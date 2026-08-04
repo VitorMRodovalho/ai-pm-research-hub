@@ -265,10 +265,33 @@ puro passa a ver ~5 cadeados de seção em vez de 39 de item; o `comms_leader` v
 aberta, com "Comunicação" e "Mídia Social" em estado de pedir-acesso - que é exatamente o caso que
 esta auditoria mediu como escondido hoje.
 
+### R7 - `tribe_leader` entra no módulo; o travamento é por item e por seção
+
+**DECIDIDA PELO PM em 04/08:** o `tribe_leader` **pode alcançar o `/admin`**, com acesso travado nos
+itens e seções que não lhe cabem.
+
+Consequências, e o que a decisão **não** é:
+
+- **Não há concessão a fazer.** Os 12 `tribe_leader` já passam em `canForAdminEntry()` (têm `write`,
+  `manage_event`, `manage_initiative`, `manage_board_admin`, `view_pii`, `award_champion`). A entrada
+  no módulo já é legítima hoje; o que falta é o travamento, não a permissão. Com isso, **o arco
+  inteiro fecha sem um único `INSERT INTO engagement_kind_permissions`.**
+- **O `/admin` em si passa a ser uma tela de widgets travados para eles.** `get_admin_dashboard` e
+  `exec_cross_initiative_comparison` exigem `manage_platform` ou `view_chapter_dashboards`, que o papel
+  não tem e, por esta decisão, não vai ganhar. Então a landing do módulo, para 12 de 89 pessoas, fica
+  sendo cadeado + pedir-acesso. Isso é coerente com o princípio (a permissão faltante vira
+  auto-evidente) mas é uma primeira impressão fraca do módulo.
+- **Decisão de implementação que decorre daí, e é de produto:** o que a landing `/admin` mostra para
+  quem entra sem `manage_platform`/`view_chapter_dashboards`. As saídas plausíveis são (a) os widgets
+  travados como qualquer outro item, ou (b) a landing redirecionar para o primeiro item ao qual a
+  pessoa tem acesso de fato. Fica registrada aqui para ser resolvida no desenho da cirurgia, não
+  agora.
+
 ### O que **não** fazer
 
-- Nenhum `INSERT INTO engagement_kind_permissions`. Nada nesta auditoria é gap de concessão. O
-  vocabulário 4 está coerente; quem está errado é o 1.
+- Nenhum `INSERT INTO engagement_kind_permissions`. Nada nesta auditoria é gap de concessão, e a
+  decisão R7 confirma isso para o último caso em aberto. O vocabulário 4 está coerente; quem está
+  errado é o 1.
 - Não recriar gate de rota no servidor - ADR-0106 aposentou isso por desenho.
 - Não "consertar" #1591 concedendo `evaluate_applications`: a action não existe.
 
@@ -277,16 +300,25 @@ esta auditoria mediu como escondido hoje.
 **Decididas em 04/08:**
 
 - ✅ **R6 - colapso por seção zerada.** Ver R6 acima.
+- ✅ **R7 - `tribe_leader` alcança o `/admin`, com travamento por item e por seção.** Ver R7 acima.
+  Sem concessão: o papel já passa em `canForAdminEntry()`.
 - ✅ **Ordem de execução: a Opção A do #1584 vem primeiro.** Este arco do admin fica em fila atrás
   dela; o gap assessment da jornada do candidato segue em aberto quanto a posição.
 
-**Ainda abertas - bloqueiam a cirurgia do #1590:**
+**Consequência das três juntas:** a cirurgia do #1590 é **inteiramente de cliente**. Não toca
+`engagement_kind_permissions`, não toca RPC, não toca RLS. Isso a torna reversível e testável sem
+migração, e mantém a fronteira real (vocabulário 4) intacta.
 
-1. **`tribe_leader` deve alcançar o `/admin`?** Hoje 12 pessoas veem "Dashboard" e tomam `400`.
-   As saídas são opostas: conceder `view_chapter_dashboards` ao papel, ou tirar a entrada do menu
-   deles. É decisão de produto, não de código.
-2. **Fernando avalia neste ciclo?** Se sim, o desbloqueio é de leitura
+**Ainda aberta:**
+
+1. **Fernando avalia neste ciclo?** Se sim, o desbloqueio é de leitura
    (`get_selection_dashboard` / superfície da #1568), não de escrita - ele já passa no gate de escrita.
+   Esta é a única que ainda pode exigir mudança de servidor, e mesmo assim provavelmente não: dar
+   entrada de menu para `/minhas-avaliacoes` (#1568) pode ser suficiente.
+
+**Aberta e nova, gerada por R7:** o que a landing `/admin` mostra para quem entra sem
+`manage_platform`/`view_chapter_dashboards` (12 pessoas). Widgets travados ou redirect para o
+primeiro item acessível. Resolver no desenho da cirurgia.
 
 ---
 
