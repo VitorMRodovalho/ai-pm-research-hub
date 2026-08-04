@@ -17,6 +17,19 @@
 > A primeira versão deste arquivo trazia e-mails reais e foi barrada pelo hook de pre-commit; o hook
 > estava certo.
 
+> 🔁 **CORREÇÃO DE DIAGNÓSTICO (2026-08-03 ~23:50 UTC).** Este documento atribui ao Bug 2 (divergência
+> de e-mail) os agendamentos que não viraram entrevista. **A medição posterior mostrou três classes, não
+> duas.** Existe uma terceira: o Apps Script dispara o webhook **uma vez por convidado** do evento, e
+> quando o endereço do candidato não é enviado a reserva se perde **com os dois lados corretos** — e-mail
+> da candidatura batendo e status na allow-list. Medido no evento `bsb4n49e06al6cj95mdivgqkp8@google.com`:
+> 70 tentativas, todas com o e-mail do PM como `guest_email`. Números atualizados: **10 eventos** desde
+> 01/07 não viraram entrevista (não 9), sendo 6 endereços de candidato real sem candidatura
+> correspondente (Classe B) e o restante Classe C. Há ainda uma Classe D: `interview_noshow` fica fora da
+> allow-list **e** é terminal em `recompute_application_status`, então quem leva no-show não consegue
+> reagendar nem voltar a andar. **A partir daqui, a fonte é `docs/specs/SPEC_INTERVIEW_BOOKING_INTEGRITY.md`**,
+> que também corrige a proposta de onde o gate único cabe (`match_booking_application` cobre 2 dos 4
+> escritores, não os 4).
+
 ---
 
 ## 1. Reparo executado durante a auditoria (autorizado pelo PM)
