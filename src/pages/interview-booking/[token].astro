@@ -33,7 +33,16 @@ if (!token || token.length < 16) {
   }
 }
 
-const calendarBaseUrl = 'https://calendar.app.google/gh9WjefjcmisVLoh7';
+// #1584 A5 — o destino vem de `validate_interview_booking_token`, que o resolve pela MESMA fonte
+// que alimenta `selection_dispatch_url_log` (resolve_interview_booking_url). Antes havia aqui um
+// literal fixo, e ele apontava para o schedule institucional: mesmo entrando pela porta governada,
+// todo candidato caía na mesma agenda e o round-robin do LRD era ignorado.
+// NUNCA reintroduzir uma URL de calendário neste arquivo — guardado por teste de contrato.
+const calendarBaseUrl: string | null = payload?.booking_url ?? null;
+
+// Token válido sem destino resolvido é falha NOSSA, e merece um estado próprio: mandar o candidato
+// para a tela de "link expirado" o faria caçar um erro que não é dele.
+const noBookingUrl = !errorMessage && !calendarBaseUrl;
 
 const pageTitle = t('interview.booking.meta.title', lang);
 const pageDesc = t('interview.booking.meta.description', lang);
@@ -52,6 +61,15 @@ const formattedExpiry = payload?.expires_at
         <h1 class="text-2xl font-bold mb-3">{t('interview.booking.error.expiredTitle', lang)}</h1>
         <p class="mb-4">{t('interview.booking.error.expiredBody', lang)}</p>
         <p class="text-sm font-mono text-red-700">code: {errorMessage}</p>
+        <p class="mt-4">
+          <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
+        </p>
+      </div>
+    ) : noBookingUrl ? (
+      <div class="bg-amber-50 border border-amber-200 rounded-lg p-6 text-amber-900">
+        <h1 class="text-2xl font-bold mb-3">{t('interview.booking.error.noUrlTitle', lang)}</h1>
+        <p class="mb-4">{t('interview.booking.error.noUrlBody', lang)}</p>
+        <p class="text-sm font-mono text-amber-800">code: no_booking_url</p>
         <p class="mt-4">
           <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
         </p>

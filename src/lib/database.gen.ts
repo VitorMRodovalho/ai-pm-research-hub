@@ -28361,6 +28361,15 @@ export type Database = {
         Args: { p_type: string }
         Returns: boolean
       }
+      _issue_interview_booking_token_core: {
+        Args: {
+          p_application_id: string
+          p_bypass_granted?: boolean
+          p_bypass_requested?: boolean
+          p_caller_id?: string
+        }
+        Returns: Json
+      }
       _log_application_pii_access: {
         Args: {
           p_accessor_id: string
@@ -32733,6 +32742,14 @@ export type Database = {
         Returns: Json
       }
       resolve_initiative_id: { Args: { p_tribe_id: number }; Returns: string }
+      resolve_interview_booking_url: {
+        Args: { p_application_id: string }
+        Returns: {
+          evaluator_id: string
+          resolution_path: string
+          url: string
+        }[]
+      }
       resolve_tribe_id: { Args: { p_initiative_id: string }; Returns: number }
       resolve_whatsapp_link: { Args: { p_member_id: string }; Returns: Json }
       respond_re_engagement: {

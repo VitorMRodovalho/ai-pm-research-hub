@@ -2788,6 +2788,9 @@ const SEL_I18N = {
       const rpcLabels: Record<string,string> = {
         schedule_interview: 'Agendar entrevista',
         issue_interview_booking_token: 'Emitir link booking',
+        // #1584 A2 — quem registra a tentativa passou a ser o core (a RPC pública delega a ele, e o
+        // despacho de cutoff chama o core direto). Sem esta entrada o timeline mostraria o nome cru.
+        _issue_interview_booking_token_core: 'Emitir link booking',
       };
 
       const passed = attempts.filter((a: any) => a.gate_passed).length;
