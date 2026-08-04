@@ -183,9 +183,19 @@ describe('#1584 B — camada DB-aware (corpo vivo, ACL, resolução real)', { sk
   it('o corpo VIVO do despacho usa a fonte compartilhada e emite token', async () => {
     const rows = await liveBody('notify_selection_cutoff_approved');
     for (const r of rows) {
-      assert.match(r.prosrc, /public\.resolve_interview_booking_url\(/, 'A1: a resolução tem de ser compartilhada');
-      assert.match(r.prosrc, /public\._issue_interview_booking_token_core\(/, 'A6: o despacho tem de emitir token');
+      // #1595 — resolve + emite + grava despacho saíram daqui para
+      // `_dispatch_interview_booking_link`, porque o MESMO trio passou a ser necessário em mais
+      // quatro lugares e duplicá-lo plantaria a quinta porta paralela. Afirmar aqui o LOCAL da
+      // definição barraria essa refatoração legítima, então a asserção segue a função: o despacho
+      // tem de passar pela fonte única, e a fonte única tem de fazer as duas coisas.
+      assert.match(r.prosrc, /public\._dispatch_interview_booking_link\(/, 'A1/A6: o despacho tem de ir pela fonte única');
       assert.match(r.prosrc, /'interview_booking_url', v_token_url/, 'A6: o e-mail leva o link do token, não o do Google');
+    }
+    const helper = await liveBody('_dispatch_interview_booking_link');
+    for (const r of helper) {
+      assert.match(r.prosrc, /public\.resolve_interview_booking_url\(/, 'A1: a resolução tem de ser compartilhada');
+      assert.match(r.prosrc, /public\._issue_interview_booking_token_core\(/, 'A6: a fonte única tem de emitir token');
+      assert.match(r.prosrc, /INSERT INTO public\.selection_dispatch_url_log/, 'a linha de despacho é ato do DESPACHO');
     }
   });
 

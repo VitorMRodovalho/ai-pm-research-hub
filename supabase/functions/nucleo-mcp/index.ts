@@ -3783,6 +3783,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
       p_calendar_event_id: params.calendar_event_id ?? null
     });
     if (error) { await logUsage(sb, member.id, "schedule_interview", false, error.message, start); return err(error.message); }
+    // #1594 — a recusa de gate deixou de ser exceção e passou a ser envelope {success:false}, para
+    // que a linha de gate_attempts commite. Sem esta checagem o modelo leria recusa como sucesso.
+    if ((data as any)?.success === false) { const em = String((data as any).message || (data as any).gate_failed_reason || "gate refused"); await logUsage(sb, member.id, "schedule_interview", false, em, start); return err(em); }
     await logUsage(sb, member.id, "schedule_interview", true, undefined, start);
     return ok(data);
   });
@@ -3814,6 +3817,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const { data, error } = await sb.rpc("notify_selection_cutoff_approved", { p_application_id: params.application_id });
     if (error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, data.error, start); return err(data.error); }
+    // #1594 — o despacho passou a abortar o e-mail por RETORNO (não por exceção), para que a linha
+    // de gate_attempts da recusa commite. success:false = nenhum e-mail saiu.
+    if ((data as any)?.success === false) { const em = String((data as any).message || (data as any).gate_failed_reason || "gate refused — no email sent"); await logUsage(sb, member.id, "notify_selection_cutoff_approved", false, em, start); return err(em); }
     await logUsage(sb, member.id, "notify_selection_cutoff_approved", true, undefined, start);
     return ok(data);
   });
@@ -10728,6 +10734,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       const { data, error } = await sb.rpc(rpc, rpcArgs);
       if (error) { await logUsage(sb, member.id, "interview_manage", false, error.message, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", error.message), message: error.message, action: /GATE_NO_AI/i.test(error.message) ? "Candidate has no AI analysis. Pass bypass_gate=true (needs manage_member) to override." : /unauthor|committee/i.test(error.message) ? "Requires committee lead of the cycle or platform admin." : undefined })); }
       if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", em), message: em })); }
+      // #1594 — recusa de gate chega em HTTP 200 com success:false (é o que faz a auditoria
+      // commitar). Um envelope de sucesso aqui diria ao modelo que a entrevista foi agendada.
+      if ((data as any)?.success === false) { const em = String((data as any).message || (data as any).gate_failed_reason || "gate refused"); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", em), message: em, action: /GATE_NO_AI/i.test(em) ? "Candidate has no AI analysis. Pass bypass_gate=true (needs manage_member) to override." : /GATE_NO_PEER_REVIEW/i.test(em) ? "Candidate has fewer than 2 peer evaluations." : /GATE_NO_SCORE/i.test(em) ? "objective_score_avg not computed — finish the objective phase first." : undefined })); }
       await logUsage(sb, member.id, "interview_manage", true, undefined, start);
       return semanticOk({
         data: { action: params.action, result: data ?? null },
@@ -10808,6 +10817,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       const { data, error } = await sb.rpc(rpc, rpcArgs);
       if (error) { await logUsage(sb, member.id, "selection_decide", false, error.message, start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: selErr("selection_decide", error.message), message: error.message })); }
       if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "selection_decide", false, em, start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: selErr("selection_decide", em), message: em })); }
+      // #1594 — notify_cutoff aborta o e-mail por RETORNO quando um gate do candidato recusa.
+      if ((data as any)?.success === false) { const em = String((data as any).message || (data as any).gate_failed_reason || "refused"); await logUsage(sb, member.id, "selection_decide", false, em, start); return ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: selErr("selection_decide", em), message: em })); }
       await logUsage(sb, member.id, "selection_decide", true, undefined, start);
       return semanticOk({
         data: { action: params.action, result: data ?? null },

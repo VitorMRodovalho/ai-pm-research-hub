@@ -28170,6 +28170,14 @@ export type Database = {
           prosrc: string
         }[]
       }
+      _audit_functions_matching: {
+        Args: { p_pattern: string }
+        Returns: {
+          identity_args: string
+          is_secdef: boolean
+          proname: string
+        }[]
+      }
       _audit_get_all_certificates_anon_execute: {
         Args: never
         Returns: boolean
@@ -28303,6 +28311,14 @@ export type Database = {
       }
       _current_affiliation_terms_version: { Args: never; Returns: string }
       _delivery_mode_for: { Args: { p_type: string }; Returns: string }
+      _dispatch_interview_booking_link: {
+        Args: {
+          p_application_id: string
+          p_caller_id?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
       _enqueue_engagement_welcome: {
         Args: { p_engagement_id: string }
         Returns: undefined
@@ -30034,6 +30050,7 @@ export type Database = {
           caller_name: string
           gate_failed_code: string
           gate_failed_reason: string
+          gate_mode: string
           gate_passed: boolean
           payload: Json
           rpc_name: string
@@ -32697,6 +32714,10 @@ export type Database = {
       request_account_claim: { Args: { p_identifier: string }; Returns: Json }
       request_application_enrichment: {
         Args: { p_field_updates: Json; p_token: string }
+        Returns: Json
+      }
+      request_interview_booking_link_via_token: {
+        Args: { p_token: string }
         Returns: Json
       }
       request_interview_reschedule: {

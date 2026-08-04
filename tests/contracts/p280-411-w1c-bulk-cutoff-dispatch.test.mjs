@@ -22,6 +22,20 @@ const I18N_KEYS = [
   "'admin.selection.bulkCutoffInviteHint'",
 ];
 
+/**
+ * Corpo do handler, delimitado pela PRÓXIMA declaração de função em vez de por uma janela fixa de
+ * bytes. A janela fixa (2200) quebrou quando o #1594 acrescentou o ramo de recusa: as asserções do
+ * fim do handler caíram para fora do recorte e o teste reprovou uma mudança correta. Um recorte que
+ * segue a função afirma o mesmo e não conta caracteres.
+ */
+function handlerBody(src, name) {
+  const start = src.indexOf(`async function ${name}`);
+  if (start < 0) return '';
+  const rest = src.slice(start + 1);
+  const nextDecl = rest.search(/\n\s*(?:async\s+)?function\s+\w+\s*\(/);
+  return nextDecl < 0 ? src.slice(start) : rest.slice(0, nextDecl);
+}
+
 describe('p280 #411 Wave 1c — bulk cutoff-invite dispatch', () => {
   describe('bulk bar button', () => {
     it('renders #bulk-cutoff-invite alongside the bulk decision buttons', () => {
@@ -49,7 +63,7 @@ describe('p280 #411 Wave 1c — bulk cutoff-invite dispatch', () => {
   });
 
   describe('executeBulkCutoffInvite handler', () => {
-    const fn = PAGE.slice(PAGE.indexOf('async function executeBulkCutoffInvite'), PAGE.indexOf('async function executeBulkCutoffInvite') + 2200);
+    const fn = handlerBody(PAGE, 'executeBulkCutoffInvite');
 
     it('exists', () => {
       assert.ok(PAGE.includes('async function executeBulkCutoffInvite()'), 'handler must be declared');
@@ -102,7 +116,7 @@ describe('p280 #411 Wave 1c — bulk cutoff-invite dispatch', () => {
 
   describe('forward-defense — no canonical-bypass', () => {
     it('does NOT write cutoff_approved_email_sent_at directly via supabase.from()', () => {
-      const fn = PAGE.slice(PAGE.indexOf('async function executeBulkCutoffInvite'), PAGE.indexOf('async function executeBulkCutoffInvite') + 2200);
+      const fn = handlerBody(PAGE, 'executeBulkCutoffInvite');
       assert.doesNotMatch(fn, /\.from\('selection_applications'\)/);
     });
   });
