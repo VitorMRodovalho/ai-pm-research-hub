@@ -3825,7 +3825,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: selection_rescue_stuck_interview — cancel lapsed interview + re-invite (#411 W1d/W3)
-  mcp.tool("selection_rescue_stuck_interview", "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.", {
+  mcp.tool("selection_rescue_stuck_interview", "Rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): re-sends the scheduling invite via notify_selection_cutoff_approved and, ONLY if that dispatch succeeds, cancels the stuck interview and resets the app to interview_pending. A gate refusal returns success:false and changes NOTHING (#1598); an unexpected error rolls the whole rescue back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.", {
     application_id: z.string().describe("Selection application UUID (must be in interview_scheduled with a past, not-conducted scheduled interview)")
   }, async (params: { application_id: string }) => {
     const start = Date.now();
@@ -3835,6 +3835,11 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const { data, error } = await sb.rpc("selection_rescue_stuck_interview", { p_application_id: params.application_id });
     if (error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, data.error, start); return err(data.error); }
+    // #1598 — a recusa de gate chega em HTTP 200 com success:false (é o que faz a linha de
+    // gate_attempts commitar). Um envelope de sucesso aqui diria ao modelo que a entrevista foi
+    // reenviada quando nada foi enviado e nada foi cancelado. Mesma correção que o #1594 fez no
+    // lane semântico (interview_manage) e que este lane RAW não tinha.
+    if (data?.success === false) { const em = String(data.message || data.gate_failed_reason || "gate refused — no email sent"); await logUsage(sb, member.id, "selection_rescue_stuck_interview", false, em, start); return err(em); }
     await logUsage(sb, member.id, "selection_rescue_stuck_interview", true, undefined, start);
     return ok(data);
   });
@@ -12390,7 +12395,10 @@ app.all("/actions", async (c) => {
 // Health check (p222 #280 alpha — reports all surfaces; #1377 adds /actions)
 app.get("/health", (c) => c.json({
   status: "ok",
-  ef_version: "2.90.0",
+  // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
+  // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
+  // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
+  ef_version: "2.91.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
