@@ -10704,9 +10704,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · interview_manage (W) — schedule/mark/rescue; committee-lead/GP gated ──
   mcp.tool(
     "interview_manage",
-    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
     {
-      action: z.enum(["schedule", "mark", "rescue"]).describe("Interview operation."),
+      action: z.enum(["schedule", "mark", "rescue", "stage_override"]).describe("Interview operation."),
       application_id: z.string().optional().describe("Application UUID — schedule / rescue."),
       interviewer_ids: z.array(z.string()).optional().describe("schedule — interviewer member UUIDs."),
       scheduled_at: z.string().optional().describe("schedule — ISO 8601 datetime."),
@@ -10716,6 +10716,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       interview_id: z.string().optional().describe("mark — selection_interviews.id (UUID)."),
       status: z.enum(["pending", "completed", "cancelled", "noshow"]).optional().describe("mark — new status."),
       notes: z.string().optional().describe("mark — status note."),
+      override_reason: z.string().optional().describe("stage_override — mandatory free-text reason (min 12 chars). Recorded on the application and in admin_audit_log."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -10734,11 +10735,19 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "rescue":
           if (!isUUID(params.application_id)) return invalid("action='rescue' requires application_id.");
           rpc = "selection_rescue_stuck_interview"; rpcArgs = { p_application_id: params.application_id }; break;
+        case "stage_override":
+          // #1613 R1.4 — a exceção do gate de entrada precisa de uma SUPERFÍCIE, senão ela é
+          // declarada e inalcançável. O motivo é validado no corpo do RPC (mínimo 12 chars),
+          // não aqui, para que web e MCP não possam divergir sobre o que é motivo suficiente.
+          if (!isUUID(params.application_id) || typeof params.override_reason !== "string") return invalid("action='stage_override' requires application_id + override_reason.");
+          rpc = "grant_interview_stage_override"; rpcArgs = { p_application_id: params.application_id, p_reason: params.override_reason }; break;
         default: return invalid(`Unknown action '${params.action}'.`);
       }
       const { data, error } = await sb.rpc(rpc, rpcArgs);
       if (error) { await logUsage(sb, member.id, "interview_manage", false, error.message, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", error.message), message: error.message, action: /GATE_NO_AI/i.test(error.message) ? "Candidate has no AI analysis. Pass bypass_gate=true (needs manage_member) to override." : /unauthor|committee/i.test(error.message) ? "Requires committee lead of the cycle or platform admin." : undefined })); }
-      if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", em), message: em })); }
+      // A mensagem, quando existe, é mais acionável que o código: `reason_required` sozinho
+      // não diz que faltam 12 caracteres. Para os RPCs que só devolvem `error`, nada muda.
+      if ((data as any)?.error) { const em = String((data as any).message || (data as any).error); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", String((data as any).error)), message: em })); }
       // #1594 — recusa de gate chega em HTTP 200 com success:false (é o que faz a auditoria
       // commitar). Um envelope de sucesso aqui diria ao modelo que a entrevista foi agendada.
       if ((data as any)?.success === false) { const em = String((data as any).message || (data as any).gate_failed_reason || "gate refused"); await logUsage(sb, member.id, "interview_manage", false, em, start); return ok(buildSemanticError({ tool: "interview_manage", semantic_domain: dom, code: selErr("interview_manage", em), message: em, action: /GATE_NO_AI/i.test(em) ? "Candidate has no AI analysis. Pass bypass_gate=true (needs manage_member) to override." : /GATE_NO_PEER_REVIEW/i.test(em) ? "Candidate has fewer than 2 peer evaluations." : /GATE_NO_SCORE/i.test(em) ? "objective_score_avg not computed — finish the objective phase first." : undefined })); }
@@ -12398,7 +12407,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.91.0",
+  ef_version: "2.92.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },

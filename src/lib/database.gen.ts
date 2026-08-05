@@ -22714,6 +22714,9 @@ export type Database = {
           interview_reschedule_requested_at: string | null
           interview_reschedule_requested_by: string | null
           interview_score: number | null
+          interview_stage_override_at: string | null
+          interview_stage_override_by: string | null
+          interview_stage_override_reason: string | null
           interview_status: string
           is_open_to_volunteer: boolean | null
           is_returning_member: boolean | null
@@ -22865,6 +22868,9 @@ export type Database = {
           interview_reschedule_requested_at?: string | null
           interview_reschedule_requested_by?: string | null
           interview_score?: number | null
+          interview_stage_override_at?: string | null
+          interview_stage_override_by?: string | null
+          interview_stage_override_reason?: string | null
           interview_status?: string
           is_open_to_volunteer?: boolean | null
           is_returning_member?: boolean | null
@@ -23016,6 +23022,9 @@ export type Database = {
           interview_reschedule_requested_at?: string | null
           interview_reschedule_requested_by?: string | null
           interview_score?: number | null
+          interview_stage_override_at?: string | null
+          interview_stage_override_by?: string | null
+          interview_stage_override_reason?: string | null
           interview_status?: string
           is_open_to_volunteer?: boolean | null
           is_returning_member?: boolean | null
@@ -23189,6 +23198,76 @@ export type Database = {
           {
             foreignKeyName: "selection_applications_interview_reschedule_requested_by_fkey"
             columns: ["interview_reschedule_requested_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_applications_interview_stage_override_by_fkey"
+            columns: ["interview_stage_override_by"]
             isOneToOne: false
             referencedRelation: "v_tribe_active_members"
             referencedColumns: ["member_id"]
@@ -31434,6 +31513,10 @@ export type Database = {
         Returns: Json
       }
       grant_image_voice_consent: { Args: { p_evidence?: Json }; Returns: Json }
+      grant_interview_stage_override: {
+        Args: { p_application_id: string; p_reason: string }
+        Returns: Json
+      }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
       import_leader_evaluations: { Args: { p_data: Json }; Returns: Json }
@@ -32274,9 +32357,11 @@ export type Database = {
           applicant_name: string
           application_id: string
           cycle_id: string
+          interview_materialized: boolean
           interview_status: string
           match_outcome: string
           matched_by: string
+          objective_score_avg: number
         }[]
       }
       meeting_close: {
