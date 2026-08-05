@@ -145,8 +145,17 @@ test('1609 static: o webhook conta a tentativa e só audita quando autorizado', 
 test('1611 static: a resposta 404 diz o motivo E se vale retentar', () => {
   assert.match(webhook, /reason:\s*outcome/, 'o motivo volta no corpo da 404');
   assert.match(webhook, /retryable:\s*isRetryable\(outcome\)/, 'a origem sabe quando desistir');
-  assert.match(webhook, /return outcome === 'no_application';/,
-    'só o buraco real é retentável — candidatura decidida e ciclo fechado não mudam sozinhos');
+  // O invariante do #1611 é o que NÃO é retentável, não a lista do que é: uma candidatura
+  // decidida e um ciclo fechado não mudam sozinhos, então reenviar é tempestade garantida.
+  // O #1613 acrescentou `objective_phase_incomplete`, que MUDA sozinho (o comitê termina a
+  // avaliação) e por isso É retentável — sob o mesmo corte de 10 do contador.
+  const retryBody = webhook.match(/function isRetryable\(outcome: string\): boolean \{([\s\S]*?)\n\}/)?.[1];
+  assert.ok(retryBody, 'isRetryable localizada');
+  assert.match(retryBody, /outcome === 'no_application'/, 'o buraco real segue retentável');
+  for (const naoRetentavel of ['status_not_allowed', 'cycle_closed']) {
+    assert.ok(!retryBody.includes(naoRetentavel),
+      `REGRESSÃO: ${naoRetentavel} virou retentável — recusa correta por desenho não muda sozinha`);
+  }
 });
 
 test('1609/1611 guard: o teste está registrado nas DUAS listas do package.json', () => {

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-05T01:18:11.583Z",
+  "generated_at": "2026-08-05T23:01:21.204Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 395,
   "by_domain": {
@@ -2468,7 +2468,7 @@
     },
     {
       "name": "interview_manage",
-      "description": "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+      "description": "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

@@ -77,6 +77,13 @@ const UNMATCHED_AUDIT_ACTION: Record<string, string> = {
   no_application: 'calendar_booking_unmatched',
   status_not_allowed: 'calendar_booking_already_decided',
   cycle_closed: 'calendar_booking_stale_cycle',
+  // #1613 — a fase objetiva ainda não fechou. É o mesmo desfecho que o RPC canônico
+  // registra como `arm116.calendar_booking_premature` desde o #1450, e a razão de ele
+  // existir AQUI é o gate de entrada: o webhook criava a linha de entrevista e SÓ DEPOIS
+  // promovia o status, de modo que a supressão da promoção deixaria um par inconsistente —
+  // entrevista existe, candidatura para trás. Recusar antes de materializar é o que evita
+  // isso, e é a mesma ordem que o RPC canônico já usa (idempotência primeiro, gate depois).
+  objective_phase_incomplete: 'calendar_booking_premature',
 };
 
 /**
@@ -86,7 +93,11 @@ const UNMATCHED_AUDIT_ACTION: Record<string, string> = {
  * campo para decidir entre desistir e tentar de novo com backoff.
  */
 function isRetryable(outcome: string): boolean {
-  return outcome === 'no_application';
+  // #1613: `objective_phase_incomplete` É retentável — ao contrário de "já decidida" e
+  // "ciclo fechado", a fase objetiva fecha sozinha quando o comitê termina de avaliar, e a
+  // mesma reserva passa a ser válida. O que protege contra tempestade não é a recusa de
+  // retentar, é o contador do #1609 (corte em 10, igual dos dois lados).
+  return outcome === 'no_application' || outcome === 'objective_phase_incomplete';
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -139,9 +150,29 @@ export const POST: APIRoute = async ({ request }) => {
   // da própria RPC, não "não achei" — por isso o fallback é explícito e não um
   // `if (!matched)` que confundiria os dois.
   const matched = (Array.isArray(matchRows) ? matchRows[0] : matchRows) as
-    | { application_id: string | null; applicant_name: string | null; app_status: string | null; interview_status: string | null; cycle_id: string | null; matched_by: string | null; match_outcome: string }
+    | { application_id: string | null; applicant_name: string | null; app_status: string | null; interview_status: string | null; cycle_id: string | null; matched_by: string | null; match_outcome: string; objective_score_avg: number | null; interview_materialized: boolean | null }
     | undefined;
-  const outcome = matched?.match_outcome ?? 'no_application';
+
+  // #1613 — o gate de fase objetiva, aplicado ANTES de materializar a entrevista.
+  //
+  // O trigger `trg_zz_gate_interview_stage_entry` suprime a promoção `* → interview_scheduled`
+  // quando não há `objective_score_avg`. Se o webhook seguisse em frente, ele inseriria a linha
+  // em selection_interviews e só então descobriria (lendo o desfecho) que a candidatura ficou
+  // para trás — o par inconsistente. Recusar aqui é a mesma ordem que o RPC canônico usa desde
+  // o #1450.
+  //
+  // As duas isenções espelham EXATAMENTE as do trigger, para que os dois lados não possam
+  // divergir: quem já está em `interview_scheduled`, e quem tem entrevista MATERIALIZADA
+  // (conduzida ou já resolvida), está reagendando, não entrando — R1.5.
+  const objectivePhaseIncomplete =
+    matched?.match_outcome === 'matched'
+    && matched.objective_score_avg == null
+    && matched.app_status !== 'interview_scheduled'
+    && matched.interview_materialized !== true;
+
+  const outcome = objectivePhaseIncomplete
+    ? 'objective_phase_incomplete'
+    : (matched?.match_outcome ?? 'no_application');
 
   if (outcome !== 'matched') {
     // #1609: a tentativa é CONTADA sempre; a linha de auditoria só sai quando o
@@ -176,13 +207,17 @@ export const POST: APIRoute = async ({ request }) => {
           target_type: 'selection_application',
           target_id: matched?.application_id ?? null,
           changes: { guest_email, scheduled_at, app_status: matched?.app_status ?? null },
-          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, reason: outcome === 'status_not_allowed' ? 'application already decided — refusal is correct by design' : 'application belongs to a closed cycle — refusal is correct by design' },
+          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, reason: outcome === 'status_not_allowed' ? 'application already decided — refusal is correct by design' : outcome === 'objective_phase_incomplete' ? 'objective phase not complete (objective_score_avg IS NULL) — #1613 entry gate, booking is re-bookable once the score lands' : 'application belongs to a closed cycle — refusal is correct by design' },
         });
       }
     }
 
     return jsonResponse({
-      error: 'application_not_found',
+      // O rótulo do erro segue o desfecho: `application_not_found` seria falso para uma
+      // recusa em que a candidatura EXISTE e foi encontrada. Segue 404 de propósito — é o
+      // status que o Apps Script (fora deste repo) já trata sem marcar o evento como
+      // processado, e trocá-lo mudaria o contrato da origem sem necessidade.
+      error: outcome === 'objective_phase_incomplete' ? 'objective_phase_incomplete' : 'application_not_found',
       reason: outcome,
       retryable: isRetryable(outcome),
       attempts: attempt?.attempts ?? null,
@@ -191,7 +226,9 @@ export const POST: APIRoute = async ({ request }) => {
         ? 'No selection_applications row matched the guest_email (primary or same-member alternate via member_emails) in ANY cycle'
         : outcome === 'status_not_allowed'
           ? 'An application matched, but its status is outside the pre-interview allow-list (submitted/screening/objective_eval/objective_cutoff/interview_pending/interview_scheduled) — a decided application is never re-opened by a booking. Do NOT retry.'
-          : 'An application matched, but it belongs to a cycle that is no longer open/active. Do NOT retry.',
+          : outcome === 'objective_phase_incomplete'
+            ? 'An application matched, but its objective phase has not closed (objective_score_avg IS NULL) and it has not entered the interview stage before. No interview row was created, so no inconsistent pair is left behind (#1613). Retry with backoff — this resolves on its own once the committee finishes the objective evaluation.'
+            : 'An application matched, but it belongs to a cycle that is no longer open/active. Do NOT retry.',
       guest_email,
     }, 404);
   }
@@ -282,7 +319,15 @@ export const POST: APIRoute = async ({ request }) => {
   if (app.status !== 'interview_scheduled') {
     appUpdates.status = 'interview_scheduled';
   }
-  await sb.from('selection_applications').update(appUpdates).eq('id', app.id);
+  // #1613 — LER o desfecho em vez de assumir. O gate de entrada roda como BEFORE trigger e
+  // pode devolver o status antigo; o UPDATE "encontra" a linha do mesmo jeito, então só o
+  // status GRAVADO separa "promoveu" de "foi recusado". A recusa aqui deveria ser impossível
+  // (a checagem acima já teria devolvido 404), e é exatamente por isso que ela vale a pena
+  // ser medida: se aparecer, a divergência é entre este arquivo e o trigger.
+  const { data: updatedApp } = await sb.from('selection_applications')
+    .update(appUpdates).eq('id', app.id).select('status').single();
+  const landedStatus = updatedApp?.status ?? null;
+  const promotionSuppressed = appUpdates.status != null && landedStatus !== appUpdates.status;
 
   // #1609: o sucesso também passa pelo contador. Duas razões: (a) fecha o par na
   // fila de exceção (`resolved_at`), de modo que uma reserva que estava presa e
@@ -307,8 +352,8 @@ export const POST: APIRoute = async ({ request }) => {
       action: 'calendar_booking_synced',
       target_type: 'selection_interview',
       target_id: interviewId,
-      changes: { application_id: app.id, guest_email, previous_app_status: app.status, status_changed: app.status !== 'interview_scheduled' },
-      metadata: { calendar_event_id, source: 'calendar_webhook', matched_by: matchedBy, interviewer_count: interviewerIds.length, attempts: syncAttempt?.attempts ?? null, recovered_after_failures: (syncAttempt?.attempts ?? 1) > 1 },
+      changes: { application_id: app.id, guest_email, previous_app_status: app.status, status_changed: app.status !== 'interview_scheduled', landed_app_status: landedStatus },
+      metadata: { calendar_event_id, source: 'calendar_webhook', matched_by: matchedBy, interviewer_count: interviewerIds.length, attempts: syncAttempt?.attempts ?? null, recovered_after_failures: (syncAttempt?.attempts ?? 1) > 1, promotion_suppressed: promotionSuppressed },
     });
   }
 
@@ -318,6 +363,8 @@ export const POST: APIRoute = async ({ request }) => {
     application_id: app.id,
     applicant_name: app.applicant_name,
     previous_status: app.status,
+    application_status: landedStatus,
+    promotion_suppressed: promotionSuppressed,
     interviewer_count: interviewerIds.length,
     matched_by: matchedBy,
     attempts: syncAttempt?.attempts ?? null,
