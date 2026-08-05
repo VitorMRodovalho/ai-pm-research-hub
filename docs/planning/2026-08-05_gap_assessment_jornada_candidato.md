@@ -204,4 +204,44 @@ As frentes R2, R3 e R1 seguem sem issue **de proposito**: as tres dependem de de
 spec ja enquadrou (§4.1 Opcao 1 vs 2; §4.2 forma do e-mail alternativo; §4.3 mudanca no Apps
 Script, fora deste repo).
 
+---
+
+## ⚠️ CORRECAO — 05/08, medido depois deste documento ser mergeado
+
+Duas afirmacoes acima estao **erradas**, e ficam aqui em vez de serem editadas em silencio.
+
+**1. "A ponte e inerte por construcao" (§3.2) — falso.** Eu citei o comentario do corpo vivo de
+`match_booking_application` ("a candidate is usually not a member") como se fosse medicao. Contado:
+
+| sinal | valor |
+|---|---|
+| candidaturas do ciclo aberto com e-mail ja em `member_emails` | **51 de 81 (63%)** |
+| enderecos de CONVIDADO (reserva) em `member_emails` | **1 de 9** |
+
+O lado da **candidatura** esta bem coberto; o lado da **reserva** nao. O defeito nao e "candidato nao
+e membro" — e que **o endereco com que a pessoa agenda nunca e capturado**, nem quando ela ja e
+membro. Isso muda o desenho do R2, e esta na **#1614**.
+
+**2. "6 candidatos reais bloqueados" (§3.2 e §6) — superestimado.** Medido por candidatura, nao por
+linha de log:
+
+| rotulo | status hoje | entrevistas | leitura |
+|---|---|---|---|
+| F | approved | 1 | passou |
+| C | final_eval | 1 | passou |
+| D | final_eval **+** interview_done | 1 cada | passou; tem **duas candidaturas** no ciclo aberto |
+| B | interview_pending | 1 | tem entrevista e convite de 04/08 |
+| **A** | **interview_pending** | **0** | **o unico de fato preso** |
+
+As 12.237 linhas sao reais, mas contam **tentativas**, nao **pessoas paradas**. Quatro dessas pessoas
+entraram por caminho manual enquanto o log gritava. Por isso o R2 foi **adiado** (#1614) e o R1
+priorizado (#1613).
+
+E o gargalo do candidato A **nao e o agendamento**: ele nao tem analise de IA nem nota objetiva,
+entao a porta governada o recusaria de qualquer forma.
+
+**A licao, que vale mais que as duas correcoes:** volume de log nao e tamanho de populacao, e
+comentario no corpo da funcao nao e medicao. Os dois erros vieram de aceitar um texto no lugar de uma
+contagem.
+
 Assisted-By: Claude (Anthropic) <noreply@anthropic.com>
