@@ -210,8 +210,8 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
   );
 });
 
-test('ef_version is 2.90.0 (#1418 raw /actions+/mcp tool annotations; 2.89.0 at #1402 semantic annotations)', () => {
-  assert.match(EF, /ef_version:\s*"2\.90\.0"/, '/health must report ef_version 2.90.0');
+test('ef_version is 2.91.0 (#1598 rescue refusal handling in the RAW lane; 2.90.0 at #1418 raw tool annotations)', () => {
+  assert.match(EF, /ef_version:\s*"2\.91\.0"/, '/health must report ef_version 2.91.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
