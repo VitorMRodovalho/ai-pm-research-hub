@@ -1,9 +1,10 @@
-# Relatório pós-evento — 1º Webinar da Tribo 6 (ROI & Portfólio)
+# Relatório pós-evento do 1º Webinar da Tribo 6 (ROI & Portfólio)
 
 **Evento:** Aplicações Práticas de IA (IA na priorização, na análise de cenário e na segurança da informação)
 **Quando:** terça, 04/08/2026, 19h00 às 20h18 (Brasília). Conteúdo de 19h05 a 20h18, 73 min.
 **Onde:** Airmeet · aberto ao público · gravado
 **Registro na plataforma:** webinar `4ff3a888-8959-4262-82e6-a6f54ffc3964` · evento `17497fca-c035-4d9a-8c37-9b721447c9fe`
+**Gravação:** https://youtu.be/__cXwlfgtwM (pública, playlist Webinars, 72min30s, com capítulos)
 
 > Fonte de todos os números: exports do Airmeet baixados em 05/08 às 00h04 (master, qna, chat, resource,
 > in_session_cta, survey) e consultas à plataforma feitas em 05/08. Os CSVs com PII ficam fora do
@@ -72,6 +73,21 @@ edições.
 nota. Se a avaliação importa para o relatório de portfólio, ela precisa ser configurada no Airmeet
 antes do evento, não depois.
 
+🟡 **O material do Fernando existe e está no ar, mas só como QR na tela.** Ele oferece um kit com os
+cinco agentes e os prompts que usa (planejador, crítico técnico, crítico de negócio, advogado do
+diabo e consolidador, cada um em um modelo diferente). O endereço aparece no slide de encerramento
+dele, aos 32min42s do vídeo publicado: **https://m2br.academy/materiais/pmi**, "Kit de Análise de
+cenário e gestão de portfólio com IA". Conferido em 05/08: responde **HTTP 200**, título "Kit PMI —
+Análise de cenário com IA | M2BR Academy".
+
+O que faltou foi registro em texto. O export de recursos do Airmeet veio **vazio** (nenhum recurso
+publicado, nenhum download) e o chat tem só os três links de LinkedIn dos palestrantes. Quem assiste
+ao replay precisa pausar e ler o slide, ou apontar a câmera para a tela. **A descrição do YouTube
+resolve isso**, e é onde o link foi colocado.
+
+Para os próximos: todo link mostrado por QR deveria ir também para a aba de recursos do Airmeet e
+para o chat, que são os dois lugares que viram registro.
+
 ## 4. Quem esteve lá, do ponto de vista da plataforma
 
 Cruzamento dos 61 presentes contra `members` + `member_emails`, por hash de e-mail:
@@ -83,23 +99,54 @@ Cruzamento dos 61 presentes contra `members` + `member_emails`, por hash de e-ma
 | membros com presença já registrada antes desta apuração | 5 |
 | membros com presença registrada nesta apuração | 23 |
 
-Os 28 membros vêm de 10 capítulos (GO, CE, RS, MG, DF, RJ, PE, PR, AM, MA).
+Os 28 membros vêm de **9 capítulos**: CE (7), GO (6), RS (4), MG (3), PE (2), RJ (2), DF (2), PR (1)
+e AM (1). Um webinar de tribo puxando presença de nove capítulos é o argumento multi-capítulo do KPI
+acontecendo na prática.
 
 **Os 33 externos não têm registro em lugar nenhum da plataforma.** Não são membros, não entraram como
 `visitor_leads` (a captura de lead é do formulário do site, não do Airmeet) e não há rota para gravar
 presença de não-membro. Ou seja: a plataforma enxerga 28 de 61. Aberto em **#1602**.
 
-## 5. Efeito nos indicadores
+## 5. O que foi gravado na plataforma
 
-- **Presença do evento:** de 5 para 28 (`attendance_record action='register'`, via MCP).
-- **Duração real:** o evento estava com `duration_actual = 60`; passou para **73**. Horas de impacto do
-  webinar: 28 × 73 min ≈ **34 h** (era ≈ 28 h com o valor errado).
-- **Meta "6+ Webinares ou Talks":** continua em **0 de 6** e **não sobe** com este webinar. A janela de
-  medição de `get_annual_kpis` está congelada em 30/06/2026 e os três webinares realizados são de
-  julho e agosto. O mesmo defeito segura "Eventos realizados" em 147 quando o número até hoje é 220.
-  Aberto em **#1603**.
+| o quê | antes | depois |
+| --- | --- | --- |
+| presença no evento | 5 | **28** |
+| `duration_actual` | 60 | **73** |
+| `events.initiative_id` | `null` | Tribo 6 |
+| `events.is_recorded` | `false` | `true` (+ `recording_url`, `recording_type='youtube'`) |
+| `webinars.status` | `confirmed` | **`completed`** |
+| `webinars.youtube_url` | `null` | https://youtu.be/__cXwlfgtwM |
+| ata do evento | inexistente | publicada, com 4 ações e 2 decisões estruturadas |
+| card no board | `in_progress` | `done` |
+| pipeline de comms | "preparar follow-up pós-evento" | **"divulgar replay e materiais"** |
 
-## 6. Pendências abertas por este evento
+A presença entrou por `attendance_record action='register'` e a ata por `meeting_minutes`, ambos pelo
+MCP. Os campos de `webinars` e de gravação do evento foram por UPDATE direto, porque não há rota MCP
+(#1600, #1601) e porque a rota da tela apagaria o `board_item_id` (#1604).
+
+## 6. Efeito nos indicadores
+
+**O contador da meta não se mexeu, e isso não é erro de execução.** Medido depois de fechar tudo:
+
+| medida | valor |
+| --- | --- |
+| webinares com `status='completed'` no banco | 2 → **3** |
+| `get_webinars_count` na janela do KPI (até 30/06) | **0** |
+| `get_webinars_count` de 01/01 até hoje | **3** |
+| Horas de Impacto, janela default do painel | **842** |
+| Horas de Impacto, de 01/01 até hoje | **1387** |
+
+A meta "6+ Webinares ou Talks" continua exibindo **0 de 6** com três webinares realizados, porque a
+janela de medição parou em 30/06/2026 e os três são de julho e agosto. O mesmo defeito segura
+"Eventos realizados" em 147 quando o número até hoje é 220, e o painel do workspace em 842 horas de
+impacto quando são 1387. As 28 presenças registradas hoje caem inteiras fora de todas as janelas
+default, porque o evento é de agosto. Aberto em **#1603**.
+
+Duração real: `duration_actual` foi de 60 para **73**, o que muda a conta de horas de impacto deste
+webinar de ≈28 h para ≈34 h. Esse ganho só aparece em superfície com janela corrigida.
+
+## 7. Pendências abertas por este evento
 
 | # | item |
 | --- | --- |
@@ -107,8 +154,32 @@ presença de não-membro. Ou seja: a plataforma enxerga 28 de 61. Aberto em **#1
 | #1601 | `event_write` não alcança os campos de realização (gravação, `duration_actual`, `initiative_id`) |
 | #1602 | presença de público externo e resolução de e-mail em lote não têm rota |
 | #1603 | janela congelada em `get_annual_kpis` (meta de webinares e eventos realizados) |
+| #1604 | editar um webinar pelo modal do admin apaga o `board_item_id` |
 
-Fora do MCP, um achado de higiene: `comms_report scope='pending_webinars'` ainda lista **três webinares
-de abril** das tribos 2, 4 e 5 (`91759ba1`, `2ab12ccf`, `cd596843`) parados em `confirmed` com
-"preparar follow-up pós-evento". Ou aconteceram e nunca foram fechados, ou não aconteceram e deveriam
-estar cancelados.
+⚠️ **A #1604 saiu de uma tentativa de fazer a coisa certa.** Antes de fechar o webinar por SQL fui
+conferir se dava para fechar pelo admin, e dava: `upsert_webinar` aceita `p_status` e `p_youtube_url`,
+e o gate dela permite ao **próprio organizador** (o Denis, neste caso) fechar o webinar dele. Só que a
+função grava `board_item_id = p_board_item_id` sem `COALESCE` e o modal nunca envia esse parâmetro.
+Fechar este webinar pela tela teria apagado, em silêncio, o vínculo com o card
+`f5a77542-4007-4229-916b-ead5852b20e6`. Por isso o fechamento foi por UPDATE direto.
+
+Isso também corrigiu a #1600, que eu havia escrito afirmando que o líder de tribo dependia do owner
+para fechar um webinar. Não depende: a capacidade existe na web. O que não existe é a rota no MCP.
+
+## 8. Achados de higiene, sem issue aberta
+
+**Três webinares de abril presos no pipeline.** `comms_report scope='pending_webinars'` ainda lista
+`91759ba1`, `2ab12ccf` e `cd596843` (tribos 2, 4 e 5) em `confirmed` com "preparar follow-up
+pós-evento". Ou aconteceram e nunca foram fechados, ou não aconteceram e deveriam estar cancelados. É
+o mesmo sintoma que a #1600 descreve: sem rota de fechamento, webinar não fecha.
+
+**Cópia velha de liderança em `initiatives.metadata`.** O `metadata.leader_member_id` da Tribo 6
+aponta para o líder anterior. O SSOT (`engagements`, papel `leader` desde 23/06) e a coluna que a
+tela realmente lê (`tribes.leader_member_id`) trazem o líder atual, então **não há efeito visível
+hoje**. Fica registrado porque é uma terceira representação do mesmo fato, e a única das três que
+está errada. Detectado ouvindo o próprio webinar, onde a transição de liderança é anunciada.
+
+**Kickoff de comms nunca registrado.** `comms_kickoff_at` do webinar é `null` e
+`comms_kickoff_logged` é `false`, embora a divulgação tenha saído em 27/07 e 02/08. Marcar agora
+gravaria a data de hoje, que seria pior que o `null`: o campo aceita apenas "agora"
+(`mark_kickoff`), não uma data retroativa.
