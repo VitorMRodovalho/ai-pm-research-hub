@@ -90,7 +90,12 @@ test('472-c1-webhook static: dead-path RPC sync_calendar_booking_to_interview lo
 });
 
 test('472-c1-webhook static: webhook logs unmatched + synced bookings (corr-5 observability)', () => {
-  assert.match(webhook, /action:\s*'calendar_booking_unmatched'/, 'unmatched booking logged → corr-5 consistency cron can detect B1 recurrence');
+  // #1611 split the single `calendar_booking_unmatched` bucket into one action per
+  // outcome, so the literal now lives in the UNMATCHED_AUDIT_ACTION map rather than
+  // inline at the insert. The observability property this test guards is unchanged:
+  // an unmatched booking is still logged under that action. The full three-way
+  // contract is owned by tests/contracts/1609-1611-booking-entrance-door.test.mjs.
+  assert.match(webhook, /'calendar_booking_unmatched'/, 'unmatched booking logged → corr-5 consistency cron can detect B1 recurrence');
   assert.match(webhook, /action:\s*'calendar_booking_synced'/, 'synced booking logged → audit parity with the canonical RPC');
 });
 
@@ -114,12 +119,18 @@ test('472-c1-webhook static: interviewer resolution via member_emails, not membe
 });
 
 // ── BEHAVIOURAL (DB-gated) ───────────────────────────────────────────────────
-test('472-c1-webhook behavioural: matcher returns EMPTY for a non-matching email', { skip: dbGated ? false : skipMsg }, async () => {
+test('472-c1-webhook behavioural: matcher attaches NOTHING for a non-matching email', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('match_booking_application', { p_guest_email: 'definitely-nobody@example.invalid' });
   assert.ifError(error);
   assert.ok(Array.isArray(data), 'TABLE-returning RPC yields an array');
-  assert.equal(data.length, 0, 'no match → empty set (no false attach)');
+  // #1611 changed the SHAPE, not the safety property: the matcher now always
+  // returns exactly one row carrying `match_outcome`, because an empty set was
+  // indistinguishable across the three refusal reasons. What corr-1 guarantees
+  // here — no false attach — is now expressed as a null application_id.
+  assert.equal(data.length, 1, 'always exactly one row (#1611)');
+  assert.equal(data[0].match_outcome, 'no_application');
+  assert.equal(data[0].application_id, null, 'no match → nothing to attach');
 });
 
 test('472-c1-webhook behavioural: a real open/active pre-interview candidate matches by primary', { skip: dbGated ? false : skipMsg }, async () => {

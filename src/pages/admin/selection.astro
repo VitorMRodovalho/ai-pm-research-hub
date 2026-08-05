@@ -279,6 +279,22 @@ const SEL_I18N = {
     errorsHeader: t('admin.selection.importJsonErrorsHeader', lang),
     ingestResultWarning: t('admin.selection.importJsonIngestResultWarning', lang),
   },
+  // #1609 R4.2 — fila de exceção de reservas de entrevista.
+  bookingExceptions: {
+    title: t('admin.selection.bookingExceptionsTitle', lang),
+    hint: t('admin.selection.bookingExceptionsHint', lang),
+    colGuest: t('admin.selection.bookingExceptionsColGuest', lang),
+    colAttempts: t('admin.selection.bookingExceptionsColAttempts', lang),
+    colLastSeen: t('admin.selection.bookingExceptionsColLastSeen', lang),
+    colOutcome: t('admin.selection.bookingExceptionsColOutcome', lang),
+    outcomeNoApplication: t('admin.selection.bookingExceptionsOutcomeNoApplication', lang),
+    outcomeStatusNotAllowed: t('admin.selection.bookingExceptionsOutcomeStatusNotAllowed', lang),
+    outcomeCycleClosed: t('admin.selection.bookingExceptionsOutcomeCycleClosed', lang),
+    actionable: t('admin.selection.bookingExceptionsActionable', lang),
+    correctRefusal: t('admin.selection.bookingExceptionsCorrectRefusal', lang),
+    suppressed: t('admin.selection.bookingExceptionsSuppressed', lang),
+    empty: t('admin.selection.bookingExceptionsEmpty', lang),
+  },
 };
 ---
 
@@ -318,6 +334,18 @@ const SEL_I18N = {
       <div id="tab-pipeline">
         <!-- Quick stats -->
         <div id="sel-quick-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4"></div>
+
+        <!-- #1609 R4.2 — fila de exceção de reservas de entrevista. Fica OCULTA
+             quando não há nada a fazer: a fila só aparece se existir ao menos uma
+             reserva pendente, para não virar mais um painel que se aprende a
+             ignorar. -->
+        <div id="booking-exceptions" class="hidden mb-4 bg-[var(--surface-card)] border border-amber-200 rounded-xl p-3">
+          <div class="flex flex-wrap items-baseline gap-2 mb-2">
+            <h2 id="booking-exceptions-title" class="text-sm font-bold text-navy">—</h2>
+            <span id="booking-exceptions-hint" class="text-[11px] text-[var(--text-secondary)]"></span>
+          </div>
+          <div id="booking-exceptions-body" class="overflow-x-auto"></div>
+        </div>
 
         <!-- Action buttons -->
         <div class="flex flex-wrap gap-3 mb-4 items-center">
@@ -1663,6 +1691,56 @@ const SEL_I18N = {
     } else {
       alertEl.classList.add('hidden');
     }
+  }
+
+  /* ── #1609 R4.2 — fila de exceção de reservas ─────────────────
+     Lê o contador por (evento, convidado), NÃO o admin_audit_log (R4.3). Antes
+     do #1609 esta informação só existia como 16.722 linhas de log espalhadas,
+     e não havia superfície nenhuma onde o GP a visse. */
+  const BOOKING_OUTCOME_STYLE: Record<string, { label: () => string; cls: string }> = {
+    no_application:     { label: () => T.bookingExceptions?.outcomeNoApplication ?? 'Nenhuma candidatura', cls: 'bg-red-50 text-red-700' },
+    status_not_allowed: { label: () => T.bookingExceptions?.outcomeStatusNotAllowed ?? 'Já decidida',      cls: 'bg-gray-100 text-gray-600' },
+    cycle_closed:       { label: () => T.bookingExceptions?.outcomeCycleClosed ?? 'Ciclo fechado',         cls: 'bg-gray-100 text-gray-600' },
+  };
+
+  async function loadBookingExceptions() {
+    if (!sb) return;
+    const card = document.getElementById('booking-exceptions');
+    const body = document.getElementById('booking-exceptions-body');
+    if (!card || !body) return;
+    const { data, error } = await sb.rpc('get_booking_exception_queue', { p_include_resolved: false });
+    // Sem autoridade (a RPC levanta exceção) ou sem fila → o cartão some. Um
+    // painel vazio permanente é ruído; a ausência aqui É a informação.
+    if (error || !Array.isArray(data) || data.length === 0) { card.classList.add('hidden'); return; }
+
+    const i18n = T.bookingExceptions ?? {};
+    const actionable = data.filter((r: any) => r.actionable).length;
+    const titleEl = document.getElementById('booking-exceptions-title');
+    const hintEl = document.getElementById('booking-exceptions-hint');
+    if (titleEl) titleEl.textContent = `${i18n.title ?? 'Reservas de entrevista sem candidatura'} (${actionable}/${data.length})`;
+    if (hintEl) hintEl.textContent = i18n.hint ?? '';
+
+    body.innerHTML = `<table class="w-full text-[12px]">
+      <thead><tr class="text-left text-[var(--text-secondary)]">
+        <th class="py-1 pr-3 font-semibold">${esc(i18n.colGuest ?? 'Convidado')}</th>
+        <th class="py-1 pr-3 font-semibold">${esc(i18n.colOutcome ?? 'Desfecho')}</th>
+        <th class="py-1 pr-3 font-semibold text-right">${esc(i18n.colAttempts ?? 'Tentativas')}</th>
+        <th class="py-1 pr-3 font-semibold">${esc(i18n.colLastSeen ?? 'Última')}</th>
+      </tr></thead><tbody>${data.map((r: any) => {
+        const style = BOOKING_OUTCOME_STYLE[r.last_outcome] ?? { label: () => r.last_outcome, cls: 'bg-gray-100 text-gray-600' };
+        const who = r.applicant_name ? `${esc(r.guest_email)} <span class="text-[var(--text-secondary)]">— ${esc(r.applicant_name)} (${esc(r.app_status ?? '')})</span>` : esc(r.guest_email);
+        const tag = r.actionable
+          ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${esc(i18n.actionable ?? 'acionável')}</span>`
+          : `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">${esc(i18n.correctRefusal ?? 'recusa correta')}</span>`;
+        const muted = r.suppressed ? `<span class="ml-1 text-[10px] text-[var(--text-muted)]">${esc(i18n.suppressed ?? 'log cortado')}</span>` : '';
+        return `<tr class="border-t border-[var(--border-default)]">
+          <td class="py-1 pr-3">${who}</td>
+          <td class="py-1 pr-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${style.cls}">${esc(style.label())}</span>${tag}</td>
+          <td class="py-1 pr-3 text-right font-mono">${esc(String(r.attempts))}${muted}</td>
+          <td class="py-1 pr-3">${esc(r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('pt-BR') : '—')}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+    card.classList.remove('hidden');
   }
 
   function renderQuickStats() {
@@ -5783,6 +5861,9 @@ const SEL_I18N = {
     if (m && canAccessAdminRoute(m, 'admin_selection')) {
       showPanel();
       loadCycles().then(() => loadDashboard()).then(() => maybeOpenDeepLinkedApplicant());
+      // #1609 R4.2: independente do dashboard — a fila de exceção é por reserva,
+      // não por ciclo, e não deve morrer junto se o dashboard falhar.
+      loadBookingExceptions().catch(() => {});
     } else {
       showDenied();
     }
