@@ -23440,6 +23440,48 @@ export type Database = {
           },
         ]
       }
+      selection_booking_attempts: {
+        Row: {
+          attempts: number
+          calendar_event_id: string
+          first_seen_at: string
+          guest_email: string
+          id: string
+          last_outcome: string
+          last_scheduled_at: string | null
+          last_seen_at: string
+          outcome_changed_at: string
+          resolved_at: string | null
+          suppressed_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          calendar_event_id: string
+          first_seen_at?: string
+          guest_email: string
+          id?: string
+          last_outcome: string
+          last_scheduled_at?: string | null
+          last_seen_at?: string
+          outcome_changed_at?: string
+          resolved_at?: string | null
+          suppressed_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          calendar_event_id?: string
+          first_seen_at?: string
+          guest_email?: string
+          id?: string
+          last_outcome?: string
+          last_scheduled_at?: string | null
+          last_seen_at?: string
+          outcome_changed_at?: string
+          resolved_at?: string | null
+          suppressed_at?: string | null
+        }
+        Relationships: []
+      }
       selection_committee: {
         Row: {
           can_interview: boolean | null
@@ -30191,6 +30233,24 @@ export type Database = {
       }
       get_board_tags: { Args: { p_board_id: string }; Returns: Json }
       get_board_timeline: { Args: { p_board_id: string }; Returns: Json }
+      get_booking_exception_queue: {
+        Args: { p_include_resolved?: boolean }
+        Returns: {
+          actionable: boolean
+          app_status: string
+          applicant_name: string
+          application_id: string
+          attempts: number
+          calendar_event_id: string
+          first_seen_at: string
+          guest_email: string
+          last_outcome: string
+          last_scheduled_at: string
+          last_seen_at: string
+          resolved_at: string
+          suppressed: boolean
+        }[]
+      }
       get_caller_capabilities: { Args: never; Returns: Json }
       get_campaign_analytics: { Args: { p_send_id?: string }; Returns: Json }
       get_candidate_onboarding_progress: {
@@ -32211,6 +32271,7 @@ export type Database = {
           application_id: string
           cycle_id: string
           interview_status: string
+          match_outcome: string
           matched_by: string
         }[]
       }
@@ -32523,6 +32584,21 @@ export type Database = {
           p_validation_action: string
         }
         Returns: Json
+      }
+      record_booking_attempt: {
+        Args: {
+          p_calendar_event_id: string
+          p_guest_email: string
+          p_outcome: string
+          p_scheduled_at?: string
+        }
+        Returns: {
+          attempts: number
+          first_seen_at: string
+          outcome_changed: boolean
+          should_audit: boolean
+          suppressed: boolean
+        }[]
       }
       record_drive_discovery: {
         Args: {
