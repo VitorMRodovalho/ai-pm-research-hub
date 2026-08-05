@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-31T20:17:26.711Z",
+  "generated_at": "2026-08-05T01:18:11.583Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 395,
   "by_domain": {
@@ -2489,7 +2489,7 @@
     },
     {
       "name": "selection_rescue_stuck_interview",
-      "description": "Atomically rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): cancels the stuck interview, resets the app to interview_pending + clears the dispatch guard, and re-sends the scheduling invite via notify_selection_cutoff_approved. One transaction — a re-dispatch failure rolls the cancel back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.",
+      "description": "Rescues a candidate whose scheduled interview lapsed (past + never conducted, app still interview_scheduled): re-sends the scheduling invite via notify_selection_cutoff_approved and, ONLY if that dispatch succeeds, cancels the stuck interview and resets the app to interview_pending. A gate refusal returns success:false and changes NOTHING (#1598); an unexpected error rolls the whole rescue back. Authority (enforced in the RPC): committee lead OR manage_member. The daily cron selection-stuck-scheduled-rescue-daily automates this after a 48h grace.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

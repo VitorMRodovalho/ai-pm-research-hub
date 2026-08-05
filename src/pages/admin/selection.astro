@@ -4764,6 +4764,10 @@ const SEL_I18N = {
           const { data, error } = await sb.rpc('selection_rescue_stuck_interview', { p_application_id: row.id });
           if (error) throw error;
           if (data?.error) throw new Error(data.error);
+          // #1598 — a recusa de gate volta em HTTP 200 com success:false (é o que faz a linha de
+          // gate_attempts commitar). Sem esta linha o toast diria "novo convite enviado" quando
+          // nada foi enviado e a entrevista NÃO foi cancelada.
+          if (data?.success === false) throw new Error(data.message || data.gate_failed_reason || 'Gate recusou o reenvio — nenhum e-mail enviado');
           toast(T.modal.rescueStuckToast);
           loadInterviewForm(row);
           loadDashboard();
