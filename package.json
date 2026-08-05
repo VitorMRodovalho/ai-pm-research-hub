@@ -85,6 +85,8 @@
   },
   "overrides": {
     "devalue": "^5.8.1",
-    "esbuild": "^0.28.1"
+    "esbuild": "^0.28.1",
+    "undici": "^7.29.0",
+    "sharp": "^0.35.0"
   }
 }
