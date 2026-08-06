@@ -106,7 +106,8 @@ export const ALL: APIRoute = async ({ request }) => {
   }
 
   // p220: detect tools/list so we can post-process the response to strip
-  // the non-MCP-spec `execution.taskSupport` field added by @modelcontextprotocol/sdk@1.29.0.
+  // the non-MCP-spec `execution.taskSupport` field added by @modelcontextprotocol/sdk@1.29.0
+  // and still emitted unchanged by 1.30.0 (re-measured #1620: 342 occurrences upstream → 0 here).
   // Stricter MCP clients (Perplexity) silently drop the entire tools array when
   // unknown top-level fields appear on each tool — symptom: "No tools to display"
   // despite tools/list returning 200 with all 299 tools. The field is Anthropic-

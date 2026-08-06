@@ -131,10 +131,10 @@ curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health
 The per-session tool-count change-history is archived at `docs/audit/MCP_RULES_TOOLCOUNT_HISTORY_ARCHIVED_2026-05-30.md`.
 
 Worker proxy paths (`nucleoia.vitormr.dev`): `/mcp` → EF `/nucleo-mcp/mcp`; `/mcp/semantic` → EF `/nucleo-mcp/semantic`.
-Both shave the SDK 1.29.0 `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See
+Both shave the SDK `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See
 `docs/MCP_SETUP_GUIDE.md` for client routing.
 
-- Transport: `@modelcontextprotocol/sdk@1.29.0` `WebStandardStreamableHTTPServerTransport` (native).
+- Transport: `@modelcontextprotocol/sdk@1.30.0` `WebStandardStreamableHTTPServerTransport` (native).
 - Tool params: Zod schemas (`z.string()`, `z.number()`, …) — NOT plain JSON Schema objects.
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT. All tools log to `mcp_usage_log`.
 - Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`, `get_ots_pipeline_health`.
@@ -202,9 +202,16 @@ Expected: `[runtime] clean (N runtime ≡ N static)`. If drift is reported (`dri
 Re-running the matrix is also useful after migrations that change RPC signatures — diff `mcp-tool-matrix.json` to see which tools call the changed RPC.
 
 ## SDK Compatibility
-- **SDK 1.29.0**: stable on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas. (Latest 1.x confirmed via npm `dist-tags.latest` — re-query, don't trust this line; 2.0 is a breaking alpha, do not adopt.)
-- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned exact (MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.29.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
-- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). 1.29.0 native transport works after converting tools to Zod + upgrading deps.
+- **SDK 1.30.0**: stable on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas. (Latest 1.x confirmed via npm `dist-tags.latest` — re-query, don't trust this line; 2.0 is a breaking alpha, do not adopt.)
+- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned exact (MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.30.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
+- **`LATEST_PROTOCOL_VERSION` is `2025-11-25` in 1.29.0 AND in 1.30.0** — 1.30.0 shipped 2026-07-27, one day
+  BEFORE the 2026-07-28 spec, so it does NOT advance the spec migration (#1620). Bumping the pin is hygiene;
+  do not read a version bump as spec progress without grepping `LATEST_PROTOCOL_VERSION` in the tarball.
+- **A bump must re-measure the `execution.taskSupport` strip, not just re-read it.** The proxies strip a
+  literal JSON substring; if a future SDK changes the field's shape the regex silently becomes a no-op while
+  the code still looks like a defense. The tripwire in `tests/contracts/mcp-tools-list-execution-strip.test.mjs`
+  (`STRIP_VERIFIED_AGAINST`) fails the build until the live upstream→proxy delta is re-measured.
+- **History**: SDK 1.27.1 worked but required manual SSE wrapping (85 lines). 1.29.0 native transport works after converting tools to Zod + upgrading deps. 1.30.0 (#1620) is a no-behavior-change bump for our surface: `server/mcp.js` is byte-identical, and the deltas are SSE keep-alive frames + `X-Accel-Buffering: no` on stream responses, `_closed` race guards, resumable-stream fixes, a parsed `Content-Type` check (`isJsonContentType`), and zod-compat error-message formatting.
 
 ## Tool Pattern
 ```typescript

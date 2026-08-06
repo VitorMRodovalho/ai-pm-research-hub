@@ -36,6 +36,25 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const SRC = readFileSync(resolve(process.cwd(), 'src/pages/mcp.ts'), 'utf8');
+const EF = readFileSync(resolve(process.cwd(), 'supabase/functions/nucleo-mcp/index.ts'), 'utf8');
+
+/**
+ * The SDK version whose tools/list output the strip was last MEASURED against
+ * (not merely read). #1620, 2026-08-06 — live upstream→proxy delta per surface:
+ * /mcp 342→0, /semantic 53→0, /actions 88→0, tool counts preserved on both sides.
+ *
+ * Every assertion above this line is a source grep: it proves the regex EXISTS.
+ * None of them can prove it still MATCHES. The strip targets a literal JSON
+ * substring (`"execution":{"taskSupport":"forbidden"}`), so an SDK that renames
+ * the field, adds a sibling key inside `execution`, or changes the emitted value
+ * turns the defense into a silent no-op while the code keeps looking correct.
+ * That is the failure class this constant exists to catch.
+ *
+ * When bumping the SDK pin: re-run the measurement against the DEPLOYED EF
+ * (POST tools/list to the EF surface and to the proxy, compare the count of
+ * `"execution":{"taskSupport":"forbidden"}` occurrences), then update this value.
+ */
+const STRIP_VERIFIED_AGAINST = '1.30.0';
 
 test('mcp proxy: detects tools/list method via request body regex', () => {
   assert.match(SRC, /const\s+isToolsList\s*=\s*[\s\S]*?"method"\s*[\\]*?[\s\S]*?"tools\\?\/list"/,
@@ -95,4 +114,23 @@ test('mcp proxy: strip applies universally (not gated on User-Agent)', () => {
   const block = SRC.slice(conditionMatch.index, conditionMatch.index + 2000);
   assert.doesNotMatch(block, /user-agent|userAgent/i,
     'Strip block must NOT branch on User-Agent — universal application');
+});
+
+test('#1620 tripwire: EF SDK pin still matches the version the strip was MEASURED against', () => {
+  // Iterate every import (a single assert.match would pass on any ONE matching
+  // pin and miss a second import left behind on the old version).
+  const pins = [...EF.matchAll(/npm:@modelcontextprotocol\/sdk@([0-9]+\.[0-9]+\.[0-9]+)\//g)]
+    .map((m) => m[1]);
+  assert.ok(pins.length >= 2,
+    `expected the EF to import the SDK on a pinned version, found ${pins.length} import(s)`);
+
+  const distinct = [...new Set(pins)];
+  assert.equal(distinct.length, 1,
+    `all SDK imports must pin the SAME version — found: ${distinct.join(', ')}`);
+
+  assert.equal(distinct[0], STRIP_VERIFIED_AGAINST,
+    `The EF now pins SDK ${distinct[0]}, but the execution.taskSupport strip was last measured ` +
+    `against ${STRIP_VERIFIED_AGAINST}. The strip matches a LITERAL JSON substring, so a shape ` +
+    `change turns it into a silent no-op that no source grep can detect. Re-measure the live ` +
+    `upstream→proxy delta on all three surfaces, then update STRIP_VERIFIED_AGAINST.`);
 });

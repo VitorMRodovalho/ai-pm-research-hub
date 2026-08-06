@@ -103,7 +103,8 @@ export const ALL: APIRoute = async ({ request }) => {
   }
 
   // p220 — tools/list spec-cleanup (mirrors mcp.ts): strip non-MCP-spec
-  // `execution.taskSupport` field emitted per-tool by @modelcontextprotocol/sdk@1.29.0.
+  // `execution.taskSupport` field emitted per-tool by @modelcontextprotocol/sdk@1.29.0,
+  // unchanged in 1.30.0 (re-measured #1620: 53 occurrences upstream → 0 here).
   // Stricter MCP clients (Perplexity) silently drop tools array on unknown top-level fields.
   // Apply universally even for 3-tool semantic surface — same SDK, same field.
   const isToolsList = typeof reqBody === 'string' && /"method"\s*:\s*"tools\/list"/.test(reqBody);
