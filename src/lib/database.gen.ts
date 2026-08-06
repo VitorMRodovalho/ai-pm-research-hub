@@ -746,6 +746,51 @@ export type Database = {
           },
         ]
       }
+      alert_deliveries: {
+        Row: {
+          alert_key: string
+          alert_kind: string
+          detail: Json
+          emailed_at: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          notified_at: string | null
+          occurrences: number
+          resolved_at: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          alert_key: string
+          alert_kind: string
+          detail?: Json
+          emailed_at?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          notified_at?: string | null
+          occurrences?: number
+          resolved_at?: string | null
+          severity: string
+          title: string
+        }
+        Update: {
+          alert_key?: string
+          alert_kind?: string
+          detail?: Json
+          emailed_at?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          notified_at?: string | null
+          occurrences?: number
+          resolved_at?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       analysis_results: {
         Row: {
           analysis_type: string
@@ -7884,6 +7929,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cron_vitality_watch: {
+        Row: {
+          alert_on_pure_silence: boolean
+          created_at: string
+          effect_action: string
+          effect_key: string
+          enabled: boolean
+          error_key: string | null
+          expected_max_gap: string
+          job_name: string
+          max_silent_runs: number
+          notes: string | null
+        }
+        Insert: {
+          alert_on_pure_silence?: boolean
+          created_at?: string
+          effect_action: string
+          effect_key: string
+          enabled?: boolean
+          error_key?: string | null
+          expected_max_gap?: string
+          job_name: string
+          max_silent_runs?: number
+          notes?: string | null
+        }
+        Update: {
+          alert_on_pure_silence?: boolean
+          created_at?: string
+          effect_action?: string
+          effect_key?: string
+          enabled?: boolean
+          error_key?: string | null
+          expected_max_gap?: string
+          job_name?: string
+          max_silent_runs?: number
+          notes?: string | null
+        }
+        Relationships: []
       }
       curation_artifact_snapshots: {
         Row: {
@@ -28243,6 +28327,17 @@ export type Database = {
           pending: number
           title: string
         }[]
+      }
+      _alert_sweep_cron: { Args: { p_deliver_email?: boolean }; Returns: Json }
+      _alert_upsert: {
+        Args: {
+          p_detail: Json
+          p_key: string
+          p_kind: string
+          p_severity: string
+          p_title: string
+        }
+        Returns: boolean
       }
       _artia_safe_event_summary: {
         Args: { p_end_date: string; p_start_date: string }
