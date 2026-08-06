@@ -18,6 +18,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import VolunteerGuide from '../../components/governance/VolunteerGuide.astro';
 import { createClient } from '@supabase/supabase-js';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
@@ -43,7 +44,10 @@ const currentGlossaryHtml = extractGlossarySection(currentLocked?.content_html);
 
 // Espelho público: só versões lacradas. #1161 — sem rótulo/histórico de versão na página
 // (confundia novos membros no pré-onboarding); só o conteúdo §13 renderiza e auto-atualiza.
-const displayHtml = currentGlossaryHtml || latestGlossaryHtml;
+// #1629 — superfície mais estreita que a do blog (`governance_documents` nega INSERT/UPDATE
+// para `authenticated`, só service_role/SECDEF escreve), mas é o mesmo mecanismo: HTML de
+// banco renderizado com set:html em página pública. Sanitizado pelo mesmo SSOT.
+const displayHtml = sanitizeUserHtml(currentGlossaryHtml || latestGlossaryHtml);
 ---
 
 <BaseLayout title={t('glossario.metaTitle', lang)} activePage="governance" lang={lang}>
