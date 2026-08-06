@@ -7,6 +7,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 import { CANONICAL_ORIGIN } from '../../lib/canonical';
+import { sanitizeUserHtml } from '../../lib/sanitize-html';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langKey = lang;
@@ -40,7 +41,10 @@ if (post?.author_member_id) {
 }
 
 const postTitle = post?.title?.[langKey] || post?.title?.['pt-BR'] || '';
-const postBody = post?.body_html?.[langKey] || post?.body_html?.['pt-BR'] || '';
+// #1629 — `body_html` é autorado por membros com `rls_can('write')` (14 de 89 ativos em
+// 2026-08-06) e esta página renderiza para ANÔNIMO. O HTML é montado no cliente e gravado
+// direto na tabela, então sanitizar no editor não seria barreira: o gate tem de estar aqui.
+const postBody = sanitizeUserHtml(post?.body_html?.[langKey] || post?.body_html?.['pt-BR'] || '');
 const postExcerpt = post?.excerpt?.[langKey] || post?.excerpt?.['pt-BR'] || '';
 const postCategory = post?.category || '';
 const postAuthor = authorName;
