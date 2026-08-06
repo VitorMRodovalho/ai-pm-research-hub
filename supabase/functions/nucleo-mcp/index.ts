@@ -180,12 +180,12 @@
 //   manage_initiative_engagement (action='remove' only), offboard_member, delete_card, archive_card.
 //   Default returns preview; confirm=true executes. Breaking behavior change.
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
-// Transport: SDK 1.29.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
+// Transport: SDK 1.30.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
 import { Hono } from "jsr:@hono/hono@4.12.9";
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.29.0/server/mcp.js";
-import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.29.0/server/webStandardStreamableHttp.js";
+import { McpServer } from "npm:@modelcontextprotocol/sdk@1.30.0/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.30.0/server/webStandardStreamableHttp.js";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { z } from "npm:zod@4.3.6";
 import {
@@ -12353,7 +12353,7 @@ function statelessGetNotAllowed(req: Request): Response | null {
 }
 
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
-// SDK 1.29.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
+// SDK 1.30.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
   const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
   if (getBlocked) return getBlocked;
@@ -12447,14 +12447,14 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.93.0",
+  ef_version: "2.94.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
     "/actions": { server: "nucleo-ia-actions", version: "0.2.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
-  sdk: "1.29.0",
+  sdk: "1.30.0",
 }));
 
 Deno.serve(app.fetch);
