@@ -46,10 +46,21 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 </BaseLayout>
 
 <script>
+  // #1631 Wave 0: o escape local daqui cobria `& < >` e NÃO a aspa, e era interpolado
+  // dentro de valor de atributo (`data-notif-link="…"`). Título, corpo e link de uma
+  // notificação são escolhidos por quem a cria, e a porta que cria (`create_notification`)
+  // estava aberta para qualquer sessão logada. Passa a usar o SSOT.
+  import { escapeHtml, safeNavigationUrl } from '../lib/escape-html';
+
   let sb: any = null;
   let currentFilter = 'all';
 
-  function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  /**
+   * Link resolvido por id, FORA do DOM. O destino do clique não volta a ser atributo:
+   * um atributo é superfície de injeção, um Map não é. Vale para o valor já filtrado —
+   * o que não passa em `safeNavigationUrl` (ex.: `javascript:`) nem entra aqui.
+   */
+  const linkById = new Map<string, string | null>();
 
   const TYPE_ICONS: Record<string, string> = {
     assignment_new: '\u{1F4CB}', assignment_removed: '\u{1F4CB}', card_moved: '\u{1F4CB}',
@@ -60,6 +71,16 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
     re_engagement_invitation: '\u{1F91D}', re_engagement_accepted: '\u2705', re_engagement_declined: '\u274C',
     arm9_inactivity_alert: '\u26A0\uFE0F', certificate_issued: '\u{1F393}',
   };
+
+  /**
+   * `TYPE_ICONS[n.type]` cru alcança o protótipo: `type='constructor'` devolveria o texto
+   * de uma função. Não injeta marcação, mas o tipo vem de quem cria a
+   * notificação, então a consulta é por chave PRÓPRIA.
+   */
+  function iconFor(type: unknown): string {
+    const key = String(type ?? '');
+    return Object.prototype.hasOwnProperty.call(TYPE_ICONS, key) ? TYPE_ICONS[key] : '\u{1F514}';
+  }
 
   function timeAgo(dateStr: string): string {
     const diff = Date.now() - new Date(dateStr).getTime();
@@ -91,16 +112,18 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       }
 
       empty?.classList.add('hidden');
+      linkById.clear();
+      for (const n of notifs) linkById.set(String(n.id), safeNavigationUrl(n.link));
       list.innerHTML = notifs.map((n: any) => `
         <div class="flex items-start gap-3 p-3 rounded-xl border ${n.is_read ? 'border-[var(--border-subtle)] bg-[var(--surface-base)]' : 'border-blue-200 bg-blue-50/30'} hover:shadow-sm transition-all cursor-pointer"
-          data-notif-id="${n.id}" data-notif-link="${escHtml(n.link || '')}">
-          <span class="text-lg mt-0.5">${TYPE_ICONS[n.type] || '\u{1F514}'}</span>
+          data-notif-id="${escapeHtml(n.id)}">
+          <span class="text-lg mt-0.5">${iconFor(n.type)}</span>
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
               ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>' : ''}
-              <span class="text-[.78rem] font-bold text-[var(--text-primary)] line-clamp-1">${escHtml(n.title)}</span>
+              <span class="text-[.78rem] font-bold text-[var(--text-primary)] line-clamp-1">${escapeHtml(n.title)}</span>
             </div>
-            ${n.body ? `<p class="text-[.7rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${escHtml(n.body)}</p>` : ''}
+            ${n.body ? `<p class="text-[.7rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${escapeHtml(n.body)}</p>` : ''}
             <span class="text-[.6rem] text-[var(--text-muted)] mt-1 block">${timeAgo(n.created_at)}</span>
           </div>
         </div>
@@ -110,7 +133,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       list.querySelectorAll('[data-notif-id]').forEach((el: Element) => {
         el.addEventListener('click', async () => {
           const id = (el as HTMLElement).dataset.notifId!;
-          const link = (el as HTMLElement).dataset.notifLink;
+          const link = linkById.get(id) || null;
           await sb.rpc('mark_notification_read', { p_notification_id: id });
           if (link) window.location.href = link;
           else loadNotifications();

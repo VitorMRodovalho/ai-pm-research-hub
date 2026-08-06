@@ -414,16 +414,12 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     try {
       const sb = (window as any).navGetSb?.();
       if (!sb) return;
-      const unsigned = members.filter(m => !m.signed);
-      for (const m of unsigned) {
-        await sb.rpc('create_notification', {
-          p_recipient_id: m.id,
-          p_type: 'system',
-          p_title: lang === 'en-US' ? 'Volunteer Agreement Pending' : lang === 'es-LATAM' ? 'Acuerdo de Voluntariado Pendiente' : 'Termo de Voluntariado Pendente',
-          p_body: lang === 'en-US' ? 'Please sign your volunteer agreement to stay compliant.' : lang === 'es-LATAM' ? 'Por favor firma tu acuerdo de voluntariado.' : 'Por favor assine seu termo de voluntariado para manter a conformidade.',
-          p_link: '/volunteer-agreement',
-        });
-      }
+      // #1631: quem faltava assinar era filtrado AQUI e o cliente escolhia o destinatário de
+      // cada `create_notification` — RPC que aceitava qualquer sessão logada. O escopo passa a
+      // ser recalculado no servidor, sob o mesmo gate de `get_volunteer_agreement_status`.
+      const { data, error } = await sb.rpc('notify_pending_volunteer_agreements', { p_lang: lang });
+      if (error) throw error;
+      if (data?.error) throw new Error(String(data.error));
       (window as any).toast?.(t.notifySent, 'success');
     } catch {
       (window as any).toast?.(t.notifyError, 'error');

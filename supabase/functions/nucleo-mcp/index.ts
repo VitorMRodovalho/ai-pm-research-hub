@@ -1446,15 +1446,16 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (!member) { await logUsage(sb, null, "send_notification_to_tribe", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "Unauthorized", start); return err("Unauthorized"); }
     if (!member.tribe_id && !member.is_superadmin) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "No tribe", start); return err("No tribe assigned."); }
-    const query = sb.from("members").select("id").eq("is_active", true).eq("current_cycle_active", true).neq("id", member.id);
-    if (!member.is_superadmin) query.eq("tribe_id", member.tribe_id);
-    const { data: members, error: membersErr } = await query;
-    if (membersErr) { await logUsage(sb, member.id, "send_notification_to_tribe", false, membersErr.message, start); return err(membersErr.message); }
-    if (!members?.length) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "No members", start); return err("No active tribe members found."); }
-    let sent = 0;
-    for (const m of members) { const { error: e } = await sb.rpc("create_notification", { p_recipient_id: m.id, p_type: "tribe_broadcast", p_title: params.title, p_body: params.body, p_link: params.link || null }); if (!e) sent++; }
+    // #1631: o destinatario deixou de ser escolhido AQUI. `create_notification` teve o EXECUTE de
+    // `authenticated` revogado (quem chamava escolhia destinatario, titulo, corpo e link) e o escopo
+    // da tribo passou a ser recalculado no servidor, sob gate proprio. De quebra, o laco antigo somava
+    // `if (!e) sent++`: uma falha voltava como "0 destinatarios", nao como erro — agora ela propaga.
+    const { data: bres, error: bErr } = await sb.rpc("send_notification_to_tribe", { p_title: params.title, p_body: params.body, p_link: params.link || null });
+    if (bErr) { await logUsage(sb, member.id, "send_notification_to_tribe", false, bErr.message, start); return err(bErr.message); }
+    if (bres?.error) { await logUsage(sb, member.id, "send_notification_to_tribe", false, bres.error, start); return err(bres.error); }
+    if (!bres?.recipients) { await logUsage(sb, member.id, "send_notification_to_tribe", false, "No members", start); return err("No active tribe members found."); }
     await logUsage(sb, member.id, "send_notification_to_tribe", true, undefined, start);
-    return ok({ action: "send_notification_to_tribe", status: "sent", recipients: sent, total_members: members.length });
+    return ok({ action: "send_notification_to_tribe", status: "sent", recipients: bres.recipients, scope: bres.scope });
   });
 
   // ===== GC-161 TOOLS (16-19) =====
@@ -11549,14 +11550,14 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           if (!(await canV4(sb, member.id, "write"))) { await logUsage(sb, member.id, "comms_post", false, "Unauthorized", start); return denied("write"); }
           if (!params.title || !params.body) return invalid("action='notify_tribe' requires title and body.");
           if (!member.tribe_id && !member.is_superadmin) return invalid("No tribe assigned; notify_tribe targets your active tribe.");
-          const q = sb.from("members").select("id").eq("is_active", true).eq("current_cycle_active", true).neq("id", member.id);
-          if (!member.is_superadmin) q.eq("tribe_id", member.tribe_id);
-          const { data: mem, error: mErr } = await q;
-          if (mErr) { error = mErr; break; }
-          if (!mem?.length) return invalid("No active tribe members to notify.");
-          let sent = 0;
-          for (const rec of mem as any[]) { const { error: e } = await sb.rpc("create_notification", { p_recipient_id: rec.id, p_type: "tribe_broadcast", p_title: params.title, p_body: params.body, p_link: params.link ?? null }); if (!e) sent++; }
-          data = { status: "sent", recipients: sent, total_members: (mem as any[]).length }; source = "create_notification"; break;
+          // #1631: mesma troca da tool `send_notification_to_tribe` — o escopo e o destinatario
+          // saem do cliente e vao para `send_notification_to_tribe`, que gateia o proprio chamador.
+          // `create_notification` nao aceita mais chamada direta de sessao `authenticated`.
+          const { data: bres, error: bErr } = await sb.rpc("send_notification_to_tribe", { p_title: params.title, p_body: params.body, p_link: params.link ?? null });
+          if (bErr) { error = bErr; break; }
+          if ((bres as any)?.error) return invalid(String((bres as any).error));
+          if (!(bres as any)?.recipients) return invalid("No active tribe members to notify.");
+          data = { status: "sent", recipients: (bres as any).recipients, scope: (bres as any).scope }; source = "send_notification_to_tribe"; break;
         }
         default: return invalid(`Unknown action '${params.action}'.`);
       }
@@ -12447,7 +12448,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.94.0",
+  ef_version: "2.95.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
