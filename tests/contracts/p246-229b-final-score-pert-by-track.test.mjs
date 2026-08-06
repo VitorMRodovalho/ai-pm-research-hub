@@ -169,41 +169,64 @@ describe('p246 #229b Foundation — final-score PERT régua by track', () => {
         assert.ok(probe.data !== null, 'should return data array (possibly empty) without column error');
       });
 
-      it('cycle4 researcher-track apps have final_score_pert_target populated (after recompute)', async () => {
-        // Scope to cycle4 via inner-join on selection_cycles to avoid hitting historical
-        // cycles where recompute never ran (those would have NULL régua).
+      // ⚠️ Estes dois testes afirmavam um INSTANTÂNEO do dado, não a regra: "researcher é
+      // dynamic" e "leader é disabled". Eram verdades de um dia. Em 06/08/2026 o coorte
+      // histórico de líder chegou a EXATAMENTE 10 e a régua da trilha virou `dynamic`
+      // (12 candidaturas, alvo 249.52, recalculado 17:30 UTC) — o sistema obedeceu a
+      // própria regra e o teste ficou vermelho. Registrado como achado de produto em #1634.
+      //
+      // A regra vive em `_compute_pert_cutoff_core` e tem TRÊS saídas, não duas:
+      //   v_n >= 10                        -> 'dynamic'
+      //   v_n <  10 e há alvo de outro ciclo -> 'historical_fallback'
+      //   v_n <  10 e não há               -> 'disabled'
+      //
+      // Afirmar a regra pega os dois defeitos que importam (régua não calculada; método
+      // incoerente com o coorte) e para de quebrar quando uma candidatura entra ou sai.
+      const CUTOFF_MIN_COHORT = 10;
+
+      it('a régua de final_score foi calculada no cycle4 (recompute rodou)', async () => {
         const { data, error } = await sb
           .from('selection_applications')
-          .select('final_score_pert_target, final_score_pert_cohort_n, final_score_pert_cutoff_method, role_applied, selection_cycles!inner(cycle_code)')
-          .eq('role_applied', 'researcher')
+          .select('final_score_pert_cutoff_method, selection_cycles!inner(cycle_code)')
           .eq('selection_cycles.cycle_code', 'cycle4-2026')
           .not('final_score', 'is', null)
-          .limit(5);
+          .not('final_score_pert_cutoff_method', 'is', null);
         if (error) {
           assert.fail(`probe error: ${error.message}`);
         }
-        assert.ok(data && data.length > 0, 'expect at least 1 cycle4 researcher with final_score populated');
-        const hasDynamic = data.some(r => r.final_score_pert_cutoff_method === 'dynamic');
-        assert.ok(hasDynamic, 'expect at least one cycle4 researcher with dynamic final_score régua post-recompute');
+        assert.ok(
+          data && data.length > 0,
+          'nenhuma candidatura do cycle4 tem método de régua — o recompute não rodou, e um NULL em toda a base passaria calado numa asserção por amostra'
+        );
       });
 
-      it('cycle4 leader-track apps have method=disabled (cohort_n<10 historical leaders)', async () => {
+      it('o método da régua obedece o coorte em TODA linha, nas duas trilhas', async () => {
         const { data, error } = await sb
           .from('selection_applications')
-          .select('final_score_pert_cutoff_method, final_score_pert_cohort_n, role_applied, selection_cycles!inner(cycle_code)')
-          .eq('role_applied', 'leader')
+          .select('id, role_applied, final_score_pert_cutoff_method, final_score_pert_cohort_n, selection_cycles!inner(cycle_code)')
           .eq('selection_cycles.cycle_code', 'cycle4-2026')
           .not('final_score', 'is', null)
-          .limit(5);
+          .not('final_score_pert_cutoff_method', 'is', null);
         if (error) {
           assert.fail(`probe error: ${error.message}`);
         }
-        if (data && data.length > 0) {
-          const allDisabled = data.every(r => r.final_score_pert_cutoff_method === 'disabled');
-          assert.ok(
-            allDisabled,
-            `cycle4 leader-track final régua should be disabled (cohort_n<10); got: ${JSON.stringify(data.map(r => r.final_score_pert_cutoff_method))}`
-          );
+        assert.ok(data && data.length > 0, 'nada para verificar — ver o teste anterior');
+
+        // Invariante universal: iterar. Um `.some()` aqui passaria com uma linha certa e
+        // dez erradas.
+        for (const r of data) {
+          const n = r.final_score_pert_cohort_n;
+          const m = r.final_score_pert_cutoff_method;
+          const onde = `${r.role_applied} app=${r.id} cohort_n=${n} method=${m}`;
+          assert.ok(Number.isInteger(n), `coorte ausente: ${onde}`);
+          if (n >= CUTOFF_MIN_COHORT) {
+            assert.equal(m, 'dynamic', `coorte >= ${CUTOFF_MIN_COHORT} exige método dynamic: ${onde}`);
+          } else {
+            assert.ok(
+              m === 'disabled' || m === 'historical_fallback',
+              `coorte < ${CUTOFF_MIN_COHORT} não pode produzir régua dynamic: ${onde}`
+            );
+          }
         }
       });
     });
