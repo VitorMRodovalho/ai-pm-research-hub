@@ -32545,6 +32545,10 @@ export type Database = {
         Returns: Json
       }
       notify_missing_drive_workspaces: { Args: never; Returns: Json }
+      notify_pending_volunteer_agreements: {
+        Args: { p_lang?: string }
+        Returns: Json
+      }
       notify_privacy_policy_change: {
         Args: { p_version_id: string }
         Returns: Json
@@ -33280,6 +33284,10 @@ export type Database = {
       }
       send_attendance_reminders: { Args: never; Returns: Json }
       send_attendance_reminders_cron: { Args: never; Returns: Json }
+      send_notification_to_tribe: {
+        Args: { p_body: string; p_link?: string; p_title: string }
+        Returns: Json
+      }
       set_event_audience: {
         Args: { p_event_id: string; p_rules: Json }
         Returns: undefined
