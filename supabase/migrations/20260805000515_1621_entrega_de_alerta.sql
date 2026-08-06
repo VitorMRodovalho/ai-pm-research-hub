@@ -217,7 +217,12 @@ BEGIN
            left(coalesce(max(d.return_message), ''), 200) AS msg
     FROM cron.job_run_details d
     JOIN cron.job j ON j.jobid = d.jobid
-    WHERE d.status <> 'succeeded'
+  -- ⚠️ O filtro é POSITIVO (`= 'failed'`), e isso não é estilo. `<> 'succeeded'` também casa o
+  -- estado EM VOO: enquanto a própria varredura roda, a linha dela em `cron.job_run_details` está
+  -- `running`, e o filtro negativo a lia como falha — a varredura acusava a si mesma, e mandou
+  -- e-mail sobre isso em 2026-08-06 02:07 UTC. "Não teve sucesso" e "falhou" são conjuntos
+  -- diferentes quando o em-progresso divide a mesma coluna.
+    WHERE d.status = 'failed'
       AND d.start_time > v_now - interval '48 hours'
     GROUP BY 1, 2
   LOOP

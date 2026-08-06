@@ -126,6 +126,18 @@ test('1621 static: a janela de falha de cron é curta, e o agrupamento é por (j
     'as 71 falhas medidas foram 3 tempestades — alertar por execução daria 71 linhas para 3 fatos');
 });
 
+test('1621 static: o filtro de falha é POSITIVO — "não teve sucesso" ≠ "falhou"', () => {
+  const sweep = mig.match(/FUNCTION public\._alert_sweep_cron\([\s\S]*?\$function\$([\s\S]*?)\$function\$/)?.[1];
+  assert.match(sweep, /WHERE d\.status = 'failed'/,
+    'o desfecho é afirmado, não deduzido por exclusão');
+  // ⚠️ Regressão medida em produção: `<> 'succeeded'` também casa o estado EM VOO. Enquanto a
+  // própria varredura roda, a linha dela em cron.job_run_details está `running` — e ela abriu um
+  // alerta contra SI MESMA às 02:07 UTC de 2026-08-06, com e-mail e tudo. Um filtro negativo sobre
+  // uma coluna que mistura desfecho com progresso engole o em-progresso.
+  assert.ok(!/d\.status <> 'succeeded'/.test(sweep),
+    'REGRESSÃO: filtro negativo de volta — a varredura acusa todo cron em voo, inclusive ela mesma');
+});
+
 test('1621 static: a notificação usa o overload EXPLÍCITO de 7 argumentos', () => {
   const sweep = mig.match(/FUNCTION public\._alert_sweep_cron\([\s\S]*?\$function\$([\s\S]*?)\$function\$/)?.[1];
   // `create_notification` tem TRÊS overloads e a ambiguidade já derrubou uma RPC antes.
