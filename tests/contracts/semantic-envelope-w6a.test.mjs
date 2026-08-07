@@ -133,7 +133,10 @@ test('W6a[comms_post]: manage_comms for scheduling, write for notify_tribe, warn
   const b = BLOCKS['comms_post'];
   assert.ok(/canV4\(sb,\s*member\.id,\s*"manage_comms"\)/.test(b), 'comms_post schedule/cancel/list must gate manage_comms');
   assert.ok(/canV4\(sb,\s*member\.id,\s*"write"\)/.test(b), 'comms_post notify_tribe must gate write');
-  for (const rpc of ['schedule_comms_post', 'cancel_scheduled_comms_post', 'list_scheduled_comms_posts', 'create_notification']) {
+  // #1631: notify_tribe deixou de chamar `create_notification` direto. A porta generica foi
+  // fechada para sessao `authenticated` (quem chamava escolhia destinatario, titulo, corpo e
+  // link); o broadcast passa por `send_notification_to_tribe`, que gateia o proprio chamador.
+  for (const rpc of ['schedule_comms_post', 'cancel_scheduled_comms_post', 'list_scheduled_comms_posts', 'send_notification_to_tribe']) {
     assert.ok(b.includes(rpc), `comms_post must dispatch ${rpc}`);
   }
   assert.ok(/#1374/.test(b), 'comms_post must warn that IG collab/tags/story-stickers are manual-only (#1374)');

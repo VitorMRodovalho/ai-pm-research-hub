@@ -67,7 +67,10 @@ const ALLOWLIST = new Set([
   //    create_notification had their caller-graph reviewed (create_initiative ← admin/initiatives.astro;
   //    create_notification ← VolunteerAgreementPanel + send_notification_to_tribe) and PUBLIC/anon EXECUTE
   //    revoked while KEEPING authenticated (legit callers use a session JWT). Per-orthogonal-gate, not mass
-  //    revoke ([LL] #588). They therefore left the sweep and are no longer allowlisted. ──
+  //    revoke ([LL] #588). They therefore left the sweep and are no longer allowlisted.
+  //    #1631 (mig 20260806000100): create_notification lost `authenticated` too — the two direct
+  //    session callers moved to gated RPCs (notify_pending_volunteer_agreements, send_notification_to_tribe).
+  //    This allowlist is about PUBLIC/anon, so the sweep is unaffected; the note above is not. ──
   // ── Ratcheted DOWN (mig 20260805000500, #1551): the ten "PENDING revoke" helpers this list used to
   //    carry had their caller-graph checked and their PUBLIC/anon/authenticated EXECUTE revoked —
   //    _compute_pert_cutoff_core, _enqueue_engagement_welcome, _log_gate_attempt,

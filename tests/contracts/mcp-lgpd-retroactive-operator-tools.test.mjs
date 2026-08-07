@@ -210,8 +210,8 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
   );
 });
 
-test('ef_version is 2.94.0 (#1620 bump do SDK 1.30.0; 2.93.0 no #1619)', () => {
-  assert.match(EF, /ef_version:\s*"2\.94\.0"/, '/health must report ef_version 2.94.0');
+test('ef_version is 2.95.0 (#1631 Wave 0 gate de create_notification; 2.94.0 no #1620)', () => {
+  assert.match(EF, /ef_version:\s*"2\.95\.0"/, '/health must report ef_version 2.95.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
