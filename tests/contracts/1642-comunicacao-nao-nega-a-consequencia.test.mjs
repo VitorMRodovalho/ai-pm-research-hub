@@ -38,11 +38,19 @@ const MIGRATION_PATH =
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
 /**
+ * Escapa TODO metacaractere de regex, não só o ponto. Um escapador parcial é pior que nenhum:
+ * ele parece defender e não defende (`js/incomplete-sanitization`, apontado pelo CodeQL neste
+ * arquivo). Aqui as chaves são literais deste teste, então não havia exploração — mas a forma
+ * errada é a que sobrevive por cópia para onde a entrada não é literal.
+ */
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
  * Lê o VALOR de uma chave do dicionário, nunca o arquivo cru. Assertar sobre o arquivo inteiro
  * casaria comentários e chaves vizinhas — o mesmo defeito que o guard do #1586b teve de corrigir.
  */
 function dictValue(src, key) {
-  const re = new RegExp(`^\\s*'${key.replace(/\./g, '\\.')}':\\s*'((?:[^'\\\\]|\\\\.)*)'`, 'm');
+  const re = new RegExp(`^\\s*'${escapeRe(key)}':\\s*'((?:[^'\\\\]|\\\\.)*)'`, 'm');
   return src.match(re)?.[1] ?? null;
 }
 
