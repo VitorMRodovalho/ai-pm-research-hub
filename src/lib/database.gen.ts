@@ -7030,6 +7030,7 @@ export type Database = {
           channel: string
           created_at: string
           email_hash: string | null
+          evidence: Json | null
           id: string
           ip_hash: string | null
           member_id: string | null
@@ -7047,6 +7048,7 @@ export type Database = {
           channel: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
@@ -7064,6 +7066,7 @@ export type Database = {
           channel?: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
