@@ -322,3 +322,67 @@ test('1621 behavioural: a vigília está registrada e alcança os crons certos',
         `vigília ${w.job_name} sem fonte de efeito seria decorativa`);
     }
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// #1649 — o teto de tempo é PRÓPRIO da varredura, e o custo dela virou dado
+//
+// A varredura estourava o `statement_timeout` de 8s que o `service_role` herda do `authenticator`
+// e derrubou 5 corridas de CI em um dia, DUAS delas em commits que só mexiam em markdown. 8s é
+// orçamento de chamada interativa do PostgREST; o chamador natural desta função é o `pg_cron`, que
+// roda como `postgres` e não tem teto.
+//
+// Elevar o teto sozinho seria MÁSCARA: quando `cron.job_run_details` dobrar, o problema volta e
+// some do radar até o cron horário estourar em produção. Por isso as duas asserções andam juntas —
+// o teto E a medição. Separá-las devolve o defeito à condição de invisível.
+// ─────────────────────────────────────────────────────────────────────────────
+const MIG_1649 = resolve(
+  ROOT, 'supabase/migrations/20260807000300_1649_varredura_com_teto_proprio_e_duracao_medida.sql',
+);
+const mig1649 = existsSync(MIG_1649)
+  ? readFileSync(MIG_1649, 'utf8').replace(/^\s*--.*$/gm, '')   // guard de ausência ignora comentário
+  : '';
+
+test('1649 static: a varredura tem teto PRÓPRIO e mede a própria duração', () => {
+  assert.ok(mig1649, `migration esperada em ${MIG_1649}`);
+  assert.match(
+    mig1649,
+    /PERFORM set_config\('statement_timeout', '60s', true\)/,
+    'sem teto próprio, a suíte volta a medir uma varredura em lote com a régua de 8s da tela',
+  );
+  // `true` = local à transação. Um `set_config(..., false)` vazaria para a conexão do pool e
+  // mudaria o teto de QUALQUER chamada seguinte que caísse nela.
+  assert.doesNotMatch(
+    mig1649,
+    /set_config\('statement_timeout', '[^']*', false\)/,
+    'teto global vazaria pelo pool do PostgREST',
+  );
+  assert.match(mig1649, /'duration_ms', v_duracao_ms/, 'o custo tem de entrar na linha de auditoria');
+  assert.match(
+    mig1649,
+    /clock_timestamp\(\) - v_t0/,
+    'duração medida com relógio de parede — `now()` é constante dentro da transação',
+  );
+});
+
+test('1649 behavioural: a varredura DEVOLVE e GRAVA a própria duração',
+  { skip: dbGated ? false : skipMsg }, async () => {
+    const sb = client();
+    const { data, error } = await sb.rpc('_alert_sweep_cron', { p_deliver_email: false });
+    assert.ifError(error);
+    assert.equal(typeof data?.duration_ms, 'number', 'sem número, não há como alertar sobre o custo');
+    assert.ok(data.duration_ms >= 0, 'duração negativa denuncia relógio errado');
+
+    // E o número chega na superfície que a vigília do próprio #1621 lê.
+    const { data: linhas, error: e1 } = await sb
+      .from('admin_audit_log')
+      .select('changes, created_at')
+      .eq('action', 'platform.alert_sweep_run')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    assert.ifError(e1);
+    assert.equal(
+      typeof linhas?.[0]?.changes?.duration_ms,
+      'number',
+      'medir e não gravar deixa a degradação invisível de novo',
+    );
+  });
