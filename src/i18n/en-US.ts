@@ -1564,7 +1564,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.durationMin': 'Duration (min)',
   'attendance.modal.meetingLink': 'Meeting link',
   'attendance.modal.timeStart': 'Start time',
-  'attendance.modal.timeStartHint': 'Brasília time (BRT) · empty = tribe slot default',
+  'attendance.modal.timeStartHint': '24-hour format (e.g. 19:00) · Brasília time (BRT) · empty = tribe slot default', // #1645
   'attendance.modal.timezone': 'Timezone',
   'attendance.modal.timezoneHint': 'Default: Brasília (BRT). Search a city (IANA) for sessions in another zone.',
   'attendance.modal.natureRecurringHint': '🔁 This creates only 1 event. Click here to create a recurring (weekly) series →',
@@ -1705,6 +1705,7 @@ const enUS: Record<string, string> = {
   'attendance.msg.eventEditOpenError': 'Could not open the editor for this event',
   'attendance.msg.eventNotLoaded': 'This event is not loaded on screen — reload the page',
   'attendance.msg.invalidTimezone': 'Invalid timezone. Pick one from the list.',
+  'attendance.msg.invalidTime': 'Invalid time. Use 24-hour format, like 19:00.', // #1645
   'attendance.msg.error': 'Error',
   'attendance.modal.selectEventType': 'Select the event type',
   'attendance.roster.loading': 'Loading...',

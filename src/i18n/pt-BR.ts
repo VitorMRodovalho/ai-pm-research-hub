@@ -1568,7 +1568,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.durationMin': 'Duração (min)',
   'attendance.modal.meetingLink': 'Link da reunião',
   'attendance.modal.timeStart': 'Horário',
-  'attendance.modal.timeStartHint': 'Horário de Brasília (BRT) · vazio = padrão da tribo',
+  'attendance.modal.timeStartHint': 'Formato 24h (ex.: 19:00) · Horário de Brasília (BRT) · vazio = padrão da tribo', // #1645
   'attendance.modal.timezone': 'Fuso horário',
   'attendance.modal.timezoneHint': 'Padrão: Brasília (BRT). Busque uma cidade (IANA) para sessões em outro fuso.',
   'attendance.modal.natureRecurringHint': '🔁 Isto cria apenas 1 evento. Clique aqui para criar uma série recorrente (semanal) →',
@@ -1711,6 +1711,7 @@ const ptBR: Record<string, string> = {
   'attendance.msg.eventNotLoaded': 'Este evento não está carregado na tela — recarregue a página',
   'attendance.modal.selectEventType': 'Selecione o tipo do evento',
   'attendance.msg.invalidTimezone': 'Fuso horário inválido. Escolha um da lista.',
+  'attendance.msg.invalidTime': 'Horário inválido. Use o formato 24h, como 19:00.', // #1645
   'attendance.msg.error': 'Erro',
   'attendance.roster.loading': 'Carregando...',
   'attendance.roster.noParticipants': 'Nenhum participante encontrado.',
