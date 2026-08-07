@@ -5489,6 +5489,7 @@ const enUS: Record<string, string> = {
   'nav.certificates': 'My Certificates',
   'nav.myPending': '✍️ My pending signatures',
   'nav.myPoints': '📊 My Score',
+  'nav.myEvaluations': '🗳️ My Evaluations',
   'myPoints.title': 'My Score, auditable',
   'myPoints.heading': 'My Score, auditable',
   'myPoints.subtitle': 'Every point, with the date it happened and the cycle it belongs to.',

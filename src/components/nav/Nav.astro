@@ -118,6 +118,9 @@ const jsI18n = JSON.stringify({
   // nav.cpmai, nav.docsMcp, nav.adminVepReconciliation). Nav resolves labels
   // via i18n[toCamelKey(item.key)] so each item.key needs a camelCase mapping.
   myPending: t('nav.myPending', lang),
+  // #1591: o Nav resolve rótulo por `i18n[toCamelKey(item.key)]`, então a chave 'my-evaluations'
+  // precisa desta entrada camelCase — sem ela o item renderiza o rótulo cru (defeito do p195).
+  myEvaluations: t('nav.myEvaluations', lang),
   cpmai: t('nav.cpmai', lang),
   docsMcp: t('nav.docsMcp', lang),
   adminVepReconciliation: t('nav.adminVepReconciliation', lang),
