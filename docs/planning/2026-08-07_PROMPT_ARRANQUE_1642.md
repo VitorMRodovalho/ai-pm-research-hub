@@ -80,9 +80,35 @@ mesmo funil, então trate como padrão, não incidente. Inclui limpar a dica mor
 `interview_manage` no `nucleo-mcp`, que ainda sugere `bypass_gate=true` ao ver `GATE_NO_AI` — ramo
 que não pode mais casar.
 
-### 4. ~~#1649 — o vermelho de CI~~ ✅ FECHADA no mesmo dia (PR #1663)
+### 4. #1649 — o vermelho de CI (ABERTA; a 1ª correção não pegou)
 
-Não é mais trabalho: o `validate` voltou a fechar verde. Ficou de sedimento, porque a forma se repete:
+⚠️ **Leia isto antes de tentar de novo.** O PR #1663 elevou o `statement_timeout` para 60s *de dentro*
+de `_alert_sweep_cron` e o `validate` dele passou. **Passou por cache quente, não por eficácia.** O
+teste seguinte, num PR de dois markdowns, falhou com `duration_ms: 8974` — parou nos 8s de sempre.
+
+Sonda que fecha a questão:
+
+```sql
+SET statement_timeout = '2s';
+SELECT set_config('statement_timeout', '60s', true), pg_sleep(4);
+-- ERROR: 57014 canceling statement due to statement timeout
+```
+
+**O `statement_timeout` é armado quando o statement COMEÇA.** Elevá-lo de dentro da função vale só
+para os statements seguintes da transação, nunca para a chamada em curso. Para este fim, aquele
+`set_config` é inerte — defesa decorativa clássica: o mecanismo existe, o teste passou, o efeito não
+acontece.
+
+O que sobrou de bom do #1663: `duration_ms` gravado em `platform.alert_sweep_run` (instrumentação
+real) e as medições. O comentário da migration e o corpo daquele PR afirmam eficácia que a sonda
+desmente — corrigir na próxima migration que tocar a função.
+
+**Saídas ainda vivas:** `ALTER ROLE service_role SET statement_timeout` (funciona, porque o statement
+nasce com o teto maior — mas é decisão de plataforma, vale para toda chamada `service_role`); ou
+tabela-sombra alimentada por cron próprio (roda como `postgres`, sem teto), tirando a varredura de
+150 MB do caminho do PostgREST.
+
+E a forma que vale como sedimento:
 
 - **8s não era o teto da função, era o teto de outra coisa.** `service_role` não define
   `statement_timeout` e herda o do `authenticator`, que é orçamento de chamada **interativa** do

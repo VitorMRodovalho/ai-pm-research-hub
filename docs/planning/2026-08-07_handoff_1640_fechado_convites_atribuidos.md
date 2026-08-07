@@ -117,7 +117,7 @@ linhas, só o pkey**, crescendo ~2.400 linhas/dia, e o filtro descarta 146.201 d
 devolver zero. `reltuples` estava em **29** (estatísticas nunca coletadas); rodei `ANALYZE` na sessão
 e foi para 146.203. A quente a RPC mede ~300 ms: o estouro é com cache frio sob a carga da suíte.
 
-### Fechada no mesmo dia (PR #1663), depois de virar parede
+### Tentativa de correção no mesmo dia (PR #1663) que NÃO pegou — issue reaberta
 
 O quadro piorou antes de fechar: o vermelho derrubou também o PR **#1659**, que tem **dois arquivos
 markdown e nada mais**, e o rerun **deixou de resolver**. Placar do dia: 5 falhas contra 2 sucessos.
@@ -131,12 +131,27 @@ Duas direções foram descartadas **por medição, não por gosto**:
 - **limitar por `runid`** (o único índice existente): **3.294 ms contra 152 ms** do seq scan, porque
   troca leitura sequencial por 20 mil buscas no heap. Eu havia proposto essa saída antes de medir.
 
-O que entrou: **teto próprio de 60s, local à transação**, porque 8s é orçamento de chamada
-interativa do PostgREST e o chamador natural da varredura é o `pg_cron` (roda como `postgres`, sem
-teto). E para o teto não ser máscara, a função passou a gravar **`duration_ms`** na mesma linha de
-auditoria que já escrevia: a degradação vira número na superfície que o próprio #1621 lê, em vez de
-vermelho intermitente. O teste afirma as duas metades juntas, e trava o `set_config` em `local` (um
-`false` vazaria o teto para a conexão do pool).
+O que entrou: teto próprio de 60s pedido de dentro da função, mais `duration_ms` gravado na linha de
+auditoria que ela já escrevia.
+
+⚠️ **E o teto NÃO funcionou.** O `validate` do #1663 passou, mas por cache quente. O PR seguinte —
+dois markdowns — falhou com `duration_ms: 8974`: parou nos 8s de sempre. A sonda que fecha a questão:
+
+```sql
+SET statement_timeout = '2s';
+SELECT set_config('statement_timeout', '60s', true), pg_sleep(4);
+-- ERROR: 57014 canceling statement due to statement timeout
+```
+
+**O `statement_timeout` é armado quando o statement começa.** Elevá-lo de dentro da chamada vale só
+para os statements seguintes da transação, nunca para a que está executando. Aquele `set_config` é,
+para este fim, inerte — e o teste que eu escrevi afirmava a presença do mecanismo, não o efeito dele.
+É a família da defesa decorativa, cometida por mim no mesmo dia em que este handoff a descreve.
+
+Sobrevive do #1663 o `duration_ms` (instrumentação real, e foi ele que denunciou a própria falha) e
+as medições. **#1649 reaberta**, com duas saídas ainda vivas: `ALTER ROLE service_role SET
+statement_timeout` (funciona porque o statement nasce com o teto maior, mas é decisão de plataforma)
+ou tabela-sombra alimentada por cron próprio, que roda como `postgres` e não tem teto.
 
 ---
 
