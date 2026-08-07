@@ -331,31 +331,47 @@ test('1621 behavioural: a vigília está registrada e alcança os crons certos',
 // orçamento de chamada interativa do PostgREST; o chamador natural desta função é o `pg_cron`, que
 // roda como `postgres` e não tem teto.
 //
-// Elevar o teto sozinho seria MÁSCARA: quando `cron.job_run_details` dobrar, o problema volta e
-// some do radar até o cron horário estourar em produção. Por isso as duas asserções andam juntas —
-// o teto E a medição. Separá-las devolve o defeito à condição de invisível.
+// ⚠️ A 1ª CORREÇÃO (PR #1663) NÃO PEGOU, e este bloco de teste é parte da razão pela qual isso
+// passou despercebido. Ele afirmava a PRESENÇA de `set_config('statement_timeout','60s',true)`
+// num ARQUIVO de migration — e passava verde enquanto o mecanismo era inerte em produção. O
+// `statement_timeout` é armado quando o statement COMEÇA; elevá-lo de dentro da função vale só
+// para os statements SEGUINTES da transação. Sonda:
+//     SET statement_timeout='2s';
+//     SELECT set_config('statement_timeout','60s',true), pg_sleep(4);  -- 57014
+//
+// Um guard ancorado num arquivo específico não observa o mundo: trocar a função em produção não
+// o derruba. As asserções abaixo passam a olhar o CORPO VIVO e o EFEITO.
+//
+// A correção que pegou (#1649, 2ª tentativa) é o pré-filtro por faixa de `runid`, medido:
+//   seq scan   5212 ms / 2741 ms · 18.748 buffers · 147.794 linhas (cresce ~2.400/dia)
+//   pré-filtro   78 ms /   25 ms ·  6.642 buffers ·  20.000 linhas (constante)
+// com guarda O(1) (0,289 ms) que cai para a varredura completa se a faixa deixar de cobrir 48h.
+// Sem a guarda o pré-filtro descartaria falhas em silêncio: medido numa janela de 30 dias, a
+// varredura completa acha 71 falhas e a filtrada 13 — 58 sumiriam sem ninguém notar.
 // ─────────────────────────────────────────────────────────────────────────────
 const MIG_1649 = resolve(
-  ROOT, 'supabase/migrations/20260807000300_1649_varredura_com_teto_proprio_e_duracao_medida.sql',
+  ROOT, 'supabase/migrations/20260807000500_1649_pre_filtro_por_faixa_de_runid_com_guarda.sql',
 );
 const mig1649 = existsSync(MIG_1649)
   ? readFileSync(MIG_1649, 'utf8').replace(/^\s*--.*$/gm, '')   // guard de ausência ignora comentário
   : '';
 
-test('1649 static: a varredura tem teto PRÓPRIO e mede a própria duração', () => {
+test('1649 static: a migration tem pré-filtro, guarda e medição — e NÃO o teto inerte', () => {
   assert.ok(mig1649, `migration esperada em ${MIG_1649}`);
-  assert.match(
-    mig1649,
-    /PERFORM set_config\('statement_timeout', '60s', true\)/,
-    'sem teto próprio, a suíte volta a medir uma varredura em lote com a régua de 8s da tela',
-  );
-  // `true` = local à transação. Um `set_config(..., false)` vazaria para a conexão do pool e
-  // mudaria o teto de QUALQUER chamada seguinte que caísse nela.
+  // O teto de dentro da própria chamada é PROVADAMENTE inerte. Mantê-lo seria defesa decorativa.
   assert.doesNotMatch(
     mig1649,
-    /set_config\('statement_timeout', '[^']*', false\)/,
-    'teto global vazaria pelo pool do PostgREST',
+    /set_config\('statement_timeout'/,
+    'o teto elevado de dentro da própria chamada não tem efeito sobre ela — voltou como máscara',
   );
+  assert.match(mig1649, /d\.runid > %s AND/, 'o pré-filtro por faixa de runid sumiu');
+  assert.match(mig1649, /v_faixa_cobre/, 'sem a guarda, o pré-filtro descarta falhas em silêncio');
+  assert.match(
+    mig1649,
+    /IF NOT v_faixa_cobre THEN\s*\n\s*RAISE WARNING/,
+    'a degradação tem de ser audível: cair para a varredura completa CALADO esconde a causa',
+  );
+  assert.match(mig1649, /'janela_degradada'/, 'a degradação tem de entrar na linha de auditoria');
   assert.match(mig1649, /'duration_ms', v_duracao_ms/, 'o custo tem de entrar na linha de auditoria');
   assert.match(
     mig1649,
@@ -363,6 +379,20 @@ test('1649 static: a varredura tem teto PRÓPRIO e mede a própria duração', (
     'duração medida com relógio de parede — `now()` é constante dentro da transação',
   );
 });
+
+test('1649 static: o guard olha o CORPO VIVO, não só o arquivo', { skip: dbGated ? false : skipMsg },
+  async () => {
+    // É esta asserção que o bloco antigo não tinha, e é a que teria pegado a 1ª correção inerte:
+    // o arquivo pode dizer qualquer coisa; quem roda é o corpo em produção.
+    const sb = client();
+    const { data, error } = await sb.rpc('_audit_function_source', { p_proname: '_alert_sweep_cron' });
+    assert.ifError(error);
+    assert.ok(data?.length > 0, '_alert_sweep_cron não existe no banco');
+    const code = data[0].prosrc.replace(/^\s*--.*$/gm, '');
+    assert.doesNotMatch(code, /set_config\('statement_timeout'/, 'o teto inerte voltou a produção');
+    assert.match(code, /v_faixa_cobre/, 'a guarda não está no corpo vivo');
+    assert.match(code, /runid/, 'o pré-filtro não está no corpo vivo');
+  });
 
 test('1649 behavioural: a varredura DEVOLVE e GRAVA a própria duração',
   { skip: dbGated ? false : skipMsg }, async () => {
