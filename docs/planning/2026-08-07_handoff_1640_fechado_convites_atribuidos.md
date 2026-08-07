@@ -117,9 +117,26 @@ linhas, só o pkey**, crescendo ~2.400 linhas/dia, e o filtro descarta 146.201 d
 devolver zero. `reltuples` estava em **29** (estatísticas nunca coletadas); rodei `ANALYZE` na sessão
 e foi para 146.203. A quente a RPC mede ~300 ms: o estouro é com cache frio sob a carga da suíte.
 
-Quatro direções na issue, **nenhuma decidida** — duas mexem em tabela do pg_cron que não é nossa, uma
-apaga histórico. O rerun do #1648 passou, o que classifica como contenção, mas a issue segue: cada PR
-tem ~60% de chance de vermelho por causa que não é dele, e isso pressiona bypass.
+### Fechada no mesmo dia (PR #1663), depois de virar parede
+
+O quadro piorou antes de fechar: o vermelho derrubou também o PR **#1659**, que tem **dois arquivos
+markdown e nada mais**, e o rerun **deixou de resolver**. Placar do dia: 5 falhas contra 2 sucessos.
+Um PR sem uma linha de código executável não causa timeout de statement — isso encerrou a discussão
+sobre atribuição.
+
+Duas direções foram descartadas **por medição, não por gosto**:
+
+- **índice parcial** em `cron.job_run_details`: `ERROR 42501: must be owner of table` — a tabela é do
+  pg_cron (dono `supabase_admin`) e o `postgres` não é membro dele;
+- **limitar por `runid`** (o único índice existente): **3.294 ms contra 152 ms** do seq scan, porque
+  troca leitura sequencial por 20 mil buscas no heap. Eu havia proposto essa saída antes de medir.
+
+O que entrou: **teto próprio de 60s, local à transação**, porque 8s é orçamento de chamada
+interativa do PostgREST e o chamador natural da varredura é o `pg_cron` (roda como `postgres`, sem
+teto). E para o teto não ser máscara, a função passou a gravar **`duration_ms`** na mesma linha de
+auditoria que já escrevia: a degradação vira número na superfície que o próprio #1621 lê, em vez de
+vermelho intermitente. O teste afirma as duas metades juntas, e trava o `set_config` em `local` (um
+`false` vazaria o teto para a conexão do pool).
 
 ---
 

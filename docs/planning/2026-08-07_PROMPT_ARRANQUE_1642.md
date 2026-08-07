@@ -80,12 +80,22 @@ mesmo funil, então trate como padrão, não incidente. Inclui limpar a dica mor
 `interview_manage` no `nucleo-mcp`, que ainda sugere `bypass_gate=true` ao ver `GATE_NO_AI` — ramo
 que não pode mais casar.
 
-### 4. #1649 — o vermelho de CI (P1, decisão do PM)
+### 4. ~~#1649 — o vermelho de CI~~ ✅ FECHADA no mesmo dia (PR #1663)
 
-`1621 behavioural` estoura o `statement_timeout` de 8s em ~60% das corridas, por causa que não é do
-PR. Quatro direções na issue; **duas mexem em tabela do pg_cron que não é nossa e uma apaga
-histórico** — por isso está sem decisão. Enquanto não fechar, todo PR paga o pedágio, e isso
-pressiona bypass (janela 7d hoje em **1 de 2**).
+Não é mais trabalho: o `validate` voltou a fechar verde. Ficou de sedimento, porque a forma se repete:
+
+- **8s não era o teto da função, era o teto de outra coisa.** `service_role` não define
+  `statement_timeout` e herda o do `authenticator`, que é orçamento de chamada **interativa** do
+  PostgREST. O chamador natural de `_alert_sweep_cron` é o `pg_cron`, que roda como `postgres` sem
+  teto. Uma varredura em lote estava sendo medida com a régua de uma consulta de tela.
+- **Elevar teto sozinho é máscara.** Veio casado com `duration_ms` gravado na linha de auditoria que
+  a função já escrevia — a degradação vira número observável, não vermelho intermitente.
+- **Duas saídas caíram por medição:** índice parcial em `cron.job_run_details` (`42501, must be
+  owner` — a tabela é do pg_cron) e corte por `runid` (**3.294 ms contra 152 ms**, porque troca
+  leitura sequencial por 20 mil buscas no heap). A segunda foi proposta por mim antes de medir.
+
+Se `1621 behavioural` voltar a estourar, o sintoma agora é outro: leia `duration_ms` na última linha
+de `platform.alert_sweep_run` antes de mexer em qualquer coisa.
 
 ---
 
