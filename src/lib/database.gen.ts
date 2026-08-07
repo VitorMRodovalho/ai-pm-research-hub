@@ -31643,6 +31643,10 @@ export type Database = {
         Args: { p_event_id: string; p_member_id: string }
         Returns: boolean
       }
+      is_selection_committee_member: {
+        Args: { p_cycle_id?: string; p_member_id: string }
+        Returns: boolean
+      }
       issue_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_event_guest_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_interview_booking_token: {

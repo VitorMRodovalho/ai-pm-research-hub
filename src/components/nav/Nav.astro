@@ -371,7 +371,12 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     const hasOpRole = item.allowedOperationalRoles?.length
       ? item.allowedOperationalRoles.includes(String(_member?.operational_role || ''))
       : false;
-    const enabled = meetsMinTier || hasDesig || hasOpRole;
+    // #1591 — ESTA função é a gêmea de `getItemAccessibility` em `src/lib/navigation.config.ts`.
+    // As duas decidem a mesma coisa em runtimes diferentes (servidor e cliente), então um eixo
+    // novo em só uma delas produz menu que aparece de um lado e some do outro. Mexer nas duas.
+    const hasCommittee = item.allowedSelectionCommittee === true
+      && _member?.selection_committee_active === true;
+    const enabled = meetsMinTier || hasDesig || hasOpRole || hasCommittee;
     if (item.lgpdSensitive && !enabled) return { visible: false, enabled: false };
     return { visible: true, enabled };
   }

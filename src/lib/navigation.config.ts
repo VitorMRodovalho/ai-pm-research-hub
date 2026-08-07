@@ -21,6 +21,18 @@ export interface NavItem {
   minTier: AccessTier;
   allowedDesignations?: string[];
   allowedOperationalRoles?: string[];
+  /**
+   * #1591 — quarto eixo de autoridade: participação no comitê de seleção do ciclo vivo.
+   *
+   * Existe porque os três eixos acima não conseguem exprimir "é do comitê". `designations` é
+   * atribuição institucional (sponsor, curator) e o comitê não tem uma; `operationalRole` é papel
+   * na tribo (tribe_leader) e usá-lo abriria a rota para TODO tribe_leader, que é exatamente o que
+   * o `route-acl.test.mjs` barra numa rota `lgpdSensitive`.
+   *
+   * O sinal vem de `get_member_by_auth().selection_committee_active`, que é verdade do domínio
+   * (`selection_committee` × ciclo aberto/avaliando), não um espelho mantido à mão.
+   */
+  allowedSelectionCommittee?: boolean;
   requiresAuth: boolean;
   section: 'main' | 'drawer' | 'both';
   group?: string;
@@ -127,7 +139,12 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cross-tribes', labelKey: 'nav.adminCrossTribes', href: '/admin/tribes', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor'] },
   { key: 'admin-tribe-dashboard', labelKey: 'nav.adminTribeDashboard', href: '/admin/tribe/', minTier: 'leader', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', dynamic: true, resolver: 'resolveMyTribeDashboard', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
-  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
+  // #1591: `allowedSelectionCommittee` entra ao lado de `sponsor`, não no lugar dele. Sponsor é a
+  // leitura institucional (presidente de capítulo anfitrião); o comitê é quem OPERA a seleção e
+  // até aqui não tinha porta nenhuma — o domínio sabia (`selection_committee.role`), o menu não.
+  // As RPCs de dashboard passaram a aceitar o mesmo predicado na MESMA migration: abrir só o menu
+  // faria a página carregar e negar os dados, que é o defeito do #1590 ao contrário.
+  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], allowedSelectionCommittee: true, lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
   { key: 'admin-vep-reconciliation', labelKey: 'nav.adminVepReconciliation', href: '/admin/vep-reconciliation', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'] },
   { key: 'admin-campaigns', labelKey: 'nav.adminCampaigns', href: '/admin/campaigns', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
@@ -147,7 +164,8 @@ export function getItemAccessibility(
   tier: AccessTier,
   designations: string[],
   isLoggedIn: boolean,
-  operationalRole?: string
+  operationalRole?: string,
+  onSelectionCommittee?: boolean
 ): ItemAccessibility {
   if (item.requiresAuth && !isLoggedIn) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
@@ -160,7 +178,9 @@ export function getItemAccessibility(
   const hasOperationalRole = item.allowedOperationalRoles?.length
     ? item.allowedOperationalRoles.includes(operationalRole || '')
     : false;
-  const enabled = meetsMinTier || hasDesig || hasOperationalRole;
+  // #1591: só conta quando a entrada declara o eixo — um `true` solto no perfil não abre nada.
+  const hasCommittee = item.allowedSelectionCommittee === true && onSelectionCommittee === true;
+  const enabled = meetsMinTier || hasDesig || hasOperationalRole || hasCommittee;
 
   if (item.lgpdSensitive && !enabled) {
     return { visible: false, enabled: false, requiredTier: item.minTier };

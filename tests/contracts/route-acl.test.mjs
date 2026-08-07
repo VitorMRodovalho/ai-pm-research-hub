@@ -56,6 +56,10 @@ function parseNavItem(key) {
     lgpdSensitive: readBooleanProp(block, 'lgpdSensitive'),
     allowedDesignations: readArrayProp(block, 'allowedDesignations'),
     allowedOperationalRoles: readArrayProp(block, 'allowedOperationalRoles'),
+    // #1591 — quarto eixo. Precisa estar MODELADO aqui: um eixo de autoridade que o guard de ACL
+    // não conhece é um caminho para rota `lgpdSensitive` que ninguém vigia, e as asserções abaixo
+    // continuariam verdes enquanto a porta estivesse aberta.
+    allowedSelectionCommittee: readBooleanProp(block, 'allowedSelectionCommittee'),
   };
 }
 
@@ -64,7 +68,10 @@ function canAccess(item, profile) {
   const meetsMinTier = TIER_RANK[profile.tier] >= TIER_RANK[item.minTier];
   const hasDesig = item.allowedDesignations.some(d => profile.designations.includes(d));
   const hasOpRole = item.allowedOperationalRoles.includes(profile.operationalRole || '');
-  const enabled = meetsMinTier || hasDesig || hasOpRole;
+  // Só conta quando a ENTRADA declara o eixo: um perfil "sou do comitê" não abre rota que não o
+  // declarou. Espelha `getItemAccessibility` em src/lib/navigation.config.ts.
+  const hasCommittee = item.allowedSelectionCommittee === true && profile.onSelectionCommittee === true;
+  const enabled = meetsMinTier || hasDesig || hasOpRole || hasCommittee;
   if (item.lgpdSensitive && !enabled) return false;
   return enabled;
 }
@@ -104,6 +111,39 @@ test('LGPD-sensitive routes are inaccessible to tribe leaders without designatio
     assert.equal(canAccess(item, leader), false,
       `LGPD route ${item.key} should deny tribe_leader without designation`);
   }
+});
+
+// ─── #1591: o quarto eixo abre o que declara, e SÓ o que declara ───
+
+test('#1591: committee membership opens ONLY the routes that declare the axis', () => {
+  // O risco de introduzir um eixo novo é ele virar uma chave-mestra. Um membro do comitê é, em
+  // tudo o mais, um voluntário comum: não pode ganhar acesso a comms, finanças ou settings.
+  const committeeMember = {
+    tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'tribe_leader',
+    onSelectionCommittee: true,
+  };
+  const abertas = navItemKeys.map(parseNavItem)
+    .filter(i => i.requiresAuth && canAccess(i, committeeMember))
+    .filter(i => !i.allowedSelectionCommittee);
+
+  // O que sobra tem de ser explicável por tier/designation, nunca pelo comitê.
+  for (const item of abertas) {
+    const semComite = canAccess(item, { ...committeeMember, onSelectionCommittee: false });
+    assert.equal(semComite, true,
+      `${item.key} abriu POR CAUSA do comitê sem declarar allowedSelectionCommittee`);
+  }
+});
+
+test('#1591: a rota de seleção abre para o comitê e fecha para quem não é', () => {
+  const item = parseNavItem('admin-selection');
+  assert.equal(item.lgpdSensitive, true, 'a tela expõe PII de candidato — o flag não pode sumir');
+  assert.equal(item.allowedSelectionCommittee, true, 'o eixo do comitê saiu da rota de seleção');
+
+  const base = { tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'tribe_leader' };
+  assert.equal(canAccess(item, { ...base, onSelectionCommittee: true }), true,
+    'quem está no comitê tem de alcançar a tela que ele opera');
+  assert.equal(canAccess(item, { ...base, onSelectionCommittee: false }), false,
+    'tribe_leader FORA do comitê continua barrado — é o que separa o eixo novo de um vazamento');
 });
 
 test('LGPD-sensitive routes are accessible to admin tier', () => {
