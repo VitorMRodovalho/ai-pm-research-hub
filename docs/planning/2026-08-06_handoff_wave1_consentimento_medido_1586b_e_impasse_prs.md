@@ -221,10 +221,11 @@ opcionais" têm gate equivalente escondido.
 | item | estado |
 |---|---|
 | **#1633** | **MERGEADO** em `cdb77a51`, 12/12 gates verdes. Carrega Wave 0 + o teste do #1635 + a asserção de `ef_version`. |
-| **#1635** | conteúdo já na main (md5 do arquivo idêntico). Comentado no PR. **Decisão pendente: fechar como superseded ou rebasear.** |
+| **#1635** | **FECHADO como superseded.** Conteúdo já na main, md5 do arquivo idêntico; autoria preservada no commit `35b5153f`. |
 | **#1586(b)** | **MERGEADO** em `864d4cf6` via PR #1638, 12/12 gates verdes. DDL aplicada (`20260807000100`, ritual GC-097 completo, phantom apagada). Teste 9/9 com credencial, zero skips. **A metade (a) do #1586, superfície MCP para reenvio humano, continua ABERTA.** |
 | **#1636** | aberta, poluição de `gate_attempts` por contract test. |
-| **#1632** | parecer do `legal-counsel` na Parte 4. Decisão do PM. |
+| **#1632** | **DECOMPOSTO em 4 issues por população** (ver Parte 6). Parecer do `legal-counsel` na Parte 4. |
+| **#1637** | Dependabot, `astro` **6.4.8 → 7.2.0**. Apareceu durante a sessão (updates de segurança ignoram `open-pull-requests-limit: 0`). **Não mergear** (política #611), mas **não fechado**: major de framework não é higiene de rotina, e fechar sem abrir o follow-up local descarta o alerta. Decisão do PM. |
 | **#588 [LL]** | 4 lições registradas para o harvest do PMO. |
 
 **Verificação do efeito, antes e depois:**
@@ -245,17 +246,46 @@ opcionais" têm gate equivalente escondido.
 fan-out. Sem essa última conferência o bucket contaria 2 e inseriria 0, que é a mesma família de
 falha silenciosa que esta issue trata.
 
+---
+
+## Parte 6, o #1632 decomposto (depois deste documento ter sido mergeado)
+
+O #1632 era um bloco indecidível: 7 recomendações, 3 populações e uma ordem obrigatória entre elas,
+sob um título só. **O que destravou foi medir os 34 sem consentimento por ESTÁGIO.** Não são uma
+população: **28 já passaram** do ponto onde o gate importa (18 `approved`, 7 `rejected`, 2
+`final_eval`, 1 `interview_done`). O gate morde em **6**.
+
+| issue | população medida | depende de |
+|---|---|---|
+| **#1640** tirar a IA da pré-condição do convite | **6** hoje (4 nunca convidados) + todo futuro | nada |
+| **#1641** não conseguem consentir | **33** de 34 (só **1** tem token vivo) | independe do gate |
+| **#1642** a comunicação nega a consequência | 34 histórico + todo futuro | 🔴 **#1640 em prod** |
+| **#1643** auditar outras superfícies de consentimento | investigação | nada |
+
+**#1640 não é decisão de mérito.** A análise por IA não é necessária: **50** aprovadas no ciclo,
+**18** sem `ai_analysis`, **17** dessas com entrevista registrada. A escolha é *quando*, não *se*.
+
+### As três ordens que não são livres
+
+1. **#1642 depois do #1640 em produção.** O texto novo afirma que não há consequência; publicá-lo
+   antes inverte a mentira em vez de removê-la.
+2. **Reprocessar as 6 depois do #1586(a).** Por SQL a conexão é `service_role`, a RPC entra no ramo
+   `v_is_cron` e o audit grava `actor_id = NULL` / `dispatch_source: 'cron'`. Já ocorreu com 3
+   candidaturas em 03/08. Num reparo de conformidade é o pior lugar possível para esse defeito.
+3. **#1641 desacoplado do convite**, em tempo e mensagem, senão recria "consinta para avançar".
+
 ### A ordem ao retomar
 
-1. Decidir a disposição do #1635 (no-op comprovado por md5).
-2. Decidir o #1632 à luz do parecer. Atenção à ordem do item (3) do parecer: **não publicar o texto
-   novo antes de o gate estar corrigido em produção**, senão cria-se a mesma informação falsa na
-   direção inversa.
-3. #1586(a): expor `selection_rescue_unbooked_invite` no `interview_manage`, para o reenvio humano
-   sair com `caller_id` em vez de "sistema".
-4. Conferir no dia seguinte que o cron das 16:00 UTC realmente inseriu as notificações (ler o
-   EFEITO, não o `status: succeeded` — foi exatamente isso que escondeu o defeito por 24 dias).
-5. Follow-up anotado: a asserção de `ef_version` quebrou 3 vezes seguidas pelo mesmo motivo (mora
+1. **#1640** (o gate). Não depende de nada e é o que destrava #1642.
+2. **#1586(a)**: expor `selection_rescue_unbooked_invite` no `interview_manage`, para o reenvio
+   humano sair com `caller_id` em vez de "sistema". **Antes** de reprocessar as 6.
+3. Reprocessar as 6.
+4. **#1642** (texto), só com #1640 em prod.
+5. **#1641** e **#1643**, independentes, quando couber.
+6. Conferir que o cron das 16:00 UTC inseriu as notificações do #1586(b): ler o **EFEITO**, não o
+   `status: succeeded`. Foi exatamente isso que escondeu o defeito por 24 dias.
+7. Decidir o **#1637** (Dependabot astro 6→7).
+8. Follow-up anotado: a asserção de `ef_version` quebrou 3 vezes seguidas pelo mesmo motivo (mora
    longe do valor que espelha). Candidata a derivação.
 
 ### Regras da casa, inalteradas
