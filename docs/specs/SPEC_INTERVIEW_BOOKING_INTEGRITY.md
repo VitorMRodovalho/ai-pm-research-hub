@@ -137,12 +137,29 @@ Medido em 2026-08-04 00:1x UTC, depois do resto desta spec. **Muda a premissa do
 
 | gate | erro | condição |
 |---|---|---|
-| `GATE_NO_AI` | P0001 | `consent_ai_analysis_at IS NULL` ou `ai_analysis IS NULL` |
+| ~~`GATE_NO_AI`~~ | ~~P0001~~ | **removido pela #1640** (ver correção abaixo) |
 | `GATE_NO_PEER_REVIEW` | P0002 | menos de 2 avaliações |
 | `GATE_NO_SCORE` | P0003 | `objective_score_avg IS NULL` |
 
 Bypass só com `manage_member`. Existe superfície de leitura das tentativas
 (`get_application_gate_attempts`, no MCP e no `/admin/selection`).
+
+> ⚠️ **CORREÇÃO (#1640, 2026-08-07).** `GATE_NO_AI` **saiu** das duas RPCs
+> (`_issue_interview_booking_token_core` em modo `full` e `schedule_interview` fora do bypass).
+> A ausência de um consentimento de terceira finalidade (LGPD art. 7º, I) não pode negar efeito ao
+> procedimento seletivo, que corre por base autônoma (art. 7º, V); somava-se art. 20 (efeito adverso
+> automatizado sem revisão humana no ponto da recusa) e art. 6º, III (necessidade).
+>
+> Medido em 07/08/2026 antes da correção: **6** candidaturas em `interview_pending` sem
+> consentimento, **todas** com 2 avaliações e nota calculada — o gate de IA era o único obstáculo;
+> **4** nunca tinham recebido convite algum. Em `schedule_interview` o gate registrava **zero**
+> recusas em 31 tentativas, mas **14** agendamentos passaram por `bypass_granted` sobre candidaturas
+> sem consentimento, e **13** desses já tinham peer-review e nota: não era imunidade, era contorno
+> por um bypass de admin que desliga junto os outros dois gates.
+>
+> P0002, P0003 e P0004 continuam — são requisitos de conclusão do processo **objetivo**, não dados
+> opcionais. `has_consent` e `has_ai_analysis` seguem no payload de `gate_attempts` como
+> observabilidade. Afirmado por `tests/contracts/1640-ia-fora-da-precondicao-do-convite.test.mjs`.
 
 > ⚠️ **CORREÇÃO (#1594, 2026-08-05).** Esta seção afirmava que "**toda** tentativa, sucesso ou
 > falha, é registrada por `_log_gate_attempt`". **Era falso, e o texto errado se propagou para o
