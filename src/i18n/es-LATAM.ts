@@ -3843,7 +3843,10 @@ const esLATAM: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., EE.UU.) — monitoreo de errores. PII removido automáticamente.',
   'privacy.s5int.resend': 'Resend Inc. (EE.UU.) — envío de emails. Datos de email y métricas de interacción.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (EE.UU.) — verificación de certificaciones. Solo datos públicos de badges.',
-  'privacy.s5int.safeguards': 'La transferencia se fundamenta en el interés legítimo para la ejecución de la iniciativa de investigación (LGPD Art. 33, IX) y en los términos de procesamiento de datos (DPA) de los respectivos proveedores.',
+  'privacy.s5int.googleAi': 'Google LLC (EE.UU.): generación de una sugerencia inicial sobre candidaturas al proceso de selección voluntario. La transferencia ocurre solo tras el consentimiento del titular, que es opcional y revocable.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (EE.UU.): triaje inicial, resumen de candidatura y análisis de videos de respuesta, en el mismo proceso de selección. La transferencia ocurre solo tras el mismo consentimiento, igualmente opcional y revocable.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (EE.UU.): transcripción de videos de respuesta de candidatos. La transferencia ocurre solo tras el consentimiento destacado para dato biométrico de voz (Art. 11, §1º, I).',
+  'privacy.s5int.safeguards': 'Las transferencias de infraestructura anteriores se fundamentan en el interés legítimo para la ejecución de la iniciativa de investigación (LGPD Art. 33, IX) y en los términos de procesamiento de datos (DPA) de los respectivos proveedores. Las transferencias a los proveedores de inteligencia artificial (Google, Anthropic y OpenAI) se fundamentan en el consentimiento específico y destacado del titular, con información previa sobre el carácter internacional de la operación (LGPD Art. 33, VIII), y no ocurren sin él.',
 
   // S6 — Retención (tabla)
   'privacy.s6ret.title': 'Retención de Datos',
@@ -6707,7 +6710,7 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.status': 'Estado actual',
   'pmi.onboarding.expires': 'Este enlace de acceso expira en {days} días. Guárdelo en sus favoritos.',
   'pmi.onboarding.consentTitle': 'Consentimiento de análisis por IA',
-  'pmi.onboarding.consentBody': 'Este consentimiento es opcional y rechazarlo no tiene efecto sobre el proceso de selección: su evaluación, su invitación a la entrevista y la decisión final ocurren normalmente con o sin él. Al consentir, usted autoriza que proveedores de inteligencia artificial (Google, con Gemini, y Anthropic, con Claude) generen una sugerencia inicial sobre su perfil, siempre revisada por evaluadores humanos, a quienes corresponde decidir. Puede revocar en cualquier momento: las informaciones derivadas de IA se eliminan inmediatamente de su candidatura.',
+  'pmi.onboarding.consentBody': 'Este consentimiento es opcional y rechazarlo no tiene efecto sobre el proceso de selección: su evaluación, su invitación a la entrevista y la decisión final ocurren normalmente con o sin él. Al consentir, usted autoriza que proveedores de inteligencia artificial (Google, con Gemini, y Anthropic, con Claude, ambos con sede en Estados Unidos) generen una sugerencia inicial sobre su perfil, siempre revisada por evaluadores humanos, a quienes corresponde decidir. Puede revocar en cualquier momento: las informaciones derivadas de IA se eliminan inmediatamente de su candidatura.',
   'pmi.onboarding.consentGranted': 'Consentimiento otorgado',
   'pmi.onboarding.revokeConsent': 'Revocar consentimiento',
   'pmi.onboarding.consentNotGranted': 'Consentimiento no otorgado',

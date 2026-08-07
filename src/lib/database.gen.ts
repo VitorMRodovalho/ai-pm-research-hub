@@ -7030,6 +7030,7 @@ export type Database = {
           channel: string
           created_at: string
           email_hash: string | null
+          evidence: Json | null
           id: string
           ip_hash: string | null
           member_id: string | null
@@ -7047,6 +7048,7 @@ export type Database = {
           channel: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
@@ -7064,6 +7066,7 @@ export type Database = {
           channel?: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
@@ -31638,6 +31641,10 @@ export type Database = {
       is_eu_resident: { Args: { p_person_id: string }; Returns: boolean }
       is_event_mandatory_for_member: {
         Args: { p_event_id: string; p_member_id: string }
+        Returns: boolean
+      }
+      is_selection_committee_member: {
+        Args: { p_cycle_id?: string; p_member_id: string }
         Returns: boolean
       }
       issue_certificate: { Args: { p_data: Json }; Returns: Json }
