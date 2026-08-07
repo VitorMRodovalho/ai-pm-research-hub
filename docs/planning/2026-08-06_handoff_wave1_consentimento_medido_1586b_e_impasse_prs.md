@@ -222,7 +222,7 @@ opcionais" têm gate equivalente escondido.
 |---|---|
 | **#1633** | **MERGEADO** em `cdb77a51`, 12/12 gates verdes. Carrega Wave 0 + o teste do #1635 + a asserção de `ef_version`. |
 | **#1635** | conteúdo já na main (md5 do arquivo idêntico). Comentado no PR. **Decisão pendente: fechar como superseded ou rebasear.** |
-| **#1586(b)** | DDL **aplicada** (`20260807000100`, ritual GC-097 completo, phantom apagada, tracking limpo). Branch `fix/1586b-detector-ciclo-e-anchor-elegivel` rebaseado na main. Teste 9/9 com credencial, zero skips. **PR aberto, não mergeado.** |
+| **#1586(b)** | **MERGEADO** em `864d4cf6` via PR #1638, 12/12 gates verdes. DDL aplicada (`20260807000100`, ritual GC-097 completo, phantom apagada). Teste 9/9 com credencial, zero skips. **A metade (a) do #1586, superfície MCP para reenvio humano, continua ABERTA.** |
 | **#1636** | aberta, poluição de `gate_attempts` por contract test. |
 | **#1632** | parecer do `legal-counsel` na Parte 4. Decisão do PM. |
 | **#588 [LL]** | 4 lições registradas para o harvest do PMO. |
@@ -236,19 +236,26 @@ opcionais" têm gate equivalente escondido.
 
 **Bypass:** janela de 7 dias segue em **1 de 2**. Nada nesta sessão usou bypass.
 
-> ⚠️ **PROD-AHEAD ativo.** A DDL do #1586(b) está em produção e o `.sql` só existe no branch do PR.
-> Enquanto ele não mergear, os **8 outros PRs abertos** (#1605, #1166, #1146, #1066, #863, #765,
-> #289, #154) falharão em `ADR-0097 missing-file drift` se a CI deles rodar. É inerente ao ritual
-> GC-097 (aplicar, mergear, aplicar) e some no merge.
+> ✅ **PROD-AHEAD fechado** no merge do #1638: a versão `20260807000100` está rastreada no banco
+> **e** o `.sql` está na main. Os 8 outros PRs abertos (#1605, #1166, #1146, #1066, #863, #765,
+> #289, #154) voltaram a poder ficar verdes sem rebase por essa causa.
+
+**Cadeia de entrega verificada:** cron `detect-stuck-selection-funnel-daily` ativo, `0 16 * * *`,
+`p_dry_run := false`, e existem **2** membros com `operational_role = 'manager'` para receber o
+fan-out. Sem essa última conferência o bucket contaria 2 e inseriria 0, que é a mesma família de
+falha silenciosa que esta issue trata.
 
 ### A ordem ao retomar
 
-1. CI do PR do #1586(b) verde, decidir merge.
-2. Decidir a disposição do #1635.
-3. Decidir o #1632 à luz do parecer. Atenção à ordem do item (3) do parecer: **não publicar o texto
+1. Decidir a disposição do #1635 (no-op comprovado por md5).
+2. Decidir o #1632 à luz do parecer. Atenção à ordem do item (3) do parecer: **não publicar o texto
    novo antes de o gate estar corrigido em produção**, senão cria-se a mesma informação falsa na
    direção inversa.
-4. Follow-up anotado: a asserção de `ef_version` quebrou 3 vezes seguidas pelo mesmo motivo (mora
+3. #1586(a): expor `selection_rescue_unbooked_invite` no `interview_manage`, para o reenvio humano
+   sair com `caller_id` em vez de "sistema".
+4. Conferir no dia seguinte que o cron das 16:00 UTC realmente inseriu as notificações (ler o
+   EFEITO, não o `status: succeeded` — foi exatamente isso que escondeu o defeito por 24 dias).
+5. Follow-up anotado: a asserção de `ef_version` quebrou 3 vezes seguidas pelo mesmo motivo (mora
    longe do valor que espelha). Candidata a derivação.
 
 ### Regras da casa, inalteradas
