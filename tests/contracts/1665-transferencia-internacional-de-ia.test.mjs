@@ -27,8 +27,16 @@ const PRIVACY_PAGE = 'src/pages/privacy.astro';
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
+/**
+ * Escapa TODO metacaractere, não só o ponto. Fica em UM lugar de propósito: na primeira versão
+ * deste arquivo o escape completo estava em `dictValue` e uma versão parcial (`replace(/\./g,…)`)
+ * aparecia três linhas adiante, no teste da página. O CodeQL pegou a segunda
+ * (`js/incomplete-sanitization`). Duas cópias de um escapador é uma cópia a mais.
+ */
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function dictValue(src, key) {
-  const re = new RegExp(`^\\s*'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*'((?:[^'\\\\]|\\\\.)*)'`, 'm');
+  const re = new RegExp(`^\\s*'${escapeRe(key)}':\\s*'((?:[^'\\\\]|\\\\.)*)'`, 'm');
   return src.match(re)?.[1] ?? null;
 }
 
@@ -69,7 +77,7 @@ describe('#1665 — os três subprocessadores de IA entram na transferência int
   it('a página renderiza as três linhas novas (chave órfã não informa ninguém)', () => {
     const page = read(PRIVACY_PAGE);
     for (const k of ['privacy.s5int.googleAi', 'privacy.s5int.anthropicAi', 'privacy.s5int.openaiWhisper']) {
-      assert.match(page, new RegExp(k.replace(/\./g, '\\.')), `${k} não é exibida`);
+      assert.match(page, new RegExp(escapeRe(k)), `${k} não é exibida`);
     }
   });
 });
