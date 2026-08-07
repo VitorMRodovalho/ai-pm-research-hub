@@ -101,7 +101,15 @@ const VOICE_CONSENT_VERSION = 'v1';
 // ⚠️ BUMP THIS whenever `pmi.onboarding.consentBody` changes. The hash below pins the exact string
 // shown, so an edited text under an unchanged version silently breaks the correspondence the
 // version is supposed to guarantee (LGPD art. 8º, §2º — the burden of proof is the controller's).
-const AI_CONSENT_VERSION = 'v2';
+// v3 (#1665): acrescenta que os provedores estão nos EUA. Não é cosmético — o art. 33, VIII exige
+// consentimento específico e destacado COM informação prévia sobre o caráter internacional da
+// operação, e é esse o inciso que a política passou a invocar para as transferências de IA. Sem a
+// frase, a base legal declarada não se sustentaria.
+//
+// v2 existiu como texto exibido por algumas horas e NUNCA foi registrado contra nenhum aceite (a
+// captura de evidência ainda não estava no ar). Mesmo assim ganha número próprio: reaproveitar
+// 'v2' para duas redações diferentes é exatamente a ambiguidade que a versão existe para eliminar.
+const AI_CONSENT_VERSION = 'v3';
 
 async function sha256Hex(text: string): Promise<string> {
   const buf = new TextEncoder().encode(text);
