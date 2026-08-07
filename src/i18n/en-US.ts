@@ -1822,6 +1822,12 @@ const enUS: Record<string, string> = {
   'profile.primaryBadge': 'Primary',
   'profile.removeBtn': '✕ Remove',
   'profile.addBtn': '+ Add',
+  // #1644 — promote a secondary email to primary (the primary one receives communications).
+  'profile.primaryHint': 'The primary email is the one that receives platform communications. You can still sign in with any of your emails.',
+  'profile.makePrimaryBtn': 'Make primary',
+  'profile.makePrimaryConfirm': 'Start receiving platform communications at {email}?',
+  'profile.primaryChanged': 'Done. Your communications now go to {email}.',
+  'profile.errorPrimaryPrefix': 'Error changing the primary email: ',
   'profile.emailInputPlaceholder': 'other@email.com',
   'profile.personalDataTitle': '🔒 Personal Data',
   'profile.phoneLabel': 'Phone',

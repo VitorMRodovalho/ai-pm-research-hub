@@ -1827,6 +1827,12 @@ const ptBR: Record<string, string> = {
   'profile.primaryBadge': 'Principal',
   'profile.removeBtn': '✕ Remover',
   'profile.addBtn': '+ Adicionar',
+  // #1644 — promover um e-mail secundário a principal (o principal é o que recebe a comunicação).
+  'profile.primaryHint': 'O e-mail principal é o que recebe as comunicações da plataforma. Você continua entrando com qualquer um dos seus e-mails.',
+  'profile.makePrimaryBtn': 'Tornar principal',
+  'profile.makePrimaryConfirm': 'Passar a receber as comunicações da plataforma em {email}?',
+  'profile.primaryChanged': 'Pronto. Suas comunicações agora vão para {email}.',
+  'profile.errorPrimaryPrefix': 'Erro ao trocar o e-mail principal: ',
   'profile.emailInputPlaceholder': 'outro@email.com',
   'profile.personalDataTitle': '🔒 Dados Pessoais',
   'profile.phoneLabel': 'Telefone',

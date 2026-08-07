@@ -1822,6 +1822,12 @@ const esLATAM: Record<string, string> = {
   'profile.primaryBadge': 'Principal',
   'profile.removeBtn': '✕ Eliminar',
   'profile.addBtn': '+ Agregar',
+  // #1644 — promover un email secundario a principal (el principal es el que recibe la comunicación).
+  'profile.primaryHint': 'El email principal es el que recibe las comunicaciones de la plataforma. Puedes seguir ingresando con cualquiera de tus emails.',
+  'profile.makePrimaryBtn': 'Hacer principal',
+  'profile.makePrimaryConfirm': '¿Pasar a recibir las comunicaciones de la plataforma en {email}?',
+  'profile.primaryChanged': 'Listo. Tus comunicaciones ahora van a {email}.',
+  'profile.errorPrimaryPrefix': 'Error al cambiar el email principal: ',
   'profile.emailInputPlaceholder': 'otro@email.com',
   'profile.personalDataTitle': '🔒 Datos Personales',
   'profile.phoneLabel': 'Teléfono',
