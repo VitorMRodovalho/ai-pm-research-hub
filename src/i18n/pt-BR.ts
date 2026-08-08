@@ -5495,6 +5495,7 @@ const ptBR: Record<string, string> = {
   'nav.certificates': 'Meus Certificados',
   'nav.myPending': '✍️ Minhas pendências',
   'nav.myPoints': '📊 Minha Pontuação',
+  'nav.myEvaluations': '🗳️ Minhas Avaliações',
   'myPoints.title': 'Minha Pontuação, auditável',
   'myPoints.heading': 'Minha Pontuação, auditável',
   'myPoints.subtitle': 'Cada ponto, com a data do fato e o ciclo a que pertence.',

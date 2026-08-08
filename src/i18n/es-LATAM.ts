@@ -5490,6 +5490,7 @@ const esLATAM: Record<string, string> = {
   'nav.certificates': 'Mis Certificados',
   'nav.myPending': '✍️ Mis firmas pendientes',
   'nav.myPoints': '📊 Mi Puntuación',
+  'nav.myEvaluations': '🗳️ Mis Evaluaciones',
   'myPoints.title': 'Mi Puntuación, auditable',
   'myPoints.heading': 'Mi Puntuación, auditable',
   'myPoints.subtitle': 'Cada punto, con la fecha del hecho y el ciclo al que pertenece.',

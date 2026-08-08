@@ -56,6 +56,31 @@ describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
     assert.match(bloco, /allowedDesignations:\s*\['sponsor'\]/);
   });
 
+  it('a fila do avaliador (/minhas-avaliacoes) tem entrada de menu pelo eixo', () => {
+    // Era a issue original: a página existia e não tinha entrada de propósito, porque o único
+    // jeito de exprimir "é do comitê" seria abrir para todo tribe_leader. Com o eixo, deixa de ser.
+    const bloco = navSrc.match(/\{\s*key:\s*'my-evaluations'[\s\S]*?\}/)?.[0] ?? '';
+    assert.ok(bloco, 'entrada my-evaluations não encontrada');
+    assert.match(bloco, /href:\s*'\/minhas-avaliacoes'/);
+    assert.match(bloco, /allowedSelectionCommittee:\s*true/);
+    assert.match(bloco, /lgpdSensitive:\s*true/, 'a fila lista nome de candidato');
+    // E NÃO pode voltar a aproximar por papel operacional — foi o que o route-acl barrou.
+    assert.doesNotMatch(bloco, /allowedOperationalRoles/,
+      'aproximar "é do comitê" por tribe_leader abre a rota para muito mais gente do que o comitê');
+  });
+
+  it('o rótulo tem chave nos 3 dicionários E no mapa do Nav', () => {
+    // O Nav resolve por `i18n[toCamelKey(item.key)]`: sem a entrada camelCase o item renderiza
+    // a chave crua, que foi o defeito do p195.
+    for (const [lang, path] of Object.entries({
+      'pt-BR': 'src/i18n/pt-BR.ts', 'en-US': 'src/i18n/en-US.ts', 'es-LATAM': 'src/i18n/es-LATAM.ts',
+    })) {
+      assert.match(read(path), /'nav\.myEvaluations':/, `${lang}: rótulo ausente`);
+    }
+    assert.match(clientSrc, /myEvaluations:\s*t\('nav\.myEvaluations'/,
+      'sem o mapeamento camelCase o menu mostra a chave crua');
+  });
+
   it('AS DUAS implementações do menu conhecem o eixo', () => {
     // O defeito clássico é consertar a gêmea morta. Aqui as duas estão vivas: uma decide no
     // servidor, a outra no cliente, sobre o MESMO item de nav.

@@ -107,15 +107,24 @@ export const NAV_ITEMS: NavItem[] = [
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'visitor', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (profile.astro self-gates via isRegisteredMember; own-row SECDEF)
   { key: 'my-points', labelKey: 'nav.myPoints', href: '/minha-pontuacao', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #1473 Onda 5a — ledger de pontuação auditável (self via get_my_points_statement; admin ?member= via get_member_points_ledger)
-  // NOTA (auditoria 2026-08-03, Achado G): /minhas-avaliacoes existe e é gateada de forma
-  // AUTORITATIVA pelas próprias RPCs committee-scoped (get_my_pending_evaluations /
-  // get_evaluation_form / submit_evaluation), mas NÃO tem entrada de nav de propósito.
-  // Uma primeira versão aproximava "está no comitê" via allowedOperationalRoles:['tribe_leader',...]
-  // e foi barrada por `route-acl.test.mjs`: nenhuma rota lgpdSensitive pode ser alcançada por
-  // tribe_leader sem designation — política correta, já que a tela expõe PII de candidato.
-  // O sinal certo é participação em `selection_committee`, que hoje NÃO existe no payload de
-  // `get_member_by_auth` que alimenta o nav. Adicioná-lo é item de spec (muda RPC + db:types no
-  // mesmo PR). Até lá o acesso é por URL direta, entregue a quem está no comitê.
+  // #1591 — a fila do próprio avaliador, finalmente no menu.
+  //
+  // A nota anterior (auditoria 2026-08-03, Achado G) registrava por que esta entrada NÃO existia:
+  // aproximar "está no comitê" por `allowedOperationalRoles:['tribe_leader']` era barrado pelo
+  // `route-acl.test.mjs`, e com razão — a tela expõe PII de candidato, e há muito mais líder de
+  // tribo do que membro de comitê. A nota concluía que o sinal certo era participação em
+  // `selection_committee`, ausente do payload de `get_member_by_auth`, e que adicioná-lo seria
+  // item de spec.
+  //
+  // Foi o que o PR #1677 fez: `selection_committee_active` passou a vir no payload, DERIVADO do
+  // domínio, e `allowedSelectionCommittee` virou o quarto eixo, modelado também no guard de ACL.
+  // Com isso a aproximação perigosa deixa de ser necessária: quem entra aqui é quem está no
+  // comitê de um ciclo vivo, e mais ninguém.
+  //
+  // `lgpdSensitive` porque a fila lista nome de candidato. As RPCs continuam sendo a autoridade
+  // real (`get_my_pending_evaluations` / `get_evaluation_form` / `submit_evaluation`, todas
+  // committee-scoped); esta entrada é UX, não fronteira.
+  { key: 'my-evaluations', labelKey: 'nav.myEvaluations', href: '/minhas-avaliacoes', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', allowedSelectionCommittee: true, lgpdSensitive: true },
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
