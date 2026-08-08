@@ -202,6 +202,15 @@ antigo ficaria mudo por mais de uma semana de falhas.
 
 ## Armadilhas medidas hoje
 
+- **O `Schema Invariants` pode ficar vermelho por CONTENÇÃO, não por invariante quebrada.** Ele
+  espera **900s** pela faixa de banco do #1509 e falha em vez de rodar concorrente contra produção,
+  o que está **certo**. Só que quem segura a faixa é o `CI Validate` **do mesmo commit**, e ele
+  levou **19 minutos** em 08/08. O teto de espera está calibrado abaixo da duração real de quem
+  espera-se. Histórico: **2 falhas em 40** execuções, então não é rotina nem flake aleatório — é a
+  condição específica de o `validate` esticar. A mensagem de erro nomeia o run que segurava, então
+  classificar custa uma leitura de log. **Re-rodar só depois de a faixa liberar**; re-rodar com
+  outro `validate` em voo repete a falha pelo mesmo motivo.
+
 - **`pg_isready` no socket unix NÃO é prontidão.** A imagem sobe um servidor temporário que escuta
   só no socket e o desliga antes do definitivo. t=3s socket aceita e TCP não; t=4s TCP aceita.
   Conectar no temporário mata o restore no meio e devolve **banco vazio**, que é exatamente como um
