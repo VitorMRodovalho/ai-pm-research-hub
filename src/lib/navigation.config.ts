@@ -21,6 +21,26 @@ export interface NavItem {
   minTier: AccessTier;
   allowedDesignations?: string[];
   allowedOperationalRoles?: string[];
+  /**
+   * #1591 — quarto eixo de autoridade: participação no comitê de seleção do ciclo vivo.
+   *
+   * Existe porque os três eixos acima não conseguem exprimir "é do comitê". `designations` é
+   * atribuição institucional (sponsor, curator) e o comitê não tem uma; `operationalRole` é papel
+   * na tribo (tribe_leader) e usá-lo abriria a rota para TODO tribe_leader, que é exatamente o que
+   * o `route-acl.test.mjs` barra numa rota `lgpdSensitive`.
+   *
+   * O sinal vem de `get_member_by_auth().selection_committee_role`, que é verdade do domínio
+   * (`selection_committee` × ciclo aberto/avaliando), não um espelho mantido à mão.
+   *
+   * ⚠️ O eixo distingue PAPEL, e a primeira versão não distinguia — tratava `evaluator` e
+   * `observer` como a mesma coisa. Isso importa porque observador OBSERVA: dar a ele a fila de
+   * avaliação é convidá-lo a pontuar candidato, que não é a função dele.
+   *
+   *   'any'       — qualquer membro do comitê, inclusive observador (ex.: o painel do processo,
+   *                 que é literalmente o que o observador existe para acompanhar)
+   *   'evaluator' — só quem avalia (ex.: a fila de avaliação)
+   */
+  allowedSelectionCommittee?: 'any' | 'evaluator';
   requiresAuth: boolean;
   section: 'main' | 'drawer' | 'both';
   group?: string;
@@ -95,15 +115,24 @@ export const NAV_ITEMS: NavItem[] = [
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'visitor', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (profile.astro self-gates via isRegisteredMember; own-row SECDEF)
   { key: 'my-points', labelKey: 'nav.myPoints', href: '/minha-pontuacao', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #1473 Onda 5a — ledger de pontuação auditável (self via get_my_points_statement; admin ?member= via get_member_points_ledger)
-  // NOTA (auditoria 2026-08-03, Achado G): /minhas-avaliacoes existe e é gateada de forma
-  // AUTORITATIVA pelas próprias RPCs committee-scoped (get_my_pending_evaluations /
-  // get_evaluation_form / submit_evaluation), mas NÃO tem entrada de nav de propósito.
-  // Uma primeira versão aproximava "está no comitê" via allowedOperationalRoles:['tribe_leader',...]
-  // e foi barrada por `route-acl.test.mjs`: nenhuma rota lgpdSensitive pode ser alcançada por
-  // tribe_leader sem designation — política correta, já que a tela expõe PII de candidato.
-  // O sinal certo é participação em `selection_committee`, que hoje NÃO existe no payload de
-  // `get_member_by_auth` que alimenta o nav. Adicioná-lo é item de spec (muda RPC + db:types no
-  // mesmo PR). Até lá o acesso é por URL direta, entregue a quem está no comitê.
+  // #1591 — a fila do próprio avaliador, finalmente no menu.
+  //
+  // A nota anterior (auditoria 2026-08-03, Achado G) registrava por que esta entrada NÃO existia:
+  // aproximar "está no comitê" por `allowedOperationalRoles:['tribe_leader']` era barrado pelo
+  // `route-acl.test.mjs`, e com razão — a tela expõe PII de candidato, e há muito mais líder de
+  // tribo do que membro de comitê. A nota concluía que o sinal certo era participação em
+  // `selection_committee`, ausente do payload de `get_member_by_auth`, e que adicioná-lo seria
+  // item de spec.
+  //
+  // Foi o que o PR #1677 fez: `selection_committee_active` passou a vir no payload, DERIVADO do
+  // domínio, e `allowedSelectionCommittee` virou o quarto eixo, modelado também no guard de ACL.
+  // Com isso a aproximação perigosa deixa de ser necessária: quem entra aqui é quem está no
+  // comitê de um ciclo vivo, e mais ninguém.
+  //
+  // `lgpdSensitive` porque a fila lista nome de candidato. As RPCs continuam sendo a autoridade
+  // real (`get_my_pending_evaluations` / `get_evaluation_form` / `submit_evaluation`, todas
+  // committee-scoped); esta entrada é UX, não fronteira.
+  { key: 'my-evaluations', labelKey: 'nav.myEvaluations', href: '/minhas-avaliacoes', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', allowedSelectionCommittee: 'evaluator', lgpdSensitive: true },
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
@@ -127,7 +156,12 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cross-tribes', labelKey: 'nav.adminCrossTribes', href: '/admin/tribes', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor'] },
   { key: 'admin-tribe-dashboard', labelKey: 'nav.adminTribeDashboard', href: '/admin/tribe/', minTier: 'leader', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', dynamic: true, resolver: 'resolveMyTribeDashboard', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
-  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
+  // #1591: `allowedSelectionCommittee` entra ao lado de `sponsor`, não no lugar dele. Sponsor é a
+  // leitura institucional (presidente de capítulo anfitrião); o comitê é quem OPERA a seleção e
+  // até aqui não tinha porta nenhuma — o domínio sabia (`selection_committee.role`), o menu não.
+  // As RPCs de dashboard passaram a aceitar o mesmo predicado na MESMA migration: abrir só o menu
+  // faria a página carregar e negar os dados, que é o defeito do #1590 ao contrário.
+  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], allowedSelectionCommittee: 'any', lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
   { key: 'admin-vep-reconciliation', labelKey: 'nav.adminVepReconciliation', href: '/admin/vep-reconciliation', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'] },
   { key: 'admin-campaigns', labelKey: 'nav.adminCampaigns', href: '/admin/campaigns', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
@@ -147,7 +181,8 @@ export function getItemAccessibility(
   tier: AccessTier,
   designations: string[],
   isLoggedIn: boolean,
-  operationalRole?: string
+  operationalRole?: string,
+  selectionCommitteeRole?: string | null
 ): ItemAccessibility {
   if (item.requiresAuth && !isLoggedIn) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
@@ -160,7 +195,16 @@ export function getItemAccessibility(
   const hasOperationalRole = item.allowedOperationalRoles?.length
     ? item.allowedOperationalRoles.includes(operationalRole || '')
     : false;
-  const enabled = meetsMinTier || hasDesig || hasOperationalRole;
+  // #1591: só conta quando a entrada declara o eixo — um `true` solto no perfil não abre nada.
+  // #1591: só conta quando a ENTRADA declara o eixo — um papel solto no perfil não abre nada.
+  // E distingue papel: 'any' inclui observador, 'evaluator' não.
+  const hasCommittee =
+    item.allowedSelectionCommittee === 'any'
+      ? Boolean(selectionCommitteeRole)
+      : item.allowedSelectionCommittee === 'evaluator'
+        ? selectionCommitteeRole === 'evaluator'
+        : false;
+  const enabled = meetsMinTier || hasDesig || hasOperationalRole || hasCommittee;
 
   if (item.lgpdSensitive && !enabled) {
     return { visible: false, enabled: false, requiredTier: item.minTier };

@@ -13,6 +13,11 @@
  * The list below is generated from the channel. Refresh it with:
  *   YOUTUBE_API_KEY=<key> node scripts/refresh-youtube-playlists.mjs
  * (see that script's header for the OAuth alternative for unlisted playlists).
+ *
+ * Id length is NOT a validity signal: playlists created from 2026-07 on get a
+ * 13-char id, the older ones are 34. Confirmed 2026-08-07 by creating
+ * PLfWCBF5VAWZM through the API and reading it back — it came out 13 chars.
+ * A short id is not a truncated one; do not "fix" it.
  */
 
 export interface YtPlaylist {
@@ -24,6 +29,8 @@ export const YOUTUBE_CHANNEL_ID = 'UCIEiHte8f_AVwCXP2wZ7DjQ';
 
 // GENERATED:START — do not edit by hand; run scripts/refresh-youtube-playlists.mjs
 export const YOUTUBE_PLAYLISTS: YtPlaylist[] = [
+  { id: 'PLanpm8h-DzgQ', title: 'Ciclo 4 (2026/2) - Reuniões Gerais' },
+  { id: 'PLfWCBF5VAWZM', title: 'Ciclo 4 (2026/2) - Reunião de Liderança' },
   { id: 'PLRexyUb8O7bo', title: 'Ciclo 4 (2026/2) - Introdução dos Líderes de Tribo' },
   { id: 'PLQJVKrw1fcry8eG_bAGShCYb7wx3oDBSS', title: 'Ciclo 3 - Conteúdo das Tribos' },
   { id: 'PLQJVKrw1fcryCMIFyLnXY9ZNoBRyo3ZiZ', title: 'Iniciativa Grupo de Estudos CPMAI (Operação)' },

@@ -3836,7 +3836,8 @@ const esLATAM: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (procesador): monitoreo de errores con remoción de PII',
   'privacy.s4.resend': 'Resend (procesador): envío de emails transaccionales y campañas, rastreo de entrega/apertura/clics',
   'privacy.s4.credly': 'Credly/Pearson VUE (fuente): verificación de badges y certificaciones PMI via API pública',
-  'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocesador): análisis automatizado de aplicaciones de voluntariado — solo tras consentimiento expreso (consent_ai_analysis_at). Ninguna decisión se toma exclusivamente por la IA — el comité humano evalúa y decide. Conformidad LGPD Art. 7,V + 9,I (divulgación a terceros) + Art. 20 (revisión humana de decisiones automatizadas).',
+  'privacy.s4.googleAi': 'Google (Gemini, subprocesador, EE.UU.): generación de una sugerencia inicial sobre candidaturas al proceso de selección voluntario. Base legal exclusiva de esta operación: consentimiento del titular (LGPD Art. 7º, I), registrado en consent_ai_analysis_at. Es opcional y revocable en cualquier momento, y el hecho de no concederlo o de revocarlo no tiene ningún efecto sobre el proceso de selección, que corre por base legal autónoma (ver la tabla de finalidades arriba). Ninguna decisión se toma exclusivamente por la IA: el comité humano evalúa y decide (Art. 20). Divulgación a terceros conforme Art. 9º, I.',
+  'privacy.s4.anthropicAi': 'Anthropic (Claude, subprocesador, EE.UU.): triaje inicial, resumen de candidatura para el comité y análisis de videos de respuesta, en el mismo proceso de selección voluntario. Base legal exclusiva de esta operación: el mismo consentimiento del ítem anterior (LGPD Art. 7º, I, registrado en consent_ai_analysis_at), igualmente opcional, revocable y sin efecto sobre el proceso de selección. El análisis de video exige, además, el consentimiento destacado de voz (Art. 11, §1º, I). Ninguna decisión se toma exclusivamente por la IA: el comité humano evalúa y decide (Art. 20).',
   'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocesador, EE.UU.): transcripción automatizada de videos de respuestas de candidatos en el screening selectivo — solo tras consentimiento destacado para tratamiento de dato personal sensible biométrico de voz (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audios y transcripciones alimentan sugerencias iniciales revisadas por evaluadores humanos. Revocación inmediata vía portal del candidato; ventana de eliminación de 30 días para transcripciones y archivos de audio (LGPD Art. 18, §IV).',
   'privacy.s4.noCommercial': 'No compartimos datos personales con terceros para fines comerciales',
 
@@ -3849,7 +3850,10 @@ const esLATAM: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., EE.UU.) — monitoreo de errores. PII removido automáticamente.',
   'privacy.s5int.resend': 'Resend Inc. (EE.UU.) — envío de emails. Datos de email y métricas de interacción.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (EE.UU.) — verificación de certificaciones. Solo datos públicos de badges.',
-  'privacy.s5int.safeguards': 'La transferencia se fundamenta en el interés legítimo para la ejecución de la iniciativa de investigación (LGPD Art. 33, IX) y en los términos de procesamiento de datos (DPA) de los respectivos proveedores.',
+  'privacy.s5int.googleAi': 'Google LLC (EE.UU.): generación de una sugerencia inicial sobre candidaturas al proceso de selección voluntario. La transferencia ocurre solo tras el consentimiento del titular, que es opcional y revocable.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (EE.UU.): triaje inicial, resumen de candidatura y análisis de videos de respuesta, en el mismo proceso de selección. La transferencia ocurre solo tras el mismo consentimiento, igualmente opcional y revocable.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (EE.UU.): transcripción de videos de respuesta de candidatos. La transferencia ocurre solo tras el consentimiento destacado para dato biométrico de voz (Art. 11, §1º, I).',
+  'privacy.s5int.safeguards': 'Las transferencias de infraestructura anteriores se fundamentan en el interés legítimo para la ejecución de la iniciativa de investigación (LGPD Art. 33, IX) y en los términos de procesamiento de datos (DPA) de los respectivos proveedores. Las transferencias a los proveedores de inteligencia artificial (Google, Anthropic y OpenAI) se fundamentan en el consentimiento específico y destacado del titular, con información previa sobre el carácter internacional de la operación (LGPD Art. 33, VIII), y no ocurren sin él.',
 
   // S6 — Retención (tabla)
   'privacy.s6ret.title': 'Retención de Datos',
@@ -5493,6 +5497,7 @@ const esLATAM: Record<string, string> = {
   'nav.certificates': 'Mis Certificados',
   'nav.myPending': '✍️ Mis firmas pendientes',
   'nav.myPoints': '📊 Mi Puntuación',
+  'nav.myEvaluations': '🗳️ Mis Evaluaciones',
   'myPoints.title': 'Mi Puntuación, auditable',
   'myPoints.heading': 'Mi Puntuación, auditable',
   'myPoints.subtitle': 'Cada punto, con la fecha del hecho y el ciclo al que pertenece.',
@@ -6713,7 +6718,7 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.status': 'Estado actual',
   'pmi.onboarding.expires': 'Este enlace de acceso expira en {days} días. Guárdelo en sus favoritos.',
   'pmi.onboarding.consentTitle': 'Consentimiento de análisis por IA',
-  'pmi.onboarding.consentBody': 'Permita que nuestra IA (Claude de Anthropic) genere una sugerencia de evaluación inicial de su perfil para acelerar el proceso. Sus notas finales siempre serán decididas por evaluadores humanos. Puede revocar este consentimiento en cualquier momento, y sus informaciones serán inmediatamente archivadas.',
+  'pmi.onboarding.consentBody': 'Este consentimiento es opcional y rechazarlo no tiene efecto sobre el proceso de selección: su evaluación, su invitación a la entrevista y la decisión final ocurren normalmente con o sin él. Al consentir, usted autoriza que proveedores de inteligencia artificial (Google, con Gemini, y Anthropic, con Claude, ambos con sede en Estados Unidos) generen una sugerencia inicial sobre su perfil, siempre revisada por evaluadores humanos, a quienes corresponde decidir. Puede revocar en cualquier momento: las informaciones derivadas de IA se eliminan inmediatamente de su candidatura.',
   'pmi.onboarding.consentGranted': 'Consentimiento otorgado',
   'pmi.onboarding.revokeConsent': 'Revocar consentimiento',
   'pmi.onboarding.consentNotGranted': 'Consentimiento no otorgado',

@@ -3836,7 +3836,8 @@ const enUS: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (processor): error monitoring with PII stripping',
   'privacy.s4.resend': 'Resend (processor): transactional and campaign email delivery, delivery/open/click tracking',
   'privacy.s4.credly': 'Credly/Pearson VUE (source): PMI badge and certification verification via public API',
-  'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocessor): automated analysis of volunteer applications — only after explicit consent (consent_ai_analysis_at). No decision is made exclusively by the AI — the human committee evaluates and decides. LGPD Art. 7,V + 9,I (third-party disclosure) + Art. 20 (human review of automated decisions) compliance.',
+  'privacy.s4.googleAi': 'Google (Gemini, subprocessor, USA): generation of an initial suggestion about applications to the volunteer selection process. Sole legal basis for this operation: data subject consent (LGPD Art. 7, I), recorded in consent_ai_analysis_at. It is optional and revocable at any time, and neither withholding nor revoking it has any effect on the selection process, which runs on its own independent legal basis (see the purposes table above). No decision is made exclusively by the AI: the human committee evaluates and decides (Art. 20). Third-party disclosure pursuant to Art. 9, I.',
+  'privacy.s4.anthropicAi': 'Anthropic (Claude, subprocessor, USA): initial triage, application briefing for the committee and analysis of video responses, within the same volunteer selection process. Sole legal basis for this operation: the same consent as the previous item (LGPD Art. 7, I, recorded in consent_ai_analysis_at), equally optional, revocable and without effect on the selection process. Video analysis additionally requires the highlighted voice consent (Art. 11, §1, I). No decision is made exclusively by the AI: the human committee evaluates and decides (Art. 20).',
   'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocessor, USA): automated transcription of candidate video responses during selection screening — only after highlighted consent for processing sensitive personal biometric voice data (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audio and transcriptions feed initial suggestions reviewed by human evaluators. Immediate revocation via candidate portal; 30-day deletion window for transcriptions and audio files (LGPD Art. 18, §IV).',
   'privacy.s4.noCommercial': 'We do not share personal data with third parties for commercial purposes',
 
@@ -3849,7 +3850,10 @@ const enUS: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., USA) — error monitoring. PII automatically removed.',
   'privacy.s5int.resend': 'Resend Inc. (USA) — email delivery. Email data and interaction metrics.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (USA) — certification verification. Public badge data only.',
-  'privacy.s5int.safeguards': 'The transfer is based on legitimate interest for the execution of the research initiative (LGPD Art. 33, IX) and the data processing agreements (DPA) of the respective providers.',
+  'privacy.s5int.googleAi': 'Google LLC (USA): generation of an initial suggestion about applications to the volunteer selection process. Transfer occurs only after the data subject consents, which is optional and revocable.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (USA): initial triage, application briefing and analysis of video responses, within the same selection process. Transfer occurs only after that same consent, equally optional and revocable.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (USA): transcription of candidate video responses. Transfer occurs only after the highlighted consent for voice biometric data (Art. 11, §1, I).',
+  'privacy.s5int.safeguards': 'The infrastructure transfers above are based on legitimate interest for the execution of the research initiative (LGPD Art. 33, IX) and the data processing agreements (DPA) of the respective providers. Transfers to the artificial intelligence providers (Google, Anthropic and OpenAI) are based instead on the data subject\'s specific and highlighted consent, with prior information about the international nature of the operation (LGPD Art. 33, VIII), and do not occur without it.',
 
   // S6 — Retention (table)
   'privacy.s6ret.title': 'Data Retention',
@@ -5492,6 +5496,7 @@ const enUS: Record<string, string> = {
   'nav.certificates': 'My Certificates',
   'nav.myPending': '✍️ My pending signatures',
   'nav.myPoints': '📊 My Score',
+  'nav.myEvaluations': '🗳️ My Evaluations',
   'myPoints.title': 'My Score, auditable',
   'myPoints.heading': 'My Score, auditable',
   'myPoints.subtitle': 'Every point, with the date it happened and the cycle it belongs to.',
@@ -6713,7 +6718,7 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.status': 'Current status',
   'pmi.onboarding.expires': 'This access link expires in {days} days. Save in your favorites.',
   'pmi.onboarding.consentTitle': 'AI analysis consent',
-  'pmi.onboarding.consentBody': 'Allow our AI (Anthropic Claude) to generate an initial evaluation suggestion for your profile to accelerate the process. Your final scores will always be decided by human evaluators. You can revoke this consent at any time, and your information will be immediately archived.',
+  'pmi.onboarding.consentBody': 'This consent is optional, and declining it has no effect on the selection process: your evaluation, your interview invitation and the final decision all happen normally with or without it. By consenting, you authorize artificial intelligence providers (Google, with Gemini, and Anthropic, with Claude, both based in the United States) to generate an initial suggestion about your profile, always reviewed by human evaluators, who are the ones who decide. You can revoke at any time: AI-derived information is deleted from your application immediately.',
   'pmi.onboarding.consentGranted': 'Consent granted',
   'pmi.onboarding.revokeConsent': 'Revoke consent',
   'pmi.onboarding.consentNotGranted': 'Consent not granted',

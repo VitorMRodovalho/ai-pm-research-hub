@@ -90,6 +90,27 @@ const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> =
 // Version pins the destacado label text; bump if you ever edit voiceConsentBody.
 const VOICE_CONSENT_VERSION = 'v1';
 
+// #1666: AI analysis consent carried NO evidence of what the candidate actually read — only a
+// timestamp. The gap became concrete when #1642 rewrote `consentBody` in all 3 languages: the 56
+// people who had already consented agreed to wording that no longer exists, unrecoverably.
+//
+// `v2` IS the post-#1642 wording. `v1` is the previous one, and it is deliberately NOT
+// reconstructible: hashing today's text and calling it v1 would assert something false about what
+// those people saw.
+//
+// ⚠️ BUMP THIS whenever `pmi.onboarding.consentBody` changes. The hash below pins the exact string
+// shown, so an edited text under an unchanged version silently breaks the correspondence the
+// version is supposed to guarantee (LGPD art. 8º, §2º — the burden of proof is the controller's).
+// v3 (#1665): acrescenta que os provedores estão nos EUA. Não é cosmético — o art. 33, VIII exige
+// consentimento específico e destacado COM informação prévia sobre o caráter internacional da
+// operação, e é esse o inciso que a política passou a invocar para as transferências de IA. Sem a
+// frase, a base legal declarada não se sustentaria.
+//
+// v2 existiu como texto exibido por algumas horas e NUNCA foi registrado contra nenhum aceite (a
+// captura de evidência ainda não estava no ar). Mesmo assim ganha número próprio: reaproveitar
+// 'v2' para duas redações diferentes é exatamente a ambiguidade que a versão existe para eliminar.
+const AI_CONSENT_VERSION = 'v3';
+
 async function sha256Hex(text: string): Promise<string> {
   const buf = new TextEncoder().encode(text);
   const hash = await crypto.subtle.digest('SHA-256', buf);
@@ -249,8 +270,19 @@ export default function PMIOnboardingPortal({
     setBusyConsent(true);
     setErrorMsg(null);
     try {
+      // #1666: ao CONCEDER, envia a prova do texto exibido (mesma forma do consentimento de voz).
+      // Ao revogar não há texto a provar — o que se registra é o ato, e a RPC fecha a linha do
+      // ledger. `p_evidence` já existia na assinatura, então isto não muda contrato nenhum.
+      const args: Record<string, unknown> = { p_token: token, p_consent_type: 'ai_analysis' };
+      if (grant) {
+        args.p_evidence = {
+          version: AI_CONSENT_VERSION,
+          lang,
+          label_text_hash: await sha256Hex(T('pmi.onboarding.consentBody')),
+        };
+      }
       const fnName = grant ? 'give_consent_via_token' : 'revoke_consent_via_token';
-      const { error } = await sb.rpc(fnName, { p_token: token, p_consent_type: 'ai_analysis' });
+      const { error } = await sb.rpc(fnName, args);
       if (error) throw new Error(error.message);
       setPayload({
         ...payload,

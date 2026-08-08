@@ -3841,7 +3841,8 @@ const ptBR: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (processador): monitoramento de erros com remoção de PII',
   'privacy.s4.resend': 'Resend (processador): envio de emails transacionais e campanhas, rastreamento de entrega/abertura/cliques',
   'privacy.s4.credly': 'Credly/Pearson VUE (fonte): verificação de badges e certificações PMI via API pública',
-  'privacy.s4.googleAi': 'Google AI / Gemini 2.5 Flash (subprocessador): análise automatizada de aplicações de candidatura voluntária — somente após consentimento expresso (consent_ai_analysis_at). Nenhuma decisão é tomada exclusivamente pela IA — o comitê humano avalia e decide. Conformidade LGPD Art. 7,V + 9,I (terceiros disclosure) + Art. 20 (revisão humana de decisões automatizadas).',
+  'privacy.s4.googleAi': 'Google (Gemini, subprocessador, EUA): geração de sugestão inicial sobre candidaturas ao processo seletivo voluntário. Base legal exclusiva desta operação: consentimento do titular (LGPD Art. 7º, I), registrado em consent_ai_analysis_at. É opcional e revogável a qualquer momento, e não conceder ou revogar não tem efeito sobre o processo seletivo, que corre por base legal autônoma (ver a tabela de finalidades acima). Nenhuma decisão é tomada exclusivamente pela IA: o comitê humano avalia e decide (Art. 20). Divulgação a terceiros conforme Art. 9º, I.',
+  'privacy.s4.anthropicAi': 'Anthropic (Claude, subprocessador, EUA): triagem inicial, resumo de candidatura para o comitê e análise de vídeos de resposta, no mesmo processo seletivo voluntário. Base legal exclusiva desta operação: o mesmo consentimento do item anterior (LGPD Art. 7º, I, registrado em consent_ai_analysis_at), igualmente opcional, revogável e sem efeito sobre o processo seletivo. A análise de vídeo exige, ainda, o consentimento destacado de voz (Art. 11, §1º, I). Nenhuma decisão é tomada exclusivamente pela IA: o comitê humano avalia e decide (Art. 20).',
   'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocessador, EUA): transcrição automatizada de vídeos de respostas de candidatos no screening seletivo — somente após consentimento destacado para tratamento de dado pessoal sensível biométrico de voz (consent_voice_biometric_at — LGPD Art. 11, §1º, I). Áudios e transcrições alimentam sugestões iniciais revisadas por avaliadores humanos. Revogação imediata via portal do candidato; janela de exclusão de 30 dias para transcrições e arquivos de áudio (LGPD Art. 18, §IV).',
   'privacy.s4.noCommercial': 'Não compartilhamos dados pessoais com terceiros para fins comerciais',
 
@@ -3854,7 +3855,10 @@ const ptBR: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., EUA) — monitoramento de erros. PII removido automaticamente.',
   'privacy.s5int.resend': 'Resend Inc. (EUA) — envio de emails. Dados de email e métricas de interação.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (EUA) — verificação de certificações. Apenas dados públicos de badges.',
-  'privacy.s5int.safeguards': 'A transferência se fundamenta no legítimo interesse para a execução da iniciativa de pesquisa (LGPD Art. 33, IX) e nos termos de processamento de dados (DPA) dos respectivos provedores.',
+  'privacy.s5int.googleAi': 'Google LLC (EUA): geração de sugestão inicial sobre candidaturas ao processo seletivo voluntário. Transferência realizada somente após o consentimento do titular, que é opcional e revogável.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (EUA): triagem inicial, resumo de candidatura e análise de vídeos de resposta, no mesmo processo seletivo. Transferência realizada somente após o mesmo consentimento, igualmente opcional e revogável.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (EUA): transcrição de vídeos de resposta de candidatos. Transferência realizada somente após o consentimento destacado para dado biométrico de voz (Art. 11, §1º, I).',
+  'privacy.s5int.safeguards': 'As transferências de infraestrutura acima se fundamentam no legítimo interesse para a execução da iniciativa de pesquisa (LGPD Art. 33, IX) e nos termos de processamento de dados (DPA) dos respectivos provedores. Já as transferências para os provedores de inteligência artificial (Google, Anthropic e OpenAI) se fundamentam no consentimento específico e destacado do titular, com informação prévia sobre o caráter internacional da operação (LGPD Art. 33, VIII), e não ocorrem sem ele.',
 
   // S6 — Retenção (tabela)
   'privacy.s6ret.title': 'Retenção de Dados',
@@ -5498,6 +5502,7 @@ const ptBR: Record<string, string> = {
   'nav.certificates': 'Meus Certificados',
   'nav.myPending': '✍️ Minhas pendências',
   'nav.myPoints': '📊 Minha Pontuação',
+  'nav.myEvaluations': '🗳️ Minhas Avaliações',
   'myPoints.title': 'Minha Pontuação, auditável',
   'myPoints.heading': 'Minha Pontuação, auditável',
   'myPoints.subtitle': 'Cada ponto, com a data do fato e o ciclo a que pertence.',
@@ -6719,7 +6724,7 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.status': 'Status atual',
   'pmi.onboarding.expires': 'Este link de acesso expira em {days} dias. Salve em seus favoritos.',
   'pmi.onboarding.consentTitle': 'Consentimento de análise por IA',
-  'pmi.onboarding.consentBody': 'Permita que nossa IA (Claude da Anthropic) gere uma sugestão de avaliação inicial do seu perfil para acelerar o processo. Suas notas finais sempre serão decididas por avaliadores humanos. Você pode revogar este consentimento a qualquer momento, e suas informações serão imediatamente arquivadas.',
+  'pmi.onboarding.consentBody': 'Este consentimento é opcional e recusá-lo não tem efeito sobre o processo seletivo: sua avaliação, seu convite para entrevista e a decisão final acontecem normalmente com ou sem ele. Ao consentir, você autoriza que provedores de inteligência artificial (Google, com o Gemini, e Anthropic, com o Claude, ambos sediados nos Estados Unidos) gerem uma sugestão inicial sobre o seu perfil, sempre revisada por avaliadores humanos, a quem cabe decidir. Você pode revogar a qualquer momento: as informações derivadas de IA são eliminadas imediatamente da sua candidatura.',
   'pmi.onboarding.consentGranted': 'Consentimento concedido',
   'pmi.onboarding.revokeConsent': 'Revogar consentimento',
   'pmi.onboarding.consentNotGranted': 'Consentimento não concedido',

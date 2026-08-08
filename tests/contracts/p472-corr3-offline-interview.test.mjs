@@ -74,8 +74,11 @@ test('472-c3 static: P0004 is an ALLOW-LIST — bypass only from pre-interview s
 test('472-c3 static: bypass authority + AI/peer/score gates unchanged', () => {
   assert.match(mig, /v_can_bypass := p_bypass_gate AND public\.can_by_member\(v_caller\.id, 'manage_member'::text\)/,
     'bypass requires p_bypass_gate AND manage_member');
-  assert.match(mig, /IF NOT v_can_bypass THEN[\s\S]*'P0001'[\s\S]*'P0002'[\s\S]*'P0003'[\s\S]*END IF;/,
-    'P0001/P0002/P0003 gates still inside the IF NOT v_can_bypass block');
+  // #1640: this asserts a FROZEN historical file, not the live body. P0001 (GATE_NO_AI) was removed
+  // from the live schedule_interview — absence of an AI consent may not deny the selection process.
+  // The live invariant is asserted by tests/contracts/1640-ia-fora-da-precondicao-do-convite.test.mjs.
+  assert.match(mig, /IF NOT v_can_bypass THEN[\s\S]*'P0002'[\s\S]*'P0003'[\s\S]*END IF;/,
+    'P0002/P0003 gates still inside the IF NOT v_can_bypass block');
   // audit preserved on both the blocked and success paths
   assert.ok((mig.match(/_log_gate_attempt/g) || []).length >= 5, 'gate-attempt audit calls preserved');
 });

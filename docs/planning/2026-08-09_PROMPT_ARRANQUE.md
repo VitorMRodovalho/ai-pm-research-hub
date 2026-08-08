@@ -1,0 +1,133 @@
+# Prompt de arranque — depois do backup restaurável (próxima sessão)
+
+> Colar depois do `/clear`. **Effort: `xhigh`.**
+> Handoff completo: `docs/planning/2026-08-08_handoff_backup_restauravel_e_laboratorio_de_perfis.md`.
+> `main` em **`2913aede`**.
+
+---
+
+## Regra zero
+
+**Nada deste documento pode ser recitado.** Re-medir com tool call na mesma volta. Os dois padrões
+que custaram caro nas duas últimas sessões:
+
+- **verde sem significado** (o gate passou, o efeito não aconteceu)
+- **número certo, significado errado** (a query estava certa, a população não era a da pergunta)
+
+Depois de consertar qualquer coisa, verifique o **efeito**, nunca só a cor. E antes de citar um
+contador, pergunte **de quem é este valor** e **em que ponto do processo essa população está**.
+
+---
+
+## O que existe agora e a sessão anterior não tinha
+
+**Uma base de teste restaurável, em um comando.** É a mudança de método mais importante:
+
+```bash
+scripts/pull-backup-local.sh --restore     # ~15s, baixa o mais novo e ensaia
+```
+
+⚠️ **O dump passou a ser DIÁRIO** (decisão 2, PR #1687), com retenção de 30 no artefato e 14 na
+cópia local. Se o #1687 ainda não tiver mergeado quando você ler isto, o `main` ainda está semanal.
+
+Com ela, gates que resolvem por `auth.uid()` deixam de ser "precisa de confirmação humana":
+
+```sql
+begin;
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '<auth_id do alvo>', true);
+select public.a_rpc_que_voce_quer_testar();
+rollback;
+```
+
+⚠️ `auth.uid()` na imagem lê `request.jwt.claim.sub` (**singular**).
+⚠️ A cópia é da **data do backup**. Para testar código de hoje, aplique as migrations posteriores;
+rodar cru mede o comportamento **antigo** (útil como controle, enganoso como validação).
+⚠️ O dump **não traz o schema `auth`**: `auth.users` volta vazio e 100 de 131 membros ficam com
+`auth_id` órfão. Isso não atrapalha a impersonação (o `auth_id` vem de `members`), mas atrapalha
+qualquer coisa que faça JOIN com `auth.users`.
+
+Detalhes e armadilhas: `docs/reference/RECUPERACAO_DE_DESASTRE.md`.
+
+---
+
+## Não re-litigar (fechado e em produção)
+
+- **#618** fechada pelo #1684. Backup restaura, limpeza enxerga, alarme voltou a ter significado,
+  cópia local semanal instalada e testada sob systemd.
+- **#1673** e **#1683** mergeados.
+- **#1679** respondida com veredito. **#1591** confirmado por impersonação.
+- **#1682** aberta com reprodução e correção **já validada** em ambiente de teste.
+
+---
+
+## Ordem sugerida
+
+### 1. 🔴 Os 10 membros que sumiram (uma medição, não uma decisão)
+Backup de 03/08 tem 131 membros; produção tem 121, com **zero** criados desde então e **zero** ações
+de remoção no `admin_audit_log`. A cópia está em `~/.local/share/nucleo-backups/`. Restaurar,
+extrair os IDs e comparar diz **quais** são e o que eram. Só depois disso decidir se é incidente.
+
+### 2. #1682 — implementar a correção que já está validada (AUTORIZADA, decisão 4)
+A ponte de e-mail no `export_my_data` e no `list_my_consents`, com **uma transação por função**
+(uma âncora ruim reverte o patch bom). Alcance medido: **34** pessoas. Levar junto as três decisões
+de escopo listadas na issue.
+
+🔴 **Antes de aplicar, olhe os PRs abertos.** Isto é DDL, e aplicar em prod antes do merge
+**serializa todos os PRs abertos** — qualquer branch sem o novo `.sql` fica vermelho nos gates de
+drift. Em 08/08 havia **12 PRs abertos**. O recorte certo não é "isso é DDL?", é "vou registrar uma
+versão?".
+
+### 3. #1643 — terminar o sweep
+Falta a **terceira classe** ("afirmação incondicional sobre tratamento condicional") nas funções de
+despacho, mais o `sign_proposer_consent`. Método e parcial na issue.
+
+### 4. 🔴 Personas sintéticas (pedido do PM em 08/08)
+Hoje a suíte de contrato bate em **produção contra candidaturas reais**: `gate_attempts` tem **542**
+tentativas desde 04/08, **537 sem ator**, tocando **15 candidaturas reais**, com **159** passando o
+gate. Isso é #1636, e é a mesma raiz do meu uso de identidades reais na base restaurada.
+
+Semear personas sintéticas na base restaurada (visitante, membro, líder, avaliador, observador,
+curador, GP, ghost) e apontar a suíte DB-aware para ela. Ganha três coisas: para de tocar gente
+real, o teste deixa de depender de **quem** ocupa o papel, e some a PII do laboratório.
+
+⚠️ Antes disso, uma pergunta **não medida**: as 159 passagens de gate emitiram token de agendamento
+para candidatos reais? Cruzar com as tabelas de token e entrevista responde.
+
+### 5. Resíduos escolhidos
+- observador por URL direta ainda recebe a fila em `get_my_pending_evaluations`
+- `route-acl.test.mjs` **reimplementa** o `canAccess` em vez de importar `getItemAccessibility`;
+  agora dá para ancorar em comportamento real
+- exigir evidência no consentimento de IA (`RAISE`), depois de confirmado o front no ar
+
+---
+
+## Decisões TOMADAS pelo PM em 08/08 — não re-litigar
+
+| # | decisão | onde vive |
+|---|---|---|
+| 1 | **O schema `auth` NÃO entra no dump.** Levaria hashes de senha e refresh tokens para o artefato do GitHub. Consequência aceita: a recuperação devolve o dado e **não** o acesso | `docs/reference/RECUPERACAO_DE_DESASTRE.md` |
+| 2 | **PITR não.** 7 dias custam **US$ 100/mês** contra ~US$ 10/mês do compute do projeto inteiro. Em vez disso, **dump diário** | PR **#1687** |
+| 3 | **Abrir ticket** no Supabase pelos diários ausentes de 02/08 e 07/08 | rascunho pronto em `docs/planning/2026-08-08_ticket_supabase_diarios_ausentes.md` — **envio é do PM** |
+| 4 | **Implementar a correção do #1682**, já validada em base restaurada | ver abaixo |
+
+⚠️ **A decisão 2 tem uma dívida embutida que a 1 criou.** Sem PITR não existe alvo de restauração
+não-destrutivo do lado do fornecedor, e sem o schema `auth` o dump não devolve identidade. Na
+prática, hoje, um desastre de identidade se resolve **recriando contas via OAuth na mão**. Isso está
+escrito no documento de recuperação e é a consequência aceita, não um esquecimento.
+
+### Ainda em aberto e sem decisão
+
+- Os quatro defeitos recortáveis do **#1679** viram issues?
+- O R2 não tem lifecycle: acumula ~5 GB/ano. Se ganhar poda, a retenção de 30 do artefato precisa
+  subir (está comentado no workflow).
+
+---
+
+## Regras da casa
+
+- Merge à `main` é da sessão main; lane leva o PR até verde e para.
+- Commit: `Assisted-By:`, nunca `Co-Authored-By`.
+- Repo **PÚBLICO**: nenhum candidato ou membro nomeado, só contagens.
+- **Postura de backup não vai para issue pública.**
+- Não rodar `npm test` com CI em voo. **Monitorar por RUN**, não por `gh pr checks`.

@@ -267,8 +267,14 @@ describe('#1594/#1595 A — camada estática (migration, front, MCP, i18n, spec)
 // Camada B — DB-aware (corpo vivo, ACL, comportamento)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false }, () => {
-  // Candidatura de recusa: ciclo FECHADO e já decidida (operacionalmente inerte), sem consentimento
-  // de IA (P0001 falha por construção), sem entrevista (modo full), e sem convite já despachado.
+  // Candidatura de recusa: ciclo FECHADO e já decidida (operacionalmente inerte), sem entrevista
+  // (modo full), e sem convite já despachado.
+  //
+  // ⚠️ #1640 — o predicado MUDOU. Ele ancorava na ausência de consentimento de IA, que recusava por
+  // P0001. Esse gate saiu (a ausência de consentimento de terceira finalidade não pode negar efeito
+  // ao processo seletivo), e manter o predicado antigo faria este teste EMITIR um token real para um
+  // candidato real em vez de observar uma recusa. A âncora agora é o peer-review incompleto (P0002),
+  // que continua sendo requisito de conclusão do processo objetivo.
   let refuseApp = null;
   let refuseProven = false;   // trava do teste que chama o despacho de verdade
   const mintedTokens = [];
@@ -278,11 +284,9 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
       .from('selection_applications')
       .select('id, email, objective_score_avg, cycle_id, selection_cycles!inner(cycle_code, status)')
       .eq('selection_cycles.status', 'closed')
-      .is('consent_ai_analysis_at', null)
       .is('cutoff_approved_email_sent_at', null)
-      .not('objective_score_avg', 'is', null)
       .not('email', 'is', null)
-      .limit(50);
+      .limit(120);
     assert.ifError(error);
 
     for (const app of data ?? []) {
@@ -291,6 +295,11 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
         .select('id', { count: 'exact', head: true })
         .eq('application_id', app.id);
       if ((count ?? 0) > 0) continue;                       // precisa ser modo `full`
+      const { count: evals } = await sb
+        .from('selection_evaluations')
+        .select('id', { count: 'exact', head: true })
+        .eq('application_id', app.id);
+      if ((evals ?? 0) >= 2) continue;                      // senão o core PASSA e emite token real
       const { data: res } = await sb.rpc('resolve_interview_booking_url', { p_application_id: app.id });
       const row = Array.isArray(res) ? res[0] : res;
       if (!row?.url) continue;                              // senão o caminho é P0020, não recusa
@@ -363,7 +372,7 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
     // A recusa NÃO pode chegar como exceção: é isso que desfazia o INSERT.
     assert.ifError(error);
     assert.equal(data?.success, false, 'o core tinha de recusar esta candidatura');
-    assert.equal(data?.gate_failed_code, 'P0001');
+    assert.equal(data?.gate_failed_code, 'P0002');   // #1640: era P0001; a âncora agora é peer-review
     assert.equal(data?.gate_mode, 'full');
 
     const { data: rows, count: after, error: e1 } = await sb
@@ -379,8 +388,8 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
       (before ?? 0) + 1,
       'a linha de recusa não sobreviveu — é exatamente o defeito que a #1594 descreve',
     );
-    assert.equal(rows[0].gate_failed_code, 'P0001');
-    assert.equal(rows[0].gate_failed_reason, 'GATE_NO_AI');
+    assert.equal(rows[0].gate_failed_code, 'P0002');
+    assert.equal(rows[0].gate_failed_reason, 'GATE_NO_PEER_REVIEW');
     assert.equal(rows[0].payload?.gate_mode, 'full');
 
     refuseProven = true;
@@ -412,7 +421,7 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
     assert.equal(data?.success, false, 'o despacho tinha de abortar');
     assert.equal(data?.email_sent, false);
     assert.equal(data?.reason, 'gate_refused');
-    assert.equal(data?.gate_failed_code, 'P0001');
+    assert.equal(data?.gate_failed_code, 'P0002');   // #1640: era P0001
 
     assert.equal(await dispatchedRows(), before, 'saiu e-mail numa recusa de gate');
 
