@@ -86,6 +86,12 @@ const PROFILE_I18N = {
   primaryBadge: t('profile.primaryBadge', lang),
   removeBtn: t('profile.removeBtn', lang),
   addBtn: t('profile.addBtn', lang),
+  // #1644
+  primaryHint: t('profile.primaryHint', lang),
+  makePrimaryBtn: t('profile.makePrimaryBtn', lang),
+  makePrimaryConfirm: t('profile.makePrimaryConfirm', lang),
+  primaryChanged: t('profile.primaryChanged', lang),
+  errorPrimaryPrefix: t('profile.errorPrimaryPrefix', lang),
   emailInputPlaceholder: t('profile.emailInputPlaceholder', lang),
   personalDataTitle: t('profile.personalDataTitle', lang),
   phoneLabel: t('profile.phoneLabel', lang),
@@ -1698,18 +1704,27 @@ const PROFILE_I18N = {
           ${PROFILE_I18N.emailsDesc}
         </p>
         <div class="flex items-center gap-2 py-2 px-3 bg-[var(--surface-base)] rounded-lg mb-2">
-          <span class="text-sm flex-1">${m.email}</span>
+          <span class="text-sm flex-1">${escapeHtmlSafe(m.email)}</span>
           <span class="text-[.65rem] font-bold text-teal uppercase bg-teal/10 px-2 py-0.5 rounded">${PROFILE_I18N.primaryBadge}</span>
         </div>
         <div id="secondary-emails-list">
           ${secondaryEmails.map((e: string, i: number) => `
             <div class="flex items-center gap-2 py-2 px-3 bg-[var(--surface-base)]/50 rounded-lg mb-2">
-              <span class="text-sm flex-1">${e}</span>
+              <span class="text-sm flex-1">${escapeHtmlSafe(e)}</span>
+              <!-- #1644: promote to primary. The primary address is what send-notification-email
+                   resolves the recipient from (members.email), so this button is the ONLY member-facing
+                   way to redirect platform mail. Dispatch by index, never by interpolating the address
+                   into an attribute. -->
+              <button type="button" data-action="make-primary-email" class="text-[.7rem] font-semibold text-teal hover:text-teal/80 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-teal/10 transition-all"
+                data-email-idx="${i}">${PROFILE_I18N.makePrimaryBtn}</button>
               <button type="button" data-action="remove-secondary-email" class="text-[.7rem] font-semibold text-red-500 hover:text-red-700 cursor-pointer bg-transparent border-0 px-2 py-0.5 rounded hover:bg-red-50 transition-all"
                 data-email-idx="${i}">${PROFILE_I18N.removeBtn}</button>
             </div>
           `).join('')}
         </div>
+        ${secondaryEmails.length > 0
+          ? `<p class="text-[.7rem] text-[var(--text-muted)] mt-1 mb-1">${PROFILE_I18N.primaryHint}</p>`
+          : ''}
         <div class="flex gap-2 mt-2">
           <input type="email" id="new-secondary-email" placeholder="${PROFILE_I18N.emailInputPlaceholder}"
             class="flex-1 px-3 py-2 border-[1.5px] border-[var(--border-default)] rounded-lg text-sm focus:outline-none focus:border-teal">
@@ -2422,6 +2437,38 @@ const PROFILE_I18N = {
     (window as any).toast?.(PROFILE_I18N.emailRemoved.replace('{email}', removed), 'info');
   }
 
+  // #1644: promote an already-registered secondary address to primary.
+  // member_set_primary_email is SECURITY DEFINER and gates on "caller is the member OR
+  // can_by_member(caller,'manage_member')", so passing currentMember.id is what the member is
+  // entitled to; it UPDATEs members.email and the sync_member_email_trigger flips is_primary in
+  // member_emails. send-notification-email reads members.email, so this is what actually
+  // redirects platform mail. Login is unaffected — identity resolves via members.auth_id.
+  // The RPC returns a plain boolean (not the {success} envelope the sibling email RPCs use).
+  async function makePrimaryEmail(idx: number) {
+    const sb = (window as any).navGetSb?.();
+    if (!sb || !currentMember) return;
+    const existing: string[] = currentMember.secondary_emails || [];
+    const promoted = existing[idx];
+    if (!promoted) return;
+    if (!(await (window as any).confirmAction(PROFILE_I18N.makePrimaryConfirm.replace('{email}', promoted)))) return;
+    const { data, error } = await sb.rpc('member_set_primary_email', {
+      p_member_id: currentMember.id, p_email: promoted,
+    });
+    if (error) {
+      (window as any).toast?.(PROFILE_I18N.errorPrimaryPrefix + error.message, 'error');
+      return;
+    }
+    if (data !== true) {
+      (window as any).toast?.(PROFILE_I18N.errorPrimaryPrefix + 'unknown', 'error');
+      return;
+    }
+    // Re-fetch rather than swapping the two addresses locally: the demote/promote happens in a
+    // trigger, so the server is the only place that knows the resulting list.
+    const { data: updated } = await sb.rpc('get_member_by_auth');
+    if (updated) { currentMember = updated; renderProfile(updated); }
+    (window as any).toast?.(PROFILE_I18N.primaryChanged.replace('{email}', promoted), 'success');
+  }
+
   // ── Notification preferences ──
   async function loadNotifPrefs() {
     const sb = (window as any).navGetSb?.();
@@ -2540,6 +2587,11 @@ const PROFILE_I18N = {
         case 'remove-secondary-email': {
           const idx = parseInt(target.getAttribute('data-email-idx') || '0', 10);
           removeSecondaryEmail(idx);
+          break;
+        }
+        case 'make-primary-email': { // #1644
+          const idx = parseInt(target.getAttribute('data-email-idx') || '0', 10);
+          makePrimaryEmail(idx);
           break;
         }
         case 'set-entry-chapter': {

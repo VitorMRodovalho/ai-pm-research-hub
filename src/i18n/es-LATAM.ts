@@ -1564,7 +1564,7 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.durationMin': 'Duración (min)',
   'attendance.modal.meetingLink': 'Enlace de la reunión',
   'attendance.modal.timeStart': 'Hora de inicio',
-  'attendance.modal.timeStartHint': 'Hora de Brasília (BRT) · vacío = por defecto de la tribu',
+  'attendance.modal.timeStartHint': 'Formato 24h (ej.: 19:00) · Hora de Brasília (BRT) · vacío = por defecto de la tribu', // #1645
   'attendance.modal.timezone': 'Zona horaria',
   'attendance.modal.timezoneHint': 'Por defecto: Brasília (BRT). Busca una ciudad (IANA) para sesiones en otra zona.',
   'attendance.modal.natureRecurringHint': '🔁 Esto crea solo 1 evento. Haz clic aquí para crear una serie recurrente (semanal) →',
@@ -1705,6 +1705,7 @@ const esLATAM: Record<string, string> = {
   'attendance.msg.eventEditOpenError': 'No fue posible abrir la edición de este evento',
   'attendance.msg.eventNotLoaded': 'Este evento no está cargado en pantalla — recargue la página',
   'attendance.msg.invalidTimezone': 'Zona horaria inválida. Elige una de la lista.',
+  'attendance.msg.invalidTime': 'Horario inválido. Usa el formato 24h, como 19:00.', // #1645
   'attendance.msg.error': 'Error',
   'attendance.modal.selectEventType': 'Selecciona el tipo de evento',
   'attendance.roster.loading': 'Cargando...',
@@ -1822,6 +1823,12 @@ const esLATAM: Record<string, string> = {
   'profile.primaryBadge': 'Principal',
   'profile.removeBtn': '✕ Eliminar',
   'profile.addBtn': '+ Agregar',
+  // #1644 — promover un email secundario a principal (el principal es el que recibe la comunicación).
+  'profile.primaryHint': 'El email principal es el que recibe las comunicaciones de la plataforma. Puedes seguir ingresando con cualquiera de tus emails.',
+  'profile.makePrimaryBtn': 'Hacer principal',
+  'profile.makePrimaryConfirm': '¿Pasar a recibir las comunicaciones de la plataforma en {email}?',
+  'profile.primaryChanged': 'Listo. Tus comunicaciones ahora van a {email}.',
+  'profile.errorPrimaryPrefix': 'Error al cambiar el email principal: ',
   'profile.emailInputPlaceholder': 'otro@email.com',
   'profile.personalDataTitle': '🔒 Datos Personales',
   'profile.phoneLabel': 'Teléfono',

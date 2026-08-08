@@ -221,6 +221,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgEventEditOpenError: t('attendance.msg.eventEditOpenError', lang),
   msgEventNotLoaded: t('attendance.msg.eventNotLoaded', lang),
   msgInvalidTimezone: t('attendance.msg.invalidTimezone', lang),
+  msgInvalidTime: t('attendance.msg.invalidTime', lang), // #1645
   msgError: t('attendance.msg.error', lang),
   rosterLoading: t('attendance.roster.loading', lang),
   rosterNoParticipants: t('attendance.roster.noParticipants', lang),
@@ -283,6 +284,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   import { isRegisteredMember } from '../lib/routing';
   import { buildWebinarCommsHref, getAttendanceEditAssistantCopy, getAttendanceHandoffCopy } from '../lib/webinars/context-aids';
   import { SELF_CHECKIN_WINDOW_HOURS } from '../lib/attendance-window';
+  import { upgradeTimeField, setTimeField, readTimeField } from '../lib/time-field'; // #1645
   import { marked } from 'marked';
 
   const I18N = (window as any).__ATTENDANCE_I18N || {
@@ -1685,7 +1687,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   async function openNewEventModal() {
     (document.getElementById('ev-title') as HTMLInputElement).value = '';
     (document.getElementById('ev-date') as HTMLInputElement).value = today();
-    (document.getElementById('ev-time-start') as HTMLInputElement).value = '';
+    setTimeField(document.getElementById('ev-time-start') as HTMLInputElement, ''); // #1645
     (document.getElementById('ev-timezone') as HTMLInputElement).value = ''; // #485: empty = BRT default
     (document.getElementById('ev-duration') as HTMLInputElement).value = '90';
     (document.getElementById('ev-link') as HTMLInputElement).value = '';
@@ -1750,7 +1752,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const title = (document.getElementById('ev-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('ev-type') as HTMLSelectElement).value;
     const date = (document.getElementById('ev-date') as HTMLInputElement).value;
-    const timeStart = (document.getElementById('ev-time-start') as HTMLInputElement).value || null;
+    // #1645: horário é opcional (vazio = padrão da tribo), mas texto que NÃO é horário tem de
+    // virar toast nosso — era exatamente isso que o balão nativo do type="time" escondia.
+    const timeRead = readTimeField(document.getElementById('ev-time-start') as HTMLInputElement);
+    if (timeRead.invalid) return toast(I18N.msgInvalidTime, 'error');
+    const timeStart = timeRead.time;
     const timezone = (document.getElementById('ev-timezone') as HTMLInputElement).value.trim() || null; // #485
     if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const duration = parseInt((document.getElementById('ev-duration') as HTMLInputElement).value);
@@ -1854,7 +1860,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
   function openRecurringModal() {
     (document.getElementById('rec-start') as HTMLInputElement).value = today();
-    (document.getElementById('rec-time-start') as HTMLInputElement).value = '';
+    setTimeField(document.getElementById('rec-time-start') as HTMLInputElement, ''); // #1645
     (document.getElementById('rec-timezone') as HTMLInputElement).value = ''; // #485: empty = BRT default
     (document.getElementById('rec-until') as HTMLInputElement).value = '';
     // #494: reset the scope selects on every open. <select>s aren't form-reset and closeModal only
@@ -1883,7 +1889,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const titleTpl = (document.getElementById('rec-title') as HTMLInputElement).value.trim();
     const type = (document.getElementById('rec-type') as HTMLInputElement).value;
     const start = (document.getElementById('rec-start') as HTMLInputElement).value;
-    const timeStart = (document.getElementById('rec-time-start') as HTMLInputElement).value || null;
+    // #1645: idem createEvent — o campo de horário nunca mais bloqueia o submit calado.
+    const recTimeRead = readTimeField(document.getElementById('rec-time-start') as HTMLInputElement);
+    if (recTimeRead.invalid) return toast(I18N.msgInvalidTime, 'error');
+    const timeStart = recTimeRead.time;
     const timezone = (document.getElementById('rec-timezone') as HTMLInputElement).value.trim() || null; // #485
     if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const duration = parseInt((document.getElementById('rec-duration') as HTMLInputElement).value);
@@ -2086,7 +2095,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       initiativeWrapper.classList.toggle('hidden', typeSelect.value !== 'iniciativa');
     };
     (document.getElementById('edit-ev-date') as HTMLInputElement).value = ev.date || '';
-    (document.getElementById('edit-ev-time-start') as HTMLInputElement).value = ev.time_start || '';
+    // #1645: `events.time_start` é `time`, então chega como "19:00:00" — setTimeField corta os segundos.
+    setTimeField(document.getElementById('edit-ev-time-start') as HTMLInputElement, ev.time_start);
     (document.getElementById('edit-ev-timezone') as HTMLInputElement).value = ev.timezone || DEFAULT_TZ; // #485
     (document.getElementById('edit-ev-duration') as HTMLInputElement).value = ev.duration_minutes || 90;
     (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value = ev.notes || '';
@@ -2174,7 +2184,10 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const initiativeIdFromSelect = editType === 'iniciativa' ? (document.getElementById('edit-ev-initiative-select') as HTMLSelectElement).value || null : null;
     const tagIds = getSelectedTagIds('edit-ev-selected-tags');
     const recurrenceGroup = (document.getElementById('edit-ev-recurrence-group') as HTMLInputElement).value;
-    const timeStart = (document.getElementById('edit-ev-time-start') as HTMLInputElement).value || null;
+    // #1645
+    const editTimeRead = readTimeField(document.getElementById('edit-ev-time-start') as HTMLInputElement);
+    if (editTimeRead.invalid) return toast(I18N.msgInvalidTime, 'error');
+    const timeStart = editTimeRead.time;
     const timezone = (document.getElementById('edit-ev-timezone') as HTMLInputElement).value.trim() || null; // #485
     if (timezone && !isValidTimeZone(timezone)) return toast(I18N.msgInvalidTimezone, 'error');
     const notes = (document.getElementById('edit-ev-notes') as HTMLTextAreaElement).value.trim() || null;
@@ -2737,6 +2750,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 
     // 3) No session at all — show auth gate
     showAuthGate();
+  }
+
+  // #1645: troca os 3 campos de horário (criar evento / criar série / editar evento) pelo
+  // controle 24h. Fica FORA de boot() de propósito: boot() tem três saídas antecipadas
+  // (sem `sb`, convidado sem cadastro, sem sessão) e a versão anterior deste conserto morava
+  // depois de `showApp()`, num ramo que nem sempre roda — helper carregado e campo intacto.
+  // Os modais são markup estático já parseado quando este módulo executa, então os 3 existem
+  // aqui independentemente de auth. `upgradeTimeField` é idempotente e tolera elemento nulo.
+  for (const id of ['ev-time-start', 'rec-time-start', 'edit-ev-time-start']) {
+    upgradeTimeField(document.getElementById(id) as HTMLInputElement | null);
   }
 
   boot();
