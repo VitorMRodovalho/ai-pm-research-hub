@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# pull-backup-local.sh — traz o backup semanal do banco para a maquina local e, opcionalmente,
+# pull-backup-local.sh — traz o backup diario do banco para a maquina local e, opcionalmente,
 # ENSAIA a restauracao.
 #
 # Por que existe (medido em 08/08/2026):
 #
-#   1. TERCEIRA COPIA. O dump semanal vivia em dois lugares, GitHub artifacts e Cloudflare R2,
+#   1. TERCEIRA COPIA. O dump vive em dois lugares, GitHub artifacts e Cloudflare R2,
 #      ambos na nuvem e ambos alcancados pelas mesmas credenciais. Uma copia local e a unica que
 #      sobrevive a perda de acesso as duas contas.
 #
@@ -24,7 +24,7 @@
 #   scripts/pull-backup-local.sh                  # baixa o mais novo e poda
 #   scripts/pull-backup-local.sh --restore        # baixa e ensaia a restauracao
 #   scripts/pull-backup-local.sh --keep 4         # muda a retencao
-#   scripts/pull-backup-local.sh --install-timer  # instala o timer semanal do systemd --user
+#   scripts/pull-backup-local.sh --install-timer  # instala o timer diario do systemd --user
 #
 # Requer: gh (autenticado), jq, unzip. Para --restore, docker.
 
@@ -32,7 +32,9 @@ set -euo pipefail
 
 REPO="${NUCLEO_BACKUP_REPO:-VitorMRodovalho/ai-pm-research-hub}"
 DEST="${NUCLEO_BACKUP_HOME:-$HOME/.local/share/nucleo-backups}"
-KEEP="${NUCLEO_BACKUP_KEEP:-8}"
+# 2026-08-08 — 8 -> 14 ao passar o dump para diario. Com timer semanal e dump diario, o local
+# pegaria uma copia a cada sete e o "mais novo" ja nasceria com dias de idade.
+KEEP="${NUCLEO_BACKUP_KEEP:-14}"
 PG_IMAGE="${NUCLEO_BACKUP_PG_IMAGE:-supabase/postgres:17.6.1.084}"
 DO_RESTORE=0
 INSTALL_TIMER=0
@@ -60,7 +62,7 @@ if [ "$INSTALL_TIMER" = "1" ]; then
   mkdir -p "$UNITS"
   cat > "$UNITS/nucleo-backup-pull.service" <<EOF
 [Unit]
-Description=Traz o backup semanal do Nucleo IA para a maquina local e ensaia a restauracao
+Description=Traz o backup diario do Nucleo IA para a maquina local e ensaia a restauracao
 Documentation=https://github.com/$REPO/blob/main/scripts/pull-backup-local.sh
 
 [Service]
@@ -71,10 +73,12 @@ StandardOutput=journal
 EOF
   cat > "$UNITS/nucleo-backup-pull.timer" <<'EOF'
 [Unit]
-Description=Backup local semanal do Nucleo IA (segunda de manha, depois do dump de domingo 23:00 UTC)
+Description=Backup local diario do Nucleo IA (de manha, depois do dump das 23:00 UTC)
 
 [Timer]
-OnCalendar=Mon *-*-* 09:00:00
+# O dump roda 23:00 UTC. Este puxa na manha seguinte, com folga para o upload e a copia offsite.
+# `Persistent=true` recupera a execucao perdida se a maquina estiver desligada na hora.
+OnCalendar=*-*-* 09:00:00
 Persistent=true
 RandomizedDelaySec=30m
 
@@ -125,8 +129,7 @@ TARGET="$DEST/backup_${STAMP}.sql.gz"
 if [ -f "$TARGET" ]; then
   log "ja existe localmente, nada a baixar: $(basename "$TARGET")"
 else
-  # Idade do backup: se o cron de domingo falhou, o mais novo pode ter semanas. Avisar e o
-  # ponto — um backup velho e silencioso e pior que um erro barulhento.
+  # Um backup velho e silencioso e pior que um erro barulhento: o aviso de idade fica abaixo.
   TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
   log "baixando..."
   gh api "repos/$REPO/actions/artifacts/$ART_ID/zip" > "$TMP/a.zip"
@@ -139,9 +142,14 @@ else
   log "gravado: $(basename "$TARGET") ($(du -h "$TARGET" | cut -f1))"
 fi
 
+# Aviso de backup VELHO. O limite acompanha a cadencia: com dump diario, 2 dias ja significa que
+# pelo menos uma execucao nao produziu artefato. Com o limite antigo de 9, calibrado para semanal,
+# este aviso ficaria mudo por mais de uma semana de falhas — que e exatamente o modo como a
+# ausencia de backup passa despercebida.
+STALE_AFTER="${NUCLEO_BACKUP_STALE_DAYS:-2}"
 AGE_DAYS=$(( ( $(date -u +%s) - $(date -u -d "$ART_WHEN" +%s) ) / 86400 ))
-if [ "$AGE_DAYS" -gt 9 ]; then
-  printf '\033[1;33mATENCAO:\033[0m o backup mais novo tem %s dias. O cron de domingo pode estar falhando.\n' "$AGE_DAYS"
+if [ "$AGE_DAYS" -gt "$STALE_AFTER" ]; then
+  printf '\033[1;33mATENCAO:\033[0m o backup mais novo tem %s dias (limite %s). O cron diario pode estar falhando.\n' "$AGE_DAYS" "$STALE_AFTER"
 fi
 
 # ── poda ─────────────────────────────────────────────────────────────────────
