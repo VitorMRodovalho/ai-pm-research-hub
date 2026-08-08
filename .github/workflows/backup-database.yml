@@ -115,8 +115,14 @@ jobs:
             -e POSTGRES_DB=postgres \
             supabase/postgres:17.6.1.084
 
+          # `pg_isready` no socket unix NAO serve de sinal de prontidao nesta imagem: durante o
+          # init ela sobe um servidor TEMPORARIO que escuta so no socket, roda os scripts e o
+          # DESLIGA antes de subir o definitivo. Medido em 08/08: t=3s o socket ja aceita e o TCP
+          # nao; t=4s o TCP aceita. Conectar no temporario faz o restore morrer no meio com
+          # `FATAL: the database system is shutting down` e devolver um banco vazio.
+          # O TCP e o discriminador porque o servidor de init tem listen_addresses vazio.
           for i in $(seq 1 60); do
-            docker exec restore-probe pg_isready -U postgres >/dev/null 2>&1 && break
+            docker exec restore-probe pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break
             sleep 2
           done
 
@@ -197,15 +203,22 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const artifacts = await github.rest.actions.listArtifactsForRepo({
+            // 2026-08-08 — este passo era VERDE E VAZIO. Pedia `per_page: 100` sem paginar, e o
+            // repositorio tem 387 artefatos: so 8 `db-backup-*` cabiam na primeira pagina, entao
+            // `slice(8)` sempre dava lista vazia. O log dizia "Kept 8 backups, deleted 0" com 12
+            // backups vivos, e "deleted 0" lia-se como "nada a fazer" em vez de "nao enxerguei".
+            // Paginar e o conserto; imprimir o TOTAL e o que impede o proximo mal-entendido.
+            const all = await github.paginate(github.rest.actions.listArtifactsForRepo, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               per_page: 100,
             });
 
-            const backups = artifacts.data.artifacts
-              .filter(a => a.name.startsWith('db-backup-'))
+            const backups = all
+              .filter(a => a.name.startsWith('db-backup-') && !a.expired)
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            console.log(`${all.length} artefatos no repo, ${backups.length} deles sao db-backup-*`);
 
             const toDelete = backups.slice(8); // Keep 8 most recent
 
@@ -218,4 +231,9 @@ jobs:
               });
             }
 
+            // Freio: nunca apagar tudo. Se o filtro quebrar e `backups` vier com o repo inteiro,
+            // e melhor o passo falhar do que drenar a retencao em silencio.
+            if (backups.length > 0 && toDelete.length >= backups.length) {
+              core.setFailed(`recusando apagar ${toDelete.length} de ${backups.length} backups`);
+            }
             console.log(`Kept ${Math.min(backups.length, 8)} backups, deleted ${toDelete.length}`);
