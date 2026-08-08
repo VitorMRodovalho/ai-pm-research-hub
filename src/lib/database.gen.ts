@@ -33273,6 +33273,10 @@ export type Database = {
         Args: { p_caller_id: string; p_cycle_id: string }
         Returns: boolean
       }
+      selection_committee_role_for: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       selection_consistency_report: {
         Args: { p_cycle_id?: string }
         Returns: Json

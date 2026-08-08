@@ -45,12 +45,17 @@ const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 const navSrc = read(NAV);
 const clientSrc = read(NAV_CLIENT);
 const migSrc = read(MIGRATION).replace(/^\s*--.*$/gm, '');
+// #1591 (2a parte): o eixo passou a distinguir PAPEL, e o gate real da avaliacao recusa
+// observador. Migration propria porque e mudanca de MODELO, nao ajuste da anterior.
+const MIGRATION_PAPEL = 'supabase/migrations/20260807000900_1591_observador_observa_nao_avalia.sql';
+const migPapel = read(MIGRATION_PAPEL).replace(/^\s*--.*$/gm, '');
 
 describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
   it('a rota de seleção declara o eixo do comitê', () => {
     const bloco = navSrc.match(/\{\s*key:\s*'admin-selection'[\s\S]*?\}/)?.[0] ?? '';
     assert.ok(bloco, 'entrada admin-selection não encontrada');
-    assert.match(bloco, /allowedSelectionCommittee:\s*true/);
+    assert.match(bloco, /allowedSelectionCommittee:\s*'any'/,
+      'o painel do processo vale para o comite inteiro, inclusive observador');
     assert.match(bloco, /lgpdSensitive:\s*true/, 'a tela expõe PII de candidato');
     // sponsor não pode sair: o eixo novo SOMA, não substitui a leitura institucional.
     assert.match(bloco, /allowedDesignations:\s*\['sponsor'\]/);
@@ -62,7 +67,8 @@ describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
     const bloco = navSrc.match(/\{\s*key:\s*'my-evaluations'[\s\S]*?\}/)?.[0] ?? '';
     assert.ok(bloco, 'entrada my-evaluations não encontrada');
     assert.match(bloco, /href:\s*'\/minhas-avaliacoes'/);
-    assert.match(bloco, /allowedSelectionCommittee:\s*true/);
+    assert.match(bloco, /allowedSelectionCommittee:\s*'evaluator'/,
+      'a fila é só de quem avalia: observador OBSERVA (decisão do PM, 07/08)');
     assert.match(bloco, /lgpdSensitive:\s*true/, 'a fila lista nome de candidato');
     // E NÃO pode voltar a aproximar por papel operacional — foi o que o route-acl barrou.
     assert.doesNotMatch(bloco, /allowedOperationalRoles/,
@@ -84,21 +90,21 @@ describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
   it('AS DUAS implementações do menu conhecem o eixo', () => {
     // O defeito clássico é consertar a gêmea morta. Aqui as duas estão vivas: uma decide no
     // servidor, a outra no cliente, sobre o MESMO item de nav.
-    assert.match(navSrc, /item\.allowedSelectionCommittee === true && onSelectionCommittee === true/,
+    assert.match(navSrc, /item\.allowedSelectionCommittee === 'evaluator'/,
       'servidor: getItemAccessibility não considera o eixo');
-    assert.match(clientSrc, /item\.allowedSelectionCommittee === true[\s\S]{0,120}selection_committee_active === true/,
+    assert.match(clientSrc, /_committeeRole === 'evaluator'/,
       'cliente: getItemAccessClient não considera o eixo');
   });
 
-  it('o eixo só conta quando a ENTRADA o declara', () => {
-    // Sem esta condição, um perfil "sou do comitê" abriria qualquer rota — chave-mestra.
+  it('o eixo só conta quando a ENTRADA o declara, e distingue PAPEL', () => {
+    // Duas coisas de uma vez: (a) um perfil "sou do comitê" não pode abrir rota que não declarou
+    // o eixo — seria chave-mestra; (b) 'any' e 'evaluator' têm de ser tratados diferente, senão
+    // observador recebe a fila de avaliação.
     for (const [src, nome] of [[navSrc, 'servidor'], [clientSrc, 'cliente']]) {
-      // `\s*` porque a conjunção pode estar quebrada em duas linhas — foi o que aconteceu no
-      // cliente, e um padrão preso a uma linha só teria reprovado código correto.
-      assert.ok(
-        /allowedSelectionCommittee === true\s*&&/.test(src),
-        `${nome}: o eixo abriria rota que não o declarou`,
-      );
+      assert.match(src, /allowedSelectionCommittee === 'any'/, `${nome}: falta o ramo 'any'`);
+      assert.match(src, /allowedSelectionCommittee === 'evaluator'/, `${nome}: falta o ramo 'evaluator'`);
+      // O `: false` final é o que fecha a porta para entrada que não declarou o eixo.
+      assert.match(src, /:\s*false;/, `${nome}: sem o default negativo o eixo vira chave-mestra`);
     }
   });
 });
@@ -123,9 +129,23 @@ describe('#1591 A — a migration', () => {
     assert.match(migSrc, /selection_coi_recused/, 'ADR-0109 não pode sair junto');
   });
 
-  it('o payload do nav expõe a flag DERIVADA, não uma coluna espelho', () => {
-    assert.match(migSrc, /public\.is_selection_committee_member\(m\.id\) AS selection_committee_active/,
-      'um espelho mantido à mão envelhece e passa a conceder o que já acabou');
+  it('o payload do nav expõe o sinal DERIVADO, não uma coluna espelho', () => {
+    // A 000700 expunha um booleano (`selection_committee_active`); a 000900 o substituiu pelo
+    // PAPEL, porque o booleano tratava observador e avaliador como a mesma coisa. Em ambas o ponto
+    // que importa é o mesmo: derivado do domínio, nunca espelho mantido à mão — espelho envelhece
+    // e passa a conceder o que já acabou.
+    assert.match(migPapel, /public\.selection_committee_role_for\(m\.id\) AS selection_committee_role/);
+  });
+
+  it('o gate REAL da avaliação recusa observador', () => {
+    // A fronteira não é o menu: é `submit_evaluation`. Antes, estar no comitê bastava — nem esta
+    // função nem `get_my_pending_evaluations` olhavam o `role`. Os 4 observadores do ciclo vivo
+    // nunca submeteram (455 avaliações, todas de `evaluator`), então o comportamento estava certo
+    // por HÁBITO e não por trava. Uma capacidade que só não é exercida por costume não é regra.
+    assert.match(migPapel, /v_committee\.role = 'observer'/);
+    assert.match(migPapel, /observer role does not evaluate/);
+    // O escape de manage_platform continua: a correção é sobre papel no comitê, não sobre admin.
+    assert.match(migPapel, /AND NOT public\.can_by_member\(v_caller\.id, 'manage_platform'::text\)/);
   });
 });
 
@@ -217,7 +237,7 @@ describe('#1591 B — o predicado VIVO responde certo', () => {
 describe('#1591 B — os corpos VIVOS carregam a mudança', () => {
   for (const [fn, marca, oque] of [
     ['get_selection_dashboard', /v_via_committee/, 'a porta do dashboard'],
-    ['get_member_by_auth', /selection_committee_active/, 'a flag do nav'],
+    ['get_member_by_auth', /selection_committee_role/, 'o papel no payload do nav'],
   ]) {
     it(`${fn}: ${oque} está em produção`, { skip: dbGated ? false : skipMsg }, async () => {
       const { data, error } = await sb.rpc('_audit_function_source', { p_proname: fn });

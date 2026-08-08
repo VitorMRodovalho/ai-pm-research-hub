@@ -59,7 +59,7 @@ function parseNavItem(key) {
     // #1591 — quarto eixo. Precisa estar MODELADO aqui: um eixo de autoridade que o guard de ACL
     // não conhece é um caminho para rota `lgpdSensitive` que ninguém vigia, e as asserções abaixo
     // continuariam verdes enquanto a porta estivesse aberta.
-    allowedSelectionCommittee: readBooleanProp(block, 'allowedSelectionCommittee'),
+    allowedSelectionCommittee: readStringProp(block, 'allowedSelectionCommittee'),
   };
 }
 
@@ -70,7 +70,10 @@ function canAccess(item, profile) {
   const hasOpRole = item.allowedOperationalRoles.includes(profile.operationalRole || '');
   // Só conta quando a ENTRADA declara o eixo: um perfil "sou do comitê" não abre rota que não o
   // declarou. Espelha `getItemAccessibility` em src/lib/navigation.config.ts.
-  const hasCommittee = item.allowedSelectionCommittee === true && profile.onSelectionCommittee === true;
+  const hasCommittee =
+    item.allowedSelectionCommittee === 'any' ? Boolean(profile.selectionCommitteeRole)
+    : item.allowedSelectionCommittee === 'evaluator' ? profile.selectionCommitteeRole === 'evaluator'
+    : false;
   const enabled = meetsMinTier || hasDesig || hasOpRole || hasCommittee;
   if (item.lgpdSensitive && !enabled) return false;
   return enabled;
@@ -120,7 +123,7 @@ test('#1591: committee membership opens ONLY the routes that declare the axis', 
   // tudo o mais, um voluntário comum: não pode ganhar acesso a comms, finanças ou settings.
   const committeeMember = {
     tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'tribe_leader',
-    onSelectionCommittee: true,
+    selectionCommitteeRole: 'evaluator',
   };
   const abertas = navItemKeys.map(parseNavItem)
     .filter(i => i.requiresAuth && canAccess(i, committeeMember))
@@ -128,22 +131,38 @@ test('#1591: committee membership opens ONLY the routes that declare the axis', 
 
   // O que sobra tem de ser explicável por tier/designation, nunca pelo comitê.
   for (const item of abertas) {
-    const semComite = canAccess(item, { ...committeeMember, onSelectionCommittee: false });
+    const semComite = canAccess(item, { ...committeeMember, selectionCommitteeRole: null });
     assert.equal(semComite, true,
       `${item.key} abriu POR CAUSA do comitê sem declarar allowedSelectionCommittee`);
   }
 });
 
-test('#1591: a rota de seleção abre para o comitê e fecha para quem não é', () => {
+test('#1591: a rota de seleção abre para o comitê INTEIRO e fecha para quem não é', () => {
   const item = parseNavItem('admin-selection');
   assert.equal(item.lgpdSensitive, true, 'a tela expõe PII de candidato — o flag não pode sumir');
-  assert.equal(item.allowedSelectionCommittee, true, 'o eixo do comitê saiu da rota de seleção');
+  assert.equal(item.allowedSelectionCommittee, 'any', 'o painel é o que o observador acompanha');
 
   const base = { tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'tribe_leader' };
-  assert.equal(canAccess(item, { ...base, onSelectionCommittee: true }), true,
-    'quem está no comitê tem de alcançar a tela que ele opera');
-  assert.equal(canAccess(item, { ...base, onSelectionCommittee: false }), false,
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: 'evaluator' }), true);
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: 'observer' }), true,
+    'observar o processo é literalmente a função do observador');
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: null }), false,
     'tribe_leader FORA do comitê continua barrado — é o que separa o eixo novo de um vazamento');
+});
+
+test('#1591: a FILA de avaliação é só de quem avalia — observador não', () => {
+  // Decisão do PM (07/08/2026): peer review aberto a todo o comitê, EXCETO observadores, que só
+  // visualizam. A primeira versão do eixo não distinguia papel e teria posto a fila (com botão
+  // "Avaliar") na frente dos 4 observadores do ciclo vivo.
+  const item = parseNavItem('my-evaluations');
+  assert.equal(item.allowedSelectionCommittee, 'evaluator');
+  assert.equal(item.lgpdSensitive, true, 'a fila lista nome de candidato');
+
+  const base = { tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'tribe_leader' };
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: 'evaluator' }), true);
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: 'observer' }), false,
+    'observador OBSERVA: convidá-lo a pontuar candidato não é a função dele');
+  assert.equal(canAccess(item, { ...base, selectionCommitteeRole: null }), false);
 });
 
 test('LGPD-sensitive routes are accessible to admin tier', () => {
