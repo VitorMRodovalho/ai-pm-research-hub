@@ -29,10 +29,18 @@ export interface NavItem {
    * na tribo (tribe_leader) e usá-lo abriria a rota para TODO tribe_leader, que é exatamente o que
    * o `route-acl.test.mjs` barra numa rota `lgpdSensitive`.
    *
-   * O sinal vem de `get_member_by_auth().selection_committee_active`, que é verdade do domínio
+   * O sinal vem de `get_member_by_auth().selection_committee_role`, que é verdade do domínio
    * (`selection_committee` × ciclo aberto/avaliando), não um espelho mantido à mão.
+   *
+   * ⚠️ O eixo distingue PAPEL, e a primeira versão não distinguia — tratava `evaluator` e
+   * `observer` como a mesma coisa. Isso importa porque observador OBSERVA: dar a ele a fila de
+   * avaliação é convidá-lo a pontuar candidato, que não é a função dele.
+   *
+   *   'any'       — qualquer membro do comitê, inclusive observador (ex.: o painel do processo,
+   *                 que é literalmente o que o observador existe para acompanhar)
+   *   'evaluator' — só quem avalia (ex.: a fila de avaliação)
    */
-  allowedSelectionCommittee?: boolean;
+  allowedSelectionCommittee?: 'any' | 'evaluator';
   requiresAuth: boolean;
   section: 'main' | 'drawer' | 'both';
   group?: string;
@@ -124,7 +132,7 @@ export const NAV_ITEMS: NavItem[] = [
   // `lgpdSensitive` porque a fila lista nome de candidato. As RPCs continuam sendo a autoridade
   // real (`get_my_pending_evaluations` / `get_evaluation_form` / `submit_evaluation`, todas
   // committee-scoped); esta entrada é UX, não fronteira.
-  { key: 'my-evaluations', labelKey: 'nav.myEvaluations', href: '/minhas-avaliacoes', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', allowedSelectionCommittee: true, lgpdSensitive: true },
+  { key: 'my-evaluations', labelKey: 'nav.myEvaluations', href: '/minhas-avaliacoes', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', allowedSelectionCommittee: 'evaluator', lgpdSensitive: true },
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
@@ -153,7 +161,7 @@ export const NAV_ITEMS: NavItem[] = [
   // até aqui não tinha porta nenhuma — o domínio sabia (`selection_committee.role`), o menu não.
   // As RPCs de dashboard passaram a aceitar o mesmo predicado na MESMA migration: abrir só o menu
   // faria a página carregar e negar os dados, que é o defeito do #1590 ao contrário.
-  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], allowedSelectionCommittee: true, lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
+  { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], allowedSelectionCommittee: 'any', lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — Ivan/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
   { key: 'admin-vep-reconciliation', labelKey: 'nav.adminVepReconciliation', href: '/admin/vep-reconciliation', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'] },
   { key: 'admin-campaigns', labelKey: 'nav.adminCampaigns', href: '/admin/campaigns', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
   { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
@@ -174,7 +182,7 @@ export function getItemAccessibility(
   designations: string[],
   isLoggedIn: boolean,
   operationalRole?: string,
-  onSelectionCommittee?: boolean
+  selectionCommitteeRole?: string | null
 ): ItemAccessibility {
   if (item.requiresAuth && !isLoggedIn) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
@@ -188,7 +196,14 @@ export function getItemAccessibility(
     ? item.allowedOperationalRoles.includes(operationalRole || '')
     : false;
   // #1591: só conta quando a entrada declara o eixo — um `true` solto no perfil não abre nada.
-  const hasCommittee = item.allowedSelectionCommittee === true && onSelectionCommittee === true;
+  // #1591: só conta quando a ENTRADA declara o eixo — um papel solto no perfil não abre nada.
+  // E distingue papel: 'any' inclui observador, 'evaluator' não.
+  const hasCommittee =
+    item.allowedSelectionCommittee === 'any'
+      ? Boolean(selectionCommitteeRole)
+      : item.allowedSelectionCommittee === 'evaluator'
+        ? selectionCommitteeRole === 'evaluator'
+        : false;
   const enabled = meetsMinTier || hasDesig || hasOperationalRole || hasCommittee;
 
   if (item.lgpdSensitive && !enabled) {

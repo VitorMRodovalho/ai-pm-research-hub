@@ -377,8 +377,16 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     // #1591 — ESTA função é a gêmea de `getItemAccessibility` em `src/lib/navigation.config.ts`.
     // As duas decidem a mesma coisa em runtimes diferentes (servidor e cliente), então um eixo
     // novo em só uma delas produz menu que aparece de um lado e some do outro. Mexer nas duas.
-    const hasCommittee = item.allowedSelectionCommittee === true
-      && _member?.selection_committee_active === true;
+    //
+    // O eixo distingue PAPEL: observador acompanha o processo ('any') mas não recebe a fila de
+    // avaliação ('evaluator'). Tratar os dois como iguais convidava o observador a pontuar.
+    const _committeeRole = _member?.selection_committee_role ?? null;
+    const hasCommittee =
+      item.allowedSelectionCommittee === 'any'
+        ? Boolean(_committeeRole)
+        : item.allowedSelectionCommittee === 'evaluator'
+          ? _committeeRole === 'evaluator'
+          : false;
     const enabled = meetsMinTier || hasDesig || hasOpRole || hasCommittee;
     if (item.lgpdSensitive && !enabled) return { visible: false, enabled: false };
     return { visible: true, enabled };
