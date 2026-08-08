@@ -6,10 +6,23 @@ on:
     - cron: '0 23 * * 0'
   workflow_dispatch: # Allow manual trigger
 
+# Medido 2026-08-08: as execucoes de 19/07, 27/07 e 02/08 concluiram `failure` — e o pg_dump,
+# a verificacao de integridade, o upload e a copia para o R2 tinham TODOS passado. O vermelho
+# vinha do ultimo passo, `Cleanup old artifacts`, com 403 "Resource not accessible by
+# integration" no DELETE: sem bloco `permissions:` o GITHUB_TOKEN herda o default do repo, que
+# nao inclui `actions: write`.
+#
+# O custo nao era a limpeza: era o ALARME. Tres semanas de vermelho cosmetico tornam
+# indistinguivel a falha real do pg_dump, que produziria exatamente a mesma cor.
+permissions:
+  contents: read
+  actions: write # o passo de limpeza faz DELETE de artefato
+
 jobs:
   backup:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # +20: o passo de verificacao restaura o dump num container e leva alguns minutos.
+    timeout-minutes: 30
 
     steps:
       - name: Install PostgreSQL client
@@ -35,6 +48,15 @@ jobs:
           FILENAME="backup_${TIMESTAMP}.sql.gz"
 
           echo "Starting backup at $(date -u)"
+          # 2026-08-08 — `cron` e `net` entram nas exclusoes, e a razao NAO e tamanho.
+          # Ensaio de restauracao do backup de 03/08 num Postgres 17.6 local: o dump carregava
+          # `COPY cron.job`, o restore respondia `permission denied for table job` (tabela de
+          # EXTENSAO, nao do usuario), e a partir dali o psql passou a interpretar cada linha de
+          # dado como comando — 26.724 "syntax error" em cascata. A vitima medida foi
+          # `admin_audit_log`: 67.494 linhas na origem, ZERO no restaurado. O log de auditoria
+          # sumia inteiro num restore real, e nada no workflow acusava.
+          # Excluir os dois schemas remove a origem da dessincronizacao. `cron.job_run_details`
+          # tinha 146.271 linhas e e telemetria do agendador, nao dado de dominio.
           # #618 (2nd leg): /usr/bin/pg_dump is Ubuntu's pg_wrapper, which resolves to the
           # LOCAL cluster's version — the runner image ships a PostgreSQL 16 service, so the
           # wrapper kept picking pg_dump 16 even with client-17 installed. Call the versioned
@@ -55,6 +77,8 @@ jobs:
             --exclude-schema=pgsodium \
             --exclude-schema=vault \
             --exclude-schema=supabase_migrations \
+            --exclude-schema=cron \
+            --exclude-schema=net \
             | gzip > "$FILENAME"
 
           SIZE=$(du -h "$FILENAME" | cut -f1)
@@ -75,6 +99,68 @@ jobs:
             exit 1
           fi
           echo "✅ Backup size OK: $SIZE bytes"
+
+      # 2026-08-08 — o passo que faltava. Ate aqui o workflow provava que o arquivo EXISTE, que
+      # o gzip abre e que tem mais de 1 KB. Nada disso prova que ele RESTAURA: o backup de 03/08
+      # passava nos tres e mesmo assim perdia `admin_audit_log` inteiro.
+      #
+      # Restaura de verdade, num Postgres da mesma versao da plataforma, e afirma o que o ensaio
+      # manual mediu. As asseercoes sao pisos, nao igualdades: a base cresce entre um domingo e
+      # outro, e um teste que exige numero exato vira ruido em duas semanas.
+      - name: Verify backup RESTORES (not just that it exists)
+        run: |
+          set -o pipefail
+          docker run -d --name restore-probe \
+            -e POSTGRES_PASSWORD=probe_ephemeral \
+            -e POSTGRES_DB=postgres \
+            supabase/postgres:17.6.1.084
+
+          for i in $(seq 1 60); do
+            docker exec restore-probe pg_isready -U postgres >/dev/null 2>&1 && break
+            sleep 2
+          done
+
+          gunzip -c "$BACKUP_FILE" \
+            | docker exec -i restore-probe psql -U postgres -d postgres -q \
+            > restore.out 2> restore.err || true
+
+          q() { docker exec restore-probe psql -U postgres -tAc "$1"; }
+
+          # (a) A cascata do COPY. Um unico "syntax error" significa que o psql saiu de um bloco
+          # COPY e passou a ler dado como comando — foi assim que o admin_audit_log se perdeu.
+          SYNTAX=$(grep -c "syntax error" restore.err || true)
+          echo "syntax errors no restore: $SYNTAX"
+          if [ "$SYNTAX" -ne 0 ]; then
+            echo "::error::$SYNTAX erros de sintaxe no restore — o psql dessincronizou e ha perda silenciosa de dado"
+            grep -oE "ERROR:  [a-z ]+" restore.err | sort | uniq -c | sort -rn | head -10
+            exit 1
+          fi
+
+          # (b) Tabelas que nao podem voltar vazias. admin_audit_log esta aqui porque foi a que
+          # se perdeu; as outras cobrem dominio, pessoas e o funil de selecao.
+          for T in admin_audit_log members board_items events selection_applications notifications; do
+            N=$(q "select count(*) from public.$T;")
+            echo "  $T = $N"
+            if [ "$N" -eq 0 ]; then
+              echo "::error::$T restaurou VAZIA — backup nao e restauravel"
+              exit 1
+            fi
+          done
+
+          # (c) Pisos estruturais. Medidos em 08/08: 213 tabelas e 518 FKs no restaurado
+          # (prod tinha 216 e 523; a diferenca sao objetos criados depois do dump e as FKs
+          # que apontam para auth.users, excluido por desenho — ver o README de recuperacao).
+          TABLES=$(q "select count(*) from pg_tables where schemaname='public';")
+          FKS=$(q "select count(*) from pg_constraint c join pg_class t on t.oid=c.conrelid join pg_namespace n on n.oid=t.relnamespace where n.nspname='public' and c.contype='f';")
+          echo "tabelas=$TABLES fks=$FKS"
+          [ "$TABLES" -ge 200 ] || { echo "::error::so $TABLES tabelas restauradas (piso 200)"; exit 1; }
+          [ "$FKS" -ge 500 ]   || { echo "::error::so $FKS chaves estrangeiras (piso 500)"; exit 1; }
+
+          echo "✅ Restore verificado: $TABLES tabelas, $FKS FKs, 0 erro de sintaxe"
+
+      - name: Tear down restore probe
+        if: always()
+        run: docker rm -f restore-probe >/dev/null 2>&1 || true
 
       - name: Upload backup artifact
         uses: actions/upload-artifact@v4
