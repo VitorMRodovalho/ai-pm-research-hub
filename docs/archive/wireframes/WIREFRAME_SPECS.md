@@ -13,7 +13,7 @@
 
 **Target UX:**
 - Amber banner at top: "Sua conta foi autenticada, mas ainda nao esta cadastrada no Nucleo."
-- Contact info: nucleoiagp@gmail.com
+- Contact info: redacted-062@example.com
 - CTA: "Fale com o gestor do projeto" (mailto link)
 - Nav shows user name with amber "Conta nao cadastrada" badge
 - Catalog (artifacts) and leaderboard (gamification) remain accessible
@@ -30,7 +30,7 @@
 
 **8-step checklist:**
 1. Aceite a posicao no volunteer.pmi.org
-2. Confirme seu cadastro com o gestor (nucleoiagp@gmail.com)
+2. Confirme seu cadastro com o gestor (redacted-062@example.com)
 3. Faca login com Google ou LinkedIn
 4. Complete seu perfil (/profile)
 5. Escolha sua tribo ate o deadline do DB (/#tribes)

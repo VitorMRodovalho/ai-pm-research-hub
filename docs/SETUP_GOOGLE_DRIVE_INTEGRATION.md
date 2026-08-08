@@ -10,7 +10,7 @@
 ## Pré-requisitos
 
 - [x] Conta institucional `nucleoia@pmigo.org.br` (Google Workspace, confirmado pelo PM)
-- [x] Conta backup admin `vitorodovalho@gmail.com` com acesso admin completo (confirmado pelo PM)
+- [x] Conta backup admin `redacted-085@example.com` com acesso admin completo (confirmado pelo PM)
 - [ ] Google Cloud Console project (criar se não existe)
 
 ---
@@ -147,10 +147,10 @@ Quota exceeded (default 10k requests/100s/project). Pode pedir aumento no Google
 **Single Point of Failure aceito (PM-confirmed):**
 
 - Conta institucional: `nucleoia@pmigo.org.br`
-- Backup admin: `vitorodovalho@gmail.com` (acesso completo às pastas)
+- Backup admin: `redacted-085@example.com` (acesso completo às pastas)
 
 **Recovery em caso de incident:**
-- Conta institucional suspensa: PM logs em `vitorodovalho@gmail.com` + recria SA + reseedar Vault
+- Conta institucional suspensa: PM logs em `redacted-085@example.com` + recria SA + reseedar Vault
 - Pasta Drive movida/deletada: `link_board_to_drive` registra novo folder_id
 - API quota exceeded: aumentar quota no Console + cache layer futuro
 

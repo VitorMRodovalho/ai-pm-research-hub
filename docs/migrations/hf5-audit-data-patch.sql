@@ -12,7 +12,7 @@ select
   current_cycle_active
 from public.members
 where
-  lower(email) in ('sarah.famr@gmail.com', 'boblmacedo@gmail.com')
+  lower(email) in ('redacted-076@example.com', 'redacted-009@example.com')
   or lower(name) like '%sarah%'
   or lower(name) like '%roberto%'
 order by name;
@@ -25,7 +25,7 @@ select
   linkedin_url
 from public.members
 where
-  (lower(email) = 'sarah.famr@gmail.com' or lower(name) like '%sarah%')
+  (lower(email) = 'redacted-076@example.com' or lower(name) like '%sarah%')
   and nullif(trim(coalesce(linkedin_url, '')), '') is null;
 
 -- 2) Role/designation mismatches between members and active cycle history

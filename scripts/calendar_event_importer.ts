@@ -6,6 +6,10 @@
  *
  * Usage:
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx tsx scripts/calendar_event_importer.ts [--dry-run]
+ *
+ * O export do Google Calendar e nomeado pelo e-mail da conta, entao o nome do arquivo E um dado
+ * pessoal. Ele vem de `CALENDAR_ICS_FILE` (o arquivo em si sempre viveu fora do repo, sob o
+ * diretorio sensivel; era so o NOME que estava versionado).
  */
 
 import 'dotenv/config';
@@ -31,7 +35,15 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const ICS_PATH = resolveSensitivePath('Google Clalendar', 'vitorodovalho@gmail.com.ics');
+const ICS_FILE = process.env.CALENDAR_ICS_FILE;
+if (!ICS_FILE) {
+  console.error(
+    'Missing CALENDAR_ICS_FILE — informe o nome do export do Google Calendar (ex.: CALENDAR_ICS_FILE="sua-conta@dominio.ics"). ' +
+      'O arquivo e lido do diretorio sensivel, fora do repo.',
+  );
+  process.exit(1);
+}
+const ICS_PATH = resolveSensitivePath('Google Clalendar', ICS_FILE);
 
 const NUCLEO_KEYWORDS = [
   'nucleo', 'núcleo', 'tribo', 'tribe',

@@ -157,9 +157,9 @@ DECLARE
   ]'::jsonb;
   v_entry jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor.rodovalho@outlook.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
   IF v_pm_id IS NULL THEN
-    RAISE EXCEPTION 'GP member not found for vitor.rodovalho@outlook.com';
+    RAISE EXCEPTION 'GP member not found for redacted-086@example.com';
   END IF;
 
   FOR v_entry IN SELECT * FROM jsonb_array_elements(v_doc_chain_map)
@@ -256,7 +256,7 @@ DECLARE
     {"kind":"president_others",     "order":4, "threshold":4}
   ]'::jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor.rodovalho@outlook.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
 
   IF EXISTS (SELECT 1 FROM public.approval_chains WHERE document_id = v_anexo_id) THEN
     RAISE EXCEPTION 'Anexo Tecnico already has chain(s) — aborting to avoid duplicates';
@@ -316,7 +316,7 @@ DECLARE
   v_batch_intro text;
   v_send_result jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor.rodovalho@outlook.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
 
   FOR v_doc IN
     SELECT
@@ -376,7 +376,7 @@ BEGIN
 
   FOR v_curator IN
     SELECT id, email, name FROM public.members
-    WHERE email IN ('boblmacedo@gmail.com','sarah.famr@gmail.com','fabriciorcc@gmail.com')
+    WHERE email IN ('redacted-009@example.com','redacted-076@example.com','redacted-027@example.com')
   LOOP
     v_send_result := public.campaign_send_one_off(
       p_template_slug := 'governance_recirculation_batch',

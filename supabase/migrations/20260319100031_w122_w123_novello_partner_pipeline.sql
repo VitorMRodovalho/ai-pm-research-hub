@@ -362,7 +362,7 @@ ON CONFLICT DO NOTHING;
 
 INSERT INTO public.partner_entities (name, entity_type, status, contact_name, contact_email, chapter, notes, partnership_date, updated_at)
 VALUES
-  ('IFG — Instituto Federal de Goiás', 'academic', 'prospect', 'Prof. Sirlon Diniz', 'sirlon.carvalho@ifg.edu.br', 'PMI-GO', 'Contato via aplicação Ambassador', CURRENT_DATE, now()),
+  ('IFG — Instituto Federal de Goiás', 'academic', 'prospect', 'Prof. Sirlon Diniz', 'redacted-078@example.com', 'PMI-GO', 'Contato via aplicação Ambassador', CURRENT_DATE, now()),
   ('FioCruz', 'research', 'prospect', NULL, NULL, NULL, 'Mencionado na aplicação Ambassador como parceria em negociação', CURRENT_DATE, now()),
   ('AI.Brasil', 'association', 'prospect', NULL, NULL, NULL, 'Associação brasileira de IA', CURRENT_DATE, now()),
   ('CEIA-UFG', 'academic', 'prospect', NULL, NULL, 'PMI-GO', 'Centro de Excelência em IA da UFG', CURRENT_DATE, now()),

@@ -6,7 +6,7 @@
 -- correctly; pattern is just ported here for symmetry.
 --
 -- Incident: Herlon Alves de Sousa (member c8e76355-..., person 84e4db2d-...) triggered
--- Step 2 rotation 2026-05-17 15:55:33 UTC when his Google login on saguaho@gmail.com
+-- Step 2 rotation 2026-05-17 15:55:33 UTC when his Google login on redacted-075@example.com
 -- (auth 54f0a110, previously a secondary linked id) rotated to primary. members.auth_id
 -- was updated 0b4c35ca → 54f0a110; persons.auth_id remained 0b4c35ca, violating
 -- invariant D (persons.auth_id and members.auth_id must agree when both set).

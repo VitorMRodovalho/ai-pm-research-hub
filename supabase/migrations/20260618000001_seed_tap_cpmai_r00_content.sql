@@ -365,15 +365,15 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <tbody>
     <tr><td><strong>PMI-GO</strong> (sede)</td><td>Ivan Lourenço Costa · presidencia@pmigo.org.br</td><td>Welma Alves de Melo</td><td><em>a confirmar</em></td><td>🟢 Sede · Sponsor</td></tr>
     <tr><td><strong>PMI-CE</strong></td><td>Francisca Jessyca Alcântara · presidencia@pmice.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>🟢 Federado (Herlon — Líder da Iniciativa)</td></tr>
-    <tr><td><strong>PMI-DF</strong></td><td>Matheus Rocha, PMP · presidente@pmidf.org</td><td>Ricardo André (Certificação)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
+    <tr><td><strong>PMI-DF</strong></td><td>Matheus Rocha, PMP · redacted-068@example.com</td><td>Ricardo André (Certificação)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
     <tr><td><strong>PMI-MG</strong></td><td>Felipe Borges · presidencia@pmimg.org.br</td><td>Rogério Peixoto (Cert. e Desenv. Prof.)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
     <tr><td><strong>PMI-RS</strong></td><td>Márcio Santos · presidencia@pmirs.org.br</td><td>Vinícius Piccini (VP Filiação e Voluntariado)</td><td>Vinícius Piccini (VP — mesma área)</td><td>🟢 Federado · Host CBGPL 2026</td></tr>
     <tr><td>PMI-AM</td><td>João Leite, PMP · presidencia@pmiam.org</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-BA</td><td>Michele Barbosa, MSc, PMP · presidencia@pmiba.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-ES</td><td>Scheila Lagass, PMP · presidencia@pmies.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-PB</td><td>Márcio Gomes da Costa · comunicacao@pmipb.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (15º cap., fundador)</td></tr>
+    <tr><td>PMI-PB</td><td>Márcio Gomes da Costa · redacted-014@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (15º cap., fundador)</td></tr>
     <tr><td>PMI-PE</td><td>Rick Lândia Barboza · presidencia@pmipe.org.br</td><td>Juliana Lima (VP Filiação/Vol)</td><td>Juliana Lima (mesma VP)</td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-PR</td><td>Sergio Martines · sergio.martines@pmipr.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-PR</td><td>Sergio Martines · redacted-077@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-RJ</td><td>Emerson Kühl · presidencia@pmirio.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-SC</td><td>Everaldo Artur Grahl · presidencia@pmisc.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-SE</td><td>Gabriel Wasil Jaciuk Raio · presidencia@pmise.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
@@ -388,9 +388,9 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <tbody>
     <tr><td>PMI-GO — PMO</td><td>Eder Valasco</td><td>Analista PMO / Liaison TAP — comentador e ponte com Diretoria Executiva</td><td><em>a confirmar via PMO-GO</em></td></tr>
     <tr><td>PMI® América Latina</td><td>Daniel Falcão</td><td>Analista de Negócios — canal de relacionamento Latam + acesso aos 27 holders BR</td><td>via PMI Latam</td></tr>
-    <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>vitor.rodovalho@outlook.com</td></tr>
-    <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>Fabricio Costa</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>fabriciorcc@gmail.com</td></tr>
-    <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>saguaho@gmail.com · herlon.sousa@pmice.org.br</td></tr>
+    <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>redacted-086@example.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>Fabricio Costa</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>redacted-027@example.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>redacted-075@example.com · redacted-036@example.com</td></tr>
     <tr><td>Comunidade técnica</td><td>Filiados PMI BR + estudantes + líderes corporativos</td><td>Público-alvo do Grupo de Estudos</td><td>público</td></tr>
     <tr><td>PMI® Global</td><td>Ricardo Vargas · PMI×AI Champion network</td><td>Diretrizes globais de IA · divulgação</td><td>via PMI Global</td></tr>
   </tbody>
@@ -403,10 +403,10 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>Nome</th><th>Função</th><th>Disponibilidade</th><th>Contato</th></tr></thead>
   <tbody>
-    <tr><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>saguaho@gmail.com</td></tr>
-    <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>vitor.rodovalho@outlook.com</td></tr>
-    <tr><td>Fabricio Costa</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>fabriciorcc@gmail.com</td></tr>
-    <tr><td>Mayanna Duarte</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>mayanna.aires@gmail.com</td></tr>
+    <tr><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>redacted-075@example.com</td></tr>
+    <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>redacted-086@example.com</td></tr>
+    <tr><td>Fabricio Costa</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>redacted-027@example.com</td></tr>
+    <tr><td>Mayanna Duarte</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>redacted-059@example.com</td></tr>
     <tr><td>Analista Pedagógico</td><td>Curadoria de conteúdo + simulados <em>(card aberto no board)</em></td><td>6-8h/mês</td><td>TBD</td></tr>
     <tr><td>Time de Apoio (3-5 voluntários do Núcleo)</td><td>Coordenação alunos, logística de aulas, suporte pedagógico — formação como GPs</td><td>2-4h/mês cada</td><td>a recrutar no Ciclo 3</td></tr>
     <tr><td>Corpo docente (3-5 mentores convidados)</td><td>Instrutores e mentores das 8 aulas — voluntariado</td><td>2-4h por aula</td><td>ver Anexo A</td></tr>

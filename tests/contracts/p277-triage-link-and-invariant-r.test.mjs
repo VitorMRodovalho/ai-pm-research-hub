@@ -8,7 +8,7 @@
  *     by the nucleo-wiki session on initiative 6e9af7a8). Fixed with a scalar uuid.
  * (B) The VEP import can reset a reconciled application's email to the candidate's PMI email,
  *     which differs from the member's primary email → R (primary-only match) tripped for a real
- *     reconciled approved candidate (Paulo, app pejota81@gmail.com vs member paulo-junior@outlook.com).
+ *     reconciled approved candidate (Paulo, app redacted-067@example.com vs member redacted-064@example.com).
  *     R's drift CTE now also accepts a member_emails (alternate) match. The pejota81 alternate was
  *     backfilled onto Paulo via the canonical member_add_alternate_email() RPC. All 22 other
  *     invariants preserved byte-identical (Phase-C md5 parity).

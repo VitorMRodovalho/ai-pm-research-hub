@@ -14,7 +14,7 @@ with source_linkedin as (
   select m.linkedin_url
   from public.members m
   where
-    (lower(m.email) = 'sarah.famr@gmail.com' or lower(m.name) like '%sarah%')
+    (lower(m.email) = 'redacted-076@example.com' or lower(m.name) like '%sarah%')
     and nullif(trim(coalesce(m.linkedin_url, '')), '') is not null
   order by m.updated_at desc nulls last
   limit 1
@@ -25,7 +25,7 @@ set
   updated_at = now()
 from source_linkedin src
 where
-  (lower(target.email) = 'sarah.famr@gmail.com' or lower(target.name) like '%sarah%')
+  (lower(target.email) = 'redacted-076@example.com' or lower(target.name) like '%sarah%')
   and nullif(trim(coalesce(target.linkedin_url, '')), '') is null;
 
 -- 2) Align with active cycle history (source of truth for current cycle role state)

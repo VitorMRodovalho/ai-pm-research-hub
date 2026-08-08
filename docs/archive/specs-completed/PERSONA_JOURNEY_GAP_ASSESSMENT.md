@@ -352,7 +352,7 @@ Ver publicações → Avaliar metodologia → Decidir se cita/colabora/apresenta
 | Ver metodologia de pesquisa | ❌ | **Sem seção de metodologia**. O Manual define fluxo de 7 etapas mas não está visível para acadêmico externo. |
 | Baixar artigos | ❌ | Artigos estão no ProjectManagement.com, não na plataforma. **Sem links diretos para publicações externas.** |
 | Ver dados para citação | ❌ | **Sem BibTeX, DOI, ou referência bibliográfica formatada** |
-| Propor colaboração | ⚠️ | Email nucleoiagp@gmail.com existe em /#resources. Sem formulário dedicado. |
+| Propor colaboração | ⚠️ | Email redacted-062@example.com existe em /#resources. Sem formulário dedicado. |
 
 ### Gaps (P10)
 

@@ -20,17 +20,17 @@ ALTER TABLE public.document_comments ADD CONSTRAINT document_comments_visibility
 UPDATE public.members
 SET designations = array_append(designations, 'legal_signer'::text)
 WHERE email IN (
-  'ivan.lourenco@pmigo.org.br',
+  'redacted-038@example.com',
   'presidencia@pmirs.org.br',
-  'matheus.rocha@pmidf.org',
+  'redacted-057@example.com',
   'presidencia@pmimg.org.br',
-  'jessica.alcantara@pmice.org.br'
+  'redacted-041@example.com'
 )
 AND NOT ('legal_signer' = ANY(designations));
 
 UPDATE public.members
 SET designations = array_append(designations, 'voluntariado_director'::text)
-WHERE email = 'diretoriavoluntariado@pmigo.org.br'
+WHERE email = 'redacted-020@example.com'
 AND NOT ('voluntariado_director' = ANY(designations));
 
 -- ========================================
@@ -103,7 +103,7 @@ DO $$
 DECLARE
   v_vitor uuid;
 BEGIN
-  SELECT id INTO v_vitor FROM public.members WHERE email='vitor.rodovalho@outlook.com';
+  SELECT id INTO v_vitor FROM public.members WHERE email='redacted-086@example.com';
   IF v_vitor IS NULL THEN RAISE EXCEPTION 'Vitor member not found'; END IF;
 
   UPDATE public.approval_chains

@@ -3,7 +3,7 @@
 -- C3 has 7 active tribes (not 8 — T3 inactivated)
 
 -- Fix Carlos Magno email
-UPDATE members SET email = 'magno@araguaia.net'
+UPDATE members SET email = 'redacted-053@example.com'
 WHERE name ILIKE '%carlos magno%' AND email LIKE '%placeholder%';
 
 -- Recreate get_cycle_evolution with correct data

@@ -120,7 +120,7 @@ BEGIN
 
   INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes)
   VALUES (
-    (SELECT id FROM public.members WHERE email = 'vitor.rodovalho@outlook.com'),
+    (SELECT id FROM public.members WHERE email = 'redacted-086@example.com'),
     'persons.backfill_from_members_gap_fill', 'persons', NULL,
     jsonb_build_object(
       'issue', '#1175 F4',

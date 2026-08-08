@@ -7,7 +7,7 @@
  * into production by giving the webhook a shared read-only matcher
  * match_booking_application(guest_email) — exact LOWER(TRIM) email match (no
  * `_`/`%` wildcard trap, since selection_applications.email is `text` and the old
- * `.ilike('email', guest)` mis-matched real addresses like `j_coelho@id.uff.br`),
+ * `.ilike('email', guest)` mis-matched real addresses like `redacted-039@example.com`),
  * OPEN/ACTIVE cycle scope, a same-member alternate-email bridge (member_emails),
  * and the pre-interview status allow-list — and by resolving interviewer emails
  * via member_emails (citext) instead of members.email only.

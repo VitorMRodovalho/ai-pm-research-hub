@@ -104,7 +104,7 @@ BEGIN
     || '<p>' || COALESCE(v_version.summary_pt, 'Consulte a política atualizada no site.') || '</p>'
     || '<p>A política completa pode ser consultada em: '
     || '<a href="https://nucleoia.vitormr.dev/privacy">nucleoia.vitormr.dev/privacy</a></p>'
-    || '<p>Em caso de dúvidas, entre em contato com o DPO: <a href="mailto:vitor.rodovalho@outlook.com">vitor.rodovalho@outlook.com</a></p>'
+    || '<p>Em caso de dúvidas, entre em contato com o DPO: <a href="mailto:redacted-086@example.com">redacted-086@example.com</a></p>'
     || '<p>Atenciosamente,<br/>Núcleo IA &amp; GP</p>',
     'lgpd',
     v_caller
