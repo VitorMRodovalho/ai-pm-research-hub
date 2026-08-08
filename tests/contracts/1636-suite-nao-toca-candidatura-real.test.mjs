@@ -278,30 +278,50 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
     );
   });
 
-  it('nenhum token de agendamento vivo aponta para fixture sintética', async () => {
-    // `onboarding_tokens` NÃO tem FK para a candidatura (vínculo polimórfico por `source_id`), ou
-    // seja, o CASCADE não o alcança. Foi exatamente esse buraco que deixou 4 tokens vivos em
-    // 07/08 sem ninguém notar. Aqui ele é asserção, não confiança no `cleanup`.
+  it('nenhum token de agendamento SOBREVIVE à limpeza da fixture', async () => {
+    // `onboarding_tokens` NÃO tem FK para a candidatura: o vínculo é polimórfico
+    // (`source_type='pmi_application'` + `source_id`), logo o CASCADE não o alcança. Foi
+    // exatamente esse buraco que deixou 4 tokens vivos em 07/08 sem ninguém notar. Aqui ele é
+    // asserção, não confiança no `cleanup`.
+    //
+    // ⚠️ A JANELA DE GRAÇA É OBRIGATÓRIA AQUI, e por um motivo diferente do teste anterior. O
+    // caminho de PASSAGEM (#1640) emite um token e só o apaga no `after` do bloco: durante alguns
+    // segundos existe, legitimamente, um token vivo sobre uma fixture viva. Sem a janela, este
+    // guard ficaria vermelho porque OUTRA corrida estava fazendo o trabalho dela — e um guard que
+    // acusa trabalho correto é desligado.
+    const limite = Date.now() - GRACE_MINUTES * 60_000;
     const { data: tokens, error } = await sb
       .from('onboarding_tokens')
-      .select('token, source_id, issued_at, expires_at')
+      .select('token, source_id, source_type, issued_at, expires_at')
       .contains('scopes', ['interview_booking'])
-      .gt('expires_at', new Date().toISOString());
+      .gt('expires_at', new Date().toISOString())
+      .gte('issued_at', CUTOFF)
+      .lt('issued_at', new Date(limite).toISOString());
     assert.ifError(error);
+    if (!tokens?.length) return;
 
-    const ids = [...new Set((tokens ?? []).map((t) => t.source_id).filter(Boolean))];
-    if (!ids.length) return;
-
+    const ids = [...new Set(tokens.map((t) => t.source_id).filter(Boolean))];
     const { data: apps, error: e2 } = await sb
       .from('selection_applications')
       .select('id, email')
       .in('id', ids);
     assert.ifError(e2);
 
-    const sinteticas = new Set((apps ?? []).filter((a) => RESERVED_DOMAIN.test(a.email ?? '')).map((a) => a.id));
-    const orfaos = (tokens ?? [])
-      .filter((t) => sinteticas.has(t.source_id))
-      .map((t) => `${t.token.slice(0, 8)}… (expira ${t.expires_at})`);
-    assert.deepEqual(orfaos, [], 'token vivo emitido sobre fixture sintética sobreviveu à limpeza');
+    const emailPorId = new Map((apps ?? []).map((a) => [a.id, a.email]));
+    const suspeitos = tokens.filter((t) => {
+      const email = emailPorId.get(t.source_id);
+      // (a) a candidatura ainda existe e é sintética → o `cleanup` não apagou o token
+      if (email !== undefined) return RESERVED_DOMAIN.test(email ?? '');
+      // (b) a candidatura SUMIU e o token ficou → o órfão que o vínculo polimórfico permite.
+      //     Medido em 08/08: 0 órfãos em 17 tokens, então a linha de base é limpa.
+      return true;
+    });
+
+    assert.deepEqual(
+      suspeitos.map((t) => `${t.token.slice(0, 8)}… source=${t.source_id ?? 'nulo'} expira ${t.expires_at}`),
+      [],
+      'token de agendamento vivo sobreviveu à limpeza da fixture (ou ficou órfão de uma ' +
+        'candidatura apagada) — é o buraco do vínculo polimórfico que deixou 4 tokens vivos em 07/08',
+    );
   });
 });
