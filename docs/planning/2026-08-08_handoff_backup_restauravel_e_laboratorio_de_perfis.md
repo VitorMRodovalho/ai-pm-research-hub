@@ -13,6 +13,12 @@ errado**. Errei os dois três vezes, todas corrigidas por medição e nenhuma po
 - "backup quebrado há 3 semanas" era a **limpeza de artefatos**, cosmética; o dump funcionava.
 - "não dá para medir sem gente" era falso: havia base restaurável e impersonação custa três linhas.
 
+Um quarto, no fim da sessão, que vale como aviso de método: **armei um monitor de CI no
+`git rev-parse HEAD` e depois empurrei outro commit.** O monitor passou a vigiar um head já
+superado, devolveu "todos concluídos" de um SHA obsoleto, e eu anunciei um PR como mergeável
+enquanto o `validate` do commit atual ainda rodava. O instrumento estava certo; o **alvo** é que
+estava errado. Fixe o head pelo PR (`gh pr view N --json headRefOid`), nunca pelo working tree.
+
 ---
 
 ## Mergeado hoje
@@ -167,6 +173,30 @@ Personas sintéticas semeadas **na base restaurada**, nunca em produção, uma p
 
 O ambiente já existe (`scripts/pull-backup-local.sh --restore`). Falta o seed de personas e apontar
 a suíte DB-aware para ele em vez de para produção. É trabalho de sessão inteira e não foi começado.
+
+---
+
+## Decisões ratificadas pelo PM no fim da sessão
+
+| # | decisão | estado |
+|---|---|---|
+| 1 | o schema `auth` **não** entra no dump | registrada em `docs/reference/RECUPERACAO_DE_DESASTRE.md`, com a consequência aceita escrita |
+| 2 | **PITR não**; em vez dele, **dump diário** | PR **#1687** |
+| 3 | abrir ticket pelos diários ausentes | rascunho em `docs/planning/2026-08-08_ticket_supabase_diarios_ausentes.md`; **envio é do PM** |
+| 4 | implementar a correção do **#1682** | autorizada, **não começada** |
+
+A decisão 2 foi tomada com o preço medido, não suposto: PITR de 7 dias custa **US$ 100/mês** contra
+**~US$ 10/mês** do compute Micro do projeto inteiro. Eu havia recomendado "levantar o custo e
+ligar"; com o número na mão, reabri a recomendação e o PM escolheu o dump diário.
+
+⚠️ **As decisões 1 e 2 se somam numa dívida que precisa estar visível:** sem `auth` no dump e sem
+PITR, um desastre de identidade se resolve **recriando contas via OAuth na mão**. É consequência
+aceita, não esquecimento.
+
+O #1687 traz três ajustes que a cadência exigiu, e o terceiro é defeito e não redação: retenção
+8 → 30 no artefato (senão 8 dias de alcance onde antes eram 8 semanas), `concurrency` sem
+cancelamento, e o aviso de backup velho recalibrado de **9 para 2 dias** — com dump diário, o limite
+antigo ficaria mudo por mais de uma semana de falhas.
 
 ---
 

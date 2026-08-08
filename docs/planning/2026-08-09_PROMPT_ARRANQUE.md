@@ -27,6 +27,9 @@ contador, pergunte **de quem é este valor** e **em que ponto do processo essa p
 scripts/pull-backup-local.sh --restore     # ~15s, baixa o mais novo e ensaia
 ```
 
+⚠️ **O dump passou a ser DIÁRIO** (decisão 2, PR #1687), com retenção de 30 no artefato e 14 na
+cópia local. Se o #1687 ainda não tiver mergeado quando você ler isto, o `main` ainda está semanal.
+
 Com ela, gates que resolvem por `auth.uid()` deixam de ser "precisa de confirmação humana":
 
 ```sql
@@ -65,10 +68,15 @@ Backup de 03/08 tem 131 membros; produção tem 121, com **zero** criados desde 
 de remoção no `admin_audit_log`. A cópia está em `~/.local/share/nucleo-backups/`. Restaurar,
 extrair os IDs e comparar diz **quais** são e o que eram. Só depois disso decidir se é incidente.
 
-### 2. #1682 — implementar a correção que já está validada
+### 2. #1682 — implementar a correção que já está validada (AUTORIZADA, decisão 4)
 A ponte de e-mail no `export_my_data` e no `list_my_consents`, com **uma transação por função**
 (uma âncora ruim reverte o patch bom). Alcance medido: **34** pessoas. Levar junto as três decisões
 de escopo listadas na issue.
+
+🔴 **Antes de aplicar, olhe os PRs abertos.** Isto é DDL, e aplicar em prod antes do merge
+**serializa todos os PRs abertos** — qualquer branch sem o novo `.sql` fica vermelho nos gates de
+drift. Em 08/08 havia **12 PRs abertos**. O recorte certo não é "isso é DDL?", é "vou registrar uma
+versão?".
 
 ### 3. #1643 — terminar o sweep
 Falta a **terceira classe** ("afirmação incondicional sobre tratamento condicional") nas funções de
@@ -94,15 +102,25 @@ para candidatos reais? Cruzar com as tabelas de token e entrevista responde.
 
 ---
 
-## Decisões que estavam com o PM
+## Decisões TOMADAS pelo PM em 08/08 — não re-litigar
 
-Se ainda não vieram, perguntar antes de agir:
+| # | decisão | onde vive |
+|---|---|---|
+| 1 | **O schema `auth` NÃO entra no dump.** Levaria hashes de senha e refresh tokens para o artefato do GitHub. Consequência aceita: a recuperação devolve o dado e **não** o acesso | `docs/reference/RECUPERACAO_DE_DESASTRE.md` |
+| 2 | **PITR não.** 7 dias custam **US$ 100/mês** contra ~US$ 10/mês do compute do projeto inteiro. Em vez disso, **dump diário** | PR **#1687** |
+| 3 | **Abrir ticket** no Supabase pelos diários ausentes de 02/08 e 07/08 | rascunho pronto em `docs/planning/2026-08-08_ticket_supabase_diarios_ausentes.md` — **envio é do PM** |
+| 4 | **Implementar a correção do #1682**, já validada em base restaurada | ver abaixo |
 
-1. **Schema `auth` no backup** — incluir resolve a recuperação de identidade e leva hashes de senha
-   e refresh tokens para o artefato do GitHub.
-2. **PITR no Supabase** — hoje `false`; RPO é o diário, e o diário tinha dois dias faltando.
-3. **Ticket no Supabase** pelos diários ausentes de 02/08 e 07/08.
-4. Os quatro defeitos recortáveis do **#1679** viram issues?
+⚠️ **A decisão 2 tem uma dívida embutida que a 1 criou.** Sem PITR não existe alvo de restauração
+não-destrutivo do lado do fornecedor, e sem o schema `auth` o dump não devolve identidade. Na
+prática, hoje, um desastre de identidade se resolve **recriando contas via OAuth na mão**. Isso está
+escrito no documento de recuperação e é a consequência aceita, não um esquecimento.
+
+### Ainda em aberto e sem decisão
+
+- Os quatro defeitos recortáveis do **#1679** viram issues?
+- O R2 não tem lifecycle: acumula ~5 GB/ano. Se ganhar poda, a retenção de 30 do artefato precisa
+  subir (está comentado no workflow).
 
 ---
 
