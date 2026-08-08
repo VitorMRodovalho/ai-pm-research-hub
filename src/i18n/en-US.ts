@@ -1564,7 +1564,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.durationMin': 'Duration (min)',
   'attendance.modal.meetingLink': 'Meeting link',
   'attendance.modal.timeStart': 'Start time',
-  'attendance.modal.timeStartHint': 'Brasília time (BRT) · empty = tribe slot default',
+  'attendance.modal.timeStartHint': '24-hour format (e.g. 19:00) · Brasília time (BRT) · empty = tribe slot default', // #1645
   'attendance.modal.timezone': 'Timezone',
   'attendance.modal.timezoneHint': 'Default: Brasília (BRT). Search a city (IANA) for sessions in another zone.',
   'attendance.modal.natureRecurringHint': '🔁 This creates only 1 event. Click here to create a recurring (weekly) series →',
@@ -1705,6 +1705,7 @@ const enUS: Record<string, string> = {
   'attendance.msg.eventEditOpenError': 'Could not open the editor for this event',
   'attendance.msg.eventNotLoaded': 'This event is not loaded on screen — reload the page',
   'attendance.msg.invalidTimezone': 'Invalid timezone. Pick one from the list.',
+  'attendance.msg.invalidTime': 'Invalid time. Use 24-hour format, like 19:00.', // #1645
   'attendance.msg.error': 'Error',
   'attendance.modal.selectEventType': 'Select the event type',
   'attendance.roster.loading': 'Loading...',
@@ -1822,6 +1823,12 @@ const enUS: Record<string, string> = {
   'profile.primaryBadge': 'Primary',
   'profile.removeBtn': '✕ Remove',
   'profile.addBtn': '+ Add',
+  // #1644 — promote a secondary email to primary (the primary one receives communications).
+  'profile.primaryHint': 'The primary email is the one that receives platform communications. You can still sign in with any of your emails.',
+  'profile.makePrimaryBtn': 'Make primary',
+  'profile.makePrimaryConfirm': 'Start receiving platform communications at {email}?',
+  'profile.primaryChanged': 'Done. Your communications now go to {email}.',
+  'profile.errorPrimaryPrefix': 'Error changing the primary email: ',
   'profile.emailInputPlaceholder': 'other@email.com',
   'profile.personalDataTitle': '🔒 Personal Data',
   'profile.phoneLabel': 'Phone',

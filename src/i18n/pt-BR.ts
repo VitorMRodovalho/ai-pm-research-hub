@@ -1568,7 +1568,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.durationMin': 'Duração (min)',
   'attendance.modal.meetingLink': 'Link da reunião',
   'attendance.modal.timeStart': 'Horário',
-  'attendance.modal.timeStartHint': 'Horário de Brasília (BRT) · vazio = padrão da tribo',
+  'attendance.modal.timeStartHint': 'Formato 24h (ex.: 19:00) · Horário de Brasília (BRT) · vazio = padrão da tribo', // #1645
   'attendance.modal.timezone': 'Fuso horário',
   'attendance.modal.timezoneHint': 'Padrão: Brasília (BRT). Busque uma cidade (IANA) para sessões em outro fuso.',
   'attendance.modal.natureRecurringHint': '🔁 Isto cria apenas 1 evento. Clique aqui para criar uma série recorrente (semanal) →',
@@ -1711,6 +1711,7 @@ const ptBR: Record<string, string> = {
   'attendance.msg.eventNotLoaded': 'Este evento não está carregado na tela — recarregue a página',
   'attendance.modal.selectEventType': 'Selecione o tipo do evento',
   'attendance.msg.invalidTimezone': 'Fuso horário inválido. Escolha um da lista.',
+  'attendance.msg.invalidTime': 'Horário inválido. Use o formato 24h, como 19:00.', // #1645
   'attendance.msg.error': 'Erro',
   'attendance.roster.loading': 'Carregando...',
   'attendance.roster.noParticipants': 'Nenhum participante encontrado.',
@@ -1827,6 +1828,12 @@ const ptBR: Record<string, string> = {
   'profile.primaryBadge': 'Principal',
   'profile.removeBtn': '✕ Remover',
   'profile.addBtn': '+ Adicionar',
+  // #1644 — promover um e-mail secundário a principal (o principal é o que recebe a comunicação).
+  'profile.primaryHint': 'O e-mail principal é o que recebe as comunicações da plataforma. Você continua entrando com qualquer um dos seus e-mails.',
+  'profile.makePrimaryBtn': 'Tornar principal',
+  'profile.makePrimaryConfirm': 'Passar a receber as comunicações da plataforma em {email}?',
+  'profile.primaryChanged': 'Pronto. Suas comunicações agora vão para {email}.',
+  'profile.errorPrimaryPrefix': 'Erro ao trocar o e-mail principal: ',
   'profile.emailInputPlaceholder': 'outro@email.com',
   'profile.personalDataTitle': '🔒 Dados Pessoais',
   'profile.phoneLabel': 'Telefone',
