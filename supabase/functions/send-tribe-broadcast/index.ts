@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
       + signature + '</div></div>'
 
     const sandbox = from.includes('onboarding@resend.dev')
-    const finalTo = sandbox ? ['redacted-086@example.com'] : [from]
+    const finalTo = sandbox ? ['vitor@vitormr.dev'] : [from]
     const finalBcc = sandbox ? [] : allBcc
     console.log('[broadcast] sandbox:', sandbox, 'to:', finalTo.length, 'bcc:', finalBcc.length, 'cc_mgmt:', ccMgmt)
 

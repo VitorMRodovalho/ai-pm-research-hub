@@ -1,6 +1,6 @@
 -- Drive Integration Phase 1: schema + RPCs (Mayanna Item 07).
 -- Service account model: institutional account nucleoia@pmigo.org.br (Workspace)
--- + backup admin redacted-085@example.com. Service Account email é adicionado
+-- + backup admin vitor@vitormr.dev. Service Account email é adicionado
 -- a cada pasta shared como Editor — no Domain-Wide Delegation needed.
 -- Setup steps em docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md (PM action).
 

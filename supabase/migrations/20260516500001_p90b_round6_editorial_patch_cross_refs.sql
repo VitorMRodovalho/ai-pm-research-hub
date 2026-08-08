@@ -12,7 +12,7 @@ DECLARE
   v_old_html text;
   v_new_html text;
 BEGIN
-  SELECT id INTO v_pm_id FROM members WHERE email = 'redacted-086@example.com';
+  SELECT id INTO v_pm_id FROM members WHERE email = 'vitor@vitormr.dev';
 
   IF v_pm_id IS NULL THEN
     RAISE EXCEPTION 'GP member not found';
@@ -72,7 +72,7 @@ END $do$;
 
 -- audit log
 INSERT INTO admin_audit_log (actor_id, action, target_type, target_id, changes, created_at)
-SELECT (SELECT id FROM members WHERE email = 'redacted-086@example.com'),
+SELECT (SELECT id FROM members WHERE email = 'vitor@vitormr.dev'),
   'governance.editorial_patch_p90b_cross_refs',
   'governance_document',
   doc_id,

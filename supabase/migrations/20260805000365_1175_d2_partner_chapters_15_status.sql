@@ -492,7 +492,7 @@ BEGIN
 
   INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes)
   VALUES (
-    (SELECT id FROM public.members WHERE email = 'redacted-086@example.com'),
+    (SELECT id FROM public.members WHERE email = 'vitor@vitormr.dev'),
     'selection.partner_chapters_d2_semantics', 'partner_chapters', NULL,
     jsonb_build_object(
       'issue', '#1175 D2',

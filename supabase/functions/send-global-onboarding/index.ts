@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
       const html = buildOnboardingHtml(group.name, group.names, signatureHtml)
       const allBcc = [...new Set([...group.emails, ...mgmtEmails])]
 
-      const finalTo = sandbox ? ['redacted-086@example.com'] : [from]
+      const finalTo = sandbox ? ['vitor@vitormr.dev'] : [from]
       const finalBcc = sandbox ? [] : allBcc
 
       if (opts.dry_run) {

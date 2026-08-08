@@ -200,7 +200,7 @@ Medido pelo `organizer` dos eventos reais:
 | schedule | conta dona | quem cai nele | sobrevive à rotatividade |
 |---|---|---|---|
 | `AcZssZ2X11x_q2gAe8Cf...` | `nucleoia@pmigo.org.br` | `cycle_fallback` (líder) **e, na prática, a maioria** | sim |
-| `AcZssZ23xtPliqd0Kjf...` | `redacted-085@example.com` | `committee_override` do PM | **não** |
+| `AcZssZ23xtPliqd0Kjf...` | `vitor@vitormr.dev` | `committee_override` do PM | **não** |
 | `AcZssZ1HnqjUn0m8zof...` | conta pessoal do co-GP | `committee_override` do co-GP | **não** |
 
 O agendamento do Google é propriedade de **uma** conta e não se transfere. Uma agenda de avaliador

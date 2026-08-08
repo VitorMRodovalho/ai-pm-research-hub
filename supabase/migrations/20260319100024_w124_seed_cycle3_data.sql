@@ -64,7 +64,7 @@ BEGIN
 
   -- 2. Get committee member IDs
   SELECT id INTO v_fabricio_id FROM members WHERE email = 'redacted-027@example.com' LIMIT 1;
-  SELECT id INTO v_vitor_id FROM members WHERE email = 'redacted-086@example.com' LIMIT 1;
+  SELECT id INTO v_vitor_id FROM members WHERE email = 'vitor@vitormr.dev' LIMIT 1;
 
   -- 3. Insert committee members
   IF v_fabricio_id IS NOT NULL THEN

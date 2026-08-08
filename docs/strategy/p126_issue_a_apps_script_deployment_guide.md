@@ -124,7 +124,7 @@ function syncCalendarBookingToInterview(eventId, calendarId) {
 
     if (code >= 400) {
       // Optional: send error notification to Vitor email
-      // MailApp.sendEmail('redacted-086@example.com', 'arm116 sync failed', body);
+      // MailApp.sendEmail('vitor@vitormr.dev', 'arm116 sync failed', body);
     }
 
   } catch (e) {

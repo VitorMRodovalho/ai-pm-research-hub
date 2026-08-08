@@ -157,9 +157,9 @@ DECLARE
   ]'::jsonb;
   v_entry jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor@vitormr.dev';
   IF v_pm_id IS NULL THEN
-    RAISE EXCEPTION 'GP member not found for redacted-086@example.com';
+    RAISE EXCEPTION 'GP member not found for vitor@vitormr.dev';
   END IF;
 
   FOR v_entry IN SELECT * FROM jsonb_array_elements(v_doc_chain_map)
@@ -256,7 +256,7 @@ DECLARE
     {"kind":"president_others",     "order":4, "threshold":4}
   ]'::jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor@vitormr.dev';
 
   IF EXISTS (SELECT 1 FROM public.approval_chains WHERE document_id = v_anexo_id) THEN
     RAISE EXCEPTION 'Anexo Tecnico already has chain(s) — aborting to avoid duplicates';
@@ -316,7 +316,7 @@ DECLARE
   v_batch_intro text;
   v_send_result jsonb;
 BEGIN
-  SELECT id INTO v_pm_id FROM public.members WHERE email = 'redacted-086@example.com';
+  SELECT id INTO v_pm_id FROM public.members WHERE email = 'vitor@vitormr.dev';
 
   FOR v_doc IN
     SELECT

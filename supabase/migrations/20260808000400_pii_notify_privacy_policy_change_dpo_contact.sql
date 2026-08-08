@@ -1,13 +1,28 @@
--- Phase B'' batch 12 (p79): notify_privacy_policy_change V3 (is_superadmin only) → V4 manage_platform.
--- Surfaced by V3 pattern scan. Single-action, no business logic change.
--- LGPD ART. 7º — privacy policy notification campaign creation. Only platform-admin should trigger.
-
+-- PII: o e-mail de mudanca de politica de privacidade e enviado a TODOS os titulares e dizia
+-- "em caso de duvidas, entre em contato com o DPO" apontando para um endereco PESSOAL do
+-- mantenedor. Medido em 08/08/2026: era a UNICA funcao viva de `public` com endereco em dominio
+-- de e-mail pessoal, e a plataforma ja publica um canal proprio na pagina /privacy e nos 3
+-- dicionarios de i18n. Um titular que quisesse exercer direito da LGPD lia um endereco que nao e
+-- o canal declarado.
+--
+-- Decisao do PM (08/08/2026), e a fronteira importa: **dentro do site, o canal e o DPO**
+-- (`dpo@pmigo.org.br`), que e o que a pagina /privacy e os 3 dicionarios de i18n ja publicam. O
+-- endereco pessoal do mantenedor (`vitor@vitormr.dev`) e a superficie do GITHUB — contato de
+-- seguranca do repositorio e valvula de sandbox das Edge Functions. Aqui quem le e o TITULAR, e
+-- ele tem de encontrar o mesmo canal em qualquer superficie da plataforma.
+--
+-- ⚠️ Um placeholder aqui seria PIOR que o defeito: mandaria o titular escrever para um endereco
+-- inexistente. Foi o mesmo raciocinio aplicado ao SECURITY.md no PR #1692, com a diferenca de
+-- que la o leitor e um pesquisador de seguranca, e aqui e um titular exercendo direito da LGPD.
+--
+-- Corpo capturado VERBATIM de `pg_get_functiondef` (corpo VIVO, nao do arquivo de migration —
+-- GC-097 / `reference-create-or-replace-base-on-live-body`). Unica diferenca: o endereco.
 CREATE OR REPLACE FUNCTION public.notify_privacy_policy_change(p_version_id uuid)
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
 DECLARE
   v_caller_auth uuid := auth.uid();
   v_caller_id uuid;
@@ -70,9 +85,4 @@ BEGIN
     'note', 'Campaign created in DRAFT status. Review and send via admin_send_campaign.'
   );
 END;
-$$;
-
-REVOKE ALL ON FUNCTION public.notify_privacy_policy_change(uuid) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.notify_privacy_policy_change(uuid) TO authenticated;
-
-NOTIFY pgrst, 'reload schema';
+$function$;

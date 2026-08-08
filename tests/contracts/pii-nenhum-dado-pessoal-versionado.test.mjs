@@ -74,7 +74,30 @@ export const PERMITIDOS = new Set([
  * qualquer lugar, isto libera um arquivo inteiro - entao a lista tem de ser curta e cada entrada
  * tem de doer um pouco de escrever.
  */
+/** Caminho deste proprio arquivo, relativo a raiz do repo. */
+const ESTE_ARQUIVO = 'tests/contracts/pii-nenhum-dado-pessoal-versionado.test.mjs';
+
+/**
+ * As fixtures dos controles. Elas SAO enderecos de dominio pessoal - tem de ser, senao o controle
+ * positivo nao controla nada - e por isso este arquivo se isenta da varredura. A isencao e segura
+ * porque o teste logo abaixo afirma que os enderecos aqui dentro sao EXATAMENTE estes: esconder um
+ * endereco real no arquivo do guard fica vermelho.
+ */
+const FIXTURES_DE_CONTROLE = new Set([
+  'fulano.sobrenome@gmail.com',
+  'fulano@hotmail.com',
+  'alguem@outlook.com',
+  'pessoa@yahoo.com.br',
+  'alguem@umdominioqualquer.com.br',
+]);
+
 export const ARQUIVOS_ISENTOS = new Map([
+  [
+    ESTE_ARQUIVO,
+    'O arquivo do proprio guard. Os controles precisam conter enderecos de dominio pessoal para ' +
+      'terem dentes. A isencao e estreita: o teste "as fixtures de controle sao exatamente as ' +
+      'declaradas" impede que um endereco real se esconda aqui.',
+  ],
   [
     'public/legacy-assets/governance/Manual de Governança e Operações (Nucleo) - R2.pdf',
     'Documento de governanca PUBLICADO (R2). Os 3 enderecos sao da cadeia de governanca em ' +
@@ -172,6 +195,22 @@ describe('PII — nenhum dado pessoal em arquivo versionado (repo PUBLICO)', () 
     assert.deepEqual(orfas, [], 'isencao aponta para arquivo que nao esta mais versionado');
   });
 
+  it('as fixtures de controle sao EXATAMENTE as declaradas (a isencao deste arquivo e estreita)', () => {
+    // Sem isto, isentar o arquivo do guard abriria um esconderijo: qualquer endereco real colado
+    // aqui dentro passaria calado. Medido na propria pele — este guard ficou vermelho no CI
+    // acusando as proprias fixtures, porque local elas ainda nao estavam rastreadas e `git
+    // ls-files` so as viu depois do `git add`.
+    const src = ler(ESTE_ARQUIVO);
+    assert.ok(src, `${ESTE_ARQUIVO} nao encontrado — o caminho do proprio guard mudou`);
+    const achados = new Set(
+      (src.match(RE_EMAIL) ?? []).map((m) => m.toLowerCase()).filter((m) => !emailPermitido(m)),
+    );
+    assert.deepEqual(
+      [...achados].sort(), [...FIXTURES_DE_CONTROLE].sort(),
+      'o arquivo do guard tem endereco de dominio pessoal que NAO e fixture de controle declarada',
+    );
+  });
+
   it('nenhum e-mail pessoal em arquivo versionado', () => {
     const ofensores = [];
     for (const f of arquivosVersionados()) {
@@ -193,6 +232,7 @@ describe('PII — nenhum dado pessoal em arquivo versionado (repo PUBLICO)', () 
   it('nenhum telefone real em arquivo versionado', () => {
     const ofensores = [];
     for (const f of arquivosVersionados()) {
+      if (ARQUIVOS_ISENTOS.has(f)) continue;   // inclui este arquivo: o controle usa um numero real-shaped
       const src = ler(f);
       if (src === null) continue;
       for (const m of src.match(RE_FONE) ?? []) {

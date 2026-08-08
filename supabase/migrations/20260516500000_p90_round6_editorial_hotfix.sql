@@ -50,10 +50,10 @@ BEGIN
   -- Get GP member id
   SELECT id INTO v_pm_id
   FROM members
-  WHERE email = 'redacted-086@example.com';
+  WHERE email = 'vitor@vitormr.dev';
 
   IF v_pm_id IS NULL THEN
-    RAISE EXCEPTION 'GP member not found for email redacted-086@example.com';
+    RAISE EXCEPTION 'GP member not found for email vitor@vitormr.dev';
   END IF;
 
   -- ====================================================================
@@ -205,7 +205,7 @@ INSERT INTO admin_audit_log (
   actor_id, action, target_type, target_id, changes, created_at
 )
 SELECT
-  (SELECT id FROM members WHERE email = 'redacted-086@example.com'),
+  (SELECT id FROM members WHERE email = 'vitor@vitormr.dev'),
   'governance.editorial_hotfix_p90',
   'governance_document',
   doc_id,

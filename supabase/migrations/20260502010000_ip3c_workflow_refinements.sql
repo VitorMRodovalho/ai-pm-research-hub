@@ -103,7 +103,7 @@ DO $$
 DECLARE
   v_vitor uuid;
 BEGIN
-  SELECT id INTO v_vitor FROM public.members WHERE email='redacted-086@example.com';
+  SELECT id INTO v_vitor FROM public.members WHERE email='vitor@vitormr.dev';
   IF v_vitor IS NULL THEN RAISE EXCEPTION 'Vitor member not found'; END IF;
 
   UPDATE public.approval_chains

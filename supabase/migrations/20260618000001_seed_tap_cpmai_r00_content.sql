@@ -388,7 +388,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <tbody>
     <tr><td>PMI-GO — PMO</td><td>Eder Valasco</td><td>Analista PMO / Liaison TAP — comentador e ponte com Diretoria Executiva</td><td><em>a confirmar via PMO-GO</em></td></tr>
     <tr><td>PMI® América Latina</td><td>Daniel Falcão</td><td>Analista de Negócios — canal de relacionamento Latam + acesso aos 27 holders BR</td><td>via PMI Latam</td></tr>
-    <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>redacted-086@example.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>vitor@vitormr.dev</td></tr>
     <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>Fabricio Costa</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>redacted-027@example.com</td></tr>
     <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>redacted-075@example.com · redacted-036@example.com</td></tr>
     <tr><td>Comunidade técnica</td><td>Filiados PMI BR + estudantes + líderes corporativos</td><td>Público-alvo do Grupo de Estudos</td><td>público</td></tr>
@@ -404,7 +404,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <thead><tr><th>Nome</th><th>Função</th><th>Disponibilidade</th><th>Contato</th></tr></thead>
   <tbody>
     <tr><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>redacted-075@example.com</td></tr>
-    <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>redacted-086@example.com</td></tr>
+    <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>vitor@vitormr.dev</td></tr>
     <tr><td>Fabricio Costa</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>redacted-027@example.com</td></tr>
     <tr><td>Mayanna Duarte</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>redacted-059@example.com</td></tr>
     <tr><td>Analista Pedagógico</td><td>Curadoria de conteúdo + simulados <em>(card aberto no board)</em></td><td>6-8h/mês</td><td>TBD</td></tr>

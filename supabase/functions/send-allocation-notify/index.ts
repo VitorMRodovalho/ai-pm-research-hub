@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
         + '</div></div>'
 
       const emails = tribeMembers.map((m: any) => m.email)
-      const finalTo = sandbox ? ['redacted-086@example.com'] : [from]
+      const finalTo = sandbox ? ['vitor@vitormr.dev'] : [from]
       const finalBcc = sandbox ? [] : emails
 
       const rr = await fetch('https://api.resend.com/emails', {

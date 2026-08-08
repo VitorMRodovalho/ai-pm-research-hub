@@ -65,7 +65,7 @@ Programa de pesquisa colaborativa entre **5 capitulos PMI** (GO, CE, DF, MG, RS)
 |-------|----------|
 | Plataforma | nucleoia.vitormr.dev |
 | GP | Vitor Maia Rodovalho, PMP |
-| Email | redacted-086@example.com |
+| Email | vitor@vitormr.dev |
 | LinkedIn | linkedin.com/in/vitormrodovalho |
 
 ---
