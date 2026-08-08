@@ -32,6 +32,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { createSyntheticApplication } from '../helpers/selection-fixtures.mjs';
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000509_1594_1595_recusa_auditada_e_porta_reagendamento.sql';
 const SPEC_PATH = 'docs/specs/SPEC_INTERVIEW_BOOKING_INTEGRITY.md';
@@ -267,52 +268,47 @@ describe('#1594/#1595 A — camada estática (migration, front, MCP, i18n, spec)
 // Camada B — DB-aware (corpo vivo, ACL, comportamento)
 // ─────────────────────────────────────────────────────────────────────────────
 describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false }, () => {
-  // Candidatura de recusa: ciclo FECHADO e já decidida (operacionalmente inerte), sem entrevista
-  // (modo full), e sem convite já despachado.
+  // ⚠️ #1636 — O ALVO DEIXOU DE SER CANDIDATURA REAL. Até 08/08/2026 este bloco escolhia a
+  // candidatura por PREDICADO sobre a base de produção, e como a metade (b) do #1594 exige que a
+  // linha de recusa COMMITE, cada corrida sedimentava recusas permanentes sobre a mesma gente:
+  // 663 linhas em `gate_attempts`, 627 sem ator, espalhadas por 13 candidaturas reais. O caminho
+  // de PASSAGEM chegou a emitir 4 tokens de agendamento vivos apontando para candidaturas reais.
   //
-  // ⚠️ #1640 — o predicado MUDOU. Ele ancorava na ausência de consentimento de IA, que recusava por
-  // P0001. Esse gate saiu (a ausência de consentimento de terceira finalidade não pode negar efeito
-  // ao processo seletivo), e manter o predicado antigo faria este teste EMITIR um token real para um
-  // candidato real em vez de observar uma recusa. A âncora agora é o peer-review incompleto (P0002),
-  // que continua sendo requisito de conclusão do processo objetivo.
-  let refuseApp = null;
+  // Agora cada forma é construída como fixture sintética (e-mail em domínio reservado por RFC
+  // 2606, convenção do #1437) e apagada no `after`. Três consequências que valem mais do que a
+  // higiene: o teste deixa de depender de QUEM ocupa o papel; o `prior_evidence` vira
+  // determinístico (fixture nova só tem a linha de entrevista); e some o ramo "asserção não
+  // exercida", que era um skip lendo como verde.
+  let refuseFx = null;   // recusa P0002 em ciclo fechado, COM nota (senão o notify sai por #1450)
+  let reuseFx = null;    // já tem entrevista → modo reuse_prior
   let refuseProven = false;   // trava do teste que chama o despacho de verdade
-  const mintedTokens = [];
 
   before(async () => {
-    const { data, error } = await sb
-      .from('selection_applications')
-      .select('id, email, objective_score_avg, cycle_id, selection_cycles!inner(cycle_code, status)')
-      .eq('selection_cycles.status', 'closed')
-      .is('cutoff_approved_email_sent_at', null)
-      .not('email', 'is', null)
-      .limit(120);
-    assert.ifError(error);
-
-    for (const app of data ?? []) {
-      const { count } = await sb
-        .from('selection_interviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', app.id);
-      if ((count ?? 0) > 0) continue;                       // precisa ser modo `full`
-      const { count: evals } = await sb
-        .from('selection_evaluations')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', app.id);
-      if ((evals ?? 0) >= 2) continue;                      // senão o core PASSA e emite token real
-      const { data: res } = await sb.rpc('resolve_interview_booking_url', { p_application_id: app.id });
-      const row = Array.isArray(res) ? res[0] : res;
-      if (!row?.url) continue;                              // senão o caminho é P0020, não recusa
-      refuseApp = app;
-      break;
-    }
+    // `objectiveScore` preenchido de propósito: `notify_selection_cutoff_approved` LEVANTA P0003
+    // (#1450) antes de chegar ao core, então sem nota a asserção sobre recusa DE GATE não seria
+    // exercida. `requireBookingUrl` evita o outro desvio: sem URL o caminho é P0020, não recusa.
+    refuseFx = await createSyntheticApplication(sb, {
+      cycleStatus: 'closed',
+      label: 'p0002-refuse',
+      objectiveScore: 8.5,
+      evaluations: 0,
+      requireBookingUrl: true,
+    });
+    reuseFx = await createSyntheticApplication(sb, {
+      cycleStatus: 'closed',
+      label: 'reuse-prior',
+      withInterview: true,
+      evaluations: 0,
+      objectiveScore: null,   // falharia no modo full — é o que distingue reuso de aprovação
+    });
   });
 
   after(async () => {
-    // O token de reagendamento é o único resíduo removível; a linha de gate_attempts é registro
-    // verdadeiro de uma tentativa que de fato aconteceu, e fica.
-    for (const t of mintedTokens) {
-      await sb.from('onboarding_tokens').delete().eq('token', t);
+    // O CASCADE de `selection_applications` leva gate_attempts, entrevistas e avaliações; o token
+    // e o log de despacho saem à mão dentro do `cleanup`. Nada disto é auditoria de gente real:
+    // as tentativas registradas foram feitas contra candidaturas que só existiram para o teste.
+    for (const fx of [refuseFx, reuseFx]) {
+      if (fx) await fx.cleanup();
     }
   });
 
@@ -350,21 +346,18 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
   });
 
   it('#1594 metade (b) — a recusa PRODUZ linha em gate_attempts que sobrevive', async () => {
-    if (!refuseApp) {
-      // Dizer alto: sem candidatura que recuse, a asserção não foi exercida (skip lê como verde).
-      console.log('[1594] nenhuma candidatura de ciclo fechado recusa em modo full — asserção não exercida');
-      return;
-    }
-
+    // #1636: a fixture é construída, então a asserção é SEMPRE exercida. O ramo "não exercida" que
+    // vivia aqui era um skip lendo como verde — e ele existia só porque o alvo era dado vivo.
     const { count: before, error: e0 } = await sb
       .from('gate_attempts')
       .select('id', { count: 'exact', head: true })
-      .eq('application_id', refuseApp.id)
+      .eq('application_id', refuseFx.id)
       .eq('gate_passed', false);
     assert.ifError(e0);
+    assert.equal(before, 0, 'fixture nova não pode nascer com histórico de gate');
 
     const { data, error } = await sb.rpc('_issue_interview_booking_token_core', {
-      p_application_id: refuseApp.id,
+      p_application_id: refuseFx.id,
       p_bypass_granted: false,
       p_caller_id: null,
       p_bypass_requested: false,
@@ -378,7 +371,7 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
     const { data: rows, count: after, error: e1 } = await sb
       .from('gate_attempts')
       .select('gate_failed_code, gate_failed_reason, payload', { count: 'exact' })
-      .eq('application_id', refuseApp.id)
+      .eq('application_id', refuseFx.id)
       .eq('gate_passed', false)
       .order('attempted_at', { ascending: false })
       .limit(1);
@@ -396,26 +389,26 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
   });
 
   it('#1594 metade (a) — na recusa, NENHUM e-mail sai pelo despacho de cutoff', async () => {
-    if (!refuseApp || !refuseProven) {
-      // Trava deliberada: sem a prova de que o core recusa ESTA candidatura, chamar o despacho
-      // arriscaria mandar convite real para um candidato real.
-      console.log('[1594] metade (a) não exercida: a recusa do core não foi provada nesta corrida');
-      return;
-    }
+    // A escada de segurança FICA, mesmo com fixture. Ela não protege mais um candidato real de
+    // receber convite; protege a asserção: sem a prova de que o core recusa ESTA linha, exercer o
+    // despacho afirmaria sobre um caminho que não é o de recusa. E `assert.ok` em vez do
+    // `console.log + return` anterior, porque com fixture a pré-condição é construída — se ela não
+    // valer, isso é defeito, não coorte vazia.
+    assert.ok(refuseProven, 'a recusa do core não foi provada — a porta não pode ser exercida');
 
     const dispatchedRows = async () => {
       const { count, error } = await sb
         .from('admin_audit_log')
         .select('id', { count: 'exact', head: true })
         .eq('action', 'selection.cutoff_approved_email_dispatched')
-        .eq('target_id', refuseApp.id);
+        .eq('target_id', refuseFx.id);
       assert.ifError(error);
       return count ?? 0;
     };
     const before = await dispatchedRows();
 
     const { data, error } = await sb.rpc('notify_selection_cutoff_approved', {
-      p_application_id: refuseApp.id,
+      p_application_id: refuseFx.id,
     });
     assert.ifError(error);
     assert.equal(data?.success, false, 'o despacho tinha de abortar');
@@ -429,7 +422,7 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
     const { data: app, error: e2 } = await sb
       .from('selection_applications')
       .select('cutoff_approved_email_sent_at')
-      .eq('id', refuseApp.id)
+      .eq('id', refuseFx.id)
       .single();
     assert.ifError(e2);
     assert.equal(app.cutoff_approved_email_sent_at, null, 'a idempotência foi carimbada sem envio');
@@ -438,69 +431,42 @@ describe('#1594/#1595 B — camada DB-aware', { skip: !sb ? 'sem SUPABASE_URL + 
     const { count: refusals, error: e3 } = await sb
       .from('gate_attempts')
       .select('id', { count: 'exact', head: true })
-      .eq('application_id', refuseApp.id)
+      .eq('application_id', refuseFx.id)
       .eq('gate_passed', false);
     assert.ifError(e3);
     assert.ok(refusals >= 2, 'a segunda tentativa (via despacho) também tem de estar registrada');
   });
 
   it('#1595 — quem já tem entrevista entra em reuse_prior e NÃO reavalia os 3 gates', async () => {
-    // A porta do reagendamento existe para quem já foi convocado uma vez. Medido em 2026-08-05: os
-    // candidatos nessa situação FALHAM P0002/P0003 hoje, então reaplicar os gates barraria
-    // exatamente a população que a porta serve.
-    const { data: interviews, error: e0 } = await sb
-      .from('selection_interviews')
-      .select('application_id')
-      .limit(200);
-    assert.ifError(e0);
-
-    let target = null;
-    for (const iv of interviews ?? []) {
-      const { count: evals } = await sb
-        .from('selection_evaluations')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', iv.application_id);
-      const { data: app } = await sb
-        .from('selection_applications')
-        .select('id, objective_score_avg, consent_ai_analysis_at')
-        .eq('id', iv.application_id)
-        .single();
-      if (!app) continue;
-      // Só serve quem FALHARIA no modo full — senão o teste não distingue reuse de aprovação.
-      const wouldFailFull =
-        app.consent_ai_analysis_at === null || (evals ?? 0) < 2 || app.objective_score_avg === null;
-      if (wouldFailFull) { target = app; break; }
-    }
-
-    if (!target) {
-      console.log('[1595] nenhum candidato com entrevista falharia no modo full — asserção não exercida');
-      return;
-    }
-
+    // A porta do reagendamento existe para quem já foi convocado uma vez, e a fixture é montada
+    // exatamente na forma que a porta serve: entrevista existente + zero avaliações + sem nota, ou
+    // seja, alguém que FALHARIA no modo full. Sem isso o teste não distingue reuso de aprovação.
     const { data, error } = await sb.rpc('_issue_interview_booking_token_core', {
-      p_application_id: target.id,
+      p_application_id: reuseFx.id,
       p_bypass_granted: false,
       p_caller_id: null,
       p_bypass_requested: false,
     });
     assert.ifError(error);
-    if (data?.token) mintedTokens.push(data.token);
 
     assert.equal(data?.success, true, 'reagendamento barrado — a porta existe justamente para este caso');
     assert.equal(data?.gate_mode, 'reuse_prior');
     assert.equal(data?.gate_bypassed, false, 'reuse não é bypass: não exige manage_member');
-    // O nível de prova é registrado, mas NÃO é fixo: uma corrida anterior pode ter subido o tier
-    // de `interview_row_only` para `prior_token`. Afirmar o valor exato seria afirmar o histórico.
-    assert.ok(
-      ['dispatch_log', 'prior_token', 'interview_row_only'].includes(data?.prior_evidence),
-      `nível de prova inesperado: ${data?.prior_evidence}`,
+    // #1636: com fixture NOVA o nível de prova é determinístico. Antes o alvo era dado vivo e uma
+    // corrida anterior podia ter subido o tier de `interview_row_only` para `prior_token`, então a
+    // asserção precisava aceitar os três — uma asserção que aceita tudo o que existe não tem
+    // dentes. A fixture só tem a linha de entrevista, logo o tier é exatamente este.
+    assert.equal(
+      data?.prior_evidence,
+      'interview_row_only',
+      'fixture só tem linha de entrevista — qualquer outro tier significa que a ordem do CASE mudou',
     );
 
     // ...e o skip ficou AUDITADO, que é a condição inegociável da decisão.
     const { data: rows, error: e1 } = await sb
       .from('gate_attempts')
       .select('gate_passed, payload')
-      .eq('application_id', target.id)
+      .eq('application_id', reuseFx.id)
       .order('attempted_at', { ascending: false })
       .limit(1);
     assert.ifError(e1);
