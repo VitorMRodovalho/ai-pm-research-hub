@@ -3843,7 +3843,10 @@ const enUS: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., USA) — error monitoring. PII automatically removed.',
   'privacy.s5int.resend': 'Resend Inc. (USA) — email delivery. Email data and interaction metrics.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (USA) — certification verification. Public badge data only.',
-  'privacy.s5int.safeguards': 'The transfer is based on legitimate interest for the execution of the research initiative (LGPD Art. 33, IX) and the data processing agreements (DPA) of the respective providers.',
+  'privacy.s5int.googleAi': 'Google LLC (USA): generation of an initial suggestion about applications to the volunteer selection process. Transfer occurs only after the data subject consents, which is optional and revocable.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (USA): initial triage, application briefing and analysis of video responses, within the same selection process. Transfer occurs only after that same consent, equally optional and revocable.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (USA): transcription of candidate video responses. Transfer occurs only after the highlighted consent for voice biometric data (Art. 11, §1, I).',
+  'privacy.s5int.safeguards': 'The infrastructure transfers above are based on legitimate interest for the execution of the research initiative (LGPD Art. 33, IX) and the data processing agreements (DPA) of the respective providers. Transfers to the artificial intelligence providers (Google, Anthropic and OpenAI) are based instead on the data subject\'s specific and highlighted consent, with prior information about the international nature of the operation (LGPD Art. 33, VIII), and do not occur without it.',
 
   // S6 — Retention (table)
   'privacy.s6ret.title': 'Data Retention',
@@ -5486,6 +5489,7 @@ const enUS: Record<string, string> = {
   'nav.certificates': 'My Certificates',
   'nav.myPending': '✍️ My pending signatures',
   'nav.myPoints': '📊 My Score',
+  'nav.myEvaluations': '🗳️ My Evaluations',
   'myPoints.title': 'My Score, auditable',
   'myPoints.heading': 'My Score, auditable',
   'myPoints.subtitle': 'Every point, with the date it happened and the cycle it belongs to.',
@@ -6707,7 +6711,7 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.status': 'Current status',
   'pmi.onboarding.expires': 'This access link expires in {days} days. Save in your favorites.',
   'pmi.onboarding.consentTitle': 'AI analysis consent',
-  'pmi.onboarding.consentBody': 'This consent is optional, and declining it has no effect on the selection process: your evaluation, your interview invitation and the final decision all happen normally with or without it. By consenting, you authorize artificial intelligence providers (Google, with Gemini, and Anthropic, with Claude) to generate an initial suggestion about your profile, always reviewed by human evaluators, who are the ones who decide. You can revoke at any time: AI-derived information is deleted from your application immediately.',
+  'pmi.onboarding.consentBody': 'This consent is optional, and declining it has no effect on the selection process: your evaluation, your interview invitation and the final decision all happen normally with or without it. By consenting, you authorize artificial intelligence providers (Google, with Gemini, and Anthropic, with Claude, both based in the United States) to generate an initial suggestion about your profile, always reviewed by human evaluators, who are the ones who decide. You can revoke at any time: AI-derived information is deleted from your application immediately.',
   'pmi.onboarding.consentGranted': 'Consent granted',
   'pmi.onboarding.revokeConsent': 'Revoke consent',
   'pmi.onboarding.consentNotGranted': 'Consent not granted',

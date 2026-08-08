@@ -3848,7 +3848,10 @@ const ptBR: Record<string, string> = {
   'privacy.s5int.sentry': 'Sentry (Functional Software Inc., EUA) — monitoramento de erros. PII removido automaticamente.',
   'privacy.s5int.resend': 'Resend Inc. (EUA) — envio de emails. Dados de email e métricas de interação.',
   'privacy.s5int.credly': 'Credly/Pearson VUE (EUA) — verificação de certificações. Apenas dados públicos de badges.',
-  'privacy.s5int.safeguards': 'A transferência se fundamenta no legítimo interesse para a execução da iniciativa de pesquisa (LGPD Art. 33, IX) e nos termos de processamento de dados (DPA) dos respectivos provedores.',
+  'privacy.s5int.googleAi': 'Google LLC (EUA): geração de sugestão inicial sobre candidaturas ao processo seletivo voluntário. Transferência realizada somente após o consentimento do titular, que é opcional e revogável.',
+  'privacy.s5int.anthropicAi': 'Anthropic PBC (EUA): triagem inicial, resumo de candidatura e análise de vídeos de resposta, no mesmo processo seletivo. Transferência realizada somente após o mesmo consentimento, igualmente opcional e revogável.',
+  'privacy.s5int.openaiWhisper': 'OpenAI (EUA): transcrição de vídeos de resposta de candidatos. Transferência realizada somente após o consentimento destacado para dado biométrico de voz (Art. 11, §1º, I).',
+  'privacy.s5int.safeguards': 'As transferências de infraestrutura acima se fundamentam no legítimo interesse para a execução da iniciativa de pesquisa (LGPD Art. 33, IX) e nos termos de processamento de dados (DPA) dos respectivos provedores. Já as transferências para os provedores de inteligência artificial (Google, Anthropic e OpenAI) se fundamentam no consentimento específico e destacado do titular, com informação prévia sobre o caráter internacional da operação (LGPD Art. 33, VIII), e não ocorrem sem ele.',
 
   // S6 — Retenção (tabela)
   'privacy.s6ret.title': 'Retenção de Dados',
@@ -5492,6 +5495,7 @@ const ptBR: Record<string, string> = {
   'nav.certificates': 'Meus Certificados',
   'nav.myPending': '✍️ Minhas pendências',
   'nav.myPoints': '📊 Minha Pontuação',
+  'nav.myEvaluations': '🗳️ Minhas Avaliações',
   'myPoints.title': 'Minha Pontuação, auditável',
   'myPoints.heading': 'Minha Pontuação, auditável',
   'myPoints.subtitle': 'Cada ponto, com a data do fato e o ciclo a que pertence.',
@@ -6713,7 +6717,7 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.status': 'Status atual',
   'pmi.onboarding.expires': 'Este link de acesso expira em {days} dias. Salve em seus favoritos.',
   'pmi.onboarding.consentTitle': 'Consentimento de análise por IA',
-  'pmi.onboarding.consentBody': 'Este consentimento é opcional e recusá-lo não tem efeito sobre o processo seletivo: sua avaliação, seu convite para entrevista e a decisão final acontecem normalmente com ou sem ele. Ao consentir, você autoriza que provedores de inteligência artificial (Google, com o Gemini, e Anthropic, com o Claude) gerem uma sugestão inicial sobre o seu perfil, sempre revisada por avaliadores humanos, a quem cabe decidir. Você pode revogar a qualquer momento: as informações derivadas de IA são eliminadas imediatamente da sua candidatura.',
+  'pmi.onboarding.consentBody': 'Este consentimento é opcional e recusá-lo não tem efeito sobre o processo seletivo: sua avaliação, seu convite para entrevista e a decisão final acontecem normalmente com ou sem ele. Ao consentir, você autoriza que provedores de inteligência artificial (Google, com o Gemini, e Anthropic, com o Claude, ambos sediados nos Estados Unidos) gerem uma sugestão inicial sobre o seu perfil, sempre revisada por avaliadores humanos, a quem cabe decidir. Você pode revogar a qualquer momento: as informações derivadas de IA são eliminadas imediatamente da sua candidatura.',
   'pmi.onboarding.consentGranted': 'Consentimento concedido',
   'pmi.onboarding.revokeConsent': 'Revogar consentimento',
   'pmi.onboarding.consentNotGranted': 'Consentimento não concedido',

@@ -7030,6 +7030,7 @@ export type Database = {
           channel: string
           created_at: string
           email_hash: string | null
+          evidence: Json | null
           id: string
           ip_hash: string | null
           member_id: string | null
@@ -7047,6 +7048,7 @@ export type Database = {
           channel: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
@@ -7064,6 +7066,7 @@ export type Database = {
           channel?: string
           created_at?: string
           email_hash?: string | null
+          evidence?: Json | null
           id?: string
           ip_hash?: string | null
           member_id?: string | null
@@ -31640,6 +31643,10 @@ export type Database = {
         Args: { p_event_id: string; p_member_id: string }
         Returns: boolean
       }
+      is_selection_committee_member: {
+        Args: { p_cycle_id?: string; p_member_id: string }
+        Returns: boolean
+      }
       issue_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_event_guest_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_interview_booking_token: {
@@ -33265,6 +33272,10 @@ export type Database = {
       selection_coi_recused: {
         Args: { p_caller_id: string; p_cycle_id: string }
         Returns: boolean
+      }
+      selection_committee_role_for: {
+        Args: { p_member_id: string }
+        Returns: string
       }
       selection_consistency_report: {
         Args: { p_cycle_id?: string }
