@@ -20,6 +20,23 @@ contas de nuvem.
 ⚠️ **`pitr_enabled` era `false` em 08/08.** Sem point-in-time, o RPO é a granularidade do diário,
 e uma falha do diário empurra isso para 48 h ou mais.
 
+Preço do add-on, medido em 08/08 pela API de billing (`/v1/projects/<ref>/billing/addons`), para
+comparar com o compute atual do projeto, que é **Micro a ~US$ 10/mês**:
+
+| PITR | preço |
+|---|---|
+| 7 dias | **US$ 100/mês** |
+| 14 dias | US$ 200/mês |
+| 28 dias | US$ 400/mês |
+
+O que o PITR compra que o diário não compra: RPO abaixo de um dia, restauração **para um instante**
+(por exemplo, o segundo anterior a uma migration ruim) e um alvo de restauração **não-destrutivo** —
+sem ele, o único restore do fornecedor é in-place sobre a própria produção.
+
+A alternativa barata para o **RPO**, e só para ele: tornar o dump lógico **diário** em vez de
+semanal. Custa minutos de CI e leva o RPO da cópia lógica de 7 dias para 1. Não dá
+point-in-time nem alvo não-destrutivo.
+
 ## O que o dump lógico NÃO contém
 
 O `pg_dump` do `backup-database.yml` exclui doze schemas. Dois grupos, por motivos diferentes:
@@ -45,8 +62,23 @@ As 4 FKs ausentes são `members_auth_id_fkey`, `user_profiles_id_fkey`, `events_
 consegue entrar. A recuperação completa exige, além do dump, reprovisionar as identidades (backup
 físico do Supabase, ou recriação via OAuth com re-vínculo de `members.auth_id`).
 
-Incluir o schema `auth` no dump resolveria e levaria hashes de senha e refresh tokens para o
-artefato do GitHub. É decisão de PM, e enquanto não for tomada, este documento é o registro dela.
+### Decisão do PM, ratificada em 08/08/2026: o schema `auth` NÃO entra no dump
+
+Incluir resolveria a recuperação de identidade e levaria **hashes de senha e refresh tokens** para o
+artefato do GitHub, que é o repositório de código. O risco de exfiltração de credencial supera o
+ganho de conveniência na recuperação.
+
+**Consequência aceita, e ela precisa estar escrita:** uma recuperação a partir deste dump devolve o
+dado e **não** devolve o acesso. Reprovisionar identidade passa a ser um passo explícito do
+procedimento, por uma destas vias:
+
+1. backup **físico** do Supabase (o único que carrega `auth`), o que na prática exige PITR ligado
+   para ter um alvo de restauração não-destrutivo;
+2. recriação das contas via OAuth com re-vínculo de `members.auth_id`, manual e proporcional ao
+   número de pessoas ativas.
+
+⚠️ As duas vias dependem de decisões que **não** estavam fechadas quando este parágrafo foi escrito.
+Antes de confiar nele num incidente, confira qual delas existe de fato.
 
 ## Fidelidade medida do dump lógico
 
