@@ -5,7 +5,7 @@
 -- applicant's PMI-registered application email diverges from their platform member email
 -- (same pmi_id), the lookup returned NULL and the function fell into the INSERT path, which
 -- collided on members_pmi_id_key (UNIQUE pmi_id) -> 23505 -> PostgREST 409. Reproduced with
--- Paulo Alves de Oliveira Junior (member paulo-junior@outlook.com, app pejota81@gmail.com,
+-- Paulo Alves de Oliveira Junior (member redacted-064@example.com, app redacted-067@example.com,
 -- shared pmi_id 1158211). Same identity-drift class as #1130 (stable join by pmi_id).
 --
 -- SECONDARY (promotion no-op): the promotion CASE only elevated members whose current role was

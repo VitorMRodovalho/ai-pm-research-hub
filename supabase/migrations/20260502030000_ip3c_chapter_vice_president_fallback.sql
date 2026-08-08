@@ -2,7 +2,7 @@
 -- * PMI-GO não tem chapter_liaison registrado (Ivan-presidente se envolve direto com o Núcleo).
 -- * Regra travada: quando chapter NÃO tem chapter_liaison, vice-presidente do capítulo
 --   atua como PREPOSTO de testemunha para governance_documents.
--- * Seed Emanuele Melo (VP PMI-GO) — email vice-presidencia@pmigo.org.br — como member ativo
+-- * Seed Emanuele Melo (VP PMI-GO) — email redacted-083@example.com — como member ativo
 --   com designation 'chapter_vice_president'. PII complementar (linkedin/phone/photo)
 --   via UI admin — não neste migration.
 -- * Seed engagements (chapter_board + observer) para satisfazer invariante A3.
@@ -18,7 +18,7 @@ DECLARE
   v_existing_member uuid;
   v_member_id uuid;
 BEGIN
-  SELECT id INTO v_existing_member FROM public.members WHERE email = 'vice-presidencia@pmigo.org.br';
+  SELECT id INTO v_existing_member FROM public.members WHERE email = 'redacted-083@example.com';
 
   IF v_existing_member IS NOT NULL THEN
     UPDATE public.members
@@ -32,7 +32,7 @@ BEGIN
     v_member_id := v_existing_member;
   ELSE
     INSERT INTO public.persons (organization_id, name, email)
-    VALUES (v_pmigo_org, 'Emanuele Melo', 'vice-presidencia@pmigo.org.br')
+    VALUES (v_pmigo_org, 'Emanuele Melo', 'redacted-083@example.com')
     RETURNING id INTO v_person_id;
 
     INSERT INTO public.members (
@@ -41,7 +41,7 @@ BEGIN
     ) VALUES (
       v_pmigo_org, v_person_id, NULL,
       'Emanuele Melo',
-      'vice-presidencia@pmigo.org.br',
+      'redacted-083@example.com',
       'PMI-GO',
       'observer',
       'active',

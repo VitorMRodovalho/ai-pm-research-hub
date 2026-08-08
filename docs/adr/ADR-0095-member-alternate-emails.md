@@ -103,7 +103,7 @@ The write surface of `member_emails` was completed by adding three new RPCs in m
 
 ### Rationale
 
-- **Surfaced organically in p215 PM smoke**: PM added an alternate (`vitor@vitormr.dev`) with kind=`personal` while the original intent was `institutional`. There was no kind-correction path without direct SQL, contradicting the agentic-workflow goal stated in §5.
+- **Surfaced organically in p215 PM smoke**: PM added an alternate (`redacted-087@example.com`) with kind=`personal` while the original intent was `institutional`. There was no kind-correction path without direct SQL, contradicting the agentic-workflow goal stated in §5.
 - **Auth pattern reused unchanged**: the three new RPCs follow the existing `member_add_alternate_email` template — self OR `can_by_member('manage_member')`, SECURITY DEFINER, SET search_path, VOLATILE.
 - **Primary-mutation policy**: all three RPCs treat the primary email as a sync-trigger-driven invariant. `remove` and `update_kind` raise on primary; `set_primary` is the only canonical path to change which email is primary, and it routes through `UPDATE members.email` so that the existing cross-member theft guard (mig 20260802000009) remains the single enforcement point.
 - **Idempotency**: `set_primary` on already-primary returns true (no-op). `remove` / `update_kind` on a non-registered email return false (not raise) — the distinction is between invalid operations (raise) and absent state (return false).

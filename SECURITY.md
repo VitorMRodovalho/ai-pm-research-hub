@@ -4,7 +4,7 @@
 
 If you believe you've found a security vulnerability in the AI & PM Research Hub, please **do not** open a public GitHub issue. Instead:
 
-1. **Email:** `vitorodovalho@gmail.com` with subject line `[SECURITY] <short description>`
+1. **Email:** `vitor@vitormr.dev` with subject line `[SECURITY] <short description>`
 2. **Expected response SLA:**
    - Acknowledgement: within 48 hours
    - Initial assessment: within 5 business days

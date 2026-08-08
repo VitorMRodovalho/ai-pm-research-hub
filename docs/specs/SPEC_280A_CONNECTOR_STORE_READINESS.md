@@ -240,7 +240,7 @@ If production cannot safely provide this isolation, use a staging/demo environme
 Use:
 
 - public/institutional support: `nucleoia@pmigo.org.br`;
-- technical/developer owner: `vitor@vitormr.dev`.
+- technical/developer owner: `redacted-087@example.com`.
 
 Store/directory submissions and public docs should prefer the institutional address for continuity. Technical owner details can be used where platforms ask for developer contact.
 

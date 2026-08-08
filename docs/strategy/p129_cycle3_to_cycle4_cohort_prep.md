@@ -78,7 +78,7 @@ Estes têm entrevista marcada mas não realizada. Alguns têm interview eval reg
 
 ## Observações
 
-1. **Maria Araújo aparece 2x** com mesmo email (`leticia.araujov@gmail.com`) — uma withdrawn (leader) + uma submitted/scheduled (researcher). Provável duplicate por mudança de track. Verificar.
+1. **Maria Araújo aparece 2x** com mesmo email (`redacted-047@example.com`) — uma withdrawn (leader) + uma submitted/scheduled (researcher). Provável duplicate por mudança de track. Verificar.
 2. **William Junio aparece 2x** com mesmo email — uma submitted researcher + uma submitted leader scheduled. Verificar.
 3. **Marcio Pimenta + Maria Araújo (researcher)**: têm interview eval REGISTRADA mesmo com `interview_status='scheduled'`. Estranho — provavelmente foi feita avaliação informal sem mark_interview_status. Investigar.
 4. **Herlon alves de sousa** (PMI-CE leader) — é o sponsor do CPMAI Cycle 3. Caso especial — confirmar se ele é candidate normal ou se aplicação é placeholder.

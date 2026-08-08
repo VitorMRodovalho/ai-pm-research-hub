@@ -218,7 +218,7 @@ Most critical:
 | File | Data | Should Be |
 |------|------|-----------|
 | `help.astro` | `https://wa.me/5562999999999` | `site_config.gp_whatsapp` |
-| `onboarding.astro`, `ResourcesSection.astro` | `nucleoiagp@gmail.com` | `site_config.contact_email` |
+| `onboarding.astro`, `ResourcesSection.astro` | `redacted-062@example.com` | `site_config.contact_email` |
 | `admin/index.astro` | Validator name + email, base URL in VRMS evidence | Env var or `site_config` |
 
 ### 3.6 Color Constants Duplicated Across Files

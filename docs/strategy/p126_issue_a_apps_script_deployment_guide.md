@@ -124,7 +124,7 @@ function syncCalendarBookingToInterview(eventId, calendarId) {
 
     if (code >= 400) {
       // Optional: send error notification to Vitor email
-      // MailApp.sendEmail('vitor.rodovalho@outlook.com', 'arm116 sync failed', body);
+      // MailApp.sendEmail('vitor@vitormr.dev', 'arm116 sync failed', body);
     }
 
   } catch (e) {
@@ -255,7 +255,7 @@ In Apps Script editor:
 ### Step 8 — End-to-end test
 
 1. Create a test event on YOUR Calendar with title containing "entrevista"
-2. Add a guest with a non-PMI-GO email (e.g., `arm116-test@gmail.com`)
+2. Add a guest with a non-PMI-GO email (e.g., `redacted-008@example.com`)
 3. Save event
 4. Wait 30-60 seconds for trigger
 5. Check Apps Script execution log for sync output

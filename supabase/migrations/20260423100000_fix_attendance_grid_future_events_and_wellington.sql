@@ -17,7 +17,7 @@
 --
 -- Rollback:
 --   UPDATE members SET member_status='active', designations='{}'::text[],
---     offboarded_at=NULL WHERE email='wbarbozaeng@gmail.com';
+--     offboarded_at=NULL WHERE email='redacted-088@example.com';
 --   (and restore previous RPC body from 20260320100005 + earlier migrations)
 -- ═══════════════════════════════════════════════════════════════
 
@@ -27,7 +27,7 @@ SET member_status = 'observer',
     designations = ARRAY['observer']::text[],
     offboarded_at = '2026-04-16 16:00:00+00',
     updated_at = now()
-WHERE email = 'wbarbozaeng@gmail.com';
+WHERE email = 'redacted-088@example.com';
 
 -- ── Fix #2: get_attendance_grid — match get_tribe_attendance_grid ──
 -- Treat future events as 'scheduled' so they don't inflate the denominator.

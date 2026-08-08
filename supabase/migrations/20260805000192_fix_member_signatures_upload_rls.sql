@@ -10,7 +10,7 @@
 --   `signatures/email.%`, so the EXISTS is ALWAYS false → EVERY member's signature/photo
 --   upload fails with "new row violates row-level security policy" (HTTP 400).
 --   Verified live: 0 of 73 active members have a `members.name` matching the pattern;
---   member juniorwillian917@gmail.com hit repeated 400s on
+--   member redacted-043@example.com hit repeated 400s on
 --   POST /object/member-signatures/signatures/juniorwillian917_gmail_com.png.
 --   (member-photos has the identical defect — found by the security-engineer review.)
 --

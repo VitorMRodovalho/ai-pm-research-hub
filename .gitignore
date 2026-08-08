@@ -70,6 +70,9 @@ release-provenance/
 .wrangler/
 
 # Non-project files (accidentally extracted/downloaded)
+# PII: extracao de assinaturas do Termo de Voluntariado (92 pessoas, 3 CPFs em CN de
+# certificado). Artefato de auditoria, nunca deveria ter sido versionado.
+scripts/docusign-signers-extracted.json
 ventoy-*/
 packages.microsoft.gpg
 DISCREPANCY_REPORT.md

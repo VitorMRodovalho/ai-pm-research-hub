@@ -136,7 +136,7 @@ export const POST: APIRoute = async ({ request }) => {
   // It does LOWER(TRIM(email)) = guest (exact, case-insensitive) so a `_`/`%` in
   // the address is NOT a wildcard — selection_applications.email is `text`, and
   // the prior `.ilike('email', guest)` mis-matched real emails like
-  // `j_coelho@id.uff.br`. The matcher also adds the corr.1 robustness: OPEN/ACTIVE
+  // `redacted-039@example.com`. The matcher also adds the corr.1 robustness: OPEN/ACTIVE
   // cycle scope, a same-member ALTERNATE-email bridge (member_emails — zero
   // cross-candidate risk, primary always preferred), and the pre-interview status
   // allow-list, all in one place shared with the canonical RPC.

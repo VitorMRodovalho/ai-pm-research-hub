@@ -105,7 +105,7 @@ listagem das 56 atas reais já mapeadas.
 
 ### Negative / risks
 
-- **Workspace dependency**: se conta `nucleoia@pmigo.org.br` for suspensa/perdida, todos writes parados (mesmo backup `vitorodovalho@gmail.com` não cobre upload via SA). Já era o SPOF aceito na Phase 1.
+- **Workspace dependency**: se conta `nucleoia@pmigo.org.br` for suspensa/perdida, todos writes parados (mesmo backup `vitor@vitormr.dev` não cobre upload via SA). Já era o SPOF aceito na Phase 1.
 - **DwD é amplo**: client_id `117466213352176222096` poderia (em tese) impersonar QUALQUER usuário do domínio se outras contas forem adicionadas como subjects. Mitigação: SA's PEM só está em Vault Supabase, não circula. Reset DwD = revogar entry no Console.
 - **Scope `drive` é amplo**: SA tem theoretical full read+write em qualquer pasta de `nucleoia@pmigo.org.br`. Mitigação: PM já compartilhou seletivamente as 12 pastas; SA só age onde tem permission explícita.
 

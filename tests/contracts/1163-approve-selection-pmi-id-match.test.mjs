@@ -7,7 +7,7 @@
  * application email diverges from their platform member email (same pmi_id), the lookup returned
  * NULL and the function fell into the INSERT path, which collided on members_pmi_id_key
  * (UNIQUE pmi_id) -> 23505 -> PostgREST 409. Reproduced with Paulo Alves de Oliveira Junior
- * (member paulo-junior@outlook.com, app pejota81@gmail.com, shared pmi_id 1158211).
+ * (member redacted-064@example.com, app redacted-067@example.com, shared pmi_id 1158211).
  *
  * SECONDARY: the promotion CASE omitted 'researcher', so an already-active researcher approved on
  * the leader track was never elevated to tribe_leader. Fix adds researcher -> tribe_leader only

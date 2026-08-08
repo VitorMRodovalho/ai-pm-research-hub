@@ -12,7 +12,7 @@
 -- WHERE/ORDER BY) instead of being re-implemented in TS — where they would be
 -- both duplicated AND subtly wrong: selection_applications.email is `text`
 -- (not citext), so the webhook's prior `.ilike('email', guest)` treated `_`/`%`
--- as wildcards (e.g. the real candidate `j_coelho@id.uff.br` — the `_` matched
+-- as wildcards (e.g. the real candidate `redacted-039@example.com` — the `_` matched
 -- any char) and was case-sensitive only by accident of ILIKE. The matcher uses
 -- LOWER(TRIM(a.email)) = guest (exact, case-insensitive) like the RPC.
 --

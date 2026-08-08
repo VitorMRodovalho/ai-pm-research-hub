@@ -4,8 +4,8 @@
 -- WHY: the VEP import refreshes a selection_application from the PMI source, which can
 -- reset its email to the candidate's PMI email (differing from the member's primary email).
 -- For a VEP-reconciled approved candidate this tripped R_approved_application_has_member
--- (R matched only members.email primary). Live case: app 6259ced2 (pejota81@gmail.com,
--- cycle3) → member Paulo Alves de Oliveira Junior (57fcf33c, paulo-junior@outlook.com),
+-- (R matched only members.email primary). Live case: app 6259ced2 (redacted-067@example.com,
+-- cycle3) → member Paulo Alves de Oliveira Junior (57fcf33c, redacted-064@example.com),
 -- reconciled 2026-05-15; the 2026-05-30 import broke the primary-email match → R=1.
 -- FIX (PM-ratified, durable option): R's drift CTE now ALSO accepts a match via
 -- member_emails (any alternate email), so a member whose app email is one of their

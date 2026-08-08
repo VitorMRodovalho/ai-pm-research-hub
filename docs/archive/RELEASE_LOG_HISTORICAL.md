@@ -2419,7 +2419,7 @@ Global Tribe Selector dropdown for admins and Allocation Notification system.
     - Tribe name and direct portal link (`/tribe/{id}`)
     - WhatsApp group button (green CTA) if tribe has `whatsapp_url`
     - Dynamic GP signature (name, phone, LinkedIn from caller's member record)
-  - Sandbox mode: Forces recipient to `vitor.rodovalho@outlook.com` when using test domain
+  - Sandbox mode: Forces recipient to `vitor@vitormr.dev` when using test domain
   - All sends logged to `broadcast_log` table
   - Security: Restricted to superadmin/manager/deputy_manager
 - **Admin UI** (`/admin/index.astro`):

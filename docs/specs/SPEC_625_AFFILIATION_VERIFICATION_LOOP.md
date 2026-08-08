@@ -67,11 +67,11 @@ ADR-0042 (chapter dashboards), ADR-0076 (PMI data/LIA/opt-out), GC-162 (RLS/LGPD
 
 | Papel no loop | Diretoria / contato |
 |---|---|
-| **Verificador operacional** (escreve na plataforma) | Diretoria de Filiação — `filiacao@pmigo.org.br` · Welma Alves `welma@pmigo.org.br` |
-| Consumidor primário do status | Diretoria de Voluntariado — `diretoriavoluntariado@pmigo.org.br` |
-| Patrocínio/escalação | Presidência (Ivan Lourenço `ivan.lourenco@pmigo.org.br`) · `vice-presidencia@pmigo.org.br` |
-| Interlocução com capítulos parceiros | Relações Institucionais — `relacoesinstitucionais@pmigo.org.br` |
-| Demais (informativo) | Certificação `certificacao@pmigo.org.br` · Desenv. Profissional `desenvolvimento.profissional@pmigo.org.br` · Eventos `diretoria.eventos@pmigo.org.br` · Adm/Finanças `diretoria.financas@pmigo.org.br` |
+| **Verificador operacional** (escreve na plataforma) | Diretoria de Filiação — `redacted-029@example.com` · Welma Alves `redacted-089@example.com` |
+| Consumidor primário do status | Diretoria de Voluntariado — `redacted-020@example.com` |
+| Patrocínio/escalação | Presidência (Ivan Lourenço `redacted-038@example.com`) · `redacted-083@example.com` |
+| Interlocução com capítulos parceiros | Relações Institucionais — `redacted-070@example.com` |
+| Demais (informativo) | Certificação `redacted-012@example.com` · Desenv. Profissional `redacted-017@example.com` · Eventos `redacted-018@example.com` · Adm/Finanças `redacted-019@example.com` |
 | **Capítulos parceiros** (visibilidade agregada v1) | Diretorias de filiação + voluntariado de cada capítulo conveniado (Acordos de Cooperação vigentes) |
 
 ## 4. Modelo de dados
