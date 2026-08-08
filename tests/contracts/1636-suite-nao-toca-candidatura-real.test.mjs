@@ -1,0 +1,327 @@
+// tests/contracts/1636-suite-nao-toca-candidatura-real.test.mjs
+//
+// #1636 — a suíte de contrato escolhia candidatura REAL de produção e escrevia nela.
+//
+// O ACHADO, medido em 08/08/2026 contra produção. Os testes DB-aware do arco do gate de entrevista
+// escolhiam o alvo por PREDICADO sobre a base viva (`.eq('status','interview_pending')`, ciclo
+// aberto / ciclo fechado) e chamavam `_issue_interview_booking_token_core` com `p_caller_id: null`.
+// Como a metade (b) do #1594 exige que a linha de recusa COMMITE, cada `npm test` sedimentava
+// recusas permanentes em prod:
+//
+//   gate_attempts ............ 663 linhas, 627 sem ator (94,6%)
+//   candidaturas reais tocadas ... 13, e 3 delas concentravam 489 linhas
+//   tokens de agendamento vivos .. 4, emitidos pelo run 31144140275 do CI (07/08 03:23–03:31),
+//                                  `access_count` 0, válidos até 21/08, apontando para gente real
+//
+// A CORREÇÃO é `tests/helpers/selection-fixtures.mjs`: cada forma que o gate exige passa a ser
+// construída como candidatura sintética (e-mail em domínio reservado por RFC 2606, convenção do
+// #1437) e apagada no fim, com o CASCADE levando `gate_attempts`, entrevistas e avaliações junto.
+//
+// ESTE ARQUIVO É A TRAVA, e ela tem de existir em duas camadas porque as duas falham de jeitos
+// diferentes:
+//
+//   Camada A (estática, SEMPRE roda) — guard de CLASSE sobre o código da suíte: quem exerce o
+//     caminho de escrita do gate TEM de passar pelo helper. Um guard que enumerasse os 4 arquivos
+//     conhecidos não impediria o quinto de nascer, e o quinto é exatamente como esta issue nasceu.
+//
+//   Camada B (DB-aware) — o EFEITO em produção. Camada A fica verde se alguém importar o helper e
+//     mesmo assim varrer prod; só o banco sabe onde a linha caiu.
+//
+// ⚠️ POR QUE A CAMADA A NÃO PODE SER UM `grep`. Sete arquivos da suíte contêm a string
+// `sb.rpc('selection_rescue_stuck_interview'` DENTRO DE UM LITERAL, porque inspecionam o código do
+// admin e do MCP procurando por ela. Um grep os acusaria todos, e um guard que grita em trabalho
+// correto é desligado na terceira vez. O scanner abaixo distingue CHAMADA de MENÇÃO, e os dois
+// controles (positivo e negativo) provam que ele distingue — sem eles, um scanner quebrado que não
+// acha nada passaria por vacuidade.
+
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { createClient } from '@supabase/supabase-js';
+import { RESERVED_DOMAIN, GRACE_MINUTES } from '../helpers/selection-fixtures.mjs';
+import { rpcCallsIn } from '../helpers/rpc-call-scanner.mjs';
+
+const DIR = 'tests/contracts';
+const HELPER = 'selection-fixtures.mjs';
+
+/**
+ * Superfície de ESCRITA do gate de entrevista: RPCs que emitem token, despacham convite, queimam
+ * cap ou movem status. Ler (`resolve_interview_booking_url`, `_audit_function_source`) não entra —
+ * leitura não deixa rastro em candidatura nenhuma.
+ */
+const RPCS_QUE_ESCREVEM = [
+  '_issue_interview_booking_token_core',
+  '_dispatch_interview_booking_link',
+  'notify_selection_cutoff_approved',
+  'selection_rescue_unbooked_invite',
+  'selection_rescue_stuck_interview',
+  'schedule_interview',
+  'mark_interview_status',
+  'request_interview_reschedule',
+  'request_interview_booking_link_via_token',
+  'process_pending_reschedule_nudges',
+  '_selection_unbooked_rescue_cron',
+  '_selection_stuck_scheduled_rescue_cron',
+  '_selection_cutoff_pending_cron',
+];
+
+/** Escrita direta na tabela de candidaturas (o 1613 muta `status` por UPDATE, sem RPC). */
+function escreveDiretoEmCandidaturas(src) {
+  return /\.from\(\s*['"]selection_applications['"]\s*\)[\s\S]{0,400}?\.(update|insert|upsert|delete)\(/.test(src);
+}
+
+/**
+ * O arquivo declara que o alvo dele é SINTÉTICO — de um dos dois jeitos aceitos:
+ *
+ *   a) importa o helper compartilhado (`selection-fixtures.mjs`), ou
+ *   b) monta a própria fixture num domínio reservado por RFC 2606 / RFC 6761.
+ *
+ * A alternativa (b) não é tolerância a duplicação: o `p693-dual-track-autolink-fkfix` precisa de
+ * DUAS candidaturas com o MESMO e-mail e papéis diferentes (é assim que o gatilho de auto-link
+ * dispara), e o helper compartilhado gera e-mail único por fixture justamente para manter aquele
+ * gatilho inerte. Forçá-lo a usar o helper quebraria o teste. O que a regra cobra é a INVARIANTE
+ * (o alvo não alcança pessoa nenhuma), não o módulo.
+ *
+ * ⚠️ Camada A é tripwire estático: ela vê o arquivo DECLARAR disciplina, não o efeito. Quem mede o
+ * efeito é a camada B, contra o banco.
+ */
+function declaraAlvoSintetico(src) {
+  return src.includes(HELPER) || /['"][^'"]*@(?:[^'"@]*\.)?(?:example\.(?:com|org|net)|test|invalid|localhost)['"]/i.test(src);
+}
+
+const ARQUIVOS = readdirSync(DIR)
+  .filter((f) => f.endsWith('.test.mjs'))
+  .map((f) => ({ nome: f, src: readFileSync(join(DIR, f), 'utf8') }));
+
+/** Arquivos que EXERCEM o caminho de escrita do gate contra o banco. */
+const EXERCEM = ARQUIVOS.filter(({ src }) => {
+  const chamadas = rpcCallsIn(src);
+  return RPCS_QUE_ESCREVEM.some((r) => chamadas.has(r)) || escreveDiretoEmCandidaturas(src);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Camada A — o predicado tem dentes, e a regra vale para a CLASSE
+// ─────────────────────────────────────────────────────────────────────────────
+describe('#1636 A — quem exerce o gate passa pela fixture sintética', () => {
+  it('CONTROLE POSITIVO: o scanner acha as chamadas reais dos 4 arquivos do arco', () => {
+    // Sem isto, um scanner quebrado (que não achasse nada) deixaria a regra abaixo verde por
+    // vacuidade — o modo de falha exato que o #1689 chamou de guard inerte.
+    const esperado = {
+      '1594-1595-gate-refusal-audit-and-reschedule-door.test.mjs': [
+        '_issue_interview_booking_token_core', 'notify_selection_cutoff_approved',
+      ],
+      '1598-1599-rescue-refusal-and-cron-error-capture.test.mjs': [
+        '_issue_interview_booking_token_core', 'selection_rescue_unbooked_invite',
+      ],
+      '1640-ia-fora-da-precondicao-do-convite.test.mjs': ['_issue_interview_booking_token_core'],
+    };
+    for (const [nome, rpcs] of Object.entries(esperado)) {
+      const arq = ARQUIVOS.find((a) => a.nome === nome);
+      assert.ok(arq, `arquivo do arco sumiu: ${nome}`);
+      const achadas = rpcCallsIn(arq.src);
+      for (const r of rpcs) {
+        assert.ok(achadas.has(r), `o scanner não achou a chamada de ${r} em ${nome}`);
+      }
+    }
+    // e o 1613 é pego pela OUTRA metade do predicado (ele muta por UPDATE, não por RPC).
+    const t1613 = ARQUIVOS.find((a) => a.nome === '1613-interview-stage-entry-gate.test.mjs');
+    assert.ok(t1613, 'arquivo do #1613 sumiu');
+    assert.ok(
+      escreveDiretoEmCandidaturas(t1613.src),
+      'o predicado de escrita direta não vê o UPDATE de status do #1613',
+    );
+  });
+
+  it('CONTROLE NEGATIVO: MENCIONAR a RPC dentro de um literal não conta como chamar', () => {
+    // Estes três inspecionam o código do admin/MCP procurando a string. Um grep os acusaria, e
+    // um guard que fica vermelho em trabalho correto é desligado.
+    for (const nome of [
+      'cutoff-approved-modal-button.test.mjs',
+      'p283-411-w3-mcp-exposure.test.mjs',
+      'cutoff-rpc-not-orphan.test.mjs',
+    ]) {
+      const arq = ARQUIVOS.find((a) => a.nome === nome);
+      assert.ok(arq, `arquivo de controle sumiu: ${nome}`);
+      assert.ok(
+        arq.src.includes('sb.rpc('),
+        `${nome} deveria CONTER a string — sem isso o controle não controla nada`,
+      );
+      const achadas = rpcCallsIn(arq.src);
+      const falsos = RPCS_QUE_ESCREVEM.filter((r) => achadas.has(r));
+      assert.deepEqual(
+        falsos, [],
+        `${nome} só MENCIONA a RPC num literal, e o scanner leu como chamada: ${falsos.join(', ')}`,
+      );
+    }
+  });
+
+  it('CONTROLE: a segunda via (fixture própria em domínio reservado) é reconhecida', () => {
+    // Sem este controle o ramo (b) da regra vira código morto e apodrece calado. O `p693` é o
+    // exemplo vivo: fixture própria, `@example.invalid`, e nenhuma linha do helper.
+    const p693 = ARQUIVOS.find((a) => a.nome === 'p693-dual-track-autolink-fkfix.test.mjs');
+    assert.ok(p693, 'o exemplo da segunda via sumiu — reapontar o controle');
+    assert.ok(!p693.src.includes(HELPER), 'o p693 passou a usar o helper: este controle perdeu o objeto');
+    assert.ok(declaraAlvoSintetico(p693.src), 'a segunda via deixou de ser reconhecida');
+
+    // E o predicado precisa REPROVAR quem não declara nada: um teste inventado que escreve numa
+    // candidatura sem dizer que ela é sintética.
+    assert.ok(
+      !declaraAlvoSintetico("await sb.from('selection_applications').update({ status: 'x' }).eq('id', alvo.id)"),
+      'o predicado aceita um arquivo que não declara alvo sintético — não tem dentes',
+    );
+  });
+
+  it('REGRA: todo arquivo que exerce o caminho de escrita usa alvo sintético', () => {
+    assert.ok(
+      EXERCEM.length >= 5,
+      `esperava ao menos os 5 arquivos que escrevem, achei ${EXERCEM.length} — o predicado ficou cego`,
+    );
+    const semFixture = EXERCEM.filter((a) => !declaraAlvoSintetico(a.src)).map((a) => a.nome);
+    assert.deepEqual(
+      semFixture, [],
+      'estes escrevem no caminho do gate sem declarar alvo sintético, logo escolhem candidatura ' +
+        `real de produção: ${semFixture.join(', ')}`,
+    );
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Camada B — o efeito no banco
+// ─────────────────────────────────────────────────────────────────────────────
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
+const SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const sb = SUPABASE_URL && SRK ? createClient(SUPABASE_URL, SRK, { auth: { persistSession: false } }) : null;
+
+/**
+ * Instante a partir do qual a regra vale. As 627 linhas anteriores são o incidente que motivou a
+ * issue e ficam como história — apagá-las seria falsificar auditoria de tentativas que de fato
+ * aconteceram. O que se afirma é a DIREÇÃO: daqui para a frente, nenhuma linha nova.
+ */
+const CUTOFF = '2026-08-09T00:00:00Z';
+
+describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
+  skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false,
+}, () => {
+  it('depois do cutoff, tentativa de gate sem ator só existe se o CRON a explicar', async () => {
+    // O cron de resgate roda como `service_role` e produz a MESMA digital da suíte (`caller_id`
+    // nulo). O que separa os dois é o carimbo de execução no log de auditoria no mesmo instante —
+    // foi assim que a análise de 08/08 separou 8 tokens do cron de 4 da suíte.
+    //
+    // Medido em 08/08 sobre 30 dias: 632 linhas sem ator, 4 explicadas pelo cron, 628 sem
+    // explicação. O discriminador não é teórico.
+    //
+    // A correlação é feita aqui e não numa RPC nova de propósito: DDL aplicada em produção antes
+    // do merge serializa todos os PRs abertos (#1633), e um guard não vale esse preço.
+    const { data: tentativas, error } = await sb
+      .from('gate_attempts')
+      .select('id, application_id, attempted_at, rpc_name')
+      .is('caller_id', null)
+      .gte('attempted_at', CUTOFF);
+    assert.ifError(error);
+    if (!tentativas?.length) return;   // nenhuma linha nova: é o estado esperado depois da correção
+
+    const { data: crons, error: e1 } = await sb
+      .from('admin_audit_log')
+      .select('created_at')
+      .like('action', 'selection.%cron_run%')
+      .gte('created_at', new Date(Date.parse(CUTOFF) - 120_000).toISOString());
+    assert.ifError(e1);
+    const carimbos = (crons ?? []).map((c) => Date.parse(c.created_at));
+
+    const JANELA_MS = 60_000;
+    const semExplicacao = tentativas.filter(
+      (t) => !carimbos.some((c) => Math.abs(c - Date.parse(t.attempted_at)) <= JANELA_MS),
+    );
+    if (!semExplicacao.length) return;
+
+    // Sobrou tentativa sem ator e sem cron. Ela é aceitável APENAS se caiu em fixture sintética
+    // (uma corrida simultânea pode ter a sua viva); em candidatura real, é a regressão.
+    const ids = [...new Set(semExplicacao.map((t) => t.application_id))];
+    const { data: apps, error: e2 } = await sb
+      .from('selection_applications')
+      .select('id, email')
+      .in('id', ids);
+    assert.ifError(e2);
+
+    const porId = new Map((apps ?? []).map((a) => [a.id, a.email]));
+    const ofensores = ids
+      .filter((id) => !RESERVED_DOMAIN.test(porId.get(id) ?? ''))
+      .map((id) => `${id} (${semExplicacao.filter((t) => t.application_id === id).length} linhas)`);
+
+    assert.deepEqual(
+      ofensores, [],
+      'candidatura REAL recebeu tentativa de gate sem ator e sem cron que a explique — ' +
+        'algum teste voltou a escolher alvo por predicado sobre produção',
+    );
+  });
+
+  it('nenhuma fixture sintética PERSISTE além da janela de graça', async () => {
+    // A invariante é a do #1437: o problema não é a fixture existir (enquanto o teste roda, ela
+    // existe), é ela SOBREVIVER. Runs de CI compartilham o banco de produção, então uma corrida
+    // simultânea legitimamente tem a sua viva — daí a janela em vez de checagem de existência.
+    const limite = new Date(Date.now() - GRACE_MINUTES * 60_000).toISOString();
+    const { data, error } = await sb
+      .from('selection_applications')
+      .select('id, applicant_name, email, created_at, status')
+      .lt('created_at', limite);
+    assert.ifError(error);
+
+    const sobreviventes = (data ?? []).filter((r) => RESERVED_DOMAIN.test(r.email ?? ''));
+    // Itera e reporta cada uma: uma checagem existencial passa assim que a primeira parece ok.
+    assert.deepEqual(
+      sobreviventes.map((r) => `${r.id} ${r.email} (criada ${r.created_at}, status ${r.status})`),
+      [],
+      `fixture sintética viva há mais de ${GRACE_MINUTES}min — a limpeza do teste falhou, e a ` +
+        'linha está em produção. Apagar é o conserto pontual; entender por que o `cleanup` não ' +
+        'rodou é o conserto.',
+    );
+  });
+
+  it('nenhum token de agendamento SOBREVIVE à limpeza da fixture', async () => {
+    // `onboarding_tokens` NÃO tem FK para a candidatura: o vínculo é polimórfico
+    // (`source_type='pmi_application'` + `source_id`), logo o CASCADE não o alcança. Foi
+    // exatamente esse buraco que deixou 4 tokens vivos em 07/08 sem ninguém notar. Aqui ele é
+    // asserção, não confiança no `cleanup`.
+    //
+    // ⚠️ A JANELA DE GRAÇA É OBRIGATÓRIA AQUI, e por um motivo diferente do teste anterior. O
+    // caminho de PASSAGEM (#1640) emite um token e só o apaga no `after` do bloco: durante alguns
+    // segundos existe, legitimamente, um token vivo sobre uma fixture viva. Sem a janela, este
+    // guard ficaria vermelho porque OUTRA corrida estava fazendo o trabalho dela — e um guard que
+    // acusa trabalho correto é desligado.
+    const limite = Date.now() - GRACE_MINUTES * 60_000;
+    const { data: tokens, error } = await sb
+      .from('onboarding_tokens')
+      .select('token, source_id, source_type, issued_at, expires_at')
+      .contains('scopes', ['interview_booking'])
+      .gt('expires_at', new Date().toISOString())
+      .gte('issued_at', CUTOFF)
+      .lt('issued_at', new Date(limite).toISOString());
+    assert.ifError(error);
+    if (!tokens?.length) return;
+
+    const ids = [...new Set(tokens.map((t) => t.source_id).filter(Boolean))];
+    const { data: apps, error: e2 } = await sb
+      .from('selection_applications')
+      .select('id, email')
+      .in('id', ids);
+    assert.ifError(e2);
+
+    const emailPorId = new Map((apps ?? []).map((a) => [a.id, a.email]));
+    const suspeitos = tokens.filter((t) => {
+      const email = emailPorId.get(t.source_id);
+      // (a) a candidatura ainda existe e é sintética → o `cleanup` não apagou o token
+      if (email !== undefined) return RESERVED_DOMAIN.test(email ?? '');
+      // (b) a candidatura SUMIU e o token ficou → o órfão que o vínculo polimórfico permite.
+      //     Medido em 08/08: 0 órfãos em 17 tokens, então a linha de base é limpa.
+      return true;
+    });
+
+    assert.deepEqual(
+      suspeitos.map((t) => `${t.token.slice(0, 8)}… source=${t.source_id ?? 'nulo'} expira ${t.expires_at}`),
+      [],
+      'token de agendamento vivo sobreviveu à limpeza da fixture (ou ficou órfão de uma ' +
+        'candidatura apagada) — é o buraco do vínculo polimórfico que deixou 4 tokens vivos em 07/08',
+    );
+  });
+});

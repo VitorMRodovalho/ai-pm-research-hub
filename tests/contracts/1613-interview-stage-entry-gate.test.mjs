@@ -34,6 +34,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { createSyntheticApplication } from '../helpers/selection-fixtures.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000514_1613_gate_entrada_fase_objetiva.sql');
@@ -252,56 +253,54 @@ test('1613 guard: o teste está registrado nas DUAS listas do package.json', () 
 test('1613 behavioural T1+T2: sem nota a transição é SUPRIMIDA, e a mutação (remover o gate) faz isto passar',
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = client();
-    // Candidatura real, pré-entrevista, sem nota. A sonda escreve e a transação é abortada
-    // logo em seguida — nada persiste (nem o status, nem a linha de auditoria).
-    const { data: apps, error: appErr } = await sb
-      .from('selection_applications')
-      .select('id, status, selection_cycles!inner(status)')
-      .is('objective_score_avg', null)
-      .in('status', ['submitted', 'screening', 'objective_eval'])
-      .in('selection_cycles.status', ['open', 'active'])
-      .limit(1);
-    assert.ifError(appErr);
-    const alvo = apps?.[0];
-    if (!alvo) return; // coorte vazia — nada a afirmar, não é falha
+    // ⚠️ #1636 — a sonda era sobre CANDIDATURA REAL pré-entrevista, e ela MUTA: o UPDATE encontra
+    // a linha viva, o trigger grava auditoria, e a limpeza tinha de apagar uma linha de
+    // `admin_audit_log` de produção. Agora a sonda é sobre fixture sintética, montada na forma
+    // exata que o gate barra: sem nota, status pré-entrevista, ciclo aberto.
+    const fx = await createSyntheticApplication(sb, {
+      cycleStatus: 'open',
+      label: '1613-t1-sem-nota',
+      status: 'submitted',
+      objectiveScore: null,
+    });
 
-    // O caminho de escrita disponível ao service_role sem SQL arbitrário é o próprio
-    // recompute? Não: ele decide o destino sozinho. Usa-se o UPDATE direto na tabela, que é
-    // exatamente o que 5 dos 7 escritores fazem por dentro.
-    const { data: escrito, error: upErr } = await sb
-      .from('selection_applications')
-      .update({ status: 'interview_scheduled' })
-      .eq('id', alvo.id)
-      .select('status')
-      .single();
-    assert.ifError(upErr);
+    try {
+      // O caminho de escrita disponível ao service_role sem SQL arbitrário é o UPDATE direto na
+      // tabela, que é exatamente o que 5 dos 7 escritores fazem por dentro.
+      const { data: escrito, error: upErr } = await sb
+        .from('selection_applications')
+        .update({ status: 'interview_scheduled' })
+        .eq('id', fx.id)
+        .select('status')
+        .single();
+      assert.ifError(upErr);
 
-    // T1: a transição não pousou.
-    assert.equal(escrito.status, alvo.status,
-      'T1: sem objective_score_avg e sem override, a candidatura NÃO entra em interview_scheduled');
+      // T1: a transição não pousou.
+      assert.equal(escrito.status, 'submitted',
+        'T1: sem objective_score_avg e sem override, a candidatura NÃO entra em interview_scheduled');
 
-    // R1.2: a recusa deixou registro. Suprimir calado não atende o requisito.
-    const { data: log } = await sb
-      .from('admin_audit_log')
-      .select('id, changes, metadata')
-      .eq('action', 'selection.interview_stage_blocked')
-      .eq('target_id', alvo.id)
-      .order('created_at', { ascending: false })
-      .limit(1);
-    assert.equal(log?.length, 1, 'R1.2: a recusa foi registrada em selection.interview_stage_blocked');
-    assert.equal(log[0].metadata?.reason, 'objective_score_avg IS NULL');
+      // R1.2: a recusa deixou registro. Suprimir calado não atende o requisito.
+      const { data: log } = await sb
+        .from('admin_audit_log')
+        .select('id, changes, metadata')
+        .eq('action', 'selection.interview_stage_blocked')
+        .eq('target_id', fx.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      assert.equal(log?.length, 1, 'R1.2: a recusa foi registrada em selection.interview_stage_blocked');
+      assert.equal(log[0].metadata?.reason, 'objective_score_avg IS NULL');
 
-    // Limpeza: a sonda escreveu em produção (o UPDATE "encontrou" a linha e gravou
-    // updated_at, e o trigger gravou a auditoria). O status já está correto por construção —
-    // o gate o devolveu ao original —, então só a linha de log precisa sair.
-    await sb.from('admin_audit_log').delete().eq('id', log[0].id);
-
-    // T2 (MUTAÇÃO): a asserção acima só vale porque o gate existe. Se o trigger sumir, o
-    // mesmo UPDATE pousa — e este teste falha. A mutação é afirmada estruturalmente aqui
-    // (o teste comportamental não pode DROPAR um trigger de produção); o par estático
-    // "trigger existe + suprime + é lido" acima é o que fecha o T2 no CI.
-    assert.ok(migRaw.includes(`CREATE TRIGGER ${TRIGGER}`),
-      'T2: sem este CREATE TRIGGER, a asserção de T1 acima passaria por vacuidade');
+      // T2 (MUTAÇÃO): a asserção acima só vale porque o gate existe. Se o trigger sumir, o
+      // mesmo UPDATE pousa — e este teste falha. A mutação é afirmada estruturalmente aqui
+      // (o teste comportamental não pode DROPAR um trigger de produção); o par estático
+      // "trigger existe + suprime + é lido" acima é o que fecha o T2 no CI.
+      assert.ok(migRaw.includes(`CREATE TRIGGER ${TRIGGER}`),
+        'T2: sem este CREATE TRIGGER, a asserção de T1 acima passaria por vacuidade');
+    } finally {
+      // `finally`, não linha solta no fim: uma asserção que falhe no meio deixaria a fixture viva
+      // em produção, que é o modo de falha que o guard do #1636 existe para acusar.
+      await fx.cleanup();
+    }
   });
 
 test('1613 behavioural T3: nenhuma candidatura foi invalidada pela migration (R1.3)',
@@ -324,33 +323,31 @@ test('1613 behavioural T3: nenhuma candidatura foi invalidada pela migration (R1
 test('1613 behavioural T4: reagendamento de entrevista já materializada passa mesmo sem nota (R1.5)',
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = client();
-    // candidatura sem nota que JÁ tem entrevista materializada (conduzida ou resolvida)
-    const { data: ivs, error: ivErr } = await sb
-      .from('selection_interviews')
-      .select('application_id, status, conducted_at, selection_applications!inner(status, objective_score_avg)')
-      .is('selection_applications.objective_score_avg', null)
-      .in('status', ['completed', 'noshow', 'cancelled', 'rescheduled'])
-      .limit(5);
-    assert.ifError(ivErr);
-    const alvo = (ivs ?? []).find((r) => {
-      const st = r.selection_applications?.status;
-      return st && !['approved', 'rejected', 'converted', 'withdrawn', 'cancelled', 'waitlist'].includes(st);
+    // ⚠️ #1636 — esta sonda MUTA de verdade (o UPDATE pousa), e o alvo era candidatura real: o
+    // desfazer dependia de a asserção do meio não falhar. Agora é fixture, montada na forma que a
+    // R1.5 descreve: sem nota, status não-terminal, e entrevista JÁ materializada.
+    const fx = await createSyntheticApplication(sb, {
+      cycleStatus: 'open',
+      label: '1613-t4-entrevista-materializada',
+      status: 'interview_pending',
+      objectiveScore: null,
+      withInterview: true,
+      interviewStatus: 'completed',
     });
-    if (!alvo) return; // coorte vazia — nada a afirmar, não é falha
 
-    const original = alvo.selection_applications.status;
-    const { data: escrito, error: upErr } = await sb
-      .from('selection_applications')
-      .update({ status: 'interview_scheduled' })
-      .eq('id', alvo.application_id)
-      .select('status')
-      .single();
-    assert.ifError(upErr);
-    assert.equal(escrito.status, 'interview_scheduled',
-      'R1.5: quem já tem entrevista materializada reagenda mesmo sem nota objetiva');
-
-    // devolve ao estado original — esta sonda MUTA de verdade e precisa desfazer
-    await sb.from('selection_applications').update({ status: original }).eq('id', alvo.application_id);
+    try {
+      const { data: escrito, error: upErr } = await sb
+        .from('selection_applications')
+        .update({ status: 'interview_scheduled' })
+        .eq('id', fx.id)
+        .select('status')
+        .single();
+      assert.ifError(upErr);
+      assert.equal(escrito.status, 'interview_scheduled',
+        'R1.5: quem já tem entrevista materializada reagenda mesmo sem nota objetiva');
+    } finally {
+      await fx.cleanup();
+    }
   });
 
 test('1613 behavioural: o cron 49 roda o lote inteiro sem abortar, e reporta a supressão',

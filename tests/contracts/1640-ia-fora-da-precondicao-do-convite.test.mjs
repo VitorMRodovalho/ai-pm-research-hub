@@ -35,6 +35,7 @@ import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { createSyntheticApplication } from '../helpers/selection-fixtures.mjs';
 
 const MIGRATION_PATH =
   'supabase/migrations/20260807000200_1640_ia_sai_da_precondicao_do_convite_e_do_agendamento.sql';
@@ -158,56 +159,38 @@ describe('#1640 B — corpo vivo', () => {
 describe('#1640 B — a regra: sem análise de IA, com peer-review e nota, RECEBE token', () => {
   let alvo = null;
   let tokenEmitido = null;
+  let fixture = null;
 
   before(async () => {
     if (!dbGated) return;
 
-    // Alvo por PREDICADO, nunca por id: ciclo FECHADO (nenhum cron age ali), sem consentimento,
-    // sem linha de entrevista (senão o modo é `reuse_prior`, que nunca passou pelo gate) e com os
-    // dois requisitos objetivos satisfeitos.
-    const { data: cycles } = await sb.from('selection_cycles').select('id').eq('status', 'closed');
-    const closedIds = (cycles ?? []).map((c) => c.id);
-    if (!closedIds.length) return;
-
-    const { data: apps } = await sb
-      .from('selection_applications')
-      .select('id, objective_score_avg')
-      .in('cycle_id', closedIds)
-      .is('consent_ai_analysis_at', null)
-      .is('ai_analysis', null)
-      .not('objective_score_avg', 'is', null)
-      .limit(60);
-
-    for (const a of apps ?? []) {
-      const { count: entrevistas } = await sb
-        .from('selection_interviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      if ((entrevistas ?? 0) > 0) continue; // modo `full` exige ausência de entrevista
-      const { count: evals } = await sb
-        .from('selection_evaluations')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      if ((evals ?? 0) < 2) continue; // senão a recusa seria P0002, e não é isto que se afirma
-      alvo = a;
-      break;
-    }
+    // ⚠️ #1636 — o alvo era candidatura REAL escolhida por predicado, e este bloco é o caminho de
+    // PASSAGEM: ele EMITE token de agendamento. Foi por aqui que nasceram os 4 tokens de 07/08 que
+    // sobreviveram à limpeza e ficaram vivos até 21/08 apontando para candidaturas reais.
+    //
+    // A fixture carrega a forma que a issue afirma: SEM consentimento de IA e SEM análise, mas com
+    // peer-review completo e nota calculada. Ciclo fechado porque nenhum cron age ali.
+    fixture = await createSyntheticApplication(sb, {
+      cycleStatus: 'closed',
+      label: '1640-passa-sem-ia',
+      consentAi: false,
+      aiAnalysis: false,
+      evaluations: 2,      // peer-review completo → não recusa por P0002
+      objectiveScore: 9.1, // nota calculada        → não recusa por P0003
+    });
+    alvo = fixture.application;
   });
 
   after(async () => {
-    // O token emitido por este teste é apagado. A linha de gate_attempts fica: uma tentativa de
-    // emissão REALMENTE foi feita, e apagá-la seria falsificar auditoria.
-    if (tokenEmitido && sb) {
-      await sb.from('onboarding_tokens').delete().eq('token', tokenEmitido);
-    }
+    // O CASCADE leva gate_attempts e avaliações; o token sai à mão dentro do `cleanup` — ele NÃO
+    // tem FK para a candidatura (vínculo polimórfico por `source_id`), que é precisamente por que
+    // os tokens de 07/08 sobreviveram sem ninguém notar.
+    if (fixture) await fixture.cleanup();
   });
 
   it('a emissão PASSA sem consentimento de IA', { skip: dbGated ? false : skipMsg }, async () => {
-    if (!alvo) {
-      // Dizer alto: skip lê como verde, e uma asserção não exercida não é uma asserção.
-      console.log('[1640] nenhuma candidatura de ciclo fechado sem IA e com peer-review+nota — asserção não exercida');
-      return;
-    }
+    // #1636: a fixture é construída, então a asserção é sempre exercida.
+    assert.ok(alvo, 'a fixture não foi criada');
 
     const { data, error } = await sb.rpc('_issue_interview_booking_token_core', {
       p_application_id: alvo.id,
@@ -242,43 +225,29 @@ describe('#1640 B — a regra: sem análise de IA, com peer-review e nota, RECEB
 
 describe('#1640 B — o que NÃO saiu: o peer-review continua barrando, e a recusa continua auditada', () => {
   let semPeerReview = null;
+  let fixture = null;
 
   before(async () => {
     if (!dbGated) return;
-    const { data: cycles } = await sb.from('selection_cycles').select('id').eq('status', 'closed');
-    const closedIds = (cycles ?? []).map((c) => c.id);
-    if (!closedIds.length) return;
+    // #1636: fixture no lugar do predicado sobre prod. P0002 é o PRIMEIRO gate que sobrou, então
+    // zero avaliações torna a recusa determinística, independente da nota. Com fixture dá para
+    // afirmar o par que o predicado não conseguia isolar: SEM avaliações e COM nota, o que prova
+    // que quem barrou foi o peer-review e não o P0003.
+    fixture = await createSyntheticApplication(sb, {
+      cycleStatus: 'closed',
+      label: '1640-sem-peer-review',
+      evaluations: 0,
+      objectiveScore: 9.1,
+    });
+    semPeerReview = fixture.application;
+  });
 
-    const { data: apps } = await sb
-      .from('selection_applications')
-      .select('id')
-      .in('cycle_id', closedIds)
-      .limit(120);
-
-    for (const a of apps ?? []) {
-      const { count } = await sb
-        .from('selection_interviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      if ((count ?? 0) > 0) continue;
-      const { count: evals } = await sb
-        .from('selection_evaluations')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      // P0002 é o PRIMEIRO gate que sobrou: com menos de 2 avaliações a recusa é determinística,
-      // independente da nota. (Medido em 07/08: não existe candidatura de ciclo fechado sem nota
-      // COM 2 avaliações, então isolar P0003 por predicado não seria exercível.)
-      if ((evals ?? 0) >= 2) continue;
-      semPeerReview = a;
-      break;
-    }
+  after(async () => {
+    if (fixture) await fixture.cleanup();
   });
 
   it('sem 2 avaliações a emissão RECUSA com P0002 e deixa linha', { skip: dbGated ? false : skipMsg }, async () => {
-    if (!semPeerReview) {
-      console.log('[1640] nenhuma candidatura de ciclo fechado com menos de 2 avaliações — asserção não exercida');
-      return;
-    }
+    assert.ok(semPeerReview, 'a fixture não foi criada');
 
     const { count: antes } = await sb
       .from('gate_attempts')

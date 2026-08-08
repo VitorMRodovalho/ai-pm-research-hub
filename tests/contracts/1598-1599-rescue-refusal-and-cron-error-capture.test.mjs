@@ -19,11 +19,12 @@
  * porque um fix quebrado queimaria o cap de um candidato real.
  */
 
-import { describe, it, before } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { createSyntheticApplication } from '../helpers/selection-fixtures.mjs';
 
 const ROOT = process.cwd();
 const MIG_PATH = 'supabase/migrations/20260805000511_1598_1599_rescues_checam_recusa_crons_gravam_erro.sql';
@@ -120,58 +121,58 @@ describe('#1598 — na recusa: sem e-mail, sem mutação, COM linha em gate_atte
   let alvo = null;
   let recusaProvada = false;
   let antes = null;
+  let fixture = null;
+
+  /**
+   * Carimbo de idempotência da fixture. Valor FIXO e no passado: o teste afirma que o rescue
+   * DEVOLVE este carimbo depois de recusar, e comparar contra um `now()` capturado em JS traria de
+   * volta a dependência de relógio que a asserção não precisa ter.
+   */
+  const CARIMBO_ANTERIOR = '2026-01-15T12:00:00.000Z';
 
   before(async () => {
     if (!dbGated) return;
 
-    // Alvo escolhido por PREDICADO, nunca por id fixo: candidatura do ciclo aberto que o
-    // `unbooked_invite` aceitaria (open + interview_pending + cap 0) e que o core RECUSA em modo
-    // `full` (sem linha de entrevista → modo full).
+    // ⚠️ #1636 — O ALVO DEIXOU DE SER CANDIDATO REAL DO CICLO ABERTO. Este era o pior dos dois
+    // arquivos: o rescue exige ciclo `open`, então o truque de ciclo fechado do #1594 não servia e
+    // a sonda caía sobre gente com processo EM ANDAMENTO. Medido em 08/08/2026: 4 candidaturas do
+    // `cycle4-2026` acumularam 132 linhas de gate sem ator por este caminho.
     //
-    // ⚠️ #1640 — a âncora MUDOU. Ela era "sem análise de IA → P0001", e esse gate saiu. Manter o
-    // predicado antigo faria esta sonda EMITIR um token real para um candidato de ciclo ABERTO e,
-    // pior, destravaria a chamada de rescue logo abaixo. A recusa agora tem de vir de um gate que
-    // sobreviveu: peer-review incompleto (P0002) ou nota não calculada (P0003).
-    const { data: cycles } = await sb.from('selection_cycles').select('id').eq('status', 'open');
-    const openIds = (cycles ?? []).map((c) => c.id);
-    if (!openIds.length) return;
+    // A fixture é montada na forma exata que o `unbooked_invite` aceita e o core recusa:
+    //   ciclo open + status interview_pending + cap 0   → passa os 3 guards do rescue
+    //   zero avaliações                                 → o core recusa P0002 em modo `full`
+    //   COM nota objetiva                               → `notify` não sai antes por #1450 (P0003
+    //                                                      é RAISE, e um RAISE aqui aborta tudo)
+    //   sem linha de entrevista                         → modo `full`, não `reuse_prior`
+    //   COM carimbo de idempotência                     → torna o restore do carimbo OBSERVÁVEL
+    //
+    // ⚠️ Fixture em ciclo ABERTO é, por construção, elegível ao `_selection_unbooked_rescue_cron`
+    // enquanto viver. A janela é a duração do teste, e uma colisão faria o cron exercer o mesmo
+    // caminho de RECUSA (sem e-mail) sobre a fixture — não sobre um candidato real, que é
+    // exatamente a troca que esta issue queria.
+    fixture = await createSyntheticApplication(sb, {
+      cycleStatus: 'open',
+      label: 'rescue-p0002',
+      status: 'interview_pending',
+      evaluations: 0,
+      objectiveScore: 7.5,
+      rescueCount: 0,
+      cutoffEmailSentAt: CARIMBO_ANTERIOR,
+      requireBookingUrl: true,
+    });
+    alvo = { ...fixture.application, codigo: 'P0002' };
+    antes = { ...alvo };
+  });
 
-    const { data: apps } = await sb
-      .from('selection_applications')
-      .select('id, status, interview_auto_rescue_count, cutoff_approved_email_sent_at, updated_at, objective_score_avg')
-      .in('cycle_id', openIds)
-      .eq('status', 'interview_pending')
-      .eq('interview_auto_rescue_count', 0);
-
-    for (const a of apps ?? []) {
-      const { count } = await sb
-        .from('selection_interviews')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      if ((count ?? 0) > 0) continue; // linha de entrevista → reuse_prior, não recusa
-      const { count: evals } = await sb
-        .from('selection_evaluations')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', a.id);
-      const codigo = (evals ?? 0) < 2 ? 'P0002' : (a.objective_score_avg === null ? 'P0003' : null);
-      if (!codigo) continue;          // passaria no gate — emitir aqui seria convite real por teste
-      // preferir quem TEM carimbo: só assim o restore do carimbo é observável.
-      if (!alvo || (a.cutoff_approved_email_sent_at && !alvo.cutoff_approved_email_sent_at)) {
-        alvo = { ...a, codigo };
-      }
-    }
-    if (alvo) antes = { ...alvo };
+  after(async () => {
+    if (fixture) await fixture.cleanup();
   });
 
   it('sonda: o core RECUSA esta candidatura em modo full', { skip: dbGated ? false : skipMsg }, async () => {
-    if (!alvo) {
-      // Dizer alto: skip lê como verde, e uma asserção não exercida não é uma asserção.
-      // Medido em 07/08/2026, logo após a #1640: NENHUMA candidatura `interview_pending` do ciclo
-      // aberto recusa mais — as 11 têm 2 avaliações e nota. A população que tornava esta asserção
-      // exercível era, em boa parte, a que o gate de IA barrava indevidamente.
-      console.log('[1598] nenhuma candidatura do ciclo aberto recusa em modo full — asserção não exercida');
-      return;
-    }
+    // #1636: com fixture a asserção é SEMPRE exercida. O ramo que existia aqui registrava, em
+    // 07/08, que nenhuma candidatura do ciclo aberto recusava mais — ou seja, este teste vinha
+    // passando sem exercer nada, e um skip lê como verde. A fixture é a forma, não o achado.
+    assert.ok(alvo, 'a fixture não foi criada — sem alvo não há o que sondar');
     const { data, error } = await sb.rpc('_issue_interview_booking_token_core', {
       p_application_id: alvo.id,
       p_bypass_granted: false,
@@ -186,12 +187,10 @@ describe('#1598 — na recusa: sem e-mail, sem mutação, COM linha em gate_atte
   });
 
   it('o rescue devolve {success:false} e NÃO queima o cap, NÃO manda e-mail, e DEIXA a linha de auditoria', { skip: dbGated ? false : skipMsg }, async () => {
-    if (!alvo || !recusaProvada) {
-      // Trava deliberada: sem a prova acima, chamar o rescue arriscaria queimar o cap de um
-      // candidato real e mandar convite indevido.
-      console.log('[1598] porta não exercida: a recusa do core não foi provada nesta corrida');
-      return;
-    }
+    // A escada FICA. Ela não protege mais o cap de um candidato real (o alvo é sintético); protege
+    // a asserção: sem a prova de que o core recusa ESTA linha, exercer o rescue afirmaria sobre o
+    // caminho de sucesso. Vira `assert` em vez de `return` porque a pré-condição é construída.
+    assert.ok(alvo && recusaProvada, 'a recusa do core não foi provada — a porta não pode ser exercida');
 
     const refusalsAntes = (
       await sb.from('gate_attempts').select('id', { count: 'exact', head: true })
