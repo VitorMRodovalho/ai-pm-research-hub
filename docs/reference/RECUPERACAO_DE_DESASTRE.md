@@ -9,9 +9,9 @@
 | onde | o que é | cadência | retenção |
 |---|---|---|---|
 | Supabase (plataforma) | backup **físico** WAL-G do projeto | diário, ~04:20 UTC | janela da plataforma |
-| GitHub Actions artifact | dump **lógico** `pg_dump` gzipado | semanal, domingo 23:00 UTC | 60 dias, 8 cópias |
-| Cloudflare R2 (`nucleoia-db-backups`) | o **mesmo** dump lógico, offsite | semanal, junto com o de cima | bucket |
-| máquina local (opcional) | o mesmo dump, via `scripts/pull-backup-local.sh` | semanal, timer `systemd --user` | 8 cópias, `chmod 600` |
+| GitHub Actions artifact | dump **lógico** `pg_dump` gzipado | **diário**, 23:00 UTC | 60 dias, **30 cópias** |
+| Cloudflare R2 (`nucleoia-db-backups`) | o **mesmo** dump lógico, offsite | **diário**, junto com o de cima | **sem poda: acumula** |
+| máquina local | o mesmo dump, via `scripts/pull-backup-local.sh` | **diária**, timer `systemd --user` | **14 cópias**, `chmod 600` |
 
 A separação existe por desenho (#618): código e backup não podem morar na mesma cesta de
 fornecedor. A cópia local é a terceira perna e é a única que sobrevive à perda de acesso às duas
@@ -33,9 +33,17 @@ O que o PITR compra que o diário não compra: RPO abaixo de um dia, restauraç�
 (por exemplo, o segundo anterior a uma migration ruim) e um alvo de restauração **não-destrutivo** —
 sem ele, o único restore do fornecedor é in-place sobre a própria produção.
 
-A alternativa barata para o **RPO**, e só para ele: tornar o dump lógico **diário** em vez de
-semanal. Custa minutos de CI e leva o RPO da cópia lógica de 7 dias para 1. Não dá
-point-in-time nem alvo não-destrutivo.
+### Decisão do PM, ratificada em 08/08/2026: PITR **não**; o dump lógico passa a ser **diário**
+
+US$ 1.200/ano num capítulo voluntário não se justificam pelo ganho, e a alternativa resolve o risco
+mais provável — perder dias de trabalho — por minutos de CI, que são gratuitos em repositório
+público. O RPO da cópia lógica cai de 7 dias para 1.
+
+**O que essa escolha NÃO compra, e precisa estar visível:** point-in-time e alvo de restauração
+não-destrutivo. Somada à decisão sobre o schema `auth` logo abaixo, a consequência prática é que
+**hoje um desastre de identidade se resolve recriando contas via OAuth na mão**. É consequência
+aceita, não esquecimento. Se essa conta mudar (mais membros, obrigação contratual, auditoria
+externa), o PITR volta à mesa.
 
 ## O que o dump lógico NÃO contém
 
@@ -113,10 +121,10 @@ nenhuma com `cron`.
 ## Procedimento de restauração local
 
 ```bash
-# baixa o mais novo, verifica o gzip, mantém 8 cópias e ENSAIA a restauração
+# baixa o mais novo, verifica o gzip, mantém 14 cópias e ENSAIA a restauração
 scripts/pull-backup-local.sh --restore
 
-# instala o timer semanal (segunda 09:00, depois do dump de domingo 23:00 UTC)
+# instala o timer diario (09:00, depois do dump das 23:00 UTC)
 scripts/pull-backup-local.sh --install-timer
 ```
 

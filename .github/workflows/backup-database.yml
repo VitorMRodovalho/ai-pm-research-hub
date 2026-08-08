@@ -1,10 +1,21 @@
-name: Weekly Database Backup
+name: Daily Database Backup
 
 on:
   schedule:
-    # Every Sunday at 23:00 UTC (20:00 BRT)
-    - cron: '0 23 * * 0'
+    # 2026-08-08 — passa de SEMANAL para DIARIO. Decisao do PM, com o preco na mao: o PITR de 7
+    # dias custa US$ 100/mes contra ~US$ 10/mes do compute Micro do projeto inteiro. Tornar este
+    # dump diario resolve o RPO (de 7 dias para 1) por minutos de CI, que sao gratuitos em
+    # repositorio publico. O que NAO se compra assim, e fica declarado: restauracao para um
+    # instante, e um alvo de restauracao nao-destrutivo no lado do fornecedor.
+    - cron: '0 23 * * *'
   workflow_dispatch: # Allow manual trigger
+
+# Sem cancelamento: um backup em andamento nunca deve ser morto por um disparo manual que chegou
+# depois. `cancel-in-progress: false` faz o novo ESPERAR — e um run cancelado apareceria como
+# ausencia de check, nao como vermelho.
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
 
 # Medido 2026-08-08: as execucoes de 19/07, 27/07 e 02/08 concluiram `failure` — e o pg_dump,
 # a verificacao de integridade, o upload e a copia para o R2 tinham TODOS passado. O vermelho
@@ -199,7 +210,7 @@ jobs:
             --endpoint-url "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
           echo "✅ Offsite copy uploaded: r2://${R2_BUCKET}/${BACKUP_FILE}"
 
-      - name: Cleanup old artifacts (keep 8)
+      - name: Cleanup old artifacts (keep 30)
         uses: actions/github-script@v7
         with:
           script: |
@@ -220,7 +231,12 @@ jobs:
 
             console.log(`${all.length} artefatos no repo, ${backups.length} deles sao db-backup-*`);
 
-            const toDelete = backups.slice(8); // Keep 8 most recent
+            // 2026-08-08 — 8 -> 30 ao passar para diario. Manter 8 daria 8 DIAS de alcance, onde
+            // antes eram 8 semanas: seria trocar frequencia por historico. 30 diarios cobrem um
+            // mes, e o alcance longo fica com o R2, que nao poda nada (a ~5 GB/ano de dumps de
+            // 14 MB, custa centavos). Se um dia o R2 ganhar lifecycle, este numero precisa subir.
+            const KEEP = 30;
+            const toDelete = backups.slice(KEEP);
 
             for (const artifact of toDelete) {
               console.log(`Deleting old backup: ${artifact.name} (${artifact.created_at})`);
@@ -236,4 +252,4 @@ jobs:
             if (backups.length > 0 && toDelete.length >= backups.length) {
               core.setFailed(`recusando apagar ${toDelete.length} de ${backups.length} backups`);
             }
-            console.log(`Kept ${Math.min(backups.length, 8)} backups, deleted ${toDelete.length}`);
+            console.log(`Kept ${Math.min(backups.length, KEEP)} backups, deleted ${toDelete.length}`);
