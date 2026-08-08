@@ -1,7 +1,7 @@
 # Handoff - 08/08 (fim de tarde): #1643 fechada, #1647 destravada, e a faixa de banco cobrou
 
 > Sessão a partir de `docs/planning/2026-08-08_handoff_1682_fechada_e_dois_falsos_incidentes.md`.
-> `main` em **`dea130d7`**. Mergeado: **PR #1647**. Aberto e verde: **PR #1689**.
+> `main` em **`6a771807`**. Mergeados: **PR #1647** e **PR #1689**.
 
 ---
 
@@ -11,8 +11,13 @@
 |---|---|
 | **#1647** | mergeado em `dea130d7` (squash), 11/11 verde |
 | **#1643** | **fechada**, sweep completo publicado na issue |
-| **#1689** | **aberto, `CLEAN`, 11/11 verde, NÃO mergeado** - decisão do PM |
-| `main` | `dea130d7`, alinhada com produção |
+| **#1689** | mergeado em `6a771807` (squash), 11/11 verde |
+| `main` | `6a771807`, alinhada com produção, sem PR meu em aberto |
+
+⚠️ O #1689 precisou de **duas** rodadas de CI: ficou `BEHIND` quando o commit de docs
+(`4b3552e0`) moveu o `main`, e o repo exige branch em dia. `gh pr update-branch` resolve, mas
+**recomeça todos os gates**. Se for mergear logo em seguida, commite os docs **antes** de levar o
+PR ao verde, não depois.
 
 ---
 
@@ -113,11 +118,10 @@ do meu próprio PR rodava. A leitura confiável é filtrar por status explicitam
 
 ## Próximo
 
-1. **#1689** está verde e pronto. Falta só a decisão de merge.
-2. **Personas sintéticas (#1636)** - segue sendo o maior e o único com **dano em curso**: cada
+1. **Personas sintéticas (#1636)** - segue sendo o maior e o único com **dano em curso**: cada
    rodada de CI que exercer aquele caminho cria token real sobre candidatura real. ⚠️ A suíte também
    escreve `members`. O mesmo trabalho cobre as duas superfícies.
-3. **Resíduos escolhidos**, ainda intocados: observador por URL direta em
+2. **Resíduos escolhidos**, ainda intocados: observador por URL direta em
    `get_my_pending_evaluations`; `route-acl.test.mjs` reimplementando o `canAccess`; exigir
    evidência no consentimento de IA sob `RAISE`.
 

@@ -2,7 +2,7 @@
 
 > Colar depois do `/clear`. **Effort: `xhigh`.**
 > Handoff completo: `docs/planning/2026-08-08_handoff_1643_fechado_e_a_faixa_de_banco.md`.
-> `main` em **`dea130d7`**.
+> `main` em **`6a771807`**. Nenhum PR da main lane em aberto.
 >
 > ⚠️ Existe um arranque anterior homônimo (`2026-08-09_PROMPT_ARRANQUE.md`), já **consumido**.
 > Este é o que vale.
@@ -56,6 +56,7 @@ gh run list --limit 30 --json databaseId,status,workflowName,headBranch \
 - **#1643 fechada.** Três classes varridas, a inversa medida (0 de 170), `sign_proposer_consent`
   classificado fora da família. Sweep completo na issue.
 - **#1647 mergeado** (`dea130d7`). Estava vermelho por estar atrás do `main`, não por defeito.
+- **#1689 mergeado** (`6a771807`). A guarda da terceira classe está viva na `main`.
 - **#1682** fechada pelo #1688; **#618** fechada pelo #1684.
 - **Decisões do PM de 08/08** seguem valendo: `auth` fora do dump; PITR não, dump diário; 4 tokens
   do #1636 registrados e **não** revogados.
@@ -64,11 +65,7 @@ gh run list --limit 30 --json databaseId,status,workflowName,headBranch \
 
 ## Ordem sugerida
 
-### 1. PR #1689 - só falta a decisão de merge
-Aberto, `CLEAN`, **11/11 verde**. Guarda da terceira classe do #1643 (teste + `package.json`, sem
-DDL, não serializa PR nenhum). Re-conferir a cor antes de mergear, não recitar daqui.
-
-### 2. 🔴 Personas sintéticas (#1636) - o único com dano EM CURSO
+### 1. 🔴 Personas sintéticas (#1636) - o único com dano EM CURSO
 Medido em 08/08: a suíte emitiu **4 tokens de agendamento reais** (run `31144140275`), vivos até
 **21/08**, `access_count` 0. Cada rodada de CI que exercer aquele caminho cria token real sobre
 candidatura real.
@@ -80,7 +77,7 @@ depender de **quem** ocupa o papel, e some a PII do laboratório.
 ⚠️ A suíte também escreve `members` - foi assim que nasceram os 10 "membros sumidos" que se
 revelaram fixtures. O mesmo trabalho cobre as duas superfícies.
 
-### 3. Resíduos escolhidos, ainda intocados
+### 2. Resíduos escolhidos, ainda intocados
 - observador por URL direta ainda recebe a fila em `get_my_pending_evaluations`
 - `route-acl.test.mjs` **reimplementa** o `canAccess` em vez de importar `getItemAccessibility`
 - exigir evidência no consentimento de IA (`RAISE`), depois de confirmado o front no ar
