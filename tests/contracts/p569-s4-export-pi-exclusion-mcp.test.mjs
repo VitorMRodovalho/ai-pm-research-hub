@@ -47,13 +47,18 @@ function fnBody(name, src = MIG140) {
 // All 3 bodies were re-captured in 140 (council folds: FOR UPDATE, revoked_at, legal-basis
 // retention note, eficacia_plena, dead-var drop) — the LATEST capture must match live.
 const EXPORT_BODY = fnBody('export_my_data');
-// #625 F1: export_my_data foi re-capturado em ...148 (adicionou a seção 'affiliation_verifications').
-// O check de md5 do corpo VIVO deve comparar contra a captura CANÔNICA mais recente (...148);
-// as assertions estruturais (pi_exclusion) seguem válidas tanto em 140 quanto em 148.
-const MIG148_PATH = 'supabase/migrations/20260805000148_625_affiliation_verification_loop_f1_f3.sql';
-const EXPORT_BODY_LATEST = existsSync(MIG148_PATH)
-  ? (fnBody('export_my_data', readFileSync(MIG148_PATH, 'utf8')) || EXPORT_BODY)
-  : EXPORT_BODY;
+// #1682: a captura canônica deixa de ser um caminho fixado à mão.
+//
+// Este arquivo já vinha perseguindo a re-captura: nasceu comparando contra ...139, o #625 F1
+// acrescentou ...148 quando `export_my_data` ganhou 'affiliation_verifications', e o #1682 (a
+// ponte do ledger de consentimento) seria o TERCEIRO ponteiro hardcoded. Um guard que precisa
+// ser reeditado a cada mudança legítima da função não está medindo drift — está medindo se
+// alguém lembrou de atualizá-lo, e fica vermelho por trabalho correto.
+//
+// A captura vencedora agora vem de `loadLatestCaptures`, o mesmo helper que o gate Phase C usa
+// (SSOT: última migration em ordem alfabética que captura aquele `nome@args`). As asserções
+// ESTRUTURAIS abaixo continuam ancoradas em ...139/...140 de propósito: elas afirmam o que o
+// #569 S4c introduziu, e isso não deve seguir a captura mais recente.
 const CREATE_BODY = fnBody('create_exclusion_declaration');
 const REVOKE_BODY = fnBody('revoke_exclusion_declaration');
 
@@ -200,12 +205,21 @@ describe('p569-s4 — 4a MCP surface (6 tools)', () => {
 
 describe('p569-s4 — DB-gated (skip without env)', () => {
   it('live bodies match the migration captures (Phase-C md5, 3 fns)', { skip: !sb }, async () => {
-    const { createHash } = await import('node:crypto');
-    const localMd5 = (b) => createHash('md5').update(b.replace(/\s+/g, ' ')).digest('hex');
+    // #1682: derivado do SSOT, não de caminhos fixados à mão — ver a nota no topo do arquivo.
+    const { loadLatestCaptures } = await import('../helpers/rpc-body-drift-parser.mjs');
+    const { latest } = loadLatestCaptures('supabase/migrations');
+    const capturaDe = (chave) => {
+      const cap = latest.get(chave);
+      // Falha ALTO: uma chave que não resolve significa que o parser deixou de reconhecer a
+      // captura, e devolver `undefined` aqui compararia md5 contra undefined — verde por
+      // acidente exatamente onde este teste deveria falar.
+      assert.ok(cap, `nenhuma migration captura "${chave}" — o guard ficaria inerte`);
+      return cap.bodyHash;
+    };
     const expected = {
-      export_my_data: localMd5(EXPORT_BODY_LATEST),
-      create_exclusion_declaration: localMd5(CREATE_BODY),
-      revoke_exclusion_declaration: localMd5(REVOKE_BODY),
+      export_my_data: capturaDe('export_my_data@'),
+      create_exclusion_declaration: capturaDe('create_exclusion_declaration@p_title text'),
+      revoke_exclusion_declaration: capturaDe('revoke_exclusion_declaration@p_declaration_id uuid'),
     };
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) { console.warn(`[p569-s4] helper unavailable: ${error.message}`); return; }
