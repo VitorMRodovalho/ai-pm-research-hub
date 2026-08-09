@@ -5154,6 +5154,8 @@ const enUS: Record<string, string> = {
   'attendance.grid.legendComms': 'Comms',
   'attendance.grid.toastPresent': '✅ Present',
   'attendance.grid.toastAbsent': '❌ Absent',
+  'attendance.grid.toastCleared': '○ Record cleared',
+  'attendance.grid.unrecorded': 'No record',
   'attendance.grid.toastExcused': '⚠️ Excused absence',
   // #529 — attendance grid: keys previously inline-fallback-only (en/es rendered PT)
   'attendance.helpTitle': 'How to mark attendance',
@@ -5170,6 +5172,8 @@ const enUS: Record<string, string> = {
   'attendance.grid.modal.title': 'Mark attendance',
   'attendance.grid.modal.present': 'Present',
   'attendance.grid.modal.absent': 'Absent',
+  'attendance.grid.modal.clear': 'Clear record',
+  'attendance.grid.modal.clearHint': 'Undoes the record. Different from marking absent, which asserts the absence.',
   'attendance.grid.modal.excused': 'Excused absence',
   'attendance.grid.modal.cancel': 'Cancel',
   'attendance.grid.modal.reasonPlaceholder': 'Reason (recommended)',

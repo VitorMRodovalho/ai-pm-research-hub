@@ -5155,6 +5155,8 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.legendComms': 'Comms',
   'attendance.grid.toastPresent': '✅ Presente',
   'attendance.grid.toastAbsent': '❌ Ausente',
+  'attendance.grid.toastCleared': '○ Registro eliminado',
+  'attendance.grid.unrecorded': 'Sin registro',
   'attendance.grid.toastExcused': '⚠️ Falta justificada',
   // #529 — attendance grid: keys previously inline-fallback-only (en/es rendered PT)
   'attendance.helpTitle': 'Cómo registrar asistencia',
@@ -5171,6 +5173,8 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.modal.title': 'Registrar asistencia',
   'attendance.grid.modal.present': 'Presente',
   'attendance.grid.modal.absent': 'Ausente',
+  'attendance.grid.modal.clear': 'Limpiar registro',
+  'attendance.grid.modal.clearHint': 'Deshace el registro. Distinto de marcar ausencia, que afirma la falta.',
   'attendance.grid.modal.excused': 'Falta justificada',
   'attendance.grid.modal.cancel': 'Cancelar',
   'attendance.grid.modal.reasonPlaceholder': 'Motivo (recomendado)',

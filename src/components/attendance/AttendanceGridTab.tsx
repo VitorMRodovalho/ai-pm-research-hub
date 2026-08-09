@@ -92,7 +92,7 @@ interface GridMember {
   present_count: number;
   detractor_status: string | null;
   consecutive_absences: number;
-  attendance: Record<string, 'present' | 'absent' | 'excused' | 'na'>;
+  attendance: Record<string, 'present' | 'absent' | 'excused' | 'na' | 'unrecorded'>;
   member_status?: string;
 }
 
@@ -131,7 +131,7 @@ interface FlatRow {
   consecutiveAbsences: number;
   eligibleCount: number;
   presentCount: number;
-  attendance: Record<string, 'present' | 'absent' | 'excused' | 'na'>;
+  attendance: Record<string, 'present' | 'absent' | 'excused' | 'na' | 'unrecorded'>;
   memberStatus?: string;
 }
 
@@ -192,6 +192,9 @@ function statusCell(v: string | undefined, hasReason: boolean = false) {
     case 'excused':
       // p87 Sprint UX: asterisco quando reason persistida (audit trail visible)
       return { label: hasReason ? '\u26A0\uFE0F*' : '\u26A0\uFE0F', bg: 'bg-blue-100 dark:bg-blue-900/30', csv: 'FJ' };
+    case 'unrecorded':
+      // #1657: evento passado, nao selado e sem linha. Nao e falta - e ausencia de REGISTRO.
+      return { label: '\u25CB', bg: 'bg-gray-50 dark:bg-gray-800/20', csv: 'SR' };
     default:
       return { label: '\u2014', bg: 'bg-gray-100 dark:bg-gray-800/40', csv: 'NA' };
   }
@@ -674,8 +677,11 @@ export default function AttendanceGridTab() {
             const eventId: string | undefined = row?.event_id;
             const memberId: string | undefined = row?.member_id;
             if (!eventId || !memberId) return;
-            const nextState: 'present' | 'absent' | 'excused' | 'na' =
-              isDelete ? 'na' : row.excused ? 'excused' : row.present ? 'present' : 'absent';
+            const nextState: 'present' | 'absent' | 'excused' | 'na' | 'unrecorded' =
+              // #1657: apagar a linha (clear_member_attendance) devolve a celula a "sem registro",
+              // que e o estado que ela tinha antes de alguem registrar. 'na' significa NAO ELEGIVEL
+              // e diria outra coisa.
+              isDelete ? 'unrecorded' : row.excused ? 'excused' : row.present ? 'present' : 'absent';
             setData(prev => {
               if (!prev) return prev;
               // Only act if this member + event are displayed in the current grid.

@@ -5160,6 +5160,8 @@ const ptBR: Record<string, string> = {
   'attendance.grid.legendComms': 'Comms',
   'attendance.grid.toastPresent': '✅ Presente',
   'attendance.grid.toastAbsent': '❌ Ausente',
+  'attendance.grid.toastCleared': '○ Registro removido',
+  'attendance.grid.unrecorded': 'Sem registro',
   'attendance.grid.toastExcused': '⚠️ Falta justificada',
   // #529 — attendance grid: keys previously inline-fallback-only (en/es rendered PT)
   'attendance.helpTitle': 'Como marcar presença',
@@ -5176,6 +5178,8 @@ const ptBR: Record<string, string> = {
   'attendance.grid.modal.title': 'Marcar presença',
   'attendance.grid.modal.present': 'Presente',
   'attendance.grid.modal.absent': 'Ausente',
+  'attendance.grid.modal.clear': 'Limpar registro',
+  'attendance.grid.modal.clearHint': 'Desfaz o registro. Diferente de marcar falta, que afirma a ausência.',
   'attendance.grid.modal.excused': 'Falta justificada',
   'attendance.grid.modal.cancel': 'Cancelar',
   'attendance.grid.modal.reasonPlaceholder': 'Motivo (recomendado)',
