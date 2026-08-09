@@ -116,14 +116,65 @@ Consulta: `gh issue list --state open --label "onda:1"`.
 
 ---
 
+---
+
+# Trilha (b): agrupamento por causa comum
+
+Os 7 clusters candidatos do plano, submetidos ao teste *"consertar a causa fecha as filhas?"*.
+**4 viraram épica, 1 virou épica parcial, 2 foram recusados.** Cada veredito tem a causa medida,
+não inferida do tema.
+
+| cluster | veredito | a causa, medida |
+|---|---|---|
+| **Presença** | ✅ épica **#1652**, 2 órfãs adotadas | #1660 é a raiz e estava fora da épica; #1657 é consequência direta |
+| **Autossuficiência do MCP** | ✅ **#1588** promovida | o MCP foi montado **absorvendo tools existentes**, não cobrindo operações |
+| **Agenda e recorrência** | ✅ épica nova **#1699** | `events.recurrence_group` **sem índice único**: nada impede a mesma ocorrência de nascer duas vezes. **2 pares vivos** hoje |
+| **O número que a plataforma reporta** | ✅ épica nova **#1700** | `get_current_cycle()` existe e **0 de 133** corpos SQL a chamam |
+| **Qualidade da suíte** | ✅ épica parcial: **#1533** promovida | "o resultado não distingue exercido de não-exercido". #1691 recusado, causa diferente |
+| **Segurança de front** | ❌ recusado | 3 causas independentes; tema comum, não causa |
+| **Ciclo seletivo** | ❌ recusado como épica | é **onda**, não épica: 14 abertas sem causa única |
+
+## As duas épicas novas, e por que a causa é medida
+
+**#1699 (série recorrente).** Os únicos índices únicos de `events` são a chave primária e um
+parcial sobre `calendar_event_id`. Não existe chave de idempotência sobre a **ocorrência**
+(`recurrence_group`, `date`), e o dano é presente: **2 pares repetidos** vivos, além dos 4 grupos
+`(title, date)` do #1528. Consertar a chave fecha #1676 e #1528, e dá ao #1565 o discriminador
+entre redefinição de dia e duplicata.
+
+**#1700 (recorte temporal).** Este é o achado que muda a Onda 5:
+
+| medida (08/08) | valor |
+|---|---|
+| `get_current_cycle()` existe e responde | sim: `cycle_4`, `is_current: true` |
+| funções em `public` cujo corpo a chama | **0** |
+| funções que mencionam `cycles` sem chamá-la | **133** |
+
+⚠️ **Não é zero-uso por ausência de capacidade: é contorno.** A função é chamada, mas só de fora do
+banco (`HomepageHero.astro` e a tool MCP homônima), e nasceu em `20260308230000_cycles_table.sql`,
+antes da maior parte das funções que a ignoram. Por isso o cluster tem causa endereçável em vez de
+uma lista de sintomas.
+
+## As recusas, que valem tanto quanto as aceitações
+
+**Segurança de front** (#1631, #1617, #1685): interpolação crua em sink, dependência sem patch e
+rota indexável são três causas independentes. Agrupá-las criaria um guarda-chuva que ninguém fecha,
+que é o que a trilha (b) veio desfazer. O instrumento certo já existe: o rótulo `onda:4`.
+
+**Ciclo seletivo** (14 abertas): é onda, não épica.
+
+**Recusas parciais dentro dos clusters aceitos**, cada uma registrada no comentário da épica:
+#1675 e #1658 fora da épica de série (causa própria); #1604, #1661 e #1662 fora da de recorte;
+#1610, #1672 e #1681 fora da do MCP.
+
+---
+
 ## Próximo
 
-1. **Trilha (b) da Onda 0**: agrupamento. Sete clusters candidatos no plano, com a regra de que
-   épica só existe com **causa comum** ("consertar a causa fecha as filhas?"). As labels de onda
-   agora dão o recorte para essa conversa.
-2. **Ordenar as 6 famílias novas** na sequência das ondas. A maior (legal-ops, 19) é a que mais
+1. **Ordenar as 6 famílias novas** na sequência das ondas. A maior (legal-ops, 19) é a que mais
    depende de terceiro.
-3. Onda 0.5 (superfície pública) e depois Onda 1 (presença).
+2. Onda 0.5 (superfície pública) e depois Onda 1 (presença), onde a ordem de dependência já está
+   registrada no #1652: #1653 → #1660 → #1657 → #1656 → #1655 → #1654.
 
 ⚠️ **Este handoff não foi commitado.** Push direto na `main` conta como evento de bypass
 (janela de 7 dias em 1 de 2), e a classe já tem registro retroativo no #1567.
