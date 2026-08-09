@@ -10,6 +10,24 @@
 # o feed de SECURITY ALERTS continua ativo e cada onda de alertas é resolvida
 # por PR local de higiene (ex.: #609), onde o CI roda completo com secrets.
 # Nunca mergear/--admin um PR do Dependabot — supersede local é o caminho canônico.
+#
+# COMPLEMENTO (PM 2026-08-09): ESTE ARQUIVO SOZINHO NÃO SEGURA O DEPENDABOT.
+# `open-pull-requests-limit: 0` governa apenas VERSION updates. SECURITY updates
+# IGNORAM esse limite, e foi por isso que o #1637 (bump major do astro) nasceu em
+# 07/08 apesar da política — medido em 09/08, `automated-security-fixes` estava
+# `enabled=true`. O custo não era só o PR imergeável: os runs dele disputam a faixa
+# serializada do banco (`wait-for-db-lane`, #1509) e deixaram o gate `Schema
+# Invariants` de um PR SÓ DE DOCUMENTAÇÃO vermelho depois de esperar 900s, com o
+# banco vivo em 43 invariantes / 0 violadas. Vermelho sem defeito.
+#
+# Correção aplicada no ajuste do REPOSITÓRIO, não aqui:
+#   gh api -X DELETE repos/<owner>/<repo>/automated-security-fixes   # desliga os PRs
+# O feed de ALERTAS continua ativo (`vulnerability-alerts`), que é o que a #611 usa
+# para dirigir o trabalho. Conferido depois de desligar: security updates
+# `enabled=false`, alertas ativos, 7 alertas abertos ainda visíveis.
+#
+# Para reverter (se um dia os secrets alcançarem runs do Dependabot):
+#   gh api -X PUT repos/<owner>/<repo>/automated-security-fixes
 
 version: 2
 updates:
