@@ -29579,6 +29579,10 @@ export type Database = {
         }
         Returns: Json
       }
+      clear_member_attendance: {
+        Args: { p_event_id: string; p_member_id: string }
+        Returns: Json
+      }
       comms_acknowledge_alert: { Args: { p_alert_id: string }; Returns: Json }
       comms_channel_status: { Args: never; Returns: Json }
       comms_check_token_expiry: { Args: never; Returns: Json }
