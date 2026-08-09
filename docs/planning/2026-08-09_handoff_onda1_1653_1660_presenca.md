@@ -183,7 +183,72 @@ dois guards: **3 de 5** e **3 de 9** vermelhos, incluindo a camada viva nos dois
 
 ---
 
+---
+
+# Adendo - o #1657 e o #1705 também fecharam nesta sessão (PR #1708)
+
+## A regra
+
+Sem linha num evento **não selado** passa a ser `unrecorded`, não `absent`. `seal_event_attendance`
+materializa a linha de no-show, então **selar** é o ato que transforma omissão em ausência, e ele
+tem dono (`manage_event`).
+
+| medida | antes | depois |
+|---|---:|---:|
+| células acusando falta sem registro | **92** | **0** |
+| membros afetados | 43 | 0 |
+| rotulados `detractor` só por falta inferida | 2 | **0** |
+| rotulados `at_risk` só por falta inferida | 5 | **0** |
+| rate médio | 0,779 | 0,781 |
+
+## O denominador quase virou a segunda mentira
+
+Trocar a célula **sozinha** colapsaria o `rate`: não há **nenhuma** falta declarada no ciclo, então
+o denominador `present + absent` viraria só `present` e **65 de 66** membros iriam a 100%, com a
+média saltando para 0,985. Foi pego medindo depois de aplicar, não antes.
+
+**A lição:** tirar a acusação de um lugar pode inflar a métrica no outro. Quem muda o significado
+de um estado tem de medir o agregado na mesma volta, não só a célula.
+
+## Três achados que valem mais que o conserto
+
+**1. A defesa do p124 estava inerte, e o guard dela ficava verde.** O ramo
+`COALESCE(erc.row_count,0)=0 THEN 'na'` saiu do corpo vivo na migration de **captura de deriva**
+`20260802000001_p209_...`; o CTE continuou sendo calculado, alimentando um alias que nenhuma linha
+lia. O guard só exigia que o CTE **existisse** em migrations posteriores. Uma captura de deriva
+**oficializa** a perda: o trabalho dela é registrar o que está vivo, e se o vivo já perdeu a
+defesa, a captura torna a perda oficial.
+
+**2. Ler o corpo da RPC não diz o que o ATO faz.** Li `cancel_event_occurrence`, afirmei que não
+tocava em `attendance`, e o corpo de fato não toca - o **trigger**
+`trg_cleanup_attendance_on_event_cancel` toca, e apagou as 9 linhas do evento cancelado. O
+resultado final era o pretendido (as 9 pessoas têm a presença real no Kick-off do mesmo dia,
+verificado antes), mas o caminho não era o que descrevi. **Conferir os triggers da tabela antes de
+prometer o que um ato faz.**
+
+**3. Um guard escrito de manhã ficou obsoleto à tarde.** O teste do #1653 exigia o CTE do p124; o
+#1657 o removeu com razão, e o guard ficou vermelho por trabalho **correto**. Corrigido para exigir
+a **proteção**, não o formato dela.
+
+## A Liderança #7 (09/07)
+
+O GP confirmou que **não aconteceu**. Verificado antes de tocar: as 9 pessoas com linha lá têm
+**todas** presença no Kick-off do mesmo dia, então 0 precisavam de migração. Cancelada por
+`cancel_event_occurrence` (reversível), só esta ocorrência - a série tem 15, com 9 futuras
+intactas.
+
 ## Próximo
+
+**#1656** (escala e semântica), que decide o denominador definitivo e fecha os 26 divergentes por
+arredondamento. Depois **#1655 → #1654**.
+
+⚠️ **#1710** nasceu deste PR e é pré-requisito prático: `seal_event_attendance` não tem superfície
+(**0 de 302** eventos selados). Enquanto ninguém sela, "sem registro" nunca vira falta - seguro,
+mas a plataforma segue sem conseguir afirmar uma ausência em massa.
+
+---
+
+## Próximo (registro original, já superado acima)
 
 **#1657**, a inferência: parar de inventar falta a partir de linha ausente, com as 33 leitoras
 contadas e o par de eventos duplicados de 09/07 resolvido. É o passo que dá sentido ao #1660 -
