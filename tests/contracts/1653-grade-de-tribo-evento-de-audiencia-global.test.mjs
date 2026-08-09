@@ -98,11 +98,24 @@ describe('#1653 - o filtro de iniciativa só vale para o evento cuja audiência 
     assert.ok(latest.size > 0, 'o parser de capturas precisa enxergar as migrations');
   });
 
-  it('as duas defesas do p124 continuam na captura (0-row e a.present)', () => {
-    // Sem isto, uma recaptura desta função poderia desfazer o #124 sem ninguém notar.
-    assert.match(bloco.body, /event_row_counts\s+AS\s*\(/, 'CTE event_row_counts preservada');
+  it('a defesa viva do p124 continua na captura (a.present explícito)', () => {
+    // Sem isto, uma recaptura desta função poderia desfazer o p124 sem ninguém notar.
     assert.match(bloco.body, /a\.present\s*=\s*true\s+THEN\s+'present'/, "a.present = true → 'present'");
     assert.match(bloco.body, /a\.present\s*=\s*false\s+THEN\s+'absent'/, "a.present = false → 'absent'");
+  });
+
+  it('a proteção contra "evento sem registro vira falta" continua de pé (agora pelo #1657)', () => {
+    // Esta asserção exigia o CTE `event_row_counts` do p124 quando foi escrita, algumas horas
+    // antes do #1657. Ela estava certa e ficou obsoleta no mesmo dia: o ramo que LIA aquele CTE
+    // tinha sumido do corpo vivo desde a captura do p209, e o #1657 substituiu a regra por uma
+    // mais forte (por célula, ciente do selo) e removeu o CTE morto junto. Manter a asserção
+    // antiga deixaria este guard vermelho por trabalho CORRETO - que é a armadilha que o próprio
+    // cabeçalho deste arquivo diz evitar. O que importa é a proteção existir, não o formato dela.
+    assert.match(
+      bloco.body,
+      /roster_sealed_at IS NULL THEN 'unrecorded'/,
+      'a captura mais recente precisa proteger quem não tem linha num evento não selado'
+    );
   });
 
   it('a exceção de audiência global do primeiro filtro continua de pé', () => {

@@ -1,4 +1,8 @@
-export type CellStatus = 'present' | 'absent' | 'na' | 'excused' | 'scheduled';
+// #1657: 'unrecorded' = elegível, evento passado e NÃO SELADO, sem linha de presença. Antes isto
+// era renderizado como 'absent', então quem não clicou era indistinguível de quem faltou. Selar o
+// evento (`seal_event_attendance`) materializa a linha de no-show e é o ato que transforma omissão
+// em ausência; enquanto ninguém sela, a célula diz "sem registro" e não acusa.
+export type CellStatus = 'present' | 'absent' | 'na' | 'excused' | 'scheduled' | 'unrecorded';
 
 export interface AttendanceEvent {
   id: string;

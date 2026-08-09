@@ -77,26 +77,52 @@ test('p124: NOTIFY pgrst reload schema fires after migration', async () => {
   );
 });
 
-test('p124: no later migration redefines get_tribe_attendance_grid without the fix', async () => {
+/**
+ * SUPERSEDIDO EM PARTE PELO #1657 (2026-08-09).
+ *
+ * O fix #1 do p124 ("0 linhas no evento => 'na'") protegia por EVENTO: só valia quando NINGUÉM
+ * registrou. Ele saiu do corpo vivo na migration de captura de deriva
+ * `20260802000001_p209_issue_226_phase_b_drift_capture_26_fns.sql` e ninguém percebeu, porque este
+ * guard só exigia que o CTE `event_row_counts` EXISTISSE nas migrations posteriores - e ele
+ * continuou existindo, alimentando um alias (`erc`) que nenhuma linha lia. Defesa decorativa: o
+ * teste provava que um texto estava num arquivo, não que a regra rodava.
+ *
+ * O #1657 substituiu a regra por uma mais forte, por CÉLULA: sem linha num evento NÃO SELADO é
+ * 'unrecorded', não 'absent'. Ela cobre os eventos com zero linha (o caso do p124) E os eventos em
+ * que só uma parte registrou, que o p124 não alcançava. O CTE morto saiu junto.
+ *
+ * Por isso a checagem para-a-frente abaixo passou a exigir a regra NOVA. O fix #2 do p124
+ * (`a.present` explícito) continua vivo e continua sendo exigido.
+ */
+test('p124/#1657: toda migration posterior mantém a.present explícito E a regra de "sem registro"', async () => {
   const dir = path.resolve('supabase/migrations');
   const files = (await fs.readdir(dir))
     .filter(f => f.endsWith('.sql') && f > '20260517180000_')
     .sort();
 
+  const redefinem = [];
   for (const f of files) {
     const src = await fs.readFile(path.join(dir, f), 'utf-8');
     if (!/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?get_tribe_attendance_grid\b/i.test(src)) continue;
+    redefinem.push(f);
 
-    // If a later migration redefines the function, it MUST keep both fixes
-    assert.match(
-      src,
-      /event_row_counts\s+AS\s*\(/,
-      `Later migration ${f} redefines get_tribe_attendance_grid but is missing the event_row_counts CTE (regression of p124 fix #1)`
-    );
+    // p124 fix #2 — segue de pé em toda recaptura.
     assert.match(
       src,
       /a\.present\s*=\s*(?:true|false)/,
       `Later migration ${f} redefines get_tribe_attendance_grid but does not branch on a.present (regression of p124 fix #2)`
     );
   }
+
+  // A captura MAIS RECENTE tem de carregar a regra que substituiu o fix #1. Afirmar sobre a última
+  // (e não sobre todas) é o que permite que uma recaptura intermediária tenha existido sem a regra
+  // enquanto ela ainda não existia.
+  assert.ok(redefinem.length > 0, 'alguma migration precisa definir get_tribe_attendance_grid');
+  const ultima = await fs.readFile(path.join(dir, redefinem[redefinem.length - 1]), 'utf-8');
+  assert.match(
+    ultima,
+    /roster_sealed_at IS NULL THEN 'unrecorded'/,
+    `${redefinem[redefinem.length - 1]} é a captura mais recente e não tem a regra do #1657 ` +
+      '(sem linha em evento não selado = "unrecorded"), que substituiu o fix #1 do p124'
+  );
 });

@@ -25,7 +25,7 @@ export function AttendanceCell({
     return <span className="text-gray-400 select-none" title={status === 'scheduled' ? 'Evento agendado' : ''}>{status === 'scheduled' ? '📅' : '—'}</span>;
   }
 
-  if (isSelf && canSelfCheckIn && status === 'absent' && isWithinWindow) {
+  if (isSelf && canSelfCheckIn && (status === 'absent' || status === 'unrecorded') && isWithinWindow) {
     return (
       <button
         onClick={onCheckIn}
@@ -41,27 +41,44 @@ export function AttendanceCell({
     return <span className="text-red-400 select-none">❌</span>;
   }
 
+  // #1657: sem registro NÃO é falta. Glifo e cor próprios, para a célula parar de acusar quem
+  // apenas não clicou num evento que ninguém selou.
+  if (isSelf && canSelfCheckIn && status === 'unrecorded' && !isWithinWindow) {
+    return <span className="text-gray-400 select-none" title="Sem registro">○</span>;
+  }
+
   if (canToggle) {
     return (
       <button
         onClick={onToggle}
         disabled={loading}
         className={`w-7 h-7 rounded cursor-pointer transition-all hover:scale-110 disabled:opacity-50 border-0 bg-transparent ${
-          status === 'present' ? 'text-green-500' : status === 'excused' ? 'text-yellow-500' : 'text-red-400'
+          status === 'present' ? 'text-green-500'
+            : status === 'excused' ? 'text-yellow-500'
+            : status === 'unrecorded' ? 'text-gray-400'
+            : 'text-red-400'
         }`}
-        title={status === 'present' ? 'Presente → clique para remover' : 'Ausente → clique para marcar'}
+        title={
+          status === 'present' ? 'Presente → clique para remover'
+            : status === 'unrecorded' ? 'Sem registro → clique para marcar presença'
+            : 'Ausente → clique para marcar'
+        }
       >
-        {loading ? '⏳' : status === 'present' ? '✅' : status === 'excused' ? '⚠️' : '❌'}
+        {loading ? '⏳' : status === 'present' ? '✅' : status === 'excused' ? '⚠️' : status === 'unrecorded' ? '○' : '❌'}
       </button>
     );
   }
 
   return (
-    <span className={`select-none ${
-      status === 'present' ? 'text-green-500' :
-      status === 'excused' ? 'text-yellow-500' : 'text-red-400'
-    }`}>
-      {status === 'present' ? '✅' : status === 'excused' ? '⚠️' : '❌'}
+    <span
+      className={`select-none ${
+        status === 'present' ? 'text-green-500' :
+        status === 'excused' ? 'text-yellow-500' :
+        status === 'unrecorded' ? 'text-gray-400' : 'text-red-400'
+      }`}
+      title={status === 'unrecorded' ? 'Sem registro' : undefined}
+    >
+      {status === 'present' ? '✅' : status === 'excused' ? '⚠️' : status === 'unrecorded' ? '○' : '❌'}
     </span>
   );
 }

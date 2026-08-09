@@ -282,6 +282,32 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     }
   }, [excusedModal, excuseReasons, refreshGrid, t]);
 
+  /* #1705: LIMPAR REGISTRO e ato distinto de "marcar falta" (#1660). Ele desfaz o registro e
+     devolve a celula a "sem registro"; marcar falta AFIRMA que a pessoa faltou. Ate o #1660 os
+     dois eram o mesmo botao, porque mark_member_present(false) apagava a linha. */
+  const handleClearRecord = useCallback(async () => {
+    if (!excusedModal) return;
+    const { eventId, memberId, memberName } = excusedModal;
+    const sb = getSb();
+    if (!sb) return;
+    const cellKey = `${eventId}:${memberId}`;
+    setExcusedModal(null);
+    try {
+      const { error } = await sb.rpc('clear_member_attendance', {
+        p_event_id: eventId, p_member_id: memberId,
+      });
+      if (error) throw error;
+      await refreshGrid();
+      setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
+      (window as any).toast?.(
+        `${memberName}: ${t('attendance.grid.toastCleared', '\u25CB Registro removido')}`,
+        'success',
+      );
+    } catch (e: any) {
+      (window as any).toast?.(e.message || 'Erro', 'error');
+    }
+  }, [excusedModal, refreshGrid, t]);
+
   // Self check-in handler
   const handleSelfCheckIn = useCallback(async (eventId: string) => {
     const sb = getSb();
@@ -676,6 +702,14 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
                 className="w-full bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-800 dark:text-red-200 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-red-200 dark:border-red-800 transition-colors"
               >
                 ❌ {t('attendance.grid.modal.absent', 'Ausente')}
+              </button>
+              <button
+                type="button"
+                onClick={handleClearRecord}
+                className="w-full bg-gray-50 hover:bg-gray-100 dark:bg-gray-800/40 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 px-4 py-3 rounded-lg flex items-center gap-2 font-semibold border border-gray-200 dark:border-gray-700 transition-colors"
+                title={t('attendance.grid.modal.clearHint', 'Desfaz o registro. Diferente de marcar falta, que afirma a ausência.')}
+              >
+                ○ {t('attendance.grid.modal.clear', 'Limpar registro')}
               </button>
             </div>
             <button
