@@ -5151,6 +5151,7 @@ const ptBR: Record<string, string> = {
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Média',
   'attendance.grid.crossFunctional': 'Funções Transversais',
+  'attendance.grid.noEligibleEvents': 'Sem eventos elegíveis no ciclo',
   'attendance.grid.showAllEvents': 'Mostrar todos os eventos',
   'attendance.grid.events': 'eventos',
   'attendance.grid.legendGeral': 'Geral',

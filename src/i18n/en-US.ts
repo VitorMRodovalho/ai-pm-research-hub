@@ -5145,6 +5145,7 @@ const enUS: Record<string, string> = {
   'attendance.grid.leader': 'Leader',
   'attendance.grid.avg': 'Avg',
   'attendance.grid.crossFunctional': 'Cross-functional',
+  'attendance.grid.noEligibleEvents': 'No eligible events in the cycle',
   'attendance.grid.showAllEvents': 'Show all events',
   'attendance.grid.events': 'events',
   'attendance.grid.legendGeral': 'General',

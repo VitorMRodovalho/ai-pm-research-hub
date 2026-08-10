@@ -157,6 +157,20 @@ interface FlatRow {
    sem i18n (o CSV, por exemplo). */
 const CROSS_FUNCTIONAL_ID = '__cross_functional__';
 
+/* #1710: quem nao tem NENHUMA celula elegivel nao tem taxa, e exibir 0% para essa pessoa e uma
+   acusacao de novo tipo: le como "nao foi a nada" sobre quem simplesmente nao e cobrada de
+   presenca. A RPC entrega rate_pct COALESCE 0 para nao quebrar o contrato numerico; quem decide
+   se ha o que mostrar e eligible_count. Medido em 10/08, depois de alinhar a elegibilidade a
+   coorte do selo: 12 pessoas nesse estado. */
+const SEM_TAXA = '-';
+const temTaxa = (eligibleCount: number) => eligibleCount > 0;
+const formatRate = (rate: number, eligibleCount: number) =>
+  temTaxa(eligibleCount) ? `${rate.toFixed(1)}%` : SEM_TAXA;
+const rateColorFor = (rate: number, eligibleCount: number) =>
+  !temTaxa(eligibleCount)
+    ? 'text-[var(--text-muted)]'
+    : rate < 50 ? 'text-red-600' : rate < 75 ? 'text-amber-600' : 'text-green-600';
+
 const TYPE_ABBR: Record<string, string> = {
   geral: '🌐 G',
   tribo: '🔬 T',
@@ -815,7 +829,11 @@ export default function AttendanceGridTab() {
   const filteredKPIs = useMemo(() => {
     const members = filteredRows;
     const total = members.length;
-    const avgRate = total > 0 ? members.reduce((s, m) => s + m.rate, 0) / total : 0;
+    /* #1710: a media so pode correr sobre quem TEM taxa. Incluir as 12 pessoas sem nenhuma
+       celula elegivel (que a RPC entrega com rate_pct 0) puxaria a media para baixo com zeros
+       que nao significam ausencia. */
+    const comTaxa = members.filter((m) => temTaxa(m.eligibleCount));
+    const avgRate = comTaxa.length > 0 ? comTaxa.reduce((s, m) => s + m.rate, 0) / comTaxa.length : 0;
     const totalHours = members.reduce((s, m) => s + m.hours, 0);
     const detractors = members.filter(m => m.detractorStatus === 'detractor').length;
     const atRisk = members.filter(m => m.detractorStatus === 'at_risk').length;
@@ -948,10 +966,16 @@ export default function AttendanceGridTab() {
       size: 80,
       enableSorting: true,
       meta: { sticky: 'right' },
-      cell: ({ getValue }) => {
-        const v = getValue() as number;
-        const color = v < 50 ? 'text-red-600' : v < 75 ? 'text-amber-600' : 'text-green-600';
-        return <span className={`font-bold ${color}`}>{Math.round(v)}%</span>;
+      cell: ({ row }) => {
+        const { rate, eligibleCount } = row.original;
+        return (
+          <span
+            className={`font-bold ${rateColorFor(rate, eligibleCount)}`}
+            title={temTaxa(eligibleCount) ? undefined : t('attendance.grid.noEligibleEvents', 'Sem eventos elegíveis no ciclo')}
+          >
+            {temTaxa(eligibleCount) ? `${Math.round(rate)}%` : SEM_TAXA}
+          </span>
+        );
       },
     });
 
@@ -1020,7 +1044,7 @@ export default function AttendanceGridTab() {
         `"${r.tribeName}"`,
         `"${r.chapter}"`,
         ...filteredEvents.map((e) => statusCell(r.attendance[e.id]).csv),
-        `${r.rate.toFixed(1)}`,
+        temTaxa(r.eligibleCount) ? `${r.rate.toFixed(1)}` : '',
       ];
       csvRows.push(cells.join(','));
     }
@@ -1755,7 +1779,7 @@ function SmartTribeSection({
             <tbody>
               {rows.map((row: any) => {
                 const r: FlatRow = row.original;
-                const rateColor = r.rate < 50 ? 'text-red-600' : r.rate < 75 ? 'text-amber-600' : 'text-green-600';
+                const rateColor = rateColorFor(r.rate, r.eligibleCount);
                 return (
                   <tr
                     key={row.id}
@@ -1848,7 +1872,7 @@ function SmartTribeSection({
                       className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
                       style={STICKY_RIGHT_TD}
                     >
-                      <span className={`font-bold ${rateColor}`}>{r.rate.toFixed(1)}%</span>
+                      <span className={`font-bold ${rateColor}`}>{formatRate(r.rate, r.eligibleCount)}</span>
                     </td>
                   </tr>
                 );
@@ -1888,8 +1912,7 @@ function MobileCardList({
     <div className="space-y-3">
       {rows.map((row: any) => {
         const r: FlatRow = row.original;
-        const rateColor =
-          r.rate < 50 ? 'text-red-600' : r.rate < 75 ? 'text-amber-600' : 'text-green-600';
+        const rateColor = rateColorFor(r.rate, r.eligibleCount);
         const statusPrefix =
           r.detractorStatus === 'detractor'
             ? '🔴 '
@@ -1912,7 +1935,7 @@ function MobileCardList({
                   {r.tribeName} &middot; {r.chapter}
                 </p>
               </div>
-              <span className={`text-lg font-extrabold ${rateColor}`}>{r.rate.toFixed(1)}%</span>
+              <span className={`text-lg font-extrabold ${rateColor}`}>{formatRate(r.rate, r.eligibleCount)}</span>
             </div>
 
             {/* Scrollable attendance strip with date headers — only show eligible events */}
