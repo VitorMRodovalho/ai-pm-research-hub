@@ -159,7 +159,7 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <KpiCard label={t('comp.tribe.members', 'Membros')} value={members.total || 0} sub={`${members.active || 0} ${t('comp.tribe.activemembers', 'ativos')}`} color="bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" />
-        <KpiCard label={t('comp.tribe.attendance', 'Presença')} value={(engagement.total_meetings || 0) > 0 ? `${Math.round((engagement.attendance_rate || 0) * 100)}%` : '—'} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
+        <KpiCard label={t('comp.tribe.attendance', 'Presença')} value={(engagement.total_meetings || 0) > 0 ? `${(engagement.attendance_pct || 0).toFixed(1)}%` : '—'} sub={`${engagement.total_meetings || 0} reuniões`} color="bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300" />
         <KpiCard label="Cards" value={production.total_cards || 0} sub={`${production.articles_approved || 0} aprovados`} color="bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300" />
         <KpiCard label="XP Total" value={gamification.tribe_total_xp || 0} sub={`média ${gamification.tribe_avg_xp || 0}`} color="bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300" />
       </div>
@@ -213,7 +213,7 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
   };
   const list = [...(members.list || [])].sort((a: any, b: any) => {
     if (sortBy === 'xp') return (b.xp_total || 0) - (a.xp_total || 0);
-    if (sortBy === 'attendance') return (b.attendance_rate || 0) - (a.attendance_rate || 0);
+    if (sortBy === 'attendance') return (b.attendance_pct || 0) - (a.attendance_pct || 0);
     return (a.name || '').localeCompare(b.name || '');
   });
 
@@ -275,7 +275,7 @@ function MembersTab({ members, sortBy, setSortBy }: { members: any; sortBy: stri
                 <td className="px-3 py-2.5 font-semibold text-navy">{m.name}</td>
                 <td className="px-3 py-2.5 text-[var(--text-secondary)]">{m.chapter || '—'}</td>
                 <td className="px-3 py-2.5 text-center font-bold">{m.xp_total || 0}</td>
-                <td className="px-3 py-2.5 text-center">{Math.round((m.attendance_rate || 0) * 100)}%</td>
+                <td className="px-3 py-2.5 text-center">{(m.attendance_pct || 0).toFixed(1)}%</td>
                 <td className="px-3 py-2.5 text-center text-[.6rem]">
                   {m.cpmai_certified && <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">CPMAI</span>}
                   {m.certifications && <span className="ml-1">{m.certifications}</span>}
@@ -364,9 +364,9 @@ function EngagementTab({ engagement, trends }: { engagement: any; trends: any })
             <LineChart data={attendanceTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
               <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis domain={[0, 1]} tickFormatter={(v: number) => `${Math.round(v * 100)}%`} />
-              <Tooltip formatter={(v: number) => `${Math.round(v * 100)}%`} />
-              <Line type="monotone" dataKey="rate" stroke="#00799E" strokeWidth={2}
+              <YAxis domain={[0, 100]} tickFormatter={(v: number) => `${Math.round(v)}%`} />
+              <Tooltip formatter={(v: number) => `${Number(v).toFixed(1)}%`} />
+              <Line type="monotone" dataKey="rate_pct" stroke="#00799E" strokeWidth={2}
                     dot={{ fill: '#00799E', r: 4 }} name="Taxa de Presença" />
             </LineChart>
           </ResponsiveContainer>

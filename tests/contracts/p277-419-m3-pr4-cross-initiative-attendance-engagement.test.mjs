@@ -50,7 +50,10 @@ test('m3 PR4 forward-defense: no 2026-03-01 literal + no members×events attenda
 
 test('m3 PR4 FE: CrossTribeWidget drops the Math.min(.,100) attendance clamp', () => {
   assert.ok(existsSync(WIDGET));
-  assert.match(widget, /attendance_rate: Math\.round\(it\.attendance_rate \* 100\),/i, 'plain round, no clamp');
+  // #1656: a RPC publica attendance_pct em 0-100, entao o widget nao converte mais escala.
+  // O que este predicado guarda continua sendo a AUSENCIA do clamp, nao a multiplicacao.
+  assert.match(widget, /attendance_rate: it\.attendance_pct,/i, 'sem conversao de escala no widget');
+  assert.ok(!/Math\.round\(it\.attendance_pct \* 100\)/i.test(widget), 'nao voltou a multiplicar a chave ja em 0-100');
   assert.ok(!/Math\.min\(Math\.round\(it\.attendance_rate \* 100\), 100\)/i.test(widget), 'old Math.min clamp removed');
 });
 

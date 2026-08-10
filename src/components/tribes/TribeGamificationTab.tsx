@@ -49,7 +49,10 @@ interface Member {
   has_cpmai: boolean;
   trail_progress: number;
   // #425 coaching primitives
+  /** @deprecated #1656 - fracao 0-1. Use attendance_pct. */
   attendance_rate: number | null;
+  /** #1656 - percentual 0-100, 1 casa. */
+  attendance_pct: number | null;
   current_streak: number;
   longest_streak: number;
   active_cycles: number;
@@ -347,7 +350,7 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                 {showBreakdown && (
                   <Th label={t('comp.gamification.attendanceCol', 'Presenca')} sortKey="attendance_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 )}
-                <Th label={t('comp.gamification.attendanceRateCol', 'Pres. %')} sortKey="attendance_rate" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
+                <Th label={t('comp.gamification.attendanceRateCol', 'Pres. %')} sortKey="attendance_pct" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
                 {showBreakdown && (
                   <>
                     <Th label={t('comp.gamification.certsCol', 'Certs')} sortKey="cert_points" currentSort={sortKey} asc={sortAsc} onSort={handleSort} />
@@ -392,8 +395,8 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
                         <td className="px-3 py-2.5 text-center">{m.attendance_points}</td>
                       )}
                       <td className="px-3 py-2.5 text-center">
-                        {m.attendance_rate != null ? (
-                          <AttendanceRatePill rate={m.attendance_rate} />
+                        {m.attendance_pct != null ? (
+                          <AttendanceRatePill pct={m.attendance_pct} />
                         ) : (
                           <span className="text-[var(--text-muted)]">—</span>
                         )}
@@ -543,12 +546,11 @@ export default function TribeGamificationTab({ tribeId, initiativeId }: TribeGam
 }
 
 // ─── Attendance Rate Pill (color-coded by threshold) ───
-function AttendanceRatePill({ rate }: { rate: number }) {
-  const pct = Math.round(rate * 100);
+function AttendanceRatePill({ pct }: { pct: number }) {
   const cls =
-    rate >= 0.8
+    pct >= 80
       ? 'text-emerald-700 dark:text-emerald-400'
-      : rate >= 0.5
+      : pct >= 50
         ? 'text-amber-600 dark:text-amber-400'
         : 'text-red-600 dark:text-red-400';
   return <span className={`font-semibold ${cls}`}>{pct}%</span>;
@@ -622,7 +624,7 @@ function MemberDrillDown({ member, t }: { member: Member; t: (k: string, f?: str
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard
             label={t('comp.gamification.attendanceRateLabel', 'Taxa de presenca (ciclo)')}
-            value={member.attendance_rate != null ? `${Math.round(member.attendance_rate * 100)}%` : t('comp.gamification.noData', 'Sem dados')}
+            value={member.attendance_pct != null ? `${member.attendance_pct.toFixed(1)}%` : t('comp.gamification.noData', 'Sem dados')}
           />
           <StatCard
             label={t('comp.gamification.currentStreak', 'Sequencia atual')}

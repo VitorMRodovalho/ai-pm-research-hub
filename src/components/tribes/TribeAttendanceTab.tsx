@@ -21,7 +21,10 @@ interface AttendanceEvent {
 interface AttendanceMember {
   id: string;
   name: string;
+  /** @deprecated #1656 — fração 0-1. Use rate_pct; sai na limpeza. */
   rate: number;
+  /** #1656 — percentual 0-100, 1 casa. Mesma escala e arredondamento do painel. */
+  rate_pct: number;
   present_count: number;
   eligible_count: number;
   attendance: Record<string, CellStatus>;
@@ -32,7 +35,10 @@ interface AttendanceMember {
 }
 
 interface AttendanceSummary {
+  /** @deprecated #1656 — fração 0-1. Use overall_rate_pct. */
   overall_rate: number;
+  /** #1656 — percentual 0-100, 1 casa. */
+  overall_rate_pct: number;
   perfect_attendance: number;
   below_50: number;
 }
@@ -376,7 +382,7 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     const arr = [...(Array.isArray(data.members) ? data.members : [])];
     const dir = sortDir === 'asc' ? 1 : -1;
     arr.sort((a, b) => {
-      if (sortKey === 'rate') return dir * (a.rate - b.rate);
+      if (sortKey === 'rate') return dir * (a.rate_pct - b.rate_pct);
       return dir * a.name.localeCompare(b.name);
     });
     return arr;
@@ -455,8 +461,8 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
           label={t('attendance.kpi.overall', 'Overall Rate')}
-          value={`${Math.round(summary.overall_rate <= 1 ? summary.overall_rate * 100 : summary.overall_rate)}%`}
-          accent={rateColor(summary.overall_rate <= 1 ? summary.overall_rate * 100 : summary.overall_rate)}
+          value={`${summary.overall_rate_pct.toFixed(1)}%`}
+          accent={rateColor(summary.overall_rate_pct)}
         />
         <KpiCard
           label={t('attendance.kpi.perfect', 'Perfect Attendance')}
@@ -536,8 +542,8 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
 
           <tbody>
             {sortedMembers.map(member => {
-              const rawRate = member.rate <= 1 ? member.rate * 100 : member.rate;
-              const pct = Math.round(rawRate);
+              const rawRate = member.rate_pct;
+              const pct = rawRate.toFixed(1);
               return (
                 <tr
                   key={member.id}

@@ -33,7 +33,9 @@ const GATED_PILLARS = [
   'learning_points', 'producao_points', 'curadoria_points', 'champions_points',
 ];
 // Columns that STAY visible in the COMPACT (default) view — high-signal, not point pillars.
-const ALWAYS_ON_SORTKEYS = ['total_points', 'cycle_points', 'current_streak', 'attendance_rate', 'name'];
+// #1656: a coluna Pres. % continua sempre visivel; o que mudou foi o NOME da chave, que agora
+// declara a escala (attendance_pct, 0-100). O guard segue afirmando visibilidade, nao a escala.
+const ALWAYS_ON_SORTKEYS = ['total_points', 'cycle_points', 'current_streak', 'attendance_pct', 'name'];
 
 test('577 static: TribeGamificationTab.tsx exists', () => {
   assert.ok(existsSync(TSX), 'component file present');
@@ -88,7 +90,7 @@ test('577 static: high-signal columns stay visible (Pres.%, CPMAI, Trilha not ga
   // Pres.% header line is immediately followed by a `{showBreakdown && (` opener.
   assert.match(
     tsx,
-    /sortKey="attendance_rate"[^\n]*\/>\s*\n\s*\{showBreakdown && \(/,
+    /sortKey="attendance_pct"[^\n]*\/>\s*\n\s*\{showBreakdown && \(/,
     'Pres. % header stays out of the gate (gated cert-block opens right after it)',
   );
   // CPMAI + Trilha headers exist outside any gate (they trail the second gated block).

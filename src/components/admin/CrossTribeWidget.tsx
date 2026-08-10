@@ -36,7 +36,10 @@ interface V4InitiativeRow {
   total_cards: number;
   cards_completed: number;
   articles_submitted: number;
+  /** @deprecated #1656 - fracao 0-1. Use attendance_pct. */
   attendance_rate: number;
+  /** #1656 - percentual 0-100, 1 casa. */
+  attendance_pct: number;
   total_hours: number;
   meetings_count: number;
   total_xp: number;
@@ -81,9 +84,9 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
     if (!m) { setTimeout(load, 400); return; }
     const { data: result } = await sb.rpc('exec_cross_initiative_comparison', { p_kind: 'research_tribe' });
     const initiatives: V4InitiativeRow[] = result?.initiatives ?? [];
-    // V4 returns attendance_rate as 0-1 fraction; widget UI expects 0-100 (V3 parity).
+    // #1656: a RPC publica attendance_pct em 0-100. A conversao de escala saiu do widget.
     // tribe_id is guaranteed non-null when p_kind='research_tribe' (RPC filters via legacy_tribe_id join).
-    // RPC guarantees: attendance_rate + total_hours both wrapped in COALESCE(..., 0)
+    // RPC guarantees: attendance_pct + total_hours both wrapped in COALESCE(..., 0)
     // server-side, so null-guards here would be dead branches. Council p194 LOW-194.A.
     const mapped: TribeRow[] = initiatives
       .filter((it) => it.tribe_id != null && it.tribe_name != null)
@@ -92,10 +95,9 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
         tribe_name: it.tribe_name as string,
         leader_name: it.leader,
         member_count: it.member_count,
-        // p277 PR4: attendance_rate is now canonical engagement (0..1 by construction via
-        // get_attendance_engagement_summary), so the old Math.min(.,100) clamp for the
-        // members×events >1.0 anomaly is no longer needed.
-        attendance_rate: Math.round(it.attendance_rate * 100),
+        // p277 PR4: canonical engagement via get_attendance_engagement_summary, entao o antigo
+        // clamp Math.min(.,100) para a anomalia membros×eventos >1.0 nao e mais necessario.
+        attendance_rate: it.attendance_pct,
         cards_done: it.cards_completed,
         cards_total: it.total_cards,
         impact_hours: Math.round(it.total_hours),

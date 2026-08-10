@@ -537,8 +537,8 @@ const CR_I18N = {
     const relG = att.reliability || {};
     const byTribe = Array.isArray(att.by_tribe) ? att.by_tribe : [];
     if (attEl && byTribe.length > 0) {
-      const engPct = engG.avg_rate != null ? (Number(engG.avg_rate) * 100).toFixed(1) : '—';
-      const relPct = relG.avg_rate != null ? (Number(relG.avg_rate) * 100).toFixed(1) : '—';
+      const engPct = engG.avg_pct != null ? Number(engG.avg_pct).toFixed(1) : '—';
+      const relPct = relG.avg_pct != null ? Number(relG.avg_pct).toFixed(1) : '—';
       attEl.innerHTML = `
         <div class="flex flex-wrap gap-3 mb-3">
           <div class="rounded-lg px-3 py-2 bg-[var(--surface-base)] border border-[var(--border-subtle)]">

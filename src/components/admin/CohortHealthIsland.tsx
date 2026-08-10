@@ -58,7 +58,10 @@ interface AttendanceMember {
   absent: number;
   excused: number;
   eligible: number;
+  /** @deprecated #1656 - fracao 0-1. Use attendance_pct. */
   attendance_rate: number | null;
+  /** #1656 - percentual 0-100, 1 casa. */
+  attendance_pct: number | null;
 }
 
 interface AttendanceOverview {
@@ -341,7 +344,7 @@ export default function CohortHealthIsland() {
               </thead>
               <tbody>
                 {attMembers.map(m => {
-                  const rate = m.attendance_rate == null ? null : Math.round(m.attendance_rate * 100);
+                  const rate = m.attendance_pct;
                   const rateColor = rate == null ? 'text-[var(--text-muted)]' : rate >= 75 ? 'text-emerald-600' : rate >= 50 ? 'text-amber-600' : 'text-red-600';
                   return (
                     <tr key={m.member_id} className="border-b border-[var(--border-default)]/50">

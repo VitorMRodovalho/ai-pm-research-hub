@@ -80,7 +80,11 @@ test('m3 PR5b forward-defense: 90-day window + reach rate_pct + hub_participatio
 test('m3 PR5b FE: ChapterDashboard chart + card consume engagement object + reliability raw counts', () => {
   assert.ok(existsSync(COMP));
   // chart: chapter bar = engagement, hub bar = real hub_engagement_pct (was hardcoded 70)
-  assert.match(comp, /a\.engagement\?\.avg_rate != null \? Math\.round\(a\.engagement\.avg_rate \* 100\)/);
+  // #1656: a chave de exibicao virou avg_pct (0-100) e o front parou de multiplicar por 100.
+  // O que este predicado guarda continua sendo o mesmo: a barra do capitulo sai do objeto
+  // engagement do summary, e nao de um numero solto.
+  assert.match(comp, /a\.engagement\?\.avg_pct != null \? a\.engagement\.avg_pct : 0/);
+  assert.ok(!/a\.engagement\.avg_rate/.test(comp), 'front nao le mais a fracao avg_rate');
   assert.match(comp, /a\.hub_engagement_pct \|\| 0/);
   assert.ok(!/p\.hub_total \|\| 0, 70,/.test(comp), 'hardcoded 70 hub baseline removed');
   assert.ok(!/a\.rate_pct/.test(comp), 'old a.rate_pct reads removed');

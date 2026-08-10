@@ -403,14 +403,14 @@ const INIT_I18N = {
     try {
       const { data } = await sb.rpc('get_initiative_stats', { p_initiative_id: INITIATIVE_ID });
       if (data) {
-        const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
+        const rateColor = (data.attendance_pct || 0) >= 75 ? '#10B981' : (data.attendance_pct || 0) >= 50 ? '#D97706' : '#BE2027';
         const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
             <div class="text-2xl font-extrabold text-navy">${data.member_count || 0}</div>
             <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">${I18N.stats?.members || 'Members'}</div>
           </div>
           ${kindConfig?.has_attendance ? `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-            <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_rate ?? 0}%</div>
+            <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_pct ?? 0}%</div>
             <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Presença</div>
           </div>` : ''}
           <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
@@ -782,10 +782,10 @@ const INIT_I18N = {
     const summary = data.summary || {};
 
     // Summary stats
-    const overallRate = Math.round((summary.overall_rate || 0) * 100);
+    const overallRate = summary.overall_rate_pct || 0;
     const rateColor = overallRate >= 75 ? '#10B981' : overallRate >= 50 ? '#D97706' : '#BE2027';
-    const perfectCount = members.filter((m: any) => m.rate != null && Math.round(m.rate * 100) === 100 && m.member_status === 'active').length;
-    const belowCount = members.filter((m: any) => m.rate != null && Math.round(m.rate * 100) < 50 && m.member_status === 'active').length;
+    const perfectCount = members.filter((m: any) => m.rate_pct != null && m.rate_pct >= 100 && m.member_status === 'active').length;
+    const belowCount = members.filter((m: any) => m.rate_pct != null && m.rate_pct < 50 && m.member_status === 'active').length;
     const pastEvents = events.filter((e: any) => !e.is_future).length;
 
     const summaryHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -826,10 +826,11 @@ const INIT_I18N = {
       const att = m.attendance || {};
       const cells = events.map((e: any) => {
         const status = att[e.id];
-        const icon = status === 'present' ? '✅' : status === 'excused' ? '🟡' : status === 'scheduled' ? '⬜' : status === 'na' ? '—' : '❌';
+        // #1656: 'unrecorded' (evento passado, nao selado, sem linha) NAO e falta - e ausencia de registro.
+        const icon = status === 'present' ? '✅' : status === 'excused' ? '🟡' : status === 'scheduled' ? '⬜' : status === 'na' ? '—' : status === 'unrecorded' ? '○' : '❌';
         return `<td class="text-center px-2 py-1 text-xs">${icon}</td>`;
       }).join('');
-      const pct = m.rate != null ? Math.round(m.rate * 100) : 0;
+      const pct = m.rate_pct ?? 0;
       const rColor = pct >= 75 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-red-600';
       return `<tr class="border-b border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]">
         <td class="text-xs font-semibold text-[var(--text-primary)] px-3 py-2 truncate max-w-[140px]">${escapeHtml(name.split(' ').slice(0, 2).join(' '))}</td>

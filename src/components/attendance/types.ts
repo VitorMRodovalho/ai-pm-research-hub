@@ -21,7 +21,10 @@ export interface AttendanceEvent {
 export interface AttendanceMember {
   id: string;
   name: string;
+  /** @deprecated #1656 - fracao 0-1. Use rate_pct; sai na limpeza. */
   rate: number;
+  /** #1656 - percentual 0-100, 1 casa (mesma escala e arredondamento do painel). */
+  rate_pct: number;
   present_count: number;
   eligible_count: number;
   attendance: Record<string, CellStatus>;
@@ -29,7 +32,10 @@ export interface AttendanceMember {
 
 export interface AttendanceGridData {
   summary: {
+    /** @deprecated #1656 - fracao 0-1. Use overall_rate_pct. */
     overall_rate: number;
+    /** #1656 - percentual 0-100, 1 casa. */
+    overall_rate_pct: number;
     perfect_attendance: number;
     below_50: number;
   };

@@ -168,7 +168,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
         data: {
           labels: [t.members, t.attendance, t.avgXp],
           datasets: [
-            { label: t.compChapter, data: [p.active || 0, a.engagement?.avg_rate != null ? Math.round(a.engagement.avg_rate * 100) : 0, g.avg_xp || 0], backgroundColor: '#0d9488' },
+            { label: t.compChapter, data: [p.active || 0, a.engagement?.avg_pct != null ? a.engagement.avg_pct : 0, g.avg_xp || 0], backgroundColor: '#0d9488' },
             { label: t.compHub, data: [p.hub_total || 0, a.hub_engagement_pct || 0, g.hub_avg_xp || 0], backgroundColor: '#94a3b8' },
           ],
         },
@@ -291,7 +291,7 @@ export default function ChapterDashboard({ lang: propLang, stakeholderMode }: Pr
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 metric-cards">
         <MetricCard icon="👥" label={t.members} value={p.active || 0} sub={`${p.observers || 0} ${t.observers} · ${p.alumni || 0} ${t.alumni}`} />
         <MetricCard icon="📄" label={t.output} value={o.board_cards_completed || 0} sub={`${o.publications_submitted || 0} ${t.publications}`} />
-        <MetricCard icon="📊" label={t.attendance} value={`${a.engagement?.avg_rate != null ? Math.round(a.engagement.avg_rate * 100) : 0}%`} sub={`${t.reliabilityLbl} ${a.reliability?.avg_rate != null ? Math.round(a.reliability.avg_rate * 100) : '—'}% · P${a.reliability?.present_total ?? 0}/A${a.reliability?.absent_total ?? 0}/E${a.reliability?.excused_total ?? 0}`} />
+        <MetricCard icon="📊" label={t.attendance} value={`${a.engagement?.avg_pct != null ? a.engagement.avg_pct.toFixed(1) : 0}%`} sub={`${t.reliabilityLbl} ${a.reliability?.avg_pct != null ? a.reliability.avg_pct.toFixed(1) : '—'}% · P${a.reliability?.present_total ?? 0}/A${a.reliability?.absent_total ?? 0}/E${a.reliability?.excused_total ?? 0}`} />
         <MetricCard icon="⏱️" label={t.hours} value={`${h.total_hours || 0}h`} sub={`${t.pdu}: ${h.pdu_equivalent || 0}`} />
         <MetricCard icon="🎓" label={t.certs} value={c.total_certs || 0} sub={`PMP: ${c.pmp || 0} · CPMAI: ${c.cpmai || 0}${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0) > 0 ? ` · ${t.other}: ${(c.total_certs || 0) - (c.pmp || 0) - (c.cpmai || 0)}` : ''}`} />
         <MetricCard icon="🤝" label={t.partnerships} value={pr.total || 0} sub={`${pr.active || 0} ${t.active} · ${pr.negotiation || 0} ${t.negotiation}${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0) > 0 ? ` · ${(pr.total || 0) - (pr.active || 0) - (pr.negotiation || 0)} ${t.other}` : ''}`} />

@@ -3309,7 +3309,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_cycle_attendance_overview (#1286 — GP/co-GP attendance by cycle)
-  mcp.tool("get_cycle_attendance_overview", "GP/co-GP: presenças/faltas cross-membro filtrável por ciclo. Sem cycle_code = ciclo corrente (membros ativos); com cycle_code (ex.: 'cycle_3') = snapshot member_cycle_history. Retorna present/absent/excused/eligible + attendance_rate por membro. Authority: manage_member OR view_internal_analytics.", {
+  mcp.tool("get_cycle_attendance_overview", "GP/co-GP: presenças/faltas cross-membro filtrável por ciclo. Sem cycle_code = ciclo corrente (membros ativos); com cycle_code (ex.: 'cycle_3') = snapshot member_cycle_history. Retorna present/absent/excused/eligible + attendance_pct (percentual 0-100, 1 casa) por membro; attendance_rate (fracao 0-1) segue publicada e sai na limpeza do #1656. Authority: manage_member OR view_internal_analytics.", {
     cycle_code: z.string().optional().describe("Código do ciclo (ex.: 'cycle_3', 'cycle_4'). Default: ciclo corrente.")
   }, async (params: any) => {
     const start = Date.now();
