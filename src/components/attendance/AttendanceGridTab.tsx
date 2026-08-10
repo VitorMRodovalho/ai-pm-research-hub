@@ -150,6 +150,13 @@ interface FlatRow {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
+/* #1655: grupo sintetico que get_attendance_grid publica para quem nao tem tribo.
+   Antes, a RPC indexava 'tribes' por public.tribes e essas pessoas ficavam sem linha
+   (medido em 10/08: summary.total_members = 83, corpo renderizando 66). O rotulo vem
+   traduzido no fetch; a RPC manda 'Cross-functional' como fallback para consumidores
+   sem i18n (o CSV, por exemplo). */
+const CROSS_FUNCTIONAL_ID = '__cross_functional__';
+
 const TYPE_ABBR: Record<string, string> = {
   geral: '🌐 G',
   tribo: '🔬 T',
@@ -614,6 +621,16 @@ export default function AttendanceGridTab() {
         /* #1656: a normalizacao morreu com a escala. A RPC publica *_pct em 0-100 e o front
            nao adivinha mais a escala - o palpite "raw <= 1 => fracao" lia 1% como 100%. */
 
+        /* #1655: o grupo dos sem-tribo chega rotulado em ingles; traduz aqui, uma vez, em vez
+           de espalhar o sentinel por cada leitura de tribe_name. */
+        if (parsed?.tribes) {
+          for (const tr of parsed.tribes) {
+            if (tr.tribe_id === CROSS_FUNCTIONAL_ID) {
+              tr.tribe_name = t('attendance.grid.crossFunctional', 'Cross-functional');
+            }
+          }
+        }
+
         setData(parsed);
 
         /* Load excuse reasons for tooltip */
@@ -631,11 +648,11 @@ export default function AttendanceGridTab() {
           }
         } catch { /* best effort */ }
 
-        /* Initialize expanded tribes — all expanded by default (include cross-functional) */
+        /* Initialize expanded tribes — all expanded by default.
+           #1655: o grupo dos sem-tribo ja vem em parsed.tribes, entao nao precisa mais ser
+           empurrado a mao aqui. */
         if (parsed && parsed.tribes) {
-          const ids = parsed.tribes.map((tr) => tr.tribe_id);
-          ids.push('__cross_functional__');
-          setExpandedTribes(new Set(ids));
+          setExpandedTribes(new Set(parsed.tribes.map((tr) => tr.tribe_id)));
         }
       } catch (e: any) {
         setError(e?.message || t('attendance.grid.errorGeneric', 'Failed to load attendance grid'));
@@ -807,8 +824,11 @@ export default function AttendanceGridTab() {
 
   /* Best tribe */
   const bestTribe = useMemo(() => {
-    if (!data || data.tribes.length === 0) return null;
-    return data.tribes.reduce((best, cur) => (cur.avg_rate_pct > best.avg_rate_pct ? cur : best), data.tribes[0]);
+    /* #1655: o grupo dos sem-tribo aparece em data.tribes para ter linha na grade, mas nao
+       e uma tribo - deixa-lo concorrer faria o KPI "melhor tribo" nomear o grupo sintetico. */
+    const real = data?.tribes.filter((tr) => tr.tribe_id !== CROSS_FUNCTIONAL_ID) ?? [];
+    if (real.length === 0) return null;
+    return real.reduce((best, cur) => (cur.avg_rate_pct > best.avg_rate_pct ? cur : best), real[0]);
   }, [data]);
 
   /* FIX 1: Week-grouped event columns */
@@ -950,18 +970,10 @@ export default function AttendanceGridTab() {
   });
 
   /* FIX 5: Group rows by tribe for collapsible rendering */
-  /* FIX 5b: Include cross-functional members (tribe_id is null) */
-  const CROSS_FUNCTIONAL_ID = '__cross_functional__';
-  const crossFunctionalTribe: GridTribe = useMemo(() => ({
-    tribe_id: CROSS_FUNCTIONAL_ID,
-    tribe_name: t('attendance.grid.crossFunctional', 'Cross-functional'),
-    leader_name: '\u2014',
-    avg_rate: 0,
-    avg_rate_pct: 0,
-    member_count: 0,
-    members: [],
-  }), [t]);
-
+  /* #1655: o grupo dos sem-tribo agora vem de data.tribes, como qualquer outro. O fallback
+     antigo montava esse grupo aqui a partir de linhas orfas, e era inerte por construcao:
+     as linhas sao achatadas de data.tribes[].members[], entao nenhuma podia ficar de fora
+     do tribeMap. Quem nao tinha tribo nao chegava ate aqui - nao chegava nem na RPC. */
   const groupedByTribe = useMemo(() => {
     if (!data) return [];
     const sortedRows = table.getRowModel().rows;
@@ -971,26 +983,12 @@ export default function AttendanceGridTab() {
       tribeMap.set(tribe.tribe_id, { tribe, rows: [] });
     }
 
-    const orphanRows: typeof sortedRows = [];
-
     for (const row of sortedRows) {
-      const entry = tribeMap.get(row.original.tribeId);
-      if (entry) {
-        entry.rows.push(row);
-      } else {
-        orphanRows.push(row);
-      }
+      tribeMap.get(row.original.tribeId)?.rows.push(row);
     }
 
-    const groups = Array.from(tribeMap.values()).filter((g) => g.rows.length > 0);
-
-    /* Add cross-functional group for members with no tribe */
-    if (orphanRows.length > 0) {
-      groups.push({ tribe: crossFunctionalTribe, rows: orphanRows });
-    }
-
-    return groups;
-  }, [data, table.getRowModel().rows, crossFunctionalTribe]);
+    return Array.from(tribeMap.values()).filter((g) => g.rows.length > 0);
+  }, [data, table.getRowModel().rows]);
 
   const toggleTribe = useCallback((tribeId: string) => {
     setExpandedTribes((prev) => {
