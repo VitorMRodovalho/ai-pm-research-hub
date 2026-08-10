@@ -5146,6 +5146,7 @@ const esLATAM: Record<string, string> = {
   'attendance.grid.leader': 'Líder',
   'attendance.grid.avg': 'Promedio',
   'attendance.grid.crossFunctional': 'Funciones Transversales',
+  'attendance.grid.noEligibleEvents': 'Sin eventos elegibles en el ciclo',
   'attendance.grid.showAllEvents': 'Mostrar todos los eventos',
   'attendance.grid.events': 'eventos',
   'attendance.grid.legendGeral': 'General',
