@@ -741,14 +741,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       _canonicalMemberCount = data.member_count ?? null;
       const _hdrCount = document.getElementById('tribe-header-member-count');
       if (_hdrCount) _hdrCount.textContent = `👥 ${data.member_count ?? 0}`;
-      const rateColor = (data.attendance_rate || 0) >= 75 ? '#10B981' : (data.attendance_rate || 0) >= 50 ? '#D97706' : '#BE2027';
+      const rateColor = (data.attendance_pct || 0) >= 75 ? '#10B981' : (data.attendance_pct || 0) >= 50 ? '#D97706' : '#BE2027';
       const statsHtml = `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
           <div class="text-2xl font-extrabold text-navy">${data.member_count}</div>
           <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Membros</div>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
-          <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_rate ?? 0}%</div>
+          <div class="text-2xl font-extrabold" style="color:${rateColor}">${data.attendance_pct ?? 0}%</div>
           <div class="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Presenca</div>
         </div>
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">

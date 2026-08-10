@@ -86,10 +86,14 @@ interface GridMember {
   id: string;
   name: string;
   chapter: string;
+  /** @deprecated #1656 - fracao 0-1. Use rate_pct; sai na limpeza. */
   rate: number;
+  /** #1656 - percentual 0-100, 1 casa. Mesma escala e arredondamento do painel. */
+  rate_pct: number;
   hours: number;
   eligible_count: number;
   present_count: number;
+  unrecorded_count?: number;
   detractor_status: string | null;
   consecutive_absences: number;
   attendance: Record<string, 'present' | 'absent' | 'excused' | 'na' | 'unrecorded'>;
@@ -100,14 +104,21 @@ interface GridTribe {
   tribe_id: string;
   tribe_name: string;
   leader_name: string;
+  /** @deprecated #1656 - fracao 0-1. Use avg_rate_pct. */
   avg_rate: number;
+  /** #1656 - percentual 0-100, 1 casa. */
+  avg_rate_pct: number;
   member_count: number;
   members: GridMember[];
 }
 
 interface GridSummary {
   total_members: number;
+  /** @deprecated #1656 - fracao 0-1. Use overall_rate_pct. */
   overall_rate: number;
+  /** #1656 - percentual 0-100, 1 casa. */
+  overall_rate_pct: number;
+  unrecorded_cells?: number;
   total_hours: number;
   detractors_count: number;
   at_risk_count: number;
@@ -175,12 +186,6 @@ function fmtDate(iso: string): string {
   const day = date.toLocaleDateString(locale, { day: '2-digit' });
   const month = date.toLocaleDateString(locale, { month: 'short' }).replace('.', '');
   return `${day}/${month.charAt(0).toUpperCase() + month.slice(1)}`;
-}
-
-/** Ensure rate is displayed as 0-100 percentage. If RPC returns 0-1, multiply by 100. */
-function normalizeRate(raw: number): number {
-  if (raw >= 0 && raw <= 1 && raw !== 0) return raw * 100;
-  return raw;
 }
 
 function statusCell(v: string | undefined, hasReason: boolean = false) {
@@ -606,18 +611,8 @@ export default function AttendanceGridTab() {
 
         const parsed = result as GridData;
 
-        /* FIX 8: normalize rates from 0-1 to 0-100 if needed */
-        if (parsed && parsed.summary) {
-          parsed.summary.overall_rate = normalizeRate(parsed.summary.overall_rate);
-        }
-        if (parsed && parsed.tribes) {
-          for (const tribe of parsed.tribes) {
-            tribe.avg_rate = normalizeRate(tribe.avg_rate);
-            for (const m of tribe.members) {
-              m.rate = normalizeRate(m.rate);
-            }
-          }
-        }
+        /* #1656: a normalizacao morreu com a escala. A RPC publica *_pct em 0-100 e o front
+           nao adivinha mais a escala - o palpite "raw <= 1 => fracao" lia 1% como 100%. */
 
         setData(parsed);
 
@@ -732,7 +727,7 @@ export default function AttendanceGridTab() {
           tribeName: tribe.tribe_name,
           tribeId: tribe.tribe_id,
           chapter: m.chapter,
-          rate: m.rate,
+          rate: m.rate_pct,   // #1656: 0-100 vindo do contrato, sem adivinhar escala
           hours: m.hours,
           detractorStatus: m.detractor_status,
           consecutiveAbsences: m.consecutive_absences,
@@ -813,7 +808,7 @@ export default function AttendanceGridTab() {
   /* Best tribe */
   const bestTribe = useMemo(() => {
     if (!data || data.tribes.length === 0) return null;
-    return data.tribes.reduce((best, cur) => (cur.avg_rate > best.avg_rate ? cur : best), data.tribes[0]);
+    return data.tribes.reduce((best, cur) => (cur.avg_rate_pct > best.avg_rate_pct ? cur : best), data.tribes[0]);
   }, [data]);
 
   /* FIX 1: Week-grouped event columns */
@@ -962,6 +957,7 @@ export default function AttendanceGridTab() {
     tribe_name: t('attendance.grid.crossFunctional', 'Cross-functional'),
     leader_name: '\u2014',
     avg_rate: 0,
+    avg_rate_pct: 0,
     member_count: 0,
     members: [],
   }), [t]);
@@ -1026,7 +1022,7 @@ export default function AttendanceGridTab() {
         `"${r.tribeName}"`,
         `"${r.chapter}"`,
         ...filteredEvents.map((e) => statusCell(r.attendance[e.id]).csv),
-        `${Math.round(r.rate)}`,
+        `${r.rate.toFixed(1)}`,
       ];
       csvRows.push(cells.join(','));
     }
@@ -1109,7 +1105,7 @@ export default function AttendanceGridTab() {
         <KpiCard
           icon={Percent}
           label={t('attendance.grid.overallRate', 'Overall Rate')}
-          value={`${Math.round(filteredKPIs.avgRate)}%`}
+          value={`${filteredKPIs.avgRate.toFixed(1)}%`}
           accent={filteredKPIs.avgRate < 75 ? 'text-amber-500' : 'text-green-500'}
         />
         <KpiCard
@@ -1138,7 +1134,7 @@ export default function AttendanceGridTab() {
           icon={Trophy}
           label={t('attendance.grid.bestTribe', 'Best Tribe')}
           value={bestTribe ? bestTribe.tribe_name : '-'}
-          suffix={bestTribe ? `${Math.round(bestTribe.avg_rate)}%` : ''}
+          suffix={bestTribe ? `${bestTribe.avg_rate_pct.toFixed(1)}%` : ''}
           accent="text-[var(--color-teal)]"
         />
       </div>
@@ -1552,7 +1548,7 @@ function TribeGroup({
               </span>
             )}
             <span className="text-xs font-semibold text-[var(--color-teal)]">
-              — {t('attendance.grid.avg', 'Média')}: {Math.round(tribe.avg_rate)}%
+              — {t('attendance.grid.avg', 'Média')}: {tribe.avg_rate_pct.toFixed(1)}%
             </span>
             <span className="text-xs text-[var(--text-muted)] font-normal">
               ({rows.length} {t('attendance.grid.members', 'members')})
@@ -1655,7 +1651,7 @@ function SmartTribeSection({
             </span>
           )}
           <span className="text-xs font-semibold text-[var(--color-teal)]">
-            — {t('attendance.grid.avg', 'Média')}: {Math.round(tribe.avg_rate)}%
+            — {t('attendance.grid.avg', 'Média')}: {tribe.avg_rate_pct.toFixed(1)}%
           </span>
           <span className="text-xs text-[var(--text-muted)] font-normal">
             ({rows.length} {t('attendance.grid.members', 'members')})
@@ -1854,7 +1850,7 @@ function SmartTribeSection({
                       className="px-2 py-1.5 whitespace-nowrap text-[var(--text-primary)]"
                       style={STICKY_RIGHT_TD}
                     >
-                      <span className={`font-bold ${rateColor}`}>{Math.round(r.rate)}%</span>
+                      <span className={`font-bold ${rateColor}`}>{r.rate.toFixed(1)}%</span>
                     </td>
                   </tr>
                 );
@@ -1918,7 +1914,7 @@ function MobileCardList({
                   {r.tribeName} &middot; {r.chapter}
                 </p>
               </div>
-              <span className={`text-lg font-extrabold ${rateColor}`}>{Math.round(r.rate)}%</span>
+              <span className={`text-lg font-extrabold ${rateColor}`}>{r.rate.toFixed(1)}%</span>
             </div>
 
             {/* Scrollable attendance strip with date headers — only show eligible events */}

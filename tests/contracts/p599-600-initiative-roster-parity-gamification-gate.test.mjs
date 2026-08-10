@@ -21,6 +21,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { loadLatestCaptures, parseMigration, normalizeBody, md5 } from '../helpers/rpc-body-drift-parser.mjs';
 
 const MIG_PATH = 'supabase/migrations/20260805000138_p599_600_initiative_roster_parity_and_gamification_gate.sql';
 const MIG = readFileSync(MIG_PATH, 'utf8');
@@ -107,23 +108,24 @@ describe('p599-600 — ACL restated for single-file auditability', () => {
 
 describe('p599-600 — DB-gated (skip without env)', () => {
   it('live bodies match the LATEST migration capture (Phase-C normalized md5)', { skip: !sb }, async () => {
-    const { createHash } = await import('node:crypto');
-    const localMd5 = (body) => createHash('md5').update(body.replace(/\s+/g, ' ')).digest('hex');
-    // get_initiative_detail was last re-created by PR-3 (#785 confidential-initiative RPC gate,
-    // mig 20260805000233). get_initiative_gamification was re-created again by #1464 Onda 3
-    // (mig 20260805000480): its cycle points now window by COALESCE(occurred_at, created_at) (fact
-    // date). Each function's canonical capture points at its own most-recent re-creation.
-    const bodyFrom = (src, name) => {
-      const m = src.match(new RegExp(
-        `CREATE OR REPLACE FUNCTION public\\.${name}\\([^)]*\\)[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`
-      ));
-      return m ? m[1] : '';
+    // #1656: o ponteiro para a captura e DERIVADO de loadLatestCaptures(), nunca um caminho de
+    // migration escrito a mao. A versao anterior fixava 20260805000233 e 20260805000480 e ficava
+    // VERMELHA quando alguem recapturava a funcao corretamente numa migration nova — foi o que
+    // aconteceu aqui (mesma classe do #1682/#569). O que o teste afirma continua sendo
+    // "corpo vivo == captura mais recente"; so parou de exigir QUAL arquivo e essa captura.
+    const { latest } = loadLatestCaptures('supabase/migrations');
+    const capturaMaisRecente = (name) => {
+      const entry = [...latest.entries()].find(([key]) => key.split('@')[0] === name);
+      assert.ok(entry, `${name}: sem captura em supabase/migrations`);
+      const [, cap] = entry;
+      const blocos = parseMigration(cap.file, readFileSync(`supabase/migrations/${cap.file}`, 'utf8'));
+      const bloco = blocos.find((b) => b.name === name);
+      assert.ok(bloco, `${name}: bloco nao reencontrado em ${cap.file}`);
+      return md5(normalizeBody(bloco.body));
     };
-    const PR3 = readFileSync('supabase/migrations/20260805000233_p785_pr3_confidential_initiative_rpcs.sql', 'utf8');
-    const MIG1464 = readFileSync('supabase/migrations/20260805000480_1464_gamification_occurred_at_cycle_windowing.sql', 'utf8');
     const expected = {
-      get_initiative_detail: localMd5(bodyFrom(PR3, 'get_initiative_detail')),
-      get_initiative_gamification: localMd5(bodyFrom(MIG1464, 'get_initiative_gamification')),
+      get_initiative_detail: capturaMaisRecente('get_initiative_detail'),
+      get_initiative_gamification: capturaMaisRecente('get_initiative_gamification'),
     };
     const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
     if (error) { console.warn(`[p599-600] helper unavailable: ${error.message}`); return; }

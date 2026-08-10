@@ -15,7 +15,10 @@ interface InitiativeMetrics {
   total_cards: number;
   cards_completed: number;
   articles_submitted: number;
+  /** @deprecated #1656 - fracao 0-1. Use attendance_pct. */
   attendance_rate: number;
+  /** #1656 - percentual 0-100, 1 casa. */
+  attendance_pct: number;
   total_hours: number;
   meetings_count: number;
   total_xp: number;
@@ -38,7 +41,7 @@ interface AlertsData {
   by_severity: { high: number; medium: number; low: number };
 }
 
-type SortKey = 'initiative_title' | 'member_count' | 'attendance_rate' | 'cards_completed' | 'total_xp' | 'total_hours' | 'days_since_last_meeting';
+type SortKey = 'initiative_title' | 'member_count' | 'attendance_pct' | 'cards_completed' | 'total_xp' | 'total_hours' | 'days_since_last_meeting';
 type RankingMetric = 'attendance' | 'production' | 'xp' | 'hours';
 type KindFilter = 'research_tribe' | 'workgroup' | 'committee' | 'study_group' | 'congress' | 'all';
 
@@ -68,7 +71,7 @@ export default function CrossTribeIsland() {
   const [alerts, setAlerts] = useState<AlertsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState<SortKey>('attendance_rate');
+  const [sortBy, setSortBy] = useState<SortKey>('attendance_pct');
   const [sortAsc, setSortAsc] = useState(false);
   const [alertsExpanded, setAlertsExpanded] = useState(false);
   const [trendMetric, setTrendMetric] = useState<RankingMetric>('attendance');
@@ -112,7 +115,7 @@ export default function CrossTribeIsland() {
   }, [items, sortBy, sortAsc]);
 
   const rankings = useMemo(() => {
-    const byAttendance = [...items].sort((a, b) => b.attendance_rate - a.attendance_rate);
+    const byAttendance = [...items].sort((a, b) => b.attendance_pct - a.attendance_pct);
     const byProduction = [...items].sort((a, b) => b.cards_completed - a.cards_completed);
     const byXp = [...items].sort((a, b) => b.total_xp - a.total_xp);
     const byHours = [...items].sort((a, b) => b.total_hours - a.total_hours);
@@ -175,7 +178,7 @@ export default function CrossTribeIsland() {
   }
 
   const rankingConfig: Record<RankingMetric, { label: string; key: keyof InitiativeMetrics; suffix: string }> = {
-    attendance: { label: t('comp.tribe.attendance', 'Presença'), key: 'attendance_rate', suffix: '%' },
+    attendance: { label: t('comp.tribe.attendance', 'Presença'), key: 'attendance_pct', suffix: '%' },
     production: { label: t('comp.crossTribe.rankingProduction', 'Produção'), key: 'cards_completed', suffix: '' },
     xp: { label: t('comp.crossTribe.rankingXp', 'XP Total'), key: 'total_xp', suffix: '' },
     hours: { label: t('comp.crossTribe.rankingHours', 'Horas'), key: 'total_hours', suffix: 'h' },
@@ -227,7 +230,7 @@ export default function CrossTribeIsland() {
                 {ranked.map((it, i) => {
                   const val = Number(it[cfg.key]) || 0;
                   const pct = (val / maxVal) * 100;
-                  const display = metric === 'attendance' ? `${Math.round(val * 100)}%` : `${Math.round(val)}${cfg.suffix}`;
+                  const display = metric === 'attendance' ? `${val.toFixed(1)}%` : `${Math.round(val)}${cfg.suffix}`;
                   return (
                     <div key={it.initiative_id} className="flex items-center gap-2">
                       <span className="text-[11px] font-bold w-10 text-right text-[var(--text-secondary)]">{rowLabel(it)}</span>
@@ -252,7 +255,7 @@ export default function CrossTribeIsland() {
               <tr>
                 <SortHeader label={t('comp.crossTribe.initiative', 'Iniciativa')} sKey="initiative_title" />
                 <SortHeader label={t('comp.tribe.members', 'Membros')} sKey="member_count" />
-                <SortHeader label={t('comp.tribe.attendance', 'Presença')} sKey="attendance_rate" />
+                <SortHeader label={t('comp.tribe.attendance', 'Presença')} sKey="attendance_pct" />
                 <SortHeader label="Cards" sKey="cards_completed" />
                 <SortHeader label="XP" sKey="total_xp" />
                 <SortHeader label={t('comp.crossTribe.rankingHours', 'Horas')} sKey="total_hours" />
@@ -286,7 +289,7 @@ export default function CrossTribeIsland() {
                         : it.members_inactive_30d > 0 && <span className="text-red-500 text-xs ml-1">({it.members_inactive_30d} {t('comp.crossTribe.inactiveShort', 'inat.')})</span>
                       }
                     </td>
-                    <td className="px-3 py-2.5 text-center font-bold">{Math.round(it.attendance_rate * 100)}%</td>
+                    <td className="px-3 py-2.5 text-center font-bold">{it.attendance_pct.toFixed(1)}%</td>
                     <td className="px-3 py-2.5 text-center">
                       <span className="font-bold">{it.cards_completed}</span>
                       <span className="text-[var(--text-muted)]">/{it.total_cards}</span>
@@ -326,7 +329,7 @@ export default function CrossTribeIsland() {
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={rankings[trendMetric].map((it) => ({
             name: rowLabel(it),
-            value: trendMetric === 'attendance' ? Math.round(Number(it[rankingConfig[trendMetric].key]) * 100) : Number(it[rankingConfig[trendMetric].key]),
+            value: Number(it[rankingConfig[trendMetric].key]),
             fill: colorMap.get(it.initiative_id) || ROW_COLORS[0],
           }))}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
