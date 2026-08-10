@@ -71,26 +71,20 @@ superseded) e as decisões de governança. Sete PRs mergeados no dia.
 
 ---
 
-## A primeira ação NÃO é código: é uma decisão do PM
+## O denominador: DECIDIDO, opção (a) - não re-litigar
 
-O #1657 deixou o denominador definitivo explicitamente em aberto, e ele é o coração do #1656.
-Hoje `rate = present / (present + absent + unrecorded)`. As opções, com o efeito de cada uma:
+**Decisão do PM em 09/08/2026:** o denominador continua sendo **todo evento elegível passado**,
+`unrecorded` incluído. É o que já está vivo desde o #1657, então **não há código a escrever** por
+causa disso. Consequência aceita: um evento que ninguém registrou continua **contando** no
+denominador; ele deixou de **acusar** na célula, e é só isso que o #1657 mudou.
 
-**(a) Manter: todo evento elegível passado entra no denominador.**
-Número comparável com o histórico (média 0,781, 23 de 66 a 100%). Custo: conta contra a pessoa um
-evento que **ninguém registrou** - a acusação sai da célula e sobrevive no agregado.
+**Restrição verificada na mesma volta, por medição e não por leitura do código:** a matemática é
+só de fato ocorrido. Nenhuma célula `present`, `unrecorded` ou `excused` vem de evento futuro
+(0 de 489); as 1.361 células `scheduled` são todas de evento futuro e **não entram** no
+denominador, porque `member_stats` conta apenas `present`/`absent`/`excused`/`unrecorded`.
 
-**(b) Só evento SELADO entra no denominador.**
-Honesto: só conta o que alguém fechou. Custo: hoje seriam **0 de 301** eventos selados, então todo
-mundo ficaria sem métrica. Torna o **#1710 pré-requisito**, não vizinho.
-
-**(c) Duas métricas nomeadas na tela.**
-*Participação* (sobre o que foi registrado) e *cobertura de registro* (quantos eventos foram
-fechados). Atende o aceite "toda tela de presença nomeia a métrica que exibe" sem esconder o
-buraco. Custo: mais superfície de UI, e duas metas em vez de uma.
-
-**Traga isso ao PM com os números medidos na volta, antes de escrever qualquer linha.** A escolha
-decide se o #1710 vem antes ou depois.
+O que **não** foi decidido e continua com o #1656: a **escala** (0-100 × 0-1) e **nomear a métrica
+na tela**. É isso que fecha os 27 divergentes.
 
 ---
 
@@ -110,6 +104,22 @@ Independe da decisão acima e fecha os 27 divergentes:
 divergência medida antes e depois com os dois números publicados.
 
 ---
+
+## Duas issues novas saíram da decisão (09/08)
+
+**#1713 - saneamento das séries que pararam.** Os eventos passados sem nenhuma linha não estão
+espalhados: concentram-se em **duas séries semanais de tribo** que pararam de registrar presença na
+primeira semana de julho (última com presença em 06/07 e 07/07), e **cada uma tem 8 ocorrências
+futuras agendadas até 28/09**. Três destinos possíveis - não aconteceu (cancelar), aconteceu e
+ninguém registrou (selar/registrar), série morreu (encerrar) - e o banco não distingue: precisa da
+resposta dos dois líderes. ⚠️ Com a opção (a), enquanto as ocorrências existirem elas **contam**.
+
+**#1714 - XP mistura ciclo e acumulado.** Mesma causa do #1656 em outra superfície. Dentro da tribo
+o recorte já é por ciclo e está certo; o `get_public_leaderboard` filtra a **população** por
+`current_cycle_active` e soma o XP de **todos os ciclos**, com o nível derivado do acumulado.
+Medido: **71,5%** do XP exibido veio de fora do ciclo, e **57 de 82** pessoas mudariam de nível se o
+recorte fosse o ciclo. Recomendação registrada: manter as duas métricas e **nomeá-las** (XP do
+ciclo = o que compete; acumulado e nível = trajetória).
 
 ## Depois do #1656
 
