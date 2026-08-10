@@ -95,15 +95,36 @@ fechamento do delimitador `$$`; o `;` é opcional.
 - **C** faixa medida no vivo onde o `service_role` alcança. As grades são gateadas em `auth.uid()`,
   então o `service_role` **não** as alcança: essa parte fica coberta por A + A'.
 
-## Estado
+## Estado - FECHADO
 
-- Branch `1656-escala-unica-presenca`, commit `acf37d70`. PR aberto, aguardando CI.
-- DDL **já em produção** (exigência do Phase C: o CI compara o corpo vivo com a migration). Enquanto
-  o PR não for mergeado e deployado, o front em produção lê a chave **velha**, que continua publicada
-  - por isso a migração foi aditiva.
+- **PR #1716 mergeada e deployada.** `main` em **`f3657592`**, os **7 runs verdes** (inclusive
+  `Deploy to Cloudflare Workers`). Branch deletado.
+- **EF `nucleo-mcp` deployada** (só a descrição de uma tool) e verificada **no vivo**: a chamada MCP
+  `attendance_report scope='cycle'` devolve `attendance_pct` ao lado de `attendance_rate`.
 - Migration registrada como `20260810120000`; as **6 linhas fantasma** das chamadas de
   `apply_migration` foram apagadas; `NOTIFY pgrst` enviado.
-- `check_schema_invariants()`: **43** invariantes, **0** violadas.
+- `npm test`: **6637 testes, 0 fail, 1 skip**. `check_schema_invariants()`: **43** invariantes,
+  **0** violadas. Nenhum evento de bypass (merge saiu com CI verde).
+
+### Quatro guards do repo estavam ancorados na FORMA, não no comportamento
+
+Todos ficaram vermelhos por trabalho correto; **nenhum** apontava defeito nesta mudança. Custaram
+cerca de uma rodada de suíte cada até separar "defeito meu" de "guard desatualizado":
+
+| guard | congelava | correção |
+|---|---|---|
+| `p599-600` | `20260805000480` como "a" captura de `get_initiative_gamification` | ponteiro derivado de `loadLatestCaptures()` (**3º** caso desta classe) |
+| `p277-419-m3-pr5b` | a expressão literal `Math.round(a.engagement.avg_rate * 100)` | afirma a nova forma **e** a inversa |
+| `p277-419-m3-pr4` | `attendance_rate: Math.round(it.attendance_rate * 100)` | afirma a **ausência do clamp**, que era o ponto do teste |
+| `577` | `sortKey="attendance_rate"` | a coluna continua sempre visível; mudou o nome da chave |
+
+Mais o `ADR-0097 empty-statements`, esse **defeito meu**: apagar as 6 fantasmas e inserir a linha
+certa à mão deixa `statements` NULL. Preenchido com `pg_get_functiondef` das 13 funções (83.666
+bytes). ⚠️ **Melhor da próxima vez:** `UPDATE` a versão da ÚLTIMA fantasma em vez de
+`DELETE`+`INSERT` — preserva os statements de graça.
+
+**A lição vale mais que as correções:** um predicado que congela a *expressão* cobra pedágio em toda
+mudança correta e não protege nada que a asserção de comportamento já não proteja.
 
 ## O que sobra da #1656 (a issue NÃO fecha com esta PR)
 
@@ -129,10 +150,51 @@ que este front estiver deployado.
 - **`get_initiative_stats.attendance_pct`** carrega a fórmula antiga (`presenças / (membros ×
   eventos)`, 0 casas), que **não** é engajamento. A escala foi corrigida; a semântica é o item 3.
 
+---
+
+# Arranque do #1710 - a medição já foi feita, e ela mudou a ordem
+
+**Passo 1 executado em 10/08** (o passo que a issue pede antes de qualquer código): as duas coortes
+divergem, e a causa **não é** a que a issue supunha.
+
+| medida (ciclo corrente) | valor |
+|---|---:|
+| eventos passados elegíveis | 53 |
+| células da coorte do **selo** × da **grade** | 502 × 503 |
+| **só no selo** (marcaria quem a grade não mostra) | **13 células, 3 pessoas** |
+| **só na grade** (o selo nunca alcança) | **14 células, 2 pessoas** |
+| eventos selados na base | **0 de 306** |
+
+**A divergência é de superfície, não de regra.** Em todas as quatro fatias a causa é
+`tribe_id IS NULL`:
+
+- **só no selo:** `manager` + `researcher`, no ciclo, **sem tribo**. Elegíveis a `geral` e
+  `lideranca` por `_attendance_eligible_events`, mas a grade é indexada por tribo.
+- **só na grade:** `alumni`, fora do ciclo, sem tribo. Entram pelo ramo histórico da grade e o selo
+  corretamente não os alcança - seguem `unrecorded` para sempre, o que está **certo**.
+
+🔴 **O achado que muda o plano:** essas 3 pessoas são invisíveis em **TODA** grade - **0 de 3**
+aparecem em `get_attendance_grid` (a geral também agrupa por `tribes[]`). O selo as alcança e o
+painel as conta. Expor o botão hoje grava falta para quem nunca teve superfície onde ser marcado -
+**pior que o defeito que o #1657 tirou**, porque ali a acusação era inferida e reversível pelo
+registro, e aqui seria materializada e sem tela onde corrigir.
+
+## Decisões do PM (10/08)
+
+1. **Dar superfície primeiro.** O #1655 (linha na grade para quem não tem tribo) vira
+   **pré-requisito** do #1710, não sucessor. Ordem nova: **#1655 -> #1710 -> #1654 -> #1218**.
+2. **O selo é AUTOMÁTICO, com janela e aviso** a quem será marcado.
+
+⚠️ **Consequência técnica da decisão 2, registrada na mesma volta:** no manual há um humano lendo
+"isto vai gravar N faltas" por evento; no cron não há. Um erro de coorte que no manual é pontual, no
+automático se propaga pelos **306** eventos de uma vez, e **não existe `unseal`**. Por isso a
+decisão 1 deixa de ser preferência e vira **condição de segurança**, e o escopo do #1710 precisa
+incluir:
+
+- **dry-run**: uma rodada em que o cron **reporta** o que faria, sem escrever;
+- **caminho de reversão** por evento (a RPC não tem);
+- a janela (N dias) e o aviso prévio, que a issue já pedia.
+
 ## Pendências que não mudaram
 
-- **#1710** continua pré-requisito prático: `seal_event_attendance` sem superfície (**0 de 302**
-  selados em 09/08 - re-medir). Enquanto ninguém sela, "sem registro" nunca vira falta.
-- Deploy da EF `nucleo-mcp` (só a descrição de uma tool mudou) fica **para depois do merge**: o
-  deploy lê a árvore de trabalho, não o PR.
 - Reescrita de histórico (PII), **#334**, Onda 0.5, Dependabot: sem mudança.
