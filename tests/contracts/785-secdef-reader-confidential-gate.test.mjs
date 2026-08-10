@@ -148,7 +148,11 @@ const ALLOWLIST = {
   get_recent_showcases_by_member: 'self-scoped (v_caller_id=p_member_id else manage_event/manage_member)',
   list_invitations_for_my_initiatives: 'leader/self-scoped (caller own initiatives)',
   // -- tribe-scoped via legacy_tribe_id (confidential legacy_tribe_id=NULL never matches an integer tribe id)
-  get_attendance_grid: 'grid_events whitelist excludes type=1on1 and (initiative_id IS NULL OR type=tribo); confidential 1on1 events excluded',
+  // get_attendance_grid: gated in mig 20260810140903 (#1655) — a contencao era efeito colateral
+  //   do filtro (initiative_id IS NULL OR type=tribo), que tambem derrubava o evento 'geral'
+  //   org-wide com initiative_id (1 evento, 58 presencas reais, medido 10/08). Ao afrouxar o
+  //   filtro por tipo, grid_events passou a chamar rls_can_see_initiative(e.initiative_id);
+  //   agora referencia um gate, e sai deste allowlist.
   get_initiative_attendance_grid: 'confidential legacy_tribe_id=NULL routes to native path requiring manage_member/view_partner/engagement; non-engaged Unauthorized',
   get_tribe_attendance_grid: 'tribe-scoped ((initiative_id IS NULL OR legacy_tribe_id=p_tribe_id)); confidential NULL never matches',
   get_tribe_events_timeline: 'tribe-scoped + type filter + visibility != gp_only; confidential (gp_only, NULL tribe) triply excluded',
