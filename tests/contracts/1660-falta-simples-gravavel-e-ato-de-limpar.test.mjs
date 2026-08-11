@@ -32,7 +32,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   loadLatestCaptures,
@@ -49,6 +49,13 @@ const FUNCOES = {
   clear_member_attendance: 'p_event_id uuid, p_member_id uuid',
   admin_bulk_mark_attendance: 'p_event_id uuid, p_member_ids uuid[], p_present boolean',
 };
+
+/** Toda a história de migrations concatenada, para afirmações sobre GRANT/REVOKE. */
+function todasAsMigrations() {
+  const arquivos = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql'));
+  assert.ok(arquivos.length > 0, 'controle positivo: nenhuma migration lida, o scanner está cego');
+  return arquivos.map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8')).join('\n');
+}
 
 /** Captura mais recente de cada função, com o arquivo derivado do parser. */
 function capturas() {
@@ -102,7 +109,14 @@ describe('#1660 - falta simples gravável, e limpar o registro como ato distinto
       assert.match(b, /VALUES \(p_event_id, p_member_id, true, false\)/, 'presença segue gravando true');
       assert.match(b, /IF v_caller_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'/);
       assert.match(b, /IF v_caller_id = p_member_id THEN/, 'auto-marcação continua permitida');
-      assert.match(b, /can_by_member\(v_caller_id, 'manage_event'\)/, 'terceiro exige manage_event');
+      // #1728: o gate passou a ser ESCOPADO ao evento. A forma anterior, sem recurso, casava
+      // qualquer grant (o líder de uma tribo passava no gate de um evento de outra).
+      assert.match(b, /_can_manage_event\(p_event_id\)/, 'terceiro exige manage_event NESTE evento');
+      assert.doesNotMatch(
+        b,
+        /can_by_member\(\s*v_caller_id\s*,\s*'manage_event'\s*\)/,
+        'a forma sem recurso é permissiva: sobrando em qualquer ramo, reabre o alcance cross-tribo'
+      );
     });
   });
 
@@ -118,15 +132,29 @@ describe('#1660 - falta simples gravável, e limpar o registro como ato distinto
     it('carrega o MESMO gate de mark_member_present (não é porta mais larga)', () => {
       assert.match(b, /IF v_caller_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'/);
       assert.match(b, /IF v_caller_id = p_member_id THEN/);
-      assert.match(b, /can_by_member\(v_caller_id, 'manage_event'\)/);
+      // #1728: as duas andam juntas. Esta APAGA a linha, inclusive a que o selo grava, então um
+      // gate mais largo aqui que em mark_member_present seria um unseal silencioso.
+      assert.match(b, /_can_manage_event\(p_event_id\)/);
+      assert.doesNotMatch(b, /can_by_member\(\s*v_caller_id\s*,\s*'manage_event'\s*\)/);
     });
 
     it('a migration revoga de anon e concede só a authenticated/service_role', () => {
-      const sql = cap.clear_member_attendance.sqlDoArquivo;
+      // O grant é propriedade do BANCO, estabelecida uma vez; não do arquivo que por acaso
+      // substituiu o corpo por último. Ancorar na captura mais recente fazia este teste ficar
+      // vermelho toda vez que a função fosse legitimamente reescrita (#1682/#569), como no #1728.
+      // A verificação VIVA de grant mora no #965 (_audit_secdef_public_grant_drift); aqui basta
+      // provar que a intenção foi declarada em algum ponto da história.
+      const sql = todasAsMigrations();
       assert.match(sql, /REVOKE ALL ON FUNCTION public\.clear_member_attendance\(uuid, uuid\) FROM anon/);
       assert.match(
         sql,
         /GRANT EXECUTE ON FUNCTION public\.clear_member_attendance\(uuid, uuid\) TO authenticated, service_role/
+      );
+      // A inversa: uma concessão posterior a anon apaga o sentido do REVOKE acima.
+      assert.doesNotMatch(
+        sql,
+        /GRANT[^;]*ON FUNCTION public\.clear_member_attendance\(uuid, uuid\)[^;]*TO[^;]*\banon\b/,
+        'alguma migration voltou a conceder EXECUTE a anon'
       );
     });
   });
