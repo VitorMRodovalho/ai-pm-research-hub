@@ -28550,6 +28550,15 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: Json
       }
+      _event_end_instant: {
+        Args: {
+          p_date: string
+          p_duration_minutes: number
+          p_time_start: string
+          p_timezone: string
+        }
+        Returns: string
+      }
       _extract_date_from_filename: {
         Args: { p_filename: string }
         Returns: string
@@ -32652,6 +32661,22 @@ export type Database = {
       preview_gate_eligibles: {
         Args: { p_doc_type: string; p_submitter_id: string }
         Returns: Json
+      }
+      preview_seal_attendance: {
+        Args: { p_cycle_start?: string }
+        Returns: {
+          already_recorded_n: number
+          already_sealed_at: string
+          blocked_reason: string
+          eligible_cohort_n: number
+          ends_at: string
+          event_date: string
+          event_id: string
+          event_title: string
+          event_type: string
+          tribe_id: number
+          would_write_absent_n: number
+        }[]
       }
       process_email_webhook: {
         Args: {
