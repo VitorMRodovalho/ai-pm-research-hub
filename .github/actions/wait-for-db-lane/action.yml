@@ -13,10 +13,35 @@ inputs:
       nao tiver `name:` proprio.
     required: false
     default: validate check-invariants
-  max-wait-seconds:
-    description: Teto de espera. Estourou, o job FALHA em vez de rodar concorrente.
+  stuck-seconds:
+    description: >
+      #1724: o criterio real de desistencia. Se a CABECA da faixa nao mudar por este tempo, a
+      fila esta travada (job pendurado segurando a vez) e o job falha. Enquanto a cabeca troca,
+      a fila esta drenando e esperar e o comportamento correto, por mais longa que ela seja.
+
+      Dimensionado sobre a duracao medida do job mais longo da faixa (`validate`, 11 runs em
+      08/2026: min 688s, mediana 763s, MAX 1552s). 1800 da folga sobre o pior caso observado.
     required: false
-    default: '900'
+    default: '1800'
+  max-wait-seconds:
+    description: >
+      Teto absoluto, so como backstop contra laco infinito. NAO e o criterio de desistencia
+      esperado — quem decide e `stuck-seconds`.
+
+      ⚠️ O default era 900 e essa era a causa da #1724: um UNICO `validate` na frente consome
+      688-1552s, entao o teto era menor que a espera legitima por um so job, e impossivel de
+      cumprir com dois na fila. Falhava por fila LONGA, que e normal, e nao por fila TRAVADA,
+      que e o defeito.
+    required: false
+    default: '3600'
+  api-retries:
+    description: >
+      #1724: tentativas por consulta a API antes de desistir. Um handshake TLS que falha uma vez
+      (medido em 10/08/2026: `x509: certificate is not valid for any names` contra
+      api.github.com) nao e o mesmo que token sem escopo ou rate limit — o primeiro melhora
+      sozinho, os outros nao. Esgotadas as tentativas, o job FALHA como antes.
+    required: false
+    default: '3'
   settle-seconds:
     description: >
       Janela de acomodacao antes da primeira consulta. Dois jobs que comecam no mesmo instante
@@ -33,6 +58,8 @@ runs:
         GH_TOKEN: ${{ github.token }}
         LANE_JOBS: ${{ inputs.lane-jobs }}
         MAX_WAIT: ${{ inputs.max-wait-seconds }}
+        STUCK_AFTER: ${{ inputs.stuck-seconds }}
+        API_RETRIES: ${{ inputs.api-retries }}
         SETTLE: ${{ inputs.settle-seconds }}
       run: |
         set -euo pipefail
@@ -43,6 +70,28 @@ runs:
 
         sleep "$SETTLE"
 
+        # Consulta com retentativa LIMITADA. O `|| true` continua proibido: engolir o erro faria
+        # a faixa parecer vazia e todo mundo entrar junto no banco, que e o estrago que isto
+        # existe para evitar (#1509). O que muda e so distinguir falha transitoria de permanente
+        # — esgotadas as tentativas, retorna erro e o chamador para.
+        api_with_retry() {
+          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out=""
+          while :; do
+            if out=$(gh api "$endpoint" --jq "$jq_expr" 2>/dev/null); then
+              printf '%s' "$out"
+              return 0
+            fi
+            if [ "$attempt" -ge "$API_RETRIES" ]; then
+              echo "::error::falhei em ler a faixa apos ${API_RETRIES} tentativas ($endpoint). Nao e o mesmo que faixa vazia: parando em vez de arriscar rodar concorrente (#1509)." >&2
+              return 1
+            fi
+            echo "  (tentativa $attempt/${API_RETRIES} falhou ao consultar a API; nova tentativa em ${backoff}s)" >&2
+            sleep "$backoff"
+            attempt=$(( attempt + 1 ))
+            backoff=$(( backoff * 3 ))
+          done
+        }
+
         # Ordem total: quem comecou antes passa primeiro, desempatando por run e nome. Como a
         # ordem e a mesma para todos os concorrentes, exatamente um se enxerga como o primeiro.
         jq_jobs='.jobs[]
@@ -51,19 +100,19 @@ runs:
           | @tsv'
 
         lane_file="$(mktemp)"
-        deadline=$(( $(date +%s) + MAX_WAIT ))
+        hard_deadline=$(( $(date +%s) + MAX_WAIT ))
+        stuck_deadline=$(( $(date +%s) + STUCK_AFTER ))
+        last_head=""
+        waited=0
 
         while :; do
           : > "$lane_file"
 
-          # Sem `|| true` de proposito: se a consulta falhar (token sem `actions: read`, rate
-          # limit), o job PARA. Engolir o erro faria a faixa parecer vazia e todo mundo entrar
-          # junto no banco, que e exatamente o estrago que isto existe para evitar.
-          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
-            --jq '.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .id')
+          runs=$(api_with_retry "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
+            '.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .id')
 
           for rid in $runs; do
-            jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$rid/jobs?per_page=50" --jq "$jq_jobs")
+            jobs=$(api_with_retry "repos/$GITHUB_REPOSITORY/actions/runs/$rid/jobs?per_page=50" "$jq_jobs")
             while IFS=$'\t' read -r started run name; do
               [ -n "${name:-}" ] || continue
               for want in $LANE_JOBS; do
@@ -79,15 +128,30 @@ runs:
           first_name="$(printf '%s' "$first" | cut -f3)"
 
           if [ -z "$first" ] || { [ "$first_run" = "$me_run" ] && [ "$first_name" = "$me_job" ]; }; then
-            echo "faixa livre — $me_job (run $me_run) segue para o banco"
+            echo "faixa livre apos ${waited}s — $me_job (run $me_run) segue para o banco"
             exit 0
           fi
 
-          if [ "$(date +%s)" -ge "$deadline" ]; then
-            echo "::error::esperei ${MAX_WAIT}s pela faixa do banco e ela segue ocupada por $first_name (run $first_run). Falhando em vez de rodar concorrente e contaminar a producao (#1509)."
+          # #1724: a fila ANDOU? Entao ela esta drenando, e esperar e o certo — o relogio de
+          # "travada" recomeca. Falhar por fila longa transforma espera legitima em vermelho.
+          head_now="${first_run}/${first_name}"
+          if [ "$head_now" != "$last_head" ]; then
+            [ -n "$last_head" ] && echo "  (a faixa andou: $last_head -> $head_now)"
+            last_head="$head_now"
+            stuck_deadline=$(( $(date +%s) + STUCK_AFTER ))
+          fi
+
+          now=$(date +%s)
+          if [ "$now" -ge "$stuck_deadline" ]; then
+            echo "::error::a faixa do banco esta TRAVADA: $first_name (run $first_run) segura a vez ha mais de ${STUCK_AFTER}s sem a fila andar. Falhando em vez de rodar concorrente e contaminar a producao (#1509)."
+            exit 1
+          fi
+          if [ "$now" -ge "$hard_deadline" ]; then
+            echo "::error::teto absoluto de ${MAX_WAIT}s atingido esperando a faixa do banco (cabeca atual: $first_name, run $first_run). Falhando em vez de rodar concorrente (#1509)."
             exit 1
           fi
 
-          echo "faixa ocupada por $first_name (run $first_run) — aguardando 15s"
+          echo "faixa ocupada por $first_name (run $first_run) — aguardando 15s (esperando ha ${waited}s)"
           sleep 15
+          waited=$(( waited + 15 ))
         done

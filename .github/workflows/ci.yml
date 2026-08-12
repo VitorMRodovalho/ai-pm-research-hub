@@ -45,9 +45,16 @@ jobs:
     # (vs ~2 min parallel), so bumped 10 -> 15 for margin over the full job
     # (install + lint + serial test + build + smoke).
     # #1509: a espera pela faixa do banco corre DENTRO deste orcamento, entao o teto
-    # precisa cobrir espera (ate 900s) + trabalho. Job morto por timeout do runner nao
-    # imprime a mensagem de teto estourado. Travado no guard.
-    timeout-minutes: 32
+    # precisa cobrir espera + trabalho. Job morto por timeout do runner nao imprime a
+    # mensagem de teto estourado. Travado no guard.
+    #
+    # #1724: o teto de espera subiu de 900s para 3600s porque 900s era MENOR que um unico
+    # `validate` na frente, e este orcamento subiu junto — senao o runner mata o job antes
+    # de a espera se explicar, que e o mesmo vermelho obscuro por outro caminho.
+    # 3600s de espera + 1533s do pior `validate` medido (12 runs, 11/08/2026: min 674s,
+    # mediana 735s) + folga. Um job de fato TRAVADO nao chega aqui: morre em 1800s pela
+    # `stuck-seconds`, que e o criterio real.
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v6
 
@@ -112,7 +119,12 @@ jobs:
           PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run smoke:routes
-        timeout-minutes: 2
+        # #1725: o teto do passo virou BACKSTOP. Quem desiste primeiro sao os orcamentos internos
+        # do smoke-routes.mjs (boot 90s, assercoes 120s, requisicao 15s), e cada um deles falha
+        # dizendo QUAL fase travou. Os 2 minutos anteriores cobriam boot + assercoes juntos, e o
+        # boot sozinho ja consumia ~18s de forma estavel — o passo morria sem nenhuma assercao ter
+        # falhado, e o vermelho nao carregava sinal sobre o commit.
+        timeout-minutes: 6
 
   browser_guards:
     runs-on: ubuntu-latest
