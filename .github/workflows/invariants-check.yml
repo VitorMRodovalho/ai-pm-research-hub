@@ -22,8 +22,13 @@ jobs:
     # mesmo orcamento. Com `timeout-minutes: 5` o job morria esperando, e um job morto por
     # timeout do runner nao imprime a mensagem de teto estourado — volta a ser um gate que
     # nao rodou por motivo obscuro, que e o que este issue existe para eliminar.
-    # Regra: timeout do job > teto de espera (900s) + trabalho. Travado no guard.
-    timeout-minutes: 25
+    # Regra: timeout do job > teto de espera + trabalho. Travado no guard.
+    #
+    # #1724: o teto de espera subiu para 3600s (900s era menor que UM `validate` na frente),
+    # e este orcamento subiu junto. 3600s de espera + 861s do pior caso medido deste job
+    # (12 runs, 11/08/2026: min 39s, mediana 49s) + folga. Quem desiste primeiro continua
+    # sendo a `stuck-seconds` de 1800s, que acusa fila TRAVADA em vez de fila longa.
+    timeout-minutes: 70
     # #1509 — este job e `validate` (ci.yml) falam com o MESMO banco de producao e nao
     # podem se sobrepor, mas a serializacao nao usa mais o grupo `supabase-shared-db` do
     # #1505 (o nome saiu de todos os workflows, de proposito): a fila do
