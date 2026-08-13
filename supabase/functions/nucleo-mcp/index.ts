@@ -10720,11 +10720,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · selection_dashboard (R) — cycle pipeline surfaces; RPCs self-gate + COI ──
   mcp.tool(
     "selection_dashboard",
-    "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+    "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
     {
-      scope: z.enum(["dashboard", "cycles", "rankings", "cutoff", "calibration", "health", "pipeline", "committee", "dispatch"]).describe("Which selection surface."),
+      scope: z.enum(["dashboard", "cycles", "rankings", "cutoff", "calibration", "health", "pipeline", "committee", "routing", "dispatch"]).describe("Which selection surface."),
       cycle_code: z.string().optional().describe("Cycle code (e.g. 'C5') — dashboard / rankings / calibration."),
-      cycle_id: z.string().optional().describe("Cycle UUID — cutoff / pipeline / committee."),
+      cycle_id: z.string().optional().describe("Cycle UUID — cutoff / pipeline / committee / routing."),
       track: z.string().optional().describe("scope='rankings' — track filter (researcher|leader|all)."),
       score_column: z.string().optional().describe("scope='cutoff' — score column (default 'research_score')."),
       chapter: z.string().optional().describe("scope='pipeline' — chapter code filter."),
@@ -10757,6 +10757,12 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "committee":
           if (!isUUID(params.cycle_id)) return invalid("scope='committee' requires cycle_id (UUID).");
           ({ data, error } = await sb.rpc("get_selection_committee", { p_cycle_id: params.cycle_id })); source = "get_selection_committee"; break;
+        case "routing":
+          // #1590 onda C — o comitê é o mecanismo de controle de acesso da tela de seleção, e até
+          // esta onda só se lia por SQL. `committee` responde QUEM está no comitê; `routing`
+          // responde quem o rodízio consegue escolher HOJE, e por que os outros não.
+          if (!isUUID(params.cycle_id)) return invalid("scope='routing' requires cycle_id (UUID).", "Use scope='cycles' to list them.");
+          ({ data, error } = await sb.rpc("get_selection_routing_overview", { p_cycle_id: params.cycle_id })); source = "get_selection_routing_overview"; break;
         case "dispatch": ({ data, error } = await sb.rpc("get_cutoff_dispatch_health")); source = "get_cutoff_dispatch_health"; break;
         default: return invalid(`Unknown scope '${params.scope}'.`);
       }
@@ -10861,9 +10867,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · interview_manage (W) — schedule/mark/rescue; committee-lead/GP gated ──
   mcp.tool(
     "interview_manage",
-    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override + set/clear_interviewer_routing_block). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited), 'block' (#1590 onda C — cycle_id + member_id [+ starts_on, ends_on, reason]: tira o entrevistador do rodízio por PERÍODO sem apagar a agenda dele; autosserviço na própria linha, manage_member para qualquer um; starts_on nulo = hoje em America/Sao_Paulo, ends_on nulo = bloqueio aberto), 'unblock' (block_id — devolve ao rodízio; mesma autoridade). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
     {
-      action: z.enum(["schedule", "mark", "rescue", "stage_override"]).describe("Interview operation."),
+      action: z.enum(["schedule", "mark", "rescue", "stage_override", "block", "unblock"]).describe("Interview operation."),
       application_id: z.string().optional().describe("Application UUID — schedule / rescue."),
       interviewer_ids: z.array(z.string()).optional().describe("schedule — interviewer member UUIDs."),
       scheduled_at: z.string().optional().describe("schedule — ISO 8601 datetime."),
@@ -10874,6 +10880,12 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       status: z.enum(["pending", "completed", "cancelled", "noshow"]).optional().describe("mark — new status."),
       notes: z.string().optional().describe("mark — status note."),
       override_reason: z.string().optional().describe("stage_override — mandatory free-text reason (min 12 chars). Recorded on the application and in admin_audit_log."),
+      cycle_id: z.string().optional().describe("block — selection cycle UUID."),
+      member_id: z.string().optional().describe("block — interviewer member UUID (self = autosserviço; outro exige manage_member)."),
+      starts_on: z.string().optional().describe("block — ISO date (YYYY-MM-DD). Omitir = a partir de hoje, no fuso America/Sao_Paulo."),
+      ends_on: z.string().optional().describe("block — ISO date (YYYY-MM-DD). Omitir = bloqueio ABERTO, encerrado por 'unblock'."),
+      reason: z.string().optional().describe("block — motivo livre, gravado no bloqueio e no audit log."),
+      block_id: z.string().optional().describe("unblock — selection_interviewer_blackouts.id (UUID)."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -10898,6 +10910,16 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           // não aqui, para que web e MCP não possam divergir sobre o que é motivo suficiente.
           if (!isUUID(params.application_id) || typeof params.override_reason !== "string") return invalid("action='stage_override' requires application_id + override_reason.");
           rpc = "grant_interview_stage_override"; rpcArgs = { p_application_id: params.application_id, p_reason: params.override_reason }; break;
+        case "block":
+          // #1590 onda C — a tabela de bloqueios subiu na onda B SEM escrita, então até aqui sair
+          // do rodízio exigia INSERT manual (ou apagar a URL, que destrói a configuração).
+          // A autoridade fica na RPC, que gateia pelo RECURSO (p_member_id vs. chamador): repetir
+          // o gate aqui criaria um segundo dono da decisão, e web e MCP divergiriam.
+          if (!isUUID(params.cycle_id) || !isUUID(params.member_id)) return invalid("action='block' requires cycle_id + member_id.");
+          rpc = "set_interviewer_routing_block"; rpcArgs = { p_cycle_id: params.cycle_id, p_member_id: params.member_id, p_starts_on: params.starts_on ?? null, p_ends_on: params.ends_on ?? null, p_reason: params.reason ?? null }; break;
+        case "unblock":
+          if (!isUUID(params.block_id)) return invalid("action='unblock' requires block_id.", "Use selection_dashboard scope='routing' to list the active windows.");
+          rpc = "clear_interviewer_routing_block"; rpcArgs = { p_block_id: params.block_id }; break;
         default: return invalid(`Unknown action '${params.action}'.`);
       }
       const { data, error } = await sb.rpc(rpc, rpcArgs);
@@ -10912,8 +10934,10 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       return semanticOk({
         data: { action: params.action, result: data ?? null },
         summary: `interview_manage action='${params.action}' ok.`,
-        next_actions: ["application_get scope='interviews': reler as entrevistas", "evaluation_submit mode='interview_scores': lançar notas da entrevista"],
-        audit: { tool: "interview_manage", semantic_domain: dom, pii_level: "medium", permission: "committee-lead|manage_platform (RPC-gated)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "RPC self-gated (committee lead of cycle | manage_platform; schedule bypass = manage_member)", resource_id: params.application_id ?? params.interview_id ?? null, extra: { action: params.action } },
+        next_actions: params.action === "block" || params.action === "unblock"
+          ? ["selection_dashboard scope='routing': reler quem o rodízio consegue escolher hoje"]
+          : ["application_get scope='interviews': reler as entrevistas", "evaluation_submit mode='interview_scores': lançar notas da entrevista"],
+        audit: { tool: "interview_manage", semantic_domain: dom, pii_level: "medium", permission: "committee-lead|manage_platform (RPC-gated); block/unblock = self|manage_member", source_tools: [rpc], caller_member_id: member.id, gate_checked: "RPC self-gated (committee lead of cycle | manage_platform; schedule bypass = manage_member; block/unblock gateiam pelo RECURSO)", resource_id: params.application_id ?? params.interview_id ?? params.block_id ?? params.member_id ?? null, extra: { action: params.action } },
       });
     },
   );
@@ -10921,7 +10945,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · selection_decide (W) — cycle decisions; GP-heavy, RPC-gated ──────────
   mcp.tool(
     "selection_decide",
-    "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove + member_id [+ role]; promote), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+    "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
     {
       action: z.enum(["approve", "notify_cutoff", "compute_cutoff", "recalc_rankings", "committee", "update_contact"]).describe("Decision operation."),
       application_id: z.string().optional().describe("Application UUID — approve / notify_cutoff / update_contact."),
@@ -10931,9 +10955,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       filter_active_only: z.boolean().optional().describe("compute_cutoff — default true."),
       score_column: z.string().optional().describe("compute_cutoff — default 'research_score'."),
       reason: z.string().optional().describe("recalc_rankings — audit reason."),
-      committee_action: z.enum(["add", "remove"]).optional().describe("action='committee' — add/remove a committee member."),
+      committee_action: z.enum(["add", "remove", "update"]).optional().describe("action='committee' — add/remove/update a committee member."),
       member_id: z.string().optional().describe("action='committee' — member UUID."),
-      committee_role: z.string().optional().describe("action='committee' — role (evaluator|lead)."),
+      committee_role: z.string().optional().describe("action='committee' — role (evaluator|lead|observer). Em 'update', mudar o papel exige promote."),
+      interview_booking_url: z.string().optional().describe("committee_action='add'|'update' — agenda de entrevista DESTA linha do comitê (precedência committee_override). Deve começar com https://. String vazia limpa o campo."),
+      can_interview: z.boolean().optional().describe("committee_action='add'|'update' — desligamento PERMANENTE do rodízio. Desligar-se é autosserviço; RELIGAR exige manage_member. Para pausa temporária use interview_manage action='block'."),
       phone: z.string().optional().describe("update_contact — candidate phone."),
       linkedin_url: z.string().optional().describe("update_contact — candidate LinkedIn URL."),
       confirm: z.boolean().optional().describe("approve / recalc_rankings — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
@@ -10949,7 +10975,15 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       // Proactive canV4 fail-fast mirroring each RPC's internal gate (nicer error + no round-trip).
       const GATE: Record<string, string> = { approve: "manage_platform", recalc_rankings: "manage_platform", compute_cutoff: "manage_member", notify_cutoff: "manage_member", committee: "promote", update_contact: "manage_member" };
       const need = GATE[params.action];
-      if (need && !(await canV4(sb, member.id, need))) { await logUsage(sb, member.id, "selection_decide", false, "Unauthorized", start); return denied(`Requires ${need}.`, need === "manage_platform" ? "GP-only decision." : "Ask a GP / committee lead."); }
+      // #1590 onda C — o fail-fast proativo existe para dar erro melhor, NÃO para ser um segundo
+      // gate. No autosserviço (o membro do comitê editando a PRÓPRIA linha de roteamento) ele
+      // recusaria justamente quem a RPC autoriza: o avaliador que cadastra a própria agenda não
+      // tem `promote` — medido em 13/08, 2 de 87 membros ativos têm. Quem decide é a RPC, que
+      // gateia pelo RECURSO e ainda cobra `promote` para trocar papel.
+      const autosservicoDeRoteamento = params.action === "committee"
+        && params.committee_action === "update"
+        && typeof params.member_id === "string" && params.member_id === member.id;
+      if (need && !autosservicoDeRoteamento && !(await canV4(sb, member.id, need))) { await logUsage(sb, member.id, "selection_decide", false, "Unauthorized", start); return denied(`Requires ${need}.`, need === "manage_platform" ? "GP-only decision." : "Ask a GP / committee lead."); }
 
       // ADR-0018 confirm-gate for the irreversible decisions.
       if ((params.action === "approve" || params.action === "recalc_rankings") && params.confirm !== true) {
@@ -10979,7 +11013,10 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           rpc = "recalculate_cycle_rankings"; rpcArgs = { p_cycle_id: params.cycle_id, p_reason: params.reason }; break;
         case "committee":
           if (!isUUID(params.cycle_id) || !params.committee_action || !isUUID(params.member_id)) return invalid("action='committee' requires cycle_id + committee_action + member_id.");
-          rpc = "manage_selection_committee"; rpcArgs = { p_cycle_id: params.cycle_id, p_action: params.committee_action, p_member_id: params.member_id, p_role: params.committee_role ?? "evaluator" }; break;
+          // `p_role` vai como NULL quando não informado: com o default antigo ('evaluator'), um
+          // update que só troca a URL rebaixaria um lead em silêncio. Em 'add' a própria RPC
+          // aplica COALESCE(p_role,'evaluator'), então o comportamento de antes não muda.
+          rpc = "manage_selection_committee"; rpcArgs = { p_cycle_id: params.cycle_id, p_action: params.committee_action, p_member_id: params.member_id, p_role: params.committee_role ?? (params.committee_action === "add" ? "evaluator" : null), p_interview_booking_url: params.interview_booking_url ?? null, p_can_interview: typeof params.can_interview === "boolean" ? params.can_interview : null }; break;
         case "update_contact":
           if (!isUUID(params.application_id)) return invalid("action='update_contact' requires application_id.");
           rpc = "update_application_contact"; rpcArgs = { p_application_id: params.application_id, p_phone: params.phone ?? null, p_linkedin_url: params.linkedin_url ?? null }; break;
@@ -10995,7 +11032,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         data: { action: params.action, result: data ?? null },
         summary: `selection_decide action='${params.action}' ok.`,
         next_actions: ["selection_dashboard scope='dashboard': reler o pipeline do ciclo", "selection_dashboard scope='rankings': ranking atualizado"],
-        audit: { tool: "selection_decide", semantic_domain: dom, pii_level: "high", permission: need, source_tools: [rpc], caller_member_id: member.id, gate_checked: `canV4(${need}) + RPC internal gate`, resource_id: params.application_id ?? params.cycle_id ?? null, extra: { action: params.action } },
+        audit: { tool: "selection_decide", semantic_domain: dom, pii_level: "high", permission: autosservicoDeRoteamento ? "self (committee routing row)" : need, source_tools: [rpc], caller_member_id: member.id, gate_checked: autosservicoDeRoteamento ? "RPC internal gate (recurso: própria linha do comitê)" : `canV4(${need}) + RPC internal gate`, resource_id: params.application_id ?? params.cycle_id ?? null, extra: { action: params.action, committee_action: params.committee_action ?? undefined } },
       });
     },
   );
@@ -12436,7 +12473,7 @@ const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);  
 // #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
 // payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
 // derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
-const SEMANTIC_SURFACE_VERSION = "0.13.0";
+const SEMANTIC_SURFACE_VERSION = "0.14.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
@@ -12564,7 +12601,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.95.0",
+  ef_version: "2.96.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
