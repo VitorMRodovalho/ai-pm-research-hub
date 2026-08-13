@@ -47,6 +47,10 @@ const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const CHAVES = {
   _roster_seal_marker: '_roster_seal_marker@',
   seal_event_attendance: 'seal_event_attendance@p_event_id uuid',
+  // #1710 onda D: a escrita em massa e a auditoria do SELO passaram para um nucleo compartilhado
+  // com o cron (que nao tem `auth.uid()`); a RPC ficou com os gates e a delegacao. A reversao nao
+  // se moveu: ela so tem caminho humano.
+  _seal_event_attendance_apply: '_seal_event_attendance_apply@p_event_id uuid, p_actor_id uuid, p_dry_run boolean',
   unseal_event_attendance: 'unseal_event_attendance@p_event_id uuid',
   preview_seal_attendance: 'preview_seal_attendance@p_cycle_start date',
   get_attendance_grid: 'get_attendance_grid@p_tribe_id integer, p_event_type text',
@@ -103,6 +107,13 @@ test('#1710 A: selar e gateado por RECURSO, e o gate sem recurso nao coexiste', 
   // dois devolveria os 622 pares medidos.
   assert.doesNotMatch(codigo, /can_by_member\(v_caller_id, 'manage_event'\)/,
     `${file}: o gate SEM recurso voltou; ele alcanca evento de qualquer tribo`);
+
+  // Onda D: o gate ficou aqui e a escrita saiu. As duas coisas tem de continuar ligadas — um gate
+  // que nao delega nao gateia nada, e uma delegacao sem gate e o buraco de volta.
+  assert.match(codigo, /public\._seal_event_attendance_apply\(p_event_id, v_caller_id, false\)/,
+    `${file}: a RPC gateada deixou de delegar ao nucleo que escreve`);
+  assert.doesNotMatch(codigo, /INSERT INTO public\.attendance/,
+    `${file}: a escrita em massa voltou para a RPC; agora existem duas copias dela`);
 });
 
 test('#1710 A: o dry-run tem a MESMA fronteira do ato', () => {
@@ -115,10 +126,10 @@ test('#1710 A: o dry-run tem a MESMA fronteira do ato', () => {
 });
 
 test('#1710 A: escrita e reversao leem o carimbo da MESMA funcao', () => {
-  const selo = captura(CHAVES.seal_event_attendance);
+  const selo = captura(CHAVES._seal_event_attendance_apply);
   const rev = captura(CHAVES.unseal_event_attendance);
 
-  for (const [nome, cap] of [['seal', selo], ['unseal', rev]]) {
+  for (const [nome, cap] of [['o nucleo do selo', selo], ['unseal', rev]]) {
     const codigo = achatado(cap.body);
     assert.match(codigo, /public\._roster_seal_marker\(\)/,
       `${cap.file}: ${nome} precisa chamar _roster_seal_marker()`);
@@ -147,7 +158,7 @@ test('#1710 A: a reversao preserva a linha em que alguem encostou', () => {
 });
 
 test('#1710 A: os dois atos deixam rastro em admin_audit_log', () => {
-  for (const [acao, chave] of [['attendance.roster_sealed', CHAVES.seal_event_attendance],
+  for (const [acao, chave] of [['attendance.roster_sealed', CHAVES._seal_event_attendance_apply],
                                ['attendance.roster_unsealed', CHAVES.unseal_event_attendance]]) {
     const { body, file } = captura(chave);
     const codigo = achatado(body);

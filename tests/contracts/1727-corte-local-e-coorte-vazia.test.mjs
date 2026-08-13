@@ -46,6 +46,12 @@ const CHAVES = {
   _event_end_instant: '_event_end_instant@p_date date, p_time_start time without time zone, p_duration_minutes integer, p_timezone text',
   _attendance_eligible_events: '_attendance_eligible_events@p_member_id uuid, p_cycle_start date',
   seal_event_attendance: 'seal_event_attendance@p_event_id uuid',
+  // #1710 onda D: a escrita em massa saiu da RPC para um nucleo compartilhado com o cron, que nao
+  // tem `auth.uid()`. As checagens de FATO DO EVENTO (fim, coorte) moraram sempre com a escrita e
+  // foram junto; a RPC ficou com os gates. Repontar as asserções para o nucleo so e honesto porque
+  // cada uma ganhou, ao lado, a prova de que o caminho do usuario DELEGA — senao o guard passaria a
+  // provar que a checagem existe em algum lugar, sem provar que alguem a alcanca.
+  _seal_event_attendance_apply: '_seal_event_attendance_apply@p_event_id uuid, p_actor_id uuid, p_dry_run boolean',
   preview_seal_attendance: 'preview_seal_attendance@p_cycle_start date',
 };
 
@@ -97,11 +103,17 @@ test('#1727 A: a elegibilidade corta pelo INSTANTE, e pela funcao compartilhada'
 });
 
 test('#1727 A: a guarda do selo deixou de comparar DATA', () => {
-  const { body, file } = captura(CHAVES.seal_event_attendance);
+  const { body, file } = captura(CHAVES._seal_event_attendance_apply);
   const codigo = achatado(body);
 
   assert.match(codigo, /IF v_end > now\(\) THEN/,
     `${file}: a guarda de evento por terminar sumiu`);
+
+  // E o caminho do usuario chega ate ela: sem a delegacao, a guarda existiria num nucleo que
+  // ninguem chama.
+  const rpc = achatado(captura(CHAVES.seal_event_attendance).body);
+  assert.match(rpc, /public\._seal_event_attendance_apply\(p_event_id, v_caller_id, false\)/,
+    'a RPC do usuario deixou de delegar ao nucleo que carrega a guarda');
   // A INVERSA, que e o defeito: `v_date > CURRENT_DATE` compara data em UTC e deixa passar a
   // reuniao de hoje a noite. Ela nao pode coexistir — seria uma segunda guarda mais fraca.
   assert.doesNotMatch(codigo, /v_date > CURRENT_DATE/,
@@ -109,7 +121,9 @@ test('#1727 A: a guarda do selo deixou de comparar DATA', () => {
 });
 
 test('#1729 A: coorte vazia nao carimba roster_sealed_at', () => {
-  const { body, file } = captura(CHAVES.seal_event_attendance);
+  // Onda D: o ramo mora no nucleo, que e o unico lugar onde o carimbo e escrito — e por isso o
+  // unico lugar onde ele pode ser escrito ERRADO. Vale para os dois chamadores de uma vez.
+  const { body, file } = captura(CHAVES._seal_event_attendance_apply);
   const codigo = achatado(body);
 
   assert.match(codigo, /IF v_eligible = 0 THEN/,

@@ -28906,6 +28906,10 @@ export type Database = {
       }
       _request_is_rest_caller: { Args: never; Returns: boolean }
       _roster_seal_marker: { Args: never; Returns: string }
+      _seal_event_attendance_apply: {
+        Args: { p_actor_id: string; p_dry_run?: boolean; p_event_id: string }
+        Returns: Json
+      }
       _selection_apto_to_sign_digest_cron: { Args: never; Returns: Json }
       _selection_consistency_cron: { Args: never; Returns: Json }
       _selection_cutoff_pending_cron: { Args: never; Returns: Json }
@@ -33388,6 +33392,10 @@ export type Database = {
           p_interviewer_ids: string[]
           p_scheduled_at: string
         }
+        Returns: Json
+      }
+      seal_attendance_window_cron: {
+        Args: { p_dry_run?: boolean }
         Returns: Json
       }
       seal_event_attendance: { Args: { p_event_id: string }; Returns: Json }
