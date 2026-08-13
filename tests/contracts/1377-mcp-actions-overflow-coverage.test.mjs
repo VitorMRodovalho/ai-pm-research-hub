@@ -64,6 +64,10 @@ const SEMANTIC_ONLY = new Set([
   'event_write',
   'attendance_record',
   'attendance_report',
+  // #1710 — /semantic only. Sem esta linha a tool nova e contada contra o teto de 256 do /mcp,
+  // onde ela NAO esta, e o guard acusa a queda de `list_webinar_proposals` do outro lado do corte:
+  // um sintoma inteiramente fabricado pela contagem errada.
+  'attendance_seal',
   'meeting_minutes',
   'meeting_actions',
   // Wave 4 (#1383) — /semantic only (selection/evaluation)

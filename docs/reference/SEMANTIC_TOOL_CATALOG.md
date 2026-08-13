@@ -213,6 +213,14 @@ byte-for-byte unchanged (same initiative, same 3 expected attendees).
 - **Gate:** `eventWriteGate()` (initiative-scoped `manage_event` + #785). `bulk_excuse` is member-scoped, not event-scoped: the RPC gates it inline (org-scope OR shares an active initiative with the target) and is passed through.
 - **Attribution:** the RPC records `registered_by`/`marked_by` — that, NOT `checked_in_at`, is what distinguishes a self check-in from a leader's batch (#1322).
 
+### `attendance_seal` (D) — adicionada em 2026-08-13 (#1710)
+- **Intent:** fechar a lista de presença de um evento, ou reverter o fecho. **`action`:** `list` (o ensaio completo do ciclo) · `seal` (event_id) · `unseal` (event_id).
+- **Absorve:** `preview_seal_attendance` · `seal_event_attendance` · `unseal_event_attendance` (as três sem tool anterior — o mecanismo existia e era inalcançável).
+- **Gate:** `manage_event` **escopado ao evento** (`_can_manage_event`) + #785. Medido em 13/08 impersonando os 14 portadores: o gate anterior, sem recurso, deixava passar **622 pares (líder, evento)** que o escopado recusa.
+- **Confirm-gate (ADR-0018 W1):** sem `confirm=true`, `seal`/`unseal` devolvem o **ensaio daquele evento** — coorte elegível, quantos já têm registro e quantas faltas seriam gravadas — em vez de executar. O número vem de `preview_seal_attendance`, a mesma fonte que a tela usa e que o servidor consulta.
+- **Por que tool própria e não `action` de `attendance_record`:** `unseal` é verbo de remoção, então a tool que o abriga é destrutiva por inteiro (precedente do `agenda_blocks`, #1548). Absorvê-lo ali jogaria as 166 chamadas/180d de `register`/`excuse`/`showcase` para trás do confirm-gate sem que nenhuma delas tivesse ficado mais perigosa.
+- **Reversão não é total, por desenho:** `unseal` preserva a linha em que alguém marcou presença ou justificou depois do selo, e devolve `kept_touched_count`. Uma falta **re-afirmada** por gente sobre a linha do selo fica indistinguível da original e é apagada junto — limite conhecido, documentado no corpo da RPC.
+
 ### `attendance_report` (R)
 - **Intent:** attendance analytics. **`scope`:** `mine` (default) · `tribe` (grid) · `ranking` · `hours` · `health` · `cycle`.
 - **Absorbs:** `get_my_attendance_history` · `get_my_tribe_attendance` · `get_attendance_ranking` · `get_my_attendance_hours` · `get_event_attendance_health` · `get_cycle_attendance_overview`.
