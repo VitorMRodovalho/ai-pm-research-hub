@@ -193,7 +193,7 @@ test('W6b: migration grants knowledge_assets_latest to authenticated + revokes a
 // #1590 onda C (13/08/2026): 0.13.0 → 0.14.0 SEM tool nova — a capacidade entrou como scope
 // ('routing') e ações (block/unblock/committee update) em tools existentes. A contagem de 54
 // continua valendo, e é por isso que ela é derivada da fonte em vez de literal.
-test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.14.0', () => {
+test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.15.0', () => {
   // #1392: /health now DERIVES the count (tools: SEMANTIC_TOOL_COUNT), so the literal is gone.
   // Verify (a) /semantic health is wired to the derived constant, and (b) registerSemanticTools
   // actually registers 52 tools — the Wave-6b guarantee, checked at the source instead of a literal.
@@ -206,5 +206,5 @@ test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.14.
   const semanticToolCount = (body.match(/mcp\.tool\(/g) || []).length;
   assert.equal(semanticToolCount, 54, `registerSemanticTools must register 54 tools after Wave 6b + #1548 + #1710 (found ${semanticToolCount})`);
   assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must read the version from SEMANTIC_SURFACE_VERSION');
-  assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "0\.14\.0";/, 'SEMANTIC_SURFACE_VERSION must be 0.14.0 after #1590 onda C');
+  assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "0\.15\.0";/, 'SEMANTIC_SURFACE_VERSION must be 0.15.0 after #1590 onda D');
 });

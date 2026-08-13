@@ -10720,11 +10720,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · selection_dashboard (R) — cycle pipeline surfaces; RPCs self-gate + COI ──
   mcp.tool(
     "selection_dashboard",
-    "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+    "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview/get_interview_booking_funnel). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'funnel' (cycle_id — #1590 onda D: cada oferta de agenda com o desfecho DERIVADO na leitura; separa 'abriu a agenda e não reservou' de 'nunca abriu', que até esta onda tinham registro idêntico. Linhas anteriores à instrumentação saem como 'pre_instrumentation' e NÃO afirmam falta), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' and 'funnel' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
     {
-      scope: z.enum(["dashboard", "cycles", "rankings", "cutoff", "calibration", "health", "pipeline", "committee", "routing", "dispatch"]).describe("Which selection surface."),
+      scope: z.enum(["dashboard", "cycles", "rankings", "cutoff", "calibration", "health", "pipeline", "committee", "routing", "funnel", "dispatch"]).describe("Which selection surface."),
       cycle_code: z.string().optional().describe("Cycle code (e.g. 'C5') — dashboard / rankings / calibration."),
-      cycle_id: z.string().optional().describe("Cycle UUID — cutoff / pipeline / committee / routing."),
+      cycle_id: z.string().optional().describe("Cycle UUID — cutoff / pipeline / committee / routing / funnel."),
       track: z.string().optional().describe("scope='rankings' — track filter (researcher|leader|all)."),
       score_column: z.string().optional().describe("scope='cutoff' — score column (default 'research_score')."),
       chapter: z.string().optional().describe("scope='pipeline' — chapter code filter."),
@@ -10763,6 +10763,13 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           // responde quem o rodízio consegue escolher HOJE, e por que os outros não.
           if (!isUUID(params.cycle_id)) return invalid("scope='routing' requires cycle_id (UUID).", "Use scope='cycles' to list them.");
           ({ data, error } = await sb.rpc("get_selection_routing_overview", { p_cycle_id: params.cycle_id })); source = "get_selection_routing_overview"; break;
+        case "funnel":
+          // #1590 onda D — 'dispatch' responde se o e-mail de corte SAIU; 'funnel' responde o que
+          // aconteceu DEPOIS que ele saiu. Antes desta onda o candidato que abriu a agenda e não
+          // achou horário tinha registro idêntico ao de quem nunca clicou, e por isso qualquer
+          // taxa de sucesso de agendamento dizia 100% por construção.
+          if (!isUUID(params.cycle_id)) return invalid("scope='funnel' requires cycle_id (UUID).", "Use scope='cycles' to list them.");
+          ({ data, error } = await sb.rpc("get_interview_booking_funnel", { p_cycle_id: params.cycle_id })); source = "get_interview_booking_funnel"; break;
         case "dispatch": ({ data, error } = await sb.rpc("get_cutoff_dispatch_health")); source = "get_cutoff_dispatch_health"; break;
         default: return invalid(`Unknown scope '${params.scope}'.`);
       }
@@ -12473,7 +12480,7 @@ const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);  
 // #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
 // payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
 // derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
-const SEMANTIC_SURFACE_VERSION = "0.14.0";
+const SEMANTIC_SURFACE_VERSION = "0.15.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
@@ -12601,7 +12608,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.96.0",
+  ef_version: "2.97.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
