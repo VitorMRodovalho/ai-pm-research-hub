@@ -104,10 +104,11 @@ Descoberta ao varrer os 109 uploads do canal: **nenhuma liderança do ciclo 4 ti
 
 ⚠️ **O working tree foi levado para a branch da outra sessão** (`fix/1666-consentimento-auditavel`) no meio do trabalho. O commit já estava empurrado, nada se perdeu, e não fiz checkout de volta para não arrancar o diretório de quem está usando.
 
-### Issues abertas (7)
+### Issues abertas (8)
 
 | # | Título curto | Origem |
 |---|---|---|
+| **#1681** | A falha do membro no MCP **não retroalimenta a priorização**: erro de protocolo não chega ao log, falha não tem classe, e o papel de quem chamou não é carimbado. O agregado diz 4,9%, mas o líder de tribo bate em parede **12×** mais que o manager e o pesquisador **24×** | pergunta do Vitor, 07/08 |
 | **#1675** | Bloco de pauta reservado é **apagado** junto com o evento por `ON DELETE CASCADE`, sem aviso ao dono e sem ator no log. Prova: o único `delete` da tabela de auditoria é "Calculadora de Token" do Marcos, 20/07 | ata da #8 |
 | **#1676** | Duplo clique no criador de recorrência gera a série duas vezes: **65 eventos apagados à mão em 3 dias**, em 3 séries | ata da #8 |
 | **#1672** | Briefing da reunião conta 22 ações pendentes e entrega **0**: o #1548 corrigiu 1 das 4 subqueries escopadas de `get_meeting_preparation`. 84 eventos org-wide, 24 briefings, 431 aparições suprimidas | Bloco C, item 4 |
