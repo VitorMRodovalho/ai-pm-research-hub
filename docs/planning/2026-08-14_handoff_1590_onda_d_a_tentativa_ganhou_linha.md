@@ -159,6 +159,26 @@ População medida no ciclo aberto: 9 em `interview_pending`, **7 sem nenhuma li
   **13/13**.
 - Comentários de medição postados nas issues **#1664**, **#1587** e **#1586**. As três seguem ABERTAS.
 
+## ⚠️ O mecanismo está ARMADO e INERTE
+
+Medido logo após o merge, em produção:
+
+| medida | valor |
+|---|---|
+| linhas em `selection_dispatch_url_log` | 94 |
+| **instrumentadas** | **0** |
+| com hash de token · aberturas carimbadas · reservas carimbadas | 0 · 0 · 0 |
+
+Isso é o esperado — as 94 são as anteriores, e nenhum despacho novo saiu desde a migration —, mas
+**significa que a instrumentação nunca foi exercida por tráfego real.** É a mesma situação das 0
+linhas em `selection_interviewer_blackouts` ao fim da onda C: a superfície existe, o contrato passa,
+e o invariante segue **em vácuo** até o primeiro despacho de verdade.
+
+A prova comportamental cobre a cadeia inteira, mas ela rodou dentro de transação abortada. O
+primeiro despacho real é que vai dizer se o carimbo sobrevive ao caminho completo (e-mail incluído).
+**Conferir `instrumented = true` + `booking_token_md5` preenchido na primeira linha nova** antes de
+publicar qualquer número do funil.
+
 ## Próximo
 
 1. **Conferir o `validate` da #1766 e mergear.**
