@@ -9,6 +9,7 @@ import {
   Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 } from 'lucide-react';
 import { hasPermission as checkPermission, type Permission } from '../../lib/permissions';
+import { canAccessAdminRoute, type AdminRouteKey } from '../../lib/admin/route-access.ts';
 
 /* ────────────────────────── Icon map ────────────────────────── */
 const ICONS: Record<string, React.FC<{ size?: number }>> = {
@@ -33,6 +34,17 @@ interface SidebarItem {
    * roles via admin.analytics.chapter). Nav is a UX hint; the page self-gates.
    */
   permission?: Permission | Permission[];
+  /**
+   * #1590 — porta alternativa por ROTA, em OR com `permission`.
+   *
+   * `permission` fala o vocabulário V3 (tabela hardcoded de tier + designação). A página fala
+   * `canAccessAdminRoute`, que desde a correção do #1590 também conhece o comitê de seleção. Um
+   * avaliador de comitê passava na página e sumia daqui: a tela abria com o menu lateral sem a
+   * entrada que descreve onde ele está.
+   *
+   * Só a entrada de Seleção declara isto por enquanto; reconciliar as ~40 restantes é o #1046.
+   */
+  routeKey?: AdminRouteKey;
 }
 
 interface SidebarSection {
@@ -61,7 +73,7 @@ const SECTIONS: SidebarSection[] = [
       { href: '/admin/members', label: { 'pt-BR': 'Membros', 'en-US': 'Members', 'es-LATAM': 'Miembros' }, icon: 'Users', permission: 'admin.access' },
       { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase', permission: 'admin.access' },
       { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
-      { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage' },
+      { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage', routeKey: 'admin_selection' },
       { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
       { href: '/admin/vep-reconciliation', label: { 'pt-BR': 'Reconciliação VEP', 'en-US': 'VEP Reconciliation', 'es-LATAM': 'Reconciliación VEP' }, icon: 'ArrowLeftRight', permission: 'admin.access' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
@@ -137,6 +149,7 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [visiblePerms, setVisiblePerms] = useState<Set<string>>(new Set());
+  const [visibleRoutes, setVisibleRoutes] = useState<Set<string>>(new Set());
 
   // Persist collapsed state
   useEffect(() => {
@@ -149,12 +162,15 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
       const member = (window as any).navGetMember?.();
       if (!member) return;
       const perms = new Set<string>();
+      const routes = new Set<string>();
       SECTIONS.forEach(s => s.items.forEach(item => {
         itemPerms(item).forEach(p => {
           if (checkPermission(member, p)) perms.add(p);
         });
+        if (item.routeKey && canAccessAdminRoute(member, item.routeKey)) routes.add(item.routeKey);
       }));
       setVisiblePerms(perms);
+      setVisibleRoutes(routes);
     }
 
     // Try immediately
@@ -222,7 +238,9 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
         {SECTIONS.map(section => {
           const visibleItems = section.items.filter(item => {
             const ps = itemPerms(item);
-            return ps.length === 0 || ps.some(p => visiblePerms.has(p));
+            if (ps.length === 0 && !item.routeKey) return true;
+            return ps.some(p => visiblePerms.has(p))
+              || (!!item.routeKey && visibleRoutes.has(item.routeKey));
           });
           if (visibleItems.length === 0) return null;
 

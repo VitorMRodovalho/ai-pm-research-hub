@@ -5830,6 +5830,8 @@ const enUS: Record<string, string> = {
   'admin.selection.diversityTab': 'Diversity',
   'admin.selection.diversityTitle': 'Diversity Metrics',
   'admin.selection.diversitySubtitle': 'Distribution by gender, chapter, sector, seniority and region — anonymized data per LGPD Art. 11',
+  // #1590 — notice for people who operate selection without being GP (committee, observer, sponsor).
+  'admin.selection.readonlyNote': 'You are in read-only mode. Deciding, scheduling and importing belong to the GP; your evaluation, when applicable, lives in the Evaluate tab.',
   'admin.selection.recalcRankings': 'Recalculate Rankings',
   'admin.selection.consentPendingBadge': 'no AI consent',
   'admin.selection.consentPendingTooltip': 'Candidate has not consented to AI analysis yet (LGPD Art. 20). cv_extracted_text + ai_analysis stay NULL intentionally. Committee must download PDF manually for review.',

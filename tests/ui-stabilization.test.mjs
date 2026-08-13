@@ -325,7 +325,10 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
 });
 
 test('analytics v2 grants readonly access without widening admin actions and ships staged metric contracts', () => {
-  const constants = read('src/lib/admin/constants.ts');
+  // #1590 — a autoridade de rota saiu de `constants.ts` para `route-access.ts` (que `constants.ts`
+  // reexporta). O que este teste protege é a EXISTÊNCIA do par leitura/escrita, não em qual dos
+  // dois arquivos ele mora, então lê os dois.
+  const constants = read('src/lib/admin/constants.ts') + '\n' + read('src/lib/admin/route-access.ts');
   const navConfig = read('src/lib/navigation.config.ts');
   const adminNav = read('src/components/nav/AdminNav.astro');
   const analytics = read('src/pages/admin/analytics.astro');

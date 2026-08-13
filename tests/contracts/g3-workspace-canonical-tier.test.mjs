@@ -9,11 +9,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+// #1590 — o predicado saiu de `constants.ts` para `route-access.ts` justamente para poder ser
+// IMPORTADO por um teste. `constants.ts` segue reexportando, então o import do workspace não mudou.
+import { getAccessTier } from '../../src/lib/admin/route-access.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repo = resolve(__dirname, '..', '..');
 const ws = readFileSync(resolve(repo, 'src/pages/workspace.astro'), 'utf8');
-const constants = readFileSync(resolve(repo, 'src/lib/admin/constants.ts'), 'utf8');
 
 test('workspace imports the canonical tier resolver (not a local map)', () => {
   assert.match(
@@ -64,9 +66,15 @@ test('workspace belonging gate uses isRegisteredMember (id-based, not truthy/rol
 
 test('canonical getAccessTier still maps guest/unknown to visitor (grounds the fix)', () => {
   // If this ever flips to 'member', the G3 premise is void — guard the SSOT.
-  assert.match(
-    constants,
-    /return\s+['"]visitor['"]\s*;?\s*\n?\s*\}/,
-    "getAccessTier's fallback must return 'visitor'",
-  );
+  //
+  // #1590: this used to regex `src/lib/admin/constants.ts` for a `return 'visitor'` literal. Two
+  // problems that the #1590 split exposed: (a) the predicate moved to `route-access.ts` and the
+  // guard went red over a pure relocation, and (b) `return 'visitor'` appears in more than one
+  // function, so the match never proved WHICH fallback it read. Calling the function answers both.
+  assert.equal(getAccessTier(false, 'guest', []), 'visitor');
+  assert.equal(getAccessTier(false, 'papel_que_nao_existe', []), 'visitor');
+  assert.equal(getAccessTier(false, '', []), 'visitor');
+  // ...and it must not be a constant 'visitor' either, or the assertions above are satisfied by a
+  // function that denies everyone.
+  assert.equal(getAccessTier(false, 'manager', []), 'admin');
 });
