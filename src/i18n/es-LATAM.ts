@@ -5831,6 +5831,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.diversityTab': 'Diversidad',
   'admin.selection.diversityTitle': 'Métricas de Diversidad',
   'admin.selection.diversitySubtitle': 'Distribución por género, capítulo, sector, antigüedad y región — datos anonimizados conforme LGPD Art. 11',
+  // #1590 — aviso para quienes operan la selección sin ser GP (comité, observador, sponsor).
+  'admin.selection.readonlyNote': 'Estás en modo de lectura. Decidir, agendar e importar son del GP; tu evaluación, cuando corresponda, está en la pestaña Evaluar.',
   'admin.selection.recalcRankings': 'Recalcular Rankings',
   'admin.selection.consentPendingBadge': 'sin consent IA',
   'admin.selection.consentPendingTooltip': 'Candidato aún no consintió análisis IA (LGPD Art. 20). cv_extracted_text + ai_analysis quedan NULL intencionalmente. Comité debe descargar PDF manualmente para revisión.',

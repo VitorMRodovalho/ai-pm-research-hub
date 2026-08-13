@@ -65,16 +65,10 @@ async function run() {
     assert.match(await denied.textContent() || '', /Acesso (restrito a administradores|negado ao módulo de seleção)/);
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
-    const selectionPage = await browser.newPage({ locale: 'pt-BR' });
-    await selectionPage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
-    await selectionPage.evaluate(() => {
-      const fakeMember = {
-        auth_id: 'selection-admin-test',
-        operational_role: 'manager',
-        designations: [],
-        is_superadmin: false,
-        name: 'Selection Admin',
-      };
+    // #1590 — o stub virou parametrizado por MEMBRO. Antes só existia o caso `manager`, e era
+    // exatamente por isso que o gate podia recusar todo o comitê sem nenhum teste ficar vermelho.
+    const installSelectionStubs = (targetPage, member, capabilities) => targetPage.evaluate(([fakeMember, caps]) => {
+      window.__nucleoCapabilities = caps;
       const fakeSb = {
         auth: {
           getSession() {
@@ -113,11 +107,76 @@ async function run() {
       window.navGetMember = () => fakeMember;
       window.navGetSb = () => fakeSb;
       window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    }, [member, capabilities ?? null]);
+
+    const GP = {
+      auth_id: 'selection-admin-test',
+      operational_role: 'manager',
+      designations: [],
+      is_superadmin: false,
+      name: 'Selection Admin',
+      selection_committee_role: null,
+    };
+    // Perfil medido em 12/08/2026: o avaliador real do ciclo aberto. tribe_leader, sem designação,
+    // sem superadmin — recusado pelo gate antigo, autorizado pela RPC.
+    const AVALIADOR_DE_COMITE = {
+      auth_id: 'selection-committee-test',
+      operational_role: 'tribe_leader',
+      designations: [],
+      is_superadmin: false,
+      name: 'Committee Evaluator',
+      selection_committee_role: 'evaluator',
+    };
+    const PESQUISADOR = {
+      auth_id: 'selection-outsider-test',
+      operational_role: 'researcher',
+      designations: [],
+      is_superadmin: false,
+      name: 'Plain Researcher',
+      selection_committee_role: null,
+    };
+
+    const selectionPage = await browser.newPage({ locale: 'pt-BR' });
+    await selectionPage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
+    await installSelectionStubs(selectionPage, GP, {
+      caller_id: null, person_id: null, is_superadmin: false,
+      org_actions: ['manage_platform', 'manage_member'], initiative_actions: {}, tribe_actions: {},
     });
     await selectionPage.locator('#sel-panel').waitFor({ state: 'visible' });
     await selectionPage.waitForFunction(() => document.querySelectorAll('#sel-tbody tr').length > 0);
     assert.equal(await selectionPage.locator('#sel-tbody tr').count() > 0, true);
+    // O GP escreve: os controles aparecem e o aviso de leitura NÃO.
+    assert.equal(await selectionPage.locator('#recalc-rankings-btn').isVisible(), true);
+    assert.equal(await selectionPage.locator('#sel-readonly-note').isVisible(), false);
     await selectionPage.close();
+
+    // #1590 — o avaliador de comitê ENTRA, e entra em modo de leitura.
+    const committeePage = await browser.newPage({ locale: 'pt-BR' });
+    await committeePage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
+    await installSelectionStubs(committeePage, AVALIADOR_DE_COMITE, {
+      caller_id: null, person_id: null, is_superadmin: false,
+      org_actions: [], initiative_actions: {}, tribe_actions: {},
+    });
+    await committeePage.locator('#sel-panel').waitFor({ state: 'visible' });
+    assert.equal(await committeePage.locator('#sel-denied').isVisible(), false,
+      'o avaliador de comitê era recusado pelo gate de tier — este é o defeito do #1590');
+    assert.equal(await committeePage.locator('#sel-readonly-note').isVisible(), true);
+    for (const seletor of ['#recalc-rankings-btn', '#start-screening-btn', '[data-sel-tab="import"]', '[data-sel-tab="committee"]']) {
+      assert.equal(await committeePage.locator(seletor).isVisible(), false,
+        `${seletor} chama RPC que o servidor recusa para ele; tem de ficar fora da tela`);
+    }
+    await committeePage.close();
+
+    // A INVERSA: sem comitê e sem tier, continua recusado. Sem esta, remover o gate passa.
+    const outsiderPage = await browser.newPage({ locale: 'pt-BR' });
+    await outsiderPage.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
+    await installSelectionStubs(outsiderPage, PESQUISADOR, {
+      caller_id: null, person_id: null, is_superadmin: false,
+      org_actions: [], initiative_actions: {}, tribe_actions: {},
+    });
+    await outsiderPage.locator('#sel-denied').waitFor({ state: 'visible' });
+    assert.equal(await outsiderPage.locator('#sel-panel').isVisible(), false);
+    await outsiderPage.close();
 
     await page.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     const analyticsDenied = page.locator('#analytics-denied');

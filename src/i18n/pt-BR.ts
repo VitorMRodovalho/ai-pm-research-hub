@@ -5836,6 +5836,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.diversityTab': 'Diversidade',
   'admin.selection.diversityTitle': 'Métricas de Diversidade',
   'admin.selection.diversitySubtitle': 'Distribuição por gênero, capítulo, setor, senioridade e região — dados anonimizados conforme LGPD Art. 11',
+  // #1590 — aviso para quem opera a seleção sem ser GP (comitê, observador, sponsor).
+  'admin.selection.readonlyNote': 'Você está em modo de leitura. As ações de decidir, agendar e importar são do GP; sua avaliação, quando houver, fica na aba Avaliar.',
   'admin.selection.recalcRankings': 'Recalcular Rankings',
   'admin.selection.consentPendingBadge': 'sem consent IA',
   'admin.selection.consentPendingTooltip': 'Candidato ainda não consentiu análise IA (LGPD Art. 20). cv_extracted_text + ai_analysis ficam NULL intencionalmente. Comitê deve baixar PDF manualmente para revisão.',
