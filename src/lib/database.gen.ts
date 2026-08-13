@@ -24453,6 +24453,190 @@ export type Database = {
           },
         ]
       }
+      selection_interviewer_blackouts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          cycle_id: string
+          ends_on: string | null
+          id: string
+          member_id: string
+          organization_id: string | null
+          reason: string | null
+          starts_on: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          cycle_id: string
+          ends_on?: string | null
+          id?: string
+          member_id: string
+          organization_id?: string | null
+          reason?: string | null
+          starts_on: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          cycle_id?: string
+          ends_on?: string | null
+          id?: string
+          member_id?: string
+          organization_id?: string | null
+          reason?: string | null
+          starts_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_interviewer_blackouts_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       selection_interviews: {
         Row: {
           application_id: string
