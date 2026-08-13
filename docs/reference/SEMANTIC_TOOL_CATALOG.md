@@ -264,9 +264,10 @@ avoided a false correction. Deliberately **kept raw** (not surfaced semantically
 `capture_visitor_lead` (public anon site entry — rate-limited + LGPD-consent-gated).
 
 ### `selection_dashboard` (R)
-- **Intent:** the selection-cycle command surface. **`scope`:** `dashboard` (cycle_code) · `cycles` · `rankings` · `cutoff` (cycle_id) · `calibration` · `health` · `pipeline` (cycle_id) · `committee` (cycle_id) · `dispatch`.
-- **Absorbs:** `get_selection_dashboard` (24) · `get_selection_cycles` · `get_selection_rankings` · `get_pert_cutoff_summary` · `get_evaluator_calibration_stats` · `get_selection_health` · `get_selection_pipeline_metrics` · `get_selection_committee` · `get_cutoff_dispatch_health`.
+- **Intent:** the selection-cycle command surface. **`scope`:** `dashboard` (cycle_code) · `cycles` · `rankings` · `cutoff` (cycle_id) · `calibration` · `health` · `pipeline` (cycle_id) · `committee` (cycle_id) · `routing` (cycle_id) · `dispatch`.
+- **Absorbs:** `get_selection_dashboard` (24) · `get_selection_cycles` · `get_selection_rankings` · `get_pert_cutoff_summary` · `get_evaluator_calibration_stats` · `get_selection_health` · `get_selection_pipeline_metrics` · `get_selection_committee` · `get_selection_routing_overview` (#1590 onda C) · `get_cutoff_dispatch_health`.
 - **Gate:** each RPC self-gates on `view_internal_analytics`/`view_aggregate_analytics` + ADR-0109 COI recusal; candidate PII stays behind those gates. Pass-through.
+- **`committee` × `routing`:** `committee` responde QUEM está no comitê; `routing` responde quem o rodízio **consegue escolher hoje**, com os três eixos separados (`can_interview` permanente · URL = capacidade · janela de bloqueio = elegibilidade), o motivo explícito de não-roteável, e a contagem/data do último despacho. Público do `routing` = comitê do ciclo ∪ designação `sponsor` ∪ `manage_member` ∪ superadmin (o público declarado na TELA, de propósito mais estreito que `get_selection_dashboard`); a URL crua só sai para a própria linha e para `manage_member`. **Não publica "próximo da fila"** — o desempate do picker concentra despachos quando o lote sai na mesma transação.
 
 ### `application_get` (R)
 - **Intent:** one application, 360°. **`scope`:** `scores` · `interviews` · `gate_attempts` · `returning` · `onboarding` (all keyed by `application_id`).
@@ -279,14 +280,16 @@ avoided a false correction. Deliberately **kept raw** (not surfaced semantically
 - **Gate:** committee membership of the cycle (self-scoped; `manage_platform` bypass) — RPC-internal.
 
 ### `interview_manage` (W)
-- **Intent:** interview scheduling lifecycle. **`action`:** `schedule` · `mark` · `rescue`.
-- **Absorbs:** `schedule_interview` · `mark_interview_status` · `selection_rescue_stuck_interview`. (`generate_interview_briefing` stays raw — inline-Haiku, `view_pii`.)
-- **Gate:** committee lead of the cycle OR platform admin (RPC-internal); the no-AI-analysis gate on `schedule` is bypassable only with `manage_member` + `bypass_gate=true`.
+- **Intent:** interview scheduling lifecycle. **`action`:** `schedule` · `mark` · `rescue` · `stage_override` · `block` · `unblock`.
+- **Absorbs:** `schedule_interview` · `mark_interview_status` · `selection_rescue_stuck_interview` · `grant_interview_stage_override` · `set_interviewer_routing_block` / `clear_interviewer_routing_block` (#1590 onda C). (`generate_interview_briefing` stays raw — inline-Haiku, `view_pii`.)
+- **Gate:** committee lead of the cycle OR platform admin (RPC-internal); the no-AI-analysis gate on `schedule` is bypassable only with `manage_member` + `bypass_gate=true`. **`block`/`unblock` gateiam pelo RECURSO** (a própria linha = autosserviço, qualquer outra = `manage_member`), decidido dentro da RPC para que web e MCP não possam divergir.
+- **`block` × `can_interview`:** `block` é PAUSA por período e não toca a agenda; `can_interview=false` (via `selection_decide committee/update`) é o desligamento permanente. Apagar a URL para sair do rodízio é o anti-padrão que a onda B retirou: destrói configuração, não tem data e não se reverte sozinho.
 
 ### `selection_decide` (W)
-- **Intent:** cycle-level decisions. **`action`:** `approve` (DESTRUCTIVE → `confirm=true`, ADR-0018) · `notify_cutoff` · `compute_cutoff` · `recalc_rankings` (DESTRUCTIVE → `confirm=true`) · `committee` (add/remove) · `update_contact`.
+- **Intent:** cycle-level decisions. **`action`:** `approve` (DESTRUCTIVE → `confirm=true`, ADR-0018) · `notify_cutoff` · `compute_cutoff` · `recalc_rankings` (DESTRUCTIVE → `confirm=true`) · `committee` (add/remove/**update**) · `update_contact`.
 - **Absorbs:** `approve_selection_application` · `notify_selection_cutoff_approved` · `compute_pert_cutoff` · `recalculate_cycle_rankings` · `manage_selection_committee` · `update_application_contact`. (`compute_application_scores` stays raw — dormant service-role helper.)
-- **Gate:** proactive `canV4()` mirroring each RPC gate — `approve`/`recalc_rankings` = `manage_platform` (GP), `compute_cutoff`/`notify_cutoff`/`update_contact` = `manage_member`, `committee` = `promote`.
+- **Gate:** proactive `canV4()` mirroring each RPC gate — `approve`/`recalc_rankings` = `manage_platform` (GP), `compute_cutoff`/`notify_cutoff`/`update_contact` = `manage_member`, `committee` add/remove = `promote`.
+- **Exceção medida (#1590 onda C):** `committee_action='update'` com `member_id` == o próprio chamador **pula o fail-fast proativo** e deixa a RPC decidir. O proativo existe para dar erro melhor, não para ser um segundo gate: o avaliador que cadastra a própria agenda de entrevista não tem `promote` (13/08: 2 de 87 membros ativos têm). Dentro da RPC continuam valendo os três gates — recurso (própria linha ∪ `manage_member`), `promote` para trocar de papel, `manage_member` para RELIGAR `can_interview`; `interview_booking_url` é validada como `https://` no servidor.
 
 ### `visitor_leads` (R/W)
 - **Intent:** pre-consent lead triage for operators. **`action`:** `list` · `ghosts` · `dismiss` · `promote` (→ application).

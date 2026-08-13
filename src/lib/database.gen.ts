@@ -29777,6 +29777,10 @@ export type Database = {
         }
         Returns: Json
       }
+      clear_interviewer_routing_block: {
+        Args: { p_block_id: string }
+        Returns: Json
+      }
       clear_member_attendance: {
         Args: { p_event_id: string; p_member_id: string }
         Returns: Json
@@ -31665,6 +31669,10 @@ export type Database = {
         Args: { p_cycle_code?: string; p_track?: string }
         Returns: Json
       }
+      get_selection_routing_overview: {
+        Args: { p_cycle_id: string }
+        Returns: Json
+      }
       get_signer_signature_url: {
         Args: { p_signer_id: string }
         Returns: string
@@ -32600,7 +32608,9 @@ export type Database = {
       manage_selection_committee: {
         Args: {
           p_action: string
+          p_can_interview?: boolean
           p_cycle_id: string
+          p_interview_booking_url?: string
           p_member_id: string
           p_role?: string
         }
@@ -33535,6 +33545,16 @@ export type Database = {
       }
       set_initiative_roadmap: {
         Args: { p_initiative_id: string; p_roadmap: Json }
+        Returns: Json
+      }
+      set_interviewer_routing_block: {
+        Args: {
+          p_cycle_id: string
+          p_ends_on?: string
+          p_member_id: string
+          p_reason?: string
+          p_starts_on?: string
+        }
         Returns: Json
       }
       set_my_entry_chapter: { Args: { p_chapter_code: string }; Returns: Json }
