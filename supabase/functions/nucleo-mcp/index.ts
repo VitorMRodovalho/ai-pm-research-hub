@@ -1,5 +1,12 @@
 // supabase/functions/nucleo-mcp/index.ts
 // MCP server v2.81.0 — /mcp full catalog + 4 prompts + 3 resources + /semantic 12 tools (Wave 1 #1383, v0.3.0)
+// #1710 (2026-08-13): +attendance_seal em /semantic (53 -> 54, v0.12.0 -> v0.13.0). Selar a lista de
+//   um evento era, depois do #1657, a UNICA forma de a plataforma afirmar que alguem faltou — e nao
+//   tinha superficie nenhuma: 0 de 510 eventos passados selados. Tool PROPRIA e destrutiva, e nao uma
+//   acao de attendance_record, porque `unseal` e verbo de remocao e arrastaria as 166 chamadas/180d
+//   de register/excuse/showcase para tras do confirm-gate do ADR-0018 (precedente do agenda_blocks,
+//   #1548). Sem confirm=true, seal/unseal devolvem o ensaio (preview_seal_attendance) em vez de
+//   executar — o mesmo numero que a tela mostra, vindo da mesma fonte que o servidor consulta.
 // #1383 Wave 1 (2026-07-15): +8 semantic boards/cards tools (card_checklist, card_write, card_comment,
 //   card_search, card_get, board_overview, platform_context, portfolio_report) on /semantic (4→12).
 //   Intent-level, stable envelope {ok,data,summary,warnings,next_actions,audit} with #785 (ADR-0105) baked
@@ -8150,6 +8157,10 @@ const SEMANTIC_TOOL_ANNOTATIONS: Record<string, SemanticAnnotation> = {
   drive_links: SEM_WRITE, partner_crm: SEM_WRITE, attendance_record: SEM_WRITE, document_comment: SEM_WRITE, change_request: SEM_WRITE,
   signature_flow: SEM_WRITE, comms_post: SEM_WRITE, webinar_manage: SEM_WRITE, champion_award: SEM_WRITE, drive_access_admin: SEM_WRITE,
   interview_manage: SEM_WRITE,
+  // #1710: `unseal` e verbo de REMOCAO, entao a tool inteira e destrutiva e as duas escritas
+  // passam pelo confirm-gate. Mesma leitura do `agenda_blocks` (#1548). Foi por isto que o selo
+  // NAO virou acao de `attendance_record`: la ele arrastaria register/excuse/showcase junto.
+  attendance_seal: SEM_DESTRUCTIVE,
 };
 
 // Wrap mcp.tool so every /semantic registration attaches its MCP annotation hints via
@@ -10228,6 +10239,111 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         warnings,
         next_actions: ["attendance_record: registrar presença ou justificar ausência", "event_search: encontrar o evento"],
         audit: { tool: "attendance_report", semantic_domain: dom, pii_level: scope === "mine" || scope === "hours" ? "self" : "low", permission: perm, source_tools: source, caller_member_id: member.id, gate_checked: gate, resource_id: resourceId, extra: { scope } },
+      });
+    },
+  );
+
+  // ── W3 · attendance_seal (D) — #1710 ────────────────────────────────────────
+  // Tool PROPRIA, e nao mais uma acao de `attendance_record`, por uma razao de classificacao:
+  // `unseal` e verbo de REMOCAO, entao a tool que o abriga e destrutiva por inteiro (precedente
+  // do `agenda_blocks`, #1548). Absorve-lo em `attendance_record` jogaria as 166 chamadas/180d de
+  // register/excuse/showcase para tras do confirm-gate do ADR-0018 sem que nenhuma delas tenha
+  // ficado mais perigosa.
+  mcp.tool(
+    "attendance_seal",
+    "Fecha (sela) a lista de presenca de um evento, ou reverte o selo. Selar materializa `present=false` para todo elegivel SEM registro: e escrita em massa no historico de pessoas reais, e sem selo a plataforma nao consegue afirmar que alguem faltou (#1657/#1710). Set `action`: 'list' (o ensaio completo do ciclo — por evento: coorte elegivel, quantos ja tem registro, quantas faltas seriam gravadas e o motivo de bloqueio), 'seal' (event_id), 'unseal' (event_id — remove SO as linhas criadas pelo selo e ainda intocadas; quem foi marcado presente ou justificado depois PERMANECE). Sem `confirm=true`, seal/unseal devolvem o ensaio daquele evento em vez de executar (ADR-0018 W1). Autoridade: manage_event ESCOPADO ao evento (`_can_manage_event`) + #785; um lider de tribo nao alcanca evento de outra tribo. Os dois atos ficam em admin_audit_log. Envelope estavel.",
+    {
+      action: z.enum(["list", "seal", "unseal"]).describe("Operacao de selagem."),
+      event_id: z.string().optional().describe("Event UUID — OBRIGATORIO para seal/unseal."),
+      cycle_start: z.string().optional().describe("action='list' — YYYY-MM-DD; default: inicio do ciclo corrente."),
+      confirm: z.boolean().optional().describe("seal/unseal — sem confirm=true devolve o ensaio (quantas faltas seriam gravadas) em vez de executar."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "attendance";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "attendance_seal", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (msg: string, action?: string) => ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "invalid_input", message: msg, action }));
+
+      // O ensaio E a fonte do numero, tanto para 'list' quanto para o preview de seal/unseal. Ele
+      // carrega a MESMA coorte e o MESMO gate por recurso do ato — um preview com regra propria
+      // prometeria o que a escrita nao cumpre.
+      const ensaio = async () => {
+        const { data, error } = await sb.rpc("preview_seal_attendance", params.cycle_start ? { p_cycle_start: params.cycle_start } : {});
+        if (error) throw error;
+        return (data ?? []) as Array<Record<string, any>>;
+      };
+
+      if (params.action === "list") {
+        let linhas: Array<Record<string, any>>;
+        try { linhas = await ensaio(); } catch (e: any) {
+          await logUsage(sb, member.id, "attendance_seal", false, e?.message ?? "preview failed", start);
+          return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "unauthorized", message: e?.message ?? "preview failed", action: "Selar exige manage_event." }));
+        }
+        const selaveis = linhas.filter((l) => !l.blocked_reason);
+        const faltas = selaveis.reduce((a, l) => a + Number(l.would_write_absent_n ?? 0), 0);
+        await logUsage(sb, member.id, "attendance_seal", true, undefined, start);
+        return semanticOk({
+          data: { action: "list", sealable: selaveis, blocked: linhas.filter((l) => l.blocked_reason) },
+          summary: `${selaveis.length} evento(s) prontos para selar; selar todos gravaria ${faltas} falta(s).`,
+          warnings: faltas > 0
+            ? [`Selar e escrita em massa no historico de pessoas reais e nao tem desfazer automatico: a reversao e por evento (action='unseal') e so apaga o que o selo criar.`]
+            : [],
+          next_actions: ["attendance_seal action='seal' event_id=... : selar um evento (sem confirm devolve o ensaio)", "attendance_report scope='event': conferir a grade antes de selar"],
+          audit: { tool: "attendance_seal", semantic_domain: dom, pii_level: "low", permission: "manage_event (RPC-enforced, por recurso)", source_tools: ["preview_seal_attendance"], caller_member_id: member.id, gate_checked: "can(manage_event) + _can_manage_event por evento + rls_can_see_initiative (#785)", resource_id: null, extra: { action: "list", sealable_n: selaveis.length, would_write_absent_total: faltas } },
+        });
+      }
+
+      if (!isUUID(params.event_id ?? "")) { await logUsage(sb, member.id, "attendance_seal", false, "Invalid event_id", start); return invalid(`action='${params.action}' requires a valid event_id (UUID).`, "Use attendance_seal action='list' ou event_search."); }
+
+      // Preview do ADR-0018: sem confirm, devolve a linha do ensaio daquele evento. Ela e a unica
+      // resposta honesta para "o que isto vai fazer" — vem do mesmo lugar que o servidor consulta.
+      let linha: Record<string, any> | undefined;
+      try {
+        linha = (await ensaio()).find((l) => l.event_id === params.event_id);
+      } catch (e: any) {
+        await logUsage(sb, member.id, "attendance_seal", false, e?.message ?? "preview failed", start);
+        return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "unauthorized", message: e?.message ?? "preview failed", action: "Selar exige manage_event." }));
+      }
+      if (!linha) {
+        await logUsage(sb, member.id, "attendance_seal", false, "Event not in preview", start);
+        return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "not_found", message: "Evento fora do ensaio de selagem.", action: "Ou voce nao tem manage_event sobre ele, ou ele esta fora do ciclo corrente, ou pertence a iniciativa confidencial (ADR-0105)." }));
+      }
+
+      if (params.confirm !== true) {
+        await logUsage(sb, member.id, "attendance_seal", true, undefined, start, "preview");
+        return semanticOk({
+          data: { action: params.action, event_id: params.event_id, preview: linha, confirm_required: true },
+          summary: params.action === "seal"
+            ? `PREVIEW — selar "${linha.event_title}" gravaria ${linha.would_write_absent_n} falta(s) na coorte de ${linha.eligible_cohort_n}. Repita com confirm=true para executar.`
+            : `PREVIEW — reverter o selo de "${linha.event_title}" (selado em ${linha.already_sealed_at ?? "—"}). Repita com confirm=true para executar.`,
+          warnings: params.action === "seal"
+            ? ["Escrita em massa: nao ha desfazer automatico. A reversao e por evento e so apaga as linhas que ESTE selo criar."]
+            : ["A reversao nao apaga linha em que alguem marcou presenca ou justificou depois do selo; essas sao contadas separadamente no resultado."],
+          next_actions: [`attendance_seal action='${params.action}' event_id='${params.event_id}' confirm=true`],
+          audit: { tool: "attendance_seal", semantic_domain: dom, pii_level: "low", permission: "manage_event (por recurso)", source_tools: ["preview_seal_attendance"], caller_member_id: member.id, gate_checked: "preview only — nenhuma escrita", resource_id: params.event_id, extra: { action: params.action, confirmed: false } },
+        });
+      }
+
+      const rpc = params.action === "seal" ? "seal_event_attendance" : "unseal_event_attendance";
+      const { data, error } = await sb.rpc(rpc, { p_event_id: params.event_id });
+      if (error) { await logUsage(sb, member.id, "attendance_seal", false, error.message, start); return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: "internal_error", message: error.message })); }
+      if (data && (data as any).success === false) {
+        await logUsage(sb, member.id, "attendance_seal", false, String((data as any).error), start);
+        return ok(buildSemanticError({ tool: "attendance_seal", semantic_domain: dom, code: (data as any).reason === "skipped_empty_cohort" ? "invalid_input" : "unauthorized", message: String((data as any).error), action: "Confira o motivo em attendance_seal action='list'." }));
+      }
+      await logUsage(sb, member.id, "attendance_seal", true, undefined, start);
+      const r = (data ?? {}) as Record<string, any>;
+      return semanticOk({
+        data: { action: params.action, event_id: params.event_id, result: r },
+        summary: params.action === "seal"
+          ? `Selado: ${r.sealed_absent_count ?? 0} falta(s) gravada(s) em "${r.event_title}" (coorte ${r.eligible_cohort_n ?? "?"}, ${r.already_recorded_count ?? 0} ja registrados).`
+          : `Selo revertido em "${r.event_title}": ${r.removed_absent_count ?? 0} linha(s) removida(s), ${r.kept_touched_count ?? 0} preservada(s).`,
+        warnings: params.action === "unseal" && Number(r.kept_touched_count ?? 0) > 0
+          ? [`${r.kept_touched_count} linha(s) foram preservadas porque alguem marcou presenca ou justificou depois do selo.`]
+          : [],
+        next_actions: ["attendance_report scope='event': conferir a grade do evento", "attendance_seal action='list': o que ainda falta selar"],
+        audit: { tool: "attendance_seal", semantic_domain: dom, pii_level: "low", permission: "manage_event (por recurso, RPC-enforced)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "_can_manage_event(event_id) + rls_can_see_initiative (#785)", resource_id: params.event_id, extra: { action: params.action, confirmed: true, ...r } },
       });
     },
   );
@@ -12320,7 +12436,7 @@ const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);  
 // #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
 // payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
 // derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
-const SEMANTIC_SURFACE_VERSION = "0.12.0";
+const SEMANTIC_SURFACE_VERSION = "0.13.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.

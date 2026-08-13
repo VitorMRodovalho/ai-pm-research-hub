@@ -189,7 +189,8 @@ test('W6b: migration grants knowledge_assets_latest to authenticated + revokes a
 
 // #1548 (31/07/2026): +agenda_blocks → 53 tools, e a versão da superfície sobe 0.11.0 → 0.12.0.
 // Precedente do próprio cabeçalho da EF: adicionar capacidade na superfície alfa bumpa a minor.
-test('W6b: /semantic surface = 53 tools (derived, not hardcoded) + version 0.12.0', () => {
+// #1710 (13/08/2026): +attendance_seal → 54 tools, versão 0.12.0 → 0.13.0. Mesmo precedente.
+test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.13.0', () => {
   // #1392: /health now DERIVES the count (tools: SEMANTIC_TOOL_COUNT), so the literal is gone.
   // Verify (a) /semantic health is wired to the derived constant, and (b) registerSemanticTools
   // actually registers 52 tools — the Wave-6b guarantee, checked at the source instead of a literal.
@@ -200,6 +201,6 @@ test('W6b: /semantic surface = 53 tools (derived, not hardcoded) + version 0.12.
   const next = SRC.indexOf('\nfunction ', start + 1);
   const body = SRC.slice(start, next === -1 ? undefined : next);
   const semanticToolCount = (body.match(/mcp\.tool\(/g) || []).length;
-  assert.equal(semanticToolCount, 53, `registerSemanticTools must register 53 tools after Wave 6b + #1548 (found ${semanticToolCount})`);
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must be v0.12.0');
+  assert.equal(semanticToolCount, 54, `registerSemanticTools must register 54 tools after Wave 6b + #1548 + #1710 (found ${semanticToolCount})`);
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must be v0.13.0');
 });
