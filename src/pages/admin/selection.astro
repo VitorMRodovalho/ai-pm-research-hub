@@ -313,6 +313,19 @@ const SEL_I18N = {
     </div>
 
     <!-- Main panel -->
+    <!--
+      #1590 — modo somente-leitura por CAPACIDADE, não por tier.
+      A partir da correção do gate (`src/lib/admin/route-access.ts`), quem opera a seleção sem ser GP
+      chega aqui: avaliador de comitê, observador, sponsor. O servidor já recusa a escrita deles
+      (`admin_update_application` exige manage_platform, `schedule_interview` exige role='lead',
+      `submit_evaluation` recusa observer), então deixar o botão na tela só troca "porta trancada"
+      por "botão que dá erro". Esconder é a mesma decisão que o drawer já toma.
+
+      O mecanismo é CSS sobre `data-sel-requires` em vez de uma varredura JS porque quase toda a
+      tela é reinjetada por `innerHTML` (tabela, modal, abas): uma varredura teria de correr de novo
+      a cada render, e o render que esquecesse de chamá-la mostraria o botão. A regra CSS vale para
+      o que ainda nem existe no DOM.
+    -->
     <div id="sel-panel" class="hidden space-y-5">
 
       <!-- HEADER + CYCLE SELECTOR -->
@@ -325,8 +338,9 @@ const SEL_I18N = {
       <!-- TABS -->
       <div class="flex gap-1 border-b border-[var(--border-default)]">
         <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">{t('admin.selection.tabPipeline', lang)}</button>
-        <button data-sel-tab="import" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
-        <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.committee', lang)}</button>
+        <!-- import → import_vep_applications (manage_member) · committee → manage_selection_committee (manage_member) -->
+        <button data-sel-tab="import" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
+        <button data-sel-tab="committee" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.committee', lang)}</button>
         <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabDiversity', lang)}</button>
       </div>
 
@@ -347,10 +361,17 @@ const SEL_I18N = {
           <div id="booking-exceptions-body" class="overflow-x-auto"></div>
         </div>
 
+        <!-- #1590: aviso de modo leitura. É o INVERSO de `data-sel-requires` — some para quem
+             escreve. Sem o aviso, a tela sem botão de ação parece quebrada, não restrita. -->
+        <div id="sel-readonly-note" data-sel-only-without="manage_platform" class="mb-4 px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-[12px] text-blue-900 font-semibold">
+          {t('admin.selection.readonlyNote', lang)}
+        </div>
+
         <!-- Action buttons -->
         <div class="flex flex-wrap gap-3 mb-4 items-center">
-          <button id="recalc-rankings-btn" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.recalcRankings', lang)}</button>
-          <button id="start-screening-btn" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
+          <!-- recalc/screening → recalculate_cycle_rankings + admin_update_application (manage_platform) -->
+          <button id="recalc-rankings-btn" data-sel-requires="manage_platform" class="px-4 py-2 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.recalcRankings', lang)}</button>
+          <button id="start-screening-btn" data-sel-requires="manage_platform" class="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">{t('admin.selection.startScreening', lang)}</button>
           <!-- p197b: PERT cutoff chip (cohort of approved active members in prior cycles) -->
           <div id="pert-cutoff-chip" class="hidden text-[12px] flex items-center gap-1 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 font-semibold cursor-help" title=""></div>
           <!-- p232 #229 Phase 2: sibling chip for leader_extra dimension cutoff (separate cohort from objective) -->
@@ -449,7 +470,8 @@ const SEL_I18N = {
         </div>
 
         <!-- Bulk actions bar -->
-        <div id="bulk-actions" class="hidden bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3 space-y-2">
+        <!-- bulk → admin_update_application + notify_selection_cutoff_approved (manage_platform / manage_member) -->
+        <div id="bulk-actions" data-sel-requires="manage_platform" class="hidden bg-[var(--surface-base)] rounded-xl px-4 py-3 mt-3 space-y-2">
           <div class="flex gap-3 items-center flex-wrap">
             <span id="bulk-count" class="text-sm font-bold text-navy">0 {t('admin.selection.bulkSelectedSuffix', lang)}</span>
             <button class="bulk-action-btn px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90" data-decision="approved">{t('admin.selection.bulkApprove', lang)}</button>
@@ -671,11 +693,37 @@ const SEL_I18N = {
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
+<!--
+  #1590 — `is:global` é obrigatório aqui, não preferência de estilo. O CSS com escopo do Astro
+  carimba um atributo nos elementos DO TEMPLATE; o que entra depois por `innerHTML` (a tabela, o
+  modal, as abas do candidato) não recebe carimbo nenhum e a regra passaria ao largo justamente
+  do lugar que mais tem botão de escrita.
+
+  Os atributos vivem no `body` porque `#applicant-modal` é IRMÃO de `#sel-panel`, não filho: uma
+  regra ancorada no painel deixaria o modal inteiro de fora.
+
+  A ausência do atributo esconde. Se o `applyGate` não rodar (erro de boot), a tela fica sem os
+  botões de escrita em vez de com todos eles.
+-->
+<style is:global>
+  body:not([data-sel-can-manage-platform="1"]) [data-sel-requires~="manage_platform"],
+  body:not([data-sel-can-manage-member="1"]) [data-sel-requires~="manage_member"],
+  body:not([data-sel-can-schedule-interview="1"]) [data-sel-requires~="schedule_interview"] {
+    display: none !important;
+  }
+
+  /* O inverso: aviso que só faz sentido para quem NÃO escreve. */
+  body[data-sel-can-manage-platform="1"] [data-sel-only-without~="manage_platform"] {
+    display: none !important;
+  }
+</style>
+
 <script is:inline define:vars={{ SEL_I18N }}>
   window.__SEL_I18N = SEL_I18N;
 </script>
 <script>
-  import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { canAccessAdminRoute } from '../../lib/admin/route-access.ts';
+  import { canFor } from '../../lib/permissions.ts';
   import { SELECTION_STATUS_TONE, GROUP_TONE, TONE_BADGE } from '../../lib/statusFarol';
   import { formatDateOnly, isDateOnlyString, isOverdueDateOnly } from '../../lib/date-only';
 
@@ -2091,7 +2139,7 @@ const SEL_I18N = {
             <div class="flex gap-2 items-end">
               ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.phoneLabel}</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
               ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.linkedinLabel}</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
-              <button id="save-contact-btn" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
+              <button id="save-contact-btn" data-sel-requires="manage_member" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
             </div>` : ''}
             ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.academicBackground}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.motivation}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
@@ -2109,7 +2157,9 @@ const SEL_I18N = {
             ${phaseBSummary}
             <div id="returning-context-panel" data-app-id="${esc(row.id)}" class="hidden border border-blue-100 bg-blue-50/40 rounded-xl p-3"><p class="text-[12px] text-blue-700">${T.modal.loadingReturningContext}</p></div>
           </div>
-          <div class="space-y-4">
+          <!-- coluna de DECISÃO: admin_decide_dual_track e admin_update_application, as duas exigem
+               manage_platform no servidor. Some inteira para o comitê que não é GP. -->
+          <div class="space-y-4" data-sel-requires="manage_platform">
             ${row.promotion_path === 'dual_track' && row.linked_application_id ? `
               <div class="px-3 py-2 rounded-lg bg-purple-50 border border-purple-200 text-[11px] text-purple-900">
                 <strong>${T.modal.dualTrackBadge}</strong> · ${T.modal.dualTrackDescription}
@@ -2154,7 +2204,11 @@ const SEL_I18N = {
         ${currentCycle?.interview_booking_url ? `<a href="${esc(currentCycle.interview_booking_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-[12px] font-semibold text-navy hover:underline mb-3">${T.modal.scheduleViaExternal}</a>` : ''}
         <!-- p152 W4: wrapped Agendar form with #manual-agendar-section so loadInterviewForm can collapse it
              when há entrevista ativa (toggle button revela quando admin precisa override). -->
-        <div id="manual-agendar-section" class="space-y-4">
+        <!-- schedule_interview exige role='lead' no comitê OU manage_platform. Eixo próprio em vez
+             de reusar manage_platform: um lead sem manage_platform pode agendar de verdade, e
+             escondê-lo seria trocar um falso positivo por um falso negativo.
+             (Sem crases neste comentário: ele vive DENTRO de um template literal.) -->
+        <div id="manual-agendar-section" class="space-y-4" data-sel-requires="schedule_interview">
           <h4 class="text-sm font-bold text-navy">${T.modal.scheduleInterviewTitle}</h4>
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -5857,8 +5911,31 @@ const SEL_I18N = {
     }
   }
 
+  // #1590 — publica as capacidades de ESCRITA no `body`, de onde o CSS as lê. Roda ANTES de
+  // `showPanel()`: o painel só aparece depois que a tela já sabe o que esconder, senão o botão
+  // pisca para quem não pode usá-lo.
+  //
+  // Espelha o servidor, e é só um espelho: quem manda são `admin_update_application`
+  // (manage_platform), `import_vep_applications` / `manage_selection_committee` /
+  // `update_application_contact` (manage_member) e `schedule_interview` (role='lead' OU
+  // manage_platform). A avaliação NÃO entra aqui: o recorte observador↔avaliador já é feito no
+  // corpo do formulário (`isObserver`/`canScore`) com o papel que a própria RPC devolve.
+  function applyWriteMode(m: any) {
+    const b = document.body;
+    const canManagePlatform = canFor('manage_platform');
+    const canManageMember = canFor('manage_member');
+    const isCommitteeLead = (m?.selection_committee_role ?? null) === 'lead';
+    const set = (attr: string, on: boolean) => {
+      if (on) b.setAttribute(attr, '1'); else b.removeAttribute(attr);
+    };
+    set('data-sel-can-manage-platform', canManagePlatform);
+    set('data-sel-can-manage-member', canManageMember);
+    set('data-sel-can-schedule-interview', canManagePlatform || isCommitteeLead);
+  }
+
   function applyGate(m: any) {
     if (m && canAccessAdminRoute(m, 'admin_selection')) {
+      applyWriteMode(m);
       showPanel();
       loadCycles().then(() => loadDashboard()).then(() => maybeOpenDeepLinkedApplicant());
       // #1609 R4.2: independente do dashboard — a fila de exceção é por reserva,

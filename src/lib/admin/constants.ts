@@ -1,7 +1,13 @@
 // ─── Admin Shared Constants ───
 // Used by admin page and potentially other admin components
 
-import { hasPermission } from '../permissions';
+import { hasPermission } from '../permissions.ts';
+
+// #1590 — a autoridade de rota mora em `route-access.ts` e é REEXPORTADA daqui, para que os
+// call sites existentes (`import { canAccessAdminRoute } from '.../admin/constants'`) sigam
+// valendo. O motivo da separação está no cabeçalho de lá: este arquivo arrasta i18n e dados de
+// tribo, e isso impedia um contrato de exercer o predicado de verdade.
+export * from './route-access.ts';
 
 export const OPROLE_LABELS: Record<string, string> = {
   manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo',
@@ -56,43 +62,7 @@ export const TIER_LABELS: Record<string, string> = {
   visitor: '🚫 Visitante (apenas página pública)',
 };
 
-export type AccessTier = 'superadmin' | 'admin' | 'leader' | 'observer' | 'member' | 'visitor';
-export type AdminRouteKey = 'admin_panel' | 'admin_analytics' | 'admin_comms' | 'admin_webinars' | 'admin_curatorship' | 'admin_member_edit' | 'admin_manage_actions' | 'admin_selection' | 'admin_settings';
-export const ANALYTICS_READONLY_DESIGNATIONS = ['sponsor', 'chapter_liaison', 'curator'] as const;
-
-const TIER_RANK: Record<AccessTier, number> = {
-  visitor: 0,
-  member: 1,
-  observer: 2,
-  leader: 3,
-  admin: 4,
-  superadmin: 5,
-};
-
-const ROUTE_MIN_TIER: Record<AdminRouteKey, AccessTier> = {
-  admin_panel: 'observer',
-  admin_analytics: 'admin',
-  admin_comms: 'admin',
-  admin_webinars: 'admin',
-  admin_curatorship: 'observer',
-  admin_member_edit: 'superadmin',
-  admin_manage_actions: 'admin',
-  admin_selection: 'admin',
-  admin_settings: 'superadmin',
-};
-
-const ROUTE_ALLOWED_DESIGNATIONS: Partial<Record<AdminRouteKey, readonly string[]>> = {
-  admin_analytics: ANALYTICS_READONLY_DESIGNATIONS,
-  admin_comms: ['comms_leader', 'comms_member'],
-};
-
-const ROUTE_ALLOWED_OPERATIONAL_ROLES: Partial<Record<AdminRouteKey, readonly string[]>> = {
-  // chapter_liaison (#670) + institutional_auditor (FU-3/ADR-0111): read-only roles that reach the
-  // aggregate analytics route without admin-tier. Both gate to PII-free aggregate data server-side.
-  admin_analytics: ['chapter_liaison', 'institutional_auditor'],
-};
-
-export { MAX_SLOTS } from '../../data/tribes';
+export { MAX_SLOTS } from '../../data/tribes.ts';
 export const ELIGIBLE_ROLES = ['researcher', 'facilitator', 'communicator'];
 
 export const CATEGORY_META: Record<string, { icon: string; color: string; bg: string }> = {
@@ -147,58 +117,6 @@ export function memberTribeTag(m: any): string {
   return `<span class="text-[.6rem] font-bold px-1.5 py-0.5 rounded" style="background:${color}18;color:${color}">T${String(tid).padStart(2,'0')}</span>`;
 }
 
-export function getAccessTier(isSuperadmin: boolean, opRole: string, desigs: string[]): string {
-  if (isSuperadmin) return 'superadmin';
-  if (opRole === 'manager') return 'admin';
-  if (opRole === 'deputy_manager') return 'admin';
-  if (desigs.includes('co_gp')) return 'admin';
-  if (opRole === 'tribe_leader') return 'leader';
-  if (desigs.includes('sponsor') || desigs.includes('curator') || desigs.includes('chapter_liaison')) return 'observer';
-  // institutional_auditor (FU-3/ADR-0111): KPIs-agregados tier — reaches admin_analytics via the
-  // route oprole allowlist; never admin-tier write surfaces.
-  if (opRole === 'institutional_auditor') return 'observer';
-  if (['researcher', 'facilitator', 'communicator'].includes(opRole)) return 'member';
-  if (desigs.length > 0) return 'member';
-  return 'visitor';
-}
-
-export function resolveTierFromMember(member: any): AccessTier {
-  if (!member) return 'visitor';
-  const opRole = member.operational_role || 'guest';
-  const desigs: string[] = member.designations || [];
-  return getAccessTier(!!member.is_superadmin, opRole, desigs) as AccessTier;
-}
-
-export function hasMinimumTier(current: AccessTier, required: AccessTier): boolean {
-  return TIER_RANK[current] >= TIER_RANK[required];
-}
-
-export function hasAnyDesignation(member: any, allowed: readonly string[] = []): boolean {
-  const desigs: string[] = Array.isArray(member?.designations) ? member.designations : [];
-  return allowed.some((designation) => desigs.includes(designation));
-}
-
-export function canAccessAdminRoute(member: any, route: AdminRouteKey): boolean {
-  if (!member) return false;
-  const tier = resolveTierFromMember(member);
-  if (hasMinimumTier(tier, ROUTE_MIN_TIER[route])) return true;
-  const opRole = String(member.operational_role || '');
-  const hasAllowedOperationalRole = (ROUTE_ALLOWED_OPERATIONAL_ROLES[route] || []).includes(opRole);
-  return hasAnyDesignation(member, ROUTE_ALLOWED_DESIGNATIONS[route]) || hasAllowedOperationalRole;
-}
-
-export function canReadInternalAnalytics(member: any): boolean {
-  return canAccessAdminRoute(member, 'admin_analytics');
-}
-
-export function canManageAdminActions(member: any): boolean {
-  return canAccessAdminRoute(member, 'admin_manage_actions');
-}
-
-export function isAnalyticsReadonlyAudience(member: any): boolean {
-  return canReadInternalAnalytics(member) && !canManageAdminActions(member);
-}
-
 export function canAccessWebinarsWorkspace(member: any): boolean {
   if (!member) return false;
   return hasPermission(member, 'board.view_global');
@@ -209,6 +127,3 @@ export function canAccessPublicationsWorkspace(member: any): boolean {
   return hasPermission(member, 'content.view_publications');
 }
 
-export function getTier(m: any): string {
-  return resolveTierFromMember(m);
-}
