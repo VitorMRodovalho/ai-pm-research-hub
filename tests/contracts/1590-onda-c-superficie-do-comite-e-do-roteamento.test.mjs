@@ -298,6 +298,57 @@ test('#1590C B: o publico do painel e o publico da pagina, nas duas direcoes', (
   }
 });
 
+// ── D: a superficie, nas duas direcoes ───────────────────────────────────────────────────
+
+const PAGINA = readFileSync(resolve(ROOT, 'src/pages/admin/selection.astro'), 'utf8');
+
+test('#1590C D: a aba de comite alcanca as 11, e os controles de comite seguem gateados', () => {
+  const aba = PAGINA.match(/<button data-sel-tab="committee"[^>]*>/)?.[0];
+  assert.ok(aba, 'a aba de comite sumiu da pagina');
+
+  // A aba PRECISA abrir para quem nao tem manage_member: o autosservico e o motivo da onda. Medido
+  // em 13/08: 2 de 87 ativos tem manage_member, e a aba escondida deixava os outros 9 do publico da
+  // tela sem porta nenhuma para o proprio cadastro de agenda.
+  assert.doesNotMatch(aba, /data-sel-requires/,
+    'a aba de comite voltou a exigir manage_member — o avaliador perde a porta da propria agenda');
+
+  // A INVERSA, obrigatoria: abrir a ABA nao pode abrir a ESCRITA de comite. Sem estas duas
+  // afirmacoes, remover o gate inteiro deixaria este teste verde.
+  assert.match(PAGINA, /<div id="committee-add-card" class="[^"]*" data-sel-requires="manage_member">/,
+    'o cartao de ADICIONAR ao comite perdeu o gate de manage_member');
+  assert.match(PAGINA, /data-sel-requires="manage_member" data-action="remove-committee"/,
+    'o botao de REMOVER do comite perdeu o gate de manage_member');
+});
+
+test('#1590C D: a tela nao decide autoridade por conta propria', () => {
+  // O `is_self` / `can_manage` vem da RPC, que e quem tambem RECUSA. Um segundo predicado no
+  // cliente (por exemplo comparar operational_role) divergiria do servidor no primeiro papel novo.
+  assert.match(PAGINA, /const eu = c\.is_self === true;/, 'a linha deixou de usar o is_self do servidor');
+  assert.match(PAGINA, /const podeEscrever = eu \|\| podeGerir;/, 'a decisao por linha mudou de forma');
+  assert.match(PAGINA, /data\?\.caller\?\.can_manage === true/, 'o can_manage deixou de vir do payload da RPC');
+
+  // Uma leitura so: duas listas da mesma coorte divergem no primeiro campo que uma sabe e a outra nao.
+  assert.doesNotMatch(PAGINA, /sb\.rpc\('get_selection_committee'/,
+    'a leitura antiga do comite voltou ao lado da nova — duas listas da mesma coorte');
+});
+
+test('#1590C D: os rotulos de motivo e de precedencia existem nos 3 dicionarios', () => {
+  const CHAVES_I18N = [
+    'admin.selection.tabCommitteeRouting', 'admin.selection.routingAxesHint',
+    'admin.selection.routingNoQueueNote', 'admin.selection.routingSummary',
+    'admin.selection.routingReasonRoleNotRoutable', 'admin.selection.routingReasonPermanentlyOff',
+    'admin.selection.routingReasonNoBookingUrl', 'admin.selection.routingReasonBlockedWindow',
+    'admin.selection.routingSourceCommitteeOverride', 'admin.selection.routingSourceMemberGlobal',
+    'admin.selection.routingPauseHint', 'admin.selection.routingUrlHint',
+  ];
+  for (const dicionario of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const src = readFileSync(resolve(ROOT, `src/i18n/${dicionario}.ts`), 'utf8');
+    for (const chave of CHAVES_I18N) {
+      assert.ok(src.includes(`'${chave}'`), `${dicionario}: falta a chave ${chave}`);
+    }
+  }
+});
+
 // ── A': o corpo VIVO nao derivou da captura ──────────────────────────────────────────────
 
 test("#1590C A': o corpo vivo das quatro funcoes bate com a captura", { skip: dbGated ? false : skipMsg }, async () => {
