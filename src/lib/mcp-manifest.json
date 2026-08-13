@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-10T03:44:07.874Z",
+  "generated_at": "2026-08-13T15:49:20.565Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 395,
+  "total": 396,
   "by_domain": {
     "personal": 23,
     "tribe": 130,
     "board": 79,
-    "events": 22,
+    "events": 23,
     "governance": 26,
     "comms": 19,
     "partners": 12,
@@ -17,7 +17,7 @@
     "health": 22
   },
   "by_permission": {
-    "read": 276,
+    "read": 277,
     "write": 108,
     "admin": 11
   },
@@ -1671,6 +1671,13 @@
     {
       "name": "attendance_report",
       "description": "Semantic attendance reader (absorbs get_my_tribe_attendance, get_attendance_ranking, get_my_attendance_history, get_my_attendance_hours, get_event_attendance_health, get_cycle_attendance_overview — 20 calls/180d). Set `scope`: 'tribe' (attendance grid for a tribe/initiative), 'ranking' (members by attendance rate), 'mine' (your own history), 'hours' (your — or, with view_internal_analytics, another member's — attendance hours for a cycle), 'health' (org-wide events missing attendance), 'cycle' (per-cycle overview). Read-only. Self scopes are free; cross-member/cross-tribe reads require view_internal_analytics, and the tribe grid ADDS the #785 confidential gate that the underlying RPC lacks. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "attendance_seal",
+      "description": "Fecha (sela) a lista de presenca de um evento, ou reverte o selo. Selar materializa `present=false` para todo elegivel SEM registro: e escrita em massa no historico de pessoas reais, e sem selo a plataforma nao consegue afirmar que alguem faltou (#1657/#1710). Set `action`: 'list' (o ensaio completo do ciclo — por evento: coorte elegivel, quantos ja tem registro, quantas faltas seriam gravadas e o motivo de bloqueio), 'seal' (event_id), 'unseal' (event_id — remove SO as linhas criadas pelo selo e ainda intocadas; quem foi marcado presente ou justificado depois PERMANECE). Sem `confirm=true`, seal/unseal devolvem o ensaio daquele evento em vez de executar (ADR-0018 W1). Autoridade: manage_event ESCOPADO ao evento (`_can_manage_event`) + #785; um lider de tribo nao alcanca evento de outra tribo. Os dois atos ficam em admin_audit_log. Envelope estavel.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false

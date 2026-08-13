@@ -112,7 +112,23 @@ test('#1710 MCP: /semantic conta a tool nova, e o teto de 256 do /mcp nao a cont
   assert.match(guard, /'attendance_seal',/,
     'attendance_seal precisa estar em SEMANTIC_ONLY no guard do #1377');
 
+  // O /semantic tem QUATRO contadores pinados em arquivos que nao se conhecem, e um deles pina
+  // tambem a VERSAO da superficie. Varrer por palpite achou dois; o terceiro custou um CI vermelho
+  // (#1755) e o quarto so apareceu quando a suite inteira rodou offline. Esta lista existe para que
+  // o proximo a somar uma tool encontre os quatro de uma vez, e nao um vermelho por vez.
   const anot = readFileSync(resolve(ROOT, 'tests/contracts/1402-semantic-tool-annotations.test.mjs'), 'utf8');
   assert.match(anot, /exactly 54 registered tools/,
-    'o numero pinado de tools do /semantic nao acompanhou a tool nova');
+    'o numero pinado de tools do /semantic (1402) nao acompanhou a tool nova');
+
+  const ponte = readFileSync(resolve(ROOT, 'tests/contracts/mcp-semantic-gateway-bridge.test.mjs'), 'utf8');
+  assert.match(ponte, /exactly 54 mcp\.tool\(\) calls/,
+    'o segundo numero pinado do /semantic (mcp-semantic-gateway-bridge) nao acompanhou a tool nova');
+
+  const w6b = readFileSync(resolve(ROOT, 'tests/contracts/semantic-envelope-w6b.test.mjs'), 'utf8');
+  assert.match(w6b, /= 54 tools \(derived, not hardcoded\) \+ version 0\.13\.0/,
+    'o terceiro numero pinado do /semantic (semantic-envelope-w6b), que pina TAMBEM a versao da superficie, nao acompanhou');
+
+  const manifesto = JSON.parse(readFileSync(resolve(ROOT, 'src/lib/mcp-manifest.json'), 'utf8'));
+  assert.ok(JSON.stringify(manifesto).includes('attendance_seal'),
+    'o manifesto publico de /docs/mcp esta velho: rode `node scripts/generate-mcp-manifest.mjs`');
 });

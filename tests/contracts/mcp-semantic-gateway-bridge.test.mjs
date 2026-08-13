@@ -93,10 +93,13 @@ function semanticBlock() {
 
 // 52 → 53 em 31/07/2026 (#1548): +agenda_blocks. Não é uma onda do #1383 — é adição própria,
 // por isso entra na conta como um termo separado em vez de inflar W5.
-test('semantic block registers exactly 53 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383 + 1 #1548)', () => {
+// 53 → 54 em 13/08/2026 (#1710): +attendance_seal. Também adição própria, não onda do #1383:
+// selar a lista de um evento virou, depois do #1657, a ÚNICA forma de a plataforma afirmar que
+// alguém faltou, e não tinha superfície nenhuma — 0 de 510 eventos passados selados.
+test('semantic block registers exactly 54 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383 + 1 #1548 + 1 #1710)', () => {
   const block = semanticBlock();
   const matches = block.match(/mcp\.tool\(\s*"[^"]+"/g) || [];
-  assert.equal(matches.length, 53, `expected 53 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(', ')}`);
+  assert.equal(matches.length, 54, `expected 54 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(", ")}`);
 });
 
 test('semantic block names the bridge + Wave-1 tools exactly', () => {
