@@ -80,6 +80,9 @@ interface GridEvent {
   duration_minutes: number;
   week_number: number;
   is_cancelled: boolean;
+  /** #1710: quando o evento foi selado. NULO = lista aberta, e por isso a celula sem linha diz
+   *  'unrecorded' em vez de falta. A grade decidia por este campo sem nunca o mostrar. */
+  roster_sealed_at: string | null;
 }
 
 interface GridMember {
@@ -1753,6 +1756,15 @@ function SmartTribeSection({
                 {relevantEvents.map((ev) => {
                   const abbr = TYPE_ABBR[ev.type] || ev.type.charAt(0).toUpperCase();
                   const fullTypeName = getTypeFull(t)[abbr] || ev.type;
+                  // #1710: o cadeado nomeia o que separa 'unrecorded' de 'absent'. Sem ele a grade
+                  // mostra os dois estados lado a lado sem dizer que o que muda e o ato de selar.
+                  const selado = !ev.is_cancelled && !!ev.roster_sealed_at;
+                  const tituloSelo = ev.is_cancelled
+                    ? t('attendance.roster.cancelled', 'Meeting cancelled — no attendance tracking')
+                    : `${fullTypeName} — ${ev.title}\n` + (selado
+                        ? t('comp.attendance.seal.gridSealed', 'Roster sealed on {d} - no record counts as absent.')
+                            .replace('{d}', new Date(ev.roster_sealed_at as string).toLocaleDateString())
+                        : t('comp.attendance.seal.gridUnsealed', 'Roster open - no record does not count as absent.'));
                   return (
                     <th
                       key={ev.id}
@@ -1760,10 +1772,11 @@ function SmartTribeSection({
                       style={{ width: 52 }}
                     >
                       <span
-                        title={ev.is_cancelled ? t('attendance.roster.cancelled', 'Meeting cancelled — no attendance tracking') : `${fullTypeName} — ${ev.title}`}
+                        title={tituloSelo}
                         className={`cursor-help font-extrabold${ev.is_cancelled ? ' line-through opacity-60' : ''}`}
                       >
                         {abbr}
+                        {selado && <span className="ml-0.5 opacity-70" aria-hidden="true">🔒</span>}
                       </span>
                     </th>
                   );
