@@ -145,13 +145,65 @@ a cada clique sem incrementar `access_count`, #1587, #1586, #1614.
 4. **Guard por regex era sintoma de modulo pesado demais para importar** - e o regex antigo
    (`return 'visitor'`) casava mais de uma funcao, entao nunca provou qual lia.
 
+## Decisoes do PM ao fechar esta sessao (13/08) - NAO re-litigar
+
+### 1. Ordem: **#1710 primeiro, depois a onda C**
+
+O PM decidiu apos a recomendacao abaixo, que nasceu de medicao e nao de preferencia.
+
+**#1710 e a onda C sao o MESMO defeito** (mecanismo entregue sem superficie; a propria onda B
+repetiu o padrao, subindo uma tabela sem escrita). O que separa os dois e o custo da ausencia:
+
+| | custo de continuar sem superficie |
+|---|---|
+| onda C | **nao quebra nada** - com 0 bloqueios o roteamento se comporta como antes; e capacidade latente e o GP consegue um `INSERT` |
+| **#1710** | **quebra agora** - a onda anterior tornou o selo o UNICO jeito de afirmar ausencia, e com **0 de 510** eventos passados selados nao ha como afirmar falta em lugar nenhum |
+
+Medido em 13/08: **510 eventos passados, 0 selados**. A issue dizia "0 de 302" em 09/08 - o
+denominador cresceu, o numerador nao.
+
+Soma-se que o #1710 e `priority:high` e esta com **todas as decisoes do PM ja tomadas** (selo
+automatico com janela e aviso, 86 ativos, 14 dias, correcao pelo lider da tribo, dry-run e reversao
+por evento): executa sem gerar pergunta nova, enquanto a onda C ainda vai gerar decisoes de UI.
+
+⚠️ **O que inverte esta ordem:** uma ausencia concreta e proxima no time de entrevistadores. Ai a
+inercia da onda B deixa de ser inofensiva.
+
+**Hedge disponivel, se a onda B precisar sair do papel antes:** fatiar a onda C e entregar so as
+duas RPCs de escrita (bloquear/desbloquear, autosservico + GP), sem painel e sem MCP - cerca de um
+quarto do esforco da onda inteira.
+
+#1654 e #1218 sao pequenos e nao competem com nada; cabem como sobremesa de qualquer sessao.
+
+### 2. Quem entra na tela de selecao: o COMITE e a regra de seguranca
+
+Nas palavras do PM: entram **presidentes, admin da plataforma, gestao (GPs) e quem estiver listado
+no comite** - e e no comite que se define quem e observador e quem avalia.
+
+Isso **ratifica o que a onda A ja entregou**, sem mudanca de codigo. Medido em 13/08 sobre o
+predicado vivo:
+
+| categoria | pessoas |
+|---|---:|
+| admin da plataforma / GP | 2 |
+| listado no comite (`evaluator`) | 1 |
+| listado no comite (`observer`) | 4 |
+| presidente / sponsor | 4 |
+| **total** | **11** |
+
+Os **6 `chapter_liaison`** ficam de fora, que era a duvida aberta.
+
+**Consequencia para a onda C:** se o comite E o mecanismo de controle de acesso, ele precisa de
+tela. Hoje `selection_committee` so se edita por SQL direto, e o campo que roteia
+(`interview_booking_url`) nao tem nem tela nem MCP. Isso sobe a prioridade da onda C dentro dela
+mesma: a superficie do comite vem antes do painel de roteamento.
+
 ## Para a proxima sessao
 
-Comecar por **re-medir** o comite e o roteamento (a superficie da onda C descreve exatamente esses
+**Tema: #1710** (`seal_event_attendance` sem superficie). Comecar re-medindo `events` selados
+vs passados - o numero acima muda sozinho a cada evento que ocorre.
+
+Quando a onda C chegar: re-medir o comite e o roteamento (a superficie descreve exatamente esses
 numeros), depois ler `supabase/functions/nucleo-mcp/index.ts` na parte de `interview_manage` /
 `selection_decide`. O plano aprovado esta em
 `~/.claude/plans/ler-e-comecarmos-docs-planning-2026-08-1-jolly-curry.md`.
-
-**Perguntas que continuam do PM:** as ondas C/D viram ordem de execucao acima da ordem herdada
-(#1710 -> #1654 -> #1218)? E os 6 `chapter_liaison` do achado da onda A: entram na tela de selecao
-ou nao?
