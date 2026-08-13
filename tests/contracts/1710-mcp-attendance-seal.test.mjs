@@ -128,7 +128,7 @@ test('#1710 MCP: /semantic conta a tool nova, e o teto de 256 do /mcp nao a cont
   // capacidade entrou como scope e acoes em tools existentes. A contagem de 54 fica; o que muda e
   // a versao. Este pin e sobre a VERSAO tambem, entao ele acompanha as duas coisas.
   const w6b = readFileSync(resolve(ROOT, 'tests/contracts/semantic-envelope-w6b.test.mjs'), 'utf8');
-  assert.match(w6b, /= 54 tools \(derived, not hardcoded\) \+ version 0\.14\.0/,
+  assert.match(w6b, /= 54 tools \(derived, not hardcoded\) \+ version 0\.15\.0/,
     'o terceiro numero pinado do /semantic (semantic-envelope-w6b), que pina TAMBEM a versao da superficie, nao acompanhou');
 
   const manifesto = JSON.parse(readFileSync(resolve(ROOT, 'src/lib/mcp-manifest.json'), 'utf8'));

@@ -58,6 +58,25 @@ const SEL_I18N = {
       member_global: t('admin.selection.routingSourceMemberGlobal', lang),
     },
   },
+  // #1590 onda D — o funil de agendamento. As chaves de `outcome` são as MESMAS palavras que a
+  // RPC devolve: traduzir por lookup evita que a tela invente um segundo vocabulário para o
+  // mesmo desfecho, que foi exatamente o que obrigou a nomear as três semânticas de presença.
+  funnel: {
+    empty: t('admin.selection.funnelEmpty', lang),
+    loadError: t('admin.selection.funnelLoadError', lang),
+    summary: t('admin.selection.funnelSummary', lang),
+    opens: t('admin.selection.funnelOpens', lang),
+    windowEnds: t('admin.selection.funnelWindowEnds', lang),
+    outcomes: {
+      booked: t('admin.selection.funnelOutcomeBooked', lang),
+      superseded: t('admin.selection.funnelOutcomeSuperseded', lang),
+      opened_never_booked: t('admin.selection.funnelOutcomeOpenedNeverBooked', lang),
+      opened_waiting: t('admin.selection.funnelOutcomeOpenedWaiting', lang),
+      never_opened_expired: t('admin.selection.funnelOutcomeNeverOpenedExpired', lang),
+      never_opened_waiting: t('admin.selection.funnelOutcomeNeverOpenedWaiting', lang),
+      pre_instrumentation: t('admin.selection.funnelOutcomePreInstrumentation', lang),
+    },
+  },
   qsTotal: t('admin.selection.qsTotal', lang),
   qsApproved: t('admin.selection.qsApproved', lang),
   qsRejected: t('admin.selection.qsRejected', lang),
@@ -741,6 +760,26 @@ const SEL_I18N = {
             da fila" seria publicar uma promessa que o código não cumpre.
           -->
           <p class="text-[11px] text-[var(--text-muted)] border-t border-[var(--border-default)] pt-3">{t('admin.selection.routingNoQueueNote', lang)}</p>
+        </div>
+
+        <!--
+          #1590 onda D — o funil de agendamento fica AQUI, e não na aba de Pipeline, por duas
+          razões medidas: (a) o público desta aba é exatamente o público que a RPC do funil deixa
+          entrar, então nenhuma porta nova se abre; (b) o PM abriu a #1664 justamente porque a aba
+          de Pipeline, que existe para avaliar candidatos, tinha uma fila operacional no topo.
+          A aba de comitê já é a aba da MÁQUINA de agendamento: quem recebe candidato (roteamento)
+          e o que aconteceu com o que foi oferecido (funil).
+        -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <h2 class="text-lg font-bold text-navy">{t('admin.selection.funnelTitle', lang)}</h2>
+            <span id="funnel-summary" class="text-[12px] font-semibold text-[var(--text-secondary)]"></span>
+          </div>
+          <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">{t('admin.selection.funnelHint', lang)}</p>
+          <div id="funnel-totals" class="flex flex-wrap gap-2"></div>
+          <div id="funnel-list" class="space-y-2"></div>
+          <p class="text-[11px] text-[var(--text-muted)] border-t border-[var(--border-default)] pt-3">{t('admin.selection.funnelNeverOpenedNote', lang)}</p>
+          <p class="text-[11px] text-[var(--text-muted)]">{t('admin.selection.funnelPreInstrumentationNote', lang)}</p>
         </div>
       </div>
 
@@ -4176,6 +4215,96 @@ const SEL_I18N = {
     return `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">${esc(rotulo)}</span>`;
   }
 
+  /* ── funil de agendamento (#1590 onda D) ─────────── */
+  //
+  // O desfecho vem DERIVADO da RPC; a tela não recalcula nenhum estado. Um segundo predicado aqui
+  // divergiria do servidor no primeiro caso de borda, e foi assim que a taxa de presença passou
+  // meses dizendo 100% enquanto a grade dizia outra coisa.
+  //
+  // `pre_instrumentation` é pintado em cinza NEUTRO, deliberadamente: ele não é um fracasso, é a
+  // ausência de medição. Pintá-lo de vermelho publicaria 94 agendamentos falhados que nunca
+  // falharam.
+  const FUNIL_CORES: Record<string, string> = {
+    booked: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    superseded: 'bg-[var(--surface-base)] text-[var(--text-muted)] border-[var(--border-default)]',
+    opened_never_booked: 'bg-red-50 text-red-700 border-red-200',
+    opened_waiting: 'bg-blue-50 text-blue-700 border-blue-200',
+    never_opened_expired: 'bg-amber-50 text-amber-700 border-amber-200',
+    never_opened_waiting: 'bg-[var(--surface-base)] text-[var(--text-secondary)] border-[var(--border-default)]',
+    pre_instrumentation: 'bg-[var(--surface-base)] text-[var(--text-muted)] border-[var(--border-default)]',
+  };
+
+  function rotuloDesfecho(desfecho: string): string {
+    return (T.funnel?.outcomes || {})[desfecho] || desfecho;
+  }
+
+  async function loadFunnel() {
+    if (!currentCycleId) return;
+    const lista = document.getElementById('funnel-list');
+    const totais = document.getElementById('funnel-totals');
+    const resumo = document.getElementById('funnel-summary');
+    if (!lista) return;
+    const { data, error } = await sb.rpc('get_interview_booking_funnel', { p_cycle_id: currentCycleId });
+    if (error || data?.error) {
+      lista.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.funnel?.loadError || 'Não foi possível carregar o funil.')}</p>`;
+      if (totais) totais.innerHTML = '';
+      if (resumo) resumo.textContent = '';
+      return;
+    }
+    const ofertas: any[] = Array.isArray(data?.dispatches) ? data.dispatches : [];
+    const contagem: Record<string, number> = data?.totals || {};
+
+    if (totais) {
+      totais.innerHTML = Object.keys(contagem)
+        .sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0))
+        .map((k) => `<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full border ${FUNIL_CORES[k] || FUNIL_CORES.pre_instrumentation}">${esc(rotuloDesfecho(k))}: ${esc(contagem[k])}</span>`)
+        .join('');
+    }
+
+    if (resumo) {
+      // "Ainda sem reserva" conta só o que FOI medido: `pre_instrumentation` e `superseded` ficam
+      // de fora porque nenhum dos dois é uma oferta viva esperando resposta.
+      const abertas = ofertas.filter((o) =>
+        o.outcome === 'opened_never_booked' || o.outcome === 'opened_waiting'
+        || o.outcome === 'never_opened_expired' || o.outcome === 'never_opened_waiting').length;
+      const medidas = ofertas.filter((o) => o.outcome !== 'pre_instrumentation').length;
+      resumo.textContent = (T.funnel?.summary || '{open} de {total} ofertas ainda sem reserva')
+        .replace('{open}', String(abertas))
+        .replace('{total}', String(medidas));
+    }
+
+    if (!ofertas.length) {
+      lista.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.funnel?.empty || 'Nenhuma oferta de agenda neste ciclo.')}</p>`;
+      return;
+    }
+
+    // As linhas anteriores à medição vão para o FIM: elas não pedem ação nenhuma e ocupariam o
+    // topo por serem as mais numerosas hoje.
+    const ordenadas = [...ofertas].sort((a, b) =>
+      (a.outcome === 'pre_instrumentation' ? 1 : 0) - (b.outcome === 'pre_instrumentation' ? 1 : 0));
+    lista.innerHTML = ordenadas.map(linhaFunil).join('');
+  }
+
+  function linhaFunil(o: any): string {
+    const F = T.funnel || {};
+    const cor = FUNIL_CORES[o.outcome] || FUNIL_CORES.pre_instrumentation;
+    const dataBr = (v: any) => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
+    const aberturas = Number(o.open_count || 0);
+    return `
+      <div class="bg-[var(--surface-base)] rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap min-w-0">
+          <span class="font-semibold text-sm text-[var(--text-primary)] truncate">${esc(o.applicant_name || '—')}</span>
+          <span class="text-[10px] text-[var(--text-muted)]">${esc(o.track || '')}</span>
+        </div>
+        <div class="flex items-center gap-3 flex-wrap text-[11px] text-[var(--text-secondary)]">
+          <span>${esc(dataBr(o.dispatched_at))}</span>
+          ${aberturas > 0 ? `<span>${esc(F.opens || 'aberturas')}: <strong>${esc(aberturas)}</strong></span>` : ''}
+          ${o.outcome !== 'pre_instrumentation' && !o.booked_at ? `<span>${esc(F.windowEnds || 'prazo do link')}: ${esc(dataBr(o.window_ends_at))}</span>` : ''}
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${cor}">${esc(rotuloDesfecho(o.outcome))}</span>
+        </div>
+      </div>`;
+  }
+
   function linhaRoteamento(c: any, podeGerir: boolean): string {
     const eu = c.is_self === true;
     const podeEscrever = eu || podeGerir;
@@ -5359,7 +5488,9 @@ const SEL_I18N = {
         const tab = (btn as HTMLElement).dataset.selTab;
         if (tab) {
           switchTab(tab);
-          if (tab === 'committee') loadCommittee();
+          // #1590 onda D: a aba carrega as duas metades da máquina de agendamento — quem recebe
+          // candidato (roteamento) e o que aconteceu com o que já foi oferecido (funil).
+          if (tab === 'committee') { loadCommittee(); loadFunnel(); }
           if (tab === 'import') loadOpportunities();
         }
       });

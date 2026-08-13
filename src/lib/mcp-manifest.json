@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-13T18:35:10.970Z",
+  "generated_at": "2026-08-13T22:09:56.979Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -1397,7 +1397,7 @@
     },
     {
       "name": "selection_dashboard",
-      "description": "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+      "description": "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview/get_interview_booking_funnel). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'funnel' (cycle_id — #1590 onda D: cada oferta de agenda com o desfecho DERIVADO na leitura; separa 'abriu a agenda e não reservou' de 'nunca abriu', que até esta onda tinham registro idêntico. Linhas anteriores à instrumentação saem como 'pre_instrumentation' e NÃO afirmam falta), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' and 'funnel' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false

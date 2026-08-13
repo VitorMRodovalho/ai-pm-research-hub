@@ -23925,35 +23925,59 @@ export type Database = {
       selection_dispatch_url_log: {
         Row: {
           application_id: string
+          booked_at: string | null
+          booked_interview_id: string | null
+          booking_token_md5: string | null
           cycle_id: string
           dispatched_at: string
+          first_opened_at: string | null
           id: string
+          instrumented: boolean
+          last_opened_at: string | null
+          open_count: number
           organization_id: string
           resolution_path: string
           resolved_evaluator_id: string | null
           resolved_url: string
+          superseded_at: string | null
           track: string
         }
         Insert: {
           application_id: string
+          booked_at?: string | null
+          booked_interview_id?: string | null
+          booking_token_md5?: string | null
           cycle_id: string
           dispatched_at?: string
+          first_opened_at?: string | null
           id?: string
+          instrumented?: boolean
+          last_opened_at?: string | null
+          open_count?: number
           organization_id: string
           resolution_path: string
           resolved_evaluator_id?: string | null
           resolved_url: string
+          superseded_at?: string | null
           track: string
         }
         Update: {
           application_id?: string
+          booked_at?: string | null
+          booked_interview_id?: string | null
+          booking_token_md5?: string | null
           cycle_id?: string
           dispatched_at?: string
+          first_opened_at?: string | null
           id?: string
+          instrumented?: boolean
+          last_opened_at?: string | null
+          open_count?: number
           organization_id?: string
           resolution_path?: string
           resolved_evaluator_id?: string | null
           resolved_url?: string
+          superseded_at?: string | null
           track?: string
         }
         Relationships: [
@@ -23969,6 +23993,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_booked_interview_id_fkey"
+            columns: ["booked_interview_id"]
+            isOneToOne: false
+            referencedRelation: "selection_interviews"
             referencedColumns: ["id"]
           },
           {
@@ -31105,6 +31136,10 @@ export type Database = {
         Returns: Json
       }
       get_initiative_stats: { Args: { p_initiative_id: string }; Returns: Json }
+      get_interview_booking_funnel: {
+        Args: { p_cycle_id: string }
+        Returns: Json
+      }
       get_invariant_alerts: { Args: never; Returns: Json }
       get_invitation_health: { Args: never; Returns: Json }
       get_item_assignments: { Args: { p_item_id: string }; Returns: Json }
