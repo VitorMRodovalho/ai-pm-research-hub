@@ -194,7 +194,18 @@ test('#1656 C: no vivo, *_pct fica em 0-100 e a primitiva *_rate em 0-1', { skip
       const r = Number(data.avg_rate); const p = Number(data.avg_pct);
       assert.ok(r >= 0 && r <= 1, `${rpc}.avg_rate deve ser fracao 0-1, veio ${r}`);
       assert.ok(p >= 0 && p <= 100, `${rpc}.avg_pct deve ser 0-100, veio ${p}`);
-      assert.ok(Math.abs(p - r * 100) <= 0.05, `${rpc}: avg_pct (${p}) nao e avg_rate*100 (${r * 100})`);
+      // `avg_pct` e `avg_rate` na escala de exibicao, arredondado a 1 casa — entao o delta maximo
+      // legitimo e EXATAMENTE 0.05, e um `<= 0.05` cru vive na fronteira: `0.7415 * 100` da
+      // 74.15000000000001 em ponto flutuante, o delta sai 0.050000000000011 e o guard estoura sem
+      // que nada esteja errado. Medido em 14/08/2026 com avg_rate=0.7415 / avg_pct=74.1: o teste
+      // passava por SORTE e so falhava quando a media caia num `.x5` (a asserção irmã de
+      // attendance_pct, logo abaixo, ja usava 0.5 e nunca esbarrou nisso).
+      // NAO fixar um modo de arredondamento aqui: `Math.round` sobe no `.5` e o numeric do Postgres
+      // desceu (74.15 → 74.1), entao comparar contra um valor "esperado" trocaria este defeito por
+      // outro. O invariante e "cabe em uma casa decimal", nos DOIS sentidos — a tolerancia e 0.05
+      // mais folga de ponto flutuante.
+      assert.ok(Math.abs(p - r * 100) <= 0.05 + 1e-9,
+        `${rpc}: avg_pct (${p}) nao e avg_rate*100 (${r * 100}) dentro de uma casa decimal`);
     }
   }
 
