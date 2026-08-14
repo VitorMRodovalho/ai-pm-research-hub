@@ -212,8 +212,11 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 
 // #1590 onda C (13/08/2026): 2.95.0 -> 2.96.0. A superficie de selecao ganhou o scope 'routing' e
 // as acoes block/unblock/committee-update; o /health e a testemunha do deploy por UMA chamada.
-test('ef_version is 2.97.0 (#1590 onda D; 2.96.0 na onda C; 2.95.0 no #1631)', () => {
-  assert.match(EF, /ef_version:\s*"2\.97\.0"/, '/health must report ef_version 2.97.0');
+// #1586 (14/08/2026): 2.97.0 -> 2.98.0. interview_manage ganhou action='rescue_unbooked', o caso
+// complementar do 'rescue' (convite emitido e NUNCA agendado). Sem essa acao o unico caminho era
+// SQL direto por service_role, que registrava ato humano como 'cron' com actor nulo.
+test('ef_version is 2.98.0 (#1586 rescue_unbooked; 2.97.0 na onda D do #1590; 2.96.0 na onda C)', () => {
+  assert.match(EF, /ef_version:\s*"2\.98\.0"/, '/health must report ef_version 2.98.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
