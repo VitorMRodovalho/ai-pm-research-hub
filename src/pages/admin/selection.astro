@@ -11,6 +11,72 @@ const i18nBundle = buildPageI18n(['diversity', 'admin.selection', 'common'], lan
 
 // Pre-render strings for inline TS script via define:vars (Ω-B+.8 p146 — final lift)
 const SEL_I18N = {
+  // #1590 onda C — o painel de comitê e roteamento. Agrupado porque ele é renderizado por
+  // `innerHTML` num arquivo que já carrega ~200 rótulos soltos.
+  routing: {
+    summary: t('admin.selection.routingSummary', lang),
+    empty: t('admin.selection.routingEmpty', lang),
+    loadError: t('admin.selection.routingLoadError', lang),
+    routable: t('admin.selection.routingRoutable', lang),
+    notRoutable: t('admin.selection.routingNotRoutable', lang),
+    noUrl: t('admin.selection.routingNoUrl', lang),
+    you: t('admin.selection.routingYou', lang),
+    dispatches: t('admin.selection.routingDispatches', lang),
+    lastDispatch: t('admin.selection.routingLastDispatch', lang),
+    pausedNow: t('admin.selection.routingPausedNow', lang),
+    pausedFuture: t('admin.selection.routingPausedFuture', lang),
+    openEnded: t('admin.selection.routingOpenEnded', lang),
+    resume: t('admin.selection.routingResume', lang),
+    editUrl: t('admin.selection.routingEditUrl', lang),
+    setUrl: t('admin.selection.routingSetUrl', lang),
+    pause: t('admin.selection.routingPause', lang),
+    turnOff: t('admin.selection.routingTurnOff', lang),
+    turnOn: t('admin.selection.routingTurnOn', lang),
+    turnOnNeedsGp: t('admin.selection.routingTurnOnNeedsGp', lang),
+    remove: t('admin.selection.routingRemove', lang),
+    save: t('admin.selection.routingSave', lang),
+    urlHint: t('admin.selection.routingUrlHint', lang),
+    from: t('admin.selection.routingFrom', lang),
+    to: t('admin.selection.routingTo', lang),
+    reasonPlaceholder: t('admin.selection.routingReasonPlaceholder', lang),
+    pauseHint: t('admin.selection.routingPauseHint', lang),
+    urlSaved: t('admin.selection.routingUrlSaved', lang),
+    paused: t('admin.selection.routingPaused', lang),
+    resumed: t('admin.selection.routingResumed', lang),
+    turnedOn: t('admin.selection.routingTurnedOn', lang),
+    turnedOff: t('admin.selection.routingTurnedOff', lang),
+    // As chaves aqui são as MESMAS que a RPC devolve em `not_routable_reasons` / `url_source`:
+    // traduzir por lookup evita um segundo vocabulário para a mesma decisão.
+    reasons: {
+      role_not_routable: t('admin.selection.routingReasonRoleNotRoutable', lang),
+      permanently_off: t('admin.selection.routingReasonPermanentlyOff', lang),
+      no_booking_url: t('admin.selection.routingReasonNoBookingUrl', lang),
+      blocked_window: t('admin.selection.routingReasonBlockedWindow', lang),
+    },
+    urlSource: {
+      committee_override: t('admin.selection.routingSourceCommitteeOverride', lang),
+      member_global: t('admin.selection.routingSourceMemberGlobal', lang),
+    },
+  },
+  // #1590 onda D — o funil de agendamento. As chaves de `outcome` são as MESMAS palavras que a
+  // RPC devolve: traduzir por lookup evita que a tela invente um segundo vocabulário para o
+  // mesmo desfecho, que foi exatamente o que obrigou a nomear as três semânticas de presença.
+  funnel: {
+    empty: t('admin.selection.funnelEmpty', lang),
+    loadError: t('admin.selection.funnelLoadError', lang),
+    summary: t('admin.selection.funnelSummary', lang),
+    opens: t('admin.selection.funnelOpens', lang),
+    windowEnds: t('admin.selection.funnelWindowEnds', lang),
+    outcomes: {
+      booked: t('admin.selection.funnelOutcomeBooked', lang),
+      superseded: t('admin.selection.funnelOutcomeSuperseded', lang),
+      opened_never_booked: t('admin.selection.funnelOutcomeOpenedNeverBooked', lang),
+      opened_waiting: t('admin.selection.funnelOutcomeOpenedWaiting', lang),
+      never_opened_expired: t('admin.selection.funnelOutcomeNeverOpenedExpired', lang),
+      never_opened_waiting: t('admin.selection.funnelOutcomeNeverOpenedWaiting', lang),
+      pre_instrumentation: t('admin.selection.funnelOutcomePreInstrumentation', lang),
+    },
+  },
   qsTotal: t('admin.selection.qsTotal', lang),
   qsApproved: t('admin.selection.qsApproved', lang),
   qsRejected: t('admin.selection.qsRejected', lang),
@@ -338,9 +404,17 @@ const SEL_I18N = {
       <!-- TABS -->
       <div class="flex gap-1 border-b border-[var(--border-default)]">
         <button data-sel-tab="pipeline" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-navy text-navy bg-transparent cursor-pointer">{t('admin.selection.tabPipeline', lang)}</button>
-        <!-- import → import_vep_applications (manage_member) · committee → manage_selection_committee (manage_member) -->
+        <!--
+          import → import_vep_applications (manage_member).
+          #1590 onda C: a aba de comitê DEIXA de exigir manage_member. Ela virou a superfície do
+          roteamento, e o roteamento tem autosserviço — o avaliador precisa alcançar a própria linha
+          para cadastrar a agenda e para se pausar. Quem escreve o quê é decidido por linha (a RPC
+          devolve `is_self` e `can_manage`), e os controles de comitê seguem com o atributo.
+          Medido em 13/08: 2 de 87 ativos têm manage_member; a aba escondida deixava os outros 9 do
+          público da tela sem porta nenhuma para o próprio cadastro.
+        -->
         <button data-sel-tab="import" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
-        <button data-sel-tab="committee" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.committee', lang)}</button>
+        <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabCommitteeRouting', lang)}</button>
         <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabDiversity', lang)}</button>
       </div>
 
@@ -647,13 +721,21 @@ const SEL_I18N = {
       <!-- TAB: COMMITTEE -->
       <div id="tab-committee" class="hidden space-y-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
             <h2 class="text-lg font-bold text-navy">{t('admin.selection.selectionCommittee', lang)}</h2>
+            <span id="routing-summary" class="text-[12px] font-semibold text-[var(--text-secondary)]"></span>
           </div>
           <p class="text-sm text-[var(--text-secondary)]">Membros do comitê avaliam candidatos em revisão cega. Mínimo de 2 avaliadores por candidato.</p>
 
+          <!--
+            #1590 onda C — os três eixos do roteamento, ditos em voz alta na tela. Eles se pareciam
+            com um só ("tem agenda?") e por isso a única forma de sair do rodízio era APAGAR a URL,
+            que destrói configuração e não se reverte sozinha.
+          -->
+          <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">{t('admin.selection.routingAxesHint', lang)}</p>
+
           <!-- Add member search -->
-          <div class="bg-[var(--surface-base)] rounded-xl p-4 space-y-3">
+          <div id="committee-add-card" class="bg-[var(--surface-base)] rounded-xl p-4 space-y-3" data-sel-requires="manage_member">
             <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">{t('admin.selection.addCommitteeMember', lang)}</h4>
             <div class="flex gap-3 items-end">
               <div class="flex-1 relative">
@@ -669,7 +751,35 @@ const SEL_I18N = {
             </div>
           </div>
 
-          <div id="committee-list" class="space-y-2"></div>
+          <div id="committee-list" class="space-y-3"></div>
+
+          <!--
+            A ordem do rodízio NÃO é publicada de propósito. Medido em 13/08/2026: cinco despachos
+            saíram com o MESMO timestamp (um lote numa transação só) e o desempate por `member_id`
+            mandou três deles para a mesma pessoa. Enquanto isso não for corrigido, exibir "próximo
+            da fila" seria publicar uma promessa que o código não cumpre.
+          -->
+          <p class="text-[11px] text-[var(--text-muted)] border-t border-[var(--border-default)] pt-3">{t('admin.selection.routingNoQueueNote', lang)}</p>
+        </div>
+
+        <!--
+          #1590 onda D — o funil de agendamento fica AQUI, e não na aba de Pipeline, por duas
+          razões medidas: (a) o público desta aba é exatamente o público que a RPC do funil deixa
+          entrar, então nenhuma porta nova se abre; (b) o PM abriu a #1664 justamente porque a aba
+          de Pipeline, que existe para avaliar candidatos, tinha uma fila operacional no topo.
+          A aba de comitê já é a aba da MÁQUINA de agendamento: quem recebe candidato (roteamento)
+          e o que aconteceu com o que foi oferecido (funil).
+        -->
+        <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6 space-y-4">
+          <div class="flex items-center justify-between gap-3 flex-wrap">
+            <h2 class="text-lg font-bold text-navy">{t('admin.selection.funnelTitle', lang)}</h2>
+            <span id="funnel-summary" class="text-[12px] font-semibold text-[var(--text-secondary)]"></span>
+          </div>
+          <p class="text-[12px] text-[var(--text-muted)] leading-relaxed">{t('admin.selection.funnelHint', lang)}</p>
+          <div id="funnel-totals" class="flex flex-wrap gap-2"></div>
+          <div id="funnel-list" class="space-y-2"></div>
+          <p class="text-[11px] text-[var(--text-muted)] border-t border-[var(--border-default)] pt-3">{t('admin.selection.funnelNeverOpenedNote', lang)}</p>
+          <p class="text-[11px] text-[var(--text-muted)]">{t('admin.selection.funnelPreInstrumentationNote', lang)}</p>
         </div>
       </div>
 
@@ -738,6 +848,29 @@ const SEL_I18N = {
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__SEL_I18N) || {
+    // #1590 onda C — fallback do painel de roteamento. Todo rótulo tem `||` no ponto de uso
+    // também: um grupo ausente aqui não pode apagar um botão de escrita da tela.
+    routing: {
+      summary: '{routable} de {total} podem ser escolhidos hoje',
+      empty: 'Nenhum membro no comitê.',
+      loadError: 'Não foi possível carregar o roteamento deste ciclo.',
+      routable: 'no rodízio', notRoutable: 'fora do rodízio', noUrl: 'sem agenda cadastrada',
+      you: 'você', dispatches: 'despachos', lastDispatch: 'último',
+      pausedNow: 'pausado agora', pausedFuture: 'pausa agendada', openEnded: 'sem data de volta',
+      resume: 'reativar', editUrl: 'editar agenda', setUrl: 'cadastrar agenda',
+      pause: 'pausar por período', turnOff: 'desligar do rodízio', turnOn: 'religar no rodízio',
+      turnOnNeedsGp: 'religar depende do GP', remove: 'remover do comitê', save: 'Salvar',
+      urlHint: 'Precisa começar com https://. Deixar em branco limpa a agenda desta linha do comitê.',
+      from: 'de', to: 'até (vazio = sem data de volta)', reasonPlaceholder: 'motivo (opcional)',
+      pauseHint: 'A pausa não apaga a agenda: quando a janela termina, a pessoa volta ao rodízio sozinha.',
+      urlSaved: 'Agenda atualizada', paused: 'Pausa registrada', resumed: 'De volta ao rodízio',
+      turnedOn: 'Religado no rodízio', turnedOff: 'Desligado do rodízio',
+      reasons: {
+        role_not_routable: 'papel não entrevista', permanently_off: 'desligado do rodízio',
+        no_booking_url: 'sem agenda', blocked_window: 'pausado por período',
+      },
+      urlSource: { committee_override: 'agenda própria (comitê)', member_global: 'agenda do perfil' },
+    },
     qsTotal: 'Total', qsApproved: 'Aprovados', qsRejected: 'Rejeitados', qsPending: 'Pendentes',
     resultSuffixOne: 'resultado', resultSuffixMany: 'resultados',
     noCandidates: 'Nenhum candidato', errorPrefix: 'Erro',
@@ -4038,30 +4171,273 @@ const SEL_I18N = {
     }
   }
 
-  /* ── committee ────────────────────────────────────── */
+  /* ── committee + roteamento (#1590 onda C) ─────────── */
+  //
+  // Uma leitura só: `get_selection_routing_overview` devolve tudo o que `get_selection_committee`
+  // devolvia MAIS os três eixos, as janelas e o histórico de despacho. Duas listas da mesma coorte
+  // divergiriam no primeiro campo que uma soubesse e a outra não.
+  //
+  // Quem pode escrever o quê é decidido POR LINHA com o que a própria RPC devolve (`is_self`,
+  // `caller.can_manage`), e não por um segundo predicado no cliente. O servidor recusa de qualquer
+  // jeito; a tela existe para não oferecer o botão que vai ser recusado.
+  let ROUTING: any = null;
+
   async function loadCommittee() {
     if (!currentCycleId) return;
-    const { data } = await sb.rpc('get_selection_committee', { p_cycle_id: currentCycleId });
-    const members = Array.isArray(data) ? data : [];
     const el = document.getElementById('committee-list');
+    const resumo = document.getElementById('routing-summary');
     if (!el) return;
-    if (!members.length) {
-      el.innerHTML = '<p class="text-sm text-[var(--text-muted)] py-4">Nenhum membro no comitê. Use a busca acima para adicionar membros.</p>';
+    const { data, error } = await sb.rpc('get_selection_routing_overview', { p_cycle_id: currentCycleId });
+    if (error || data?.error) {
+      el.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.routing?.loadError || 'Não foi possível carregar o roteamento.')}</p>`;
+      if (resumo) resumo.textContent = '';
       return;
     }
-    el.innerHTML = members.map((c: any) => `
-      <div class="flex items-center justify-between bg-[var(--surface-base)] rounded-xl px-4 py-3">
-        <div>
-          <span class="font-semibold text-sm text-[var(--text-primary)]">${esc(c.member_name || '—')}</span>
-          <span class="text-[11px] text-[var(--text-muted)] ml-2">${esc(c.member_role || '')}</span>
+    ROUTING = data;
+    const membros = Array.isArray(data?.members) ? data.members : [];
+    const podeGerir = data?.caller?.can_manage === true;
+
+    if (resumo) {
+      resumo.textContent = (T.routing?.summary || '{routable} de {total} podem ser escolhidos hoje')
+        .replace('{routable}', String(data?.routable_now ?? 0))
+        .replace('{total}', String(membros.length));
+    }
+
+    if (!membros.length) {
+      el.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.routing?.empty || 'Nenhum membro no comitê.')}</p>`;
+      return;
+    }
+    el.innerHTML = membros.map((c: any) => linhaRoteamento(c, podeGerir)).join('');
+  }
+
+  function chipMotivo(motivo: string): string {
+    const rotulo = (T.routing?.reasons || {})[motivo] || motivo;
+    return `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">${esc(rotulo)}</span>`;
+  }
+
+  /* ── funil de agendamento (#1590 onda D) ─────────── */
+  //
+  // O desfecho vem DERIVADO da RPC; a tela não recalcula nenhum estado. Um segundo predicado aqui
+  // divergiria do servidor no primeiro caso de borda, e foi assim que a taxa de presença passou
+  // meses dizendo 100% enquanto a grade dizia outra coisa.
+  //
+  // `pre_instrumentation` é pintado em cinza NEUTRO, deliberadamente: ele não é um fracasso, é a
+  // ausência de medição. Pintá-lo de vermelho publicaria 94 agendamentos falhados que nunca
+  // falharam.
+  const FUNIL_CORES: Record<string, string> = {
+    booked: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    superseded: 'bg-[var(--surface-base)] text-[var(--text-muted)] border-[var(--border-default)]',
+    opened_never_booked: 'bg-red-50 text-red-700 border-red-200',
+    opened_waiting: 'bg-blue-50 text-blue-700 border-blue-200',
+    never_opened_expired: 'bg-amber-50 text-amber-700 border-amber-200',
+    never_opened_waiting: 'bg-[var(--surface-base)] text-[var(--text-secondary)] border-[var(--border-default)]',
+    pre_instrumentation: 'bg-[var(--surface-base)] text-[var(--text-muted)] border-[var(--border-default)]',
+  };
+
+  function rotuloDesfecho(desfecho: string): string {
+    return (T.funnel?.outcomes || {})[desfecho] || desfecho;
+  }
+
+  async function loadFunnel() {
+    if (!currentCycleId) return;
+    const lista = document.getElementById('funnel-list');
+    const totais = document.getElementById('funnel-totals');
+    const resumo = document.getElementById('funnel-summary');
+    if (!lista) return;
+    const { data, error } = await sb.rpc('get_interview_booking_funnel', { p_cycle_id: currentCycleId });
+    if (error || data?.error) {
+      lista.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.funnel?.loadError || 'Não foi possível carregar o funil.')}</p>`;
+      if (totais) totais.innerHTML = '';
+      if (resumo) resumo.textContent = '';
+      return;
+    }
+    const ofertas: any[] = Array.isArray(data?.dispatches) ? data.dispatches : [];
+    const contagem: Record<string, number> = data?.totals || {};
+
+    if (totais) {
+      totais.innerHTML = Object.keys(contagem)
+        .sort((a, b) => (contagem[b] || 0) - (contagem[a] || 0))
+        .map((k) => `<span class="text-[11px] font-semibold px-2.5 py-1 rounded-full border ${FUNIL_CORES[k] || FUNIL_CORES.pre_instrumentation}">${esc(rotuloDesfecho(k))}: ${esc(contagem[k])}</span>`)
+        .join('');
+    }
+
+    if (resumo) {
+      // "Ainda sem reserva" conta só o que FOI medido: `pre_instrumentation` e `superseded` ficam
+      // de fora porque nenhum dos dois é uma oferta viva esperando resposta.
+      const abertas = ofertas.filter((o) =>
+        o.outcome === 'opened_never_booked' || o.outcome === 'opened_waiting'
+        || o.outcome === 'never_opened_expired' || o.outcome === 'never_opened_waiting').length;
+      const medidas = ofertas.filter((o) => o.outcome !== 'pre_instrumentation').length;
+      resumo.textContent = (T.funnel?.summary || '{open} de {total} ofertas ainda sem reserva')
+        .replace('{open}', String(abertas))
+        .replace('{total}', String(medidas));
+    }
+
+    if (!ofertas.length) {
+      lista.innerHTML = `<p class="text-sm text-[var(--text-muted)] py-4">${esc(T.funnel?.empty || 'Nenhuma oferta de agenda neste ciclo.')}</p>`;
+      return;
+    }
+
+    // As linhas anteriores à medição vão para o FIM: elas não pedem ação nenhuma e ocupariam o
+    // topo por serem as mais numerosas hoje.
+    const ordenadas = [...ofertas].sort((a, b) =>
+      (a.outcome === 'pre_instrumentation' ? 1 : 0) - (b.outcome === 'pre_instrumentation' ? 1 : 0));
+    lista.innerHTML = ordenadas.map(linhaFunil).join('');
+  }
+
+  function linhaFunil(o: any): string {
+    const F = T.funnel || {};
+    const cor = FUNIL_CORES[o.outcome] || FUNIL_CORES.pre_instrumentation;
+    const dataBr = (v: any) => v ? new Date(v).toLocaleDateString('pt-BR') : '—';
+    const aberturas = Number(o.open_count || 0);
+    return `
+      <div class="bg-[var(--surface-base)] rounded-xl px-4 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center gap-2 flex-wrap min-w-0">
+          <span class="font-semibold text-sm text-[var(--text-primary)] truncate">${esc(o.applicant_name || '—')}</span>
+          <span class="text-[10px] text-[var(--text-muted)]">${esc(o.track || '')}</span>
         </div>
-        <div class="flex items-center gap-3">
-          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.role === 'lead' ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'}">${c.role}</span>
-          ${c.can_interview ? '<span class="text-[10px] text-emerald-600">pode entrevistar</span>' : ''}
-          <button class="text-[11px] text-red-500 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="remove-committee" data-member-id="${esc(c.member_id)}">remover</button>
+        <div class="flex items-center gap-3 flex-wrap text-[11px] text-[var(--text-secondary)]">
+          <span>${esc(dataBr(o.dispatched_at))}</span>
+          ${aberturas > 0 ? `<span>${esc(F.opens || 'aberturas')}: <strong>${esc(aberturas)}</strong></span>` : ''}
+          ${o.outcome !== 'pre_instrumentation' && !o.booked_at ? `<span>${esc(F.windowEnds || 'prazo do link')}: ${esc(dataBr(o.window_ends_at))}</span>` : ''}
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${cor}">${esc(rotuloDesfecho(o.outcome))}</span>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+  }
+
+  function linhaRoteamento(c: any, podeGerir: boolean): string {
+    const eu = c.is_self === true;
+    const podeEscrever = eu || podeGerir;
+    const motivos: string[] = Array.isArray(c.not_routable_reasons) ? c.not_routable_reasons : [];
+    const bloqueios: any[] = Array.isArray(c.blocks) ? c.blocks : [];
+    const R = T.routing || {};
+
+    const estado = c.routable_now
+      ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">${esc(R.routable || 'no rodízio')}</span>`
+      : `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[var(--surface-base)] text-[var(--text-muted)] border border-[var(--border-default)]">${esc(R.notRoutable || 'fora do rodízio')}</span>`;
+
+    // Fonte da agenda com as MESMAS palavras que o log de despacho grava (`resolution_path`), para
+    // a tela e a auditoria não descreverem a mesma decisão com vocabulários diferentes.
+    const fonte = c.url_source
+      ? `<span class="text-[11px] text-[var(--text-secondary)]">${esc((R.urlSource || {})[c.url_source] || c.url_source)}</span>`
+      : `<span class="text-[11px] text-[var(--text-muted)]">${esc(R.noUrl || 'sem agenda cadastrada')}</span>`;
+
+    const janelas = bloqueios.map((b: any) => `
+      <div class="flex items-center justify-between gap-2 text-[11px] bg-amber-50/60 border border-amber-200 rounded-lg px-3 py-1.5">
+        <span class="text-amber-800">
+          ${esc(b.active ? (R.pausedNow || 'pausado agora') : (R.pausedFuture || 'pausa agendada'))}:
+          ${esc(b.starts_on)}${b.ends_on ? ` → ${esc(b.ends_on)}` : ` → ${esc(R.openEnded || 'sem data de volta')}`}
+          ${b.reason ? `· ${esc(b.reason)}` : ''}
+        </span>
+        ${podeEscrever ? `<button class="text-[11px] font-semibold text-navy hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="routing-resume" data-block-id="${esc(b.id)}">${esc(R.resume || 'reativar')}</button>` : ''}
+      </div>`).join('');
+
+    return `
+      <div class="bg-[var(--surface-base)] rounded-xl px-4 py-3 space-y-2" data-routing-row="${esc(c.member_id)}">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-semibold text-sm text-[var(--text-primary)]">${esc(c.name || '—')}</span>
+            <span class="text-[11px] text-[var(--text-muted)]">${esc(c.operational_role || '')}</span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${c.role === 'lead' ? 'bg-purple-50 text-purple-700' : c.role === 'observer' ? 'bg-[var(--surface-card)] text-[var(--text-secondary)] border border-[var(--border-default)]' : 'bg-blue-50 text-blue-700'}">${esc(c.role)}</span>
+            ${eu ? `<span class="text-[10px] font-semibold text-navy">${esc(R.you || 'você')}</span>` : ''}
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            ${estado}
+            ${c.routable_now ? '' : motivos.map(chipMotivo).join('')}
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 flex-wrap text-[11px] text-[var(--text-secondary)]">
+          <span>${fonte}</span>
+          <span>${esc(R.dispatches || 'despachos')}: <strong>${esc(c.dispatch_count ?? 0)}</strong>${c.last_dispatched_at ? ` · ${esc(R.lastDispatch || 'último')}: ${esc(new Date(c.last_dispatched_at).toLocaleDateString('pt-BR'))}` : ''}</span>
+        </div>
+
+        ${janelas}
+
+        ${podeEscrever ? `
+        <div class="flex items-center gap-3 flex-wrap pt-1">
+          <button class="text-[11px] font-semibold text-navy hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="routing-url-toggle" data-member-id="${esc(c.member_id)}">${esc(c.url_source === 'committee_override' ? (R.editUrl || 'editar agenda') : (R.setUrl || 'cadastrar agenda'))}</button>
+          <button class="text-[11px] font-semibold text-navy hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="routing-pause-toggle" data-member-id="${esc(c.member_id)}">${esc(R.pause || 'pausar por período')}</button>
+          ${c.can_interview
+            ? `<button class="text-[11px] font-semibold text-amber-700 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="routing-permanent-off" data-member-id="${esc(c.member_id)}">${esc(R.turnOff || 'desligar do rodízio')}</button>`
+            : podeGerir
+              ? `<button class="text-[11px] font-semibold text-emerald-700 hover:underline cursor-pointer bg-transparent border-0 p-0" data-action="routing-permanent-on" data-member-id="${esc(c.member_id)}">${esc(R.turnOn || 'religar no rodízio')}</button>`
+              : `<span class="text-[11px] text-[var(--text-muted)]">${esc(R.turnOnNeedsGp || 'religar depende do GP')}</span>`}
+          <button class="text-[11px] text-red-500 hover:underline cursor-pointer bg-transparent border-0 p-0" data-sel-requires="manage_member" data-action="remove-committee" data-member-id="${esc(c.member_id)}">${esc(R.remove || 'remover do comitê')}</button>
+        </div>
+
+        <div class="hidden space-y-2" data-routing-url-form="${esc(c.member_id)}">
+          <input type="url" placeholder="https://calendar.app.google/..." value="${esc(c.committee_url || '')}"
+            class="w-full px-3 py-2 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]"
+            data-routing-url-input="${esc(c.member_id)}" />
+          <p class="text-[10px] text-[var(--text-muted)]">${esc(R.urlHint || 'Precisa começar com https://. Deixar em branco limpa a agenda desta linha do comitê.')}</p>
+          <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0" data-action="routing-url-save" data-member-id="${esc(c.member_id)}">${esc(R.save || 'Salvar')}</button>
+        </div>
+
+        <div class="hidden space-y-2" data-routing-pause-form="${esc(c.member_id)}">
+          <div class="flex gap-2 flex-wrap items-end">
+            <label class="text-[10px] font-bold text-[var(--text-secondary)]">${esc(R.from || 'de')}
+              <input type="date" class="block px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" data-routing-start="${esc(c.member_id)}" />
+            </label>
+            <label class="text-[10px] font-bold text-[var(--text-secondary)]">${esc(R.to || 'até (vazio = sem data de volta)')}
+              <input type="date" class="block px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" data-routing-end="${esc(c.member_id)}" />
+            </label>
+            <input type="text" placeholder="${esc(R.reasonPlaceholder || 'motivo (opcional)')}"
+              class="flex-1 min-w-[160px] px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" data-routing-reason="${esc(c.member_id)}" />
+            <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0" data-action="routing-pause-save" data-member-id="${esc(c.member_id)}">${esc(R.save || 'Salvar')}</button>
+          </div>
+          <p class="text-[10px] text-[var(--text-muted)]">${esc(R.pauseHint || 'A pausa não apaga a agenda: quando ela termina, a pessoa volta ao rodízio sozinha.')}</p>
+        </div>` : ''}
+      </div>`;
+  }
+
+  function alternarFormulario(seletor: string, memberId: string) {
+    const el = document.querySelector<HTMLElement>(`[${seletor}="${CSS.escape(memberId)}"]`);
+    el?.classList.toggle('hidden');
+  }
+
+  async function salvarAgendaRoteamento(memberId: string) {
+    const input = document.querySelector<HTMLInputElement>(`[data-routing-url-input="${CSS.escape(memberId)}"]`);
+    if (!input || !currentCycleId) return;
+    // String vazia LIMPA (a RPC distingue "não mandou" de "mandou vazio"); `null` seria "não mandou".
+    const { data, error } = await sb.rpc('manage_selection_committee', {
+      p_cycle_id: currentCycleId, p_action: 'update', p_member_id: memberId,
+      p_interview_booking_url: input.value.trim(),
+    });
+    if (error || data?.error) { toast(error?.message || data.error, 'error'); return; }
+    toast(T.routing?.urlSaved || 'Agenda atualizada');
+    loadCommittee();
+  }
+
+  async function salvarPausaRoteamento(memberId: string) {
+    if (!currentCycleId) return;
+    const ini = document.querySelector<HTMLInputElement>(`[data-routing-start="${CSS.escape(memberId)}"]`)?.value || null;
+    const fim = document.querySelector<HTMLInputElement>(`[data-routing-end="${CSS.escape(memberId)}"]`)?.value || null;
+    const motivo = document.querySelector<HTMLInputElement>(`[data-routing-reason="${CSS.escape(memberId)}"]`)?.value || null;
+    const { data, error } = await sb.rpc('set_interviewer_routing_block', {
+      p_cycle_id: currentCycleId, p_member_id: memberId,
+      p_starts_on: ini, p_ends_on: fim, p_reason: motivo,
+    });
+    if (error || data?.error) { toast(error?.message || data.error, 'error'); return; }
+    toast(T.routing?.paused || 'Pausa registrada');
+    loadCommittee();
+  }
+
+  async function reativarRoteamento(blockId: string) {
+    const { data, error } = await sb.rpc('clear_interviewer_routing_block', { p_block_id: blockId });
+    if (error || data?.error) { toast(error?.message || data.error, 'error'); return; }
+    toast(T.routing?.resumed || 'De volta ao rodízio');
+    loadCommittee();
+  }
+
+  async function alternarDesligamento(memberId: string, ligar: boolean) {
+    if (!currentCycleId) return;
+    const { data, error } = await sb.rpc('manage_selection_committee', {
+      p_cycle_id: currentCycleId, p_action: 'update', p_member_id: memberId, p_can_interview: ligar,
+    });
+    if (error || data?.error) { toast(error?.message || data.error, 'error'); return; }
+    toast(ligar ? (T.routing?.turnedOn || 'Religado no rodízio') : (T.routing?.turnedOff || 'Desligado do rodízio'));
+    loadCommittee();
   }
 
   let committeeSearchTimeout: any = null;
@@ -5112,7 +5488,9 @@ const SEL_I18N = {
         const tab = (btn as HTMLElement).dataset.selTab;
         if (tab) {
           switchTab(tab);
-          if (tab === 'committee') loadCommittee();
+          // #1590 onda D: a aba carrega as duas metades da máquina de agendamento — quem recebe
+          // candidato (roteamento) e o que aconteceu com o que já foi oferecido (funil).
+          if (tab === 'committee') { loadCommittee(); loadFunnel(); }
           if (tab === 'import') loadOpportunities();
         }
       });
@@ -5358,6 +5736,15 @@ const SEL_I18N = {
         inlineDecide(target.dataset.id, target.dataset.name || '?', 'rejected');
       }
       else if (action === 'remove-committee' && target.dataset.memberId) { removeCommitteeMember(target.dataset.memberId); }
+      // #1590 onda C — roteamento. Todas as ações abaixo são recusadas pelo servidor quando o alvo
+      // não é a própria linha e o chamador não tem manage_member; a tela só evita oferecer o botão.
+      else if (action === 'routing-url-toggle' && target.dataset.memberId) { alternarFormulario('data-routing-url-form', target.dataset.memberId); }
+      else if (action === 'routing-url-save' && target.dataset.memberId) { salvarAgendaRoteamento(target.dataset.memberId); }
+      else if (action === 'routing-pause-toggle' && target.dataset.memberId) { alternarFormulario('data-routing-pause-form', target.dataset.memberId); }
+      else if (action === 'routing-pause-save' && target.dataset.memberId) { salvarPausaRoteamento(target.dataset.memberId); }
+      else if (action === 'routing-resume' && target.dataset.blockId) { reativarRoteamento(target.dataset.blockId); }
+      else if (action === 'routing-permanent-off' && target.dataset.memberId) { alternarDesligamento(target.dataset.memberId, false); }
+      else if (action === 'routing-permanent-on' && target.dataset.memberId) { alternarDesligamento(target.dataset.memberId, true); }
       else if (action === 'add-committee-member' && target.dataset.memberId) {
         addCommitteeMemberById(target.dataset.memberId, target.dataset.memberName || '');
       }

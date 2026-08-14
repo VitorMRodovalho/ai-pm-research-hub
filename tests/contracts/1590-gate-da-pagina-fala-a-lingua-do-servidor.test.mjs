@@ -144,7 +144,14 @@ describe('#1590 C — a tela esconde a escrita que o servidor recusa', () => {
   it('as superficies de escrita declaram o que exigem', () => {
     for (const [ancora, eixo] of [
       ['data-sel-tab="import"', 'manage_member'],           // import_vep_applications
-      ['data-sel-tab="committee"', 'manage_member'],        // manage_selection_committee
+      // #1590 onda C: a ABA de comite saiu desta lista de proposito. Ela deixou de ser uma
+      // superficie de escrita unica e virou o painel de roteamento, que tem AUTOSSERVICO — o
+      // avaliador precisa alcancar a propria linha para cadastrar agenda e se pausar, e ele nao
+      // tem manage_member (13/08: 2 de 87 ativos tem). O gate desceu para os controles de comitê
+      // DENTRO dela, que continuam sendo escrita de GP; as duas ancoras abaixo sao as mesmas
+      // afirmacoes, um nivel mais fundo.
+      ['id="committee-add-card"', 'manage_member'],        // cartao de ADICIONAR ao comite
+      ['data-action="remove-committee"', 'manage_member'],        // remover do comite
       ['id="save-contact-btn"', 'manage_member'],           // update_application_contact
       ['id="recalc-rankings-btn"', 'manage_platform'],      // recalculate_cycle_rankings
       ['id="start-screening-btn"', 'manage_platform'],      // admin_update_application

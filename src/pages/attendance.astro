@@ -10,6 +10,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { buildPageI18n } from '../i18n/pageI18n';
 import AttendanceGridTab from '../components/attendance/AttendanceGridTab';
+import SealPanel from '../components/attendance/SealPanel';
 import EventMinutesIsland from '../components/events/EventMinutesIsland';
 import { SELF_CHECKIN_WINDOW_HOURS } from '../lib/attendance-window';
 
@@ -63,6 +64,12 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         <button class="tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 data-tab="grid" data-action="switch-tab">
           📊 {t('attendance.tab.grid', lang)}
+        </button>
+        <!-- #1710: a selagem so aparece para quem tem autoridade de evento. O servidor recusa por
+             EVENTO de qualquer jeito; esconder aqui evita oferecer um ato que a pessoa nao tem. -->
+        <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
+                id="tab-seal-btn" data-tab="seal" data-action="switch-tab">
+          🔒 {t('comp.attendance.seal.tab', lang)}
         </button>
         <button class="hidden tab-btn px-4 py-2 rounded-full text-[13px] font-semibold cursor-pointer border-2 border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all"
                 id="tab-new-event" data-action="open-new-event">
@@ -155,6 +162,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <!-- Grid tab -->
       <div id="tab-grid" class="hidden">
         <AttendanceGridTab client:load />
+      </div>
+
+      <!-- Seal tab (#1710) -->
+      <div id="tab-seal" class="hidden">
+        <SealPanel client:load />
       </div>
       <EventMinutesIsland client:load />
     </main>
@@ -676,6 +688,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     document.getElementById('tab-events')!.classList.toggle('hidden', name !== 'events');
     document.getElementById('tab-ranking')!.classList.toggle('hidden', name !== 'ranking');
     document.getElementById('tab-grid')!.classList.toggle('hidden', name !== 'grid');
+    document.getElementById('tab-seal')?.classList.toggle('hidden', name !== 'seal');
     if (name === 'ranking') loadRanking();
   }
 
@@ -1159,6 +1172,16 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         case 'refresh-events':
           loadEvents();
           break;
+        case 'seal-from-roster': {
+          // #1710: leva o evento conferido para a confirmacao do painel, que e quem sabe quantas
+          // faltas o selo grava. Aqui nao ha escrita nenhuma.
+          const eventId = CURRENT_EVENT_ID;
+          closeModal('modal-roster');
+          const sealTabBtn = document.getElementById('tab-seal-btn') as HTMLElement | null;
+          if (sealTabBtn) switchTab(sealTabBtn, 'seal');
+          window.dispatchEvent(new CustomEvent('seal:focus', { detail: { eventId } }));
+          break;
+        }
         case 'open-focused-edit': {
           const focused = currentFocusedEvent();
           if (focused) openEditEventSafe(focused);
@@ -2343,12 +2366,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     // each member as ❌ is misleading. Roster RPC returns event_cancelled
     // per row (consistent across all rows for the same event).
     const isCancelledEvent = data.some((m: any) => m.event_cancelled === true);
+    const sealBtn = document.getElementById('roster-seal');
     if (CAN_MANAGE && !isCancelledEvent) {
       bulkAllBtn?.classList.remove('hidden');
       bulkConfirmBtn?.classList.remove('hidden');
+      sealBtn?.classList.remove('hidden');
     } else {
       bulkAllBtn?.classList.add('hidden');
       bulkConfirmBtn?.classList.add('hidden');
+      sealBtn?.classList.add('hidden');
     }
     const sorted = [...data].sort((a: any, b: any) => {
       if (a.present !== b.present) return a.present ? -1 : 1;
@@ -2681,6 +2707,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     if (CAN_MANAGE) {
       document.getElementById('tab-new-event')?.classList.remove('hidden');
       document.getElementById('tab-recurring')?.classList.remove('hidden');
+      document.getElementById('tab-seal-btn')?.classList.remove('hidden');
       const interviewToggle = document.getElementById('interview-toggle-wrapper');
       if (interviewToggle) { interviewToggle.classList.remove('hidden'); interviewToggle.classList.add('flex'); }
     }
