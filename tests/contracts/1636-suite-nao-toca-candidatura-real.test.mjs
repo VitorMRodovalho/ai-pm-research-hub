@@ -200,6 +200,34 @@ const sb = SUPABASE_URL && SRK ? createClient(SUPABASE_URL, SRK, { auth: { persi
  */
 const CUTOFF = '2026-08-09T00:00:00Z';
 
+/**
+ * Operações MANUAIS de GP, conhecidas e autorizadas, que produzem a mesma digital que este guard
+ * caça. Não são regressão da suíte: são despachos reais decididos por uma pessoa.
+ *
+ * Por que um allowlist por ID e não um CUTOFF novo: mover o cutoff cegaria o guard para a janela
+ * inteira desde 09/08, e o valor dele está justamente em vigiar essa janela. Um ID nomeado deixa o
+ * guard ver tudo e ignorar só o evento que já foi explicado.
+ *
+ * Por que não um discriminador genérico: a operação manual grava `dispatch_source='cron'` no
+ * metadata igual ao cron de verdade — aceitar isso como prova faria o guard passar a tolerar
+ * QUALQUER chamada via service_role, que é exatamente o que ele existe para pegar. O cron real se
+ * distingue por carimbar também a EXECUÇÃO (`selection.%cron_run%`, 197 linhas), e a chamada
+ * manual não carimba.
+ *
+ * ⚠️ Uma entrada aqui é dívida, não isenção: enquanto `selection_rescue_unbooked_invite` não tiver
+ * superfície (#1586), a única porta para despachar é o service_role, e toda operação manual vai
+ * cair aqui. A saída é a tela do #1586, com autor autenticado — não o crescimento desta lista.
+ */
+const OPERACOES_MANUAIS_CONHECIDAS = new Set([
+  // 14/08/2026 02:26:19Z — despacho de convite de agendamento decidido pelo PM na sessão do #1587,
+  // para tirar a instrumentação da onda D (#1590) do vácuo: até então o log tinha 94 linhas e ZERO
+  // instrumentadas, e nenhum número do funil podia ser publicado sem uma linha real. Chamado por
+  // `selection_rescue_unbooked_invite` via REST/service_role, que é o caminho do cron, porque a
+  // RPC não tem superfície (#1586). O e-mail foi enviado a um candidato real que esperava o
+  // convite desde 04/08. Auditado em `admin_audit_log` como `selection.unbooked_invite_rescued`.
+  '4b99b6dc-2eb3-450e-9448-3d78ca00ed32',
+]);
+
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
   skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false,
 }, () => {
@@ -219,7 +247,11 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
       .is('caller_id', null)
       .gte('attempted_at', CUTOFF);
     assert.ifError(error);
-    if (!tentativas?.length) return;   // nenhuma linha nova: é o estado esperado depois da correção
+
+    // As operações manuais já explicadas saem ANTES da correlação com o cron: elas não têm carimbo
+    // de execução para casar, e é justamente por isso que estão nomeadas uma a uma.
+    const novas = (tentativas ?? []).filter((t) => !OPERACOES_MANUAIS_CONHECIDAS.has(t.id));
+    if (!novas.length) return;   // nenhuma linha nova: é o estado esperado depois da correção
 
     const { data: crons, error: e1 } = await sb
       .from('admin_audit_log')
@@ -230,7 +262,7 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
     const carimbos = (crons ?? []).map((c) => Date.parse(c.created_at));
 
     const JANELA_MS = 60_000;
-    const semExplicacao = tentativas.filter(
+    const semExplicacao = novas.filter(
       (t) => !carimbos.some((c) => Math.abs(c - Date.parse(t.attempted_at)) <= JANELA_MS),
     );
     if (!semExplicacao.length) return;
@@ -253,6 +285,22 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
       ofensores, [],
       'candidatura REAL recebeu tentativa de gate sem ator e sem cron que a explique — ' +
         'algum teste voltou a escolher alvo por predicado sobre produção',
+    );
+  });
+
+  it('o allowlist de operações manuais fica em sincronia (sem entradas extintas)', async () => {
+    // Ratchet: uma entrada que não corresponde mais a nenhuma linha viva vira ruído e, pior,
+    // esconde que o guard deixou de vigiar aquele caso. O padrão é o dos allowlists do Q-C /
+    // Phase C — a lista só encolhe.
+    const ids = [...OPERACOES_MANUAIS_CONHECIDAS];
+    if (!ids.length) return;
+    const { data, error } = await sb.from('gate_attempts').select('id').in('id', ids);
+    assert.ifError(error);
+    const vivos = new Set((data ?? []).map((r) => r.id));
+    assert.deepEqual(
+      ids.filter((id) => !vivos.has(id)), [],
+      'entrada do allowlist de operações manuais não corresponde a nenhuma linha viva em '
+      + '`gate_attempts` — remova-a: enquanto ela ficar, o guard carrega uma isenção sem objeto.',
     );
   });
 

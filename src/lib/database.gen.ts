@@ -407,6 +407,13 @@ export type Database = {
             foreignKeyName: "ai_analysis_runs_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "ai_analysis_runs_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -541,6 +548,13 @@ export type Database = {
             foreignKeyName: "ai_processing_log_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "ai_processing_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -666,6 +680,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_score_validations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "ai_score_validations_application_id_fkey"
@@ -7090,6 +7111,13 @@ export type Database = {
             foreignKeyName: "consent_records_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "consent_records_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -10556,6 +10584,13 @@ export type Database = {
             foreignKeyName: "engagements_selection_application_id_fkey"
             columns: ["selection_application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "engagements_selection_application_id_fkey"
+            columns: ["selection_application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -12475,6 +12510,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gate_attempts_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "gate_attempts_application_id_fkey"
@@ -17620,6 +17662,13 @@ export type Database = {
             foreignKeyName: "onboarding_progress_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "onboarding_progress_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -19406,6 +19455,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pmi_video_screenings_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "pmi_video_screenings_application_id_fkey"
@@ -22729,6 +22785,13 @@ export type Database = {
             foreignKeyName: "selection_application_service_history_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_application_service_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -23370,6 +23433,13 @@ export type Database = {
             foreignKeyName: "selection_applications_linked_application_id_fkey"
             columns: ["linked_application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_applications_linked_application_id_fkey"
+            columns: ["linked_application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -23992,6 +24062,13 @@ export type Database = {
             foreignKeyName: "selection_dispatch_url_log_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -24001,6 +24078,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_interviews"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_booked_interview_id_fkey"
+            columns: ["booked_interview_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["canonical_interview_id"]
           },
           {
             foreignKeyName: "selection_dispatch_url_log_cycle_id_fkey"
@@ -24206,6 +24290,13 @@ export type Database = {
             foreignKeyName: "selection_evaluation_ai_suggestions_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_ai_suggestions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -24263,6 +24354,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_anomalies_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "selection_evaluation_anomalies_application_id_fkey"
@@ -24397,6 +24495,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "selection_evaluations_application_id_fkey"
@@ -24726,6 +24831,13 @@ export type Database = {
             foreignKeyName: "selection_interviews_application_id_fkey"
             columns: ["application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_interviews_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -24779,6 +24891,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_membership_snapshots_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "selection_membership_snapshots_application_id_fkey"
@@ -24929,6 +25048,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "selection_applications"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_topic_views_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
           },
           {
             foreignKeyName: "selection_topic_views_application_id_fkey"
@@ -26765,6 +26891,13 @@ export type Database = {
             foreignKeyName: "visitor_leads_promoted_to_application_id_fkey"
             columns: ["promoted_to_application_id"]
             isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "visitor_leads_promoted_to_application_id_fkey"
+            columns: ["promoted_to_application_id"]
+            isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
           },
@@ -28343,6 +28476,35 @@ export type Database = {
           stddev_diff: number | null
         }
         Relationships: []
+      }
+      v_application_interview_state: {
+        Row: {
+          application_id: string | null
+          cache_interview_status: string | null
+          cache_is_stale: boolean | null
+          canonical_conducted_at: string | null
+          canonical_interview_id: string | null
+          canonical_interviewer_ids: string[] | null
+          canonical_row_status: string | null
+          canonical_scheduled_at: string | null
+          cycle_id: string | null
+          has_stuck_row: boolean | null
+          interview_rows: number | null
+          interview_state: string | null
+          ja_realizada: boolean | null
+          last_conducted_at: string | null
+          multiplicity_class: string | null
+          next_scheduled_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_applications_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_cron_last_success: {
         Row: {
