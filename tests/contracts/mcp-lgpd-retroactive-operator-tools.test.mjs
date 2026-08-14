@@ -210,8 +210,10 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
   );
 });
 
-test('ef_version is 2.95.0 (#1631 Wave 0 gate de create_notification; 2.94.0 no #1620)', () => {
-  assert.match(EF, /ef_version:\s*"2\.95\.0"/, '/health must report ef_version 2.95.0');
+// #1590 onda C (13/08/2026): 2.95.0 -> 2.96.0. A superficie de selecao ganhou o scope 'routing' e
+// as acoes block/unblock/committee-update; o /health e a testemunha do deploy por UMA chamada.
+test('ef_version is 2.97.0 (#1590 onda D; 2.96.0 na onda C; 2.95.0 no #1631)', () => {
+  assert.match(EF, /ef_version:\s*"2\.97\.0"/, '/health must report ef_version 2.97.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {

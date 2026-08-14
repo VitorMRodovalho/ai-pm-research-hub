@@ -89,6 +89,49 @@ async function run() {
             });
           }
           if (name === 'get_member_by_auth') return Promise.resolve({ data: fakeMember, error: null });
+          if (name === 'get_selection_cycles') {
+            return Promise.resolve({ data: [{ id: 'cycle-uuid-teste', title: 'Ciclo de teste', status: 'open' }], error: null });
+          }
+          // #1590 onda C — o painel de roteamento. O payload imita a FORMA que a RPC devolve
+          // (incluindo `is_self` e `caller.can_manage`, que é quem decide o que a linha oferece).
+          if (name === 'get_selection_routing_overview') {
+            return Promise.resolve({
+              data: {
+                cycle: { id: 'cycle-uuid-teste', cycle_code: 'cycle-teste', status: 'open', has_fallback_url: true, fallback_url: null },
+                caller: { member_id: 'eu', committee_role: 'evaluator', can_manage: !!(caps?.org_actions || []).includes('manage_member') },
+                local_date: '2026-08-13',
+                routable_now: 1,
+                blocked_now: 1,
+                members: [
+                  {
+                    member_id: 'eu', name: 'Committee Evaluator', operational_role: 'tribe_leader',
+                    role: 'evaluator', can_interview: true, is_self: true,
+                    url_source: 'committee_override', has_url: true,
+                    booking_url: 'https://calendar.app.google/eu', committee_url: 'https://calendar.app.google/eu',
+                    routable_now: true, not_routable_reasons: [], blocked_now: false, blocks: [],
+                    dispatch_count: 4, last_dispatched_at: '2026-08-07T17:00:11.676908+00:00',
+                  },
+                  {
+                    member_id: 'outra', name: 'Outra Pessoa', operational_role: 'chapter_liaison',
+                    role: 'observer', can_interview: true, is_self: false,
+                    url_source: null, has_url: false, booking_url: null, committee_url: null,
+                    routable_now: false, not_routable_reasons: ['role_not_routable', 'no_booking_url'],
+                    blocked_now: false, blocks: [],
+                    dispatch_count: 0, last_dispatched_at: null,
+                  },
+                  {
+                    member_id: 'pausada', name: 'Pessoa Pausada', operational_role: 'manager',
+                    role: 'evaluator', can_interview: true, is_self: false,
+                    url_source: 'member_global', has_url: true, booking_url: null, committee_url: null,
+                    routable_now: false, not_routable_reasons: ['blocked_window'], blocked_now: true,
+                    blocks: [{ id: 'bloco-1', starts_on: '2026-08-10', ends_on: '2026-08-20', reason: 'ferias', created_by_name: 'Ela', created_by_self: true, active: true }],
+                    dispatch_count: 8, last_dispatched_at: '2026-08-08T00:57:35.982524+00:00',
+                  },
+                ],
+              },
+              error: null,
+            });
+          }
           return Promise.resolve({ data: [], error: null });
         },
         from(table) {
@@ -161,10 +204,45 @@ async function run() {
     assert.equal(await committeePage.locator('#sel-denied').isVisible(), false,
       'o avaliador de comitê era recusado pelo gate de tier — este é o defeito do #1590');
     assert.equal(await committeePage.locator('#sel-readonly-note').isVisible(), true);
-    for (const seletor of ['#recalc-rankings-btn', '#start-screening-btn', '[data-sel-tab="import"]', '[data-sel-tab="committee"]']) {
+    for (const seletor of ['#recalc-rankings-btn', '#start-screening-btn', '[data-sel-tab="import"]']) {
       assert.equal(await committeePage.locator(seletor).isVisible(), false,
         `${seletor} chama RPC que o servidor recusa para ele; tem de ficar fora da tela`);
     }
+
+    // #1590 onda C — a aba de comitê PASSA a aparecer para o avaliador: ela virou a superfície do
+    // roteamento, e o roteamento tem autosserviço. Antes desta onda ele não tinha porta nenhuma
+    // para cadastrar a própria agenda de entrevista, que é o campo que decide para quem o
+    // candidato é mandado.
+    assert.equal(await committeePage.locator('[data-sel-tab="committee"]').isVisible(), true,
+      'sem a aba, o avaliador continua sem porta para a própria agenda — é o defeito da onda C');
+
+    await committeePage.locator('[data-sel-tab="committee"]').click();
+    await committeePage.locator('[data-routing-row="eu"]').waitFor({ state: 'visible' });
+
+    // A PRÓPRIA linha oferece escrita; a de outra pessoa, não. É a decisão por RECURSO que a RPC
+    // também aplica — a tela só evita oferecer o botão que seria recusado.
+    assert.equal(await committeePage.locator('[data-routing-row="eu"] [data-action="routing-url-toggle"]').isVisible(), true,
+      'o avaliador precisa alcançar a PRÓPRIA agenda');
+    assert.equal(await committeePage.locator('[data-routing-row="eu"] [data-action="routing-pause-toggle"]').isVisible(), true,
+      'pausar a si mesmo é autosserviço (decisão do PM)');
+    assert.equal(await committeePage.locator('[data-routing-row="outra"] [data-action="routing-url-toggle"]').count(), 0,
+      'a linha de OUTRA pessoa não pode oferecer escrita a quem não tem manage_member');
+    assert.equal(await committeePage.locator('[data-routing-row="pausada"] [data-action="routing-resume"]').count(), 0,
+      'reativar bloqueio alheio também é manage_member');
+
+    // Os controles de COMITÊ (o que continua sendo escrita de GP) seguem escondidos dentro da aba.
+    assert.equal(await committeePage.locator('#committee-add-card').isVisible(), false,
+      'abrir a ABA não pode abrir a escrita de comitê');
+    assert.equal(await committeePage.locator('[data-action="remove-committee"]').first().isVisible(), false,
+      'remover do comitê continua exigindo manage_member');
+
+    // O motivo de não-roteável chega traduzido, e o resumo publica FATO, não posição de fila.
+    const painel = await committeePage.locator('#committee-list').innerText();
+    assert.ok(/papel não entrevista/i.test(painel), 'o motivo tem de chegar traduzido, não como chave crua');
+    assert.ok(!/próximo da fila/i.test(painel), 'o painel não pode publicar ordem de fila');
+    assert.match(await committeePage.locator('#routing-summary').innerText(), /1 de 3/,
+      'o resumo tem de contar quem pode ser escolhido HOJE');
+
     await committeePage.close();
 
     // A INVERSA: sem comitê e sem tier, continua recusado. Sem esta, remover o gate passa.

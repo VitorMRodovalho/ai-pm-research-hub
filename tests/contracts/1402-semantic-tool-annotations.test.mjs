@@ -96,15 +96,26 @@ const READ_ONLY = new Set([
 const DESTRUCTIVE = new Set([
   'card_write', 'engagement_write', 'event_write', 'member_lifecycle',
   'selection_decide', 'document_version_write', 'ip_exclusion', 'lgpd_admin',
+  // #1548 marcou `agenda_blocks` como destrutiva no MAPA e nao aqui, entao a classificacao dela
+  // ficou sem verdade-fundamental para conferir contra. Reparado junto do #1710.
+  'agenda_blocks',
+  // #1710: `unseal` remove linhas de presenca; selar grava falta em massa. Os dois passam pelo
+  // confirm-gate do ADR-0018 (sem confirm=true, devolvem o ensaio em vez de executar).
+  'attendance_seal',
 ]);
 
 // 52 → 53 em 31/07/2026 (#1548): +agenda_blocks. A Agenda Viva de Protagonismo não tinha
 // NENHUMA superfície MCP — reservar, editar e confirmar bloco só existiam pela web, e por isso o
 // buraco de 7 blocos sem confirmar da Geral de 30/07 (0 XP) só era corrigível por clique humano.
+// 53 → 54 em 13/08/2026 (#1710): +attendance_seal. Mesmo padrão, outro mecanismo: selar era a
+// ÚNICA forma de a plataforma afirmar que alguém faltou depois do #1657, e não tinha superfície
+// nenhuma — 0 de 510 eventos passados selados. Tool própria, e não ação de `attendance_record`,
+// porque `unseal` é verbo de remoção e arrastaria as 166 chamadas/180d de register/excuse para
+// trás do confirm-gate sem que nenhuma delas tivesse ficado mais perigosa.
 // O número é pinado de propósito: subir sem intenção é o sintoma de tool duplicada ou registrada
 // duas vezes; descer é tool perdida num refactor.
-test('#1402: the semantic surface still has exactly 53 registered tools', () => {
-  assert.equal(REGISTERED.length, 53, `expected 53 semantic tools, got ${REGISTERED.length}`);
+test('#1402: the semantic surface still has exactly 54 registered tools', () => {
+  assert.equal(REGISTERED.length, 54, `expected 54 semantic tools, got ${REGISTERED.length}`);
 });
 
 test('#1402: applySemanticAnnotations is wired into registerSemanticTools', () => {

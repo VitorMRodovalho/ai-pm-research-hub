@@ -23925,35 +23925,59 @@ export type Database = {
       selection_dispatch_url_log: {
         Row: {
           application_id: string
+          booked_at: string | null
+          booked_interview_id: string | null
+          booking_token_md5: string | null
           cycle_id: string
           dispatched_at: string
+          first_opened_at: string | null
           id: string
+          instrumented: boolean
+          last_opened_at: string | null
+          open_count: number
           organization_id: string
           resolution_path: string
           resolved_evaluator_id: string | null
           resolved_url: string
+          superseded_at: string | null
           track: string
         }
         Insert: {
           application_id: string
+          booked_at?: string | null
+          booked_interview_id?: string | null
+          booking_token_md5?: string | null
           cycle_id: string
           dispatched_at?: string
+          first_opened_at?: string | null
           id?: string
+          instrumented?: boolean
+          last_opened_at?: string | null
+          open_count?: number
           organization_id: string
           resolution_path: string
           resolved_evaluator_id?: string | null
           resolved_url: string
+          superseded_at?: string | null
           track: string
         }
         Update: {
           application_id?: string
+          booked_at?: string | null
+          booked_interview_id?: string | null
+          booking_token_md5?: string | null
           cycle_id?: string
           dispatched_at?: string
+          first_opened_at?: string | null
           id?: string
+          instrumented?: boolean
+          last_opened_at?: string | null
+          open_count?: number
           organization_id?: string
           resolution_path?: string
           resolved_evaluator_id?: string | null
           resolved_url?: string
+          superseded_at?: string | null
           track?: string
         }
         Relationships: [
@@ -23969,6 +23993,13 @@ export type Database = {
             columns: ["application_id"]
             isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_dispatch_url_log_booked_interview_id_fkey"
+            columns: ["booked_interview_id"]
+            isOneToOne: false
+            referencedRelation: "selection_interviews"
             referencedColumns: ["id"]
           },
           {
@@ -28905,6 +28936,11 @@ export type Database = {
         Returns: Json
       }
       _request_is_rest_caller: { Args: never; Returns: boolean }
+      _roster_seal_marker: { Args: never; Returns: string }
+      _seal_event_attendance_apply: {
+        Args: { p_actor_id: string; p_dry_run?: boolean; p_event_id: string }
+        Returns: Json
+      }
       _selection_apto_to_sign_digest_cron: { Args: never; Returns: Json }
       _selection_consistency_cron: { Args: never; Returns: Json }
       _selection_cutoff_pending_cron: { Args: never; Returns: Json }
@@ -29770,6 +29806,10 @@ export type Database = {
           p_pmi_data_fetched_at: string
           p_pmi_memberships: Json
         }
+        Returns: Json
+      }
+      clear_interviewer_routing_block: {
+        Args: { p_block_id: string }
         Returns: Json
       }
       clear_member_attendance: {
@@ -31096,6 +31136,10 @@ export type Database = {
         Returns: Json
       }
       get_initiative_stats: { Args: { p_initiative_id: string }; Returns: Json }
+      get_interview_booking_funnel: {
+        Args: { p_cycle_id: string }
+        Returns: Json
+      }
       get_invariant_alerts: { Args: never; Returns: Json }
       get_invitation_health: { Args: never; Returns: Json }
       get_item_assignments: { Args: { p_item_id: string }; Returns: Json }
@@ -31658,6 +31702,10 @@ export type Database = {
       }
       get_selection_rankings: {
         Args: { p_cycle_code?: string; p_track?: string }
+        Returns: Json
+      }
+      get_selection_routing_overview: {
+        Args: { p_cycle_id: string }
         Returns: Json
       }
       get_signer_signature_url: {
@@ -32595,7 +32643,9 @@ export type Database = {
       manage_selection_committee: {
         Args: {
           p_action: string
+          p_can_interview?: boolean
           p_cycle_id: string
+          p_interview_booking_url?: string
           p_member_id: string
           p_role?: string
         }
@@ -33389,6 +33439,10 @@ export type Database = {
         }
         Returns: Json
       }
+      seal_attendance_window_cron: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
       seal_event_attendance: { Args: { p_event_id: string }; Returns: Json }
       search_board_items: {
         Args: { p_query: string; p_tribe_id?: number }
@@ -33526,6 +33580,16 @@ export type Database = {
       }
       set_initiative_roadmap: {
         Args: { p_initiative_id: string; p_roadmap: Json }
+        Returns: Json
+      }
+      set_interviewer_routing_block: {
+        Args: {
+          p_cycle_id: string
+          p_ends_on?: string
+          p_member_id: string
+          p_reason?: string
+          p_starts_on?: string
+        }
         Returns: Json
       }
       set_my_entry_chapter: { Args: { p_chapter_code: string }; Returns: Json }
@@ -33775,6 +33839,7 @@ export type Database = {
         Args: { p_board_item_id: string; p_partner_entity_id: string }
         Returns: Json
       }
+      unseal_event_attendance: { Args: { p_event_id: string }; Returns: Json }
       update_agenda_block: {
         Args: {
           p_block_id: string

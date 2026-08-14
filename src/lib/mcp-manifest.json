@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-08-10T03:44:07.874Z",
+  "generated_at": "2026-08-13T22:09:56.979Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 395,
+  "total": 396,
   "by_domain": {
     "personal": 23,
     "tribe": 130,
     "board": 79,
-    "events": 22,
+    "events": 23,
     "governance": 26,
     "comms": 19,
     "partners": 12,
@@ -17,7 +17,7 @@
     "health": 22
   },
   "by_permission": {
-    "read": 276,
+    "read": 277,
     "write": 108,
     "admin": 11
   },
@@ -1397,7 +1397,7 @@
     },
     {
       "name": "selection_dashboard",
-      "description": "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
+      "description": "Selection-cycle command surface (absorbs get_selection_dashboard/cycles/rankings/pert_cutoff_summary/evaluator_calibration_stats/selection_health/selection_pipeline_metrics/selection_committee/cutoff_dispatch_health/selection_routing_overview/get_interview_booking_funnel). Set `scope`: 'dashboard' (cycle_code), 'cycles', 'rankings' (cycle_code [+ track]), 'cutoff' (cycle_id [+ score_column]), 'calibration' (cycle_code), 'health', 'pipeline' (cycle_id [+ chapter]), 'committee' (cycle_id), 'routing' (cycle_id — #1590 onda C: quem está cadastrado para roteamento, com os três eixos separados, motivo de não-roteável e contagem de despachos; a URL crua só sai para a própria linha e para manage_member), 'funnel' (cycle_id — #1590 onda D: cada oferta de agenda com o desfecho DERIVADO na leitura; separa 'abriu a agenda e não reservou' de 'nunca abriu', que até esta onda tinham registro idêntico. Linhas anteriores à instrumentação saem como 'pre_instrumentation' e NÃO afirmam falta), 'dispatch'. Authority is enforced by each RPC (view_internal_analytics / view_aggregate_analytics; 'routing' and 'funnel' = committee-of-cycle | sponsor | manage_member | superadmin) with ADR-0109 conflict-of-interest recusal (an active candidate in the cycle is blocked). Candidate PII stays behind those gates. Stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1671,6 +1671,13 @@
     {
       "name": "attendance_report",
       "description": "Semantic attendance reader (absorbs get_my_tribe_attendance, get_attendance_ranking, get_my_attendance_history, get_my_attendance_hours, get_event_attendance_health, get_cycle_attendance_overview — 20 calls/180d). Set `scope`: 'tribe' (attendance grid for a tribe/initiative), 'ranking' (members by attendance rate), 'mine' (your own history), 'hours' (your — or, with view_internal_analytics, another member's — attendance hours for a cycle), 'health' (org-wide events missing attendance), 'cycle' (per-cycle overview). Read-only. Self scopes are free; cross-member/cross-tribe reads require view_internal_analytics, and the tribe grid ADDS the #785 confidential gate that the underlying RPC lacks. Stable envelope.",
+      "domain": "events",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "attendance_seal",
+      "description": "Fecha (sela) a lista de presenca de um evento, ou reverte o selo. Selar materializa `present=false` para todo elegivel SEM registro: e escrita em massa no historico de pessoas reais, e sem selo a plataforma nao consegue afirmar que alguem faltou (#1657/#1710). Set `action`: 'list' (o ensaio completo do ciclo — por evento: coorte elegivel, quantos ja tem registro, quantas faltas seriam gravadas e o motivo de bloqueio), 'seal' (event_id), 'unseal' (event_id — remove SO as linhas criadas pelo selo e ainda intocadas; quem foi marcado presente ou justificado depois PERMANECE). Sem `confirm=true`, seal/unseal devolvem o ensaio daquele evento em vez de executar (ADR-0018 W1). Autoridade: manage_event ESCOPADO ao evento (`_can_manage_event`) + #785; um lider de tribo nao alcanca evento de outra tribo. Os dois atos ficam em admin_audit_log. Envelope estavel.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false
@@ -2468,7 +2475,7 @@
     },
     {
       "name": "interview_manage",
-      "description": "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+      "description": "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override + set/clear_interviewer_routing_block). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited), 'block' (#1590 onda C — cycle_id + member_id [+ starts_on, ends_on, reason]: tira o entrevistador do rodízio por PERÍODO sem apagar a agenda dele; autosserviço na própria linha, manage_member para qualquer um; starts_on nulo = hoje em America/Sao_Paulo, ends_on nulo = bloqueio aberto), 'unblock' (block_id — devolve ao rodízio; mesma autoridade). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false
@@ -2482,7 +2489,7 @@
     },
     {
       "name": "selection_decide",
-      "description": "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove + member_id [+ role]; promote), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+      "description": "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

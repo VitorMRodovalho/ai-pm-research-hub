@@ -12,14 +12,18 @@ paths:
 
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
-- `/semantic` (server: `nucleo-ia-semantic`, v0.11.0) — public semantic gateway (SPEC-280 / EPIC #1383).
-  **52 tools**: 4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
+- `/semantic` (server: `nucleo-ia-semantic`, v0.13.0) — public semantic gateway (SPEC-280 / EPIC #1383).
+  **54 tools** (o número aqui estava em 52/v0.11.0, dois releases atrás: `agenda_blocks` do #1548 e
+  `attendance_seal` do #1710 não tinham chegado a este arquivo; a fonte é `countRegisteredTools`, não esta linha):
+  4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
   members/engagements/initiatives** (`member_search`, `member_get`, `member_emails`, `member_lifecycle`,
   `engagement_write`, `initiative_roster`, `initiative_directory`, `initiative_report`, `my_status`) + 6
   **Wave 3 events/attendance/meetings** (`event_search`, `event_write`, `attendance_record`,
-  `attendance_report`, `meeting_minutes`, `meeting_actions`) + 6 **Wave 4 selection/evaluation**
+  `attendance_report`, `meeting_minutes`, `meeting_actions`) + `attendance_seal` (#1710 — selar/reverter a
+  lista de um evento; destrutiva, com confirm-gate: sem `confirm=true` devolve o ensaio) + `agenda_blocks`
+  (#1548) + 6 **Wave 4 selection/evaluation**
   (`selection_dashboard`, `application_get`, `evaluation_submit`, `interview_manage`, `selection_decide`,
   `visitor_leads`) + 7 **Wave 5 governance/docs/certificates** (`document_get`, `document_version_write`,
   `document_comment`, `change_request`, `signature_flow`, `certificate_manage`, `ip_exclusion`) + 7 **Wave 6a
