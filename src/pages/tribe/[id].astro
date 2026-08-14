@@ -1016,7 +1016,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.webinarsEvents || 'Webinars & Eventos')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Agenda e gravações</span>
             </a>
-            <a href="${lp}/admin/knowledge" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
+            <!-- #1748: este tile apontava para o CRUD administrativo de conhecimento, cuja
+                 escrita exige manage_platform (2 de 79 membros com login). O bloco nao tem
+                 gate, entao qualquer membro que abrisse a propria tribo era convidado a uma
+                 tela onde a RLS o recusaria com o texto cru da politica. O destino do membro
+                 e o catalogo publico, que le a mesma hub_resources e e minTier visitor.
+                 Nao citar o caminho administrativo aqui: um guard sobre o fonte cru casaria
+                 este comentario e ficaria verde com o defeito de volta. -->
+            <a href="${lp}/library" class="group flex flex-col items-center gap-2 p-5 rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] hover:border-navy/30 hover:shadow-md transition-all no-underline">
               <span class="text-2xl">🔗</span>
               <span class="text-sm font-bold text-navy group-hover:underline">${escapeHtml(I18N.knowledgeBase || 'Base de Conhecimento')}</span>
               <span class="text-[11px] text-[var(--text-muted)]">Artigos, cursos e referências</span>
