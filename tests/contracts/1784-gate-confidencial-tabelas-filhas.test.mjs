@@ -106,11 +106,14 @@ test('#1784 DB: toda tabela-filha do card carrega o gate de forma explicita', { 
   }
 });
 
-test('#1784 DB: checklists e comments seguem gateados pelo pai, e board_items pelo helper', { skip: dbGated ? false : skipMsg }, async () => {
+test('#1784 DB: comments segue gateado pelo pai, e board_items e checklists pelo helper', { skip: dbGated ? false : skipMsg }, async () => {
   const { data, error } = await sb().rpc('_audit_confidential_gate_coverage');
   assert.ifError(error);
   const forma = t => data.filter(r => r.tabela === t).map(r => r.forma);
-  assert.deepEqual(forma('board_item_checklists'), ['transitivo'], 'checklists dependem do EXISTS sobre o pai');
+  // #1791 promoveu checklists de 'transitivo' para 'explicito': ao fechar a direcao de escrita, a
+  // policy virou FOR ALL com o predicado explicito, e a leitura deixou de depender do EXISTS sobre
+  // o pai. 'explicito' e mais forte que 'transitivo', nunca mais fraco.
+  assert.deepEqual(forma('board_item_checklists'), ['explicito'], 'checklists ganharam o predicado explicito no #1791');
   assert.deepEqual(forma('board_item_comments'), ['transitivo'], 'comments dependem do EXISTS sobre o pai');
   assert.ok(forma('board_items').every(f => f === 'explicito'), 'board_items e o gate do #785 PR-2');
 });
