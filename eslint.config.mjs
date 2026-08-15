@@ -1,7 +1,9 @@
 import js from '@eslint/js';
 import reactPlugin from 'eslint-plugin-react';
 import astroPlugin from 'eslint-plugin-astro';
-import astroParser from 'astro-eslint-parser';
+// astro-eslint-parser 3.x (exigido pelo astro 7: migrou para @astrojs/compiler-rs) deixou de
+// expor default export. O namespace carrega `parseForESLint`, que e o contrato que o ESLint usa.
+import * as astroParser from 'astro-eslint-parser';
 import tsParser from '@typescript-eslint/parser';
 
 export default [
