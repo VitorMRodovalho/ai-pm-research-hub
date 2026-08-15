@@ -21,6 +21,10 @@
  *   | quem nao tem vinculo com o card, pela RPC       | P0001     |
  *   | anon nas 5 RPCs + no predicado (PostgREST)      | HTTP 404  |
  *
+ * E o buraco que o guard do #785 apontou no meio do caminho, tambem exercido: com write_board e
+ * SEM enxergar a iniciativa confidencial, a RPC escrevia no card dela (SECDEF contorna a RLS).
+ * Antes do gate: passava. Depois: P0001.
+ *
  * A medicao da populacao mudou no meio do caminho e a licao fica registrada: contar "barrados" por
  * `can_by_member('write_board')` deu 3, mas a policy tem TRES ramos — 2 das 3 pessoas passavam por
  * `rls_is_superadmin()`. Barrado de verdade: 1.
@@ -33,6 +37,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const MIG = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20260815133147_1778_autoria_do_card_vira_predicado_unico_do_checklist.sql'),
+  'utf8',
+);
+// o predicado ganhou o gate do #785 numa migration seguinte, depois que o guard
+// 785-secdef-reader-confidential-gate acusou (corretamente) o leitor SECDEF sem gate
+const MIG_GATE = readFileSync(
+  resolve(process.cwd(), 'supabase/migrations/20260815140508_1778_o_predicado_do_checklist_carrega_o_gate_785.sql'),
   'utf8',
 );
 const CARD_DETAIL = readFileSync(resolve(process.cwd(), 'src/components/board/CardDetail.tsx'), 'utf8');
@@ -48,6 +58,13 @@ test('#1778 mig: o predicado olha o RECURSO, e nao so a capacidade', () => {
   assert.match(MIG, /board_items bi\s+WHERE bi\.id = p_card_id AND bi\.assignee_id = p_member_id/);
   // autor/contribuidor — a nocao que faltava, e o motivo desta issue
   assert.match(MIG, /board_item_assignments ba[\s\S]{0,200}ba\.role IN \('author', 'contributor'\)/);
+});
+
+test('#1778/#785 mig: o predicado exige que o chamador ENXERGUE o card', () => {
+  // SECURITY DEFINER contorna a RLS: sem esta linha, quem tem write_board e nao enxerga a
+  // iniciativa confidencial escrevia atividade nos cards dela pela RPC (medido antes do patch).
+  assert.match(MIG_GATE, /AND public\.rls_can_see_item\(p_card_id\)/);
+  assert.match(MIG_GATE, /CREATE OR REPLACE FUNCTION public\.can_manage_card_checklist/i);
 });
 
 test('#1778 mig: as quatro RPCs chamam o predicado, e nenhuma reescreve a regra', () => {
@@ -168,6 +185,10 @@ test('#1778 DB: ninguem com trabalho atribuido continua sem caminho para registr
   const amostra = cards.slice(0, 25);
   const negados = [];
   for (const card of amostra) {
+    // o predicado agora carrega o gate do #785, e service_role (sem auth.uid()) nao enxerga
+    // card de iniciativa confidencial — esse caso e materia do #1784, nao deste guard
+    const { data: visivel } = await c.rpc('rls_can_see_item', { p_item_id: card.id });
+    if (visivel !== true) continue;
     const { data: pode } = await c.rpc('can_manage_card_checklist', { p_member_id: card.assignee_id, p_card_id: card.id });
     if (pode !== true) negados.push(card.id);
   }
