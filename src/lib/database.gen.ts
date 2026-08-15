@@ -30798,17 +30798,15 @@ export type Database = {
       get_blog_likes_batch: { Args: { p_post_ids: string[] }; Returns: Json }
       get_blog_post_likes: { Args: { p_post_id: string }; Returns: Json }
       get_board: { Args: { p_board_id: string }; Returns: Json }
-      get_board_activities:
-        | { Args: { p_board_id?: string; p_limit?: number }; Returns: Json }
-        | {
-            Args: {
-              p_assignee_filter?: string
-              p_board_id: string
-              p_period_filter?: string
-              p_status_filter?: string
-            }
-            Returns: Json
-          }
+      get_board_activities: {
+        Args: {
+          p_assignee_filter?: string
+          p_board_id: string
+          p_period_filter?: string
+          p_status_filter?: string
+        }
+        Returns: Json
+      }
       get_board_by_domain: {
         Args: {
           p_domain_key: string
@@ -30820,6 +30818,10 @@ export type Database = {
       get_board_drive_links: { Args: { p_board_id: string }; Returns: Json }
       get_board_item_drive_access: {
         Args: { p_board_item_id: string }
+        Returns: Json
+      }
+      get_board_lifecycle_log: {
+        Args: { p_board_id?: string; p_limit?: number }
         Returns: Json
       }
       get_board_members: {

@@ -471,7 +471,7 @@ Você é membro da diretoria do ${member.chapter || "capítulo"}. Seu acesso é 
 - \`get_comms_metrics_by_channel\` — Métricas por canal social
 - \`get_admin_dashboard\` — Dashboard admin: membros, tribos, atividade
 - \`get_ghost_visitors\` — Visitantes fantasma: usuários autenticados sem vínculo com membro
-- \`get_board_activities\` — Atividades recentes dos boards (lifecycle events)
+- \`get_board_activities\` — Log de ciclo de vida dos boards (as atividades dos cards estao em \`board_overview\` scope='tasks')
 - \`search_members\` — Buscar membros por nome, tribo, tier ou status
 - \`list_boards\` — Lista todos os boards ativos com IDs
 - \`manage_partner\` — Criar ou atualizar parceiro no pipeline`);
@@ -567,7 +567,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 ### Tier 1 — Todos os membros (mais 10 leitura contextuais)
 | # | Ferramenta | Parâmetros | Descrição |
 |---|-----------|-----------|-----------|
-| 28 | get_board_activities | board_id?, limit? | Atividades recentes dos boards |
+| 28 | get_board_activities | board_id?, limit? | Log de ciclo de vida do board (atividades de card: \`board_overview\` scope='tasks') |
 | 29 | list_boards | — | Lista boards ativos com IDs |
 | 30 | get_governance_docs | doc_type? | Documentos de governança |
 | 31 | get_manual_section | section?, lang? | Seções do Manual de Governança |
@@ -2551,11 +2551,15 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL 47: get_board_activities — All authenticated members
-  mcp.tool("get_board_activities", "Returns recent board lifecycle events: status changes, reviews, curation actions.", { board_id: z.string().optional().describe("UUID of the board. If omitted, returns activities across all boards."), limit: z.number().optional().describe("Max events. Default: 20") }, async (params: { board_id?: string; limit?: number }) => {
+  // #1779: o nome da TOOL fica (cliente com catalogo em cache continua achando), mas a RPC por tras
+  // passa a ser get_board_lifecycle_log. "Atividade" no produto e linha de checklist do card; o que
+  // esta tool devolve e evento de ciclo de vida. Para as atividades de verdade: board_overview
+  // scope='tasks'.
+  mcp.tool("get_board_activities", "Returns recent board LIFECYCLE events (status changes, reviews, curation actions) — not the cards' checklist activities. For those, use board_overview scope='tasks'.", { board_id: z.string().optional().describe("UUID of the board. If omitted, returns events across all boards."), limit: z.number().optional().describe("Max events. Default: 20") }, async (params: { board_id?: string; limit?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_board_activities", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_board_activities", { p_board_id: params.board_id || null, p_limit: params.limit || 20 });
+    const { data, error } = await sb.rpc("get_board_lifecycle_log", { p_board_id: params.board_id || null, p_limit: params.limit || 20 });
     if (error) { await logUsage(sb, member.id, "get_board_activities", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "get_board_activities", false, data.error, start); return err(data.error); }
     await logUsage(sb, member.id, "get_board_activities", true, undefined, start);
@@ -9136,15 +9140,18 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W1 · board_overview (R) — boards list / one board / initiative context ──
   mcp.tool(
     "board_overview",
-    "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent activities), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'initiative'. Read-only, stable envelope.",
+    "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent lifecycle events), 'tasks' (board_id → every card's checklist activity in ONE call: who owns it, whether it is done, when it is due), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'tasks'/'initiative'. Read-only, stable envelope.",
     {
-      scope: z.enum(["list", "board", "initiative"]).describe("What to summarize."),
-      board_id: z.string().optional().describe("Board UUID — REQUIRED for scope='board'."),
+      scope: z.enum(["list", "board", "tasks", "initiative"]).describe("What to summarize."),
+      board_id: z.string().optional().describe("Board UUID — REQUIRED for scope='board' and scope='tasks'."),
       initiative_id: z.string().optional().describe("Initiative UUID — scope='initiative'."),
       tribe_id: z.number().optional().describe("Legacy tribe 1-8 — scope='initiative' alternative to initiative_id."),
-      activity_limit: z.number().optional().describe("scope='board' recent-activity cap (default 20)."),
+      activity_limit: z.number().optional().describe("scope='board' recent lifecycle-event cap (default 20)."),
+      assignee_id: z.string().optional().describe("scope='tasks': only this member's activities (member UUID)."),
+      status: z.enum(["all", "pending", "completed"]).optional().describe("scope='tasks' status filter (default 'all')."),
+      period: z.enum(["all", "overdue", "week", "month"]).optional().describe("scope='tasks' due-date window (default 'all')."),
     },
-    async (params: { scope: "list" | "board" | "initiative"; board_id?: string; initiative_id?: string; tribe_id?: number; activity_limit?: number }) => {
+    async (params: { scope: "list" | "board" | "tasks" | "initiative"; board_id?: string; initiative_id?: string; tribe_id?: number; activity_limit?: number; assignee_id?: string; status?: "all" | "pending" | "completed"; period?: "all" | "overdue" | "week" | "month" }) => {
       const start = Date.now();
       const dom = "boards";
       const member = await getMember(sb);
@@ -9170,7 +9177,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           sb.rpc("get_board", { p_board_id: params.board_id }),
           sb.rpc("get_board_members", { p_board_id: params.board_id }),
           sb.rpc("get_board_tags", { p_board_id: params.board_id }),
-          sb.rpc("get_board_activities", { p_board_id: params.board_id, p_limit: params.activity_limit ?? 20 }),
+          sb.rpc("get_board_lifecycle_log", { p_board_id: params.board_id, p_limit: params.activity_limit ?? 20 }),
         ]);
         const warnings: string[] = [];
         const pick = (r: PromiseSettledResult<any>, label: string): any => {
@@ -9181,11 +9188,38 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         const board = pick(boardRes, "board");
         await logUsage(sb, member.id, "board_overview", true, undefined, start);
         return semanticOk({
-          data: { scope: "board", board_id: params.board_id, board, members: pick(membersRes, "members"), tags: pick(tagsRes, "tags"), recent_activities: pick(actRes, "activities") },
+          // #1779: a chave era `recent_activities` e trazia o LOG. "Atividade" e linha de checklist
+          // do card; o que vem aqui e evento de ciclo de vida. As atividades estao em scope='tasks'.
+          data: { scope: "board", board_id: params.board_id, board, members: pick(membersRes, "members"), tags: pick(tagsRes, "tags"), recent_lifecycle_events: pick(actRes, "lifecycle log") },
           summary: `Board ${board?.board_name ? `"${board.board_name}"` : params.board_id}.`,
           warnings,
-          next_actions: ["card_search mode='board': list its cards", "card_write action='create': add a card"],
-          audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_board", "get_board_members", "get_board_tags", "get_board_activities"], caller_member_id: member.id, gate_checked: "rls_can_see_board", resource_id: params.board_id!, extra: { scope: "board" } },
+          next_actions: ["board_overview scope='tasks': quem responde por que, e ate quando", "card_search mode='board': list its cards", "card_write action='create': add a card"],
+          audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_board", "get_board_members", "get_board_tags", "get_board_lifecycle_log"], caller_member_id: member.id, gate_checked: "rls_can_see_board", resource_id: params.board_id!, extra: { scope: "board" } },
+        });
+      }
+
+      if (params.scope === "tasks") {
+        // #1779: a porta agregada de tarefas que faltava no semantico. A RPC ja existia e so o
+        // frontend a alcancava — para saber quem responde por que num board, era card a card.
+        if (!isUUID(params.board_id ?? "")) { await logUsage(sb, member.id, "board_overview", false, "Invalid board_id", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "invalid_input", message: "scope='tasks' requires board_id (UUID).", action: "Use scope='list' to find one." })); }
+        if (!(await canSee(sb, "board", params.board_id!))) { await logUsage(sb, member.id, "board_overview", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: "Board not found or not visible to you.", action: "This board may belong to a confidential initiative you are not engaged in." })); }
+        const { data, error } = await sb.rpc("get_board_activities", {
+          p_board_id: params.board_id,
+          p_assignee_filter: params.assignee_id ?? null,
+          p_status_filter: params.status ?? "all",
+          p_period_filter: params.period ?? "all",
+        });
+        if (error) { await logUsage(sb, member.id, "board_overview", false, error.message, start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        if (data?.error) { await logUsage(sb, member.id, "board_overview", false, data.error, start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "internal_error", message: data.error })); }
+        const tasks = data?.activities ?? [];
+        const semDono = tasks.filter((a: any) => !a.assignee_id).length;
+        const atrasadas = tasks.filter((a: any) => !a.done && a.target_date && a.target_date < new Date().toISOString().slice(0, 10)).length;
+        await logUsage(sb, member.id, "board_overview", true, undefined, start);
+        return semanticOk({
+          data: { scope: "tasks", board_id: params.board_id, filters: { assignee_id: params.assignee_id ?? null, status: params.status ?? "all", period: params.period ?? "all" }, total: data?.total ?? 0, completed: data?.completed ?? 0, pending: data?.pending ?? 0, returned: tasks.length, without_assignee: semDono, overdue: atrasadas, tasks },
+          summary: `${tasks.length} atividade(s) no recorte; o board tem ${data?.pending ?? 0} pendente(s) de ${data?.total ?? 0}. ${semDono} sem responsavel, ${atrasadas} vencida(s).`,
+          next_actions: ["card_checklist: marcar concluida ou trocar o responsavel", "card_get: abrir o card de uma atividade", "board_overview scope='board': o log de ciclo de vida"],
+          audit: { tool: "board_overview", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_board_activities"], caller_member_id: member.id, gate_checked: "rls_can_see_board", resource_id: params.board_id!, extra: { scope: "tasks", status: params.status ?? "all", period: params.period ?? "all" } },
         });
       }
 
@@ -12506,7 +12540,7 @@ const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);  
 // #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
 // payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
 // derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
-const SEMANTIC_SURFACE_VERSION = "0.15.0";
+const SEMANTIC_SURFACE_VERSION = "0.16.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
@@ -12634,7 +12668,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.100.0",
+  ef_version: "2.101.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },

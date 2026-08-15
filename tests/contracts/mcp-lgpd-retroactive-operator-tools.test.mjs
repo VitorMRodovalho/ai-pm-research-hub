@@ -221,8 +221,12 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 // #1780 (15/08/2026): 2.99.0 -> 2.100.0. card_write ganhou assign_role/unassign_role. A auditoria
 // da Fase 1 achou 13 verbos do dominio sem porta MCP nenhuma, e os papeis do card (autor,
 // revisor, contribuidor) eram justamente o vocabulario da queixa que abriu o EPIC.
-test('ef_version is 2.100.0 (#1780 papeis do card; 2.99.0 no #1778; 2.98.0 no #1586)', () => {
-  assert.match(EF, /ef_version:\s*"2\.100\.0"/, '/health must report ef_version 2.100.0');
+// #1779 (15/08/2026): 2.100.0 -> 2.101.0. O log de ciclo de vida ganhou nome proprio
+// (get_board_lifecycle_log) e as tarefas do board ganharam porta agregada no semantico
+// (board_overview scope='tasks'). Sem tool nova: acao dentro de tool existente, porque o conector
+// cacheia tools/list.
+test('ef_version is 2.101.0 (#1779 log x tarefas; 2.100.0 no #1780; 2.99.0 no #1778)', () => {
+  assert.match(EF, /ef_version:\s*"2\.101\.0"/, '/health must report ef_version 2.101.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
