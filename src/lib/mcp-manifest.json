@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-15T13:48:45.166Z",
+  "generated_at": "2026-08-15T14:25:24.807Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -1145,7 +1145,7 @@
     },
     {
       "name": "card_write",
-      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false

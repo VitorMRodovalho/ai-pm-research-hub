@@ -8842,9 +8842,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W1 · card_write (W) — 297 calls/180d; 10 actions over one card ──────────
   mcp.tool(
     "card_write",
-    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
     {
-      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast"]).describe("Card operation."),
+      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast", "assign_role", "unassign_role"]).describe("Card operation."),
       card_id: z.string().optional().describe("Card UUID — required for every action EXCEPT 'create'."),
       board_id: z.string().optional().describe("Board UUID — required for action='create'."),
       target_board_id: z.string().optional().describe("Destination board UUID — move_to_board (required), duplicate/mirror (optional/required)."),
@@ -8860,6 +8860,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       forecast_date: z.string().optional().describe("action='forecast' new forecast date (YYYY-MM-DD); also settable via update."),
       justification: z.string().optional().describe("action='forecast' — required justification."),
       is_portfolio_item: z.boolean().optional().describe("update — mark portfolio deliverable (Leader/GP)."),
+      member_id: z.string().optional().describe("assign_role/unassign_role — member UUID whose role on the card changes."),
+      assignment_role: z.enum(["author", "reviewer", "contributor", "curation_reviewer"]).optional().describe("assign_role/unassign_role — the role on THIS card (#1780: quem e autor/revisor/contribuidor; ate agora so existia na UI)."),
       priority: z.string().optional().describe("create — low|medium|high|urgent (stored as a tag)."),
       notes: z.string().optional().describe("mirror — optional notes on the copy."),
       reason: z.string().optional().describe("delete (required) / move / archive / restore — audit reason."),
@@ -8882,7 +8884,12 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         gateKind = "item"; resourceId = params.card_id;
       }
       if (!(await canSee(sb, gateKind, resourceId))) { await logUsage(sb, member.id, "card_write", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: `You cannot see this ${gateKind} (confidential initiative or no access).`, action: "This resource belongs to a confidential initiative you are not engaged in." })); }
-      if (!(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
+      // #1780: assign_role/unassign_role passam pela autoridade da PROPRIA RPC
+      // (participate_in_governance_review / lider de tribo / board admin / curate_content para
+      // curation_reviewer / autoatribuicao como 'author'). Um canV4('write_board') aqui seria mais
+      // ESTRITO que a RPC chamada — o mesmo defeito que o #1778 corrigiu no card_checklist.
+      const ROLE_ACTIONS = new Set(["assign_role", "unassign_role"]);
+      if (!ROLE_ACTIONS.has(params.action) && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
 
       // Per-action input validation
       if (params.action === "create" && (!params.title || !params.title.trim())) return invalid("action='create' requires title.", "Pass title.");
@@ -8892,6 +8899,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (params.action === "duplicate" && params.target_board_id && !isUUID(params.target_board_id)) return invalid("target_board_id must be a UUID.", "Fix target_board_id.");
       if (params.action === "delete" && (!params.reason || !params.reason.trim())) return invalid("action='delete' requires reason (audit).", "Pass reason.");
       if (params.action === "forecast" && (!params.forecast_date || !params.justification || !params.justification.trim())) return invalid("action='forecast' requires forecast_date + justification.", "Pass forecast_date and justification.");
+      if (ROLE_ACTIONS.has(params.action) && (!isUUID(params.member_id ?? "") || !params.assignment_role)) return invalid(`action='${params.action}' requires member_id (UUID) + assignment_role (author|reviewer|contributor|curation_reviewer).`, "Pass member_id and assignment_role.");
 
       // ADR-0018 confirm-gate for destructive verbs (archive/delete) — return a preview unless confirm=true.
       if ((params.action === "archive" || params.action === "delete") && params.confirm !== true) {
@@ -8935,6 +8943,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "duplicate": rpc = "duplicate_board_item"; rpcArgs = { p_item_id: params.card_id, p_target_board_id: params.target_board_id || null }; break;
         case "mirror": rpc = "create_mirror_card"; rpcArgs = { p_source_item_id: params.card_id, p_target_board_id: params.target_board_id, p_target_status: params.restore_status || "backlog", p_notes: params.notes || null }; break;
         case "forecast": rpc = "update_card_forecast"; rpcArgs = { p_board_item_id: params.card_id, p_new_forecast: params.forecast_date, p_justification: params.justification }; break;
+        case "assign_role": rpc = "assign_member_to_item"; rpcArgs = { p_item_id: params.card_id, p_member_id: params.member_id, p_role: params.assignment_role }; break;
+        case "unassign_role": rpc = "unassign_member_from_item"; rpcArgs = { p_item_id: params.card_id, p_member_id: params.member_id, p_role: params.assignment_role }; break;
         default: return invalid(`Unknown action '${params.action}'.`);
       }
       const { data, error } = await sb.rpc(rpc!, rpcArgs!);
@@ -12624,7 +12634,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.99.0",
+  ef_version: "2.100.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
