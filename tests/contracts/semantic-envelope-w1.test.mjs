@@ -132,12 +132,26 @@ for (const tool of WRITE_TOOLS) {
   });
 }
 
-for (const tool of ['card_checklist', 'card_write']) {
-  test(`W1[${tool}]: WRITE carries write_board authority`, () => {
-    const b = BLOCKS[tool];
-    assert.ok(/canV4\(sb,\s*member\.id,\s*"write_board"/.test(b), `${tool}: must gate on canV4(write_board)`);
-  });
-}
+test('W1[card_write]: WRITE carries write_board authority', () => {
+  const b = BLOCKS['card_write'];
+  assert.ok(/canV4\(sb,\s*member\.id,\s*"write_board"/.test(b), 'card_write: must gate on canV4(write_board)');
+});
+
+// #1778 (15/08/2026): card_checklist saiu do canV4('write_board') puro. O gate por capacidade era
+// mais ESTRITO que a RPC que a tool chama — o autor do proprio card era recusado pelo MCP e aceito
+// pelo SQL. O fail-fast passou a ler o MESMO predicado das RPCs. O contrato continua exigindo
+// autoridade no servidor, so que nomeando o predicado em vez da capacidade.
+test('W1[card_checklist]: WRITE carries the resource-aware authority predicate (#1778)', () => {
+  const b = BLOCKS['card_checklist'];
+  assert.ok(
+    /rpc\("can_manage_card_checklist"/.test(b),
+    'card_checklist: must gate on can_manage_card_checklist (write_board OR card assignee/author/contributor)',
+  );
+  assert.ok(
+    !/canV4\(sb,\s*member\.id,\s*"write_board"/.test(b),
+    'card_checklist: o canV4 puro voltaria a ser mais estrito que a propria RPC',
+  );
+});
 
 for (const tool of GATED_READS) {
   test(`W1[${tool}]: initiative-linked READ carries the #785 gate (canSee) on the resource path`, () => {

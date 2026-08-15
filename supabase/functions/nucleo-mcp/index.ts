@@ -8769,7 +8769,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W1 · card_checklist (W) — 345 calls/180d, the platform's #1 write path ──
   mcp.tool(
     "card_checklist",
-    "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: write_board — EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+    "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: can_manage_card_checklist (#1778) — write_board OR being the card's assignee/author/contributor OR a board admin/editor OR comms team on a communication board; EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
     {
       action: z.enum(["add", "update", "complete", "assign", "delete"]).describe("Checklist operation."),
       card_id: z.string().optional().describe("Card UUID — REQUIRED for action='add'."),
@@ -8807,9 +8807,16 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       // #785 fail-fast (contract) — the card must be visible.
       if (!cardId || !(await canSee(sb, "item", cardId))) { await logUsage(sb, member.id, "card_checklist", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthorized", message: "You cannot see this card (confidential initiative or no access).", action: "This card belongs to a confidential initiative you are not engaged in." })); }
 
-      // Authority — write_board for mutating actions; 'complete' is RPC-self-gated (activity owner).
-      const needsWriteBoard = params.action !== "complete";
-      if (needsWriteBoard && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_checklist", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP, or use action='complete' if you own the activity." })); }
+      // Authority — #1778: o fail-fast le o MESMO predicado das RPCs (can_manage_card_checklist:
+      // write_board OU responsavel/autor/contribuidor do card OU papel no board OU comms no board
+      // de comunicacao). Antes daqui saia um canV4('write_board') puro, mais ESTRITO que a RPC que
+      // esta tool chama — o autor do card era recusado pelo MCP e aceito pelo SQL.
+      // 'complete' segue de fora: a RPC dele se autogateia ao dono da atividade, regra mais larga.
+      if (params.action !== "complete") {
+        const { data: podeGerir, error: gateErr } = await sb.rpc("can_manage_card_checklist", { p_member_id: member.id, p_card_id: cardId });
+        if (gateErr) { await logUsage(sb, member.id, "card_checklist", false, gateErr.message, start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "internal_error", message: gateErr.message })); }
+        if (podeGerir !== true) { await logUsage(sb, member.id, "card_checklist", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_checklist", semantic_domain: dom, code: "unauthorized", message: "Requires write_board, or being the card's assignee/author/contributor.", action: "Ask a tribe leader / GP, or use action='complete' if you own the activity." })); }
+      }
 
       let rpc: string; let rpcArgs: Record<string, unknown>;
       switch (params.action) {
@@ -8827,7 +8834,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         data: { action: params.action, card_id: cardId, checklist_item_id: newId, result: data ?? null },
         summary: `Checklist ${params.action} ${params.action === "complete" && params.completed === false ? "(reopened) " : ""}ok em card ${cardId}.`,
         next_actions: ["card_get: re-read the card with its checklist", "card_checklist action='complete' to tick items off"],
-        audit: { tool: "card_checklist", semantic_domain: dom, pii_level: "low", permission: params.action === "complete" ? "activity_owner|write_board" : "write_board", source_tools: [rpc!], caller_member_id: member.id, gate_checked: params.action === "complete" ? "rls_can_see_item + RPC-self(owner)" : "rls_can_see_item + write_board", resource_id: cardId, extra: { action: params.action } },
+        audit: { tool: "card_checklist", semantic_domain: dom, pii_level: "low", permission: params.action === "complete" ? "activity_owner|write_board" : "write_board|card_owner|author|contributor", source_tools: [rpc!], caller_member_id: member.id, gate_checked: params.action === "complete" ? "rls_can_see_item + RPC-self(owner)" : "rls_can_see_item + can_manage_card_checklist", resource_id: cardId, extra: { action: params.action } },
       });
     },
   );
@@ -12617,7 +12624,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.98.0",
+  ef_version: "2.99.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },

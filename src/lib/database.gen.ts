@@ -29904,6 +29904,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_manage_card_checklist: {
+        Args: { p_card_id: string; p_member_id: string }
+        Returns: boolean
+      }
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
       can_read_internal_analytics: { Args: never; Returns: boolean }

@@ -307,18 +307,28 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
           checklistMigrated.current = true;
           const jsonItems = parsed.filter((c: any) => c.text);
           if (jsonItems.length > 0) {
-            const rows = jsonItems.map((c: any, i: number) => ({
-              board_item_id: item.id, text: c.text, is_completed: !!c.done, position: i,
-            }));
-            const { data: inserted } = await sb.from('board_item_checklists')
-              .insert(rows).select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by');
-            if (Array.isArray(inserted)) {
-              setChecklist(inserted.map((c: any) => ({
-                id: c.id, text: c.text, done: c.is_completed,
-                assigned_to: c.assigned_to, target_date: c.target_date,
-                completed_at: c.completed_at, completed_by: c.completed_by,
-              })));
+            // #1778: a migracao JSON→tabela tambem sai do INSERT direto. Como add_checklist_item
+            // nao recebe o estado de concluido, o item que ja vinha marcado e fechado logo depois
+            // pela RPC propria (best-effort: ela se autogateia ao dono da atividade).
+            const migrated: any[] = [];
+            for (let i = 0; i < jsonItems.length; i++) {
+              const c: any = jsonItems[i];
+              const { data: newId, error } = await sb.rpc('add_checklist_item', {
+                p_board_item_id: item.id, p_text: c.text, p_position: i,
+              });
+              if (error || !newId) {
+                (window as any).toast?.((error?.message) || i18n.error || 'Erro ao migrar atividades', 'error');
+                break; // migracao parcial e visivel: a tela nao finge que migrou tudo
+              }
+              let done = false;
+              if (c.done) {
+                const { error: cErr } = await sb.rpc('complete_checklist_item', { p_checklist_item_id: newId, p_completed: true });
+                if (cErr) (window as any).toast?.(cErr.message || 'Atividade migrada, mas nao foi possivel marca-la como concluida', 'error');
+                else done = true;
+              }
+              migrated.push({ id: newId, text: c.text, done });
             }
+            if (migrated.length > 0) setChecklist(migrated);
           }
         }
       }
@@ -497,16 +507,23 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
   // ── Checklist helpers (always DB-backed via board_item_checklists table) ──
   const addCheckItem = async () => {
-    if (!newCheckItem.trim()) return;
+    const text = newCheckItem.trim();
+    if (!text) return;
     const sb = getSb();
     if (!sb) return;
-    const { data, error } = await sb.from('board_item_checklists')
-      .insert({ board_item_id: item.id, text: newCheckItem.trim(), position: checklist.length })
-      .select('id, text, is_completed, position, assigned_to, target_date, completed_at, completed_by')
-      .single();
-    if (!error && data) {
-      setChecklist([...checklist, { id: data.id, text: data.text, done: false }]);
+    // #1778: pela RPC, nao por INSERT direto. A RLS da tabela decide so por capacidade
+    // (write/write_board) e nao olha o card; a RPC aceita tambem responsavel, autor e
+    // contribuidor daquele card. O INSERT direto barrava o proprio dono do trabalho.
+    const { data, error } = await sb.rpc('add_checklist_item', {
+      p_board_item_id: item.id,
+      p_text: text,
+      p_position: checklist.length,
+    });
+    if (error) {
+      (window as any).toast?.(error.message || i18n.error || 'Erro ao adicionar atividade', 'error');
+      return; // mantem o texto digitado: a recusa nao pode se parecer com sucesso
     }
+    setChecklist([...checklist, { id: data as unknown as string, text, done: false }]);
     setNewCheckItem('');
   };
 
@@ -516,7 +533,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     const sb = getSb();
     if (!sb) return;
     const newDone = !ci.done;
-    await sb.rpc('complete_checklist_item', { p_checklist_item_id: ci.id, p_completed: newDone });
+    const { error } = await sb.rpc('complete_checklist_item', { p_checklist_item_id: ci.id, p_completed: newDone });
+    if (error) {
+      (window as any).toast?.(error.message || i18n.error || 'Erro ao atualizar atividade', 'error');
+      return; // #1778: a tela nao pode marcar concluido o que o banco recusou
+    }
     const updated = [...checklist];
     updated[idx] = { ...updated[idx], done: newDone, completed_at: newDone ? new Date().toISOString() : null };
     setChecklist(updated);
@@ -527,7 +548,12 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     if (ci.id) {
       const sb = getSb();
       if (!sb) return;
-      await sb.from('board_item_checklists').delete().eq('id', ci.id);
+      // #1778: mesma troca do add — a RPC olha o card, o DELETE direto so olhava a capacidade.
+      const { error } = await sb.rpc('delete_checklist_item', { p_checklist_item_id: ci.id, p_reason: null });
+      if (error) {
+        (window as any).toast?.(error.message || i18n.error || 'Erro ao remover atividade', 'error');
+        return; // a linha nao pode sumir da tela se o banco recusou apaga-la
+      }
     }
     setChecklist(checklist.filter((_, i) => i !== idx));
   };
