@@ -1110,7 +1110,7 @@
     },
     {
       "name": "board_overview",
-      "description": "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent activities), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'initiative'. Read-only, stable envelope.",
+      "description": "Semantic board reader (absorbs list_boards/get_board_detail/get_board_activities and folds in the get_board_or_initiative_context bridge). Set `scope`: 'list' (all boards visible to you), 'board' (board_id → fields + members + tags + recent lifecycle events), 'tasks' (board_id → every card's checklist activity in ONE call: who owns it, whether it is done, when it is due), 'initiative' (initiative_id or tribe_id → initiative + primary board + sample cards + engagement count). #785: confidential initiatives are excluded from 'list' (via RLS) and fail-fast on 'board'/'tasks'/'initiative'. Read-only, stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1173,7 +1173,7 @@
     },
     {
       "name": "get_board_activities",
-      "description": "Returns recent board lifecycle events: status changes, reviews, curation actions.",
+      "description": "Returns recent board LIFECYCLE events (status changes, reviews, curation actions) — not the cards' checklist activities. For those, use board_overview scope='tasks'.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
