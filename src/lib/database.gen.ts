@@ -28757,6 +28757,14 @@ export type Database = {
           tabela: string
         }[]
       }
+      _audit_confidential_write_gate_coverage: {
+        Args: never
+        Returns: {
+          aponta_para: string
+          forma: string
+          tabela: string
+        }[]
+      }
       _audit_curation_artifact_snapshot_security: { Args: never; Returns: Json }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
       _audit_function_execute_acl: {
