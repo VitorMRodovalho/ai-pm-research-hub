@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-14T15:41:38.676Z",
+  "generated_at": "2026-08-15T13:48:45.166Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -1117,7 +1117,7 @@
     },
     {
       "name": "card_checklist",
-      "description": "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: write_board — EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
+      "description": "Semantic checklist writer for a board card (absorbs add/update/complete/assign/delete_checklist_item — 345 calls/180d, the platform's #1 write path). Set `action`: 'add' (card_id + text), 'update' (checklist_item_id; text/position/target_date), 'complete' (checklist_item_id; completed default true), 'assign' (checklist_item_id + assigned_to), 'delete' (checklist_item_id). Authority: can_manage_card_checklist (#1778) — write_board OR being the card's assignee/author/contributor OR a board admin/editor OR comms team on a communication board; EXCEPT 'complete', whose RPC self-gates to the activity owner. #785 confidential-visibility (ADR-0105) enforced as a contract: the target card must be visible to you. Stable envelope {ok,data,summary,warnings,next_actions,audit}.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
