@@ -218,8 +218,11 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 // #1778 (15/08/2026): 2.98.0 -> 2.99.0. O fail-fast do card_checklist passou a ler
 // can_manage_card_checklist em vez de canV4('write_board'): o MCP era mais ESTRITO que a RPC que
 // ele mesmo chama, e recusava o autor do card que o SQL aceitava.
-test('ef_version is 2.99.0 (#1778 card_checklist le o predicado; 2.98.0 no #1586; 2.97.0 na onda D do #1590)', () => {
-  assert.match(EF, /ef_version:\s*"2\.99\.0"/, '/health must report ef_version 2.99.0');
+// #1780 (15/08/2026): 2.99.0 -> 2.100.0. card_write ganhou assign_role/unassign_role. A auditoria
+// da Fase 1 achou 13 verbos do dominio sem porta MCP nenhuma, e os papeis do card (autor,
+// revisor, contribuidor) eram justamente o vocabulario da queixa que abriu o EPIC.
+test('ef_version is 2.100.0 (#1780 papeis do card; 2.99.0 no #1778; 2.98.0 no #1586)', () => {
+  assert.match(EF, /ef_version:\s*"2\.100\.0"/, '/health must report ef_version 2.100.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {

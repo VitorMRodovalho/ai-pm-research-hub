@@ -71,13 +71,14 @@ The contract is guarded statically by `tests/contracts/semantic-envelope-w1.test
 - **Intent:** the card checklist writer — the platform's #1 write path (345 calls/180d).
 - **`action`:** `add` (card_id + text) · `update` (checklist_item_id) · `complete` (checklist_item_id; `completed` default true) · `assign` (checklist_item_id + assigned_to) · `delete` (checklist_item_id).
 - **Absorbs:** `add_checklist_item`, `update_checklist_item`, `complete_checklist_item`, `assign_checklist_item`, `delete_checklist_item`.
-- **Gate:** `write_board` + #785 (`rls_can_see_item`). `complete` is RPC-self-gated to the activity owner (no `write_board` required).
+- **Gate (#1778):** `can_manage_card_checklist` + #785 (`rls_can_see_item`, agora DENTRO do predicado) — `write_board` **ou** ser responsável/autor/contribuidor do card, board admin/editor, ou comms no board de comunicação. `complete` é RPC-self-gated ao dono da atividade.
 
 ### `card_write` (W)
 - **Intent:** create/mutate/move/lifecycle a single card (297 calls/180d).
-- **`action`:** `create` (board_id + title) · `update` · `move` · `move_to_board` · `archive`* · `restore` · `delete`* · `duplicate` · `mirror` · `forecast`. (*destructive → `confirm=true`.)
-- **Absorbs:** `create_board_card`, `update_card_fields`, `update_card_status`, `move_card`, `move_card_to_board`, `archive_card`, `restore_card`, `delete_card`, `duplicate_card`, `create_mirror_card`, `update_card_forecast`.
-- **Gate:** `write_board`, **board-scoped** via #785 on the target card (`create` gates the target board). Closes the Wave-0 resourceless-write concern for delete/duplicate/mirror.
+- **`action`:** `create` (board_id + title) · `update` · `move` · `move_to_board` · `archive`* · `restore` · `delete`* · `duplicate` · `mirror` · `forecast` · `assign_role` / `unassign_role` (card_id + member_id + `assignment_role`). (*destructive → `confirm=true`.)
+- **Absorbs:** `create_board_card`, `update_card_fields`, `update_card_status`, `move_card`, `move_card_to_board`, `archive_card`, `restore_card`, `delete_card`, `duplicate_card`, `create_mirror_card`, `update_card_forecast`, `assign_member_to_item`, `unassign_member_from_item`.
+- **Gate:** `write_board`, **board-scoped** via #785 on a target card (`create` gates the target board). Closes the Wave-0 resourceless-write concern for delete/duplicate/mirror.
+- **#1780:** `assign_role`/`unassign_role` NÃO passam pelo `write_board` do resto da tool — a autoridade é a da própria RPC (`participate_in_governance_review` / líder de tribo / board admin / `curate_content` para `curation_reviewer` / autoatribuição como `author`). Um `write_board` aqui seria mais estrito que a RPC chamada, o defeito que o #1778 corrigiu no `card_checklist`. A LEITURA dos papéis já existia em `card_get` (`assignments`).
 
 ### `card_comment` (W)
 - **Intent:** comment on a card (create/edit/soft-delete), with @mentions.
