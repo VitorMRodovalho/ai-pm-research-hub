@@ -178,6 +178,17 @@ describe('#1572 — corpo vivo dos caminhos de decisão', () => {
     // 2025, que já não têm como ganhar justificativa.
     assert.match(src, /v_unjustified_active/);
   });
+
+  it('#1801 — o ciclo ATIVO resolve por STATUS, e não pela data de escrita da linha', { skip: dbGated ? false : skipMsg }, () => {
+    // Sem isto o contador acima aponta para o ciclo errado e o amarelo fica preso: `created_at` é a
+    // data de ESCRITA, e o backfill do cycle2-2025 (13/07/2026) tornou um ciclo FECHADO a linha mais
+    // nova da tabela. Mesma causa 1 da #1586(b), em outra função.
+    const src = corpos.get('get_selection_health');
+    assert.match(src, /\(c\.status = 'open'\) DESC/);
+    // Um segundo ciclo aberto não pode sumir calado: a função devolve UM ciclo, mas conta quantos há.
+    assert.match(src, /v_open_cycles/);
+    assert.match(src, /'open_cycles'/);
+  });
 });
 
 // ── Superfície viva: colunas, ACL e fail-closed ───────────────────────────────────────────────────
@@ -212,6 +223,27 @@ describe('#1572 — superfície', () => {
     });
     assert.ifError(error);
     assert.equal(data?.error, 'Unauthorized');
+  });
+
+  it('#1801 — a armadilha do created_at é load-bearing nos dados de hoje', { skip: dbGated ? false : skipMsg }, async () => {
+    // O guard estático acima só vale enquanto a inversão existir de fato. Aqui se confirma que a
+    // linha mais nova por `created_at` NÃO é o ciclo aberto — se um dia deixar de ser, este teste
+    // avisa que a trava perdeu o objeto em vez de seguir verde por acaso.
+    const { data, error } = await sb
+      .from('selection_cycles')
+      .select('cycle_code, status, created_at')
+      .order('created_at', { ascending: false });
+    assert.ifError(error);
+    assert.ok(data?.length >= 2, 'precisa de ao menos dois ciclos para a inversão existir');
+
+    const abertos = data.filter((c) => c.status === 'open');
+    if (abertos.length === 0) return;  // sem ciclo aberto a resolução cai no fallback, e tudo bem
+
+    assert.notEqual(
+      data[0].status,
+      'open',
+      'a inversão sumiu: o mais novo por created_at voltou a ser o aberto, e o guard do #1801 perdeu o objeto',
+    );
   });
 
   it('a população decidida sem avaliação é NÃO VAZIA (o portão é load-bearing)', { skip: dbGated ? false : skipMsg }, async () => {
