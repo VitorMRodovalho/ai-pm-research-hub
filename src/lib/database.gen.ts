@@ -29002,6 +29002,17 @@ export type Database = {
           proname: string
         }[]
       }
+      _audit_undeclared_state_domain: {
+        Args: never
+        Returns: {
+          coluna: string
+          sem_dominio_declarado: boolean
+          tabela: string
+          tem_dominio_declarado: boolean
+          tem_fk: boolean
+          tem_trigger_na_tabela: boolean
+        }[]
+      }
       _audit_view_security_invoker: {
         Args: { p_views: string[] }
         Returns: {
