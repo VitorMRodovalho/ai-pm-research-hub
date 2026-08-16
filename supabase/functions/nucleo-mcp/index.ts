@@ -5396,8 +5396,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok({ findings: data ?? [], count: (data ?? []).length });
   });
 
-  // TOOL: get_lgpd_cron_health — admin observability for LGPD monthly crons (ADR-0061 W8 / Pattern 43 reuse)
-  mcp.tool("get_lgpd_cron_health", "Returns LGPD compliance cron health snapshot: 3 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly) with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y count of members 5y+ inactive not yet anonymized. Health signal: green (all crons <=35d), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + cron silent >35d). Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'", {}, async () => {
+  // TOOL: get_lgpd_cron_health — admin observability for LGPD retention crons (ADR-0061 W8 / Pattern 43 reuse; #905 premember, #1819 retention sweep)
+  mcp.tool("get_lgpd_cron_health", "Returns LGPD compliance cron health snapshot: 4 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly, lgpd-anonymize-premember-monthly) plus the DAILY data-retention-sweep-daily, each with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y (members 5y+ inactive not yet anonymized), premember_anonymization (dormant until legal ratifies the #905 window), and data_retention: how many declared data_retention_policy rows have a working executor, with the reason for each uncovered one. Coverage is INFORMATIONAL — declared gaps are tracked in issues and locked by a CI ratchet, not by this signal. Health signal: green (monthly crons <=35d and the daily sweep not silent), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + monthly cron silent >35d, OR the daily sweep active and silent >2d — never-ran is not red). max_days_since_any_job_ran stays about the MONTHLY jobs only. Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_lgpd_cron_health", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -12668,7 +12668,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.101.0",
+  ef_version: "2.102.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },

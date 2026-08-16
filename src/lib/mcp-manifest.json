@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T14:43:42.778Z",
+  "generated_at": "2026-08-16T20:33:41.580Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -2713,7 +2713,7 @@
     },
     {
       "name": "get_lgpd_cron_health",
-      "description": "Returns LGPD compliance cron health snapshot: 3 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly) with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y count of members 5y+ inactive not yet anonymized. Health signal: green (all crons <=35d), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + cron silent >35d). Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'",
+      "description": "Returns LGPD compliance cron health snapshot: 4 monthly crons (lgpd-anonymize-inactive-monthly, v4-anonymize-by-kind-monthly, log-retention-monthly, lgpd-anonymize-premember-monthly) plus the DAILY data-retention-sweep-daily, each with last_run_at + last_status + days_since_last_run + failed_runs_last_90d. Plus pending_anonymization_inactive_5y (members 5y+ inactive not yet anonymized), premember_anonymization (dormant until legal ratifies the #905 window), and data_retention: how many declared data_retention_policy rows have a working executor, with the reason for each uncovered one. Coverage is INFORMATIONAL — declared gaps are tracked in issues and locked by a CI ratchet, not by this signal. Health signal: green (monthly crons <=35d and the daily sweep not silent), yellow (newly registered / not yet fired / no pending work), red (pending anonymization + monthly cron silent >35d, OR the daily sweep active and silent >2d — never-ran is not red). max_days_since_any_job_ran stays about the MONTHLY jobs only. Authority: view_internal_analytics. Use to audit 'are LGPD obligations being met?'",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
