@@ -28944,6 +28944,16 @@ export type Database = {
           sends_http: boolean
         }[]
       }
+      _audit_selection_cycle_resolution: {
+        Args: never
+        Returns: {
+          args: string
+          exemplo: string
+          funcao: string
+          resolve_por_created_at: boolean
+          usa_helper: boolean
+        }[]
+      }
       _audit_trigger_dispatch_without_handler: {
         Args: never
         Returns: {
@@ -33803,6 +33813,7 @@ export type Database = {
         Returns: Json
       }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
+      selection_active_cycle_id: { Args: never; Returns: string }
       selection_coi_recused: {
         Args: { p_caller_id: string; p_cycle_id: string }
         Returns: boolean
