@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-15T14:25:24.807Z",
+  "generated_at": "2026-08-16T14:43:42.778Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -613,7 +613,7 @@
     },
     {
       "name": "list_initiative_engagements",
-      "description": "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.",
+      "description": "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked' (encerrados — as linhas vêm com status='offboarded'), 'onboarding' (linhas com status='pending'). Os dois últimos ficaram inertes até #1809.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false
@@ -2706,7 +2706,7 @@
     },
     {
       "name": "get_invitation_health",
-      "description": "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked/canceled), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.",
+      "description": "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked — 'canceled' saiu em #1809: não existe no domínio de initiative_invitations.status e valia sempre 0), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
