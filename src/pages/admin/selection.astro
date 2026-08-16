@@ -151,6 +151,13 @@ const SEL_I18N = {
     leader: t('admin.selection.leader', lang),
     both: t('admin.selection.statusBoth', lang),
   },
+  earlyAcceptancePanel: {
+    title: t('admin.selection.earlyAcceptancePanel.title', lang),
+    approved: t('admin.selection.earlyAcceptancePanel.approved', lang),
+    justified: t('admin.selection.earlyAcceptancePanel.justified', lang),
+    unjustified: t('admin.selection.earlyAcceptancePanel.unjustified', lang),
+    rejected: t('admin.selection.earlyAcceptancePanel.rejected', lang),
+  },
   modal: {
     deepLinkNotFound: t('admin.selection.modal.deepLinkNotFound', lang),
     tabInfo: t('admin.selection.modal.tabInfo', lang),
@@ -195,6 +202,9 @@ const SEL_I18N = {
     rankOverall: t('admin.selection.modal.rankOverall', lang),
     changeStatus: t('admin.selection.modal.changeStatus', lang),
     feedbackPlaceholder: t('admin.selection.modal.feedbackPlaceholder', lang),
+    earlyAcceptanceTitle: t('admin.selection.modal.earlyAcceptanceTitle', lang),
+    earlyAcceptanceHint: t('admin.selection.modal.earlyAcceptanceHint', lang),
+    earlyAcceptancePlaceholder: t('admin.selection.modal.earlyAcceptancePlaceholder', lang),
     saveChanges: t('admin.selection.modal.saveChanges', lang),
     loadingEvaluation: t('admin.selection.modal.loadingEvaluation', lang),
     loadingComms: t('admin.selection.modal.loadingComms', lang),
@@ -512,6 +522,10 @@ const SEL_I18N = {
 
         <!-- Pipeline kanban -->
         <div id="sel-kanban" class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4"></div>
+
+        <!-- #1572 — aprovado sem NENHUMA avaliação. Antes disto só se descobria cruzando status com
+             a contagem de avaliações na mão. Fica escondido quando o número é zero. -->
+        <div id="sel-early-acceptance" class="hidden mb-4"></div>
 
         <!-- Table -->
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
@@ -914,6 +928,11 @@ const SEL_I18N = {
       converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
     },
     roleLabels: { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' },
+    earlyAcceptancePanel: {
+      title: 'Aprovados sem avaliação', approved: 'aprovados',
+      justified: 'com justificativa', unjustified: 'sem justificativa',
+      rejected: 'rejeitados sem avaliação',
+    },
     modal: {
       tabInfo: 'Informações', tabEvaluate: 'Avaliar', tabInterview: 'Entrevista',
       tabComms: 'Comunicação', tabAiRuns: 'Análises IA', tabAudit: 'Auditoria',
@@ -927,6 +946,9 @@ const SEL_I18N = {
       objScore: 'Obj. Score', finalScore: 'Final Score',
       rankChapter: 'Rank (Cap.)', rankOverall: 'Rank (Geral)',
       changeStatus: 'Alterar Status', feedbackPlaceholder: 'Feedback / observações...',
+      earlyAcceptanceTitle: 'Aceite antecipado',
+      earlyAcceptanceHint: 'Aprovar uma candidatura sem nenhuma avaliação registrada é permitido, mas exige justificativa de pelo menos 20 caracteres, que fica gravada na candidatura junto com quem aprovou. Deixe em branco se a candidatura já tem avaliação.',
+      earlyAcceptancePlaceholder: 'Por que esta aprovação dispensa avaliação?',
       saveChanges: 'Salvar alterações',
       loadingEvaluation: 'Carregando formulário de avaliação...',
       loadingComms: 'Carregando comunicações...',
@@ -1546,6 +1568,20 @@ const SEL_I18N = {
     return `<span class="text-[10px] text-[var(--text-muted)]" title="Sem convite individual">—</span>`;
   }
 
+  /* #1572 — campo de justificativa do aceite antecipado (aprovação com ZERO avaliação).
+     Renderizado SEM condição de contagem de propósito: quem decide se a justificativa é exigida é a
+     RPC, que conta avaliação de QUALQUER tipo, enquanto a linha do dashboard só traz `peer_eval_count`
+     (só as `objective`). Reproduzir a regra aqui com o número errado esconderia o campo justamente
+     na candidatura que a RPC vai recusar, e o GP bateria numa parede sem onde escrever. */
+  function earlyAcceptanceBlock(): string {
+    return `
+      <div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 space-y-2">
+        <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.earlyAcceptanceTitle}</h4>
+        <p class="text-[11px] text-[var(--text-muted)]">${T.modal.earlyAcceptanceHint}</p>
+        <textarea id="modal-early-acceptance" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="${T.modal.earlyAcceptancePlaceholder}"></textarea>
+      </div>`;
+  }
+
   /* p92 Phase D — pipeline workflow indicators (5 mini-badges per candidate).
      Compact one-glance status for AI / peer review / interview / token usage / video.
      Each badge: dot color (emerald=done, amber=partial, gray=pending) + tooltip. */
@@ -1853,6 +1889,37 @@ const SEL_I18N = {
     renderKanban();
     renderTable();
     renderRankEmptyAlert();
+    void renderEarlyAcceptancePanel();  // #1572 — assíncrono e não bloqueia o resto da tela
+  }
+
+  /* #1572 — o contador de "aprovado sem NENHUMA avaliação", com a separação entre justificado e não
+     justificado. Vem de `get_selection_health` e NÃO é recalculado aqui de propósito: a linha do
+     dashboard só carrega `peer_eval_count`, que conta apenas avaliação do tipo 'objective', então
+     somar no cliente daria um número diferente do que o portão de escrita usa. Uma fonte só.
+     O painel fica escondido quando não há nenhuma, para não virar ruído permanente. */
+  async function renderEarlyAcceptancePanel() {
+    const el = document.getElementById('sel-early-acceptance');
+    if (!el || !sb) return;
+    const { data, error } = await sb.rpc('get_selection_health');
+    // A RPC exige `view_internal_analytics` e recusa candidato do ciclo por COI (ADR-0109). Nos dois
+    // casos o painel simplesmente não aparece: é observabilidade, não bloqueia a tela.
+    if (error || !data || data.error) { el.classList.add('hidden'); return; }
+    const c = data.decided_without_evaluation?.cycle;
+    if (!c) { el.classList.add('hidden'); return; }
+    const total = Number(c.approved_without_evaluation ?? 0);
+    if (total === 0) { el.classList.add('hidden'); return; }
+    const justificados = Number(c.approved_without_evaluation_justified ?? 0);
+    const semJustificativa = total - justificados;
+    const rejeitadas = Number(c.rejected_without_evaluation ?? 0);
+    el.classList.remove('hidden');
+    el.innerHTML = `
+      <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span class="text-[12px] font-bold text-[var(--text-secondary)]">${T.earlyAcceptancePanel.title}</span>
+        <span class="text-[12px] text-[var(--text-muted)]">${T.earlyAcceptancePanel.approved}: <strong>${total}</strong></span>
+        <span class="text-[12px] text-[var(--text-muted)]">${T.earlyAcceptancePanel.justified}: <strong>${justificados}</strong></span>
+        <span class="text-[12px] text-[var(--text-muted)]">${T.earlyAcceptancePanel.unjustified}: <strong>${semJustificativa}</strong></span>
+        ${rejeitadas > 0 ? `<span class="text-[12px] text-[var(--text-muted)]">${T.earlyAcceptancePanel.rejected}: <strong>${rejeitadas}</strong></span>` : ''}
+      </div>`;
   }
 
   // p152 W4 OPP-152.6: show alert when >80% of filtered rows have NO rank
@@ -2312,6 +2379,7 @@ const SEL_I18N = {
                 <option value="waitlist">${T.statusLabels?.waitlist || 'Lista de Espera'}</option>
               </select>
               <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
+              ${earlyAcceptanceBlock()}
               <button id="modal-dual-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-purple-700 text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.dualTrackApplyBtn}</button>
             ` : `
               <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.changeStatus}</h4>
@@ -2319,6 +2387,7 @@ const SEL_I18N = {
                 ${Object.entries(STATUS_LABELS).map(([k, v]) => `<option value="${k}" ${k === row.status ? 'selected' : ''}>${v}</option>`).join('')}
               </select>
               <textarea id="modal-feedback" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-20" placeholder="${T.modal.feedbackPlaceholder}">${esc(row.feedback || '')}</textarea>
+              ${earlyAcceptanceBlock()}
               <button id="modal-save-btn" data-id="${esc(row.id)}" class="w-full px-4 py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveChanges}</button>
             `}
           </div>
@@ -2488,12 +2557,14 @@ const SEL_I18N = {
     body.querySelector('#modal-save-btn')?.addEventListener('click', async () => {
       const newStatus = (body.querySelector('#modal-status-select') as HTMLSelectElement)?.value;
       const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
+      // #1572 — só viaja quando preenchido; a RPC ignora o campo quando a candidatura já tem avaliação.
+      const earlyReason = (body.querySelector('#modal-early-acceptance') as HTMLTextAreaElement)?.value?.trim();
       const btn = body.querySelector('#modal-save-btn') as HTMLButtonElement;
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
       try {
         const { data, error } = await sb.rpc('admin_update_application', {
           p_application_id: row.id,
-          p_data: { status: newStatus, feedback },
+          p_data: { status: newStatus, feedback, ...(earlyReason ? { early_acceptance_reason: earlyReason } : {}) },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
@@ -2515,6 +2586,9 @@ const SEL_I18N = {
       const researcherDecision = (body.querySelector('#modal-status-researcher') as HTMLSelectElement)?.value;
       const leaderDecision = (body.querySelector('#modal-status-leader') as HTMLSelectElement)?.value;
       const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
+      // #1572 — a justificativa vale para as DUAS pontas do par: a RPC repassa a cada lado e cada um
+      // decide se precisa, porque a contagem de avaliação é por candidatura, não por par.
+      const earlyReason = (body.querySelector('#modal-early-acceptance') as HTMLTextAreaElement)?.value?.trim();
       const btn = body.querySelector('#modal-dual-save-btn') as HTMLButtonElement;
       if (!researcherDecision || !leaderDecision) {
         toast('Selecione decisão para Pesquisador E Líder', 'error');
@@ -2527,6 +2601,7 @@ const SEL_I18N = {
           p_researcher_decision: researcherDecision,
           p_leader_decision:     leaderDecision,
           p_feedback:            feedback || null,
+          p_early_acceptance_reason: earlyReason || null,
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
