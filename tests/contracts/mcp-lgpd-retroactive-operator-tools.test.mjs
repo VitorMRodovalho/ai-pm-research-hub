@@ -225,8 +225,12 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 // (get_board_lifecycle_log) e as tarefas do board ganharam porta agregada no semantico
 // (board_overview scope='tasks'). Sem tool nova: acao dentro de tool existente, porque o conector
 // cacheia tools/list.
-test('ef_version is 2.101.0 (#1779 log x tarefas; 2.100.0 no #1780; 2.99.0 no #1778)', () => {
-  assert.match(EF, /ef_version:\s*"2\.101\.0"/, '/health must report ef_version 2.101.0');
+// #1819 (16/08/2026): 2.101.0 -> 2.102.0. A descricao de get_lgpd_cron_health passou a cobrir a
+// varredura diaria de retencao (#1812) e o bloco data_retention, e corrigiu o "3 monthly crons"
+// que estava desatualizado desde o #905. Sem tool nova: so descricao, porque o conector cacheia
+// tools/list. O bump e o que torna o deploy verificavel por UMA chamada a /health.
+test('ef_version is 2.102.0 (#1819 retencao no painel; 2.101.0 no #1779; 2.100.0 no #1780)', () => {
+  assert.match(EF, /ef_version:\s*"2\.102\.0"/, '/health must report ef_version 2.102.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
