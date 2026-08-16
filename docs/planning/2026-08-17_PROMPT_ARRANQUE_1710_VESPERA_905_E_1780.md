@@ -32,6 +32,13 @@ Regras de varredura que já custaram caro:
 - 🆕 🔴 **Antes de implementar política declarada em tabela, procure quem já a executa.** A linha de
   anonimização declarava 3 anos; o caminho revisado roda a 5 e a recomendação legal é 2/1. E o cron dele
   está **inativo de propósito**, atrás de portão de parecer. **Cron inativo pode ser governança.**
+- 🆕 🔴 **Estreitar o conjunto de candidatos para forçar unicidade não é resolver, é chutar.** No #1822,
+  desambiguar a tabela de uma coluna contando **só as relações que têm domínio** produziu **51 violações
+  e zero defeitos** — o literal era de uma coluna sem `CHECK`, e sobrava o homônimo com domínio para levar
+  a culpa. Antes de chamar a saída de achado, **confira no catálogo se o suposto dono admite a coluna**.
+- 🆕 📌 **No predicado que CONTA, use só sinal do mesmo grão do que está sendo medido.** Trigger é de
+  tabela, não de coluna: se entrar na base de um ratchet, ela cai quando a tabela ganha um trigger alheio.
+  Sinal de grão maior é devolvido como informação, nunca no booleano que o teste assere.
 - ⚠️ **Antes de escalar a gravidade, confira QUEM CHAMA.**
 
 ---
@@ -45,6 +52,11 @@ EF `nucleo-mcp` deployada: **`ef_version` 2.102.0** (era 2.101.0); smoke pós-de
 HTTP 200 e `tools/list` com 342 tools, zero erro.
 ⚠️ **Re-medir a janela de bypass** antes de qualquer `--admin` (na medição de 16/08: 30 commits em 7 dias,
 todos com `(#N)` de PR, zero eventos).
+
+🟢 **(16/08, noite) #1822 fechada** pela PR #1823, 12/12 sem `--admin`. `main` em **`5d96fbf5`**, migration
+`20260816225830` aplicada com zero PRs abertas, drift **0/0/0** (`live_count` 1201 → 1202), 43 invariantes
+em zero. Handoff: `docs/planning/2026-08-16_handoff_1822_dominio_nao_declarado.md`. O **ITEM 4 abaixo já
+foi medido** — leia antes de reabri-lo.
 
 📌 **A varredura `data-retention-sweep-daily` estreia às 04:25 UTC de 17/08.** Vale conferir a primeira
 corrida real: `get_lgpd_cron_health` (impersonado) deve sair de `never_ran: true` para
@@ -111,16 +123,31 @@ frio genérico, tabela-espelho por origem, ou não arquivar.
 
 ---
 
-## ITEM 4 — o resto da classe: resolução por STATEMENT
+## ITEM 4 — o resto da classe: resolução por STATEMENT ✅ **MEDIDO em 16/08 (#1822)**
 
-Os dois ratchets cobrem a classe por **corpo inteiro**: `_audit_state_literal_domain` (#1805, coluna de
-dono único) e `_audit_shared_state_literal_domain` (#1809, nome compartilhado, **562 pares, 20 colunas,
-268 funções**). Ambos com base ZERO.
+Os três ratchets cobrem a classe: `_audit_state_literal_domain` (#1805, coluna de dono único),
+`_audit_shared_state_literal_domain` (#1809, nome compartilhado) e, desde o #1822,
+`_audit_undeclared_state_domain` — a coluna que **não declara domínio nenhum**, e que por isso nenhum
+dos outros dois alcança (base **56** de **270** examinadas).
 
-⚠️ **Ponto cego declarado:** função que referencia **duas ou mais** relações com a mesma coluna sai da
-cobertura, de propósito. Fechar o resto exige **resolver por STATEMENT** (qual tabela cada
-`UPDATE`/`DELETE`/`FROM` alcança), não por corpo. Se for atacar: comece medindo quantas funções ambíguas
-têm o literal dentro de um statement de tabela única.
+**O ponto cego foi medido: 377 pares (função, coluna) em 294 funções**, contra 491 cobertos. Decompõe em
+**91** sem nenhuma relação com domínio (já inertes), **48** com exatamente uma, e **238** de ambiguidade
+real.
+
+🔴 **O atalho dos 48 NÃO existe — ensaiado e morto.** Contar só as relações que carregam domínio devolveu
+**51 violações e ZERO defeitos**: `type = 'selection_approved'` debitado de `certificates` e
+`kind = 'volunteer'` de `member_emails`, porque `notifications.type` e `engagements.kind` não têm `CHECK`
+nenhum. O `count(DISTINCT reloid) = 1` do #1809 é **justamente o que protege** contra isso — estreitar o
+denominador para forçar unicidade inverte a proteção.
+
+⚠️ **Sobra a ambiguidade real: 238 pares.** Fechar exige **resolver por STATEMENT** (qual tabela cada
+`UPDATE`/`DELETE`/`FROM` alcança), não por corpo. Não há caminho barato; a medição acima já foi feita e
+não precisa ser refeita.
+
+📌 **Decisão pendente do PM:** quais das **56** colunas sem domínio declarado merecem ganhar `CHECK`. Nem
+todas devem — `admin_audit_log.action` é vocabulário que cresce de propósito (regex de formato), e
+declarar domínio sobre dado vivo tem risco próprio: o ensaio bateu em linha de `pilots` fora do domínio
+na primeira tentativa. A lista sai de `_audit_undeclared_state_domain()`.
 
 ---
 
