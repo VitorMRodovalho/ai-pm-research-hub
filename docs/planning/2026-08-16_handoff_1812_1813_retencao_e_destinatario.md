@@ -1,4 +1,4 @@
-# Handoff — a retenção que ninguém executava, e o alerta que não tinha para quem ir
+# Handoff — a retenção que ninguém executava, o alerta sem destinatário, e o painel que não via nenhum dos dois
 
 > Sessão de 16/08/2026 (tarde). Arranque anterior: `2026-08-17_PROMPT_ARRANQUE_1710_VESPERA_RETENCAO_E_1780.md`
 > (ITENS 2 e 3 daquele documento). Handoff anterior: `2026-08-16_handoff_1809_metade_compartilhada_fechada.md`.
@@ -11,10 +11,14 @@
 | issue | PR | o que era |
 |---|---|---|
 | **#1812** | #1815 (12/12, sem `--admin`) | `data_retention_policy` declarava 6 políticas ativas e não tinha executor nenhum |
-| **#1813** | #1816 | o alerta diário de consistência da seleção só alcançava `role='lead'`, e o ciclo aberto tem zero |
+| **#1813** | #1816 (12/12) | o alerta diário de consistência da seleção só alcançava `role='lead'`, e o ciclo aberto tem zero |
+| **#1819** | #1820 (12/12) | `get_lgpd_cron_health` não via nem a varredura de retenção nem a cobertura das políticas |
 
-`main` saiu de `524a311d`. Migrations **`20260816184810`** (#1812) e **`20260816191212`** (#1813),
-ambas aplicadas com **zero PRs abertas** e mergeadas em ordem. Drift `0/0/0` depois das duas.
+`main` saiu de `524a311d` e fechou em **`28f8232d`**. Migrations **`20260816184810`** (#1812),
+**`20260816191212`** (#1813) e **`20260816201138`** (#1819) — **cada uma aplicada com zero PRs abertas**
+e mergeada antes da seguinte. Drift `0/0/0` depois das três.
+
+**Edge Function `nucleo-mcp` deployada**: `ef_version` **2.101.0 → 2.102.0** (só o #1819 mexeu na EF).
 
 ## O que ficou aberto de propósito
 
@@ -83,6 +87,49 @@ O guard fica **vermelho** com uma quarta política plantada (4 descobertas em ve
 gravadas**, onde antes seriam zero. Com um lead promovido: `via_lead=1`, `via_gp=0` — o fallback não
 dispara em paralelo. Nada persistiu (`scores_plantados=0`, `audit_do_ensaio=0`).
 
+**#1819** — impersonando quem tem `view_internal_analytics` (a função resolve o chamador por
+`auth.uid()` e devolveria `Not authenticated` para `service_role`), em transação abortada. O limiar foi
+exercido **nos dois sentidos**, plantando uma linha em `cron.job_run_details`:
+
+```
+nunca-rodou         -> green   (a guarda IS NOT NULL funciona)
+silêncio de 5 dias  -> red
+silêncio de 1 dia   -> green
+```
+
+A linha plantada não sobreviveu (`0`).
+
+---
+
+## O painel de LGPD passou a ver a retenção (#1819)
+
+`get_lgpd_cron_health` reportava quatro jobs e **nada** do que o #1812 tinha entregue. Agora reporta os
+cinco (quatro mensais + a varredura diária) e ganha um bloco `data_retention` com a cobertura das
+políticas e o motivo de cada lacuna.
+
+**Quatro decisões de desenho, todas guardadas por teste:**
+
+1. **A varredura é diária e tem driver de saúde próprio (2 dias).** O limiar de 35 dias dos mensais
+   esconderia semanas de silêncio de um job que apaga linha todo dia.
+2. **Nunca-rodou não é vermelho.** Sem a guarda `v_sweep_days_since IS NOT NULL` o painel ficaria
+   vermelho no minuto em que subisse — a varredura nasceu com zero execuções.
+3. **A cobertura é INFORMACIONAL, nunca driver de saúde.** A base declarada tem descobertas por desenho
+   (#1814 e o portão do #905); painel sempre amarelo treina todo mundo a ignorar o painel. Quem cobra
+   regressão é o ratchet no CI.
+4. **`max_days_since_any_job_ran` não mudou de significado** — segue sendo sobre os mensais.
+
+De quebra, a descrição da tool MCP dizia **"3 monthly crons"**, desatualizada desde o #905, que já tinha
+levado o SQL a quatro. Corrigida, manifesto regenerado, EF deployada.
+
+📌 **O `ef_version` estava igual no vivo e no fonte (`2.101.0`)** — o comentário do #1598 no bloco de
+`/health` diz que o bump existe justamente para que UMA chamada a `/health` sirva de testemunha do
+deploy. Bumpado para **2.102.0** junto com o guard de versão. Smoke pós-deploy: `initialize` HTTP 200 e
+`tools/list` com **342 tools, zero erro** (o `tools/list` é o que pega a classe de falha de Zod que o
+`initialize` não pega).
+
+⚠️ **O conector cacheia `tools/list`:** o servidor já responde com a descrição nova (conferido no vivo),
+mas um cliente MCP conectado só a vê depois que o cache dele expira.
+
 ---
 
 ## Os dois ratchets novos
@@ -125,3 +172,12 @@ que o teste **exerça a audiência sem provocar notificação**. Hoje devolve **
 4. ⚠️ **O qualificador do predicado sai da DESCRIÇÃO da linha, não da intuição.** A função aposentada
    inventou `status = 'resolved'` sobre uma tabela que não tem `status`.
 5. 📌 **Um cron inativo pode ser governança, não esquecimento.** Antes de propor ativar, leia o SPEC.
+6. 🆕 ⚠️ **Job diário não cabe no limiar de job mensal.** Enfiar a varredura no `max_days_since` dos
+   mensais teria escondido semanas de silêncio e ainda dado um segundo significado ao mesmo campo.
+   Cadência diferente pede driver próprio, e campo existente não muda de sentido.
+7. 🆕 ⚠️ **Guard novo cujo estado normal é "lacuna" não pode dirigir sinal de saúde.** A cobertura das
+   políticas tem 3 descobertas por desenho; ligá-la ao sinal deixaria o painel amarelo para sempre, e
+   painel sempre amarelo é painel ignorado. Informação no corpo, cobrança no ratchet do CI.
+8. 🆕 📌 **`ef_version` igual no vivo e no fonte apaga a testemunha do deploy.** Confira ANTES de subir:
+   `curl .../nucleo-mcp/health` contra o literal em `index.ts`. Se forem iguais, bumpe (o guard de versão
+   em `mcp-lgpd-retroactive-operator-tools` acompanha) — senão a prova do deploy vira grep no bundle.
