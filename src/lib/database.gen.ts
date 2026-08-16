@@ -8629,6 +8629,7 @@ export type Database = {
           cleanup_type: string
           created_at: string | null
           description: string | null
+          executor: string | null
           id: string
           is_active: boolean | null
           retention_days: number
@@ -8638,6 +8639,7 @@ export type Database = {
           cleanup_type: string
           created_at?: string | null
           description?: string | null
+          executor?: string | null
           id?: string
           is_active?: boolean | null
           retention_days: number
@@ -8647,6 +8649,7 @@ export type Database = {
           cleanup_type?: string
           created_at?: string | null
           description?: string | null
+          executor?: string | null
           id?: string
           is_active?: boolean | null
           retention_days?: number
@@ -28926,6 +28929,22 @@ export type Database = {
         }[]
       }
       _audit_preview_gate_eligibles_drift: { Args: never; Returns: Json }
+      _audit_retention_policy_coverage: {
+        Args: never
+        Returns: {
+          coberta: boolean
+          dias: number
+          executor: string
+          horizonte_bate: boolean
+          job_ativo: boolean
+          job_registrado: boolean
+          motivo: string
+          politica: string
+          ramo_implementado: boolean
+          tabela: string
+          tipo: string
+        }[]
+      }
       _audit_secdef_initiative_reader_gates: {
         Args: never
         Returns: {
@@ -29036,6 +29055,8 @@ export type Database = {
         }[]
       }
       _current_affiliation_terms_version: { Args: never; Returns: string }
+      _data_retention_sweep: { Args: { p_dry_run?: boolean }; Returns: Json }
+      _data_retention_sweep_cron: { Args: never; Returns: Json }
       _delivery_mode_for: { Args: { p_type: string }; Returns: string }
       _dispatch_interview_booking_link: {
         Args: {
