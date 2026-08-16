@@ -787,7 +787,7 @@ Sem confirm=true, retorna preview (ADR-0018). Confirme com confirm=true.
 
 ## Se candidato sair sozinho
 
-Eles usam \`withdraw_from_initiative\` (W5). Você verá no list_initiative_engagements com status='revoked' + revoke_reason começando com 'self_withdraw:'.
+Eles usam \`withdraw_from_initiative\` (W5). Você verá no list_initiative_engagements com status_filter='revoked' + revoke_reason começando com 'self_withdraw:'. Atenção (#1809): o filtro se chama 'revoked', mas o valor gravado em engagements.status é **'offboarded'** — é ele que vem nas linhas.
 
 ## Constraints
 
@@ -4734,7 +4734,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_invitation_health — admin observability (ADR-0061 W7)
-  mcp.tool("get_invitation_health", "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked/canceled), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.", {}, async () => {
+  mcp.tool("get_invitation_health", "Returns invitation system health: status counts (pending/accepted/declined/expired/revoked — 'canceled' saiu em #1809: não existe no domínio de initiative_invitations.status e valia sempre 0), stale-pending-past-expires-grace-1h (cron silence indicator), last 5 cron firings of expire-stale-invitations-hourly, and a green/yellow/red health_signal. Authority: view_internal_analytics (PMI-Latam admin / coordenadores nacionais). Use when triaging 'why are invitations not expiring?' or auditing invitation throughput.", {}, async () => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_invitation_health", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -5622,7 +5622,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: list_initiative_engagements — owner/admin-detail listing (ADR-0061 W5)
-  mcp.tool("list_initiative_engagements", "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked', 'onboarding'.", {
+  mcp.tool("list_initiative_engagements", "List engagements (active + lifecycle history) of an initiative with granted_by / source / motivation context. Complements get_initiative_members by exposing audit detail. Authority: admin (manage_member or view_pii on initiative) OR active member of the initiative. Motivation field gated to admin only. Use status_filter to scope: 'active' (default), 'all', 'revoked' (encerrados — as linhas vêm com status='offboarded'), 'onboarding' (linhas com status='pending'). Os dois últimos ficaram inertes até #1809.", {
     initiative_id: z.string().describe("Initiative UUID"),
     status_filter: z.string().optional().describe("Filter: 'active' | 'all' | 'revoked' | 'onboarding'. Default: 'active'.")
   }, async (params: { initiative_id: string; status_filter?: string }) => {

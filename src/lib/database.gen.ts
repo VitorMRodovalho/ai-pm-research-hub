@@ -28954,6 +28954,17 @@ export type Database = {
           usa_helper: boolean
         }[]
       }
+      _audit_shared_state_literal_domain: {
+        Args: never
+        Returns: {
+          args: string
+          coluna: string
+          fora_do_dominio: boolean
+          funcao: string
+          literal: string
+          tabela_resolvida: string
+        }[]
+      }
       _audit_state_literal_domain: {
         Args: never
         Returns: {
@@ -29662,7 +29673,6 @@ export type Database = {
         Returns: Json
       }
       admin_run_portfolio_data_sanity: { Args: never; Returns: Json }
-      admin_run_retention_cleanup: { Args: never; Returns: Json }
       admin_send_campaign: {
         Args: {
           p_audience_filter?: Json

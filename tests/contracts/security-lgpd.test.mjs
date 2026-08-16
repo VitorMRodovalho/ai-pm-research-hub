@@ -191,24 +191,35 @@ test('data_retention_policy seeded with 5 policies', () => {
   assert.ok(rowCount >= 5, `Must have at least 5 seed policies, found ${rowCount}`);
 });
 
-test('admin_run_retention_cleanup RPC exists', () => {
-  const body = findFunctionBody('admin_run_retention_cleanup');
-  assert.ok(body, 'admin_run_retention_cleanup not found');
-});
-
-test('admin_run_retention_cleanup requires admin', () => {
-  const body = findFunctionBody('admin_run_retention_cleanup');
-  assert.ok(body);
-  // V3 legacy pattern was 'is_superadmin'/'operational_role'; updated p60 Pacote E
-  // to V4 'can_by_member(..., manage_platform)' (Phase B'' easy-convert).
-  // Spirit preserved: must gate on admin authority.
+// #1809 (2026-08-16): `admin_run_retention_cleanup` foi APOSENTADA. Ela citava tres colunas que
+// nao existem — notifications.read (e `is_read`), data_anomaly_log.status (a tabela nao tem essa
+// coluna) e selection_applications.applied_at (e `application_date`) — e falhava na primeira,
+// medido impersonando um GP em transacao abortada. Nao tinha chamador no app nem no MCP, e nao
+// estava em cron nenhum: nunca funcionou.
+//
+// Os dois testes que existiam aqui liam o CREATE nas migrations HISTORICAS, entao continuariam
+// verdes depois do DROP — afirmando que uma funcao inexistente "existe" e "exige admin". Um teste
+// que sobrevive a remocao do seu objeto nao esta medindo o objeto.
+//
+// A retencao que importa segue nos crons de LGPD, independentes desta RPC:
+// `lgpd-anonymize-inactive-monthly` e `v4-anonymize-by-kind-monthly` (ambos ativos).
+// ⚠️ `lgpd-anonymize-premember-monthly` estava INATIVO em 16/08/2026 — anotado na #1809 como
+// lacuna LATENTE: nenhuma candidatura passava de 3 anos naquela medicao.
+test('admin_run_retention_cleanup foi aposentada (#1809) e nao pode ser recriada', () => {
   assert.ok(
-    /is_superadmin\s*=\s*true/i.test(body)
-      || /operational_role/i.test(body)
-      || /can_by_member\s*\([^)]*manage_platform/i.test(body),
-    'Must check admin role (V3 is_superadmin/operational_role OR V4 can_by_member manage_platform)'
+    /DROP\s+FUNCTION\s+IF\s+EXISTS\s+public\.admin_run_retention_cleanup\s*\(\s*\)/i.test(allSQL),
+    'o DROP da #1809 sumiu das migrations'
   );
-  assert.ok(/RAISE\s+EXCEPTION/i.test(body), 'Must RAISE EXCEPTION on unauthorized');
+  // Se alguem recriar a RPC, o CREATE aparece DEPOIS do DROP na ordem das migrations.
+  // Ancorar no ULTIMO DROP, nao no primeiro: 20260426173951 (p60) ja fazia DROP + CREATE para
+  // recriar a funcao, entao o primeiro DROP tem um CREATE legitimo logo abaixo.
+  const drops = [...allSQL.matchAll(/DROP\s+FUNCTION\s+IF\s+EXISTS\s+public\.admin_run_retention_cleanup/gi)];
+  const depois = allSQL.slice(drops[drops.length - 1].index);
+  assert.ok(
+    !/CREATE\s+(OR\s+REPLACE\s+)?FUNCTION\s+(public\.)?admin_run_retention_cleanup/i.test(depois),
+    'admin_run_retention_cleanup foi recriada depois do DROP — se for intencional, corrija as tres '
+      + 'colunas inexistentes (is_read, auto_fixed, application_date) e atualize este contrato'
+  );
 });
 
 // ─── P0-C: XSS Prevention ───
