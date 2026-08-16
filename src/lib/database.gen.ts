@@ -29256,6 +29256,13 @@ export type Database = {
       }
       _selection_apto_to_sign_digest_cron: { Args: never; Returns: Json }
       _selection_consistency_cron: { Args: never; Returns: Json }
+      _selection_consistency_recipients: {
+        Args: never
+        Returns: {
+          member_id: string
+          via: string
+        }[]
+      }
       _selection_cutoff_pending_cron: { Args: never; Returns: Json }
       _selection_interview_overdue_cron: { Args: never; Returns: Json }
       _selection_status_recompute_cron: { Args: never; Returns: Json }
