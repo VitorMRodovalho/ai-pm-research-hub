@@ -38,10 +38,19 @@ Regras de varredura que já custaram caro:
 
 ## Estado (16/08, fim da tarde)
 
-`main` com **#1812** e **#1813** fechadas (PRs #1815 e #1816). Migrations **`20260816184810`** e
-**`20260816191212`** aplicadas, cada uma com zero PRs abertas. **Drift `0/0/0`** depois das duas.
+`main` em **`28f8232d`**, com **#1812**, **#1813** e **#1819** fechadas (PRs #1815, #1816 e #1820, todas
+12/12 sem `--admin`). Migrations **`20260816184810`**, **`20260816191212`** e **`20260816201138`**, cada
+uma aplicada com zero PRs abertas e mergeada antes da seguinte. **Drift `0/0/0`** depois das três.
+EF `nucleo-mcp` deployada: **`ef_version` 2.102.0** (era 2.101.0); smoke pós-deploy com `initialize`
+HTTP 200 e `tools/list` com 342 tools, zero erro.
 ⚠️ **Re-medir a janela de bypass** antes de qualquer `--admin` (na medição de 16/08: 30 commits em 7 dias,
 todos com `(#N)` de PR, zero eventos).
+
+📌 **A varredura `data-retention-sweep-daily` estreia às 04:25 UTC de 17/08.** Vale conferir a primeira
+corrida real: `get_lgpd_cron_health` (impersonado) deve sair de `never_ran: true` para
+`days_since_last_run` perto de zero, e `admin_audit_log` deve ganhar uma linha
+`action = 'data_retention.sweep'` com `affected_total = 0` (nenhuma política morde antes de 09/09).
+Se a corrida falhar, o painel só vira vermelho depois de **2 dias** de silêncio — não antes.
 
 ---
 
@@ -172,7 +181,13 @@ A Fase 1 mediu e quatro cortes saíram (#1778, #1784, #1791, #1779). Segue abert
 8. **Mudança de schema exige `npm run db:types` na MESMA PR** (o gate `gen-types-drift` pega). **RPC nova
    conta, e RPC removida também. Coluna nova também.**
 9. **Mexeu em descrição de tool no `nucleo-mcp/index.ts`? Regenere o manifesto:**
-   `node scripts/generate-mcp-manifest.mjs`.
+   `node scripts/generate-mcp-manifest.mjs`. 🆕 **E confira o `ef_version` ANTES de deployar:**
+   `curl .../nucleo-mcp/health` contra o literal em `index.ts` — se estiverem IGUAIS, bumpe (o guard em
+   `tests/contracts/mcp-lgpd-retroactive-operator-tools.test.mjs` acompanha), senão `/health` deixa de ser
+   testemunha do deploy e a prova vira grep de sentinela no bundle (lição do #1598, repetida no #1819).
+   Pós-deploy, o smoke tem de incluir **`tools/list`**, não só `initialize`: a falha de Zod 3→4 deixa o
+   `initialize` verde e derruba só a listagem. ⚠️ `deno` **não está instalado nesta máquina** — quem roda
+   `deno lint`/`deno check` é o CI.
 10. **`CREATE FUNCTION` concede EXECUTE a PUBLIC.** O `REVOKE ... FROM PUBLIC, anon` vai na MESMA
     migration. (`CREATE OR REPLACE` de função **existente** preserva as ACLs.)
 11. **`SECURITY DEFINER` contorna a RLS.** O gate do #785 tem de estar **dentro** da função.
