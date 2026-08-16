@@ -28954,6 +28954,17 @@ export type Database = {
           usa_helper: boolean
         }[]
       }
+      _audit_state_literal_domain: {
+        Args: never
+        Returns: {
+          args: string
+          coluna: string
+          fora_do_dominio: boolean
+          funcao: string
+          literal: string
+          tabela_dona: string
+        }[]
+      }
       _audit_trigger_dispatch_without_handler: {
         Args: never
         Returns: {
