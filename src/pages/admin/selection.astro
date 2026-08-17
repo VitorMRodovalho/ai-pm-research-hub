@@ -4949,6 +4949,20 @@ const SEL_I18N = {
           const notesPreview = intv.notes
             ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic line-clamp-2">${esc(String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced')).slice(-2).join(' · '))}</div>`
             : '';
+          // #1832: com QUEM. A tela dizia dia e hora e não o entrevistador, e a RPC já devolvia
+          // os ids — agora devolve `interviewers` resolvido NO SERVIDOR (nome + id), de propósito:
+          // um mapa montado aqui a partir do comitê ATUAL quebraria calado quando alguém saísse.
+          //
+          // Quando o array vem vazio a tela DIZ que não há registro, em vez de omitir a linha.
+          // Medido em 17/08/2026: 26 das 129 entrevistas (20%) não têm entrevistador gravado, e
+          // entre as vindas do webhook de calendário são 24 de 55 (44%). Omitir tornaria "não
+          // temos o dado" indistinguível de "não mostramos o dado", que é justamente a cegueira
+          // que motivou esta issue. A raiz da ausência é a #1614.
+          const quem = Array.isArray(intv.interviewers) ? intv.interviewers : [];
+          const nomes = quem.map((p: any) => (p && p.name) ? String(p.name) : 'id não resolvido');
+          const entrevistadores = nomes.length
+            ? `<div class="text-[11px] text-[var(--text-secondary)] mt-0.5"><span aria-hidden="true">👤</span> <span class="font-semibold">${nomes.length > 1 ? 'Entrevistadores' : 'Entrevistador'}:</span> ${esc(nomes.join(' · '))}</div>`
+            : `<div class="text-[11px] text-amber-700 mt-0.5" title="A entrevista existe, mas nenhum entrevistador foi gravado. Nas entrevistas vindas do calendário isso vem da lista fixa de e-mails do Apps Script (ver #1614)."><span aria-hidden="true">⚠️</span> Entrevistador não registrado</div>`;
           h += `<div class="${isActive ? 'border-2 border-navy bg-navy/5' : 'border border-[var(--border-subtle)]'} rounded-lg p-2.5 flex flex-col gap-1.5">
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <div class="flex items-center gap-2">
@@ -4959,6 +4973,7 @@ const SEL_I18N = {
               </div>
               ${actions}
             </div>
+            ${entrevistadores}
             ${notesPreview}
           </div>`;
         }
