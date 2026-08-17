@@ -101,3 +101,48 @@ Amostra do que está sem guarda, com a forma do dado:
 - Os demais itens do arranque seguem como estavam: **#1710** re-medir em 23/08 (prazo 24/08), o portão
   legal **R1–R5 do SPEC #905** (prazo 30/09) é decisão de fora da engenharia, **#1814** sem urgência
   (primeira mordida 2028), e o resto do **EPIC #1780**.
+
+---
+
+## Adendo (mesma sessão, depois do merge) — a reunião geral de 13/08 entra na próxima
+
+O PM definiu o escopo da próxima sessão: **edição e publicação do vídeo da última reunião geral, ata,
+vínculo dos presentes, protagonistas da noite e as ações derivadas a monitorar.** Foi feito o
+reconhecimento do material, e ele muda o plano de execução.
+
+**Arranque da próxima:** `docs/planning/2026-08-17_PROMPT_ARRANQUE_REUNIAO_13AGO_1710_E_905.md`
+(supersede o `..._1710_VESPERA_905_E_1780.md`).
+
+### O material está em disco, fora do git
+
+`_drive-docs/reuniao-geral-2026-08-13/` — git-ignored pelo `~/.config/git/ignore`, conferido por
+`git check-ignore` e não por leitura do arquivo:
+
+- `notes-by-gemini.md` (111 KB) — Resumo, **Próximas etapas com 10 itens já extraídos**, Detalhes e a
+  **transcrição completa carimbada por tempo** (71 blocos, até `01:35:32`).
+- `chat.txt` (6,3 KB) — log do chat.
+
+🔑 **Não precisa transcrever.** A transcrição já existe; WhisperX seria retrabalho. E o vídeo
+(703.727.488 bytes) **não precisa ser baixado** — está legível pelo mount, porque o `Meet Recordings`
+fica dentro da pasta `Núcleo IA & GP` (`1PFLzCa8…`), já ligada em `_drive/nucleo-ia-gp`.
+
+### Três armadilhas de nome do Drive, todas medidas aqui
+
+1. O Drive troca `/` por `／` (barra fullwidth) nos nomes — grep por data falha silenciosamente.
+2. **A gravação do Meet não tem extensão no nome.** Um `--include "*.mp4"` passa por cima dela apesar do
+   MIME ser `video/mp4` — foi assim que a primeira varredura concluiu, errado, que a gravação não existia.
+   Filtre por MIME, ou liste sem filtro.
+3. O doc nativo do Google volta com **0 bytes pelo mount**; só `rclone cat` traz conteúdo, e o nome no
+   remote leva o `.md` que o rclone acrescenta na exportação.
+
+### O que falta no evento, medido
+
+`Reunião Geral - 2026-08-13`, id `ed3a4c5a-553d-41c7-b01b-40e4145e85e9`: sem `recording_url`, sem
+`youtube_url`, sem `recording_type`, sem `minutes_text`, **zero champions**, roster não selado, e
+**34 linhas de presença — 31 presentes, 3 ausentes**. A geral de 30/07, que é a forma-alvo, tem
+`recording_type='youtube'`, ata de 14.473 chars, **5 champions** e 54 linhas (51 presentes).
+
+⚠️ **Buraco declarado: não existe Meeting Report do Google para 13/08.** A pasta `Meeting Reports` para em
+09/07, e o que ela guarda é `YouTube analytics.csv`, não lista de presença. As 31 presenças não têm
+relatório oficial contra o que reconciliar — só chat e transcrição, que sub-contam quem assistiu calado.
+**Decisão do PM antes de mexer, e não selar o roster antes dela.**
