@@ -41,11 +41,11 @@ Regras de varredura que já custaram caro:
 
 ---
 
-## Estado (17/08, 17:00 UTC)
+## Estado (17/08, 21:10 UTC)
 
-`main` em **`c30f481d`**, **zero PRs abertas**, **43 invariantes com zero violações**,
-**zero eventos de bypass** em 7 dias. EF `nucleo-mcp` em `ef_version` **2.102.0**.
-Migration mais recente: `20260817145902` (#1832).
+`main` em **`be526c13`**, **zero PRs abertas**, **43 invariantes com zero violações**,
+**zero eventos de bypass** em 7 dias. EF `nucleo-mcp` em `ef_version` **2.103.0** (deployada e conferida pelo `/health`).
+Migration mais recente: `20260817202155` (#1836).
 
 ---
 
@@ -70,7 +70,46 @@ PM. Se aparecer uma, o procedimento medido é:
 ⚠️ `schedule` **carimba `booked_at` sozinho** quando a linha de despacho é instrumentada. Isso é
 bom, e cria uma armadilha de leitura: o carimbo é o do REGISTRO, não o da reserva.
 
-## ITEM 2: os três de oferta direta, só falta ratificar
+## 🔴 ITEM 2: #1838, o avaliador barrado e a tela que confirma o que não gravou
+
+Um **avaliador do comitê** (tem `view_pii`, não tem `manage_platform`, `manage_member` nem
+`view_internal_analytics`) está barrado em **seis RPCs** das telas de seleção e de reconciliação do
+VEP. Ele entrevista, e não opera as telas ao redor da entrevista.
+
+🔴 **O grave não é o bloqueio, é a forma dele.** `update_application_contact` devolve
+`{"error":"Unauthorized"}` com **HTTP 200**, e o handler só testa o erro de transporte:
+a tela mostra **"Contato atualizado"**, fecha o modal e recarrega, sem ter gravado nada.
+
+📌 **Conserto que não depende de decisão nenhuma:** ler `data.error`, e varrer os demais handlers
+do arquivo pelo mesmo padrão. O handler de aprovação, poucas linhas acima, já faz certo.
+
+⚖️ **Decisão do PM, separada:** as capacidades exigidas fazem sentido? `update_application_contact`
+pede `manage_member`, que é ciclo de vida de membro (GP-only por LGPD), para editar o LinkedIn de um
+**candidato**; `get_application_onboarding_pct` pede `manage_platform` para devolver **um inteiro**.
+Caminho intermediário: gate por participação no comitê do ciclo mais `view_pii`.
+
+⚠️ **Duas convenções de recusa na mesma tela:** três RPCs recusam no corpo com HTTP 200 e três
+levantam exceção (HTTP 400). Tratamento genérico de erro acerta um e erra o outro.
+
+## ITEM 3: o Apps Script conhece 3 endereços para um comitê de 7
+
+O `teamEmails` do Apps Script tem **3 endereços**; o comitê do ciclo aberto tem **7 pessoas**.
+Quem não está na lista é lido como **candidato**, e é isso que enche a fila da #1664: dois dos
+"endereços institucionais" que apareciam lá são integrantes do comitê, e o endereço pessoal do
+operador apareceu **11 vezes**.
+
+📌 **Derive a lista do catálogo**, nunca de memória: `selection_committee` do ciclo aberto,
+mais os alternativos em `member_emails`. O operador tem **três** endereços, e o que ele usa na
+agenda não está registrado em lugar nenhum.
+
+⚠️ **O script vivo mora no Google e só existe um snapshot no repositório**
+(`docs/specs/p87-calendar-webhook-apps-script.md`). Compare antes de editar.
+
+O conserto durável é o do #1614: **o script para de classificar** e manda todos os convidados, e o
+servidor decide, porque o catálogo está no servidor. Enquanto isso não acontece, **incluir alguém
+no comitê pelo admin não faz nada pelo script**, e o defeito só aparece semanas depois.
+
+## ITEM 4: os três de oferta direta, só falta ratificar
 
 O arranque anterior pedia data e hora para "2 aprovados já ativos nunca entrevistados". **A
 pergunta não se aplica.** Hoje são 3, e o export do VEP mostra os três **Active na mesma vaga**,
@@ -79,7 +118,7 @@ com `submittedDateUtc` **nulo** e oferta estendida e aceita em julho.
 Eles entraram por **oferta direta**, não pelo funil, então não havia etapa de entrevista a cumprir.
 📌 **Falta apenas o PM ratificar** que oferta direta dispensa entrevista. Não marcar horário.
 
-## ⏰ ITEM 3: #1710, prazo 24/08
+## ⏰ ITEM 5: #1710, prazo 24/08
 
 Config conferida em 17/08 e intacta:
 
@@ -96,7 +135,7 @@ de 31 para 45), então não reaproveitar recorte anterior.
 ⚖️ **Decidido (15/08):** células fora do alcance de líder ficam com o GP pela grade geral, e a
 lista **nominal** vai ao GP **na conversa, não em issue nem PR**.
 
-## ITEM 4: funil de entrevistas, prazo 28/08
+## ITEM 6: funil de entrevistas, prazo 28/08
 
 Medido em 17/08: **105 linhas, 11 instrumentadas, 3 aberturas, 1 reserva medida.**
 
@@ -108,7 +147,7 @@ pessoa ter aberto.
 dizer que a instrumentação começou no meio do ciclo, e que uma reserva real ficou de fora, diz
 conversão falsa. **Não provocar despacho para testar:** o cron gera linhas sozinho.
 
-## ITEM 5: #1834, o import do VEP
+## ITEM 7: #1834, o import do VEP
 
 `import_vep_applications` grava estado em massa **sem passar pela RPC canônica**, e com isso pula
 auditoria, vínculo de membro e sincronia da janela de autoridade. Os três efeitos foram medidos e
@@ -125,7 +164,7 @@ canônica**, que é a saída mais forte e provavelmente a mais barata no longo p
 ⚠️ **Antes de editar a função:** ela teve drift recuperado na p176. Confirme por md5 normalizado
 que a captura no repositório ainda é idêntica ao corpo vivo.
 
-## ITEM 6: #1614, que virou gargalo ativo
+## ITEM 8: #1614, que virou gargalo ativo
 
 Deixou de ser dívida adiada. Em um único dia ela custou **duas reservas invisíveis**, **11
 registros de ruído** na fila da #1664 e **um gate de CI vermelho**.
@@ -136,7 +175,7 @@ catálogo, e filtrar por **organizador do comitê** em vez de título de calend�
 
 📌 **Reabrir a decisão de 05/08 é conversa com o PM**, não conserto unilateral.
 
-## ITEM 7: #1829, o painel que fica verde com a varredura falhando
+## ITEM 9: #1829, o painel que fica verde com a varredura falhando
 
 O driver mede o agendador (`max(start_time)` sem filtro de status) e não o trabalho, e
 `_data_retention_sweep_cron()` não tem handler, então no modo de falha o audit não ganha linha.
@@ -144,7 +183,7 @@ Latente: a estreia de 17/08 às 04:25 foi `succeeded` com `affected_total = 0`.
 
 📌 Correção mais forte proposta: **vermelho quando o job rodou e o audit não gravou**.
 
-## ITEM 8: #1822, a triagem das 56 é decisão do PM
+## ITEM 10: #1822, a triagem das 56 é decisão do PM
 
 **270 colunas examinadas, 208 com domínio, 6 por FK, 56 sem guarda** em 44 tabelas, triadas em
 cinco classes (detalhe no handoff de 17/08 madrugada). A classe de **enumeração técnica fechada**
@@ -152,7 +191,7 @@ cinco classes (detalhe no handoff de 17/08 madrugada). A classe de **enumeraçã
 **já está sujo** (mesma localidade sob duas grafias, três grafias de um lugar, valor numérico
 solto, string vazia). Conserto é FK para `chapter_registry`, e é **item próprio ainda sem issue**.
 
-## ITEM 9: o resto, com dono
+## ITEM 11: o resto, com dono
 
 - **#1664** sem movimento: 36 não resolvidas, 31 acionáveis, **36 de 36 já suprimidas**. Raiz é a
   #1614. Os 11 do "endereço do operador" agora têm causa nomeada.
