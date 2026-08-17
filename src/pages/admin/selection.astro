@@ -4946,8 +4946,16 @@ const SEL_I18N = {
                 ${(isPast || isTodayLocal) ? `<button class="interview-status-btn px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer border-0 hover:opacity-90" data-interview-id="${esc(intv.id)}" data-status="completed" title="Marcar como concluída (entrevista aconteceu)">Concluir</button>` : ''}
               </div>`
             : '';
-          const notesPreview = intv.notes
-            ? `<div class="text-[10px] text-[var(--text-muted)] mt-1 italic line-clamp-2">${esc(String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced')).slice(-2).join(' · '))}</div>`
+          // #1836: a nota da entrevista passou a ser BRIEFING, escrita para ser lida ANTES da
+          // conversa. O preview antigo cortava em `line-clamp-2` E ficava com as duas ÚLTIMAS
+          // linhas (`slice(-2)`), então apagaria o começo de qualquer nota com mais de duas.
+          // Agora aparece inteira. O filtro de 'Auto-synced' fica, porque aquilo é ruído do
+          // webhook de calendário e não texto escrito por alguém.
+          const notesLines = intv.notes
+            ? String(intv.notes).split('\n').filter((s: string) => s.trim() && !s.includes('Auto-synced'))
+            : [];
+          const notesPreview = notesLines.length
+            ? `<div class="text-[11px] text-[var(--text-primary)] mt-1 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2 whitespace-pre-line"><span class="block font-bold text-[9px] text-amber-800 uppercase tracking-wide mb-1">Briefing</span>${esc(notesLines.join('\n'))}</div>`
             : '';
           // #1832: com QUEM. A tela dizia dia e hora e não o entrevistador, e a RPC já devolvia
           // os ids — agora devolve `interviewers` resolvido NO SERVIDOR (nome + id), de propósito:
