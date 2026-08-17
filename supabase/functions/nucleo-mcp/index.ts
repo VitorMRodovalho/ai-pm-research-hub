@@ -10925,9 +10925,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · interview_manage (W) — schedule/mark/rescue; committee-lead/GP gated ──
   mcp.tool(
     "interview_manage",
-    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override + set/clear_interviewer_routing_block). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite: candidatura JÁ AGENDADA que travou, status interview_scheduled), 'rescue_unbooked' (#1586 — application_id: o caso COMPLEMENTAR, convite emitido e NUNCA agendado, status interview_pending; conta em interview_manual_rescue_count com cap 3, separado do cap 1 do cron, e preserva o AUTOR no admin_audit_log — antes desta ação o único caminho era SQL direto por service_role, que registrava ato humano como 'cron' com actor nulo), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited), 'block' (#1590 onda C — cycle_id + member_id [+ starts_on, ends_on, reason]: tira o entrevistador do rodízio por PERÍODO sem apagar a agenda dele; autosserviço na própria linha, manage_member para qualquer um; starts_on nulo = hoje em America/Sao_Paulo, ends_on nulo = bloqueio aberto), 'unblock' (block_id — devolve ao rodízio; mesma autoridade). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
+    "Interview scheduling lifecycle (absorbs schedule_interview + mark_interview_status + selection_rescue_stuck_interview + grant_interview_stage_override + set/clear_interviewer_routing_block). Set `action`: 'schedule' (application_id + interviewer_ids[] + scheduled_at [+ duration_minutes, calendar_event_id, bypass_gate]), 'mark' (interview_id + status pending|completed|cancelled|noshow [+ notes]), 'rescue' (application_id — re-dispatch a stuck interview invite: candidatura JÁ AGENDADA que travou, status interview_scheduled), 'rescue_unbooked' (#1586 — application_id: o caso COMPLEMENTAR, convite emitido e NUNCA agendado, status interview_pending; conta em interview_manual_rescue_count com cap 3, separado do cap 1 do cron, e preserva o AUTOR no admin_audit_log — antes desta ação o único caminho era SQL direto por service_role, que registrava ato humano como 'cron' com actor nulo), 'stage_override' (application_id + override_reason — #1613 R1.4: authorise ONE application to enter interview_scheduled without an objective score; manage_platform, reason mandatory, audited), 'block' (#1590 onda C — cycle_id + member_id [+ starts_on, ends_on, reason]: tira o entrevistador do rodízio por PERÍODO sem apagar a agenda dele; autosserviço na própria linha, manage_member para qualquer um; starts_on nulo = hoje em America/Sao_Paulo, ends_on nulo = bloqueio aberto), 'unblock' (block_id — devolve ao rodízio; mesma autoridade). 'set_notes' (#1836 — interview_id [+ notes]: grava a nota de BRIEFING lida pelo entrevistador antes da entrevista; editável depois do agendamento e vazio apaga; mesma autoridade, audita a mudança e nunca o texto). Authority: committee lead of the cycle OR platform admin (RPC-gated; the AI-analysis gate on 'schedule' is bypassable only with manage_member + bypass_gate=true). NOTE: generate_interview_briefing (AI-generated prep) stays a raw tool (view_pii). Stable envelope.",
     {
-      action: z.enum(["schedule", "mark", "rescue", "rescue_unbooked", "stage_override", "block", "unblock"]).describe("Interview operation."),
+      action: z.enum(["schedule", "mark", "rescue", "rescue_unbooked", "stage_override", "block", "unblock", "set_notes"]).describe("Interview operation."),
       application_id: z.string().optional().describe("Application UUID — schedule / rescue / rescue_unbooked."),
       interviewer_ids: z.array(z.string()).optional().describe("schedule — interviewer member UUIDs."),
       scheduled_at: z.string().optional().describe("schedule — ISO 8601 datetime."),
@@ -10936,7 +10936,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       bypass_gate: z.boolean().optional().describe("schedule — skip the no-AI-analysis gate (requires manage_member). Default false."),
       interview_id: z.string().optional().describe("mark — selection_interviews.id (UUID)."),
       status: z.enum(["pending", "completed", "cancelled", "noshow"]).optional().describe("mark — new status."),
-      notes: z.string().optional().describe("mark — status note."),
+      notes: z.string().optional().describe("mark — status note. set_notes (#1836) — nota de BRIEFING que o entrevistador lê ANTES da entrevista (histórico no frontend + get_application_interviews no MCP). Vazio ou omitido APAGA a nota."),
       override_reason: z.string().optional().describe("stage_override — mandatory free-text reason (min 12 chars). Recorded on the application and in admin_audit_log."),
       cycle_id: z.string().optional().describe("block — selection cycle UUID."),
       member_id: z.string().optional().describe("block — interviewer member UUID (self = autosserviço; outro exige manage_member)."),
@@ -10959,6 +10959,13 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "mark":
           if (!isUUID(params.interview_id) || !params.status) return invalid("action='mark' requires interview_id + status.");
           rpc = "mark_interview_status"; rpcArgs = { p_interview_id: params.interview_id, p_status: params.status, p_notes: params.notes ?? null }; break;
+        case "set_notes":
+          // #1836: `selection_interviews.notes` era o unico campo que as duas superficies ja liam
+          // (historico no frontend + get_application_interviews no MCP) e nao tinha escritor fora
+          // de mark_interview_status, que forca mudanca de status. Editavel depois do agendamento
+          // de proposito: contexto novo nao deve exigir remarcacao.
+          if (!isUUID(params.interview_id)) return invalid("action='set_notes' requires interview_id.", "Use application_get scope='interviews' para achar o interview_id.");
+          rpc = "set_interview_notes"; rpcArgs = { p_interview_id: params.interview_id, p_notes: params.notes ?? null }; break;
         case "rescue":
           if (!isUUID(params.application_id)) return invalid("action='rescue' requires application_id.");
           rpc = "selection_rescue_stuck_interview"; rpcArgs = { p_application_id: params.application_id }; break;
@@ -12668,7 +12675,7 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.102.0",
+  ef_version: "2.103.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },

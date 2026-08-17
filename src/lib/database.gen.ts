@@ -33920,6 +33920,10 @@ export type Database = {
         Args: { p_initiative_id: string; p_roadmap: Json }
         Returns: Json
       }
+      set_interview_notes: {
+        Args: { p_interview_id: string; p_notes: string }
+        Returns: Json
+      }
       set_interviewer_routing_block: {
         Args: {
           p_cycle_id: string

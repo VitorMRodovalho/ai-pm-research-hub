@@ -229,8 +229,12 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 // varredura diaria de retencao (#1812) e o bloco data_retention, e corrigiu o "3 monthly crons"
 // que estava desatualizado desde o #905. Sem tool nova: so descricao, porque o conector cacheia
 // tools/list. O bump e o que torna o deploy verificavel por UMA chamada a /health.
-test('ef_version is 2.102.0 (#1819 retencao no painel; 2.101.0 no #1779; 2.100.0 no #1780)', () => {
-  assert.match(EF, /ef_version:\s*"2\.102\.0"/, '/health must report ef_version 2.102.0');
+// #1836 (17/08/2026): 2.102.0 -> 2.103.0. `interview_manage` ganhou action='set_notes', que grava
+// a nota de BRIEFING lida pelo entrevistador antes da entrevista. Aqui houve acao NOVA, nao so
+// descricao, e o conector cacheia tools/list: sem o bump, a unica forma de saber se o deploy pegou
+// seria tentar a acao e ver se falha.
+test('ef_version is 2.103.0 (#1836 set_notes; 2.102.0 no #1819; 2.101.0 no #1779)', () => {
+  assert.match(EF, /ef_version:\s*"2\.103\.0"/, '/health must report ef_version 2.103.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {
