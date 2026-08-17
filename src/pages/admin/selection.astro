@@ -2672,12 +2672,15 @@ const SEL_I18N = {
       const linkedin = (body.querySelector('#edit-linkedin') as HTMLInputElement)?.value?.trim();
       if (!phone && !linkedin) { toast('Preencha ao menos um campo', 'error'); return; }
       try {
-        const { error } = await sb.rpc('update_application_contact', {
+        const { data, error } = await sb.rpc('update_application_contact', {
           p_application_id: row.id,
           p_phone: phone || null,
           p_linkedin_url: linkedin || null,
         });
         if (error) throw error;
+        // #1838 — a recusa de autoridade volta no CORPO com HTTP 200, então 'error' é nulo e o
+        // handler antigo confirmava "Contato atualizado" sem ter gravado nada.
+        if (data?.error) throw new Error(data.error);
         toast('Contato atualizado');
         modal.classList.add('hidden');
         loadDashboard();
@@ -4584,10 +4587,12 @@ const SEL_I18N = {
 
   async function removeCommitteeMember(memberId: string) {
     if (!currentCycleId || !confirm('Remover este membro do comitê?')) return;
-    const { error } = await sb.rpc('manage_selection_committee', {
+    const { data, error } = await sb.rpc('manage_selection_committee', {
       p_cycle_id: currentCycleId, p_action: 'remove', p_member_id: memberId,
     });
-    if (error) { toast(error.message, 'error'); return; }
+    // #1838 — recusa no corpo com HTTP 200; sem ler data.error a tela dizia "removido" com o
+    // membro intacto no comitê. Mesma forma dos irmãos desta ilha (URL/pausa/religar).
+    if (error || data?.error) { toast(error?.message || data.error, 'error'); return; }
     toast('Membro removido do comitê');
     loadCommittee();
   }
@@ -4638,11 +4643,14 @@ const SEL_I18N = {
       try {
         const updateData: any = { status: decision };
         if (bulkFeedback) updateData.feedback = bulkFeedback;
-        const { error } = await sb.rpc('admin_update_application', {
+        const { data, error } = await sb.rpc('admin_update_application', {
           p_application_id: id,
           p_data: updateData,
         });
         if (error) throw error;
+        // #1838 — recusa no corpo com HTTP 200: sem esta linha a linha recusada entrava no
+        // contador de SUCESSO e o lote reportava "N atualizado(s)" incluindo quem não gravou.
+        if (data?.error) throw new Error(data.error);
         ok++;
       } catch (e: any) {
         fail++;
@@ -5649,6 +5657,9 @@ const SEL_I18N = {
           // Notify React islands (DiversityDashboard) about cycle change
           window.dispatchEvent(new CustomEvent('selection:cycle-changed', { detail: { cycleId: newId } }));
           sb.rpc('get_selection_dashboard', { p_cycle_code: cycle.cycle_code }).then(({ data }: any) => {
+            // #1838 — a recusa vem no corpo com HTTP 200, então `data` é truthy e
+            // `data.applications || []` pintava CICLO VAZIO em vez de "sem permissão".
+            if (data?.error) { console.warn('Dashboard error:', data.error); return; }
             if (data) {
               allRows = data.applications || [];
               const badge = document.getElementById('sel-cycle-badge');
@@ -5908,11 +5919,12 @@ const SEL_I18N = {
       let fail = 0;
       for (const r of submitted) {
         try {
-          const { error } = await sb.rpc('admin_update_application', {
+          const { data, error } = await sb.rpc('admin_update_application', {
             p_application_id: r.id,
             p_data: { status: 'screening' },
           });
           if (error) throw error;
+          if (data?.error) throw new Error(data.error);  // #1838 — recusa no corpo conta como erro
           ok++;
         } catch { fail++; }
       }
