@@ -22807,6 +22807,137 @@ export type Database = {
           },
         ]
       }
+      selection_application_status_history: {
+        Row: {
+          action: string
+          actor_member_id: string | null
+          application_id: string
+          caller_context: Json
+          changed_at: string | null
+          from_status: string | null
+          id: string
+          observed_at: string
+          source: string
+          to_status: string
+        }
+        Insert: {
+          action: string
+          actor_member_id?: string | null
+          application_id: string
+          caller_context?: Json
+          changed_at?: string | null
+          from_status?: string | null
+          id?: string
+          observed_at?: string
+          source?: string
+          to_status: string
+        }
+        Update: {
+          action?: string
+          actor_member_id?: string | null
+          application_id?: string
+          caller_context?: Json
+          changed_at?: string | null
+          from_status?: string | null
+          id?: string
+          observed_at?: string
+          source?: string
+          to_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_application_status_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       selection_applications: {
         Row: {
           academic_background: string | null
