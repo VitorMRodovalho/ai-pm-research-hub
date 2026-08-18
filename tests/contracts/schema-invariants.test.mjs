@@ -20,6 +20,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { dbFetch } from '../helpers/db-fetch.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -29,7 +30,10 @@ const skipMsg = 'Skipped: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required';
 
 async function callInvariantRpc() {
   const url = `${SUPABASE_URL}/rest/v1/rpc/check_schema_invariants`;
-  const res = await fetch(url, {
+  // #1844: dbFetch limita a espera e repete APENAS em PGRST003 (pool cheio), que e
+  // transitorio. Sem isso, uma saturacao de pool vira 61s pendurados e depois vermelho
+  // num teste que nao tem relacao com a mudanca da PR.
+  const res = await dbFetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
