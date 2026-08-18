@@ -36,6 +36,12 @@ const semDb = !SUPABASE_URL || !SERVICE_KEY;
 
 const auth = () => ({ apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` });
 
+// #1844: `fetch` sem timeout transforma pooler saturado em espera de ~60s POR chamada, e a suíte
+// inteira estoura o teto de 95 min do job em vez de ficar vermelha rápido. Um limite explícito
+// converte a mesma falha num vermelho legível.
+const LIMITE_MS = 20_000;
+const pega = (url) => fetch(url, { headers: auth(), signal: AbortSignal.timeout(LIMITE_MS) });
+
 describe('#1834 A — camada estática (a migration diz o que precisa dizer)', () => {
   it('a migration existe no timestamp canônico', () => {
     assert.ok(SQL.length > 0, `${MIG} não encontrada — apply_migration cria o timestamp e o arquivo local usa ELE`);
@@ -126,10 +132,7 @@ describe('#1834 B — camada DB-aware', { skip: semDb ? 'sem SUPABASE_URL + SERV
   // trigger sumisse, candidatura nova ficaria sem linha de histórico e o ratchet acende.
 
   it('RATCHET — nenhuma candidatura sem linha de histórico (piso 0, só pode subir)', async () => {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/selection_applications?select=id,selection_application_status_history(id)`,
-      { headers: auth() },
-    );
+    const r = await pega(`${SUPABASE_URL}/rest/v1/selection_applications?select=id,selection_application_status_history(id)`);
     assert.equal(r.status, 200, `leitura falhou: HTTP ${r.status}`);
     const linhas = await r.json();
     assert.ok(Array.isArray(linhas) && linhas.length > 0, 'o guard precisa examinar linhas (senão está cego)');
@@ -147,10 +150,7 @@ describe('#1834 B — camada DB-aware', { skip: semDb ? 'sem SUPABASE_URL + SERV
   });
 
   it('toda linha semeada tem changed_at NULO, e toda linha de trigger tem carimbo', async () => {
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/selection_application_status_history?select=source,changed_at`,
-      { headers: auth() },
-    );
+    const r = await pega(`${SUPABASE_URL}/rest/v1/selection_application_status_history?select=source,changed_at`);
     assert.equal(r.status, 200, `leitura falhou: HTTP ${r.status}`);
     const linhas = await r.json();
     assert.ok(linhas.length > 0, 'histórico vazio — o guard estaria cego');
