@@ -832,7 +832,8 @@ const SEL_I18N = {
 <style is:global>
   body:not([data-sel-can-manage-platform="1"]) [data-sel-requires~="manage_platform"],
   body:not([data-sel-can-manage-member="1"]) [data-sel-requires~="manage_member"],
-  body:not([data-sel-can-schedule-interview="1"]) [data-sel-requires~="schedule_interview"] {
+  body:not([data-sel-can-schedule-interview="1"]) [data-sel-requires~="schedule_interview"],
+  body:not([data-sel-can-operate-selection="1"]) [data-sel-requires~="operate_selection"] {
     display: none !important;
   }
 
@@ -2339,7 +2340,7 @@ const SEL_I18N = {
             <div class="flex gap-2 items-end">
               ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.phoneLabel}</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
               ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.linkedinLabel}</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
-              <button id="save-contact-btn" data-sel-requires="manage_member" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
+              <button id="save-contact-btn" data-sel-requires="operate_selection" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
             </div>` : ''}
             ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.academicBackground}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.motivation}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
@@ -6422,12 +6423,20 @@ const SEL_I18N = {
     const canManagePlatform = canFor('manage_platform');
     const canManageMember = canFor('manage_member');
     const isCommitteeLead = (m?.selection_committee_role ?? null) === 'lead';
+    // #1838: o eixo `operate_selection` gateia ESCRITA (o botão de contato), então segue a regra
+    // de escrita do servidor: papel que decide, não qualquer participação. O domínio da coluna é
+    // ('evaluator','lead','observer'), então esta lista exclui exatamente o observador.
+    // `selection_committee_role` vem de `selection_committee_role_for()`, o mesmo sinal que o
+    // servidor consulta, com o mesmo predicado de ciclo (`open` OU fase `evaluating`).
+    const isCommitteeWriter = ['evaluator', 'lead'].includes(m?.selection_committee_role ?? '');
+    const canViewPii = canFor('view_pii');
     const set = (attr: string, on: boolean) => {
       if (on) b.setAttribute(attr, '1'); else b.removeAttribute(attr);
     };
     set('data-sel-can-manage-platform', canManagePlatform);
     set('data-sel-can-manage-member', canManageMember);
     set('data-sel-can-schedule-interview', canManagePlatform || isCommitteeLead);
+    set('data-sel-can-operate-selection', canManageMember || (isCommitteeWriter && canViewPii));
   }
 
   function applyGate(m: any) {
