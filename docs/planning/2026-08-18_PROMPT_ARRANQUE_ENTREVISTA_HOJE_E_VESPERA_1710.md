@@ -43,6 +43,7 @@ Regras de varredura que já custaram caro, as três últimas ganhas nesta madrug
 `main` em **`23b2e135`**, **zero PRs abertas**, **43 invariantes com zero violações**.
 Migrations novas da madrugada: `20260817234948` (#1834) e as quatro `202608181018xx`/`202608181021xx` (#1838).
 Bypass: **1 evento** na janela de 7 dias (a #1843, justificada na PR). Orçamento 2.
+Issues: **209 abertas**. **#1834 fechada** em 18/08; **#1842**, **#1844** e **#1848** abertas na madrugada.
 
 ---
 
@@ -125,18 +126,27 @@ corpo com `success:false`, `RAISE` com 400). Tratamento genérico acerta uma e e
 ⚠️ **A página `/admin/vep-reconciliation` tem gate de rota próprio** ("é admin"). Destravar as 3
 RPCs dela **não garante que o avaliador chegue lá**. Não ampliei rota por conta própria.
 
-## ITEM 6: #1834 precisa ser RETITULADA
+## ITEM 6: #1834 fechada — e o que dela ficou aberto na #1848
 
-O título ainda culpa o `import_vep_applications`, e **a premissa não se sustenta**: o corpo vivo
-escreve um só status (`'submitted'`), não tem `UPDATE` da tabela e nunca cita `'approved'`. A janela
-de 13:03-13:05 eram **152 linhas pré-existentes** com decisões espalhadas por 5 meses, escritas por
-**SQL direto com `service_role`**, fora de qualquer função — e é por isso que não havia auditoria.
+✅ **Fechada e retitulada em 18/08**, para *"status de candidatura sem carimbo próprio nem histórico,
+e escrita direta sem rastro"*. O título anterior culpava o `import_vep_applications`, e o corpo vivo
+desmente: escreve um só status (`'submitted'`), não tem `UPDATE` da tabela, nunca cita `'approved'`.
+A janela de 13:03-13:05 eram **152 linhas pré-existentes** com decisões espalhadas por 5 meses,
+escritas por **SQL direto com `service_role`** — nenhuma função rodou, então nenhuma função auditou.
 
-✅ O conserto entregue foi na TABELA: trigger de histórico (**172 linhas de base**, `changed_at` NULO
-de propósito) que alcança as 20 funções que escrevem status **e** a escrita direta.
+✅ **Item 1 da proposta entregue** (PR #1843): trigger de tabela, **172 linhas de base** com
+`changed_at` NULO de propósito, alcançando as 20 funções que escrevem status **e** a escrita direta.
 
-📌 Sugestão de título: *"status de candidatura sem carimbo próprio nem histórico, e escrita direta
-sem rastro"*.
+🆕 **Item 2 NÃO foi entregue e virou a #1848:** detectar o vínculo ausente **no ato da gravação**, em
+vez de deixar o invariante `R_approved_application_has_member` descobrir horas depois, como CI
+vermelho numa PR sem relação. Medido em 18/08: das **98** aprovadas, **3 resolvem só pelo e-mail
+alternativo** — a mesma forma do caso que travou o CI em 17/08. Hoje o invariante está em zero
+violações, mas isso é propriedade do DADO, não da estrutura.
+
+📌 A distinção que separa os dois itens, e que vale para o próximo caso: **auditar registra que
+aconteceu; validar decide se pode acontecer.** Um trigger de auditoria que recusa escrita vira
+gargalo, então a #1848 propõe **anomalia, não exceção** — barrar transformaria o caso legítimo
+(e-mail alternativo ainda não cadastrado) em bloqueio operacional.
 
 ## ITEM 7: #1842, o ratchet que não existe
 
@@ -184,11 +194,14 @@ Filas paradas:
 ## Ordem sugerida
 
 1. **Marcar as entrevistas** (hoje 23:00 UTC e amanhã) — único item que expira.
-2. **Retitular a #1834** (5 minutos, e evita que a próxima sessão persiga a função errada).
-3. **23/08: re-medir o #1710** pelos dois caminhos.
-4. **Decidir a #1844** — enquanto o CI trava, toda PR vira candidata a bypass, e restam **1 de 2**.
-5. **Alimentar a #588** com as lições acumuladas; o laço do PMO está parado há 70 dias.
-6. **Triar as 18 sem onda e as 7 acima de 90 dias**, começando pela **#92**.
+2. **23/08: re-medir o #1710** pelos dois caminhos.
+3. **Decidir a #1844** — enquanto o CI trava, toda PR vira candidata a bypass, e restam **1 de 2**.
+4. **Alimentar a #588** com as lições acumuladas; o laço do PMO está parado há 70 dias.
+5. **Triar as 18 sem onda e as 7 acima de 90 dias**, começando pela **#92**.
+
+⚠️ **Dois achados desta madrugada seguem SEM issue**, e somem se ninguém os abrir: o `mark`
+carimbando `conducted_at` com a hora do REGISTRO (16 de 99 já divergem, máx. 64 dias), e o envelope
+do `mark` relatando `application_status` que ele não gravou.
 
 ---
 
