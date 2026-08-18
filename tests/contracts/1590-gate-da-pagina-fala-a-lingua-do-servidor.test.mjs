@@ -139,6 +139,7 @@ describe('#1590 C — a tela esconde a escrita que o servidor recusa', () => {
     assert.match(PAGINA, /body:not\(\[data-sel-can-manage-platform="1"\]\)\s*\[data-sel-requires~="manage_platform"\]/);
     assert.match(PAGINA, /body:not\(\[data-sel-can-manage-member="1"\]\)\s*\[data-sel-requires~="manage_member"\]/);
     assert.match(PAGINA, /body:not\(\[data-sel-can-schedule-interview="1"\]\)\s*\[data-sel-requires~="schedule_interview"\]/);
+    assert.match(PAGINA, /body:not\(\[data-sel-can-operate-selection="1"\]\)\s*\[data-sel-requires~="operate_selection"\]/);
   });
 
   it('as superficies de escrita declaram o que exigem', () => {
@@ -152,7 +153,11 @@ describe('#1590 C — a tela esconde a escrita que o servidor recusa', () => {
       // afirmacoes, um nivel mais fundo.
       ['id="committee-add-card"', 'manage_member'],        // cartao de ADICIONAR ao comite
       ['data-action="remove-committee"', 'manage_member'],        // remover do comite
-      ['id="save-contact-btn"', 'manage_member'],           // update_application_contact
+      // #1838: o eixo desceu de manage_member para operate_selection. O servidor passou a
+      // aceitar comite-do-ciclo-da-candidatura + view_pii ALEM de manage_member, e o alvo do
+      // botao e um CANDIDATO, nao um membro. Manter manage_member aqui esconderia o botao de
+      // quem o servidor agora autoriza — o falso negativo que o teste de agendar ja evitava.
+      ['id="save-contact-btn"', 'operate_selection'],        // update_application_contact
       ['id="recalc-rankings-btn"', 'manage_platform'],      // recalculate_cycle_rankings
       ['id="start-screening-btn"', 'manage_platform'],      // admin_update_application
       ['id="bulk-actions"', 'manage_platform'],             // admin_update_application em lote
