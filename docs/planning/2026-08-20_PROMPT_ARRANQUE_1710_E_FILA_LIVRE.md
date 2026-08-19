@@ -105,7 +105,10 @@ em arquivo.** Recupere-os do handoff ou refaça:
 
 - **A** → Marcelo Pereira (na tribo desde 07/08, Drive desde 08/08, falta `start_trail`).
 - **B** → Jefferson Pinto (líder), sobre o Pereira + manter horário publicado.
-- **C** → 🔴 **"6 tribos sem horário publicado" NÃO EXISTE pela definição do produto. Medido em
+- **C** → ✅ **ESCRITO para a tribo 13** (decisão do PM em 19/08: essa primeiro), em
+  `docs/_deliverables/2026-08-19_comunicado_C_tribo13_horario.md`, **não versionado**. Verificado por
+  impersonação que o líder consegue corrigir sozinho. **Falta o texto da tribo 10**, o caso oposto.
+  🔴 **"6 tribos sem horário publicado" NÃO EXISTE pela definição do produto. Medido em
   19/08 22:2x UTC.** A tela da tribo (`src/pages/tribe/[id].astro:585`) mostra
   `tribes.meeting_schedule` e, na falta dele, `tribe_meeting_slots`. Contar por
   `recurring_meeting_rules` dá 6, mas essa tabela **não é a que a tela lê**, e 4 das tais 6 têm de
@@ -142,6 +145,16 @@ Ela **não mergeia**: entrega handoff + PR verde, e **esta sessão faz o QA e o 
 - **#588** `[LL]` do PMO · **#92** (raiz da #1614)
 - 🆕 **Três candidaturas com `interview_status='scheduled'` sem entrevista agendada** (família do #1842).
   Sem issue. Some se ninguém abrir.
+- 🆕 **#1881 (aberta 19/08):** o gatilho de XP de entregável dispara só na transição de `status`, mas a
+  elegibilidade tem QUATRO campos. Quem entra pelos outros três nunca paga. Travou o `validate` numa
+  PR só de docs. **Contido pagando o card pela função canônica** (30 pts, sem bônus, ator sistema;
+  7 de 7 elegíveis pagos), mas a raiz continua: o próximo card volta a travar a fila.
+- 🆕 **#1882 (aberta 19/08):** `volunteer/leader` concede `write` com escopo **`organization`**,
+  enquanto todo outro tipo de liderança é `initiative`. São **13 pessoas**. Exercido por impersonação
+  com rollback: escreve em tribo alheia, e lê **e-mail e telefone** de 7 e 8 pessoas de tribos que não
+  são dela (contra 2 da própria). A mitigação documentada em `get_tribe_member_contacts` só vale para
+  `caller_chapter_scope() IS NOT NULL`, e para líder de tribo ela é NULL. **Não estreitar o escopo sem
+  decidir antes se a largura é intencional.**
 
 ---
 
