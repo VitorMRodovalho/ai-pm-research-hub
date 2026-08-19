@@ -352,6 +352,38 @@ guarda entrega exatamente a rotatividade que o PM quer evitar.**
 4. **A lista continua sem vaga e sem video** (secao 3.1), e isso vale para qualquer formato de
    prazo.
 
+### 5.1 A guarda anti-troca: opcoes levantadas, NAO escolhidas
+
+O PM pediu "entrar sim, trocar nao". A guarda de entrada ja existe (`has_tribe`); a de **saida** nao.
+Levanto as opcoes com o impacto medido de cada uma, sem escolher, porque a escolha e da sessao de
+planejamento.
+
+**O que a saida exige hoje**, lendo `withdraw_from_initiative`: chamador autenticado, engajamento
+ativo na iniciativa, **motivo com no minimo 10 caracteres** (fica registrado), e a unica trava real
+e ser o **ultimo voluntario** de um `kind` obrigatorio. Nao ha aprovacao de lider, nem tempo minimo.
+
+**Tempo de casa dos 66 com engajamento ativo de tribo** (dias desde `start_date`, medido 19/08):
+
+| menor | p25 | mediana | p75 | maior |
+|---|---|---|---|---|
+| **12** | 40 | **40** | 167 | 211 |
+
+Faixas: **1** pessoa com menos de 30 dias, **45** com menos de 60, **46** com menos de 90.
+
+| opcao | como funciona | impacto medido hoje | custo |
+|---|---|---|---|
+| **A. Tempo minimo de permanencia** | bloqueia `withdraw` antes de N dias de engajamento | **30 dias afeta 1 de 66** · **60 dias congela 45 de 66** · 90 dias congela 46 | simples de implementar e de explicar; mas um numero alto prende quem entrou na tribo errada, e o corte de 60 dias e uma mudanca de regime, nao um ajuste |
+| **B. Aprovacao do lider para sair** | `withdraw` vira pedido, o lider da tribo decide | atinge os **66**, mas so no momento em que quiserem sair | ja existe canal de notificacao (`tribe_request` provou o padrao); porem cria fila de aprovacao e da ao lider poder de reter pessoa, o que e decisao de governanca, nao de produto |
+| **C. Separar "sair" de "poder pedir outra"** | sair continua livre; **sair nao restaura a elegibilidade** para pedir tribo. Reentrada passa pelo GP | atinge os **66**, sem bloquear ninguem de sair | e a que mais casa com a preocupacao literal do PM (o problema e **trocar**, nao **sair**); custo e o GP virar gargalo de reentrada |
+| **D. Nao fazer nada** | mantem como esta | **66 de 66 podem trocar** assim que o prazo reabrir | zero trabalho, e devolve exatamente o cenario que a restricao quer evitar |
+
+**Observacao que atravessa as quatro:** hoje a trava e o prazo global fechado, e ela e **acidental**.
+Qualquer formato de prazo por pessoa **remove essa trava**, entao a guarda precisa ser decidida
+**junto com** o prazo, nao depois dele.
+
+**Nao recomendo A com corte de 60 dias** sem que isso seja tratado como mudanca de politica: 45 de
+66 pessoas passariam de "podem sair" para "nao podem" no dia do deploy.
+
 ### Decisoes menores que nao dependem dessa
 
 1. **Ligar `auto_detect_onboarding_completions`** em cron, ou chamar de algum ponto: destrava
