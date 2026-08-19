@@ -62,12 +62,28 @@ Quando a Diretoria verificar o caso, **a entrada sai do arquivo**.
 | **dias até o piso** | **5** |
 | cron | `attendance-seal-window-daily`, `40 11 * * *`, **ativo** |
 
-⚠️ **A medição de 15/08 (43 selam, 80 faltas, 40 pessoas) é TETO e encolhe a cada presença registrada.**
-**RE-MEDIR EM 23/08, a véspera, pelos DOIS caminhos independentes. Não recitar.**
+🔴 **CORREÇÃO (medida em 19/08 22:14 UTC): o número NÃO é teto.** Ele tem DUAS forças opostas. As
+faltas encolhem a cada presença registrada, mas o conjunto de eventos devidos **CRESCE** conforme a
+janela de graça (14 dias) desliza e mais eventos cruzam o corte. Replicando o predicado do cron:
 
-📌 **`preview_seal_attendance()` exige `auth.uid()`** e recusa `service_role` com "Not authenticated"
-(medido em 19/08). Os dois caminhos são: (a) a porta MCP, que carrega identidade, e (b) SQL direto
-replicando o predicado. **Divergência entre os dois é achado, não erro de digitação.**
+| cenário | corte (fim do evento) | devidos | selam | coorte vazia | faltas |
+|---|---|---|---|---|---|
+| agora (19/08) | 2026-08-05 22:14 | 42 | **38** | 4 | **76** |
+| piso (24/08 11:40 UTC) | 2026-08-10 11:40 | 47 | **43** | 4 | **83** |
+
+A linha do piso é **simulação, não medição**: a coorte é lida de hoje. Que ela caia em 43 selos, o
+mesmo número de 15/08, é **coincidência de duas partes móveis**, não estabilidade. **RE-MEDIR EM 23/08.**
+Distribuição das 83 faltas: **41 pessoas**, sendo 17 com uma, 13 com duas, 8 com três, e uma com sete.
+
+📌 **Os dois caminhos medem COISAS DIFERENTES, e divergir é o desenho, não achado.**
+`seal_attendance_window_cron` (o ato) **não tem gate de chamador**. `preview_seal_attendance` tem
+**dois** (`_can_manage_event` + `rls_can_see_initiative`) e mede o que UM chamador alcança: a
+diferença entre os dois É a grade fora do alcance do líder, que já foi decidida como sendo do GP.
+O preview também exige `auth.uid()` e recusa `service_role` com "Not authenticated" (medido em 19/08).
+
+⚙️ **A consulta do caminho (b) está congelada em `docs/audit/1710_MEDICAO_SELO_23AGO.sql`**, já
+parametrizada por `grace_days` e `floor_date` da config, e conferida contra os números acima. Em
+23/08 é só executar. Ela caduca se o corpo de qualquer uma das três funções mudar.
 
 ⚠️ **A entrevista de 24/08 23:30 UTC cai no MESMO dia do prazo.** Não deixe os dois para a mesma sessão.
 
@@ -117,10 +133,11 @@ Ela **não mergeia**: entrega handoff + PR verde, e **esta sessão faz o QA e o 
 
 ## Ordem sugerida
 
-1. **Conferir o cron do #1855** (pós 09:00 UTC): saiu o esperado?
-2. **#1710**: preparar os dois caminhos de medição AGORA, para que 23/08 seja só executar.
-3. **Textos A, B e C** ao PM, se ele aprovar.
-4. **23/08: re-medir o #1710** pelos dois caminhos.
+1. **Conferir o cron do #1855** (pré-condição: passou das 09:00 UTC de 20/08): saiu o esperado?
+2. ✅ **FEITO em 19/08 22:1x UTC.** Caminho (b) congelado em `docs/audit/1710_MEDICAO_SELO_23AGO.sql`,
+   e o item 1 acima corrigido: o número não é teto, e os dois caminhos divergem por desenho.
+3. **Textos A, B e C** ao PM, se ele aprovar. **C ainda exige levantar as 6 tribos sem horário.**
+4. **23/08: re-medir o #1710** pelos dois caminhos, sabendo que eles medem recortes diferentes.
 
 ---
 
