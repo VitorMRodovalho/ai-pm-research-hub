@@ -274,32 +274,83 @@ Todas verificadas como **OPEN** em 19/08.
 
 ---
 
-## 5. A decisao pendente, formulada e NAO tomada
+## 5. A decisao do PM (19/08): o prazo tem a FORMA errada, nao o valor errado
 
-**Pergunta:** qual e o caminho oficial de entrada em tribo?
+Esta secao foi reescrita depois da leitura do PM. Minha formulacao original tratava o prazo vencido
+como "decisao de processo a reafirmar ou revogar". **O PM corrigiu o enquadramento:** o defeito nao
+e a data, e o **formato**. O prazo foi desenhado como **data global de coorte**, como se todos
+entrassem ao mesmo tempo; mas o candidato precisa de um prazo **relativo ao fim da jornada dele**,
+para que a escolha de tribo nao fique pendente para sempre.
 
-Hoje existem os dois, e **nenhum esta declarado como o oficial**:
+### A premissa de coorte nao se sustenta, medido
 
-- **Caminho A, pedido do membro (`tribe_request`).** Construido, testado, com notificacao aos dois
-  lados, cancelamento (#1255) e portao de capacidade. **Esta desligado por prazo desde 22/07.**
-- **Caminho B, alocacao administrativa.** E o que vem acontecendo. Nao passa por
-  `request_tribe_assignment`, e **e a raiz do #1777** (24 pesquisadores sem `write_board`).
+Entradas de membros ativos por mes: **03/2026 = 35 · 04 = 4 · 05 = 4 · 06 = 31 · 07 = 13 · 08 = 7**.
+Sao duas ondas mais um fluxo continuo, nao uma turma.
 
-O que torna a decisao urgente e que **a plataforma esta contando com o caminho A sem que ele
-exista**: ha registro de que a alocacao de um membro foi **revertida em favor de "ele escolhe a
-tribo dele apos o onboarding"** - e a janela de escolha esta fechada ha 28 dias. **11 membros
-ativos** estao parados no passo 5 sem tribo e sem botao.
+E o teste direto: **3 pessoas assinaram o Termo de Voluntario DEPOIS do prazo de 22/07**, e as
+**3 estao sem tribo hoje** (3 de 3). O termo mais recente e de **18/08**, ou seja **27 dias** depois
+do prazo. O funil seguiu entregando gente na porta fechada por quase um mes.
 
-As tres saidas, com o que cada uma exige:
+### O primitivo por pessoa JA EXISTE, e esta no passo errado
 
-| saida | o que precisa | efeito colateral conhecido |
-|---|---|---|
-| **A1. Reabrir a janela** (mover ou anular `tribe_request_deadline`) | uma decisao do PM, sem codigo | volta a valer o defeito 3.1: 3 das 12 ofertadas estao lotadas e o payload nao mostra vaga nem video |
-| **A2. Janela por pessoa** em vez de data global | mudar o portao de `now() > deadline` para janela relativa a entrada | e desenho, fora do mandato desta issue |
-| **B. Declarar a alocacao administrativa como oficial** | aposentar o caminho A, resolver o #1777, e mudar a copy do passo 5 | assume o custo de o membro nao escolher |
+`onboarding_progress.sla_deadline` esta **100% preenchido** nas **5 chaves orfas** do #1875
+(`accept_terms`, `join_whatsapp`, `kick_off`, `platform_access`, `profile_complete`), com prazos
+**escalonados por pessoa** (de 29/06 a 29/08). Quem preenche e `seed_pre_onboarding_steps()`, com
+`now() + (v_sla_days || ' days')::interval` e SLAs de 7, 14, 14, 14 e 30 dias.
 
-**Nao recomendo escolher sem antes decidir o 3.1**, porque reabrir a janela com a lista atual
-entrega ao candidato 12 opcoes das quais 3 recusam no envio e 2 tribos vazias nao aparecem.
+E esta **0% preenchido em `meet_tribe`**, que e exatamente o passo que precisa dele.
+
+**Consequencia para a triagem:** as 5 chaves orfas do #1875 nao sao so divida. Elas carregam o
+**unico prazo por pessoa que funciona neste schema**, e sao da jornada de pre-termo do #873. O
+#1875, o #873 e o prazo de tribo sao a mesma conversa.
+
+### A restricao que o PM adicionou: entrar sim, trocar nao
+
+> "a tribo tem que estar aberta para eles, as que tiver vagas, mas nao pode permitir os que ja
+> escolheram tribo e estao atuando de simplesmente sair da tribo e entrar em outra."
+
+**Boa noticia: essa separacao ja existe no desenho.** O comentario da propria RPC diz
+*"has_tribe callers keep their own state (the deadline is about joining, not their membership)"*.
+A elegibilidade e `v_is_active AND v_tribe_id IS NULL AND NOT v_has_tribe_engagement AND NOT
+member_is_pre_onboarding(...)`, com guarda de **duas chaves** (o campo legado `members.tribe_id`
+**e** o engajamento `volunteer` ativo numa initiative `research_tribe`).
+
+Exercido sob a identidade de um pesquisador que ja atua numa tribo: `eligible: false`,
+`ineligible_reason: "has_tribe"`, e **`tribes: []`** (zero tribos ofertadas). Ele nao ve a lista.
+**Trocar o prazo global por prazo por pessoa NAO abre a porta da troca**, porque o portao da troca
+e outro.
+
+### O buraco real, e ele so aparece quando o prazo reabrir
+
+O mesmo payload traz **`can_self_leave: true`**. A unica condicao para sair sozinho e
+`v_active_vol_count > 1`, isto e, **"nao deixe a tribo com zero voluntarios"**. Nao ha guarda de
+tempo de casa, de entrega, nem de aprovacao de lider.
+
+| medicao (19/08) | valor |
+|---|---|
+| tribos ofertadas pela RPC | **12** |
+| tribos onde sair e livre (`n_vol > 1`) | **12** |
+| tribos onde sair e barrado | **0** |
+| pessoas com engajamento ativo de tribo | **66** |
+| **dessas, que podem sair sozinhas hoje** | **66** |
+
+Ou seja: **sair e depois pedir outra tribo e um caminho de dois passos, aberto para 66 de 66.**
+Hoje ele nao se materializa **porque o prazo global esta fechado** - o prazo vencido esta agindo,
+por acidente, como a trava anti-troca. **Reabrir a janela (global ou por pessoa) sem adicionar
+guarda entrega exatamente a rotatividade que o PM quer evitar.**
+
+### O que fica para a sessao de planejamento decidir
+
+1. **Onde mora o prazo por pessoa.** `onboarding_progress.sla_deadline` da linha de `meet_tribe` e
+   o candidato natural, porque o mecanismo ja existe e ja e alimentado noutro passo. Quantos dias,
+   e contados a partir de que marco (assinatura do termo? conclusao do passo 4?), e decisao aberta.
+2. **O que acontece quando o prazo por pessoa vence.** Vira alocacao pelo GP? Vira lembrete? A
+   pendencia so pode deixar de ser eterna se houver desfecho definido.
+3. **A guarda anti-troca**, que hoje nao existe e nao pode nascer do prazo. Opcoes que NAO desenho
+   aqui: exigir aprovacao do lider para sair, exigir tempo minimo de permanencia, ou separar
+   "sair" de "poder pedir outra" (sair sem reabrir elegibilidade).
+4. **A lista continua sem vaga e sem video** (secao 3.1), e isso vale para qualquer formato de
+   prazo.
 
 ### Decisoes menores que nao dependem dessa
 

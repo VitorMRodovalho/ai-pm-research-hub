@@ -10,7 +10,39 @@
 
 ## O que a sessao de planejamento precisa decidir
 
-### Decisao 1 - a unica que trava as outras: qual e o caminho oficial de entrada em tribo
+### Decisao 1 - RESOLVIDA pelo PM em 19/08: o prazo tem a FORMA errada
+
+O PM leu a auditoria e corrigiu o enquadramento. Nao e "o prazo de 22/07 ainda vale?". O prazo foi
+desenhado como **data global de coorte**, como se todos entrassem ao mesmo tempo. O certo e um
+prazo **relativo ao fim da jornada de cada candidato**, para a escolha de tribo nao ficar pendente
+para sempre.
+
+Medido, a premissa de coorte nao se sustenta: entradas por mes sao **35 · 4 · 4 · 31 · 13 · 7**
+(marco a agosto), e **3 pessoas assinaram o Termo depois do prazo, as 3 sem tribo hoje**. O termo
+mais recente e de 18/08, **27 dias** depois do prazo.
+
+**O primitivo ja existe:** `onboarding_progress.sla_deadline` esta **100% preenchido nas 5 chaves
+orfas do #1875**, com prazos escalonados por pessoa, alimentado por `seed_pre_onboarding_steps()`
+via `now() + N days` (SLAs de 7/14/14/14/30). Esta **0% em `meet_tribe`**. Ou seja: **#1875, #873 e
+o prazo de tribo sao a mesma conversa**, e as chaves orfas nao sao so divida.
+
+**Restricao adicional do PM:** novos candidatos entram nas tribos com vaga, mas quem ja escolheu e
+esta atuando **nao pode sair e entrar em outra**.
+
+- **Isso ja esta no desenho.** Exercido sob um pesquisador que atua numa tribo: `eligible: false`,
+  `ineligible_reason: "has_tribe"`, `tribes: []`. A guarda tem duas chaves (`members.tribe_id` **e**
+  engajamento `volunteer` ativo). **Trocar o formato do prazo nao abre a porta da troca.**
+- **Mas ha um buraco, e ele so aparece quando o prazo reabrir.** `can_self_leave` e verdadeiro
+  sempre que a tribo tem mais de 1 voluntario, e **isso vale para 12 de 12 tribos e 66 de 66
+  pessoas**. Sair e depois pedir outra e um caminho de dois passos. Hoje ele nao se materializa
+  **porque o prazo global fechado esta agindo, por acidente, como a trava anti-troca**.
+  **Reabrir sem guarda entrega a rotatividade que o PM quer evitar.**
+
+**O que sobra para a sessao decidir:** (a) de que marco contam os dias e quantos; (b) o que
+acontece quando o prazo pessoal vence (alocacao pelo GP? lembrete?); (c) **a guarda anti-troca, que
+hoje nao existe e nao pode nascer do prazo**; (d) a lista continua sem vaga e sem video.
+
+### Decisao 1-B (superada, mantida para historico): qual e o caminho oficial de entrada em tribo
 
 O fluxo `tribe_request` **nao esta parado por desuso. Esta fechado por configuracao.**
 
