@@ -105,7 +105,21 @@ em arquivo.** Recupere-os do handoff ou refaça:
 
 - **A** → Marcelo Pereira (na tribo desde 07/08, Drive desde 08/08, falta `start_trail`).
 - **B** → Jefferson Pinto (líder), sobre o Pereira + manter horário publicado.
-- **C** → líderes das **6 tribos sem horário publicado**. Falta levantar quem são.
+- **C** → 🔴 **"6 tribos sem horário publicado" NÃO EXISTE pela definição do produto. Medido em
+  19/08 22:2x UTC.** A tela da tribo (`src/pages/tribe/[id].astro:585`) mostra
+  `tribes.meeting_schedule` e, na falta dele, `tribe_meeting_slots`. Contar por
+  `recurring_meeting_rules` dá 6, mas essa tabela **não é a que a tela lê**, e 4 das tais 6 têm de
+  17 a 22 encontros futuros marcados. É o mesmo erro de denominador do #1875, repetido.
+
+  O real são **dois casos opostos, e duas mensagens diferentes**, entre as 12 tribos ativas:
+
+  | tribo | o que a tela mostra | encontros futuros | o problema |
+  |---|---|---|---|
+  | 13 · Dados em Projetos de IA | **nada** | **17** | reúne e não publica |
+  | 10 · Governança Assistida | "Quinta-Feira - 18:00" | **0** (1 evento na vida) | publica e não reúne |
+
+  As outras 10 estão cobertas: 3 pelos slots (5, 7, 8) e 7 pelo texto. **Confirme com o PM qual das
+  duas mensagens ele quer antes de escrever**, porque elas não são a mesma.
 
 ⚠️ **Não use o rascunho antigo.** Ele dá boas-vindas ao Figueiredo, que **não está em tribo** (a
 alocação foi revertida em 19/08 a pedido do PM: ele escolhe a tribo dele depois do onboarding).
