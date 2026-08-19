@@ -125,6 +125,35 @@ Nenhum foi feito, os dois são pequenos e os dois são **DDL ou RPC**, logo depe
    aparece para 5. Falta projetar `m.pmi_id` como fallback na RPC.
 2. **A fila da Diretoria está inflada:** 18 dos 31 não são público dela. Falta filtro de coorte.
 
+## 🆕 ITEM 4b: o módulo de filiação auditado, e a inversão que ele pede
+
+Auditado em 19/08 02:00, com o contexto quente. **A medição dá nome à intuição do PM:** o módulo
+pede que humanos façam o trabalho da máquina, e enterra o trabalho que só humano faz.
+
+| fato | número |
+|---|---|
+| verificações mais recentes por membro | 69 |
+| com evidência **reprocessável por máquina** | **69 (100%)** |
+| idade da evidência (`pmi_data_fetched_at`) | **2 dias** (mín = máx = média) |
+| crons que **verificam** filiação | **0** |
+| ativos sem verificação, com evidência reprocessável | 26, dos quais **0** |
+
+📌 **Efeito de manada chegando:** as 69 verificações têm idade entre 1 e 37 dias, média 33. Foram
+feitas na mesma campanha, então **vencem juntas**.
+
+- **#1866** — auto-verificar quem TEM evidência (a regra já existe no #1175 F1, é agendar), e a tela
+  vira console de exceção. 🔴 **Cinco guardas na issue**, e a principal: a recusa tem que ser por
+  **idade da evidência**, não por o job terminar sem erro, senão o sync quebrar deixa o painel verde
+  mentindo. ⚠️ **Refresh automático NÃO é atestação:** use valor de `method` próprio, e **não**
+  `verified_by_member_id` nulo (a coluna é nullable, e ator nulo é o anti-padrão conhecido).
+- **#1867** — seção de filiação no digest semanal de líderes. A infra existe
+  (`send-weekly-leader-digest`, segundas 12:00 UTC, 3.560 chars, **não cita filiação**). 🔴
+  **Requisito que faz ou quebra: publicar o DENOMINADOR.** "2 vencidas, 7 vencendo" seria correto e
+  mentiroso, porque os **26 sem linha** não aparecem em contagem nenhuma.
+
+⚖️ Os dois são **propostas**, não decisões tomadas. O #1867 tem três pendências declaradas: público,
+nominal ou agregado, e se a seção deve sumir quando não há exceção.
+
 ## ⏰ ITEM 5: #1710, prazo 24/08
 
 Config conferida em 17/08 e intacta (`floor_date` 2026-08-24, `grace_days` 14; cron
