@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATION_PATH = join(
@@ -167,7 +168,7 @@ async function rpc(name, body) {
 test('live: check_schema_invariants — 0 violations after PR-4', { skip: !canRun && skipMsg }, async () => {
   const { ok, json, text } = await rpc('check_schema_invariants', {});
   assert.ok(ok, `check_schema_invariants must run: ${text}`);
-  assert.equal(json.filter((r) => r.violation_count > 0).length, 0, 'no invariant may be violated');
+  assert.equal(unexpectedViolations(json).length, 0, violationsMessage(json));
 });
 
 test('live: get_my_reacceptance_obligations is callable and member-scoped (empty without a member)', { skip: !canRun && skipMsg }, async () => {

@@ -28,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -164,6 +165,5 @@ test('DB: invariant total is 43, 0 violations', { skip: dbGated ? false : skipMs
   assert.ok(!error, error?.message);
   // #785 PR-2 (mig 232) added AJ_confidential_visibility_gate_present → 37; #333 (mig 259) added AK_voice_biometric_consent_enforcement → 38; #209 (mig 263) added AL_drive_revocation_terminal_consistency → 39; #301 (mig 268) added AM_drive_curation_grant_terminal_consistency → 40; #973 PR-1 (mig 301) added NO invariant → still 40; #974 PR-2 (mig 302) added AN_no_dynamic_remission_cooperation → 41; #1269 (mig 398) added AO_active_member_stale_tribe_id_after_leave → 42; #1221 fatia 1 (mig 403) added AP_interim_grant_reverted_when_cert_issued → 43.
   assert.equal(data.length, 43, `expected 43 invariants, got ${data.length}`);
-  const offenders = data.filter(x => x.violation_count > 0).map(x => `${x.invariant_name}=${x.violation_count}`);
-  assert.equal(offenders.length, 0, `unexpected violations: ${offenders.join(', ')}`);
+  assert.equal(unexpectedViolations(data).length, 0, violationsMessage(data));
 });
