@@ -2330,18 +2330,19 @@ const SEL_I18N = {
             </div>
             <!-- Contact: Phone + WhatsApp + LinkedIn + CV + Credly -->
             <div class="flex flex-wrap gap-2 items-center text-[13px]">
-              ${row.phone ? `<a href="https://wa.me/${row.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold no-underline hover:bg-emerald-100">WhatsApp ${esc(row.phone)}</a>` : ''}
+              ${row.phone ? `<a href="https://wa.me/${row.phone.replace(/\D/g, '')}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-semibold no-underline hover:bg-emerald-100">WhatsApp ${esc(row.phone)}</a>` : ''}
               ${row.linkedin_url ? `<a href="${esc(row.linkedin_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[11px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : ''}
               ${resumeLinkHtml(row)}
               ${row.member_credly_url ? `<a href="${esc(row.member_credly_url)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold no-underline hover:bg-amber-100">Credly</a>` : ''}
             </div>
-            <!-- Inline edit: add phone/linkedin if missing -->
-            ${!row.phone || !row.linkedin_url ? `
+            <!-- #1856: os campos de contato aparecem SEMPRE, preenchidos com o valor atual. Antes
+                 só renderizavam quando vazios, então dava para PREENCHER e nunca para CORRIGIR.
+                 A RPC update_application_contact sempre soube sobrescrever (COALESCE(NULLIF(...))). -->
             <div class="flex gap-2 items-end">
-              ${!row.phone ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.phoneLabel}</label><input type="text" id="edit-phone" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>` : ''}
-              ${!row.linkedin_url ? `<div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.linkedinLabel}</label><input type="text" id="edit-linkedin" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>` : ''}
+              <div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.phoneLabel}</label><input type="text" id="edit-phone" value="${esc(row.phone || '')}" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="+5551999999999" /></div>
+              <div class="flex-1"><label class="text-[10px] text-[var(--text-muted)] font-semibold">${T.modal.linkedinLabel}</label><input type="text" id="edit-linkedin" value="${esc(row.linkedin_url || '')}" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://linkedin.com/in/..." /></div>
               <button id="save-contact-btn" data-sel-requires="operate_selection" data-id="${esc(row.id)}" class="px-3 py-1.5 bg-navy text-white rounded-lg text-[11px] font-bold cursor-pointer border-0 hover:opacity-90">${T.modal.saveBtn}</button>
-            </div>` : ''}
+            </div>
             ${row.academic_background ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.academicBackground}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[120px] overflow-y-auto">${esc(row.academic_background)}</p></div>` : ''}
             ${row.motivation ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.motivation}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3 whitespace-pre-wrap max-h-[200px] overflow-y-auto">${esc(row.motivation)}</p></div>` : ''}
             ${row.areas_of_interest ? `<div><h4 class="text-[12px] font-bold text-[var(--text-secondary)] mb-1">${T.modal.areasOfInterest}</h4><p class="text-[13px] text-[var(--text-primary)] bg-[var(--surface-base)] rounded-lg p-3">${esc(row.areas_of_interest)}</p></div>` : ''}
@@ -3777,7 +3778,7 @@ const SEL_I18N = {
       // Candidate context panel — quick access while evaluating
       const appRow = allRows.find(r => r.id === applicationId);
       const contactLinks = [
-        appRow?.phone ? `<a href="https://wa.me/${appRow.phone.replace(/\\D/g, '')}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold no-underline hover:bg-emerald-100">WhatsApp</a>` : '',
+        appRow?.phone ? `<a href="https://wa.me/${appRow.phone.replace(/\D/g, '')}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-semibold no-underline hover:bg-emerald-100">WhatsApp</a>` : '',
         appRow?.linkedin_url ? `<a href="${esc(appRow.linkedin_url)}" target="_blank" rel="noopener" class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold no-underline hover:bg-blue-100">LinkedIn</a>` : '',
         // p195 Opção B+: pass through storage_path + synced_at from appRow (allRows has full row);
         // app object from /admin/selection/eval RPC may only have resume_url. Prefer appRow when available.
