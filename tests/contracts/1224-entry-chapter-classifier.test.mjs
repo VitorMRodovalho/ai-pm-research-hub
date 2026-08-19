@@ -18,6 +18,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const MIG = readFileSync(
   fileURLToPath(new URL('../../supabase/migrations/20260805000386_1224_derive_entry_chapter_from_pmi_memberships.sql', import.meta.url)),
@@ -138,5 +139,5 @@ test('1224: derivation keeps invariant U (one primary affiliation) green', { ski
     (r) => r.invariant_name === 'U_active_person_has_primary_chapter_affiliation',
   );
   assert.ok(u, 'invariant U present');
-  assert.equal(Number(u.violation_count), 0, 'invariant U must have 0 violations');
+  assert.equal(unexpectedViolations([u]).length, 0, violationsMessage([u]));
 });

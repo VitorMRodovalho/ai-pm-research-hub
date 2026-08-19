@@ -56,6 +56,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # #1850: este job NAO e required, e e por isso que ele pode dizer a verdade.
+          # `validate` (required) tolera as violacoes declaradas em
+          # tests/helpers/invariant-exceptions.mjs, para que uma violacao mantida
+          # aberta por decisao nao congele a fila de merge inteira. Aqui nao se
+          # tolera nada: modo estrito ignora toda declaracao, e este job fica
+          # vermelho enquanto a violacao existir. Destravar o portao required
+          # nunca pode apagar o sinal. Travado por
+          # tests/contracts/1850-excecoes-declaradas-de-invariante.test.mjs.
+          INVARIANT_STRICT: '1'
         run: |
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "::warning::SUPABASE_SERVICE_ROLE_KEY secret not configured — test will skip gracefully. Configure in repo Settings → Secrets → Actions to enable live-DB drift detection."

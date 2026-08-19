@@ -15,6 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const MIG = readFileSync(
   fileURLToPath(new URL('../../supabase/migrations/20260805000374_1197_member_chapter_from_application_declaration.sql', import.meta.url)),
@@ -76,5 +77,5 @@ test('1197: members.chapter column default stays Outro (canonical no-chapter val
     (r) => r.invariant_name === 'U_active_person_has_primary_chapter_affiliation',
   );
   assert.ok(u, 'invariant U present in suite');
-  assert.equal(Number(u.violation_count), 0, 'invariant U must have 0 violations');
+  assert.equal(unexpectedViolations([u]).length, 0, violationsMessage([u]));
 });

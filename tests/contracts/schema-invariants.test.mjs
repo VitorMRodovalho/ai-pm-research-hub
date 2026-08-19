@@ -3,7 +3,13 @@
  *
  * Static analysis tests (rpc-v4-auth, authority-derivation) check migration
  * text. This test calls check_schema_invariants() against the live database
- * and asserts that every invariant returns violation_count = 0.
+ * and asserts that every invariant returns violation_count = 0, EXCEPT the
+ * ones declared in tests/helpers/invariant-exceptions.mjs (a violation held
+ * open on purpose, with an issue and an expiry date behind it).
+ *
+ * The `check-invariants` workflow runs this file with INVARIANT_STRICT=1, so
+ * declarations are ignored there and that job stays red while a violation is
+ * open. Muting the required gate must never mute the signal.
  *
  * Any non-zero count means drift that triggers did not catch — typically
  * introduced via service_role direct UPDATE that bypassed BEFORE triggers,
@@ -21,6 +27,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { dbFetch } from '../helpers/db-fetch.mjs';
+import {
+  unexpectedViolations,
+  violationsMessage,
+  staleExceptions,
+  DECLARED_INVARIANT_EXCEPTIONS,
+  activeExceptions,
+} from '../helpers/invariant-exceptions.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -100,16 +113,17 @@ test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, asy
     await t.test(`${name} — 0 violations`, () => {
       const row = byName[name];
       assert.ok(row, `Invariant ${name} missing from RPC output`);
-      if (row.violation_count !== 0) {
+      if (unexpectedViolations([row]).length > 0) {
         const samples = Array.isArray(row.sample_ids) ? row.sample_ids.join(', ') : '';
         assert.fail(
           `${name} (${row.severity}): ${row.violation_count} violation(s)\n` +
           `  ${row.description}\n` +
           `  sample IDs: ${samples}\n` +
+          `  ${violationsMessage([row])}\n` +
           `  Query locally to investigate: SELECT * FROM public.check_schema_invariants();`
         );
       }
-      assert.strictEqual(row.violation_count, 0);
+      assert.strictEqual(unexpectedViolations([row]).length, 0);
     });
   }
 });
@@ -123,5 +137,37 @@ test('ADR-0012 B10: invariant output shape', { skip: !canRun && skipMsg }, async
       `severity must be high|medium|low, got: ${row.severity}`);
     assert.ok(Number.isInteger(row.violation_count), 'violation_count must be integer');
     assert.ok(row.violation_count >= 0, 'violation_count must be non-negative');
+  }
+});
+
+/**
+ * #1850: the ratchet. A declaration that no longer matches a live violation has
+ * done its job and must be deleted. This WARNS rather than fails on purpose:
+ * clearing a violation should never freeze the merge queue by surprise, which
+ * is the exact failure mode this whole mechanism exists to remove. The `expires`
+ * date is the forcing function.
+ */
+test('#1850: declared exceptions still match a live violation', { skip: !canRun && skipMsg }, async () => {
+  const rows = await callInvariantRpc();
+  const stale = staleExceptions(rows);
+  for (const e of stale) {
+    console.warn(
+      `::warning::${e.invariant} no longer reports a violation. `
+      + `Delete its entry in tests/helpers/invariant-exceptions.mjs (#${e.issue}).`,
+    );
+  }
+  const active = activeExceptions();
+  if (active.length) {
+    console.warn(
+      `::notice::${active.length} declared invariant exception(s) in force: `
+      + active.map((e) => `${e.invariant} (#${e.issue}, expires ${e.expires})`).join('; '),
+    );
+  }
+  // Uma declaracao que nomeia invariante inexistente nao tolera nada e mente no
+  // relatorio. Falhar aqui e seguro: o nome ou existe, ou sempre esteve errado.
+  const live = new Set(rows.map((r) => r.invariant_name));
+  for (const e of DECLARED_INVARIANT_EXCEPTIONS) {
+    assert.ok(live.has(e.invariant),
+      `declared exception names an invariant absent from the catalog: ${e.invariant} (#${e.issue})`);
   }
 });
