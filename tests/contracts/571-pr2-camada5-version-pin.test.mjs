@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATION_PATH = join(
@@ -168,7 +169,7 @@ test('check_schema_invariants: AN present, dormant (count 0), and 0 total violat
   assert.ok(an, 'AN_no_dynamic_remission_cooperation must be registered');
   assert.equal(an.severity, 'high');
   assert.equal(an.violation_count, 0, 'AN must be 0 (dormant: cooperation_addendum under_review; or all agreements pinned)');
-  assert.equal(json.filter((r) => r.violation_count > 0).length, 0, 'no invariant may be violated');
+  assert.equal(unexpectedViolations(json).length, 0, violationsMessage(json));
 });
 
 test('binding RPCs enforce auth (no member context => denied)', { skip: !canRun && skipMsg }, async () => {

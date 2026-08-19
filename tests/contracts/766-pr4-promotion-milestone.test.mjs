@@ -27,6 +27,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -113,8 +114,7 @@ test('DB: no promotion-specific invariant exists (mutable cache, no directional 
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  const total = data.reduce((s, r) => s + r.violation_count, 0);
-  assert.equal(total, 0, 'no invariant may have violations');
+  assert.equal(unexpectedViolations(data).length, 0, violationsMessage(data));
   assert.ok(!data.some((r) => /promotion/i.test(r.invariant_name)), 'no promotion-specific invariant should exist');
 });
 

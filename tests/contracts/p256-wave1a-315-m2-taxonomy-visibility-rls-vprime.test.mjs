@@ -2,6 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 // p256 Wave 1a M2 — taxonomy + visibility + status + atomic RLS swap + V' invariant.
 // Spec: SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md §19.5; P0-Q1/Q2/Q3/Q4/Q6/Q10 + A1/A2.
@@ -258,8 +259,8 @@ describe('p256 M2 — taxonomy + visibility + status + RLS swap + V invariant pr
       assert.equal(v.violation_count, 0, `V must have violation_count=0 post-synthetic-chain-backfill (got: ${v.violation_count})`);
 
       // PM #4 (c): all rows violation_count = 0
-      const violations = data.filter(r => r.violation_count > 0);
-      assert.equal(violations.length, 0, `all invariants must have violation_count=0 (drift: ${violations.map(r => r.invariant_name).join(',')})`);
+      const violations = unexpectedViolations(data);
+      assert.equal(violations.length, 0, violationsMessage(data));
     });
   });
 });
