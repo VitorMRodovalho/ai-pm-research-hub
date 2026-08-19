@@ -25,6 +25,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000102_p278_315_w1b_governance_documents_metadata_column.sql');
@@ -78,6 +79,6 @@ test('W1b behavioural: schema invariants still clean after the column add', { sk
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ifError(error);
   assert.ok(Array.isArray(data), 'check_schema_invariants returns an array');
-  const violations = data.filter((r) => Number(r.violation_count) > 0);
-  assert.equal(violations.length, 0, `expected 0 invariant violations, got: ${violations.map((v) => v.invariant_name).join(', ')}`);
+  const violations = unexpectedViolations(data);
+  assert.equal(violations.length, 0, violationsMessage(data));
 });
