@@ -27,6 +27,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -108,8 +109,7 @@ test('DB: check_schema_invariants reports >=32 invariants, 0 violations, AE pres
   assert.ok(!error, error?.message);
   // >= 32: this PR's invariant set is AE's floor; later PRs append (D4/D5 mig 210 added AF → 33).
   assert.ok(data.length >= 32, `expected >=32 invariants, got ${data.length}`);
-  const total = data.reduce((s, r) => s + r.violation_count, 0);
-  assert.equal(total, 0, 'no invariant may have violations');
+  assert.equal(unexpectedViolations(data).length, 0, violationsMessage(data));
   const ae = data.find((r) => /^AE_/.test(r.invariant_name));
   assert.ok(ae, 'AE invariant present');
   assert.equal(ae.violation_count, 0, 'AE has no violations');

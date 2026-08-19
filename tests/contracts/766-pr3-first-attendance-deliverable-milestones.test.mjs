@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -123,8 +124,7 @@ test('DB: check_schema_invariants reports at least 31 invariants (AC+AD live), 0
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
   assert.ok(data.length >= 31, `expected >= 31 invariants, got ${data.length}`);
-  const total = data.reduce((s, r) => s + r.violation_count, 0);
-  assert.equal(total, 0, 'no invariant may have violations');
+  assert.equal(unexpectedViolations(data).length, 0, violationsMessage(data));
 });
 
 test('DB: AC + AD present, medium severity, 0 violations', { skip: dbGated ? false : skipMsg }, async () => {

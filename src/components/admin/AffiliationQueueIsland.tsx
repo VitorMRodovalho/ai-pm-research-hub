@@ -330,7 +330,12 @@ export default function AffiliationQueueIsland() {
     setVActive(r.latest_verification?.membership_active !== false);
     // Prefer the actual PMI membership name (raw) when known — e.g. "Amazônia Chapter" (AM alias).
     setVChapter(br[0] ? (br[0].raw || `${br[0].name}, Brazil Chapter`) : (r.chapter || ''));
-    setVExpires(r.latest_verification?.membership_expires_on || toDateInput(br[0]?.expiry) || toDateInput(r.pmi_profile?.member_until));
+    // #1862 — sem terceiro fallback. `pmi_profile.member_until` e `service_latest_end_date`, data de
+    // SERVICO voluntario, e nao de filiacao (o erro do #999, ja corrigido na escrita pelo #1175 F1).
+    // Ele so entrava quando `br[0]` estava vazio, ou seja, exatamente quando NAO ha evidencia de
+    // membresia: o campo acertava no caso facil e chutava no dificil. Vazio pede preenchimento;
+    // preenchido com o valor errado pede so confirmacao.
+    setVExpires(r.latest_verification?.membership_expires_on || toDateInput(br[0]?.expiry) || '');
     setVObs('');
   };
 
@@ -724,6 +729,11 @@ export default function AffiliationQueueIsland() {
                       <td></td>
                       <td colSpan={8} className="px-3 py-3">
                         {p ? (
+                          <>
+                          {/* #1862 — o bloco acima e SERVICO voluntario. A ausencia de evidencia de
+                              FILIACAO tem que ser dita, senao "Servico PMI ate 2027" e lido como
+                              filiacao vigente. Duas causas possiveis, e a tela nao distingue: perfil
+                              da comunidade PMI privado, ou ainda nao filiado. */}
                           <div className="flex flex-wrap gap-x-8 gap-y-2 text-[12px]">
                             <div>
                               <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)] flex items-center gap-1"><IdCard size={11} /> {t('comp.affiliationQueue.panelPmiId', 'PMI ID')}</div>
@@ -738,11 +748,11 @@ export default function AffiliationQueueIsland() {
                               )}
                             </div>
                             <div>
-                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelSince', 'Membro desde')}</div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelSince', 'Serviço PMI desde')}</div>
                               <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.member_since)}</div>
                             </div>
                             <div>
-                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelUntil', 'Membro até')}</div>
+                              <div className="text-[.6rem] uppercase tracking-wider text-[var(--text-muted)]">{t('comp.affiliationQueue.panelUntil', 'Serviço PMI até')}</div>
                               <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.member_until)}</div>
                             </div>
                             <div>
@@ -754,6 +764,13 @@ export default function AffiliationQueueIsland() {
                               <div className="font-medium text-[var(--text-primary)]">{fmtDate(p.last_sync || r.vep_last_seen_at, true)}</div>
                             </div>
                           </div>
+                          {(!r.pmi_memberships || r.pmi_memberships.length === 0) && (
+                            <div className="mt-2 text-[12px] text-amber-600 flex items-start gap-1">
+                              <Info size={12} className="mt-[2px] shrink-0" />
+                              {t('comp.affiliationQueue.panelNoMembershipEvidence', 'Sem evidência de filiação no VEP. As datas acima são de serviço voluntário, não de filiação. Pode ser perfil da comunidade PMI privado ou ainda não filiado: confirme antes de verificar.')}
+                            </div>
+                          )}
+                          </>
                         ) : (
                           <div className="text-[12px] text-amber-600 flex items-center gap-1"><Info size={12} /> {t('comp.affiliationQueue.panelNoProfile', 'Sem enriquecimento VEP — verifique manualmente.')}</div>
                         )}
