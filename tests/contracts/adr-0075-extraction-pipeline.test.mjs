@@ -15,6 +15,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -84,6 +85,6 @@ test('ADR-0075 §3+§4+§5: pipeline structural elements exist (via check_schema
   const r = await rpc('check_schema_invariants');
   assert.equal(r.ok, true, `check_schema_invariants must run cleanly: ${r.status}`);
   assert.ok(Array.isArray(r.body), 'expected array of invariant rows');
-  const violations = r.body.filter((row) => Number(row.violation_count) > 0);
-  assert.equal(violations.length, 0, `expected 0 invariant violations, got: ${JSON.stringify(violations).slice(0, 500)}`);
+  const violations = unexpectedViolations(r.body);
+  assert.equal(violations.length, 0, violationsMessage(r.body));
 });

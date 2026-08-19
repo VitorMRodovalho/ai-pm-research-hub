@@ -22,6 +22,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -83,8 +84,7 @@ test('DB: check_schema_invariants reports R=0 and 31 invariants, 0 total violati
   const r = data.find(x => x.invariant_name === 'R_approved_application_has_member');
   assert.ok(r, 'R present');
   assert.strictEqual(r.violation_count, 0, 'R must have 0 violations (alternate-email match honored)');
-  const offenders = data.filter(x => x.violation_count > 0).map(x => `${x.invariant_name}=${x.violation_count}`);
-  assert.strictEqual(offenders.length, 0, `unexpected violations: ${offenders.join(', ')}`);
+  assert.strictEqual(unexpectedViolations(data).length, 0, violationsMessage(data));
 });
 
 test('DB: link_initiative_to_drive executes without the record-assignment crash (service-role → graceful auth error)', { skip: dbGated ? false : skipMsg }, async () => {
