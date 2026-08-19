@@ -141,12 +141,12 @@ pede que humanos façam o trabalho da máquina, e enterra o trabalho que só hum
 📌 **Efeito de manada chegando:** as 69 verificações têm idade entre 1 e 37 dias, média 33. Foram
 feitas na mesma campanha, então **vencem juntas**.
 
-- **#1866** — auto-verificar quem TEM evidência (a regra já existe no #1175 F1, é agendar), e a tela
+- **#1866**: auto-verificar quem TEM evidência (a regra já existe no #1175 F1, é agendar), e a tela
   vira console de exceção. 🔴 **Cinco guardas na issue**, e a principal: a recusa tem que ser por
   **idade da evidência**, não por o job terminar sem erro, senão o sync quebrar deixa o painel verde
   mentindo. ⚠️ **Refresh automático NÃO é atestação:** use valor de `method` próprio, e **não**
   `verified_by_member_id` nulo (a coluna é nullable, e ator nulo é o anti-padrão conhecido).
-- **#1867** — seção de filiação no digest semanal de líderes. A infra existe
+- **#1867**: seção de filiação no digest semanal de líderes. A infra existe
   (`send-weekly-leader-digest`, segundas 12:00 UTC, 3.560 chars, **não cita filiação**). 🔴
   **Requisito que faz ou quebra: publicar o DENOMINADOR.** "2 vencidas, 7 vencendo" seria correto e
   mentiroso, porque os **26 sem linha** não aparecem em contagem nenhuma.
