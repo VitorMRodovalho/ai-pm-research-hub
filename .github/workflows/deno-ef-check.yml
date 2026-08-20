@@ -29,6 +29,25 @@ permissions:
 jobs:
   deno:
     runs-on: ubuntu-latest
+    # #1896 - o check das EFs NAO deve depender da arvore npm do frontend. Sem esta variavel o
+    # Deno descobre o package.json da raiz e resolve TUDO que esta declarado la: medido num clone
+    # limpo, o node_modules criado por este job ganhava 39 entradas de topo (astro, playwright,
+    # eslint, @radix-ui...), e nenhuma Edge Function importa qualquer uma delas -- elas usam
+    # especificadores `npm:`/`jsr:` inline, que o Deno resolve sozinho.
+    #
+    # O custo disso apareceu em 20/08/2026: `satteri@0.10.4` foi publicado declarando uma
+    # optionalDependency em `@bruits/satteri-darwin-arm64@0.10.4`, versao que nunca existiu (a
+    # lista pula de 0.10.3 para 0.10.5). O npm tolera (dep opcional, `os` nao casa com o runner
+    # Linux); o resolvedor do Deno nao. Um check REQUIRED caiu por uma publicacao quebrada num
+    # canto da arvore do site, e a fila de merge congelou.
+    #
+    # Amplificador: `deno-version: v2.x` flutua. O runner instalou 2.9.5, que falha; 2.5.6 passa.
+    #
+    # Medido com Deno 2.9.5, clone limpo e cache frio: com a variavel, node_modules cai de 39 para
+    # 4 entradas, os 56 de 56 arquivos seguem sendo checados, e um TS2322 injetado de proposito
+    # continua reprovando o job. A correcao nao afrouxa o portao, so para de acopla-lo ao frontend.
+    env:
+      DENO_NO_PACKAGE_JSON: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
