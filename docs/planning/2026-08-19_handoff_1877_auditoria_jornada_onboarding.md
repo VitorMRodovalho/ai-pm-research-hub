@@ -142,40 +142,50 @@ Tres itens independentes do caminho de tribo, todos com populacao medida:
 
 ---
 
-## Aviso de CI para a sessao principal (20/08, 00:10 UTC)
+## Aviso de CI para a sessao principal (20/08, 01:40 UTC)
 
-**As duas PRs desta worktree estao com o `validate` vermelho, e nenhuma falha e de conteudo.**
+**As duas PRs desta worktree ficaram VERDES no check required.** Estado conferido em 20/08 as 01:45:
 
-- **PR #1879** (esta auditoria, dois arquivos `.md`)
-- **PR #1883** (#1880, uma migration **nao aplicada**)
+| PR | conteudo | `validate` (required) | `check-invariants` | estado |
+|---|---|---|---|---|
+| **#1879** | esta auditoria, **2 arquivos `.md`** | **pass** | fail, **por desenho** | **MERGEADA** 00:54 (`b2216566`) |
+| **#1883** | #1880, **1 migration nao aplicada** | **pass** | fail, **por desenho** | aberta |
 
-### O que aconteceu, medido
+> Este bloco foi corrigido depois do merge da #1879: a versao que entrou na `main` afirmava que as
+> duas PRs estavam **vermelhas**, o que era verdade quando foi escrito e deixou de ser minutos
+> depois. Fica o registro de que **a afirmacao obsoleta chegou a mergear**, e de que o conserto veio
+> por PR propria em vez de edicao silenciosa.
 
-1. Um run do `validate` **na `main`** (23:36) ficou vermelho por **flake de saturacao**:
-   `canceling statement due to statement timeout`, 81,7 s, sobre um invariante que mede **0
-   violacoes**. Reportado no **#1844**, com um achado novo: a retentativa do #1851 cobre
-   `PGRST003`, mas o que caiu foi **57014** do Postgres, classe nao coberta.
-2. Esse run **segurou a faixa do banco** por cerca de 10 minutos.
-3. As duas PRs, que eu subi com **2 segundos de diferenca** (erro meu), enfileiraram atras dele,
-   esperaram **585 s cada** e morreram em `wait-for-db-lane` com **"falhei em ler a faixa apos 3
-   tentativas"**. O fail-closed esta correto.
-4. Re-disparei **uma so**, com **zero** runs em curso confirmado. Falhou igual, em **~1 minuto**,
-   sem espera: **o guard nao conseguiu LER a faixa, com a faixa livre.** Reportado no **#1509**.
+`check-invariants` vermelho e o desenho vigente: a violacao do #1850 esta declarada em
+`tests/helpers/invariant-exceptions.mjs` com vencimento 30/09, e aquele job roda
+`INVARIANT_STRICT=1` de proposito. **Nao tente consertar isso nestas PRs.**
 
-**Parei de re-disparar**, porque cada rerun adiciona polling ao mesmo endpoint que esta falhando.
+### Historico, porque custou tres runs e vale ficar registrado
 
-### O que isso significa para o merge
+Entre 23:43 e 00:07 as duas PRs perderam tres runs **sem executar um unico teste**, e nenhuma
+falha foi de conteudo:
 
-O conteudo das duas PRs esta completo. Elas precisam de **um run limpo**, uma por vez, quando a
-fila estiver drenada. **Sugestao: rodar a #1883 primeiro** (ela conserta o mecanismo que trava a
-fila) e a #1879 depois.
+1. Um run do `validate` **na `main`** ficou vermelho por **flake de saturacao**
+   (`canceling statement due to statement timeout`, 81,7 s, sobre invariante que media **0**
+   violacoes) e segurou a faixa do banco por cerca de 10 minutos. Levado ao **#1844**, com um
+   achado novo: a retentativa do #1851 cobre `PGRST003`, mas o que caiu foi **57014** do
+   Postgres, classe nao coberta.
+2. As duas PRs, subidas com **2 segundos de diferenca** (erro meu), enfileiraram atras dele e
+   morreram em `wait-for-db-lane` apos **585 s** cada.
+3. Re-disparei **uma so**, com zero runs em curso, e falhou em **~1 minuto**: o guard **nao
+   conseguiu LER a faixa, com a faixa livre**. Levado ao **#1509**, com a ressalva explicita de
+   que **nao rodei o contrafactual** e portanto nao afirmo causa.
 
-⚠️ **Nao interprete esses vermelhos como defeito das PRs**, e nao tente consertar o `validate`
-nelas: a causa esta em #1844 e #1509.
+Depois disso os runs passaram sozinhos. **A licao operacional: uma PR por vez, e nao insistir com
+rerun durante degradacao**, porque cada rerun adiciona polling ao endpoint que esta falhando.
 
 ### Nota sobre a #1880
 
 A violacao de dado **foi reparada as 23:01** por caminho direto, com **ator nulo** (assinatura de
-`service_role`). Re-medido: **0 violacoes em 7 elegiveis**. **O dado foi reparado, o mecanismo nao.**
-Sem a #1883, o proximo `portfolio_flag_changed` num card ja `done` recria a violacao e trava a fila
-outra vez.
+`service_role`). Re-medido depois: **0 violacoes em 7 elegiveis**. **O dado foi reparado, o
+mecanismo nao.** Sem a **#1883**, o proximo `portfolio_flag_changed` num card ja `done` recria a
+violacao. A #1883 e **branch separada** desta; ela nao viola a regra "sem migration" desta
+auditoria, que vale para a branch `audit/1877-jornada-onboarding`.
+
+⚠️ **Ordem sugerida:** mergear a **#1883** e so entao aplicar a migration. Aplicar antes do merge
+deixa as outras branches vermelhas, porque o banco e um so.

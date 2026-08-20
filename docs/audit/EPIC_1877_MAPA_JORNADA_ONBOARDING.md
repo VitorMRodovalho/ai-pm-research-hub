@@ -413,6 +413,21 @@ Formulados para serem verificaveis, nao para prescrever solucao.
 
 ---
 
+## 6.1 Um item da #1877 deixado em aberto DE PROPOSITO
+
+A #1877 pede, no item 3, "**onde** a jornada deveria oferecer escolha de tribo, e por que hoje nao
+oferece".
+
+**A segunda metade esta respondida** (secoes 0, 1 e 3.1): hoje nao oferece porque a janela esta
+fechada por prazo, porque o componente que oferece a escolha mora em `/workspace` e o checklist da
+jornada nao aponta para la, e porque a lista que ele entrega nao tem vaga nem video.
+
+**A primeira metade fica em aberto, por mandato.** Dizer *onde* a escolha deveria morar e desenho,
+e a propria issue determina "nao comecar pelo desenho". Registro aqui para que nao pareca
+esquecimento: **e uma pergunta viva para a sessao de planejamento**, e ela so deve ser respondida
+depois da decisao 1 da secao 5 (formato do prazo) e da guarda da secao 5.1, porque as duas mudam o
+que a tela precisa oferecer.
+
 ## 7. O que NAO foi possivel medir
 
 - **Sessao de navegador com credencial real.** A auditoria exerceu as RPCs sob a identidade do
