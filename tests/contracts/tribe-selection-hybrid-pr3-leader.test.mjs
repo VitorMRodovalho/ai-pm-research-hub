@@ -68,8 +68,19 @@ test('tribe page renders the leader queue from list_tribe_pending_requests', () 
   assert.match(PAGE, /tribeRequestsSectionHtml/);
 });
 
-test('tribe page gates the queue on isLeaderOfThisTribeV4 (leader/GP display gate)', () => {
-  assert.match(PAGE, /if \(!isLeaderOfThisTribeV4\(\)\) return ''/);
+// #1887: o portao da fila NAO pode ser o de escrita no board. `canWriteThisTribeBoardV4`
+// (ex-`isLeaderOfThisTribeV4`, cujo nome mentia) e satisfeito por qualquer pesquisadora com
+// `write_board` escopado, e era isso que fazia a tela chamar `list_tribe_pending_requests`
+// para nao-lideres e colher 403 a cada carga. O guard aceita o identificador renomeado, mas
+// exige que ele seja o de LIDERANCA, e proibe explicitamente o de escrita.
+test('tribe page gates the queue on a LEADERSHIP predicate, not on board-write (#1887)', () => {
+  assert.match(PAGE, /if \(!isTribeLeaderOfThisTribeV4\(\)\) return ''/);
+  assert.doesNotMatch(PAGE, /if \(!canWriteThisTribeBoardV4\(\)\) return ''/);
+  // e o predicado espelha o gate da RPC: manage_member OU volunteer/leader DESTA tribo
+  assert.match(
+    PAGE,
+    /function isTribeLeaderOfThisTribeV4\(\)[\s\S]*?isHighManagement\(currentMember\)[\s\S]*?operational_role === 'tribe_leader'[\s\S]*?getEffectiveTribeId\(currentMember\) === TRIBE_ID/
+  );
 });
 
 test('accept/decline call review_tribe_request (the PR1 write) with approve/decline', () => {
