@@ -228,13 +228,21 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   '4b99b6dc-2eb3-450e-9448-3d78ca00ed32',
 
   // 20/08/2026 02:39:24Z, 02:39:38Z e 03:10:33Z — TRÊS tentativas de emitir o convite de
-  // agendamento para a MESMA candidatura, decididas pelo PM e confirmadas por ele em 20/08.
-  // Chamadas por `_issue_interview_booking_token_core` via REST/service_role, que continua sendo
-  // a única porta enquanto a RPC não tiver superfície (#1586) — daí o `caller_id` nulo.
+  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (a única porta
+  // enquanto a RPC não tiver superfície, #1586 — daí o `caller_id` nulo).
+  //
+  // ⚠️ O PM declarou em 20/08 que o convite foi ERRO: não era para convidar sem o peer review
+  // completo. Esta entrada NÃO é o registro de uma operação endossada, é o registro de uma
+  // tentativa equivocada que o gate barrou. Fica aqui com essa leitura, de propósito.
   //
   // As três foram RECUSADAS pelo próprio gate (`P0002` / `GATE_NO_PEER_REVIEW`, `eval_count: 0`):
-  // nenhum token foi emitido e nenhum e-mail saiu. O que elas registram é o gate FUNCIONANDO, não
-  // uma escrita indevida — a candidatura estava (e segue) sem as duas avaliações objetivas.
+  // nenhum token foi emitido e nenhum e-mail saiu. O que elas registram é o gate FUNCIONANDO
+  // exatamente como projetado, contra uma pressão de processo — a candidatura estava (e segue)
+  // com ZERO avaliações de qualquer tipo.
+  //
+  // Contexto que o PM registrou junto: dispensar o gate por pressão de kickoff ou pedido de
+  // patrocinador aconteceu em julho e está DESCONTINUADO por decisão dele. O fluxo estruturado
+  // (2 avaliações antes do convite) é o caminho, e o gate é quem o sustenta.
   //
   // Descartada a hipótese que este guard nomeia na mensagem de falha ("algum teste voltou a
   // escolher alvo por predicado"). Três medições a derrubam: (a) a RPC resolve por
