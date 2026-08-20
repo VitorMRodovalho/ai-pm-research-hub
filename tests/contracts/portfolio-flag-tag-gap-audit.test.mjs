@@ -87,6 +87,31 @@ test('static: o script de auditoria chama a RPC (uma só fonte de verdade)', () 
     'o script não reimplementa a regra em JS — ela vive na RPC');
 });
 
+test('static: os readers SECDEF novos aplicam o gate confidencial (#785 / ADR-0105)', () => {
+  // A regra 5 do CLAUDE.md não abre exceção: reader SECDEF sobre tabela ligada a
+  // iniciativa precisa de rls_can_see_initiative(), mesmo com manage_platform na
+  // entrada. O allowlist de 785-secdef-reader-confidential-gate.test.mjs é para
+  // exceções justificadas — não é o caminho quando o gate simplesmente cabe.
+  const GATE_MIG = resolve(ROOT, 'supabase/migrations/20260820224453_gate_785_confidential_on_new_secdef_readers.sql');
+  assert.ok(existsSync(GATE_MIG), 'migration do gate presente');
+  const gateRaw = readFileSync(GATE_MIG, 'utf8');
+  for (const fn of ['audit_portfolio_flag_tag_gaps', 'tribe_journey_health']) {
+    const i = gateRaw.indexOf(`FUNCTION public.${fn}(`);
+    assert.ok(i > 0, `${fn} recriada na migration do gate`);
+    const body = gateRaw.slice(i, gateRaw.indexOf('$fn$;', i));
+    assert.match(body, /public\.rls_can_see_initiative\(i\.id\)/,
+      `${fn} precisa aplicar rls_can_see_initiative sobre a iniciativa`);
+  }
+  // Nenhum dos dois pode ter sido allowlistado em vez de gated.
+  const guardRaw = readFileSync(
+    resolve(ROOT, 'tests/contracts/785-secdef-reader-confidential-gate.test.mjs'), 'utf8');
+  const allowlist = guardRaw.slice(guardRaw.indexOf('const ALLOWLIST = {'), guardRaw.indexOf('};', guardRaw.indexOf('const ALLOWLIST = {')));
+  for (const fn of ['audit_portfolio_flag_tag_gaps', 'tribe_journey_health']) {
+    assert.equal(allowlist.includes(`${fn}:`), false,
+      `${fn} está gated — não pode aparecer no ALLOWLIST (o guard reprova entradas obsoletas)`);
+  }
+});
+
 // ── (B) DB-gated ────────────────────────────────────────────────────────────
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
