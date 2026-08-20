@@ -8,7 +8,30 @@
 
 ## 1. Estado
 
-**Fila de PRs vazia.** `main` em `0416fcce`. **Zero bypass** consumido em toda a sessão de 19-20/08.
+### 🔴 PRIMEIRO: a fila está CONGELADA por quebra externa do npm
+
+O check **`deno` é required** (os três são `validate`, `browser_guards`, `deno` — confirmado via
+API de proteção em 20/08). Ele passou a falhar em **20/08, entre 04:51 e 18:26**, com:
+
+```
+error: Could not find npm package '@bruits/satteri-darwin-arm64' matching '0.10.4'
+```
+
+**Não é do repositório.** Medido: o pacote é **transitivo**, é específico de `darwin-arm64` (e o
+runner é Linux), o `package-lock.json` fixa **0.9.5**, e no registro do npm o `latest` desse pacote
+hoje é **0.10.5** — a 0.10.4 não resolve. A PR em que apareceu tem diff de um `.md` e um teste.
+
+**Consequência: nenhuma PR merga até isso ser resolvido.** A **#1894** (este próprio documento)
+está aberta e bloqueada por isso, com `validate` VERDE.
+
+Caminhos a investigar, em ordem: (a) o resolvedor do `deno check` não está honrando o lockfile —
+descobrir de onde sai a faixa que permite `0.10.x` quando `@astrojs/markdown-satteri` pede
+`satteri: ^0.9.1`; (b) fixar/limpar cache do Deno no workflow; (c) esperar o upstream republicar.
+**Não** trate como flake: duas execuções seguidas falharam igual.
+
+---
+
+**Fila de PRs:** vazia antes disso; agora **1 aberta e bloqueada** (#1894). `main` em `0416fcce`. **Zero bypass** consumido em toda a sessão de 19-20/08.
 
 Mergeadas na sessão: **#1879** (auditoria da jornada), **#1883** (trigger de XP), **#1890** (o #1887),
 **#1893** (isenção do #1636), **#1892** (docs da lane).
