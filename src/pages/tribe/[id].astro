@@ -512,7 +512,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   // #161 (2026-06-06): V4 scoped gate for tribe board/edit authority (broadcast tab, minutes/board
   // edit). Mirrors write_board on the page's initiative (tribe fallback). Replaces the V3 global
   // hasPermission('board.edit_tribe_items') && tribe_id===TRIBE_ID under-grant pattern.
-  function isLeaderOfThisTribeV4(): boolean {
+  function canWriteThisTribeBoardV4(): boolean {
     if (!currentMember) return false;
     // Admin simulation overlay (see canSeeTribeContacts): preview the simulated V3 tier + tribe.
     const sim = getSimulation();
@@ -523,6 +523,19 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     if (typeof cf !== 'function') return false;
     if (INITIATIVE_ID && cf('write_board', { type: 'initiative', id: INITIATIVE_ID }) === true) return true;
     return cf('write_board', { type: 'tribe', id: TRIBE_ID }) === true;
+  }
+
+  // #1887: lideranca REAL desta tribo, que NAO e a mesma pergunta que write_board.
+  // canWriteThisTribeBoardV4() responde "pode escrever no board desta tribo", e uma pesquisadora
+  // com write_board escopado responde true. Usar aquela funcao como se fosse lideranca fazia a
+  // tela chamar list_tribe_pending_requests para nao-lideres, que a RPC recusa com 403 a cada
+  // carga da pagina. Espelha o gate da RPC: GP (manage_member) OU lider volunteer/leader DESTA
+  // tribo (operational_role e o cache mantido por sync_operational_role_cache).
+  function isTribeLeaderOfThisTribeV4(): boolean {
+    if (!currentMember) return false;
+    if (isHighManagement(currentMember)) return true;
+    return currentMember.operational_role === 'tribe_leader'
+      && getEffectiveTribeId(currentMember) === TRIBE_ID;
   }
 
   let membersMap: Map<string, any> = new Map();
@@ -1050,7 +1063,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   function renderRoadmap() {
     const el = document.getElementById('tribe-roadmap-section');
     if (!el) return;
-    const canAuthor = isLeaderOfThisTribeV4();
+    const canAuthor = canWriteThisTribeBoardV4();
     const editBtn = canAuthor
       ? `<button data-action="open-roadmap-modal" class="px-3 py-1.5 bg-navy text-white rounded-lg text-xs font-semibold cursor-pointer border-0 hover:opacity-90 transition-all shrink-0">${escapeHtml(I18N.roadmapEdit || 'Editar roadmap')}</button>`
       : '';
@@ -1143,7 +1156,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // ── Tribe Selection Híbrida PR3: leader's join-request queue ──
   // Leader/GP-only section atop the Members tab. The server RPC enforces the real authority
-  // (Caminho-3: GP or volunteer/leader of THIS tribe); isLeaderOfThisTribeV4() is the display gate.
+  // (Caminho-3: GP or volunteer/leader of THIS tribe); isTribeLeaderOfThisTribeV4() mirrors it (#1887).
   // Returns '' for non-leaders, RPC errors, or an empty queue (so the section never shows blank).
   // #1139 Item 2: mirror the leader's pending-request count onto the Membros tab, so it is visible
   // from any tab (the queue itself only renders inside the Membros panel). Called on load (via
@@ -1163,7 +1176,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
   async function tribeRequestsSectionHtml(): Promise<string> {
-    if (!isLeaderOfThisTribeV4()) return '';
+    if (!isTribeLeaderOfThisTribeV4()) return '';
     const sb = getSb();
     if (!sb) return '';
     let rows: any[] = [];
@@ -1886,7 +1899,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   function checkBroadcastAccess() {
     if (!currentMember) return;
-    const isLeaderOfThisTribe = isLeaderOfThisTribeV4(); // #161: V4 scoped write_board (was global board.edit_tribe_items)
+    const isLeaderOfThisTribe = canWriteThisTribeBoardV4(); // #161: V4 scoped write_board (was global board.edit_tribe_items)
     if (isLeaderOfThisTribe || isHighManagement(currentMember)) {
       showBroadcastTab();
       renderBroadcastPanel();
@@ -2326,7 +2339,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         || desigs.includes('comms_member')
       );
     canEdit = isHighManagement(currentMember) ||
-      isLeaderOfThisTribeV4() || // #161: V4 scoped write_board (was global board.edit_tribe_items)
+      canWriteThisTribeBoardV4() || // #161: V4 scoped write_board (was global board.edit_tribe_items)
       canOperateComms;
   }
 
