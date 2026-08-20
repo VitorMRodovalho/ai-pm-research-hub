@@ -139,3 +139,43 @@ Tres itens independentes do caminho de tribo, todos com populacao medida:
   producao e a lane serializa com a sessao principal do #1710). **Nao ha mudanca de codigo nesta
   branch**, so dois arquivos `.md`, entao nao ha teste que a PR precise exercer.
 - **Aviso de fila:** se a sessao principal preferir, esta PR pode esperar o #1710 fechar.
+
+---
+
+## Aviso de CI para a sessao principal (20/08, 00:10 UTC)
+
+**As duas PRs desta worktree estao com o `validate` vermelho, e nenhuma falha e de conteudo.**
+
+- **PR #1879** (esta auditoria, dois arquivos `.md`)
+- **PR #1883** (#1880, uma migration **nao aplicada**)
+
+### O que aconteceu, medido
+
+1. Um run do `validate` **na `main`** (23:36) ficou vermelho por **flake de saturacao**:
+   `canceling statement due to statement timeout`, 81,7 s, sobre um invariante que mede **0
+   violacoes**. Reportado no **#1844**, com um achado novo: a retentativa do #1851 cobre
+   `PGRST003`, mas o que caiu foi **57014** do Postgres, classe nao coberta.
+2. Esse run **segurou a faixa do banco** por cerca de 10 minutos.
+3. As duas PRs, que eu subi com **2 segundos de diferenca** (erro meu), enfileiraram atras dele,
+   esperaram **585 s cada** e morreram em `wait-for-db-lane` com **"falhei em ler a faixa apos 3
+   tentativas"**. O fail-closed esta correto.
+4. Re-disparei **uma so**, com **zero** runs em curso confirmado. Falhou igual, em **~1 minuto**,
+   sem espera: **o guard nao conseguiu LER a faixa, com a faixa livre.** Reportado no **#1509**.
+
+**Parei de re-disparar**, porque cada rerun adiciona polling ao mesmo endpoint que esta falhando.
+
+### O que isso significa para o merge
+
+O conteudo das duas PRs esta completo. Elas precisam de **um run limpo**, uma por vez, quando a
+fila estiver drenada. **Sugestao: rodar a #1883 primeiro** (ela conserta o mecanismo que trava a
+fila) e a #1879 depois.
+
+⚠️ **Nao interprete esses vermelhos como defeito das PRs**, e nao tente consertar o `validate`
+nelas: a causa esta em #1844 e #1509.
+
+### Nota sobre a #1880
+
+A violacao de dado **foi reparada as 23:01** por caminho direto, com **ator nulo** (assinatura de
+`service_role`). Re-medido: **0 violacoes em 7 elegiveis**. **O dado foi reparado, o mecanismo nao.**
+Sem a #1883, o proximo `portfolio_flag_changed` num card ja `done` recria a violacao e trava a fila
+outra vez.
