@@ -1,4 +1,4 @@
-# Arranque de 21/08 — fila livre, e um relógio que dispara sábado
+# Arranque de 21/08: fila destravada, e um relógio que já desarmou
 
 > Tudo aqui foi medido ao vivo em **20/08/2026** (horários em UTC). **Re-medir antes de agir**:
 > número recitado de handoff não vale como medição.
@@ -8,33 +8,40 @@
 
 ## 1. Estado
 
-### 🔴 PRIMEIRO: a fila está CONGELADA por quebra externa do npm
+### ✅ RESOLVIDO: a fila esteve congelada por quebra externa do npm, e foi destravada
 
-O check **`deno` é required** (os três são `validate`, `browser_guards`, `deno` — confirmado via
-API de proteção em 20/08). Ele passou a falhar em **20/08, entre 04:51 e 18:26**, com:
+O check **`deno` é required** (os três são `validate`, `browser_guards`, `deno`). Ele passou a
+falhar em 20/08 com `Could not find npm package '@bruits/satteri-darwin-arm64' matching '0.10.4'`,
+sem nenhuma mudança no repositório, e **nenhuma PR mergeava**.
 
-```
-error: Could not find npm package '@bruits/satteri-darwin-arm64' matching '0.10.4'
-```
+**Causa raiz, medida (#1896, PR #1897 mergeada):** `deno check --node-modules-dir=auto` sobre
+`supabase/functions/**` fazia o Deno descobrir o `package.json` da **raiz** e resolver **toda** a
+árvore npm do frontend. Em clone limpo, o `node_modules` criado por esse job ganhava **39 entradas
+de topo** (astro 7.2.4, playwright, eslint, @radix-ui), e **nenhuma Edge Function importa qualquer
+uma delas**: elas usam `npm:`/`jsr:` inline. O portão das EFs estava refém da árvore do site.
 
-**Não é do repositório.** Medido: o pacote é **transitivo**, é específico de `darwin-arm64` (e o
-runner é Linux), o `package-lock.json` fixa **0.9.5**, e no registro do npm o `latest` desse pacote
-hoje é **0.10.5** — a 0.10.4 não resolve. A PR em que apareceu tem diff de um `.md` e um teste.
+O gatilho externo: `satteri@0.10.4` (publicado 19/08 10:57 UTC) declara `optionalDependencies` em
+`@bruits/satteri-darwin-arm64@0.10.4`, versão que **nunca foi publicada** (a lista pula de `0.10.3`
+para `0.10.5`). O npm tolera, porque a dep é opcional e o `os` não casa com Linux. O Deno não.
 
-**Consequência: nenhuma PR merga até isso ser resolvido.** A **#1894** (este próprio documento)
-está aberta e bloqueada por isso, com `validate` VERDE.
+**Correção:** `DENO_NO_PACKAGE_JSON=1` no job. Medido com Deno 2.9.5, clone limpo, cache frio:
+`node_modules` cai de 39 para **4**, seguem **56 de 56** arquivos checados, e um `TS2322` injetado
+de propósito **continua reprovando**. O portão não virou vácuo.
 
-Caminhos a investigar, em ordem: (a) o resolvedor do `deno check` não está honrando o lockfile —
-descobrir de onde sai a faixa que permite `0.10.x` quando `@astrojs/markdown-satteri` pede
-`satteri: ^0.9.1`; (b) fixar/limpar cache do Deno no workflow; (c) esperar o upstream republicar.
-**Não** trate como flake: duas execuções seguidas falharam igual.
+⚠️ **A armadilha que quase inverteu o diagnóstico:** reproduzir local **passou**. O workflow pede
+`deno-version: v2.x`, que **flutua**; o runner instala **2.9.5** e eu tinha 2.5.6. Antes de dizer
+"não reproduz", leia no log do job qual versão o runner instalou. `v2.x` não é uma versão.
+
+📌 **Fica aberto, sem dono:** o `deno-version` segue em faixa flutuante (a exposição caiu muito com
+o acoplamento removido, mas segue móvel num check required), e o `deno.lock` segue velho de fato
+(registra `astro@^6.4.8` enquanto o `package.json` pede `^7.2.2`).
 
 ---
 
-**Fila de PRs:** vazia antes disso; agora **1 aberta e bloqueada** (#1894). `main` em `0416fcce`. **Zero bypass** consumido em toda a sessão de 19-20/08.
+**Fila de PRs:** livre. `main` em **`72319b04`** (a #1897, o conserto do `deno`). **Zero bypass** consumido em toda a sessão de 19-20/08, inclusive no destravamento.
 
 Mergeadas na sessão: **#1879** (auditoria da jornada), **#1883** (trigger de XP), **#1890** (o #1887),
-**#1893** (isenção do #1636), **#1892** (docs da lane).
+**#1893** (isenção do #1636), **#1892** (docs da lane), **#1897** (o conserto do `deno`).
 
 `check_schema_invariants()` devolveu **0 violações** às 13:51, depois do import do VEP.
 
@@ -42,19 +49,28 @@ Mergeadas na sessão: **#1879** (auditoria da jornada), **#1883** (trigger de XP
 
 ## 2. O que tem data (por urgência)
 
-### 🔴 Sábado 22/08, 15:00 UTC (12:00 BRT) — dispara sozinho
+### ✅ Sábado 22/08, 15:00 UTC: o relógio DESARMOU sozinho
 
-O cron `selection-stuck-scheduled-rescue-daily` (15:00 UTC diário, ativo) alcança pela primeira vez
-a entrevista de **19/08 21:30 UTC** que ficou sem desfecho. A conta: carência de 48h
-(`sla_policies.stuck_scheduled_grace`) vence 21/08 21:30, e a primeira execução posterior é a de
-sábado.
+O cron `selection-stuck-scheduled-rescue-daily` (15:00 UTC diário, ativo) alcançaria a entrevista de
+**19/08 21:30 UTC** que estava sem desfecho, e dispararia um convite de agendamento NOVO para quem já
+tinha sido entrevistada.
 
-**Se ninguém carregar as notas até lá, a plataforma dispara um convite de agendamento NOVO para
-quem já foi entrevistada.**
+**Desarmou como previsto, sem intervenção manual.** O entrevistador submeteu as notas em **20/08
+18:49:03 UTC**: `submit_interview_scores` carimbou `conducted_at`, a linha virou `completed` e a
+candidatura avançou para `final_eval`. Rodei o predicado do próprio cron às **19:09:19 UTC**:
+**0 alvos** (grace medido = 48h). Ele lê a linha canônica e o status da candidatura, e os dois
+deixaram de casar.
 
-Não precisa de intervenção manual: `submit_interview_scores` carimba `conducted_at` e marca
-`completed` assim que **qualquer** entrevistador submete notas (WATCH-240.A / p241) — a ação do
-entrevistador desarma o cron sozinha. Em 20/08 18:22 ainda estava tudo zerado.
+⚠️ **O que isso custou, e é o item que fica:** o entrevistador achou que a submissão tinha
+**falhado**, porque o painel de histórico ao lado pintou `Unauthorized: requires manage_member action`
+em vermelho. O painel tem `try/catch` próprio e não bloqueia o formulário, mas quem opera não tem como
+saber disso. É o espelho do defeito 1 do #1838 (a tela confirma gravação que não aconteceu): aqui a
+tela **sugere falha onde houve gravação**. Registrado no **#1895**.
+
+📌 **Ainda em aberto na mesma candidatura:** o LinkedIn não gravou. Os dois portões aceitam o
+avaliador (a RPC `update_application_contact` já foi corrigida pelo #1838, e o gate de tela
+`operate_selection` espelha), então a causa **não** é autoridade e não foi determinada. Pedir nova
+tentativa e capturar o texto exato do toast.
 
 ### 🔴 24/08 — #1710, o único irreversível
 
@@ -100,9 +116,26 @@ funil ativo tem 2 ou mais.
   (`update_checklist_item` 9/9, `delete_checklist_item` 4/4, `get_selection_health` 3/3 com erro de
   SQL vivo), **169 MB** de log sem política de retenção (`admin_audit_log` 137 MB, `pii_access_log`
   12 MB ⚠️), e 273 FKs sem índice.
+- **#1895 (nova, e é a que o comitê sente a cada jornada):** a tela de seleção deriva **todas** as
+  afordâncias de UM eixo pessoal (`is_locked` = "eu já submeti a avaliação DESTE tipo"). Os dois botões
+  são complementares por construção (`canScore` vs `isLocked || isObserver`), então **quem fez a
+  entrevista e não a objetiva nunca vê o resultado consolidado**. O mesmo eixo faz a tela convidar à
+  avaliação redundante dos dois lados, e o formulário de entrevista aparece para quem **não** é o
+  entrevistador designado, com `submit_interview_scores` **aceitando** a submissão de quem tem
+  `manage_platform`.
+  📐 **O número que dimensiona:** dos 3 `evaluator` do ciclo aberto, **2 são GP**. Só 1 é comitê puro,
+  então o modelo de autoridade nunca tinha sido exercido sem GP, e essa pessoa descobre um portão por
+  jornada. Superfície medida: **145 RPCs SECDEF de leitura** exigem `manage_member`, `manage_platform`
+  ou `view_internal_analytics` (mais 248 de escrita/outro).
+  ⚖️ **O que trava não é análise, é decisão do PM:** o que um avaliador de comitê **pode ler**. O #1838
+  pediu isso em 17/08 e segue sem resposta. Sem ela, varrer os 145 só produz outra tabela esperando a
+  mesma decisão.
+  🐛 **Defeito latente achado no caminho:** `selection_committee_role_for()` **nunca devolve `'lead'`**
+  (o `CASE` colapsa em `evaluator`/`observer`), então um lead puro perderia escrita e agendamento. Não
+  acende hoje porque o ciclo aberto tem 3 `evaluator` e 4 `observer`, e nenhum `lead`.
 - **#1664**, **#1728**, **#1729**, **#1742**, **#1744**, **#1592**, **#1205**, **#1842**, **#1844**,
   **#1850** (violação aberta de propósito, vence 30/09), **#1876**, **#1877** (épica), **#1880**,
-  **#1881**, **#1882**, **#1884**, **#1885**, **#1886**.
+  **#1881**, **#1882**, **#1884**, **#1885**, **#1886**, **#1895**.
 
 ---
 
