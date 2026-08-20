@@ -253,6 +253,16 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   '6b68d5f8-f82f-4a81-8130-3f4596fd20cb',
   'ffefc7ba-48d8-48c1-9716-63ec3934c823',
   '62d63724-8bee-41ed-a8ea-4cefba297469',
+
+  // 20/08/2026 11:50:38Z — QUARTA tentativa, mesma candidatura, mesma recusa
+  // (`GATE_NO_PEER_REVIEW`). Posterior às três acima e anterior ao momento em que o PM registrou
+  // a decisão de descontinuar a prática. Mesmo desfecho: recusada, sem token e sem e-mail.
+  //
+  // ⚠️ SINAL, não rotina: esta lista saiu de 1 para 5 entradas em UM dia, e as 4 últimas são a
+  // mesma operação repetida contra a mesma candidatura. Isso não é o guard sendo chato, é a
+  // ausência de superfície autenticada (#1586) transformando cada decisão manual em dívida de
+  // teste. Enquanto o #1586 não existir, esta lista cresce a cada tentativa.
+  'c5c2b7aa-e556-4f05-99fe-17c9f9522a93',
 ]);
 
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
