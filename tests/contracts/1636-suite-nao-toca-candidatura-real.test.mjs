@@ -226,6 +226,33 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // RPC não tem superfície (#1586). O e-mail foi enviado a um candidato real que esperava o
   // convite desde 04/08. Auditado em `admin_audit_log` como `selection.unbooked_invite_rescued`.
   '4b99b6dc-2eb3-450e-9448-3d78ca00ed32',
+
+  // 20/08/2026 02:39:24Z, 02:39:38Z e 03:10:33Z — TRÊS tentativas de emitir o convite de
+  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (a única porta
+  // enquanto a RPC não tiver superfície, #1586 — daí o `caller_id` nulo).
+  //
+  // ⚠️ O PM declarou em 20/08 que o convite foi ERRO: não era para convidar sem o peer review
+  // completo. Esta entrada NÃO é o registro de uma operação endossada, é o registro de uma
+  // tentativa equivocada que o gate barrou. Fica aqui com essa leitura, de propósito.
+  //
+  // As três foram RECUSADAS pelo próprio gate (`P0002` / `GATE_NO_PEER_REVIEW`, `eval_count: 0`):
+  // nenhum token foi emitido e nenhum e-mail saiu. O que elas registram é o gate FUNCIONANDO
+  // exatamente como projetado, contra uma pressão de processo — a candidatura estava (e segue)
+  // com ZERO avaliações de qualquer tipo.
+  //
+  // Contexto que o PM registrou junto: dispensar o gate por pressão de kickoff ou pedido de
+  // patrocinador aconteceu em julho e está DESCONTINUADO por decisão dele. O fluxo estruturado
+  // (2 avaliações antes do convite) é o caminho, e o gate é quem o sustenta.
+  //
+  // Descartada a hipótese que este guard nomeia na mensagem de falha ("algum teste voltou a
+  // escolher alvo por predicado"). Três medições a derrubam: (a) a RPC resolve por
+  // `id = p_application_id` estrito, sem re-resolver alvo, então o id real foi passado de
+  // propósito; (b) os testes que batem nesta RPC e afirmam `GATE_NO_PEER_REVIEW` (#1640, #1594)
+  // usam fixture `@example.com`; (c) re-executada a suíte INTEIRA em 20/08 04:12Z, nenhuma linha
+  // nova apareceu. Se fosse teste, toda execução somaria uma.
+  '6b68d5f8-f82f-4a81-8130-3f4596fd20cb',
+  'ffefc7ba-48d8-48c1-9716-63ec3934c823',
+  '62d63724-8bee-41ed-a8ea-4cefba297469',
 ]);
 
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
