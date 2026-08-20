@@ -75,6 +75,18 @@ async function fetchAudit() {
 
 const CONF_ORDER = { alta: 0, media: 1, revisar: 1, baixa: 2 };
 
+/**
+ * Escapa um valor para caber numa célula de tabela markdown.
+ * A barra invertida sai primeiro: inverter a ordem faria o `\\` inserido pelo
+ * escape do pipe ser reescapado, e um título com `\\|` continuaria quebrando a
+ * linha. Quebras de linha viram espaço porque encerrariam a linha da tabela.
+ * Títulos de card são texto livre digitado pelos líderes — trate como hostil.
+ */
+const mdCell = (v) =>
+  v == null || v === ''
+    ? '—'
+    : String(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+
 function tribeLabel(row) {
   return row.tribe_id != null ? `T${row.tribe_id}` : (row.initiative_kind || '—');
 }
@@ -104,7 +116,7 @@ function renderMarkdown(audit) {
     lines.push('| Tribo | Iniciativa | Cards | Com flag | Gap A | Gap B |');
     lines.push('| --- | --- | ---: | ---: | ---: | ---: |');
     for (const b of byInit) {
-      lines.push(`| ${b.tribe_id != null ? `T${b.tribe_id}` : '—'} | ${b.initiative_title} | ${b.cards} | ${b.flagged} | ${b.missing_flag} | ${b.missing_type_tag} |`);
+      lines.push(`| ${b.tribe_id != null ? `T${b.tribe_id}` : '—'} | ${mdCell(b.initiative_title)} | ${b.cards} | ${b.flagged} | ${b.missing_flag} | ${b.missing_type_tag} |`);
     }
     lines.push('');
   }
@@ -130,8 +142,7 @@ function renderMarkdown(audit) {
     lines.push('| Conf. | Tribo | Card | Status | Base | Prev. | Entregue | Tipo sugerido |');
     lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const r of subset) {
-      const cell = (v) => v ?? '—';
-      lines.push(`| ${r.confidence} | ${tribeLabel(r)} | ${r.title.replace(/\|/g, '\\|')} | ${r.status} | ${cell(r.baseline_date)} | ${cell(r.forecast_date)} | ${cell(r.actual_completion_date)} | ${cell(r.suggested_type)} |`);
+      lines.push(`| ${mdCell(r.confidence)} | ${mdCell(tribeLabel(r))} | ${mdCell(r.title)} | ${mdCell(r.status)} | ${mdCell(r.baseline_date)} | ${mdCell(r.forecast_date)} | ${mdCell(r.actual_completion_date)} | ${mdCell(r.suggested_type)} |`);
     }
     lines.push('');
   }
