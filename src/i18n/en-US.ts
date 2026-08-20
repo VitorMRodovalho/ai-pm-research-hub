@@ -4277,6 +4277,8 @@ const enUS: Record<string, string> = {
   'portfolio.script.sanityFail': 'Failed to run data sanity check.',
   'portfolio.script.sanityOk': 'Sanity OK. Orphans:',
   'portfolio.script.sanityInactive': 'Inactive:',
+  'portfolio.script.sanityMissingFlag': 'Deliverables missing portfolio flag:',
+  'portfolio.script.sanityMissingTypeTag': 'Portfolio items missing type tag:',
   'portfolio.script.tribe': 'Stream',
   'portfolio.script.global_scope': 'Global',
   'portfolio.script.board': 'Board',

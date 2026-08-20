@@ -4277,6 +4277,8 @@ const esLATAM: Record<string, string> = {
   'portfolio.script.sanityFail': 'Error al ejecutar verificación de datos.',
   'portfolio.script.sanityOk': 'Verificación OK. Huérfanos:',
   'portfolio.script.sanityInactive': 'Inactivos:',
+  'portfolio.script.sanityMissingFlag': 'Entregables sin flag de portafolio:',
+  'portfolio.script.sanityMissingTypeTag': 'Ítems de portafolio sin etiqueta de tipo:',
   'portfolio.script.tribe': 'Línea',
   'portfolio.script.global_scope': 'Global',
   'portfolio.script.board': 'Board',
