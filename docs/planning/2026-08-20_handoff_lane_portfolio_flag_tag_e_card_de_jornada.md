@@ -103,12 +103,37 @@ falhas sao anteriores. A main vem alternando verde/vermelho o dia todo (falhou 1
 passou 00:54, falhou 01:44, passou 02:23 e 05:18, falhou 21:42), o que sugere guard
 DB-aware dependente de estado.
 
-**4.2 - as 3 falhas restantes desta PR seguem sem nome.** A API do Actions devolve so os
-ultimos ~45KB do log, que sao o cleanup do git; as linhas `not ok` ficam no meio de uma
-saida TAP de ~7.000 testes. Tentados: log do job, log do run com `failed_only`, anotacoes
-do check run (vazias). Mitigacao aplicada no commit `90d3be2`: os dois contract tests novos
-foram movidos para o **fim** da ordem de execucao, para que a saida deles caia dentro da
-cauda que a API entrega. **A leitura desse log e o proximo passo.**
+**4.2 - as falhas seguem sem nome, e a contagem OSCILA.** Tres medicoes:
+
+| head | resultado |
+| --- | --- |
+| main `72319b0` | pass 6979 · **fail 2** |
+| `72e6831` | pass 6985 · **fail 5** |
+| `90d3be2` | pass 6997 · **fail 4** |
+
+Entre `72e6831` e `90d3be2` a UNICA diferenca e a ordem de arquivos no `package.json` --
+nenhuma mudanca funcional. Ainda assim caiu de 5 para 4. **Nao e um conjunto fixo de
+falhas: sao testes instaveis**, o que tambem explica a main alternando verde/vermelho o dia
+todo (falhou 19/08 23:36, passou 00:54, falhou 01:44, passou 02:23 e 05:18, falhou 21:42).
+
+Hipotese principal: os guards DB-aware correm contra o banco COMPARTILHADO, e esta sessao o
+estava mutando na mesma janela (3 migrations, 1 card + 8 atividades + 2 atribuicoes, e
+edicoes em `schema_migrations`). Para um diagnostico limpo, **rodar o `validate` com o banco
+parado**.
+
+**Como NAO extrair os nomes** (custou 2 tentativas): a API do Actions devolve so os ultimos
+~45KB do log, que sao o cleanup do git; as linhas `not ok` ficam no meio de uma saida TAP de
+~7.000 testes. Tentados sem sucesso: log do job, log do run com `failed_only`, anotacoes do
+check run (vazias). O commit `90d3be2` tentou empurrar os dois contract tests novos para o
+fim da ordem de execucao -- **foi um no-op**: o runner do Node ORDENA a lista de arquivos, e
+a ordem no `package.json` e irrelevante (provado: passar `zzz.test.mjs` antes de
+`aaa.test.mjs` roda o `aaa` primeiro). O arquivo ficou como esta porque a mudanca e inocua,
+mas a justificativa do commit esta errada.
+
+**Caminho que funciona:** rodar `npm test 2>&1 | grep -B2 -A25 '^not ok'` em uma maquina com
+`SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` no ambiente. Rodar isso dentro da sessao do
+Claude Code nao serve -- o container nao tem os secrets, entao os DB-aware pulam e o grep
+volta vazio.
 
 **4.3 - o que ja foi descartado como causa,** cada um medido contra o banco vivo:
 `785-secdef-reader-confidential-gate` (zero ofensores, zero entradas obsoletas),
@@ -144,11 +169,20 @@ cauda que a API entrega. **A leitura desse log e o proximo passo.**
    `attendance` reprovava no proprio comentario que explica a decisao; passou a limpar
    comentarios SQL antes de checar.
 
+7. **O runner do Node ordena os arquivos de teste.** A ordem em que eles aparecem no script
+   do `package.json` nao e a ordem de execucao. Qualquer plano que dependa de "colocar este
+   teste por ultimo" para achar a saida dele no log e invalido.
+
+8. **Nao empurrar commit enquanto um `validate` de diagnostico roda.** O workflow tem
+   `cancel-in-progress`; um push de docs no meio descarta o run. (Nesta sessao o run
+   sobreviveu por pouco -- o 404 no log era so o artefato ainda nao persistido, nao
+   cancelamento -- mas a janela existe.)
+
 ---
 
 ## 6. Estado da entrega
 
-- 4 commits, PR #1899 draft, **10 de 11 checks verdes** no head `90d3be2`
+- 5 commits, PR #1899 draft, **10 de 11 checks verdes** no head
   (CodeQL, gen-types-drift, check-invariants, check-advisors, browser_guards,
   visual_dark_mode, analyze, deno, issue_reference_gate, Cloudflare).
 - `validate` pendente - e o unico vermelho, e o motivo de a PR nao estar pronta.
