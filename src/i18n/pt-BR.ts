@@ -4283,6 +4283,8 @@ const ptBR: Record<string, string> = {
   'portfolio.script.sanityFail': 'Falha na execução do data sanity.',
   'portfolio.script.sanityOk': 'Sanity OK. Orfãos:',
   'portfolio.script.sanityInactive': 'Inativos:',
+  'portfolio.script.sanityMissingFlag': 'Entregáveis sem flag de portfólio:',
+  'portfolio.script.sanityMissingTypeTag': 'Itens de portfólio sem tag de tipo:',
   'portfolio.script.tribe': 'Tribo',
   'portfolio.script.global_scope': 'Global',
   'portfolio.script.board': 'Board',
