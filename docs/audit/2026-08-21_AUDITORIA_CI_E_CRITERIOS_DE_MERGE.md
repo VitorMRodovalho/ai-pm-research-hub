@@ -52,7 +52,11 @@ nenhum.
 
 ## 1. O achado central, medido de ponta a ponta
 
-**A fila de merge esta travada agora, por UMA linha de dado de producao.**
+**A fila de merge ficou travada por 5h22m, por UMA linha de dado de producao.**
+
+> ⏱️ **Atualizado as 20:15 UTC de 21/08.** Quando medi (entre 15h e 19h UTC) a fila estava
+> travada. Ela **destravou as 19:41:41 UTC**, durante esta sessao. A secao 1.1 mede como, e o
+> jeito como destravou reforca o achado em vez de anula-lo.
 
 A cadeia inteira, cada elo medido nesta sessao:
 
@@ -91,7 +95,38 @@ required.
 > Observacao de metodo: a mensagem de falha do guard afirma "algum teste voltou a escolher alvo por
 > predicado sobre producao". Isso e **hipotese, nao diagnostico**. A linha tem a mesma digital das
 > 4 operacoes manuais ja declaradas (mesma candidatura, mesma RPC, mesma recusa), o que aponta para
-> operacao humana e nao para regressao da suite. Confirmar a origem e escopo do #1636, nao desta lane.
+> operacao humana e nao para regressao da suite. O #1905 chegou a mesma conclusao por outro caminho
+> e a registrou no proprio allowlist, com as tres medicoes que descartam a hipotese.
+
+### 1.1 Como destravou, medido
+
+| evento | carimbo |
+|---|---|
+| a linha de `gate_attempts` entra | 21/08 **14:18:47Z** |
+| PR #1905 (`feat(tribos): #1900`) mergeia, carregando a 6a entrada do allowlist | 21/08 **19:41:41Z** |
+| PR #1907, que era **a PR dedicada** a esse conserto, e **fechada** sem merge | 21/08 **19:42:28Z** |
+| **duracao do congelamento** | **5h22m54s** |
+
+Tres coisas medidas nesse desfecho, e nenhuma delas enfraquece o diagnostico:
+
+1. **O estado do banco nao mudou.** Reexecutei o predicado do guard as 20:12Z: continuam **9** linhas
+   sem ator apos o cutoff, **1** sem cron que a explique, **1** candidatura real ofensora. O que mudou
+   foi o **codigo do teste**, nao o mundo. O portao destravou porque a lista de excecoes cresceu.
+
+2. **O conserto entrou de carona numa PR de outro assunto.** A 6a entrada do allowlist chegou dentro
+   de `feat(tribos): #1900 - reconciliacao semanal do card de jornada por cron`, que nao tem relacao
+   com selecao. A PR dedicada (#1907) virou redundante e foi fechada 47 segundos depois. Ou seja: o
+   preco de um evento de producao foi cobrado da PR que por acaso estava em voo. **Essa e a forma
+   concreta que o acoplamento assume no dia a dia**, e ela nao aparece em nenhuma metrica de CI.
+
+3. **A serie esta declarada no proprio codigo.** O comentario da 6a entrada registra "1 -> 5 -> 6" e
+   nomeia a causa: enquanto a RPC nao tiver superficie autenticada (**#1586**), toda decisao manual
+   entra por `service_role` e vira divida de teste. E a mesma conclusao do item C1 da secao 9, a que
+   cheguei por medicao independente.
+
+**O que isso muda na recomendacao: nada, e esse e o ponto.** A proxima tentativa manual repete o
+ciclo inteiro. O que a secao 9 propoe (A2) e tirar essa classe de assercao de dentro do portao, para
+que o proximo evento legitimo de producao pare de custar 5 horas de fila.
 
 ---
 
@@ -400,9 +435,10 @@ auto-diagnosticado no proprio arquivo: *"enquanto `selection_rescue_unbooked_inv
 superficie (#1586), a unica porta para despachar e o service_role, e toda operacao manual vai cair
 aqui"*.
 
-Medido hoje: a lista teria de ir para **6 entradas**, e a sexta e a **quinta tentativa na mesma
-candidatura**. O crescimento dessa lista e uma medicao limpa da ausencia do #1586. Ele nao deve ser
-resolvido mexendo no teste.
+Medido hoje: a lista **foi** para 6 entradas as 19:41:41Z, e a sexta e a **quinta tentativa na
+mesma candidatura** (ver 1.1). O crescimento dessa lista e uma medicao limpa da ausencia do #1586.
+Ele nao deve ser resolvido mexendo no teste, e nao foi: o #1905 registrou a entrada com o motivo e
+a serie, que e o comportamento certo dado o portao que existe hoje.
 
 ---
 
