@@ -87,10 +87,38 @@ test('static: uma tribo com dado ruim não derruba as outras', () => {
   assert.match(body, /admin_audit_log/, 'a execução fica registrada');
 });
 
-test('static: o agendamento é semanal e idempotente', () => {
-  assert.match(migCode, /cron\.schedule\(\s*'tribe-journey-cards-weekly'/,
-    'nome estável — cron.schedule faz upsert por nome');
-  assert.match(migCode, /'20 6 \* \* 1'/, 'segundas, minuto deslocado dos vizinhos');
+test('static: o agendamento é diário e o job semanal foi removido (#1906)', () => {
+  // A migration original agendava semanal. Trocar a cadência sem trocar o NOME deixaria
+  // um `...-weekly` rodando todo dia; criar o nome novo sem remover o antigo deixaria
+  // DOIS jobs disparando a mesma reconciliação (cron.schedule faz upsert por nome).
+  const CRON2 = resolve(ROOT, 'supabase/migrations/20260821203103_jornada_escrita_condicional_e_agenda_diaria.sql');
+  assert.ok(existsSync(CRON2), 'migration do follow-up #1906 presente');
+  const c2 = readFileSync(CRON2, 'utf8').replace(/^\s*--.*$/gm, '');
+  assert.match(c2, /cron\.unschedule\('tribe-journey-cards-weekly'\)/, 'o semanal é removido');
+  assert.match(c2, /cron\.schedule\(\s*'tribe-journey-cards-daily'/, 'o diário é criado');
+  assert.match(c2, /'20 6 \* \* \*'/, 'todo dia, minuto deslocado dos vizinhos');
+});
+
+test('static: a escrita é condicional — execução sem novidade não toca no card (#1906)', () => {
+  // Sem isto, a cadência diária faria os 12 cards aparecerem como alterados todo dia e
+  // treinaria o líder a ignorar o card, que é o oposto do objetivo.
+  const CRON2 = resolve(ROOT, 'supabase/migrations/20260821203103_jornada_escrita_condicional_e_agenda_diaria.sql');
+  const c2 = readFileSync(CRON2, 'utf8').replace(/^\s*--.*$/gm, '');
+  const i = c2.indexOf('FUNCTION public._sync_tribe_journey_card(');
+  const body = c2.slice(i, c2.indexOf('$fn$;', i));
+
+  assert.match(body, /IF v_desc_atual IS DISTINCT FROM v_desc THEN/,
+    'a descrição só é reescrita quando difere');
+  assert.equal(/Última reconciliação/.test(body), false,
+    'o carimbo de execução NÃO pode voltar para a descrição — ele vive no admin_audit_log');
+  assert.match(body, /IF v_assignee_atual IS NULL THEN/,
+    'assignee_id só entra no SET quando está nulo');
+  assert.equal(/SET description = v_desc, assignee_id/.test(body), false,
+    'assignee_id não pode voltar ao SET incondicional: UPDATE OF dispara pela coluna MENCIONADA, ' +
+    'não pela alterada, e acionaria trg_board_item_deliverable_xp à toa (#1881)');
+  assert.match(body, /ELSIF v_txt_atual IS DISTINCT FROM/,
+    'atividade só é reescrita quando texto, estado ou posição diferem');
+  assert.match(body, /'changed', v_changed/, 'o retorno declara se houve mudança');
 });
 
 // ── (B) DB-gated ────────────────────────────────────────────────────────────
@@ -132,6 +160,17 @@ test('DB: reconciliar duas vezes não duplica card',
     assert.ok(!a.error && !b.error, 'as duas execuções passam');
     assert.equal(a.data?.reconciliados, b.data?.reconciliados,
       'mesma população reconciliada — nenhum card novo apareceu entre as duas');
+  });
+
+test('DB: a segunda execução seguida não altera nada (escrita condicional, #1906)',
+  { skip: dbGated ? false : skipMsg }, async () => {
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+    await sb.rpc('sync_tribe_journey_cards_cron');            // converge
+    const { data, error } = await sb.rpc('sync_tribe_journey_cards_cron');
+    assert.ok(!error, `precisa resolver (erro: ${error?.message})`);
+    assert.equal(data?.alterados, 0,
+      `execução sem novidade não pode escrever (alterados: ${data?.alterados})`);
+    assert.ok(data?.reconciliados >= 1, 'mas segue reconciliando a população');
   });
 
 test('DB: o job está agendado e ativo',
