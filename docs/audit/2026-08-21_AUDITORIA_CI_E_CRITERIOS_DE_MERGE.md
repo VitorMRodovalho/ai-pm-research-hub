@@ -16,7 +16,8 @@
 **"Os CI e criterios de validacao de merge estao seguindo as boas praticas?"**
 
 Em grande parte sim, e alguns padroes daqui sao melhores que a media do mercado: o
-`wait-for-db-lane` resolve um bug real do proprio GitHub (fila que cancela pendente), o
+`wait-for-db-lane` contorna um comportamento documentado do GitHub que morde de verdade (a fila de
+concorrencia guarda UM pendente por grupo e cancela o anterior quando um terceiro chega), o
 `invariant-exceptions.mjs` e um allowlist com data de validade e modo estrito, e existem 8 testes
 que auditam a propria CI. O problema nao e falta de rigor. E que **o portao required foi acoplado a
 um recurso mutavel compartilhado**, e isso quebra duas boas praticas simultaneamente: um gate de
@@ -36,11 +37,16 @@ para o qual coletei o detalhe passo a passo, **22 dos 23 vermelhos morreram no m
 
 **"Precisamos de um plano de agrupamento de licoes aprendidas e organizacao das rotinas?"**
 
-De agrupamento, sim, e a secao 6 mostra o formato: o repo ja **inventou** o padrao certo de
-tolerancia com prazo (o do #1850) e o aplicou a **1 de 30 superficies**. As outras 8 listas de
-tolerancia somam **823 entradas sem nenhuma data de validade**. De organizacao de rotinas, o
-diagnostico e mais especifico que "organizar": 4 dos 16 workflows nao tem funcao de portao
-nenhuma, 1 job existe so para ecoar, e 20 arquivos de teste Playwright nunca rodam.
+De agrupamento, sim, e a secao 6 mostra o formato pronto: o repo ja **inventou** o padrao certo
+de tolerancia com prazo (o do #1850) e o aplicou a **1 de 31 superficies**. As outras 30 (8 arquivos
+somando **823 entradas**, mais 22 allowlists embutidos em codigo de teste) **nao tem data de
+validade nenhuma**.
+
+De organizacao de rotinas, o diagnostico e mais especifico que "organizar", e sao quatro itens
+concretos: `Schema Invariants` re-executa arquivos que o `validate` ja executou (2.110 minutos em
+30 dias), `deploy.yml` publica em producao sem depender de portao nenhum, o job `quality_gate`
+existe so para ecoar um `echo`, e 20 arquivos de teste Playwright nao sao invocados por workflow
+nenhum.
 
 ---
 
