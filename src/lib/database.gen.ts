@@ -30085,6 +30085,10 @@ export type Database = {
         Args: { p_signed_ip?: string; p_signed_user_agent?: string }
         Returns: Json
       }
+      audit_portfolio_flag_tag_gaps: {
+        Args: { p_dashboard_cycle?: number; p_include_non_tribe?: boolean }
+        Returns: Json
+      }
       auth_org: { Args: never; Returns: string }
       auto_approve_alumni_drive_revocations: {
         Args: { p_member_id?: string; p_source?: string }
@@ -33359,6 +33363,10 @@ export type Database = {
         Returns: Json
       }
       platform_activity_summary: { Args: never; Returns: Json }
+      portfolio_suggest_item_type: {
+        Args: { p_tags?: string[]; p_title: string }
+        Returns: string
+      }
       prepare_member_offboard: { Args: { p_member_id: string }; Returns: Json }
       preview_gate_eligibles: {
         Args: { p_doc_type: string; p_submitter_id: string }
@@ -34207,6 +34215,14 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      sync_tribe_journey_card: {
+        Args: {
+          p_dry_run?: boolean
+          p_initiative_id: string
+          p_window_days?: number
+        }
+        Returns: Json
+      }
       title_case: { Args: { input: string }; Returns: string }
       toggle_blog_like: { Args: { p_post_id: string }; Returns: Json }
       tribe_capacity_limit: { Args: never; Returns: number }
@@ -34220,6 +34236,11 @@ export type Database = {
           tribe_name: string
         }[]
       }
+      tribe_journey_health: {
+        Args: { p_initiative_id?: string; p_window_days?: number }
+        Returns: Json
+      }
+      tribe_journey_items: { Args: { p_ev: Json }; Returns: Json }
       trigger_ai_calibration_run: { Args: never; Returns: Json }
       trigger_backup: { Args: never; Returns: Json }
       try_auto_link_ghost: {
