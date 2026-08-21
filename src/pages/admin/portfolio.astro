@@ -25,6 +25,8 @@ const scriptI18n = JSON.stringify({
   sanityFail: t('portfolio.script.sanityFail', lang),
   sanityOk: t('portfolio.script.sanityOk', lang),
   sanityInactive: t('portfolio.script.sanityInactive', lang),
+  sanityMissingFlag: t('portfolio.script.sanityMissingFlag', lang),
+  sanityMissingTypeTag: t('portfolio.script.sanityMissingTypeTag', lang),
   tribe: t('portfolio.script.tribe', lang),
   globalScope: t('portfolio.script.global_scope', lang),
   board: t('portfolio.script.board', lang),
@@ -230,7 +232,18 @@ const scriptI18n = JSON.stringify({
       return;
     }
     const summary = data?.summary || {};
-    (window as any).toast?.(`${_i18n.sanityOk || 'Sanity OK. Orphans:'} ${summary.orphan_items ?? 0} · ${_i18n.sanityInactive || 'Inactive:'} ${summary.items_in_inactive_board ?? 0}`, 'success');
+    // Os dois últimos contadores vêm de `portfolio_suggest_item_type` (migration
+    // 20260820215416): entregáveis de tribo que o dashboard não enxerga por falta
+    // de flag, e itens de portfólio que o filtro de tipo não classifica.
+    const missingFlag = summary.tribe_cards_missing_portfolio_flag ?? 0;
+    const missingTypeTag = summary.tribe_portfolio_items_missing_type_tag ?? 0;
+    const gapsClean = missingFlag === 0 && missingTypeTag === 0;
+    (window as any).toast?.([
+      `${_i18n.sanityOk || 'Sanity OK. Orphans:'} ${summary.orphan_items ?? 0}`,
+      `${_i18n.sanityInactive || 'Inactive:'} ${summary.items_in_inactive_board ?? 0}`,
+      `${_i18n.sanityMissingFlag || 'Deliverables missing portfolio flag:'} ${missingFlag}`,
+      `${_i18n.sanityMissingTypeTag || 'Portfolio items missing type tag:'} ${missingTypeTag}`,
+    ].join(' · '), gapsClean ? 'success' : 'info');
   });
 
   // ─── KPI Health (W104) — now uses get_annual_kpis ───

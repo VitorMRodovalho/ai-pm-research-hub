@@ -263,6 +263,38 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // ausência de superfície autenticada (#1586) transformando cada decisão manual em dívida de
   // teste. Enquanto o #1586 não existir, esta lista cresce a cada tentativa.
   'c5c2b7aa-e556-4f05-99fe-17c9f9522a93',
+
+  // 21/08/2026 14:18:47Z — QUINTA tentativa, MESMA candidatura, MESMA recusa
+  // (`P0002` / `GATE_NO_PEER_REVIEW`, `eval_count: 0`, `bypass_requested: false`). Nenhum token
+  // emitido e nenhum e-mail enviado, como nas quatro anteriores.
+  //
+  // ⚠️ ESTA É A PRIMEIRA POSTERIOR À DECISÃO. As quatro acima são todas de 20/08, e foi em 20/08
+  // que o PM registrou que dispensar o gate por pressão de prazo é prática DESCONTINUADA. Esta é
+  // do dia seguinte. A lista deixou de ser o retrato de um dia ruim e virou série: 1 → 5 → 6.
+  // O que ela mede continua sendo o mesmo: enquanto a RPC não tiver superfície autenticada
+  // (#1586), toda decisão manual entra por service_role e vira dívida de teste.
+  //
+  // Medido ao vivo em 21/08: a candidatura segue com ZERO avaliações de qualquer tipo — o mesmo
+  // estado que motivou as quatro recusas anteriores —, 0 tokens de agendamento vivos e status
+  // `interview_pending`. O gate fez exatamente o que existe para fazer, pela quinta vez.
+  //
+  // A hipótese que a mensagem de falha deste guard nomeia ("algum teste voltou a escolher alvo por
+  // predicado sobre produção") foi DESCARTADA por três medições desta sessão:
+  //   (a) o arco inteiro do gate (71 testes, 5 arquivos, incluindo os que afirmam
+  //       `GATE_NO_PEER_REVIEW`) rodou contra produção e `gate_attempts` ficou em 697 linhas antes
+  //       e depois, com as MESMAS 9 sem ator pós-cutoff dos dois lados. Teste que varresse
+  //       produção somaria linha PERMANENTE, como as 627 do incidente que abriu esta issue;
+  //   (b) a Camada A passou inteira: todo arquivo que exerce o caminho de escrita declara alvo
+  //       sintético;
+  //   (c) `admin_audit_log` não tem NENHUMA linha na janela de ±10min — nem carimbo de cron, nem
+  //       ação de ator. E o guard não está cego: os outros três sem-ator pós-cutoff que NÃO estão
+  //       nesta lista (14/08 15:00, 17/08 15:30 ×2) TÊM carimbo (`stuck_rescue_cron_run`,
+  //       `unbooked_rescue_cron_run`) e por isso ele nunca os acusou.
+  //
+  // 📌 Ao investigar a próxima: o guard reporta `application_id` na mensagem de falha, e esta
+  // lista guarda `gate_attempts.id`. São colunas diferentes. "O ID que falhou não está na lista"
+  // NÃO prova ofensor novo — cruze pelas duas chaves antes de concluir qualquer coisa.
+  'ec7336f2-8c04-4a44-b1fc-794c83bd435c',
 ]);
 
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {

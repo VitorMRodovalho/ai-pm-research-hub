@@ -102,10 +102,31 @@ test(canRun ? '1113: write gate — initiative leader passes, researcher denied'
     const leaderAllowed = await rpc('can_by_member', { p_member_id: l.id, p_action: 'write_board', p_resource_type: 'initiative', p_resource_id: initId });
     assert.equal(leaderAllowed, true, 'initiative leader passes write_board gate');
 
-    const others = await getRows('members', "select=id&operational_role=eq.researcher&auth_id=not.is.null&limit=1");
-    if (others.length) {
-      const otherAllowed = await rpc('can_by_member', { p_member_id: others[0].id, p_action: 'write_board', p_resource_type: 'initiative', p_resource_id: initId });
-      assert.equal(otherAllowed, false, 'researcher denied write_board on the leader initiative');
+    // #1113 (medido 2026-08-21): este alvo era `limit=1` SEM `ORDER BY`, ou seja, um pesquisador
+    // ARBITRARIO -- o PostgREST devolve linha em ordem fisica, que muda quando alguem escreve na
+    // tabela. A asserção assume que o escolhido NAO tem autoridade na iniciativa do lider, e isso
+    // e falso para quem esta engajado nela: medi 20 pesquisadores com `write_board` legitimo em
+    // iniciativas de lider, TODOS por engajamento (0 sem engajamento, ou seja, nenhum furo).
+    // Quando a ordem fisica calhava de trazer um dos 20, um check REQUIRED reprovava e travava a
+    // fila inteira, sem que nada de autoridade tivesse mudado.
+    //
+    // O alvo agora e escolhido pela PROPRIEDADE que a asserção precisa: um pesquisador SEM
+    // engajamento naquela iniciativa. Se nao houver nenhum, o teste diz isso em vez de reprovar.
+    const engagedRows = await getRows(
+      'auth_engagements',
+      `select=auth_id&initiative_id=eq.${initId}`,
+    );
+    const engagedAuthIds = new Set((engagedRows ?? []).map((e) => e.auth_id).filter(Boolean));
+    const candidates = await getRows(
+      'members',
+      "select=id,auth_id&operational_role=eq.researcher&auth_id=not.is.null&limit=50",
+    );
+    const outsider = (candidates ?? []).find((c) => !engagedAuthIds.has(c.auth_id));
+    if (outsider) {
+      const otherAllowed = await rpc('can_by_member', { p_member_id: outsider.id, p_action: 'write_board', p_resource_type: 'initiative', p_resource_id: initId });
+      assert.equal(otherAllowed, false, 'researcher WITHOUT engagement denied write_board on the leader initiative');
+    } else {
+      console.log('  (skip: todo pesquisador vivo esta engajado nesta iniciativa)');
     }
     probed = true;
     break;

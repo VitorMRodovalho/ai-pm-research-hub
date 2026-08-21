@@ -29418,12 +29418,24 @@ export type Database = {
         Args: { p_interview_id: string }
         Returns: string
       }
+      _sync_tribe_journey_card: {
+        Args: {
+          p_actor_id: string
+          p_initiative_id: string
+          p_window_days?: number
+        }
+        Returns: Json
+      }
       _test_detect_inactive_with_threshold: {
         Args: { p_threshold: number }
         Returns: Json
       }
       _test_invariants_with_synthetic_breach: {
         Args: { p_breach: string }
+        Returns: Json
+      }
+      _tribe_journey_health_data: {
+        Args: { p_initiative_id?: string; p_window_days?: number }
         Returns: Json
       }
       _v4_active_initiatives_with_leaders: {
@@ -30083,6 +30095,10 @@ export type Database = {
       }
       attest_affiliation_access: {
         Args: { p_signed_ip?: string; p_signed_user_agent?: string }
+        Returns: Json
+      }
+      audit_portfolio_flag_tag_gaps: {
+        Args: { p_dashboard_cycle?: number; p_include_non_tribe?: boolean }
         Returns: Json
       }
       auth_org: { Args: never; Returns: string }
@@ -33359,6 +33375,10 @@ export type Database = {
         Returns: Json
       }
       platform_activity_summary: { Args: never; Returns: Json }
+      portfolio_suggest_item_type: {
+        Args: { p_tags?: string[]; p_title: string }
+        Returns: string
+      }
       prepare_member_offboard: { Args: { p_member_id: string }; Returns: Json }
       preview_gate_eligibles: {
         Args: { p_doc_type: string; p_submitter_id: string }
@@ -34207,6 +34227,15 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      sync_tribe_journey_card: {
+        Args: {
+          p_dry_run?: boolean
+          p_initiative_id: string
+          p_window_days?: number
+        }
+        Returns: Json
+      }
+      sync_tribe_journey_cards_cron: { Args: never; Returns: Json }
       title_case: { Args: { input: string }; Returns: string }
       toggle_blog_like: { Args: { p_post_id: string }; Returns: Json }
       tribe_capacity_limit: { Args: never; Returns: number }
@@ -34220,6 +34249,11 @@ export type Database = {
           tribe_name: string
         }[]
       }
+      tribe_journey_health: {
+        Args: { p_initiative_id?: string; p_window_days?: number }
+        Returns: Json
+      }
+      tribe_journey_items: { Args: { p_ev: Json }; Returns: Json }
       trigger_ai_calibration_run: { Args: never; Returns: Json }
       trigger_backup: { Args: never; Returns: Json }
       try_auto_link_ghost: {
