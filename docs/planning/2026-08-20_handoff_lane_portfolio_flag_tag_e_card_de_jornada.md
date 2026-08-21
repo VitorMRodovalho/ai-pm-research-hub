@@ -105,16 +105,24 @@ DB-aware dependente de estado.
 
 **4.2 - as falhas seguem sem nome, e a contagem OSCILA.** Tres medicoes:
 
-| head | resultado |
-| --- | --- |
-| main `72319b0` | pass 6979 · **fail 2** |
-| `72e6831` | pass 6985 · **fail 5** |
-| `90d3be2` | pass 6997 · **fail 4** |
+| head | conteudo do commit | resultado |
+| --- | --- | --- |
+| main `72319b0` | tip da main | pass 6979 · **fail 2** |
+| `72e6831` | codigo | pass 6985 · **fail 5** |
+| `90d3be2` | so ordem no package.json | pass 6997 · **fail 4** |
+| `c931a9f` | so um .md a mais | pass 6997 · **fail 4** |
 
-Entre `72e6831` e `90d3be2` a UNICA diferenca e a ordem de arquivos no `package.json` --
-nenhuma mudanca funcional. Ainda assim caiu de 5 para 4. **Nao e um conjunto fixo de
-falhas: sao testes instaveis**, o que tambem explica a main alternando verde/vermelho o dia
-todo (falhou 19/08 23:36, passou 00:54, falhou 01:44, passou 02:23 e 05:18, falhou 21:42).
+Leitura: o **4 e estavel** (duas medicoes seguidas, identicas, com mudancas que nao tocam
+codigo). O **5 foi ponto fora da curva** -- um teste flaky a mais naquela execucao. Portanto
+a branch carrega **2 falhas persistentes acima da main**, nao 3.
+
+Ressalva na comparacao com a main: o run dela foi as 21:42, com o banco AINDA SEM as funcoes
+desta lane. Re-rodar a main hoje provavelmente da um numero pior que 2, porque o banco tem 6
+funcoes cujas migrations so existem nesta branch (o guard de orfas reprova la, nao aqui). A
+unica comparacao honesta e re-rodar a main depois do merge.
+
+A main tambem alterna verde/vermelho o dia todo (falhou 19/08 23:36, passou 00:54, falhou
+01:44, passou 02:23 e 05:18, falhou 21:42), o que sugere que parte das 2 dela e flaky.
 
 Hipotese principal: os guards DB-aware correm contra o banco COMPARTILHADO, e esta sessao o
 estava mutando na mesma janela (3 migrations, 1 card + 8 atividades + 2 atribuicoes, e
@@ -189,6 +197,6 @@ volta vazio.
 - Local: `npx astro build` limpo, `npm test` 6160 pass / 0 fail / 744 skip.
 - Check-in automatico armado para reler o log do `validate` quando fechar.
 
-**Nao mergear enquanto o `validate` nao for explicado.** As 3 falhas nao identificadas
+**Nao mergear enquanto o `validate` nao for explicado.** As 2 falhas nao identificadas
 podem ser dos 6 testes DB-gated escritos aqui - que pulam local e so rodam na CI, ou seja,
 nunca executaram de verdade em lugar nenhum.
