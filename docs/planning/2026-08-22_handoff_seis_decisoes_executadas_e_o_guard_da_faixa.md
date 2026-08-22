@@ -79,6 +79,19 @@ E o par de alertas mostra a diferença entre sinal e ruído:
 > único disco**. **Empurrar é urgente e independente do merge** — tira o risco de perda sem
 > antecipar decisão nenhuma. Registrado em #1910.
 
+> ✅ **ADENDO 22/08 (sessão seguinte): a ação acima está encerrada, e o SHA que ela cita morreu.**
+> O `9e15d73c` **não** estava fora do remoto quando isto foi escrito: era ancestral de
+> `origin/lane/video-reunioes-e-shorts`, então nunca esteve em um disco só. Depois a lane teve o
+> histórico reescrito (`ae937c4b`, "registra a sanitizacao de historico"), o que trocou os SHAs:
+> `9e15d73c` **não é mais alcançável por nenhum ref**, e seu sucessor é `3d4bd280`, com o mesmo
+> assunto e o mesmo conteúdo. Nada foi perdido.
+> A captura das migrations, que era o risco real, **landou na main** pela #1931 (`3e4ac649`) com
+> as três versões `20260822032921`, `20260822033913` e `20260822120649`.
+> 📌 **Citar SHA de branch viva num doc que vai para a main é dívida:** a main é permanente e a
+> branch não. Quando ela é reescrita ou apagada, a referência não dá erro, dá **silêncio**.
+> Prefira nomear o conteúdo (assunto do commit, versão da migration, nº da PR) e deixe o SHA como
+> apoio, nunca como a única chave.
+
 ---
 
 ## 4. Três correções em cima do meu próprio trabalho
