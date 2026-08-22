@@ -79,6 +79,14 @@ Do lado da CI, o mesmo instante:
 | 32481010980 | `claude/1900-cron-jornada-tribo` | `b41217d9` | 21/08 12:15 | **success** |
 | 32492721370 | `claude/1900-cron-jornada-tribo` | `005ee51c` | 21/08 14:32 | **failure** |
 
+> 📌 **Nota de 22/08:** os dois SHAs desta tabela (`b41217d9` e `005ee51c`) **não são mais
+> alcançáveis**: a branch `claude/1900-cron-jornada-tribo` foi apagada na higiene de branches de
+> 22/08 (#1929). Os números de run continuam válidos e resolvem na API do GitHub; os SHAs ficam
+> aqui como **registro do que foi medido**, não como ponteiro navegável. Não reescrevi a tabela:
+> ela documenta o estado no instante da medição, e trocar o SHA falsificaria o registro.
+> Causa distinta da do `9e15d73c` (reescrita de histórico da lane de vídeo), que produz o mesmo
+> sintoma por outro caminho.
+
 E o log do run vermelho nomeia uma unica asserção:
 
 ```
