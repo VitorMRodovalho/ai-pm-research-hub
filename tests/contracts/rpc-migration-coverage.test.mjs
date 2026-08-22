@@ -36,6 +36,7 @@ import {
   prodAheadBanner,
   prodAheadVersions,
 } from '../helpers/migration-drift-classifier.mjs';
+import { skipDataInvariant } from '../helpers/data-invariant-gate.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -379,7 +380,7 @@ test('CI sentinel: SUPABASE_URL + SERVICE_ROLE_KEY must be set when running in C
 
 test(
   'Track Q-C: no NEW orphan functions vs allowlist',
-  { skip: !canRun && skipMsg },
+  { skip: skipDataInvariant(canRun, skipMsg) },
   async () => {
     const rows = await callAuditRpc();
     const allowlist = loadAllowlist();
@@ -666,7 +667,7 @@ test(
 
 test(
   'Phase C: no NEW body-hash drift vs p175 allowlist',
-  { skip: !canRun && skipMsg },
+  { skip: skipDataInvariant(canRun, skipMsg) },
   async () => {
     const liveRows = await callBodiesAuditRpc();
     const captures = loadLatestCaptures(MIGRATIONS_DIR);
@@ -783,7 +784,7 @@ test('Phase C: body-drift allowlist size matches p175 baseline', () => {
 
 test(
   'ADR-0097: no NEW missing-file drift vs p224 baseline (tracked − local)',
-  { skip: !canRun && skipMsg },
+  { skip: skipDataInvariant(canRun, skipMsg) },
   async () => {
     const rows = await callSchemaMigrationsAuditRpc();
     const localVersions = extractLocalMigrationVersions();
@@ -862,7 +863,7 @@ test('ADR-0097: missing-file baseline size matches p224 constant', () => {
 
 test(
   'ADR-0097: no NEW orphan-local drift vs p224 baseline (local − tracked)',
-  { skip: !canRun && skipMsg },
+  { skip: skipDataInvariant(canRun, skipMsg) },
   async () => {
     const rows = await callSchemaMigrationsAuditRpc();
     const localVersions = extractLocalMigrationVersions();
@@ -930,7 +931,7 @@ test('ADR-0097: orphan-local baseline size matches p224 constant', () => {
 
 test(
   'ADR-0097: no NEW empty-statements drift vs p224 baseline',
-  { skip: !canRun && skipMsg },
+  { skip: skipDataInvariant(canRun, skipMsg) },
   async () => {
     const rows = await callSchemaMigrationsAuditRpc();
     const baseline = loadMigrationEmptyStatementsBaseline();
