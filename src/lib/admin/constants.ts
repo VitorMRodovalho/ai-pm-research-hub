@@ -10,7 +10,7 @@ import { hasPermission } from '../permissions.ts';
 export * from './route-access.ts';
 
 export const OPROLE_LABELS: Record<string, string> = {
-  manager: 'Gerente', deputy_manager: 'Deputy PM', tribe_leader: 'Líder de Tribo',
+  manager: 'Gerente', deputy_manager: 'Vice-GP', tribe_leader: 'Líder de Tribo',
   researcher: 'Pesquisador', facilitator: 'Facilitador', communicator: 'Multiplicador',
   sponsor: 'Patrocinador', institutional_auditor: 'Auditor Institucional',
   none: 'Sem papel', guest: 'Convidado'

@@ -3492,6 +3492,8 @@ const enUS: Record<string, string> = {
   'tribe.meetingSchedulePlaceholder': 'E.g. Thursdays, 7pm',
   'tribe.meetingScheduleSaved': 'Schedule updated',
   'tribe.noMembers': 'No members allocated to this tribe.',
+  'tribe.interested.title': 'Interested this round',
+  'tribe.interested.hint': 'Signalled interest in this tribe in the current round. No engagement yet.',
   'tribe.noDeliverables': 'No deliverables registered for this cycle.',
   'tribe.noResources': 'No resources linked to this tribe.',
   'tribe.addDeliverable': '➕ Add Deliverable',

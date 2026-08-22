@@ -93,15 +93,21 @@ const DESIG_LABELS: Record<string, string> = {
   sponsor: 'Patrocinador', chapter_liaison: 'Elo Capítulo', ambassador: 'Embaixador',
   founder: 'Fundador', curator: 'Curador', comms_team: 'Equipe Comms',
   comms_leader: 'Líder Comms', comms_member: 'Membro Comms', co_gp: 'Co-GP',
+  deputy_manager: 'Vice-GP',
 };
 const DESIG_COLORS: Record<string, string> = {
   sponsor: '#BE2027', chapter_liaison: '#BE2027', ambassador: '#10B981',
   founder: '#7C3AED', curator: '#D97706', comms_team: '#06B6D4',
   comms_leader: '#06B6D4', comms_member: '#06B6D4', co_gp: '#FF610F',
+  deputy_manager: '#FF610F',
 };
 
 const ALL_ROLES = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'facilitator', 'communicator', 'none', 'guest'];
-const ALL_DESIGS = ['sponsor', 'chapter_liaison', 'ambassador', 'founder', 'curator', 'comms_team', 'comms_leader', 'comms_member', 'co_gp'];
+// Wave 1 (2026-08-21): `deputy_manager` e consultada por 23 gates (15 paginas admin,
+// governanca, presenca, workspace) e ate aqui NAO era concedivel pela UI -- quem a tinha
+// recebeu fora de banda. `co_gp` ja esta na lista e ja concede o mesmo tier admin
+// (route-access.ts), entao incluir esta NAO amplia a classe do que um admin pode conceder.
+const ALL_DESIGS = ['sponsor', 'chapter_liaison', 'ambassador', 'founder', 'curator', 'comms_team', 'comms_leader', 'comms_member', 'co_gp', 'deputy_manager'];
 
 function initials(name: string): string {
   return name.split(' ').map(w => w[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || '?';

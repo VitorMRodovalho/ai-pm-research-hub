@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 const ROLES = [
   { value: 'manager', pt: 'Gerente', en: 'Manager', es: 'Gerente' },
-  { value: 'deputy_manager', pt: 'Deputy', en: 'Deputy Manager', es: 'Subgerente' },
+  { value: 'deputy_manager', pt: 'Vice-GP', en: 'Deputy PM', es: 'Vice-GP' },
   { value: 'tribe_leader', pt: 'Líder de Tribo', en: 'Tribe Leader', es: 'Líder de Tribu' },
   { value: 'researcher', pt: 'Pesquisador', en: 'Researcher', es: 'Investigador' },
   { value: 'facilitator', pt: 'Facilitador', en: 'Facilitator', es: 'Facilitador' },

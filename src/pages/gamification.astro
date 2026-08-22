@@ -1069,8 +1069,11 @@ const SCORING_I18N = {
         sb.from('tribe_selections').select('tribe_id, member_id'),
       );
       if (selectionsError) throw selectionsError;
-      const { data: leaders, error: leadersError } = await withTimeout(
-        sb.from('public_members').select('id, tribe_id').eq('operational_role', 'tribe_leader'),
+      // Wave 2 (Bloco C): antes buscava SO os lideres, e por isso a selecao vencia
+      // o vinculo real para todo mundo que nao fosse lider. Agora traz todo membro
+      // COM tribo, para que o vinculo sobrescreva a sinalizacao (ver abaixo).
+      const { data: withTribe, error: leadersError } = await withTimeout(
+        sb.from('public_members').select('id, tribe_id').not('tribe_id', 'is', null),
       );
       if (leadersError) throw leadersError;
 
@@ -1080,9 +1083,18 @@ const SCORING_I18N = {
       await ensureLifetimePointsLoaded();
 
     // Build tribe map: member_id → tribe_id
+    //
+    // Wave 2 (Bloco C, 2026-08-22): a ORDEM aqui e a correcao. `tribe_selections` e
+    // sinalizacao de interesse, sem ciclo e nunca limpa; ela entra primeiro apenas
+    // como preenchimento para quem ainda nao tem vinculo, e o vinculo REAL
+    // (public_members.tribe_id) sobrescreve depois. Antes so os lideres
+    // sobrescreviam, entao para os demais a selecao vencia: medido 2026-08-22, 6
+    // pessoas tinham pontos creditados a tribo que escolheram em marco e nao a
+    // tribo onde estao hoje. As 16 pessoas que so existem pela selecao (sem
+    // tribe_id) continuam contando, para nao mudar o denominador do ranking.
     const memberTribe: Record<string, number> = {};
     (selections || []).forEach((s: any) => { memberTribe[s.member_id] = s.tribe_id; });
-    (leaders || []).forEach((l: any) => { if (l.tribe_id) memberTribe[l.id] = l.tribe_id; });
+    (withTribe || []).forEach((m: any) => { if (m.tribe_id) memberTribe[m.id] = m.tribe_id; });
 
     // Aggregate by tribe
     const tribeStats: Record<number, { points: number; members: number; names: string[] }> = {};
