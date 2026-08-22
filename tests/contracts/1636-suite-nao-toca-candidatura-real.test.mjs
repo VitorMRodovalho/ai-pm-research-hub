@@ -41,6 +41,7 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { RESERVED_DOMAIN, GRACE_MINUTES } from '../helpers/selection-fixtures.mjs';
 import { rpcCallsIn } from '../helpers/rpc-call-scanner.mjs';
+import { skipDataInvariant } from '../helpers/data-invariant-gate.mjs';
 
 const DIR = 'tests/contracts';
 const HELPER = 'selection-fixtures.mjs';
@@ -319,8 +320,12 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   'ec7336f2-8c04-4a44-b1fc-794c83bd435c',
 ]);
 
+// A2: a Camada B le LINHAS DE PRODUCAO, entao um despacho manual legitimo do PM a reprova em
+// TODA branch. Foi o que congelou a fila por 5h22m54s em 21/08. Ela sai do portao required e
+// passa a rodar no `invariants-check` (diario, estrito, nao-required), onde pode acusar sem
+// travar merge de ninguem. A Camada A ACIMA continua no portao: ela e funcao do diff.
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
-  skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false,
+  skip: skipDataInvariant(!!sb, 'sem SUPABASE_URL + SERVICE_ROLE_KEY'),
 }, () => {
   it('depois do cutoff, tentativa de gate sem ator só existe se o CRON a explicar', async () => {
     // O cron de resgate roda como `service_role` e produz a MESMA digital da suíte (`caller_id`

@@ -65,6 +65,13 @@ jobs:
           # nunca pode apagar o sinal. Travado por
           # tests/contracts/1850-excecoes-declaradas-de-invariante.test.mjs.
           INVARIANT_STRICT: '1'
+          # A2 (auditoria de 21/08) — liga os invariantes de DADO que saíram do check
+          # required. Fora daqui eles ficam skipped com a razão dita no nome do skip.
+          # A lógica está em `tests/helpers/data-invariant-gate.mjs`, e a justificativa é a
+          # mesma do INVARIANT_STRICT acima: este job não é required, então ele pode dizer a
+          # verdade. Aqui entram a deriva de migration (Q-C / Phase C / ADR-0097) e a Camada B
+          # do #1636, que leem estado de PRODUÇÃO e por isso reprovavam PR de docs.
+          DATA_INVARIANT_GATE: '1'
         run: |
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "::warning::SUPABASE_SERVICE_ROLE_KEY secret not configured — test will skip gracefully. Configure in repo Settings → Secrets → Actions to enable live-DB drift detection."
