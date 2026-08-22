@@ -435,9 +435,8 @@ Da Wave 0, medido em 2026-08-21:
 ## 8. Sanitização de histórico (22/08) — por que os SHAs mudaram
 
 O repositório é **público**. Commits desta lane carregavam, em assunto, corpo e comentário de arquivo,
-detalhe operacional de um achado de autorização rastreado no security advisory privado do repositório -
-incluindo a indicação de que parte dele seguia sem correção. Num repo público isso é legível por
-qualquer pessoa; só a página do advisory é restrita.
+detalhe operacional de um achado de autorização rastreado no security advisory privado do repositório.
+Num repo público isso é legível por qualquer pessoa; só a página do advisory é restrita.
 
 Os 14 commits do range foram reescritos com `git filter-branch` para remover esse detalhe, preservando
 todo o resto. **Nenhum corpo de função SQL mudou**: a reescrita tocou apenas comentário fora de corpo,
@@ -447,9 +446,9 @@ drift nem DDL a re-aplicar.
 Conferido após a reescrita: zero menções nos 14 corpos de commit, `npx astro build` limpo,
 `npm test` 6904 testes / 0 falhas, `origin/main` intacto.
 
-**Resta uma menção deliberada**, num comentário *dentro* do corpo de `board_write_authority`: removê-la
-mudaria o hash da função e exigiria re-aplicar DDL em produção por um comentário. Ela cita apenas
-comportamento por desenho dos seeds, já documentado na matriz da Wave 4.
+**Resta uma menção deliberada**, num comentário *dentro* do corpo de uma função: removê-la mudaria o
+hash da função e exigiria re-aplicar DDL em produção por um comentário. Ela cita apenas comportamento
+por desenho dos seeds, já documentado na matriz da Wave 4.
 
 ### Duas armadilhas registradas
 
