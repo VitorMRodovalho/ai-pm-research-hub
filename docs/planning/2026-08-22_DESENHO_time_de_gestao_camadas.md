@@ -277,3 +277,79 @@ premissas erradas, e o desenho-alvo em linguagem de função. As etapas 1 a 4 s�
    qual board a ação vai, ou se cria taxonomia própria.
 6. **Manual de governança:** confirmar que ele e esta matriz saem juntos, porque o manual descreve o que
    a matriz implementa.
+
+---
+
+## 6. Anexo: `co_gp` × `deputy_manager` - três eixos, três respostas diferentes (medido 21/08)
+
+Pergunta do PM: qual dos dois nomes é o correto na arquitetura e no permissionamento. A resposta é que
+**os dois estão em uso ao mesmo tempo, na mesma pessoa, em eixos diferentes** - e um terceiro nome
+(`manager`) entra junto por causa do cache.
+
+### Eixo 1: `engagements.role` (a autoridade canônica, ADR-0007)
+
+| role (kind=`volunteer`) | combos seedados | escopo | pessoas vigentes |
+|---|---|---|---|
+| `manager` | 19 | `organization` | 1 |
+| `co_gp` | 19 | `organization` | 1 |
+| `deputy_manager` | 19 | `organization` | **0** |
+
+**Os três conjuntos de ações são idênticos.** Diferença medida entre eles: nenhuma, em nenhuma direção.
+Ou seja, **a escolha do nome do papel é neutra em permissão**. Quem decide entre `co_gp` e
+`deputy_manager` está decidindo vocabulário, não autoridade.
+
+### Eixo 2: `members.operational_role` (cache do trigger `sync_operational_role_cache`)
+
+O trigger **colapsa `volunteer/co_gp` em `'manager'`**:
+
+```
+WHEN bool_or(ae.kind='volunteer' AND ae.role='manager')        THEN 'manager'
+WHEN bool_or(ae.kind='volunteer' AND ae.role='co_gp')          THEN 'manager'
+WHEN bool_or(ae.kind='volunteer' AND ae.role='deputy_manager') THEN 'deputy_manager'
+```
+
+Consequência medida: `operational_role='manager'` tem **2 pessoas** (GP e co-GP, indistinguíveis) e
+`operational_role='deputy_manager'` tem **0**. O degrau `deputy_manager` do cache só nasce de um
+engajamento `volunteer/deputy_manager`, que não existe. **É degrau inalcançável**, e mesmo assim é
+consultado por pelo menos quatro escadas de UI (`useBoardPermissions.ts:34` com peso 2.5,
+`route-access.ts:93`, `ROLE_PRIO_ALL` em `tribe/[id].astro`, `ChapterDashboard.tsx:147`).
+
+`TeamSection.astro:291` já documenta o colapso e contorna lendo a **designation** para separar GP de
+Co-GP na página pública. Ou seja, o contorno já existe no código, mas por fora do eixo de autoridade.
+
+### Eixo 3: `members.designations` (array, gates de UI)
+
+| designation | pessoas |
+|---|---|
+| `co_gp` | 1 |
+| `deputy_manager` | 1 |
+
+E são **a mesma pessoa**, que carrega as duas ao mesmo tempo, com engajamento `volunteer/co_gp` e
+`operational_role='manager'`. Três nomes, uma pessoa, um mesmo cargo.
+
+⚠️ **Defeito colateral:** `deputy_manager` é consultado como designation em
+`GovernancePage.tsx:165`, `SealPanel.tsx:66`, `workspace.astro:503` e `navigation.config.ts:153`, mas
+**não está em `ALL_DESIGS` do editor de membro** (`MemberDetailIsland.tsx:27`, que lista `co_gp` e não
+lista `deputy_manager`). A designation que quatro portões consultam **não pode ser concedida pela UI de
+admin**. A única pessoa que a tem recebeu fora de banda.
+
+⚠️ **Deriva de rótulo:** a mesma chave `deputy_manager` aparece como `Deputy PM`
+(`admin/constants.ts:13`), `Vice-GP` (`MemberDetailIsland.tsx:8`), `Vice-Gerente`
+(`permissions.ts:344`) e **`Gerente Adjunto` (`certificates/pdf.ts:254`, que imprime em certificado)**.
+Quatro rótulos para uma chave, um deles em documento emitido.
+
+### Recomendação
+
+**`volunteer/co_gp` é o correto como engajamento**, porque é o que está seedado, vigente, e o que o
+trigger reconhece. Não porque conceda mais: concede exatamente o mesmo.
+
+**`deputy_manager` deveria ser consolidado ou aposentado nos três eixos**, hoje ele é:
+
+- engagement role: 19 combos seedados, 0 pessoas → porta aberta sem dono
+- operational_role: 0 pessoas, 4+ portões de UI o consultam → degrau inalcançável
+- designation: 1 pessoa, 4 portões o consultam, o editor de admin não sabe concedê-la → concessão fora
+  de banda
+
+Isto é pré-requisito do desenho de níveis do §3: **não dá para desenhar uma escada nova enquanto o
+degrau existente tem três estados contraditórios.** Entra como decisão 4 do §5, agora com o material
+para decidi-la.
