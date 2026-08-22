@@ -113,9 +113,10 @@ mecânica sugeriria:
   engajamento com `role IN ('leader','coordinator','manager','co_gp')` na iniciativa do board. **O papel
   `coordinator` escopado à iniciativa já é, hoje, o "braço direito" que o PM descreveu**, sem seed novo.
 
-Fica um achado de segurança levantado nesta wave que **não entra em repositório público** e foi
-reportado ao PM por fora, com medição e raio. Ele precisa ser decidido antes da Wave 3, porque toca o
-mesmo mecanismo de escopo que a camada tática vai usar.
+Fica um achado de autorização levantado nesta wave que **não entra em repositório público**. Ele foi
+arquivado como **security advisory privado do repositório** (draft), com mecanismo, prova, raio
+medido e correção candidata. Precisa ser decidido **antes da Wave 3**, porque toca o mesmo mecanismo de
+escopo que a camada tática vai usar.
 
 ---
 
