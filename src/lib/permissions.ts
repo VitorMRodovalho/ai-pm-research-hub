@@ -341,7 +341,7 @@ export const TIER_LABELS: Record<OperationalTier, { pt: string; en: string; es: 
 };
 
 export const DESIGNATION_LABELS: Record<Designation, { pt: string; en: string; es: string }> = {
-  deputy_manager: { pt: 'Vice-Gerente',         en: 'Deputy Manager',    es: 'Vice-Gerente' },
+  deputy_manager: { pt: 'Vice-GP',              en: 'Deputy PM',         es: 'Vice-GP' },
   sponsor:        { pt: 'Patrocinador',         en: 'Sponsor',           es: 'Patrocinador' },
   curator:        { pt: 'Curador',              en: 'Curator',           es: 'Curador' },
   comms_leader:   { pt: 'Líder de Comunicação', en: 'Comms Leader',     es: 'Líder de Comunicación' },

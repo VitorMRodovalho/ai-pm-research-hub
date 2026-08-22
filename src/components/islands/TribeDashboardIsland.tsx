@@ -29,7 +29,7 @@ const CHART_COLORS = ['#00799E', '#FF610F', '#4F17A8', '#10B981', '#F59E0B', '#E
 const ROLE_LABELS: Record<string, string> = {
   researcher: 'Pesquisador', tribe_leader: 'Líder de Tribo',
   communicator: 'Comunicador', facilitator: 'Facilitador',
-  guest: 'Convidado', manager: 'Gerente', deputy_manager: 'Vice-Gerente',
+  guest: 'Convidado', manager: 'Gerente', deputy_manager: 'Vice-GP',
 };
 
 export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDashboardProps) {
