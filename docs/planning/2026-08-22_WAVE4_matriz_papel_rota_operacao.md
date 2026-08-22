@@ -3,6 +3,10 @@
 > Medido ao vivo em **2026-08-22**. Nenhum seed proposto: o procedimento de 4 etapas rodou na Wave 0 e
 > a conclusão dela se mantém, mas **duas afirmações herdadas caíram na medição** e estão marcadas com
 > ⚠️. Repositório PÚBLICO: sem nome de pessoa.
+>
+> **Re-medido em 2026-08-22 (segunda passada).** Uma terceira afirmação caiu, e era da própria matriz:
+> a coluna do pesquisador estava errada para ata e presença. Ver §4-bis. O §7 foi reescrito com a
+> medição, e a decisão 1 dele está **fechada**.
 
 A pergunta do PM, literal: *"estas rotas de subir vídeo, agenda, ata, link de ata, link de reunião, MCP
 subir tarefas, responsáveis, data, atualizar informações no board, presenças... todos estes o líder de
@@ -98,6 +102,49 @@ Então um `volunteer/coordinator` numa tribo escreve no board **daquela** inicia
 `board_write_authority`) e **não tem `manage_event`** — logo, nada de ata, presença, evento ou ação de
 reunião. Ele é meio braço direito: cobre a metade de board e nenhuma da metade de reunião.
 
+## 4-bis. ⚠️ Correção: o portão das rotas de reunião não é a capacidade, e o pesquisador JÁ passa
+
+As linhas de reunião desta matriz foram derivadas da capacidade `manage_event`. Medido no corpo vivo,
+a maioria das RPCs de reunião **não pergunta pela capacidade**: pergunta por `_can_manage_event(p_event_id)`,
+que tem um caminho preservado da V3:
+
+```
+IF v_caller.operational_role = 'tribe_leader' AND v_event_tribe_id = v_caller.tribe_id THEN RETURN true;
+IF v_caller.operational_role = 'researcher'   AND v_event_tribe_id = v_caller.tribe_id THEN RETURN true;
+IF v_event.created_by = v_caller.id THEN RETURN true;
+```
+
+Chame-o de **Path Y**. Ele concede por `operational_role` e por tribo, **fora do catálogo de capacidades**.
+As RPCs de reunião se dividem em dois grupos, e a divisão é o corte real:
+
+| portão | RPCs | pesquisador da própria tribo |
+|---|---|---|
+| `_can_manage_event` (**tem Path Y**) | `mark_member_present`, `clear_member_attendance`, `admin_bulk_mark_attendance`, `seal_event_attendance`, `unseal_event_attendance`, `preview_seal_attendance`, `upsert_event_minutes`, `upsert_event_agenda`, `manage_action_items` | **passa** |
+| `_manage_event_scope_ok` (só capacidade, escopada) | `meeting_close`, `register_attendance_batch`, `create_action_item`, `resolve_action_item`, `update_event_instance`, `drop_event_instance`, `mark_member_excused`, `register_decision` | não passa |
+
+Logo **o pesquisador já lança presença e já escreve ata** na própria tribo. `upsert_event_minutes` tem
+inclusive uma janela explícita para ele: pode editar dentro de 72h do evento, e quem tem `manage_event`
+não tem essa trava.
+
+### A afordância existe e ninguém usa
+
+| superfície | GP | co-GP | líderes de tribo | pesquisadores |
+|---|---|---|---|---|
+| presença lançada por outrem (`marked_by`) | 101 linhas / 6 eventos | 132 / 9 | 50 / 10 eventos (5 pessoas de 13) | **0** |
+| ata (`minutes_posted_by`) | 23 eventos | 19 | 22 (5 pessoas) | **0** |
+
+São **55 pesquisadores ativos** com a permissão e **zero** uso nas duas superfícies. E a cobertura mostra
+onde a dor está: das **137 reuniões de tribo dos últimos 120 dias, 122 têm presença (89%) e 36 têm ata
+(26%)**; 15 não têm nenhuma das duas.
+
+📌 Isto instancia `reference-a-regra-ja-existe-na-rpc-e-a-ui-nao-a-chama` na direção inversa: a
+autoridade já existe no banco, e o que falta é superfície e prática. Também instancia
+`reference-zero-linhas-hoje-nao-e-ausencia-de-risco`: `clear_member_attendance` e
+`seal_event_attendance` estão no grupo do Path Y, então 55 pessoas podem limpar e selar presença da
+própria tribo, e isso toca o selo do #1710.
+
+---
+
 ## 5. O achado central: não existe UM modelo de autoridade para board
 
 A pergunta do PM pressupõe que dá para "limitar exclusão e alteração às tiers corretas". Medido, cada
@@ -132,32 +179,48 @@ repositório. Entra no inventário da wave de consistência.
 |---|---|---|---|---|
 | evento: criar, editar, apagar | ✔ | ✔ (própria) | ✖ | ✖ |
 | vídeo e gravação (`update_event`) | ✔ | ✔ (própria) | ✖ | ✖ |
-| ata: escrever e fechar | ✔ | ✔ (própria) | ✖ | ✖ |
-| ações da reunião | ✔ | ✔ (própria) | ✖ | ✖ |
+| ata: **escrever** | ✔ | ✔ (própria) | ✖ | **✔ (própria, 72h)** |
+| ata: **fechar** (`meeting_close`) | ✔ | ✔ (própria) | ✖ | ✖ |
+| ações da reunião | ✔ | ✔ (própria) | ✖ | ~ (`manage_action_items` sim; criar/resolver não) |
 | converter ação em card | ✔ | ✔ | ✖ | ✖ |
-| presença | ✔ | ✔ (própria) | ✖ | ✖ |
+| presença: marcar e limpar | ✔ | ✔ (própria) | ✖ | **✔ (própria)** |
+| presença: selar e dessellar | ✔ | ✔ (própria) | ✖ | **✔ (própria)** |
+| presença: lote e abonar | ✔ | ✔ (própria) | ✖ | ✖ |
 | bloco de agenda | ✔ | ✔ | ~ (`reserve_agenda_block`) | ~ (`reserve_agenda_block`) |
 | board: criar card | ✔ | ✔ | ✔ (própria) | ✔ (própria) |
 | board: editar card | ✔ | ✔ | ✔ | ✔ |
 | board: arquivar card ("delete") | ✔ | ✔ | ✔ | ✔ |
 | board: arquivar via admin | ✔ | ✔ (própria) | ✖ | ✖ |
 
-A linha que responde a pergunta do PM: **o pesquisador já cria, edita e arquiva card**, e **não toca em
-nada de reunião**. O corte hoje é exatamente entre `write_board` e `manage_event`.
+A linha que responde a pergunta do PM: **o pesquisador já cria, edita e arquiva card, e já escreve ata
+e lança presença na própria tribo**. O corte hoje não é entre `write_board` e `manage_event`: é entre as
+RPCs que passam por `_can_manage_event` (Path Y, e o pesquisador passa) e as que passam por
+`_manage_event_scope_ok` (só capacidade, e ele não passa). Ver §4-bis.
+
+⚠️ A versão anterior desta matriz dizia `✖` para o pesquisador em ata, ações e presença. Estava errada:
+foi derivada da capacidade seedada, e não do portão que as RPCs realmente chamam.
 
 ## 7. O que decidir
 
-1. **O "braço direito" precisa de `manage_event` escopado, ou só de board?** Se a dor é "manter a ordem
-   na tribo" no sentido de cards, ele **já pode** e não há nada a fazer. Se é lançar presença e escrever
-   ata quando o líder falta, então é `manage_event` escopado, e aí sim é papel novo.
-2. **Se for papel novo, ele nasce como `role` sob `kind='volunteer'`** (para herdar o escopo de
-   iniciativa da tribo), com `manage_event` + `write_board` em escopo `initiative`. Sugestão de nome:
-   `deputy_leader`. **Não usar `coordinator`**: já existe com outro significado e outro conjunto.
-3. **Restrição pedida ("exclusão e alteração para as tiers corretas"):** não há operação destrutiva de
-   card a restringir (§5). A restrição faz sentido em **evento** (`update_event` altera data, link e
-   gravação) e em **fechar ata** (`meeting_close`, que é o ato que congela o registro). Decidir se o
-   braço direito fecha ata ou só escreve.
-4. **Consistência dos portões de board** (§5): seis RPCs, seis portões diferentes. Vale unificar em
-   `board_write_authority` — mas é refactor, não permissão, e deve entrar como wave própria.
-5. **Expor os parâmetros de vídeo no `event_write`** (§3). Não é decisão de autoridade, é de escopo de
+1. ✅ **FECHADA em 2026-08-22: o "braço direito" não vira papel novo.** A pergunta pressupunha que o
+   pesquisador estivesse bloqueado. Ele não está: pelo Path Y (§4-bis) ele já lança presença e já
+   escreve ata na própria tribo, e **55 pesquisadores ativos nunca exerceram nem uma nem outra**. Criar
+   `volunteer/deputy_leader` com `manage_event` escopado concederia o que já existe, e o efeito
+   previsto é zero. A lacuna medida é de **cobertura de ata (26% das 137 reuniões)**, que é problema de
+   superfície e de prática, não de autoridade. **Nenhum seed proposto**, portanto o procedimento de 4
+   etapas do `V4_AUTHORITY_MODEL.md` não é acionado.
+2. ~~Se for papel novo, ele nasce como `role` sob `kind='volunteer'`.~~ Prejudicada pela decisão 1. Fica
+   registrado, para quem retomar: **não reaproveitar `coordinator`**, que já existe com outro
+   significado e outro conjunto (§4).
+3. **Restrição, e agora ela tem alvo.** Não há operação destrutiva de card a restringir (§5), mas há em
+   presença: `clear_member_attendance`, `seal_event_attendance` e `unseal_event_attendance` estão no
+   grupo do Path Y, logo os 55 pesquisadores podem limpar, selar e dessellar presença da própria tribo.
+   Isso alimenta o selo do #1710. **Decisão em aberto:** manter Path Y como está, ou tirar dele as três
+   RPCs de limpar/selar, deixando ata, agenda e marcar presença. É restrição, não concessão, e não
+   depende de seed nenhum.
+4. **Fechar ata (`meeting_close`) continua fora do Path Y** e exige a capacidade escopada. Nenhuma
+   mudança proposta; fica registrado que o corte já está onde a pergunta do PM sugeria colocá-lo.
+5. **Consistência dos portões de board** (§5): seis RPCs, seis portões diferentes. Vale unificar em
+   `board_write_authority`, mas é refactor, não permissão, e deve entrar como wave própria.
+6. **Expor os parâmetros de vídeo no `event_write`** (§3). Não é decisão de autoridade, é de escopo de
    ferramenta.

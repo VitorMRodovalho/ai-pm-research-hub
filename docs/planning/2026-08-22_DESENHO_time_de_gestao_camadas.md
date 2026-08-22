@@ -247,6 +247,14 @@ o resto é um `role` novo em escopo `initiative`, com escrita e sem operação d
 rastreabilidade que já existe (`registered_by` em presença, #1322). **Não é proposta ainda**, pelo
 motivo do §4.
 
+⚠️ **Superado em 2026-08-22, e a conclusão se inverteu.** O parágrafo acima raciocina sobre o degrau de
+*capacidades seedadas*, mas as RPCs de reunião não perguntam pela capacidade: perguntam por
+`_can_manage_event`, que concede a `operational_role='researcher'` na própria tribo. Medido: o
+pesquisador **já lança presença e já escreve ata** da própria tribo, e os **55 pesquisadores ativos
+nunca usaram nem uma nem outra** (0 linhas em `marked_by`, 0 em `minutes_posted_by`). O degrau novo
+concederia o que já existe. A decisão foi fechada como **"não vira papel novo"**; detalhe e medição em
+`2026-08-22_WAVE4_matriz_papel_rota_operacao.md` §4-bis e §7.
+
 ---
 
 ## 4. O que NÃO foi feito, de propósito
@@ -313,6 +321,11 @@ Consequência medida: `operational_role='manager'` tem **2 pessoas** (GP e co-GP
 engajamento `volunteer/deputy_manager`, que não existe. **É degrau inalcançável**, e mesmo assim é
 consultado por pelo menos quatro escadas de UI (`useBoardPermissions.ts:34` com peso 2.5,
 `route-access.ts:93`, `ROLE_PRIO_ALL` em `tribe/[id].astro`, `ChapterDashboard.tsx:147`).
+
+⚠️ **Re-medido em 2026-08-22, depois que a Wave 1 mergeou (#1933):** o degrau deixou de ser
+inalcançável. `operational_role` hoje tem **1 pessoa em `deputy_manager`** e **1 em `manager`**, não 2
+em `manager` e 0 em `deputy_manager`. O colapso descrito acima é o estado **anterior** à Wave 1; as
+quatro escadas de UI que consultam `deputy_manager` passaram a receber resposta.
 
 `TeamSection.astro:291` já documenta o colapso e contorna lendo a **designation** para separar GP de
 Co-GP na página pública. Ou seja, o contorno já existe no código, mas por fora do eixo de autoridade.
