@@ -96,6 +96,9 @@ export function scanStalePins(root, skip = new Set()) {
   const { newest, migrationFileCount } = buildNewestDefinitions(join(root, 'supabase/migrations'));
 
   let filesPinning = 0;
+  // Quantos dos que fixam chegam a escrever um nome de função na forma que este scanner enxerga.
+  // A diferença entre os dois é o PONTO CEGO declarado, e precisa ser medida em vez de estimada.
+  let filesAsserting = 0;
   const pairs = [];
   const guards = new Set();
 
@@ -111,6 +114,7 @@ export function scanStalePins(root, skip = new Set()) {
 
     ASSERT_RE.lastIndex = 0;
     const asserted = new Set([...src.matchAll(ASSERT_RE)].map((m) => m[1].toLowerCase()));
+    if (asserted.size > 0) filesAsserting += 1;
 
     for (const fn of asserted) {
       const def = newest.get(fn);
@@ -122,7 +126,7 @@ export function scanStalePins(root, skip = new Set()) {
   }
 
   pairs.sort((a, b) => pairKey(a.guard, a.fn).localeCompare(pairKey(b.guard, b.fn)));
-  return { filesPinning, pairs, guards, migrationFileCount, catalogSize: newest.size };
+  return { filesPinning, filesAsserting, pairs, guards, migrationFileCount, catalogSize: newest.size };
 }
 
 /** Lê a linha de base: uma entrada `guard|funcao` por linha, `#` é comentário. */

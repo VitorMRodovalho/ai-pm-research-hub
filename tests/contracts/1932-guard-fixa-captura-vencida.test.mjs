@@ -29,6 +29,16 @@
  * Fixar continua certo para "esta migration entregou X"; é errado para afirmar invariante
  * corrente de segurança, LGPD ou autoridade.
  *
+ * ⚠️ COBERTURA PARCIAL, MEDIDA — e escrita aqui porque um guard que se lê como completo sendo
+ * parcial é a própria classe de defeito que ele existe para pegar. O par (guard, função) só é
+ * visível quando o arquivo escreve o nome da função na forma `CREATE OR REPLACE FUNCTION
+ * public.X`. Em 22/08, dos **294** arquivos que fixam migration, **184** escrevem ao menos um
+ * nome nessa forma e **110 (37,4%) não escrevem nenhum** — afirmam sobre o texto fixado por outros
+ * caminhos (`assert.match(body, /can_by_member[\s\S]*view_pii/)`, contagem de policies, presença
+ * de GRANT). Esses 110 são invisíveis para este guard e podem estar fixados em captura vencida
+ * sem que nada acuse. Ampliar a extração é passo separado: casa com mais formas ao custo de falso
+ * positivo, e o valor de hoje é travar o crescimento nos 184 que dá para ver com precisão.
+ *
  * Offline (lê repo, não fala com banco). Refs #1932, #1910, #1931.
  */
 
@@ -119,6 +129,14 @@ test('#1932: o denominador não pode esvaziar (piso contra guard verde por vácu
     scan.catalogSize >= 800,
     `só ${scan.catalogSize} funções no catálogo (piso 800) — o cabeçalho CREATE OR REPLACE ` +
       'deixou de casar?',
+  );
+  // O denominador que este guard REALMENTE enxerga (184 em 22/08). Sem piso próprio, a extração
+  // de nomes podia colapsar sozinha: `filesPinning` seguiria em 294, nenhum par novo apareceria,
+  // e os quatro testes acima ficariam verdes medindo quase nada.
+  assert.ok(
+    scan.filesAsserting >= 120,
+    `só ${scan.filesAsserting} dos ${scan.filesPinning} arquivos que fixam migration escrevem um ` +
+      'nome de função na forma reconhecida (piso 120). A extração de nomes provavelmente colapsou.',
   );
 });
 

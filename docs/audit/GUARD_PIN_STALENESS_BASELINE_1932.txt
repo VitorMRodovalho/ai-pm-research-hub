@@ -15,6 +15,11 @@
 # para um guard proprio.
 #
 # Gerado em 2026-08-22. Pares: 172. Guards distintos: 102.
+#
+# COBERTURA PARCIAL, e medida: dos 294 arquivos que fixam migration, 184 escrevem ao menos um
+# nome na forma `CREATE OR REPLACE FUNCTION public.X` e 110 (37,4%) nao escrevem nenhum. Esses
+# 110 afirmam sobre o texto fixado por outros caminhos e sao INVISIVEIS para o guard: podem
+# estar fixados em captura vencida sem que nada acuse. Ampliar a extracao e passo separado.
 tests/contracts/1001-vep-rejection-divergent-bucket.test.mjs|get_vep_divergence_report
 tests/contracts/1022-exit-state-canonical-semantics.test.mjs|admin_offboard_member
 tests/contracts/1022-exit-state-canonical-semantics.test.mjs|validate_status_transition
