@@ -30,32 +30,46 @@ opinião.
 `meeting_actions` tem a rota `action='convert_to_card'`, que exige `board_id` e a capacidade
 `write_board`. Ela existe e não foi usada, porque não estava claro **para qual board** essas ações vão.
 
-### O board já existe, e é confidencial
+### O board do rito de liderança NÃO existe
 
-A pergunta do PM era "fico até pensando se eu não tinha que ter um board de gestão oculto aos demais,
-ou se já até existe". **Já existe.** Medido em `project_boards` com `initiative_id` sem tribo:
+⚠️ **Correção do PM, 22/08.** Uma primeira leitura minha concluiu que o board de gestão já existia, e
+estava errada. O board **"GP × Presidência - Governança do Núcleo"** (`confidential`, 25 itens) é
+**específico da reunião com a presidência do capítulo**, não do rito quinzenal de liderança. Os itens
+confirmam: numerados `[G1]` a `[G6]` e `[8]` a `[21]`, tratam de PM Day pedido pela presidência, backlog
+do SGPL, PI da presidência virar tribo, registro no INPI, posicionamento estratégico. É a pauta daquela
+relação.
 
-| board | visibilidade | itens | ativo |
+Varredura por board ativo com "lideran", "gest" ou "governan" no nome ou no `domain_key`:
+
+| board | escopo | visibilidade | itens |
 |---|---|---|---|
-| **GP × Presidência - Governança do Núcleo** | **`confidential`** | 25 | sim |
-| Hub de Comunicação | standard | 69 | sim |
-| CPMAI Prep Course - Design | standard | 36 | sim |
-| Publicações & Submissões PMI | standard | 32 | sim |
-| Kickoff Ciclo 4 + Onboarding dos Líderes | standard | 30 | sim |
+| GP × Presidência - Governança do Núcleo | relação com a presidência | `confidential` | 25 |
+| T7: Governança & Trustworthy AI | tribo 7, é o TEMA de pesquisa dela | standard | 19 |
+| T10: Governança Assistida | tribo 10, idem | standard | 9 |
+| PMI Global Summit - Governance and Community | submissão | standard | 7 |
 
-O mecanismo de ocultação é o do **ADR-0105 / #785**: `initiatives.visibility='confidential'` exclui
-board, eventos, artefatos e documentos do read-all de Tier 1+, deixando visível só para quem tem
-engajamento na iniciativa mais GP (`manage_platform`). O gate é `rls_can_see_initiative()`.
+**Nenhum é do rito de liderança.** A reunião quinzenal que reúne a coordenação e os líderes de tribo,
+com 14 edições já realizadas, **não tem board**. As 26 ações da #10 existem só em
+`meeting_action_items`, sem superfície de acompanhamento.
+
+O mecanismo de ocultação que o PM imaginou **existe** e está em uso no board da presidência: é o do
+**ADR-0105 / #785**, `initiatives.visibility='confidential'`, que tira board, eventos, artefatos e
+documentos do read-all de Tier 1+ e deixa visível só para quem tem engajamento mais GP
+(`manage_platform`). O gate é `rls_can_see_initiative()`. Ou seja: o padrão está provado, falta aplicá-lo
+a uma iniciativa nova para a liderança.
 
 ### O que decidir, e é decisão do PM
 
-1. As ações da liderança vão para o board confidencial existente, para um board novo de rito de
-   liderança, ou ficam só em `meeting_action_items`?
-2. **Nem toda ação é confidencial.** Das 26, a maioria é operação de tribo ("apresentar o artefato na
-   próxima reunião") e caberia no board da própria tribo, visível ao time. Uma minoria é sensível
-   (conversa individual sobre desempenho, afastamento). Se tudo for para o board confidencial, o líder
-   de tribo perde o acompanhamento do que é dele.
-3. Se houver split, ele precisa de **critério declarado**, senão vira julgamento caso a caso.
+1. Criar o board do rito de liderança? Se sim, sob iniciativa `confidential` como a da presidência, ou
+   `standard` visível aos líderes?
+2. **Nem toda ação da liderança é sensível.** Das 26, a maioria é operação de tribo ("apresentar o
+   artefato na próxima reunião", "confirmar a data do webinar") e caberia no board da própria tribo,
+   à vista do time que vai executar. Uma minoria é sensível (conversa individual sobre desempenho,
+   afastamento por questão familiar). Se tudo for para um board fechado, o líder perde acompanhamento
+   do que é dele; se tudo for aberto, expõe o que não deve.
+3. Se houver split, ele precisa de **critério declarado**, senão vira julgamento caso a caso. Uma opção
+   é o campo `kind` de `meeting_action_items` (`action` / `decision` / `followup` / `general`) virar o
+   roteador, em vez de inventar taxonomia nova.
 
 ### Itens da reunião que o PM citou e que NÃO viraram ação
 
