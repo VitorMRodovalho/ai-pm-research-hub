@@ -353,3 +353,73 @@ trigger reconhece. Não porque conceda mais: concede exatamente o mesmo.
 Isto é pré-requisito do desenho de níveis do §3: **não dá para desenhar uma escada nova enquanto o
 degrau existente tem três estados contraditórios.** Entra como decisão 4 do §5, agora com o material
 para decidi-la.
+
+---
+
+## 7. Estado da lane (handoff, 2026-08-22)
+
+### Entregue e commitado, NÃO mergeado
+
+| commit | o que é | carrega DDL? |
+|---|---|---|
+| `a912fce8` | desenho em camadas (este documento, §1-§5) | não |
+| `bd8945cf` | anexo §6: `co_gp` × `deputy_manager` em três eixos | não |
+| `a99f96b6` | Wave 0: auditoria de 4 etapas | não |
+| `adb5eafb` | ponteiro para o advisory privado | não |
+| `9e15d73c` | **Wave 1**: ativa o degrau Vice-GP + consolidação | **SIM** (2 migrations) |
+| `3b00bf95` | **Wave 2**: interesse deixa de ser renderizado como vínculo | não |
+
+⚠️ **`9e15d73c` aplicou DDL no banco compartilhado** (migrations `20260822032921` e
+`20260822033913`). Enquanto esta lane não mergear, as outras ficam vermelhas: o banco é um só e as
+funções vivas já mudaram. **Esta PR destrava, não trava.** `9e15d73c` é fronteira limpa se a main
+quiser soltar só o DDL.
+
+### Fila
+
+| wave | estado | bloqueio |
+|---|---|---|
+| 0 · auditoria de 4 etapas | ✅ concluída | — |
+| 1 · degrau Vice-GP + consolidação | ✅ concluída | aguarda merge |
+| 2 · aba Membros (Bloco C) | ✅ concluída | — |
+| 3 · iniciativa de gestão + board + níveis | ⛔ bloqueada | decisão do advisory privado do repositório |
+| 4 · matriz papel × rota (Bloco B) | 🟡 pronta para começar | nenhum; Wave 0 já deu a base |
+| 5 · manual de governança | ⛔ | depende de 3 e 4 |
+
+### Por que a Wave 3 depende do advisory
+
+A camada tática seria construída sobre `scope='initiative'`, que é exatamente o mecanismo que o
+advisory mostra não escopando quando o chamador não passa o recurso. Criar a iniciativa de gestão
+antes de decidir isso significa consertar depois com mais gente dentro.
+
+### O que a Wave 4 já tem pronto (não re-derivar)
+
+Da Wave 0, medido em 2026-08-21:
+
+- **`board_write_authority` tem 7 ramos alternativos** OR'd, e um deles é engajamento na iniciativa do
+  board com `role IN ('leader','coordinator','manager','co_gp')`. **O papel `coordinator` escopado à
+  iniciativa já é o "braço direito"** que o PM descreveu. Não precisa de action nova.
+- `write_board` em escopo `initiative` tem **16 combos**, inclusive `volunteer/researcher`. Escrever em
+  board não é privilégio de liderança hoje.
+- `manage_member` escopado exclui `volunteer/leader` **de propósito**: líder de tribo administra
+  evento, board e iniciativa da própria tribo e não administra quem entra e sai dela.
+- Portanto o trabalho da Wave 4 é de **restrição** (o que o braço direito não pode apagar nem alterar),
+  não de concessão.
+
+### Decisões do PM já tomadas nesta lane
+
+1. **Direção A** (2026-08-21): o co-GP é Vice-GP, não GP pleno. Executada na Wave 1.
+2. **Bloco C** (2026-08-21): mesclar as seleções em bloco separado e rotulado, com janela. Executada na
+   Wave 2.
+3. **Advisory** (2026-08-21): arquivar como security advisory privado antes de corrigir. Feito; a
+   correção **não** está autorizada.
+
+### Pendências que não são de wave
+
+- `certificates/pdf.ts` segue com `Gerente Adjunto` para a chave `deputy_manager`, de propósito:
+  certificado é documento formal e pede o termo por extenso, não a sigla. **A redação correta é decisão
+  do PM.**
+- `volunteer/deputy_manager` mantém **19 combos seedados e 0 pessoas**. Não foi aposentado porque
+  retirar os seeds sem retirar o ramo do trigger criaria a armadilha inversa (papel que aparece e não
+  concede nada). Decidir junto com o desenho de níveis da Wave 3.
+- O bloco de interessados da Wave 2 **renderiza vazio hoje** em toda tribo: toda seleção fora do roster
+  é de março e cai fora da janela do ciclo. Ele existe para a próxima rodada de seleção.
