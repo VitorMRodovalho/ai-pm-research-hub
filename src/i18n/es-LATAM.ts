@@ -3492,6 +3492,8 @@ const esLATAM: Record<string, string> = {
   'tribe.meetingSchedulePlaceholder': 'Ej: Jueves, 19h',
   'tribe.meetingScheduleSaved': 'Horario actualizado',
   'tribe.noMembers': 'Ningún miembro asignado a esta tribu.',
+  'tribe.interested.title': 'Interesados en esta ronda',
+  'tribe.interested.hint': 'Señalaron interés en esta tribu en la ronda actual. Aún no tienen vínculo.',
   'tribe.noDeliverables': 'Ningún entregable registrado para este ciclo.',
   'tribe.noResources': 'Ningún recurso vinculado a esta tribu.',
   'tribe.addDeliverable': '➕ Agregar Entregable',

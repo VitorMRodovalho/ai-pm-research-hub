@@ -34,6 +34,8 @@ const TRIBE_I18N = {
   meetingSchedulePlaceholder: t('tribe.meetingSchedulePlaceholder', lang),
   meetingScheduleSaved: t('tribe.meetingScheduleSaved', lang),
   noMembers: t('tribe.noMembers', lang),
+  interestedTitle: t('tribe.interested.title', lang),
+  interestedHint: t('tribe.interested.hint', lang),
   noDeliverables: t('tribe.noDeliverables', lang),
   noResources: t('tribe.noResources', lang),
   addDeliverable: t('tribe.addDeliverable', lang),
@@ -539,6 +541,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
   }
 
   let membersMap: Map<string, any> = new Map();
+  // Wave 2 (Bloco C): quem tem VINCULO com a tribo (roster) e quem apenas
+  // SINALIZOU interesse nesta rodada sao coisas diferentes. Ate 2026-08-22 as
+  // duas listas eram somadas e renderizadas como se fossem a mesma.
+  let rosterIds: Set<string> = new Set();
+  let interestedMembers: any[] = [];
   let _canonicalMemberCount: number | null = null; // M4-D (#419): canonical roster member_count — single source for the header badge
   let canEdit = false;
   let tribeData: any = null;
@@ -1292,16 +1299,28 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     // Leader-only join-request queue sits above the roster (mutually useful: approving fills the roster).
     const requestsHtml = await tribeRequestsSectionHtml();
 
+    // Wave 2 (Bloco C): interesse NAO e vinculo. Quem apenas sinalizou a tribo
+    // nesta rodada aparece em bloco proprio e rotulado, abaixo do roster e com a
+    // mesma marcacao do bloco de Observadores -- nunca como card de membro.
+    const interestedHtml = interestedMembers.length ? `
+      <div class="mt-6 pt-4 border-t border-[var(--border-subtle)]">
+        <h3 class="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider mb-1">🙋 ${escapeHtml(I18N.interestedTitle || 'Interessados nesta rodada')} (${interestedMembers.length})</h3>
+        <p class="text-[11px] text-[var(--text-muted)] mb-3">${escapeHtml(I18N.interestedHint || 'Sinalizaram interesse nesta tribo na rodada atual. Ainda nao possuem vinculo.')}</p>
+        <div class="flex flex-wrap gap-3">${interestedMembers.map((m: any) => `<div class="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)]">
+          <span class="text-xs text-[var(--text-secondary)]">${escapeHtml(m.name || '')}</span>
+        </div>`).join('')}</div>
+      </div>` : '';
+
     if (!members.length) {
       el.innerHTML = requestsHtml + `
         <div class="text-center py-14">
           <div class="text-4xl mb-3">👥</div>
           <div class="font-semibold text-[var(--text-secondary)] text-sm">${I18N.noMembers}</div>
-        </div>`;
+        </div>` + interestedHtml;
       return;
     }
 
-    let html = requestsHtml + `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>`;
+    let html = requestsHtml + `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">${members.map(memberCardHtml).join('')}</div>` + interestedHtml;
 
     // Fetch observers for this tribe
     try {
@@ -2066,7 +2085,10 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           const parsed = typeof cd === 'string' ? JSON.parse(cd) : cd;
           if (parsed && typeof parsed === 'object') {
             contactData = parsed;
-            const members = Array.from(membersMap.values());
+            // Wave 2: membersMap e a uniao (ver comentario no bloco de merge); a
+            // grade renderiza SO o roster, senao o re-render por contactData
+            // reintroduziria os interessados como se fossem membros.
+            const members = Array.from(membersMap.values()).filter((m: any) => rosterIds.has(m.id));
             // p164 Tier C: expand sort priority — manager/deputy_manager
             // (engagement-derived) should appear at the top alongside tribe_leader.
             // Order: manager (0) > deputy_manager (1) > tribe_leader (2) >
@@ -2127,7 +2149,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
       // Load all tribe data in parallel
       const activeCycleCode = getActiveCycleCode();
-      const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes] = await Promise.all([
+      const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes, cycleRes] = await Promise.all([
         // WS-A1: explicit columns (NOT select('*')) so the anon key never receives
         // whatsapp_url/drive_url. The group link is served only via get_tribe_group_link.
         sb.from('tribes').select('id, name, quadrant, quadrant_name, leader_member_id, meeting_schedule, meeting_time_start, meeting_time_end, miro_url, meeting_link, notes, updated_at, updated_by, is_active, workstream_type, legacy_board_url, video_url, video_duration, name_i18n, quadrant_name_i18n, organization_id').eq('id', TRIBE_ID).single(),
@@ -2144,7 +2166,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               .eq('tribe_id', TRIBE_ID)
               .eq('current_cycle_active', true)
               .eq('is_active', true),
-        sb.from('tribe_selections').select('member_id').eq('tribe_id', TRIBE_ID),
+        sb.from('tribe_selections').select('member_id, selected_at').eq('tribe_id', TRIBE_ID),
         activeCycleCode
           ? (INITIATIVE_ID
               ? sb.rpc('list_initiative_deliverables', { p_initiative_id: INITIATIVE_ID, p_cycle_code: activeCycleCode })
@@ -2156,6 +2178,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         INITIATIVE_ID
           ? sb.from('publication_submissions').select('id, title').eq('status', 'published').eq('initiative_id', INITIATIVE_ID).order('title')
           : sb.from('publication_submissions').select('id, title').eq('status', 'published').order('title'),
+        // Wave 2: a janela do bloco de interessados. `cycles` tem SELECT publico
+        // (policy cycles_read_all), entao o cliente pode ler cycle_start.
+        sb.from('cycles').select('cycle_start').eq('is_current', true).maybeSingle(),
       ]);
 
       publishedArtifacts = artifactsRes.data || [];
@@ -2217,24 +2242,43 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         }
       } catch (bannerErr) { console.warn('Cross-tribe banner error:', bannerErr); }
 
-      // Merge members: direct (tribe_id set) + selections
+      // Wave 2 (Bloco C, decisao do PM 2026-08-22): o roster e as SELECOES eram
+      // somados num unico array e renderizados juntos como "membros". Sao coisas
+      // diferentes. `tribe_selections` e tabela de INTERESSE ("escolhi esta tribo",
+      // escrita pela home em TribesSection.astro): 4 colunas, sem ciclo, sem status
+      // e sem saida, e nunca foi limpa.
+      //
+      // O filtro de `current_cycle_active` NAO protegia, porque ele mede a atividade
+      // da PESSOA e nao o vinculo dela com ESTA tribo. Medido 2026-08-22: 6 pessoas
+      // apareciam em tribo alheia (3 na tribo 2, 1 na 3, 2 na 5), todas com selecao
+      // de marco/2026 e vinculo hoje em outra tribo. O roster, sozinho, batia com o
+      // vinculo vigente em 12 de 12 tribos -- o defeito era a soma, nao a fonte.
+      //
+      // Correcao: o roster segue sendo a lista de membros; o interesse vira bloco
+      // proprio e rotulado, limitado a RODADA CORRENTE (selected_at >= cycle_start
+      // do ciclo is_current). A janela e obrigatoria: nada apaga linha de
+      // `tribe_selections` (nao ha policy de DELETE), entao sem ela a lista so
+      // cresce. Medido: a janela elimina as 6 e nenhuma sobrevive.
       const directIds = new Set(allDirectMembers.map((m: any) => m.id));
+      rosterIds = directIds;
+      const cycleStart: string | null = cycleRes?.data?.cycle_start || null;
       const selectionMemberIds = (selectionsRes.data || [])
+        .filter((s: any) => !cycleStart || (s.selected_at && String(s.selected_at).slice(0, 10) >= cycleStart))
         .map((s: any) => s.member_id)
         .filter((id: string) => !directIds.has(id));
 
-      let selectionMembers: any[] = [];
+      interestedMembers = [];
       if (selectionMemberIds.length > 0) {
         const { data } = await sb.from('public_members')
           .select('id, name, photo_url, chapter, operational_role, designations, tribe_id, share_whatsapp, current_cycle_active, is_active')
           .in('id', selectionMemberIds)
           .eq('current_cycle_active', true)
           .eq('is_active', true);
-        selectionMembers = data || [];
+        interestedMembers = data || [];
       }
 
-      const allMembers = [...allDirectMembers, ...selectionMembers];
-      if (!canSeeInactiveTribes(currentMember) && tribeData.is_active !== true && allMembers.length === 0 && !isAssignedToCurrentTribe(currentMember)) {
+      const allMembers = [...allDirectMembers];
+      if (!canSeeInactiveTribes(currentMember) && tribeData.is_active !== true && (allMembers.length + interestedMembers.length) === 0 && !isAssignedToCurrentTribe(currentMember)) {
         showDenied('Esta tribo não está ativa no ciclo atual para exploração geral.');
         return;
       }
@@ -2252,8 +2296,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         return (a.name || '').localeCompare(b.name || '');
       });
 
-      // Build members map for deliverable assignee lookup
+      // Build members map for deliverable assignee lookup.
+      // Wave 2: a UNIAO (roster + interessados) fica aqui de proposito -- este map
+      // resolve NOME de responsavel de entregavel, e um card atribuido a quem nao
+      // esta no roster perderia o nome se a lista fosse so o roster. Quem RENDERIZA
+      // a grade de membros e `allMembers`/`rosterIds`, nunca este map cru.
       allMembers.forEach((m: any) => membersMap.set(m.id, m));
+      interestedMembers.forEach((m: any) => membersMap.set(m.id, m));
 
       // Load contact data for leaders/admins (LGPD-gated RPC)
       if (canSeeTribeContacts()) { // #161: V4 scoped view_pii (was global board.edit_tribe_items)

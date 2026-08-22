@@ -3498,6 +3498,8 @@ const ptBR: Record<string, string> = {
   'tribe.meetingSchedulePlaceholder': 'Ex: Quintas, 19h',
   'tribe.meetingScheduleSaved': 'Horário atualizado',
   'tribe.noMembers': 'Nenhum membro alocado nesta tribo.',
+  'tribe.interested.title': 'Interessados nesta rodada',
+  'tribe.interested.hint': 'Sinalizaram interesse nesta tribo na rodada atual. Ainda não possuem vínculo.',
   'tribe.noDeliverables': 'Nenhuma entrega cadastrada para este ciclo.',
   'tribe.noResources': 'Nenhum recurso vinculado a esta tribo.',
   'tribe.addDeliverable': '➕ Adicionar Entrega',
