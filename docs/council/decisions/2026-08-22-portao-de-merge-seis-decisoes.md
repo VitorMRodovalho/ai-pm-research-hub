@@ -18,7 +18,7 @@ NAO-fazer, e esta registrada como tal de proposito.
 | **A3** | `validate` pos-merge: fazer o **deploy depender dele** | **fazer (opcao A)** |
 | **A4** | migrar branch protection legada para ruleset | **fazer** |
 | **A5** | merge queue e branch efemera do Supabase | **NAO adotar** |
-| **C1** | #1586, superficie autenticada para despacho | **priorizar** |
+| **C1** | #1586, superficie autenticada para despacho | **premissa CAIU, ver abaixo** |
 
 ### O racional de cada uma, resumido
 
@@ -48,12 +48,34 @@ ouvir "a fila de merge trava", e as duas falham contra as causas medidas:
 - **branch efemera do Supabase** nasce SEM DADO, e os testes que importam afirmam sobre dado real.
   Contra banco vazio eles passariam por vacuo, trocando vermelho legitimo por verde falso.
 
-**C1 (produto, nao CI).** Enquanto a unica porta para despachar convite for o `service_role`, toda
-decisao manual do PM vira linha sem ator e entra no allowlist do #1636 para a fila voltar a andar.
-A lista foi de 1 para 6 entradas em dois dias, e 5 das 6 sao a mesma operacao. Registro honesto: o
-**gate funcionou** nas cinco (nenhum token emitido, nenhum e-mail enviado). O que cresceu nao e
-divida tecnica, e o custo visivel de uma funcionalidade que falta. O allowlist e termometro, nao
-sujeira a limpar.
+**C1 — a premissa CAIU na verificacao, e a decisao aprovada fica sem objeto.**
+
+A auditoria e o docket afirmaram que a superficie autenticada NAO existia ("enquanto a unica porta
+for o `service_role`..."). **Falso, e medido em 22/08:** o **#1586 esta FECHADO desde 17/08**, com a
+superficie viva e verificada: `interview_manage` com `action='rescue_unbooked'` mapeia para
+`selection_rescue_unbooked_invite` e **preserva o AUTOR** no `admin_audit_log`. A ressalva que o
+proprio fechamento registrou (o conector cacheava o schema antigo com 4 acoes) tambem nao vale
+mais: o enum hoje expoe 8 acoes, `rescue_unbooked` entre elas.
+
+O que a medicao mostra, cruzando as 6 entradas do allowlist com o log de auditoria:
+
+| entrada | data | linhas de auditoria em +/-30s |
+|---|---|---|
+| 1a | 14/08, ANTES da superficie | **3** (foi auditada) |
+| 2a a 6a | 20 e 21/08, DEPOIS | **0, 0, 0, 0, 0** |
+
+As cinco tentativas posteriores a entrega passaram por `service_role` cru, ignorando o caminho
+autenticado que existia para elas. Logo o problema **nao e ausencia de tela**, e a tela existente
+nao ser usada no momento da necessidade.
+
+**A acao aprovada ("priorizar #1586") fica sem objeto.** O substituto plausivel e muito mais barato
+(fazer o caminho certo aparecer na hora: mensagem de recusa do gate apontando a acao correta,
+runbook, ou ambos), mas **nao foi decidido** e nao esta sendo assumido aqui.
+
+⚠️ A premissa errada esta propagada em pelo menos tres lugares alem deste: a secao C1 da auditoria,
+os comentarios do allowlist em `tests/contracts/1636-suite-nao-toca-candidatura-real.test.mjs`
+("enquanto `selection_rescue_unbooked_invite` nao tiver superficie (#1586)"), e o docket de
+decisao. Corrigir os tres e trabalho pendente.
 
 ### Sub-decisao dentro da A2 (fronteira)
 
@@ -77,5 +99,5 @@ desaparece. Verificado com defeito injetado, dos dois lados.
 - **B1** (conserto mecanico, fora do bloco de decisao) -> PR #1913, mergeada em `8309ab94`
 - **A1, A3, A4** -> a executar, uma de cada vez; A1 depende da A2 ter landado
 - **A5** -> nada a executar; esta decisao E o registro
-- **C1** -> #1586, roadmap
+- **C1** -> sem objeto: #1586 entregue em 17/08. Acao substituta a decidir.
 - Padrao sistemico -> #1910
