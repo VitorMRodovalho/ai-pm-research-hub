@@ -14,26 +14,28 @@
  *
  * NOTE: #729 does NOT close on this migration — the read branch is only reachable once a revocation can
  * be RECORDED (self-service #570 at go-live, or the pending admin RPC gp_record_image_consent_revocation).
+ *
+ * ── #1932, lote PII/LGPD ────────────────────────────────────────────────────────────────────────
+ * Este guard fixava a migration 20260805000314, e `get_member_comms_card` foi redefinida depois em
+ * 20260805000447 (papeis confidenciais, #1383). Todas as afirmacoes daqui sao de INVARIANTE
+ * CORRENTE — "o portao de comunicacao honra revogacao de imagem e NAO usa consent_status" — entao
+ * o arquivo inteiro passa a resolver a captura vigente. Fixar so provaria que a 314 entregou.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const MIGRATION = join(
-  __dirname,
-  '../../supabase/migrations/20260805000314_729_comms_clearance_honor_image_consent_revocation.sql',
-);
-// Defensive read (LL #684): a missing file becomes a clean assertion, not an ENOENT module crash.
-const sql = existsSync(MIGRATION) ? readFileSync(MIGRATION, 'utf8') : '';
-// Executable code only (strip `-- ...` comment lines) — the header/notes discuss consent_status/the
-// #570 model; the gate must not actually USE consent_status (p697 pattern, line 58 there).
-const code = sql.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n');
+// Captura VIGENTE (#1932): a definicao mais nova de get_member_comms_card, nao um arquivo fixado.
+// O helper lanca se a funcao sumir — importa porque metade das afirmacoes aqui e NEGATIVA
+// (`doesNotMatch`), e negativa sobre string vazia e verde para sempre.
+const cap = latestFunctionCapture(process.cwd(), 'get_member_comms_card');
+const sql = cap.block;
+// Codigo executavel apenas: o preambulo discute consent_status e o modelo #570, e o portao nao pode
+// USAR consent_status (padrao p697). Mascarar preserva offsets.
+const code = maskLineComments(sql);
 
 test('#729 (a) migration re-anchors get_member_comms_card as SECDEF with pinned search_path', () => {
-  assert.ok(sql, `migration file missing at expected path: ${MIGRATION}`);
+  assert.ok(sql, `captura vigente vazia (arquivo ${cap.file})`);
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.get_member_comms_card\(/);
   assert.match(sql, /SECURITY DEFINER/);
   assert.match(sql, /SET search_path TO 'public', 'pg_temp'/);

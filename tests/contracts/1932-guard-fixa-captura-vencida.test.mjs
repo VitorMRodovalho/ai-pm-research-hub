@@ -24,7 +24,7 @@
  * nova, um renomear de diretório) para o conjunto medido virar zero e o teste ficar verde para
  * sempre. `[] == []` é verde. Os pisos transformam esse esvaziamento em reprovação.
  *
- * NÃO diz que os 172 pares são 172 buracos. Diz que são 172 pontos sem contato com a definição
+ * NÃO diz que os 174 pares são 174 buracos. Diz que são 174 pontos sem contato com a definição
  * vigente; cada um só é buraco se a migration posterior mexeu justamente na propriedade afirmada.
  * Fixar continua certo para "esta migration entregou X"; é errado para afirmar invariante
  * corrente de segurança, LGPD ou autoridade.
@@ -32,21 +32,29 @@
  * ⚠️ COBERTURA PARCIAL, MEDIDA — e escrita aqui porque um guard que se lê como completo sendo
  * parcial é a própria classe de defeito que ele existe para pegar. O par (guard, função) só é
  * visível quando o arquivo escreve o nome da função na forma `CREATE OR REPLACE FUNCTION
- * public.X`. Em 22/08, dos **294** arquivos que fixam migration, **184** escrevem ao menos um
- * nome nessa forma e **110 (37,4%) não escrevem nenhum** — afirmam sobre o texto fixado por outros
- * caminhos (`assert.match(body, /can_by_member[\s\S]*view_pii/)`, contagem de policies, presença
- * de GRANT). Esses 110 são invisíveis para este guard e podem estar fixados em captura vencida
- * sem que nada acuse. Ampliar a extração é passo separado: casa com mais formas ao custo de falso
- * positivo, e o valor de hoje é travar o crescimento nos 184 que dá para ver com precisão.
+ * public.X`. Em 22/08, dos **334** arquivos que fixam migration, **201** escrevem ao menos um nome
+ * nessa forma e **133 não escrevem nenhum** — afirmam sobre o texto fixado por outros caminhos
+ * (match direto de trecho, contagem de policies, presença de GRANT). Esses são invisíveis aqui.
+ *
+ * E o ponto cego existe também POR FUNÇÃO dentro de arquivo visível: `export_my_data` estava
+ * vencida no guard `568` (fixada em 05/08, vigente em 20260808000100) e o scanner não a via,
+ * porque aquele arquivo afirma trechos do corpo sem nunca escrever o cabeçalho `CREATE OR REPLACE
+ * FUNCTION public.export_my_data`. Só apareceu na revisão manual do lote de PII/LGPD.
  *
  * Offline (lê repo, não fala com banco). Refs #1932, #1910, #1931.
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { scanStalePins, parseBaseline, pairKey } from '../helpers/guard-pin-staleness.mjs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import {
+  latestFunctionCapture,
+  pairKey,
+  parseBaseline,
+  scanStalePins,
+} from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const BASELINE_PATH = 'docs/audit/GUARD_PIN_STALENESS_BASELINE_1932.txt';
@@ -140,17 +148,63 @@ test('#1932: o denominador não pode esvaziar (piso contra guard verde por vácu
   );
 });
 
-test('#1932: a instância provada continua detectável (controle positivo)', () => {
-  // Sem um controle positivo, os quatro testes acima passam tanto porque não há dívida nova
-  // quanto porque o scanner deixou de achar qualquer coisa. Este ancora o guard num caso que
-  // sabemos ser verdadeiro, e reprova se a detecção morrer.
-  const alvo = pairKey(
-    'tests/contracts/568-consent-records-lgpd-read.test.mjs',
-    'admin_list_member_consents',
-  );
-  assert.ok(
-    currentSet.has(alvo),
-    'a instância provada do #1932 deixou de ser detectada. Ou o guard 568 foi corrigido ' +
-      `(então remova a entrada de ${BASELINE_PATH} e este controle), ou o scanner quebrou.`,
+test('#1932: controle positivo sintético — a detecção funciona nos DOIS sentidos', () => {
+  // O controle anterior era ancorado na instância provada (`568` / `admin_list_member_consents`).
+  // Ela foi CONSERTADA no lote de PII/LGPD, e um controle que morre quando o defeito é corrigido
+  // não é controle: mede dívida restante, não capacidade de detectar. Este roda sobre um fixture
+  // sintético, então continua valendo mesmo que um dia não sobre dívida nenhuma no repo.
+  const base = mkdtempSync(join(tmpdir(), 'g1932-'));
+  try {
+    const migs = join(base, 'migrations');
+    const tests = join(base, 'tests');
+    mkdirSync(migs);
+    mkdirSync(tests);
+
+    const corpo = (n) =>
+      `CREATE OR REPLACE FUNCTION public.fixture_fn()\nRETURNS void LANGUAGE plpgsql AS $$\nBEGIN\n  -- v${n}\nEND;\n$$;\n`;
+    writeFileSync(join(migs, '20260101000000_antiga.sql'), corpo(1));
+    writeFileSync(join(migs, '20260202000000_nova.sql'), corpo(2));
+
+    // (a) guard que fixa a ANTIGA e afirma a função: tem de ser detectado
+    writeFileSync(
+      join(tests, 'vencido.test.mjs'),
+      `const M = 'supabase/migrations/20260101000000_antiga.sql';\n` +
+        `assert.match(body, /CREATE OR REPLACE FUNCTION public\\.fixture_fn/);\n`,
+    );
+    let r = scanStalePins(base, new Set(), { testsDir: tests, migrationsDir: migs });
+    assert.equal(r.pairs.length, 1, 'guard fixado na captura vencida tem de ser detectado');
+    assert.equal(r.pairs[0].fn, 'fixture_fn');
+    assert.equal(r.pairs[0].newestVersion, '20260202000000');
+
+    // (b) o MESMO guard fixando a captura mais nova: não pode ser detectado (senão o guard acusa
+    //     todo mundo e a linha de base vira ruído)
+    writeFileSync(
+      join(tests, 'vencido.test.mjs'),
+      `const M = 'supabase/migrations/20260202000000_nova.sql';\n` +
+        `assert.match(body, /CREATE OR REPLACE FUNCTION public\\.fixture_fn/);\n`,
+    );
+    r = scanStalePins(base, new Set(), { testsDir: tests, migrationsDir: migs });
+    assert.equal(r.pairs.length, 0, 'guard que aponta para a captura vigente não é dívida');
+
+    // (c) resolvido por `latestFunctionCapture`: também não é dívida, mesmo fixando a antiga
+    writeFileSync(
+      join(tests, 'vencido.test.mjs'),
+      `const M = 'supabase/migrations/20260101000000_antiga.sql';\n` +
+        `const cap = latestFunctionCapture(ROOT, 'fixture_fn');\n` +
+        `assert.match(cap.block, /CREATE OR REPLACE FUNCTION public\\.fixture_fn/);\n`,
+    );
+    r = scanStalePins(base, new Set(), { testsDir: tests, migrationsDir: migs });
+    assert.equal(r.pairs.length, 0, 'guard convertido para a captura vigente sai da dívida sozinho');
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
+});
+
+test('#1932: latestFunctionCapture LANÇA em vez de devolver vazio', () => {
+  // Vazio seria pior que erro: `doesNotMatch('', /vaza_hash/)` é verde para sempre, e é essa a
+  // forma das afirmações de PII que passaram a depender deste helper.
+  assert.throws(
+    () => latestFunctionCapture(ROOT, 'funcao_que_nenhuma_migration_define'),
+    /nenhuma migration define/,
   );
 });

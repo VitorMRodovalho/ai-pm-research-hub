@@ -1,34 +1,38 @@
 # Linha de base do #1932 - guards que fixam uma migration VENCIDA.
 #
-# Cada linha e um par (arquivo de guard | funcao) em que o guard NAO fixa a migration que
-# carrega a definicao mais nova daquela funcao. O guard afirma, portanto, sobre um corpo que
-# a producao pode nao executar mais - e segue verde de qualquer jeito.
+# Cada linha e um par (arquivo de guard | funcao) em que o guard NAO fixa a migration que carrega
+# a definicao mais nova daquela funcao. O guard afirma sobre um corpo que a producao pode nao
+# executar mais - e segue verde de qualquer jeito.
 #
-# ESTA LISTA SO ENCOLHE. `tests/contracts/1932-guard-fixa-captura-vencida.test.mjs` reprova
-# nos DOIS sentidos:
-#   - par novo fora da lista        -> divida nova, conserte o guard (nao adicione aqui)
-#   - entrada que ja nao esta velha -> desculpa vencida, REMOVA a linha
+# ESTA LISTA SO ENCOLHE. tests/contracts/1932-guard-fixa-captura-vencida.test.mjs reprova nos DOIS
+# sentidos: par novo fora da lista (divida nova, conserte o guard) e entrada que ja nao esta velha
+# (desculpa vencida, remova a linha).
 #
-# Consertar um par significa: fazer o guard ler a captura mais nova (helper de resolucao), ou
-# afirmar contra o `prosrc` vivo, ou - se o guard existe para provar entrega historica e nao
-# invariante corrente - reescrever a mensagem para dizer isso e mover a afirmacao de invariante
-# para um guard proprio.
+# CONSERTAR = fazer o guard chamar latestFunctionCapture(ROOT, "nome") para aquela funcao. O
+# scanner reconhece a chamada e o par sai daqui sozinho. Se o guard existe para provar ENTREGA
+# HISTORICA e nao invariante corrente, o conserto e outro: reescrever a mensagem para dizer isso.
 #
-# Gerado em 2026-08-22. Pares: 172. Guards distintos: 102.
+# Regenerado em 2026-08-22, depois do lote de PII/LGPD. Pares: 174. Guards: 104.
+# Movimento nesta volta: -13 / +15.
+#   - as 13 que sairam: os 7 pares de PII/LGPD, parte convertida para a captura vigente e parte
+#     que era FALSO POSITIVO - nome citado so em comentario JS, ou dentro de assert.doesNotMatch,
+#     que afirma AUSENCIA e e o oposto de depender da definicao.
+#   - as 15 que entraram: divida REAL que o scanner nao via. O reconhecimento de migration fixada
+#     passou a cobrir a forma partida - resolve(MIGRATIONS_DIR, "<versao>_x.sql") - e com ela os
+#     arquivos que fixam migration foram de 294 para 334.
 #
-# COBERTURA PARCIAL, e medida: dos 294 arquivos que fixam migration, 184 escrevem ao menos um
-# nome na forma `CREATE OR REPLACE FUNCTION public.X` e 110 (37,4%) nao escrevem nenhum. Esses
-# 110 afirmam sobre o texto fixado por outros caminhos e sao INVISIVEIS para o guard: podem
-# estar fixados em captura vencida sem que nada acuse. Ampliar a extracao e passo separado.
+# COBERTURA PARCIAL, e medida: dos 334 arquivos que fixam migration, 201 escrevem ao menos
+# um nome na forma CREATE OR REPLACE FUNCTION public.X e 133 nao escrevem nenhum. Esses sao
+# INVISIVEIS. O ponto cego tambem existe POR FUNCAO dentro de arquivo visivel: export_my_data
+# estava vencida no guard 568 e so apareceu na revisao manual deste lote.
 tests/contracts/1001-vep-rejection-divergent-bucket.test.mjs|get_vep_divergence_report
 tests/contracts/1022-exit-state-canonical-semantics.test.mjs|admin_offboard_member
-tests/contracts/1022-exit-state-canonical-semantics.test.mjs|validate_status_transition
+tests/contracts/1039-drive-teardown-fatia-b.test.mjs|check_schema_invariants
 tests/contracts/105-my-meetings-widget.test.mjs|get_my_meetings
 tests/contracts/106-chapter-dashboard-pr2.test.mjs|admin_update_setting
 tests/contracts/106-chapter-dashboard-pr3.test.mjs|get_chapter_selection_summary
 tests/contracts/1071-agenda-viva-past-admin-reserved.test.mjs|get_geral_agenda_viva
 tests/contracts/1080-cycle-xp-bucket-taxonomy.test.mjs|get_member_cycle_xp
-tests/contracts/1103-leader-onboarding-role-scoped.test.mjs|consume_onboarding_token
 tests/contracts/1130-vep-role-cohort-reconciliation.test.mjs|get_vep_role_cohort_reconciliation
 tests/contracts/1163-approve-selection-pmi-id-match.test.mjs|approve_selection_application
 tests/contracts/1221-merit-immutable-fatia1.test.mjs|check_schema_invariants
@@ -41,17 +45,21 @@ tests/contracts/1289-move-item-to-board-authority.test.mjs|board_write_authority
 tests/contracts/1290-1291-1286-gp-cohort-visibility.test.mjs|get_cycle_attendance_overview
 tests/contracts/1290-1291-1286-gp-cohort-visibility.test.mjs|get_gp_cohort_health
 tests/contracts/1352-decline-routes-to-picker.test.mjs|review_tribe_request
+tests/contracts/1445-vep-offer-retracted-active-bucket.test.mjs|get_vep_divergence_report
+tests/contracts/1446-selection-dashboard-default-open-cycle.test.mjs|get_selection_dashboard
 tests/contracts/1468-recompute-cutoff-researcher-scope.test.mjs|recompute_application_status
 tests/contracts/1476-wave2-operational-membership-canonical.test.mjs|seal_event_attendance
-tests/contracts/1584-governed-booking-door.test.mjs|resolve_interview_booking_url
+tests/contracts/1496-activity-owner-gate-parity.test.mjs|complete_checklist_item
+tests/contracts/156-attendance-grid-historical-cohort.test.mjs|get_attendance_grid
 tests/contracts/1594-1595-gate-refusal-audit-and-reschedule-door.test.mjs|_dispatch_interview_booking_link
 tests/contracts/1609-1611-booking-entrance-door.test.mjs|selection_consistency_report
+tests/contracts/190-curation-queue-state.test.mjs|get_curation_queue_state
 tests/contracts/193-curation-fsm-cleanup.test.mjs|get_curation_dashboard
+tests/contracts/209-drive-offboarding.test.mjs|check_schema_invariants
+tests/contracts/301-curation-drive-grants.test.mjs|check_schema_invariants
 tests/contracts/425-gamification-cockpit.test.mjs|get_initiative_gamification
 tests/contracts/425-gamification-cockpit.test.mjs|get_tribe_gamification
 tests/contracts/564-events-write-authority-rls.test.mjs|update_future_events_in_group
-tests/contracts/568-consent-records-lgpd-read.test.mjs|admin_list_member_consents
-tests/contracts/568-consent-records-lgpd-read.test.mjs|list_my_consents
 tests/contracts/576-gamification-perf-batch-indexes.test.mjs|get_initiative_gamification
 tests/contracts/576-gamification-perf-batch-indexes.test.mjs|get_tribe_gamification
 tests/contracts/651-governance-parallel-gates.test.mjs|_enqueue_gate_notifications
@@ -62,11 +70,8 @@ tests/contracts/676-recurring-agenda-write-path.test.mjs|update_recurring_meetin
 tests/contracts/676-recurring-meeting-rules.test.mjs|get_recurring_meeting_drift
 tests/contracts/676-recurring-meeting-rules.test.mjs|reconcile_all_recurring_meetings
 tests/contracts/676-recurring-meeting-rules.test.mjs|reconcile_recurring_meeting
-tests/contracts/729-comms-clearance-image-consent-revocation.test.mjs|get_member_comms_card
 tests/contracts/766-pr5-profile-complete-milestone.test.mjs|check_schema_invariants
 tests/contracts/785-confidential-initiative-rls.test.mjs|check_schema_invariants
-tests/contracts/976-pr4-camada5-reaceite.test.mjs|anonymize_premember_applications
-tests/contracts/consent-voice-biometric-ui.test.mjs|give_consent_via_token
 tests/contracts/cutoff-approved-modal-button.test.mjs|get_selection_dashboard
 tests/contracts/cycle4-public-verticals.test.mjs|get_public_platform_stats
 tests/contracts/cycle4-tribe-capacity-ssot.test.mjs|tribe_capacity_limit
@@ -80,8 +85,6 @@ tests/contracts/D4-D5-interview-drift.test.mjs|check_schema_invariants
 tests/contracts/homepage-stats-pre-onboarding.test.mjs|get_member_retention_canonical
 tests/contracts/homepage-stats-pre-onboarding.test.mjs|get_public_platform_stats
 tests/contracts/leader-extra-cohort-separation.test.mjs|recompute_all_active_pert_cutoffs
-tests/contracts/lgpd-art-18-retroactive-deletion.test.mjs|lgpd_execute_retroactive_deletion
-tests/contracts/lgpd-art-18-retroactive-deletion.test.mjs|lgpd_record_retroactive_notification
 tests/contracts/normalize-legacy-contract-volunteer.test.mjs|approve_selection_application
 tests/contracts/p232-229-phase2-leader-extra-visibility.test.mjs|get_application_score_breakdown
 tests/contracts/p232-229-phase2-leader-extra-visibility.test.mjs|get_selection_dashboard
@@ -126,8 +129,6 @@ tests/contracts/p277-419-m3c-engagement-foundation.test.mjs|get_attendance_engag
 tests/contracts/p277-419-m3c-engagement-foundation.test.mjs|get_attendance_reliability_summary
 tests/contracts/p277-419-m4-gamification-cohort-roster.test.mjs|get_initiative_gamification
 tests/contracts/p277-419-m4-gamification-cohort-roster.test.mjs|get_tribe_gamification
-tests/contracts/p277-419-m4a-roster-primitive.test.mjs|resolve_initiative_id
-tests/contracts/p277-419-m4a-roster-primitive.test.mjs|resolve_tribe_id
 tests/contracts/p277-419-m4c-clean-stats-cross-roster.test.mjs|exec_cross_initiative_comparison
 tests/contracts/p277-419-m4c-clean-stats-cross-roster.test.mjs|get_initiative_stats
 tests/contracts/p277-419-m4c-clean-stats-cross-roster.test.mjs|get_tribe_stats
@@ -145,13 +146,19 @@ tests/contracts/p282-411-w2-cron-automation.test.mjs|get_cutoff_dispatch_health
 tests/contracts/p282-411-w2-cron-automation.test.mjs|notify_selection_cutoff_approved
 tests/contracts/p472-corr5-consistency-cron.test.mjs|selection_consistency_report
 tests/contracts/p479-canonical-chapter-webinar-metrics.test.mjs|get_chapter_metrics
-tests/contracts/p481-chapter-fork-cleanup.test.mjs|get_public_impact_data
 tests/contracts/p625-c2-members-v4.test.mjs|admin_list_members
 tests/contracts/p697-member-comms-card.test.mjs|get_member_comms_card
 tests/contracts/p705-eval-queue-and-dual-track.test.mjs|get_my_pending_evaluations
 tests/contracts/p708-create-initiative-board-scope.test.mjs|create_initiative
+tests/contracts/rls-members-directory-authoritative.test.mjs|rls_is_authoritative_member
 tests/contracts/sediment-268-a-approval-pipeline-org-id.test.mjs|lock_document_version
 tests/contracts/sediment-268-a-approval-pipeline-org-id.test.mjs|sign_ip_ratification
+tests/contracts/tribe-request-deadline-enforcement.test.mjs|get_my_tribe_request_context
+tests/contracts/tribe-request-deadline-enforcement.test.mjs|request_tribe_assignment
+tests/contracts/tribe-selection-hybrid-pr1.test.mjs|_sync_tribe_id_from_engagement
+tests/contracts/tribe-selection-hybrid-pr1.test.mjs|check_schema_invariants
+tests/contracts/tribe-selection-hybrid-pr1.test.mjs|request_tribe_assignment
+tests/contracts/tribe-selection-hybrid-pr1.test.mjs|review_tribe_request
 tests/contracts/tribe-selection-hybrid-pr2-fe.test.mjs|get_my_tribe_request_context
 tests/contracts/w3a0-chapter-ssot.test.mjs|get_selection_dashboard
 tests/contracts/w3b-ii-members-chapter-derivation.test.mjs|check_schema_invariants
