@@ -60,16 +60,15 @@ for (const rpcName of LGPD_RPCS) {
     assert.ok(body, `RPC ${rpcName} not found`);
 
     // Must check admin tier via legacy direct pattern OR V4 can_by_member() gate (ADR-0011).
-    // 2026-08-22: `can_org_by_member` tambem conta, e e ESTRITAMENTE MAIS FORTE que
-    // `can_by_member` -- exige combo de escopo organization/global. O guard casava pelo
-    // literal e reprovaria a versao mais restrita; a alternativa abaixo aceita a forma
-    // forte sem afrouxar nada.
+    // `can_org_by_member` is the STRICTER form of the same gate: it only accepts a combo of
+    // organization/global scope, so it can never be satisfied by an initiative-scoped combo.
+    // It must be accepted here, or hardening a caller turns this guard red for improving it.
     const checksAdmin =
       /is_superadmin\s*=\s*true/i.test(body) ||
       /operational_role\s+IN\s*\(/i.test(body) ||
-      /can(_org)?_by_member\s*\([^)]*,\s*'view_pii'/i.test(body);
+      /can(?:_org)?_by_member\s*\([^)]*,\s*'view_pii'/i.test(body);
     assert.ok(checksAdmin,
-      `RPC ${rpcName} must check admin tier (is_superadmin / operational_role / can[_org]_by_member 'view_pii')`);
+      `RPC ${rpcName} must check admin tier (is_superadmin / operational_role / can_by_member|can_org_by_member 'view_pii')`);
 
     const raisesException = /RAISE\s+EXCEPTION/i.test(body);
     assert.ok(raisesException, `RPC ${rpcName} must RAISE EXCEPTION on unauthorized access`);
@@ -79,13 +78,13 @@ for (const rpcName of LGPD_RPCS) {
     const body = findFunctionBody(rpcName);
     assert.ok(body);
 
-    // Accept either legacy `IF NOT ( ... OR ... )` boolean gate or V4 `IF NOT can_by_member(...)` form.
-    // idem acima -- `IF NOT can_org_by_member(...)` e a forma mais estrita.
+    // Accept legacy `IF NOT ( ... OR ... )`, V4 `IF NOT can_by_member(...)`, or the stricter
+    // `IF NOT can_org_by_member(...)` form.
     const hasLegacyGate = /IF\s+NOT\s*\(/i.test(body);
-    const hasV4Gate = /IF\s+NOT\s+(?:public\.)?can(_org)?_by_member\s*\(/i.test(body);
+    const hasV4Gate = /IF\s+NOT\s+(?:public\.)?can(?:_org)?_by_member\s*\(/i.test(body);
     const hasRaise = /RAISE\s+EXCEPTION\s+'Access denied/i.test(body);
     assert.ok((hasLegacyGate || hasV4Gate) && hasRaise,
-      `RPC ${rpcName} must have IF NOT (admin) or IF NOT can[_org]_by_member(...) gate + RAISE EXCEPTION 'Access denied`);
+      `RPC ${rpcName} must have IF NOT (admin) or IF NOT can_by_member(...)/can_org_by_member(...) gate + RAISE EXCEPTION 'Access denied`);
   });
 }
 
