@@ -120,9 +120,14 @@ Tres coisas medidas nesse desfecho, e nenhuma delas enfraquece o diagnostico:
    concreta que o acoplamento assume no dia a dia**, e ela nao aparece em nenhuma metrica de CI.
 
 3. **A serie esta declarada no proprio codigo.** O comentario da 6a entrada registra "1 -> 5 -> 6" e
-   nomeia a causa: enquanto a RPC nao tiver superficie autenticada (**#1586**), toda decisao manual
-   entra por `service_role` e vira divida de teste. E a mesma conclusao do item C1 da secao 9, a que
-   cheguei por medicao independente.
+   nomeia uma causa: enquanto a RPC nao tiver superficie autenticada (**#1586**), toda decisao manual
+   entra por `service_role` e vira divida de teste. Cheguei a mesma conclusao no item C1 da secao 9,
+   por medicao independente.
+
+   > ⚠️ **Corrigido em 22/08: essa causa e FALSA, e eu a herdei do comentario em vez de medi-la.** O
+   > #1586 fechou em **17/08**, antes de 5 das 6 entradas. A superficie existe
+   > (`interview_manage action='rescue_unbooked'`) e nao foi usada. O que a serie mede nao e falta de
+   > tela — e tela nao alcancada na hora. Ver a nota da secao 9.
 
 **O que isso muda na recomendacao: nada, e esse e o ponto.** A proxima tentativa manual repete o
 ciclo inteiro. O que a secao 9 propoe (A2) e tirar essa classe de assercao de dentro do portao, para
@@ -430,15 +435,20 @@ lista sem prazo nao e portao nem divida: e um numero que ninguem tem obrigacao d
 
 ### 6.1 O allowlist do #1636 e um instrumento de medicao, nao uma divida de teste
 
-O caso citado no arranque (1 para 5 entradas em um dia, 4 delas a mesma operacao) esta corretamente
+O caso citado no arranque (1 para 5 entradas em um dia, 4 delas a mesma operacao) vinha
 auto-diagnosticado no proprio arquivo: *"enquanto `selection_rescue_unbooked_invite` nao tiver
 superficie (#1586), a unica porta para despachar e o service_role, e toda operacao manual vai cair
 aqui"*.
 
+> ⚠️ **Corrigido em 22/08: o auto-diagnostico estava ERRADO, e eu o chamei de "correto" sem
+> verificar.** O #1586 fechou em 17/08; 5 das 6 entradas sao posteriores. A unica porta NAO era o
+> `service_role` — era a porta escolhida.
+
 Medido hoje: a lista **foi** para 6 entradas as 19:41:41Z, e a sexta e a **quinta tentativa na
-mesma candidatura** (ver 1.1). O crescimento dessa lista e uma medicao limpa da ausencia do #1586.
-Ele nao deve ser resolvido mexendo no teste, e nao foi: o #1905 registrou a entrada com o motivo e
-a serie, que e o comportamento certo dado o portao que existe hoje.
+mesma candidatura** (ver 1.1). O crescimento dessa lista e uma medicao limpa de **quantas vezes o
+caminho autenticado foi contornado**, nao da ausencia dele. Ele nao deve ser resolvido mexendo no
+teste, e nao foi: o #1905 registrou a entrada com o motivo e a serie, que e o comportamento certo
+dado o portao que existe hoje.
 
 ---
 
@@ -540,8 +550,11 @@ Nenhum dos dois enquanto nao tiver prazo: e **um numero**. A resposta operaciona
 o repo ja tem o formato certo (#1850) e o aplicou a 1 de ~30 superficies. Um allowlist com prazo,
 issue e ratchet declarado e portao. Sem prazo, e sedimento.
 
-O caso especifico do #1636 nao e problema de allowlist: ele esta medindo a ausencia do #1586, e esta
-medindo bem.
+O caso especifico do #1636 nao e problema de allowlist: ele esta medindo bem uma coisa real. **Que
+coisa, corrigido em 22/08:** nao a ausencia do #1586 (fechado em 17/08), e sim quantas vezes a
+superficie autenticada existente foi contornada por `service_role` cru. A leitura muda o conserto —
+de "construir a tela" (roadmap) para "fazer a tela aparecer na hora" (mensagem de recusa e/ou
+runbook).
 
 ### 7.4 Alvo instavel em teste comportamental
 

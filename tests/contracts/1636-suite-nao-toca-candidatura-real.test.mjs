@@ -236,13 +236,18 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // para tirar a instrumentação da onda D (#1590) do vácuo: até então o log tinha 94 linhas e ZERO
   // instrumentadas, e nenhum número do funil podia ser publicado sem uma linha real. Chamado por
   // `selection_rescue_unbooked_invite` via REST/service_role, que é o caminho do cron, porque a
-  // RPC não tem superfície (#1586). O e-mail foi enviado a um candidato real que esperava o
+  // RPC ainda NÃO tinha superfície nesta data (#1586, entregue 3 dias depois, em 17/08 — para as
+  // entradas seguintes esta justificativa já não vale). O e-mail foi enviado a um candidato real que esperava o
   // convite desde 04/08. Auditado em `admin_audit_log` como `selection.unbooked_invite_rescued`.
   '4b99b6dc-2eb3-450e-9448-3d78ca00ed32',
 
   // 20/08/2026 02:39:24Z, 02:39:38Z e 03:10:33Z — TRÊS tentativas de emitir o convite de
-  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (a única porta
-  // enquanto a RPC não tiver superfície, #1586 — daí o `caller_id` nulo).
+  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (daí o `caller_id`
+  // nulo).
+  //
+  // ⚠️ Corrigido em 22/08: este comentário dizia "a única porta enquanto a RPC não tiver
+  // superfície (#1586)". Falso — o #1586 fechou em 17/08, TRÊS DIAS ANTES destas três. O caminho
+  // autenticado (`interview_manage action='rescue_unbooked'`) existia e não foi usado.
   //
   // ⚠️ O PM declarou em 20/08 que o convite foi ERRO: não era para convidar sem o peer review
   // completo. Esta entrada NÃO é o registro de uma operação endossada, é o registro de uma
@@ -272,9 +277,12 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // a decisão de descontinuar a prática. Mesmo desfecho: recusada, sem token e sem e-mail.
   //
   // ⚠️ SINAL, não rotina: esta lista saiu de 1 para 5 entradas em UM dia, e as 4 últimas são a
-  // mesma operação repetida contra a mesma candidatura. Isso não é o guard sendo chato, é a
-  // ausência de superfície autenticada (#1586) transformando cada decisão manual em dívida de
-  // teste. Enquanto o #1586 não existir, esta lista cresce a cada tentativa.
+  // mesma operação repetida contra a mesma candidatura.
+  //
+  // ⚠️ Corrigido em 22/08. Este comentário atribuía o crescimento à "ausência de superfície
+  // autenticada (#1586)". A superfície existe desde 17/08. O que a lista mede não é falta de
+  // tela, é a tela não ser alcançada na hora da necessidade: cada uma destas passou por
+  // service_role cru tendo `interview_manage action='rescue_unbooked'` disponível.
   'c5c2b7aa-e556-4f05-99fe-17c9f9522a93',
 
   // 21/08/2026 14:18:47Z — QUINTA tentativa, MESMA candidatura, MESMA recusa
@@ -284,8 +292,9 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // ⚠️ ESTA É A PRIMEIRA POSTERIOR À DECISÃO. As quatro acima são todas de 20/08, e foi em 20/08
   // que o PM registrou que dispensar o gate por pressão de prazo é prática DESCONTINUADA. Esta é
   // do dia seguinte. A lista deixou de ser o retrato de um dia ruim e virou série: 1 → 5 → 6.
-  // O que ela mede continua sendo o mesmo: enquanto a RPC não tiver superfície autenticada
-  // (#1586), toda decisão manual entra por service_role e vira dívida de teste.
+  // O que ela mede, corrigido em 22/08: NÃO é a ausência de superfície (o #1586 fechou em 17/08,
+  // quatro dias antes desta). É a superfície existente não ser usada — esta entrada, como as
+  // quatro de 20/08, entrou por service_role cru e por isso não tem autor no `admin_audit_log`.
   //
   // Medido ao vivo em 21/08: a candidatura segue com ZERO avaliações de qualquer tipo — o mesmo
   // estado que motivou as quatro recusas anteriores —, 0 tokens de agendamento vivos e status
