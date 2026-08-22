@@ -131,10 +131,20 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const cardInitiativeId = item.initiative_id ?? board.initiative_id ?? null;
   const isLeader = (cardInitiativeId && canFor('manage_board_admin', { type: 'initiative', id: cardInitiativeId }))
     || (cardTribeId !== null && canFor('manage_board_admin', { type: 'tribe', id: cardTribeId }));
-  const isCardOwner = item.assignee_id === permissions.member?.id;
   const canEditBaseline = (isGP || isLeader) && !item.baseline_locked_at;
   const canUnlockBaseline = isGP;
-  const canEditForecast = isGP || isLeader || isCardOwner;
+  // #1903 — o gate da data de forecast lia `item.assignee_id`, a coluna LEGADA e SINGULAR, enquanto
+  // a tela de adicionar pessoas escreve em `board_item_assignments`. Quem era adicionado pela tabela
+  // aparecia no card e continuava sem nada clicável na data, sem erro e sem explicação.
+  //
+  // Medido em 2026-08-20: dos 983 vínculos na tabela, 205 NÃO coincidem com `assignee_id`, o que
+  // atingia 51 pessoas em 154 cards. Uma pesquisadora tinha 2 cards pela tabela e 0 onde era a
+  // `assignee_id`, então para ela o recurso nunca funcionou uma vez.
+  //
+  // O predicado certo já existia neste mesmo arquivo: `isCardAssignee` (acima) lê as DUAS fontes e
+  // é o que `canEdit` usa. `isCardOwner` era uma segunda definição, mais estreita, usada só aqui.
+  // Removida em vez de corrigida, para que ninguém a reutilize por engano.
+  const canEditForecast = isGP || isLeader || isCardAssignee;
   const canEditPortfolioFlag = isGP || isLeader;
   const [showBaselineModal, setShowBaselineModal] = useState(false);
   const [newBaselineDate, setNewBaselineDate] = useState('');

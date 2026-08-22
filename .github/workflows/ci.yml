@@ -20,6 +20,42 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
+  # A1 (auditoria de CI, #1908) — a metade HERMETICA da suite, fora da faixa do banco.
+  #
+  # Medido em 22/08/2026: 289 dos 611 arquivos (47%) nao referenciam `SUPABASE_URL`,
+  # `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` nem o helper `db-fetch`. Rodam em 12,6s com
+  # `--test-concurrency=4`, com 3.588 asserçoes e **0 skipped** — o zero e a prova de que nenhum
+  # deles esta gated por credencial, ou seja, sao mesmo hermeticos.
+  #
+  # Antes da A1 eles esperavam a faixa serializada do banco (p90 14m21s) e rodavam em serie, por
+  # uma restricao (#1261) que nao se aplica a eles. E quando o `validate` era CANCELADO na fila
+  # (7 em 198 runs, #1869), morriam junto sem executar nada.
+  #
+  # ⚠️ NAO adicione `wait-for-db-lane` aqui. Se um teste deste job passar a falar com o banco, o
+  # conserto e move-lo para `test:behavioural` — nao trazer a espera para ca. O guard da particao
+  # reprova a classificacao errada nas DUAS direcoes.
+  structural:
+    runs-on: ubuntu-latest
+    # Sem espera de faixa: o orcamento cobre so instalar e rodar. Se este job encostar em 10 min,
+    # alguma coisa deixou de ser hermetica.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Sem env de Supabase, de proposito: se um teste daqui precisar de credencial, ele esta no
+      # balde errado e tem de aparecer como skip, nao passar despercebido.
+      - name: Run structural tests
+        run: npm run test:structural
+
   validate:
     runs-on: ubuntu-latest
     # O recurso disputado e o BANCO DE PRODUCAO compartilhado, nao o ref: com
@@ -102,8 +138,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-        run: npm test
-        
+        # A1 (#1908) — este job roda so a metade COMPORTAMENTAL. A estrutural (289 arquivos,
+        # 12,6s, zero banco) vive no job `structural` abaixo, que nao espera a faixa. Guard da
+        # particao: tests/contracts/1908-a1-particao-da-suite.test.mjs.
+        run: npm run test:behavioural
+
       - name: Build Project
         # Mock env vars satisfy Astro/Vite build-time replacement. URL precisa
         # DNS-resolvable: workerd recente (runner image update ~2026-05-18)

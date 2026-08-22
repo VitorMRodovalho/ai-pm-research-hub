@@ -111,3 +111,113 @@ jobs:
 
             core.setOutput('state', 'healthy');
 
+
+  # A2 (auditoria de CI, 21/08/2026) — os invariantes de DADO sairam do check required e passaram
+  # a viver no `invariants-check`, que NAO e required. Sem este monitor a mudanca trocaria "fila
+  # congelada por evento de producao" por "sinal que ninguem le", que e pior: o primeiro incomoda
+  # e o segundo desaparece.
+  #
+  # Mesma maquina do job acima (dedup por titulo, comenta enquanto persiste, fecha ao recuperar),
+  # apontada para `invariants-check.yml`. Titulo distinto de proposito: os dois alertas precisam
+  # coexistir sem um sobrescrever o outro.
+  monitor_invariants_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check latest Schema Invariants run
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflow_id = 'invariants-check.yml';
+            const branch = 'main';
+            const alertTitle = '[CI Monitor] Schema Invariants failing on main';
+
+            const runsResponse = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id,
+              branch,
+              status: 'completed',
+              per_page: 1,
+            });
+
+            const latest = runsResponse.data.workflow_runs?.[0];
+            if (!latest) {
+              core.info('No completed Schema Invariants runs found yet.');
+              core.setOutput('state', 'no_data');
+              return;
+            }
+
+            core.info(`Latest Schema Invariants run: ${latest.html_url} (${latest.conclusion})`);
+            core.setOutput('latest_run_url', latest.html_url);
+            core.setOutput('latest_run_conclusion', String(latest.conclusion || ''));
+
+            const openIssues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existingAlert = openIssues.data.find((issue) => issue.title === alertTitle);
+
+            if (latest.conclusion === 'failure') {
+              const body = [
+                'CI heartbeat detectou falha no workflow `Schema Invariants` em `main`.',
+                '',
+                `- Run: ${latest.html_url}`,
+                `- SHA: \`${latest.head_sha}\``,
+                `- Trigger: \`${latest.event}\``,
+                '',
+                '⚠️ Este job NAO e required, entao nenhuma PR esta bloqueada por ele. E exatamente',
+                'por isso que este alerta existe: ele carrega os invariantes de DADO (deriva de',
+                'migration Q-C / Phase C / ADR-0097, e a Camada B do #1636), que saíram do portão',
+                'required pela A2 para nao congelarem a fila com evento legitimo de producao.',
+                '',
+                'Ação sugerida:',
+                '1. Abrir o log e identificar QUAL invariante caiu.',
+                '2. Se for deriva de migration: procurar DDL aplicada sem `.sql` na main (ver #1910).',
+                '3. Se for a Camada B do #1636: identificar a linha de `gate_attempts` e decidir',
+                '   entre allowlist (operacao manual conhecida) ou investigacao (regressao de teste).',
+              ].join('\n');
+
+              if (existingAlert) {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number: existingAlert.number,
+                  body: `Falha ainda ativa nos invariantes.\n\n${body}`,
+                });
+                core.info(`Updated existing invariants alert issue #${existingAlert.number}`);
+              } else {
+                const created = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: alertTitle,
+                  body,
+                });
+                core.info(`Created invariants alert issue #${created.data.number}`);
+              }
+
+              core.setOutput('state', 'failing');
+              return;
+            }
+
+            if (existingAlert) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: existingAlert.number,
+                body: `Heartbeat detectou recuperação dos invariantes.\n\n- Run verde: ${latest.html_url}\n- SHA: \`${latest.head_sha}\``,
+              });
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existingAlert.number,
+                state: 'closed',
+              });
+              core.info(`Closed recovered invariants alert issue #${existingAlert.number}`);
+            }
+
+            core.setOutput('state', 'healthy');

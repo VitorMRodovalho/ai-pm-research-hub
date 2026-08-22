@@ -48,6 +48,37 @@ inputs:
       precisam estar ambos visiveis na API antes de qualquer um decidir quem e o mais antigo.
     required: false
     default: '15'
+  rate-limit-max-wait-seconds:
+    description: >
+      #1923: quanto esperar, no total, por uma cota de API esgotada antes de desistir.
+
+      Cota esgotada e uma TERCEIRA classe de falha, e o guard so conhecia duas. Um handshake TLS
+      que falha melhora em segundos; um token sem escopo nao melhora nunca; uma cota esgotada
+      melhora numa escala de MINUTOS. As `api-retries` (3 tentativas em ~20s) foram dimensionadas
+      para a primeira classe, e aplicadas a esta transformam uma condicao auto-curavel em required
+      vermelho.
+
+      NAO afrouxa o #1509: esgotado este teto, a funcao retorna erro e o job FALHA, como antes.
+      A unica coisa que muda e quanto tempo se espera antes de chamar de permanente.
+    required: false
+    default: '900'
+  poll-seconds:
+    description: >
+      Intervalo entre consultas enquanto a faixa esta ocupada. #1923: cada ciclo custa
+      1 + (runs de faixa ativos) chamadas, POR job em espera, entao o intervalo e um multiplicador
+      direto do consumo de cota.
+    required: false
+    default: '15'
+  poll-seconds-long:
+    description: >
+      #1923: intervalo depois de `poll-backoff-after` ciclos. Uma espera longa e justamente a que
+      mais consome, e quem ja esperou 5 minutos nao precisa de resolucao de 15s.
+    required: false
+    default: '30'
+  poll-backoff-after:
+    description: 'Ciclos no intervalo curto antes de passar ao longo (#1923).'
+    required: false
+    default: '20'
 
 runs:
   using: composite
@@ -61,6 +92,10 @@ runs:
         STUCK_AFTER: ${{ inputs.stuck-seconds }}
         API_RETRIES: ${{ inputs.api-retries }}
         SETTLE: ${{ inputs.settle-seconds }}
+        RL_MAX_WAIT: ${{ inputs.rate-limit-max-wait-seconds }}
+        POLL: ${{ inputs.poll-seconds }}
+        POLL_LONG: ${{ inputs.poll-seconds-long }}
+        POLL_BACKOFF_AFTER: ${{ inputs.poll-backoff-after }}
       run: |
         set -euo pipefail
 
@@ -70,22 +105,60 @@ runs:
 
         sleep "$SETTLE"
 
-        # Consulta com retentativa LIMITADA. O `|| true` continua proibido: engolir o erro faria
-        # a faixa parecer vazia e todo mundo entrar junto no banco, que e o estrago que isto
-        # existe para evitar (#1509). O que muda e so distinguir falha transitoria de permanente
-        # — esgotadas as tentativas, retorna erro e o chamador para.
+        # #1923 — quanto falta para a cota voltar. `GET /rate_limit` NAO consome cota, entao pode
+        # ser chamado exatamente quando ela acabou, que e quando se precisa dele.
+        rate_limit_reset_in() {
+          local reset now
+          reset=$(gh api rate_limit --jq '.resources.core.reset' 2>/dev/null) || { echo 60; return 0; }
+          case "$reset" in ''|*[!0-9]*) echo 60; return 0;; esac
+          now=$(date +%s)
+          if [ "$reset" -le "$now" ]; then echo 15; else echo $(( reset - now )); fi
+        }
+
+        # Consulta com retentativa LIMITADA. O `|| true` continua proibido: engolir o erro faria a
+        # faixa parecer vazia e todo mundo entrar junto no banco, que e o estrago que isto existe
+        # para evitar (#1509).
+        #
+        # #1923 — passa a distinguir TRES classes, nao duas. O erro tambem passa a ser IMPRESSO:
+        # antes ia para /dev/null, e o incidente de 22/08 teve de ser diagnosticado por inferencia
+        # (7 jobs de runs independentes morrendo na mesma janela de 30s) porque a mensagem da API
+        # nunca chegou ao log.
         api_with_retry() {
-          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out=""
+          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out="" errfile msg wait_s rl_waited=0
           while :; do
-            if out=$(gh api "$endpoint" --jq "$jq_expr" 2>/dev/null); then
+            errfile="$(mktemp)"
+            if out=$(gh api "$endpoint" --jq "$jq_expr" 2>"$errfile"); then
+              rm -f "$errfile"
               printf '%s' "$out"
               return 0
             fi
+            msg="$(tr '\n' ' ' < "$errfile" | tail -c 300)"
+            rm -f "$errfile"
+
+            # 3a classe: cota esgotada. Auto-curavel, mas na escala de MINUTOS — as 3 tentativas em
+            # ~20s foram dimensionadas para blip de TLS e aqui so aceleram o vermelho. Espera ate o
+            # reset e tenta de novo, SEM consumir tentativa.
+            #
+            # Continua FALHANDO FECHADO: estourado RL_MAX_WAIT, retorna erro como antes. O que nao
+            # pode acontecer, nunca, e seguir para o banco sem ter lido a faixa (#1509).
+            if printf '%s' "$msg" | grep -qiE 'rate limit|429|too many requests'; then
+              wait_s="$(rate_limit_reset_in)"
+              [ "$wait_s" -gt "$RL_MAX_WAIT" ] && wait_s="$RL_MAX_WAIT"
+              if [ $(( rl_waited + wait_s )) -gt "$RL_MAX_WAIT" ]; then
+                echo "::error::cota da API esgotada e nao voltou dentro de ${RL_MAX_WAIT}s ($endpoint): ${msg}. Parando em vez de arriscar rodar concorrente (#1509, #1923)." >&2
+                return 1
+              fi
+              rl_waited=$(( rl_waited + wait_s ))
+              echo "  (cota da API esgotada; aguardando ${wait_s}s ate o reset — total ${rl_waited}s/${RL_MAX_WAIT}s) — ${msg}" >&2
+              sleep "$wait_s"
+              continue
+            fi
+
             if [ "$attempt" -ge "$API_RETRIES" ]; then
-              echo "::error::falhei em ler a faixa apos ${API_RETRIES} tentativas ($endpoint). Nao e o mesmo que faixa vazia: parando em vez de arriscar rodar concorrente (#1509)." >&2
+              echo "::error::falhei em ler a faixa apos ${API_RETRIES} tentativas ($endpoint): ${msg}. Nao e o mesmo que faixa vazia: parando em vez de arriscar rodar concorrente (#1509)." >&2
               return 1
             fi
-            echo "  (tentativa $attempt/${API_RETRIES} falhou ao consultar a API; nova tentativa em ${backoff}s)" >&2
+            echo "  (tentativa $attempt/${API_RETRIES} falhou ao consultar a API: ${msg}; nova tentativa em ${backoff}s)" >&2
             sleep "$backoff"
             attempt=$(( attempt + 1 ))
             backoff=$(( backoff * 3 ))
@@ -99,19 +172,59 @@ runs:
           | [(.started_at // "9999-12-31T23:59:59Z"), (.run_id | tostring), .name]
           | @tsv'
 
+        # #1923 — QUAIS workflows tem job de faixa, DERIVADO do repositorio em vez de lista de
+        # nomes. A acao roda depois do checkout, entao `.github/workflows` esta em disco: qualquer
+        # workflow que CHAME esta acao entra, inclusive um criado depois desta linha.
+        #
+        # Por que derivar e nao listar: uma lista de nomes que envelhece faria o guard ignorar um
+        # workflow novo de faixa e liberar dois jobs no banco ao mesmo tempo — exatamente o
+        # estrago do #1509, reintroduzido por uma otimizacao. Derivando, o pior caso e a lista
+        # ficar GRANDE demais (custa cota), nunca pequena demais (custa correcao).
+        #
+        # E se a derivacao falhar (layout mudou, grep vazio), NAO filtra nada: volta ao
+        # comportamento anterior de varrer todos os runs. Degrada para caro-e-correto, nunca para
+        # barato-e-errado.
+        lane_workflows="$(grep -rlF 'wait-for-db-lane' "${GITHUB_WORKSPACE}/.github/workflows/" 2>/dev/null \
+          | sed 's#.*/##' | sort -u | tr '\n' ' ')"
+        if [ -z "${lane_workflows// /}" ]; then
+          echo "::warning::nao consegui derivar quais workflows tem job de faixa; varrendo TODOS os runs (mais caro em cota, mesma correcao) (#1923)"
+        else
+          echo "workflows com job de faixa (derivados do repo): ${lane_workflows}"
+        fi
+
         lane_file="$(mktemp)"
         hard_deadline=$(( $(date +%s) + MAX_WAIT ))
         stuck_deadline=$(( $(date +%s) + STUCK_AFTER ))
         last_head=""
         waited=0
+        cycles=0
 
         while :; do
           : > "$lane_file"
 
           runs=$(api_with_retry "repos/$GITHUB_REPOSITORY/actions/runs?per_page=50" \
-            '.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | .id')
+            '.workflow_runs[] | select(.status == "in_progress" or .status == "queued") | [(.id|tostring), (.path // "")] | @tsv')
 
-          for rid in $runs; do
+          # #1923 — so os runs de workflow de faixa viram uma chamada a `/jobs`. Era aqui que a
+          # cota ia embora: o custo por ciclo era 1 + (TODOS os runs ativos), e um unico PR abre
+          # seis workflows, dos quais dois tem job de faixa.
+          lane_runs=""
+          while IFS=$'\t' read -r rid rpath; do
+            [ -n "${rid:-}" ] || continue
+            if [ -z "${lane_workflows// /}" ]; then
+              lane_runs="$lane_runs $rid"
+              continue
+            fi
+            base="${rpath##*/}"
+            for want in $lane_workflows; do
+              if [ "$base" = "$want" ]; then
+                lane_runs="$lane_runs $rid"
+                break
+              fi
+            done
+          done <<< "$runs"
+
+          for rid in $lane_runs; do
             jobs=$(api_with_retry "repos/$GITHUB_REPOSITORY/actions/runs/$rid/jobs?per_page=50" "$jq_jobs")
             while IFS=$'\t' read -r started run name; do
               [ -n "${name:-}" ] || continue
@@ -151,7 +264,17 @@ runs:
             exit 1
           fi
 
-          echo "faixa ocupada por $first_name (run $first_run) — aguardando 15s (esperando ha ${waited}s)"
-          sleep 15
-          waited=$(( waited + 15 ))
+          # #1923 — o intervalo e multiplicador direto do consumo de cota, e quem ja esperou
+          # varios minutos nao precisa de resolucao de 15s. Encurtar a espera nao adianta nada
+          # para quem esta atras de um `validate` de 13 minutos.
+          cycles=$(( cycles + 1 ))
+          if [ "$cycles" -gt "$POLL_BACKOFF_AFTER" ]; then
+            interval="$POLL_LONG"
+          else
+            interval="$POLL"
+          fi
+
+          echo "faixa ocupada por $first_name (run $first_run) — aguardando ${interval}s (esperando ha ${waited}s)"
+          sleep "$interval"
+          waited=$(( waited + interval ))
         done

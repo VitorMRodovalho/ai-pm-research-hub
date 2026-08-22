@@ -29418,12 +29418,24 @@ export type Database = {
         Args: { p_interview_id: string }
         Returns: string
       }
+      _sync_tribe_journey_card: {
+        Args: {
+          p_actor_id: string
+          p_initiative_id: string
+          p_window_days?: number
+        }
+        Returns: Json
+      }
       _test_detect_inactive_with_threshold: {
         Args: { p_threshold: number }
         Returns: Json
       }
       _test_invariants_with_synthetic_breach: {
         Args: { p_breach: string }
+        Returns: Json
+      }
+      _tribe_journey_health_data: {
+        Args: { p_initiative_id?: string; p_window_days?: number }
         Returns: Json
       }
       _v4_active_initiatives_with_leaders: {
@@ -30203,6 +30215,14 @@ export type Database = {
       }
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
+      can_org: {
+        Args: { p_action: string; p_person_id: string }
+        Returns: boolean
+      }
+      can_org_by_member: {
+        Args: { p_action: string; p_member_id: string }
+        Returns: boolean
+      }
       can_read_internal_analytics: { Args: never; Returns: boolean }
       can_view_comms_analytics: { Args: never; Returns: boolean }
       cancel_agenda_block: {
@@ -34223,6 +34243,7 @@ export type Database = {
         }
         Returns: Json
       }
+      sync_tribe_journey_cards_cron: { Args: never; Returns: Json }
       title_case: { Args: { input: string }; Returns: string }
       toggle_blog_like: { Args: { p_post_id: string }; Returns: Json }
       tribe_capacity_limit: { Args: never; Returns: number }

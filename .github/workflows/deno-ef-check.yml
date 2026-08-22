@@ -42,6 +42,9 @@ jobs:
     # canto da arvore do site, e a fila de merge congelou.
     #
     # Amplificador: `deno-version: v2.x` flutua. O runner instalou 2.9.5, que falha; 2.5.6 passa.
+    # ^ HISTORICO de 20/08, antes do `DENO_NO_PACKAGE_JSON` abaixo. Com a variavel, 2.9.5 PASSA
+    #   (run 32537672003, 21/08 23:39, verde). A faixa flutuante foi eliminada em separado: ver
+    #   o pin exato em `deno-version` mais abaixo (B1).
     #
     # Medido com Deno 2.9.5, clone limpo e cache frio: com a variavel, node_modules cai de 39 para
     # 4 entradas, os 56 de 56 arquivos seguem sendo checados, e um TS2322 injetado de proposito
@@ -52,7 +55,19 @@ jobs:
       - uses: actions/checkout@v4
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
+          # B1 (auditoria de 21/08) — versao EXATA, nao faixa. `v2.x` flutua, e o comentario
+          # acima ja registra o custo disso: o runner instalou 2.9.5, que falhava, enquanto
+          # 2.5.6 passava. Uma faixa flutuante faz a NAO-reproducao mentir: reproduzir com
+          # outra minor passa e inocenta o repo por engano.
+          #
+          # 2.9.5 e a versao que o runner instalou no ultimo run VERDE medido (run 32537672003,
+          # 21/08 23:39), ja com `DENO_NO_PACKAGE_JSON=1`. Ou seja: e a versao verificada, nao
+          # a mais nova.
+          #
+          # Para subir: troque aqui, confirme no log do job que o runner baixou o que voce pediu
+          # (`Downloading Deno from .../vX.Y.Z/`), e so entao mergeie. Nao leia a versao daqui,
+          # leia do log -- e esse o ponto de pinar.
+          deno-version: v2.9.5
 
       # CLI flags (not a committed deno.json) so this CI config never touches how the
       # Supabase bundler deploys the functions. no-explicit-any + no-import-prefix are
