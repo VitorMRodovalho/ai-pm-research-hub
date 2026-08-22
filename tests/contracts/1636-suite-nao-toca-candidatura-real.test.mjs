@@ -41,6 +41,7 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { RESERVED_DOMAIN, GRACE_MINUTES } from '../helpers/selection-fixtures.mjs';
 import { rpcCallsIn } from '../helpers/rpc-call-scanner.mjs';
+import { skipDataInvariant } from '../helpers/data-invariant-gate.mjs';
 
 const DIR = 'tests/contracts';
 const HELPER = 'selection-fixtures.mjs';
@@ -214,22 +215,40 @@ const CUTOFF = '2026-08-09T00:00:00Z';
  * distingue por carimbar também a EXECUÇÃO (`selection.%cron_run%`, 197 linhas), e a chamada
  * manual não carimba.
  *
- * ⚠️ Uma entrada aqui é dívida, não isenção: enquanto `selection_rescue_unbooked_invite` não tiver
- * superfície (#1586), a única porta para despachar é o service_role, e toda operação manual vai
- * cair aqui. A saída é a tela do #1586, com autor autenticado — não o crescimento desta lista.
+ * ⚠️ Uma entrada aqui é dívida, não isenção. E desde 17/08/2026 ela é dívida EVITÁVEL.
+ *
+ * 📌 O CAMINHO AUTENTICADO EXISTE. Use `interview_manage` com `action='rescue_unbooked'`
+ * (#1586, entregue 17/08): ele chama `selection_rescue_unbooked_invite` preservando o AUTOR no
+ * `admin_audit_log`. Chamar por service_role registra ato humano como se fosse cron, com actor
+ * nulo — e é exatamente isso que obriga uma entrada nova aqui e congela a fila de merge de todo
+ * mundo até alguém adicioná-la.
+ *
+ * Medido em 22/08/2026, cruzando as 6 entradas com o log de auditoria: a de 14/08 (ANTERIOR à
+ * entrega do #1586) tem 3 linhas de auditoria no mesmo instante; as CINCO de 20 e 21/08, todas
+ * posteriores, têm ZERO. Ou seja: passaram por service_role cru mesmo já havendo porta.
+ *
+ * ⚠️ Este comentário afirmava o contrário até 22/08 ("enquanto o #1586 não existir..."). A
+ * premissa vinha de 08/08 e nunca foi re-medida; nesse intervalo a solução foi entregue. Se você
+ * chegou aqui investigando uma entrada nova, a pergunta certa NÃO é "quando vão fazer a tela",
+ * é "por que a tela não foi usada".
  */
 const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // 14/08/2026 02:26:19Z — despacho de convite de agendamento decidido pelo PM na sessão do #1587,
   // para tirar a instrumentação da onda D (#1590) do vácuo: até então o log tinha 94 linhas e ZERO
   // instrumentadas, e nenhum número do funil podia ser publicado sem uma linha real. Chamado por
   // `selection_rescue_unbooked_invite` via REST/service_role, que é o caminho do cron, porque a
-  // RPC não tem superfície (#1586). O e-mail foi enviado a um candidato real que esperava o
+  // RPC ainda NÃO tinha superfície nesta data (#1586, entregue 3 dias depois, em 17/08 — para as
+  // entradas seguintes esta justificativa já não vale). O e-mail foi enviado a um candidato real que esperava o
   // convite desde 04/08. Auditado em `admin_audit_log` como `selection.unbooked_invite_rescued`.
   '4b99b6dc-2eb3-450e-9448-3d78ca00ed32',
 
   // 20/08/2026 02:39:24Z, 02:39:38Z e 03:10:33Z — TRÊS tentativas de emitir o convite de
-  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (a única porta
-  // enquanto a RPC não tiver superfície, #1586 — daí o `caller_id` nulo).
+  // agendamento para a MESMA candidatura, feitas pelo PM por REST/service_role (daí o `caller_id`
+  // nulo).
+  //
+  // ⚠️ Corrigido em 22/08: este comentário dizia "a única porta enquanto a RPC não tiver
+  // superfície (#1586)". Falso — o #1586 fechou em 17/08, TRÊS DIAS ANTES destas três. O caminho
+  // autenticado (`interview_manage action='rescue_unbooked'`) existia e não foi usado.
   //
   // ⚠️ O PM declarou em 20/08 que o convite foi ERRO: não era para convidar sem o peer review
   // completo. Esta entrada NÃO é o registro de uma operação endossada, é o registro de uma
@@ -259,9 +278,12 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // a decisão de descontinuar a prática. Mesmo desfecho: recusada, sem token e sem e-mail.
   //
   // ⚠️ SINAL, não rotina: esta lista saiu de 1 para 5 entradas em UM dia, e as 4 últimas são a
-  // mesma operação repetida contra a mesma candidatura. Isso não é o guard sendo chato, é a
-  // ausência de superfície autenticada (#1586) transformando cada decisão manual em dívida de
-  // teste. Enquanto o #1586 não existir, esta lista cresce a cada tentativa.
+  // mesma operação repetida contra a mesma candidatura.
+  //
+  // ⚠️ Corrigido em 22/08. Este comentário atribuía o crescimento à "ausência de superfície
+  // autenticada (#1586)". A superfície existe desde 17/08. O que a lista mede não é falta de
+  // tela, é a tela não ser alcançada na hora da necessidade: cada uma destas passou por
+  // service_role cru tendo `interview_manage action='rescue_unbooked'` disponível.
   'c5c2b7aa-e556-4f05-99fe-17c9f9522a93',
 
   // 21/08/2026 14:18:47Z — QUINTA tentativa, MESMA candidatura, MESMA recusa
@@ -271,8 +293,9 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // ⚠️ ESTA É A PRIMEIRA POSTERIOR À DECISÃO. As quatro acima são todas de 20/08, e foi em 20/08
   // que o PM registrou que dispensar o gate por pressão de prazo é prática DESCONTINUADA. Esta é
   // do dia seguinte. A lista deixou de ser o retrato de um dia ruim e virou série: 1 → 5 → 6.
-  // O que ela mede continua sendo o mesmo: enquanto a RPC não tiver superfície autenticada
-  // (#1586), toda decisão manual entra por service_role e vira dívida de teste.
+  // O que ela mede, corrigido em 22/08: NÃO é a ausência de superfície (o #1586 fechou em 17/08,
+  // quatro dias antes desta). É a superfície existente não ser usada — esta entrada, como as
+  // quatro de 20/08, entrou por service_role cru e por isso não tem autor no `admin_audit_log`.
   //
   // Medido ao vivo em 21/08: a candidatura segue com ZERO avaliações de qualquer tipo — o mesmo
   // estado que motivou as quatro recusas anteriores —, 0 tokens de agendamento vivos e status
@@ -297,8 +320,12 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   'ec7336f2-8c04-4a44-b1fc-794c83bd435c',
 ]);
 
+// A2: a Camada B le LINHAS DE PRODUCAO, entao um despacho manual legitimo do PM a reprova em
+// TODA branch. Foi o que congelou a fila por 5h22m54s em 21/08. Ela sai do portao required e
+// passa a rodar no `invariants-check` (diario, estrito, nao-required), onde pode acusar sem
+// travar merge de ninguem. A Camada A ACIMA continua no portao: ela e funcao do diff.
 describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
-  skip: !sb ? 'sem SUPABASE_URL + SERVICE_ROLE_KEY' : false,
+  skip: skipDataInvariant(!!sb, 'sem SUPABASE_URL + SERVICE_ROLE_KEY'),
 }, () => {
   it('depois do cutoff, tentativa de gate sem ator só existe se o CRON a explicar', async () => {
     // O cron de resgate roda como `service_role` e produz a MESMA digital da suíte (`caller_id`

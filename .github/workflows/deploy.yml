@@ -1,14 +1,57 @@
+# A3 (auditoria de CI, 21/08/2026) — o deploy passa a DEPENDER do `CI Validate`.
+#
+# ANTES: `on: push: branches: [main]`. O deploy disparava junto com o `validate` pos-merge e
+# publicava MUITO antes dele terminar. Medido: deploy p50 1m22s contra `validate` p50 14m05s,
+# ou seja, ~12 min de vantagem. O check pos-merge existia mas nao protegia deploy nenhum: era
+# custo sem cobertura, e ainda ocupava a faixa serializada do banco exatamente quando a proxima
+# PR precisava dela.
+#
+# DEPOIS: `workflow_run` sobre o `CI Validate`, so em `main` e so quando ele conclui com sucesso.
+# Custo aceito na decisao: publicar deixa de levar ~1m22s e passa a levar ~14 min.
+#
+# ⚠️ TRES ARMADILHAS DO `workflow_run`, todas tratadas abaixo:
+#
+#  1. `actions/checkout` NAO pega o commit que disparou. Sem `ref:` explicito ele pega o HEAD do
+#     branch padrao NO MOMENTO do run, que pode ja ser outro commit. Isso publicaria codigo que
+#     nenhum `validate` aprovou -- exatamente o que esta mudanca existe para impedir. Por isso o
+#     `ref: ${{ github.event.workflow_run.head_sha }}`.
+#
+#  2. `branches: [main]` filtra pelo branch do run que DISPAROU, nao pelo destino da PR. Runs de
+#     `pull_request` tem como head o branch da PR, entao nao disparam deploy. E o comportamento
+#     desejado, mas nao e obvio na leitura.
+#
+#  3. O gatilho so passa a valer quando ESTE arquivo estiver na main. Ate o merge, nada muda.
+#
+# ⚠️ SEMANTICA QUE MUDOU, e vale saber: `workflow_run.conclusion` e a conclusao do WORKFLOW
+# INTEIRO, nao so dos jobs required. `CI Validate` carrega tambem `visual_dark_mode` e
+# `quality_gate`, que NAO sao required. Com isto, um vermelho neles passa a segurar o deploy.
+# E mais estrito que o portao de merge, de proposito: nao publicar quando algo ficou vermelho e
+# a leitura conservadora. Se preferir o contrario, o ajuste e consultar a conclusao do job
+# `validate` pela API num step, em vez do gatilho.
 name: Deploy to Cloudflare Workers
 
 on:
-  push:
+  workflow_run:
+    workflows: ["CI Validate"]
+    types: [completed]
     branches: [main]
+  # Escotilha manual. Sem ela, um portao de ~14 min vira ponto unico de falha para publicar
+  # correcao urgente. Fica registrada no historico de runs como disparo manual, com ator.
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Nao publica quando o `CI Validate` que disparou nao fechou verde. O disparo manual
+    # (`workflow_dispatch`) nao tem `workflow_run`, entao passa por escolha explicita de alguem.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     steps:
       - uses: actions/checkout@v6
+        with:
+          # Ver armadilha 1 acima. No disparo manual cai no default (HEAD do ref escolhido).
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
       - uses: actions/setup-node@v6
         with:
           node-version: 22
