@@ -1,4 +1,8 @@
-# Arranque: governança da liderança - rastreio das ações, board de gestão, permissão por papel
+# Arranque: o time de gestão do Núcleo - estrutura, board, permissão por papel
+
+> **Escopo, em uma linha:** o time de gestão hoje são 2 pessoas com uma capacidade global, sem
+> iniciativa, sem board e sem papel. Vai crescer em níveis, absorver os pontos focais e sair junto
+> com a reforma do manual de governança. Este arranque mede o que existe e nomeia o que decidir.
 
 > Tudo abaixo foi medido ao vivo em **21-22/08/2026** (horários em UTC). **Re-medir antes de agir**:
 > número recitado de handoff não vale como medição.
