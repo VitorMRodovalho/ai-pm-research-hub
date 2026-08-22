@@ -71,6 +71,76 @@ a uma iniciativa nova para a liderança.
    é o campo `kind` de `meeting_action_items` (`action` / `decision` / `followup` / `general`) virar o
    roteador, em vez de inventar taxonomia nova.
 
+### O pedido real: um board do TIME DE GESTÃO, e ele vai crescer em níveis
+
+⚠️ **Segunda correção do PM, 22/08.** O que ele quer não é o board do rito quinzenal, é o board do
+**time de gestão do Núcleo**, que hoje tem 2 pessoas (GP e co-GP), está subindo uma terceira, vai
+absorver **pontos focais dos capítulos** como membros de gestão, vai ter **níveis diferentes**, e vai
+junto com a reforma do manual de governança. Líder de tribo também pode receber tarefa desse board.
+
+### O estado medido, e ele é o argumento central
+
+| medida | valor |
+|---|---|
+| pessoas com `manage_platform` hoje | **2** |
+| iniciativas de kind governança/gestão | **0** |
+| `engagement kind` para ponto focal | **0** |
+
+E o recorte por papel vigente:
+
+| kind / role | vigentes | com `manage_platform` | com `manage_event` |
+|---|---|---|---|
+| `chapter_board` / **`liaison`** | **7** | **0** | **0** |
+| `chapter_board` / `board_member` | 9 | 0 | 0 |
+| `ambassador` / `ambassador` | 5 | 2 | 2 |
+| `ambassador` / `founder` | 4 | 2 | 2 |
+
+Três leituras que saem daí:
+
+1. **O time de gestão não existe como estrutura.** Existe como **duas pessoas carregando uma capacidade
+   global** (`manage_platform`). Não há iniciativa, não há board, não há papel. Crescer de 2 para um time
+   multinível não é adicionar gente: é **trocar flag de capacidade por estrutura governada**.
+2. **Os pontos focais já existem** e são os 7 `chapter_board/liaison`. Trazê-los "para dentro" não é
+   criá-los, é dar a eles engajamento numa iniciativa de gestão e a capacidade correspondente. Hoje eles
+   têm **zero**.
+3. **O papel atual do time de gestão está modelado errado.** GP e co-GP aparecem como `ambassador`, que
+   é papel de **posicionamento externo** (junto com `founder`), não de gestão interna. Isso funciona
+   enquanto são dois; não sobrevive a níveis.
+
+### O desenho a decidir, e a boa prática aplicável
+
+A plataforma já tem o primitivo certo: **iniciativa** é o primitivo de domínio (ADR-0005), autoridade é
+escopada a ela (ADR-0007), e `visibility='confidential'` (ADR-0105/#785) fecha board, eventos, artefatos
+e documentos para quem não está engajado. **O time de gestão deveria ser uma iniciativa como qualquer
+outra**, e não um conjunto de exceções.
+
+Isso resolve de uma vez o que o PM listou:
+
+- **board próprio**, herdando o gate da iniciativa, sem inventar mecanismo de ocultação novo
+- **níveis** viram `engagement kind` + `role` dentro da iniciativa, do mesmo jeito que tribo tem líder e
+  pesquisador
+- **ponto focal entra** ganhando engajamento nessa iniciativa, mantendo o `chapter_board/liaison` que
+  já descreve a relação com o capítulo
+- **líder de tribo recebe tarefa** sem precisar ser membro do time: `board_item_assignments` atribui a
+  pessoa, e o gate de leitura é da iniciativa. Decidir se ele vê só o card dele ou o board todo.
+
+Perguntas abertas, todas do PM:
+
+1. A iniciativa de gestão nasce `confidential` ou `standard`? Confidencial protege conversa de pessoas
+   e de contrato; padrão dá exemplo de transparência para quem cobra transparência das tribos. **Pode
+   ser as duas: uma iniciativa de gestão `standard` e uma de assuntos sensíveis `confidential`**, que é
+   o que a presidência já faz na prática.
+2. Quantos níveis, e o que cada um pode? Sugestão de partida, a validar contra
+   `docs/reference/V4_AUTHORITY_MODEL.md`: coordenação (hoje `manage_platform`), gestão (opera o ciclo,
+   sem ciclo de vida de membro), apoio de gestão (executa e registra, sem apagar), ponto focal
+   (representa o capítulo, lê tudo, escreve no que é dele).
+3. ⚠️ **`manage_platform` não deve ser o degrau de entrada.** Ele carrega ciclo de vida de membro, que é
+   invariante só-GP por LGPD Art. 18. Um time de gestão crescendo com `manage_platform` para todo mundo
+   é exatamente o anti-padrão de escalada registrado no sedimento p122e.
+4. A reforma do **manual de governança** e este desenho são o mesmo trabalho, e devem sair juntos: o
+   manual descreve o que a matriz de permissão implementa. Se saírem separados, divergem na primeira
+   mudança.
+
 ### Itens da reunião que o PM citou e que NÃO viraram ação
 
 Levantados por ele depois, e ausentes das 26:
