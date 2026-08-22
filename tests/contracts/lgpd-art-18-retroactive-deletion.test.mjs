@@ -62,6 +62,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
@@ -73,6 +74,14 @@ const DOCS_FILE = resolve(
   ROOT,
   'docs/audit/lgpd-art11-remediation/notification_art18_interim_template.md'
 );
+
+// #1932 (lote PII/LGPD): SECDEF + search_path fixado e INVARIANTE CORRENTE de seguranca, entao
+// resolve a captura vigente. Este arquivo fixava a 20260805000023 e as duas RPCs foram redefinidas
+// na 20260805000024 (hotfix do FK de accessor_id) — as afirmacoes descreviam texto que a producao
+// nao executa mais. O resto do arquivo segue fixando de proposito: sao afirmacoes sobre o que a
+// 023 entregou (blocos de sanity, DROP de sobrecarga).
+const capRecord = latestFunctionCapture(ROOT, 'lgpd_record_retroactive_notification');
+const capDelete = latestFunctionCapture(ROOT, 'lgpd_execute_retroactive_deletion');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -102,17 +111,16 @@ test('p238 #332: migration adds deletion_artifacts jsonb column (IF NOT EXISTS, 
   );
 });
 
-test('p238 #332: both RPCs declared with SECDEF + pinned search_path', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+test('p238 #332: both RPCs declared with SECDEF + pinned search_path (captura vigente)', () => {
   // notification RPC
   assert.match(
-    body,
+    capRecord.block,
     /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.lgpd_record_retroactive_notification\s*\([\s\S]*?\)\s+RETURNS\s+jsonb\s+LANGUAGE\s+plpgsql\s+SECURITY\s+DEFINER\s+SET\s+search_path\s*=\s*'public',\s*'pg_temp'/i,
     'lgpd_record_retroactive_notification must be SECDEF with pinned search_path'
   );
   // deletion RPC
   assert.match(
-    body,
+    capDelete.block,
     /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.lgpd_execute_retroactive_deletion\s*\([\s\S]*?\)\s+RETURNS\s+jsonb\s+LANGUAGE\s+plpgsql\s+SECURITY\s+DEFINER\s+SET\s+search_path\s*=\s*'public',\s*'pg_temp'/i,
     'lgpd_execute_retroactive_deletion must be SECDEF with pinned search_path'
   );

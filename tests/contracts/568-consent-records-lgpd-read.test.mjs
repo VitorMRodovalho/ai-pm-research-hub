@@ -19,6 +19,22 @@
  * the auto PUBLIC grant linger).
  *
  * Cross-ref: #568, #564/PR#565, GC-162, LGPD Art. 18 (II access / V confirmation) + Art. 37.
+ *
+ * ── #1932, lote PII/LGPD: as afirmacoes de INVARIANTE CORRENTE leem a captura VIGENTE ──────────
+ * Este arquivo era a instancia provada do #1932. Ele fixava a migration 130 e afirmava
+ * `can_by_member(v_caller_id, 'view_pii')` com a mensagem "admin read gated on view_pii" — linha
+ * que a producao nao executa desde 20260822120649, que trocou o portao pelo `can_org_by_member`,
+ * mais estrito. O guard seguia VERDE.
+ *
+ * Agora cada afirmacao de invariante corrente resolve `latestFunctionCapture(...)`. O que continua
+ * fixado na 130 e so o que e ENTREGA HISTORICA daquela migration (a postura de GRANT que ela
+ * estabeleceu), e esta rotulado como tal. A postura de GRANT VIGENTE quem prova sao os testes de
+ * banco no fim do arquivo, que exercem o anon de verdade.
+ *
+ * ⚠️ `export_my_data` tambem estava desatualizada aqui (fixada na 130, vigente em 20260808000100) e
+ * o scanner do #1932 NAO a via: o arquivo nunca escreve `CREATE OR REPLACE FUNCTION
+ * public.export_my_data`, so afirma trechos do corpo. O ponto cego nao e apenas por arquivo, e por
+ * FUNCAO dentro de arquivo visivel.
  */
 
 import test from 'node:test';
@@ -26,10 +42,19 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
+// Fixado DE PROPOSITO: so para o que a migration 130 entregou (postura de GRANT).
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000130_p568_consent_records_lgpd_read_rpcs.sql');
 const body = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+
+// Captura VIGENTE de cada funcao. `latestFunctionCapture` lanca se a funcao sumir, em vez de
+// devolver vazio — um `doesNotMatch('', ...)` seria verde para sempre, e as afirmacoes de PII aqui
+// sao justamente dessa forma ("nao vaza hash").
+const capLmc = latestFunctionCapture(ROOT, 'list_my_consents');
+const capAdm = latestFunctionCapture(ROOT, 'admin_list_member_consents');
+const capExp = latestFunctionCapture(ROOT, 'export_my_data');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -37,57 +62,88 @@ const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_AN
 const svcGated = !!(SUPABASE_URL && SERVICE_KEY);
 const anonGated = !!(SUPABASE_URL && ANON_KEY);
 
-// ── STATIC: list_my_consents (subject self-read) ────────────────────────────────────────
-test('#568 static: list_my_consents is SECDEF + STABLE, anon-revoked, omits hashes, has is_active', () => {
-  assert.ok(existsSync(MIG), 'migration 130 exists');
-  assert.match(body, /CREATE OR REPLACE FUNCTION public\.list_my_consents\(\)/);
-  assert.match(body, /list_my_consents\(\)[\s\S]*?STABLE[\s\S]*?SECURITY DEFINER/);
+// ── VIGENTE: list_my_consents (leitura do proprio titular) ──────────────────────────────
+test('#568 vigente: list_my_consents e SECDEF + STABLE, omite os hashes e publica is_active', () => {
+  assert.match(capLmc.block, /CREATE OR REPLACE FUNCTION public\.list_my_consents\(\)/);
+  assert.match(capLmc.block, /STABLE/, 'leitura do titular e STABLE');
+  assert.match(capLmc.block, /SECURITY DEFINER/);
+  // A visao do TITULAR nao pode expor as evidencias de captura. Antes isto exigia fatiar a
+  // migration entre CREATE e REVOKE porque o arquivo continha as duas funcoes; a captura vigente
+  // ja e so esta funcao, entao a afirmacao vale sobre o bloco inteiro.
+  assert.doesNotMatch(capLmc.block, /email_hash|ip_hash|user_agent_hash/,
+    'list_my_consents (visao do titular) precisa omitir as evidencias de captura');
+  assert.match(capLmc.block, /'is_active', \(cr\.revoked_at IS NULL\)/,
+    'o titular ve um flag consolidado de vigencia');
+});
+
+// ── VIGENTE: admin_list_member_consents (portao + cerca de org + log de acesso) ─────────
+test('#568 vigente: admin_list_member_consents e gateada em view_pii COM escopo de org e loga sempre', () => {
+  assert.match(capAdm.block, /CREATE OR REPLACE FUNCTION public\.admin_list_member_consents\(p_member_id uuid\)/);
+
+  // O portao vigente e o ESCOPADO. Afirmar o nome exato importa: `can_org_by_member` nao contem
+  // `can_by_member`, entao a versao anterior desta linha reprovaria — foi assim que o #1932 achou
+  // este arquivo. A negativa abaixo e o que impede a volta silenciosa ao portao mais fraco.
+  assert.match(capAdm.block, /IF NOT public\.can_org_by_member\(v_caller_id, 'view_pii'\) THEN/,
+    'leitura administrativa gateada em view_pii COM escopo de organizacao');
+  assert.doesNotMatch(capAdm.block, /public\.can_by_member\(v_caller_id, 'view_pii'\)/,
+    'nao pode reverter para o portao amplo can_by_member (perde o escopo de org)');
+
+  // CRITICO: cerca multi-tenant — SECDEF contorna a RLS RESTRICTIVE, e o portao de capacidade nao
+  // limita o ALVO.
+  assert.match(capAdm.block, /v_target_org_id IS NULL OR v_caller_org_id IS NULL OR v_target_org_id <> v_caller_org_id/,
+    'cerca de org: o alvo precisa ser membro da organizacao de quem chama');
+  assert.match(capAdm.block, /RAISE EXCEPTION 'Access denied: target member not in caller organization'/);
+  assert.match(capAdm.block, /AND cr\.organization_id = v_caller_org_id/, 'cerca de org tambem na query');
+
+  // O caminho administrativo (view_pii) DEVE expor as evidencias — inverso da visao do titular.
+  assert.match(capAdm.block, /email_hash[\s\S]*?ip_hash[\s\S]*?user_agent_hash/,
+    'o caminho de auditoria expoe as evidencias de captura');
+});
+
+test('#568 vigente: o log de acesso do admin_list_member_consents nao fica atras de condicional (Art. 37)', () => {
+  const ins = capAdm.block.indexOf('INSERT INTO public.pii_access_log');
+  assert.ok(ins > 0, 'a funcao precisa registrar a leitura em pii_access_log');
+  assert.match(capAdm.block.slice(ins), /'admin_list_member_consents'[\s\S]*?now\(\)/);
+
+  // A versao anterior afirmava `doesNotMatch(body, /p_member_id <> v_caller_id/)` sobre o arquivo
+  // INTEIRO, como proxy de "self-read nao e excluido do log". O proxy quebrou sem que o invariante
+  // quebrasse: a captura vigente usa exatamente essa comparacao na cerca de CAPITULO ("self sempre
+  // permitido"), que nao tem relacao com o log. Varredura de literal no corpo todo nao diz de QUAL
+  // construcao o literal e.
+  //
+  // A afirmacao precisa e posicional: entre o ultimo `END IF;` e o INSERT nao pode abrir condicional.
+  const antes = capAdm.block.slice(0, ins);
+  const ultimoEndIf = antes.lastIndexOf('END IF;');
+  assert.ok(ultimoEndIf > 0, 'esperado ao menos um bloco IF antes do log (os portoes)');
+  const entre = antes.slice(ultimoEndIf + 'END IF;'.length);
+  assert.doesNotMatch(entre, /\bIF\b/,
+    'o log de acesso precisa ser incondicional: nenhuma leitura administrativa pode escapar do registro');
+});
+
+// ── VIGENTE: export_my_data ─────────────────────────────────────────────────────────────
+test('#568 vigente: export_my_data leva consent_records por projecao explicita e usa i.title', () => {
+  assert.match(capExp.block, /'consent_records', COALESCE\(\(/, 'o export inclui consent_records');
+  // projecao explicita (NAO row_to_json), para coluna futura nao ser exportada por acidente
+  const exBlock = capExp.block.slice(capExp.block.lastIndexOf("'consent_records'"));
+  assert.doesNotMatch(exBlock, /row_to_json\(cr\)/, 'consent_records exporta por projecao explicita');
+  // o bug pre-existente: initiatives.name deixou de existir (V4 renomeou para title)
+  assert.doesNotMatch(capExp.block, /'initiative_name', i\.name\b/,
+    'nao pode referenciar i.name (a coluna virou title no V4)');
+  assert.match(capExp.block, /'initiative_name', i\.title\b/, 'engagements usam i.title');
+});
+
+// ── ENTREGA HISTORICA: a postura de ACL que a migration 130 estabeleceu ─────────────────
+// Fixado de proposito. A pergunta aqui e "a 130 entregou isto?", nao "isto vale hoje" — quem
+// responde a segunda sao os testes de banco abaixo, que exercem o anon de verdade. Manter as duas
+// e o ponto: `CREATE OR REPLACE` reconcede EXECUTE a PUBLIC por padrao, entao a postura vigente
+// precisa ser medida, nao deduzida do texto de uma migration.
+test('#568 entrega da migration 130: revoga PUBLIC/anon e concede authenticated + service_role', () => {
+  assert.ok(existsSync(MIG), 'migration 130 existe');
   assert.match(body, /REVOKE EXECUTE ON FUNCTION public\.list_my_consents\(\) FROM PUBLIC, anon;/);
   assert.match(body, /GRANT EXECUTE ON FUNCTION public\.list_my_consents\(\) TO authenticated, service_role;/);
-  // subject view must NOT leak the internal capture hashes (slice the fn body by its CREATE..REVOKE bounds)
-  const lmcBlock = body.slice(
-    body.indexOf('CREATE OR REPLACE FUNCTION public.list_my_consents'),
-    body.indexOf('REVOKE EXECUTE ON FUNCTION public.list_my_consents'));
-  assert.doesNotMatch(lmcBlock, /email_hash|ip_hash|user_agent_hash/,
-    'list_my_consents (subject view) must omit the capture-evidence hashes');
-  assert.match(lmcBlock, /'is_active', \(cr\.revoked_at IS NULL\)/, 'subject sees a consolidated active flag');
-});
-
-// ── STATIC: admin_list_member_consents (view_pii + org fence + audit log) ────────────────
-test('#568 static: admin_list_member_consents is view_pii-gated with an org fence + always logs', () => {
-  assert.match(body, /CREATE OR REPLACE FUNCTION public\.admin_list_member_consents\(p_member_id uuid\)/);
-  assert.match(body, /IF NOT public\.can_by_member\(v_caller_id, 'view_pii'\) THEN/,
-    'admin read gated on view_pii');
-  // CRITICAL: multi-tenant fence — target must be in caller org (SECDEF bypasses the RESTRICTIVE RLS)
-  assert.match(body, /v_target_org_id IS NULL OR v_caller_org_id IS NULL OR v_target_org_id <> v_caller_org_id/,
-    'org fence: target must be a real member in the caller organization');
-  assert.match(body, /RAISE EXCEPTION 'Access denied: target member not in caller organization'/);
-  assert.match(body, /AND cr\.organization_id = v_caller_org_id/, 'row-level org fence on the consent query too');
-  // accountability: log EVERY admin read (no self-read carve-out), with explicit accessed_at.
-  // (The INSERT + the self-read carve-out string are both unique to this function — assert on the
-  // whole body; an earlier indexOf('export_my_data') matched the header comment, slicing to empty.)
-  assert.doesNotMatch(body, /p_member_id <> v_caller_id/, 'self-read must NOT be excluded from the audit log');
-  assert.match(body, /INSERT INTO public\.pii_access_log[\s\S]*?'admin_list_member_consents'[\s\S]*?now\(\)/);
   assert.match(body, /REVOKE EXECUTE ON FUNCTION public\.admin_list_member_consents\(uuid\) FROM PUBLIC, anon;/);
-  // the admin (view_pii) audit path MUST expose the capture-evidence hashes (inverse of the subject view)
-  const admProjBlock = body.slice(
-    body.indexOf('CREATE OR REPLACE FUNCTION public.admin_list_member_consents'),
-    body.indexOf('REVOKE EXECUTE ON FUNCTION public.admin_list_member_consents'));
-  assert.match(admProjBlock, /email_hash[\s\S]*?ip_hash[\s\S]*?user_agent_hash/,
-    'admin audit path exposes the capture-evidence hashes');
-});
-
-// ── STATIC: export_my_data adds consent + fixes the i.name→i.title regression ────────────
-test('#568 static: export_my_data includes consent_records, fixes i.name→i.title, re-asserts grants', () => {
-  assert.match(body, /'consent_records', COALESCE\(\(/, 'export gains a consent_records key');
-  // explicit projection (NOT row_to_json) so future columns are not auto-exported
-  const exBlock = body.slice(body.lastIndexOf("'consent_records'"));
-  assert.doesNotMatch(exBlock, /row_to_json\(cr\)/, 'consent_records export uses explicit projection');
-  // the pre-existing bug: initiatives.name no longer exists (V4 renamed to title)
-  assert.doesNotMatch(body, /'initiative_name', i\.name\b/, 'must NOT reference i.name (column was renamed to title)');
-  assert.match(body, /'initiative_name', i\.title\b/, 'engagements use i.title');
   assert.match(body, /REVOKE EXECUTE ON FUNCTION public\.export_my_data\(\) FROM PUBLIC, anon;/,
-    'CREATE OR REPLACE must re-assert the ACL explicitly (drop the lingering anon auto-grant)');
+    'CREATE OR REPLACE obriga a reafirmar a ACL (derruba o auto-grant de anon)');
 });
 
 // ── DB (gated): anon is revoked on all three; service_role fail-closes ───────────────────

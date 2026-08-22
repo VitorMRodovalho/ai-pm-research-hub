@@ -69,6 +69,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
@@ -110,10 +111,13 @@ test('p238 #331: migration uses DROP+CREATE for both consent RPCs (not bare CREA
   );
 });
 
-test('p238 #331: give_consent_via_token takes p_evidence jsonb', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+// #1932 (lote PII/LGPD): a ASSINATURA vigente e invariante corrente. Fixado na 20260805000022, a
+// funcao foi redefinida na 20260808000300 — a afirmacao descrevia a assinatura de uma captura
+// vencida. O DROP da sobrecarga de 2 args e os blocos de sanity seguem fixados de proposito: sao
+// afirmacoes sobre o que a 022 entregou.
+test('p238 #331: give_consent_via_token takes p_evidence jsonb (captura vigente)', () => {
   assert.match(
-    body,
+    latestFunctionCapture(ROOT, 'give_consent_via_token').block,
     /CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.give_consent_via_token\s*\([\s\S]*?p_evidence\s+jsonb\s+DEFAULT\s+NULL/i,
     'give_consent_via_token must take p_evidence jsonb DEFAULT NULL as 3rd arg'
   );
