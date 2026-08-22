@@ -30215,6 +30215,14 @@ export type Database = {
       }
       can_manage_comms_metrics: { Args: never; Returns: boolean }
       can_manage_knowledge: { Args: never; Returns: boolean }
+      can_org: {
+        Args: { p_action: string; p_person_id: string }
+        Returns: boolean
+      }
+      can_org_by_member: {
+        Args: { p_action: string; p_member_id: string }
+        Returns: boolean
+      }
       can_read_internal_analytics: { Args: never; Returns: boolean }
       can_view_comms_analytics: { Args: never; Returns: boolean }
       cancel_agenda_block: {
