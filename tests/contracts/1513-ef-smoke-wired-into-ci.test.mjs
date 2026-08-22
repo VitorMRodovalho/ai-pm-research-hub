@@ -59,7 +59,14 @@ function stepBlock(yaml, stepName) {
 
 test('#1513: ef-smoke.test.mjs esta no script `npm test` (senao nunca roda em CI)', () => {
   const pkg = JSON.parse(readRepo('package.json'));
-  const files = pkg.scripts.test.split(/\s+/).filter((f) => f.endsWith('.mjs'));
+  // A1 (#1908) — `test` virou `npm run test:structural && npm run test:behavioural` e nao lista
+  // mais caminho. Ler so ele deixaria ESTA asserçao vazia, ou seja, verde para sempre — que e
+  // o modo de falha que este guard existe para impedir. A uniao dos dois baldes e o mesmo
+  // conjunto de antes. (Mesma correçao aplicada ao guard do #1109.)
+  const files = [pkg.scripts['test:structural'] ?? '', pkg.scripts['test:behavioural'] ?? '']
+    .join(' ')
+    .split(/\s+/)
+    .filter((f) => f.endsWith('.mjs'));
   assert.ok(
     files.includes(EF_SMOKE_PATH),
     `${EF_SMOKE_PATH} saiu do script "test" do package.json. O CI so roda esse script; ` +
@@ -72,7 +79,14 @@ test('#1513: o step `Run Unit Tests` exporta SUPABASE_ANON_KEY do secret', () =>
   const block = stripYamlComments(stepBlock(yaml, 'Run Unit Tests'));
 
   // Confirma que a fatia e mesmo o step que roda a suite, e nao um homonimo.
-  assert.match(block, /run:\s*npm test\b/, 'a fatia auditada nao e o step que roda `npm test`');
+  // A1 (#1908) — o step passou a rodar `npm run test:behavioural`, que e onde ef-smoke vive
+  // (ele fala com EF deployada, logo e comportamental). O ancora acompanha o rename; o que
+  // NAO pode e a asserçao aceitar qualquer step, senao ela para de identificar a fatia certa.
+  assert.match(
+    block,
+    /run:\s*npm run test:behavioural\b/,
+    'a fatia auditada nao e o step que roda a suite comportamental',
+  );
 
   assert.match(
     block,

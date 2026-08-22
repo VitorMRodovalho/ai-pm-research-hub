@@ -27,30 +27,30 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { SKIP_LIST, SKIP_SET } from '../helpers/contract-whitelist-skips.mjs';
 
 const ROOT = process.cwd();
 const CONTRACT_DIR = 'tests/contracts';
 
 // ── Documented quarantine (allowlist) ─────────────────────────────────────────
-// Each entry: a contract test intentionally excused from the whitelists, with a
-// reason and a tracking issue. Removing the root cause = wire the file + delete
-// the entry here. NEVER add without a live issue — that is silencing, not skipping.
-const SKIP_LIST = [
-  {
-    file: 'ip-gate-templates.test.mjs',
-    reason:
-      'Deterministic policy-drift: resolve_default_gates diverged from the test ' +
-      '(first gate committee_majority != curator; executive_summary returns gates ' +
-      "!= NULL; threshold 'majority' not number/'all') since ADR-0016 C9 (9d2eea3c). " +
-      'Never wired into either whitelist; not running in CI. Reconcile test-vs-policy.',
-    issue: 1340,
-  },
-];
+// A1 (#1908): a lista saiu daqui para `tests/helpers/contract-whitelist-skips.mjs`, porque agora
+// tem DOIS consumidores — este guard e o classificador da partição estrutural x comportamental
+// (`scripts/classify-test-suite.mjs`). Duas cópias divergiriam, e a divergência apareceria como
+// "teste sumiu do CI", que é o defeito que esta lista existe para impedir.
+// As regras não mudaram: motivo escrito + issue viva, e as entradas são validadas abaixo.
 
-const skipSet = new Set(SKIP_LIST.map((e) => e.file));
+const skipSet = SKIP_SET;
 
 const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
-const testScript = pkg.scripts?.test ?? '';
+
+// A1 (#1908) — `test` deixou de listar arquivo: virou `npm run test:structural && npm run
+// test:behavioural`. Continuar lendo `test` aqui deixaria este guard VAZIO, ou seja, verde para
+// sempre — o pior desfecho possível para um guard cujo trabalho é ser o denominador. A união dos
+// dois baldes é o mesmo conjunto de antes, e é ela que passa a valer.
+const testScript = [
+  pkg.scripts?.['test:structural'] ?? '',
+  pkg.scripts?.['test:behavioural'] ?? '',
+].join(' ');
 const contractsScript = pkg.scripts?.['test:contracts'] ?? '';
 
 // A file is "referenced" if its whitelist path token appears verbatim in the
