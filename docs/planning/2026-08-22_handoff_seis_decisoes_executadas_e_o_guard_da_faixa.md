@@ -81,7 +81,7 @@ E o par de alertas mostra a diferença entre sinal e ruído:
 
 ---
 
-## 4. Duas correções que eu mesmo tive de fazer
+## 4. Três correções em cima do meu próprio trabalho
 
 **(a) A #1920 corrigia 2 pontos, e eram 9.** Contando as ocorrências em vez de checar presença, a
 premissa falsa do #1586 seguia viva em 7 lugares além dos 2 já corrigidos — 4 no doc de auditoria
@@ -89,14 +89,6 @@ premissa falsa do #1586 seguia viva em 7 lugares além dos 2 já corrigidos — 
 ausência do #1586, e está medindo bem"* — a afirmação errada, elogiada como boa medição.
 A 10ª ocorrência **não era falsa** (a entrada de 14/08 é anterior à entrega), e ali só mudou o
 tempo verbal. **Varredura de premissa não é busca-e-substitui: cada ocorrência tem uma data.**
-
-**(c) A A1 quebrou DOIS guards, e os dois estavam certos.** `#1109` e `#1513` liam
-`pkg.scripts.test` para conferir que um arquivo está mesmo no CI. Com `test` deixando de listar
-caminhos, os dois ficariam **vazios** (`[] == []`), verdes para sempre, justamente nos guards cujo
-trabalho é notar teste que parou de rodar. Peguei o #1109 rodando a suíte inteira local; o #1513 foi
-o CI que pegou. Só então varri a classe: `pkg.scripts.test` é lido estruturalmente em três lugares,
-e o resto das ocorrências de `npm test` é prosa. **Consertar o primeiro que aparece não é a
-varredura.**
 
 **(b) Abri a #1926 com a premissa errada e a fechei.** Afirmei que
 `ip-gate-templates.test.mjs` era órfão silencioso e que o repo não tinha denominador comparando o
@@ -109,6 +101,14 @@ guards. É a mesma lição que eu tinha acabado de ampliar na #1920, repetida no
 📌 E a A1 **teria desligado esse guard em silêncio**: com `test` deixando de listar arquivo, a
 checagem do #1109 ficaria **vazia** — verde para sempre, o pior desfecho para o guard que É o
 denominador. A A1 agora o atualiza para ler a união dos dois baldes.
+
+**(c) A A1 quebrou DOIS guards, e os dois estavam certos.** `#1109` e `#1513` liam
+`pkg.scripts.test` para conferir que um arquivo está mesmo no CI. Com `test` deixando de listar
+caminhos, os dois ficariam **vazios** (`[] == []`), verdes para sempre, justamente nos guards cujo
+trabalho é notar teste que parou de rodar. Peguei o #1109 rodando a suíte inteira local; o #1513 foi
+o CI que pegou. Só então varri a classe: `pkg.scripts.test` é lido estruturalmente em três lugares,
+e o resto das ocorrências de `npm test` é prosa. **Consertar o primeiro que aparece não é a
+varredura.**
 
 ---
 
