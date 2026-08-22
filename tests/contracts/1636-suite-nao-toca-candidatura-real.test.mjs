@@ -214,9 +214,22 @@ const CUTOFF = '2026-08-09T00:00:00Z';
  * distingue por carimbar também a EXECUÇÃO (`selection.%cron_run%`, 197 linhas), e a chamada
  * manual não carimba.
  *
- * ⚠️ Uma entrada aqui é dívida, não isenção: enquanto `selection_rescue_unbooked_invite` não tiver
- * superfície (#1586), a única porta para despachar é o service_role, e toda operação manual vai
- * cair aqui. A saída é a tela do #1586, com autor autenticado — não o crescimento desta lista.
+ * ⚠️ Uma entrada aqui é dívida, não isenção. E desde 17/08/2026 ela é dívida EVITÁVEL.
+ *
+ * 📌 O CAMINHO AUTENTICADO EXISTE. Use `interview_manage` com `action='rescue_unbooked'`
+ * (#1586, entregue 17/08): ele chama `selection_rescue_unbooked_invite` preservando o AUTOR no
+ * `admin_audit_log`. Chamar por service_role registra ato humano como se fosse cron, com actor
+ * nulo — e é exatamente isso que obriga uma entrada nova aqui e congela a fila de merge de todo
+ * mundo até alguém adicioná-la.
+ *
+ * Medido em 22/08/2026, cruzando as 6 entradas com o log de auditoria: a de 14/08 (ANTERIOR à
+ * entrega do #1586) tem 3 linhas de auditoria no mesmo instante; as CINCO de 20 e 21/08, todas
+ * posteriores, têm ZERO. Ou seja: passaram por service_role cru mesmo já havendo porta.
+ *
+ * ⚠️ Este comentário afirmava o contrário até 22/08 ("enquanto o #1586 não existir..."). A
+ * premissa vinha de 08/08 e nunca foi re-medida; nesse intervalo a solução foi entregue. Se você
+ * chegou aqui investigando uma entrada nova, a pergunta certa NÃO é "quando vão fazer a tela",
+ * é "por que a tela não foi usada".
  */
 const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // 14/08/2026 02:26:19Z — despacho de convite de agendamento decidido pelo PM na sessão do #1587,

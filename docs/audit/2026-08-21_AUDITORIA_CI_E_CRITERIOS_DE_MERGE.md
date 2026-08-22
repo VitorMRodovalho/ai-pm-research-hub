@@ -668,8 +668,23 @@ Ordenada por (retorno medido) / (risco de mexer). **Nada disto foi executado.**
 
 | # | item |
 |---|---|
-| **C1** | **#1586 (superficie autenticada para `selection_rescue_unbooked_invite`).** Enquanto a unica porta for `service_role`, toda decisao manual do PM vira linha sem ator, e o allowlist do #1636 cresce a cada tentativa. Hoje ele iria para 6 entradas, e a sexta e a **quinta tentativa na mesma candidatura**. Nenhum conserto de CI resolve isso |
+| **C1** | ~~**#1586 (superficie autenticada para `selection_rescue_unbooked_invite`).**~~ **PREMISSA CORRIGIDA em 22/08 — ver nota abaixo.** |
 
+> ⚠️ **Correcao de 22/08/2026.** Esta secao afirmava que a superficie autenticada nao existia
+> ("enquanto a unica porta for `service_role`..."). **Falso desde 17/08:** o **#1586 esta FECHADO**,
+> e `interview_manage` com `action='rescue_unbooked'` chama `selection_rescue_unbooked_invite`
+> preservando o AUTOR no `admin_audit_log`. A ressalva do fechamento (conector cacheando schema de
+> 4 acoes) tambem nao vale mais: o enum expoe 8, com `rescue_unbooked` entre elas.
+>
+> Medido cruzando as 6 entradas do allowlist do #1636 com o log: a de 14/08 (ANTERIOR a entrega)
+> tem 3 linhas de auditoria; as cinco de 20 e 21/08, todas POSTERIORES, tem **zero**. Passaram por
+> `service_role` cru mesmo ja havendo porta.
+>
+> Logo o C1 **nao e** "construir a tela", e sim "a tela existente nao ser alcancada no momento da
+> necessidade" — intervencao muito mais barata. A acao substituta esta em aberto; ver #1910.
+>
+> A origem do erro: a premissa foi verificada em 08/08 e recitada em 21/08 sem re-medicao, e no
+> intervalo alguem entregou a solucao.
 ---
 
 ## 10. O que esta lane NAO fez, de proposito
