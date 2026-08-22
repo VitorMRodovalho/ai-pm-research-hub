@@ -362,16 +362,22 @@ para decidi-la.
 
 | commit | o que é | carrega DDL? |
 |---|---|---|
-| `a912fce8` | desenho em camadas (este documento, §1-§5) | não |
-| `bd8945cf` | anexo §6: `co_gp` × `deputy_manager` em três eixos | não |
-| `a99f96b6` | Wave 0: auditoria de 4 etapas | não |
-| `adb5eafb` | ponteiro para o advisory privado | não |
-| `9e15d73c` | **Wave 1**: ativa o degrau Vice-GP + consolidação | **SIM** (2 migrations) |
-| `3b00bf95` | **Wave 2**: interesse deixa de ser renderizado como vínculo | não |
+| `8e805c0e` | desenho em camadas (este documento, §1-§5) | não |
+| `95e4ce6a` | anexo §6: `co_gp` × `deputy_manager` em três eixos | não |
+| `a90f3b24` | Wave 0: auditoria de 4 etapas | não |
+| `e67e5f66` | ponteiro para o advisory privado | não |
+| `3d4bd280` | **Wave 1**: ativa o degrau Vice-GP + consolidação | **SIM** (2 migrations) |
+| `386676f6` | **Wave 2**: interesse deixa de ser renderizado como vínculo | não |
+| `e34b83b8` | estado da lane (esta seção) | não |
+| `d01b0460` | **autoridade**: leitores de PII e escrita em board exigem escopo | não |
+| `21f4be18` | **Wave 4**: matriz papel × rota × operação | não |
 
-⚠️ **`9e15d73c` aplicou DDL no banco compartilhado** (migrations `20260822032921` e
+⚠️ **Os SHAs desta tabela foram reescritos em 22/08** por uma sanitização de histórico (ver §8).
+Qualquer anotação externa que aponte para os SHAs anteriores está morta.
+
+⚠️ **`3d4bd280` aplicou DDL no banco compartilhado** (migrations `20260822032921` e
 `20260822033913`). Enquanto esta lane não mergear, as outras ficam vermelhas: o banco é um só e as
-funções vivas já mudaram. **Esta PR destrava, não trava.** `9e15d73c` é fronteira limpa se a main
+funções vivas já mudaram. **Esta PR destrava, não trava.** `3d4bd280` é fronteira limpa se a main
 quiser soltar só o DDL.
 
 ### Fila
@@ -423,3 +429,46 @@ Da Wave 0, medido em 2026-08-21:
   concede nada). Decidir junto com o desenho de níveis da Wave 3.
 - O bloco de interessados da Wave 2 **renderiza vazio hoje** em toda tribo: toda seleção fora do roster
   é de março e cai fora da janela do ciclo. Ele existe para a próxima rodada de seleção.
+
+---
+
+## 8. Sanitização de histórico (22/08) — por que os SHAs mudaram
+
+O repositório é **público**. Commits desta lane carregavam, em assunto, corpo e comentário de arquivo,
+detalhe operacional de um achado de autorização rastreado no security advisory privado do repositório -
+incluindo a indicação de que parte dele seguia sem correção. Num repo público isso é legível por
+qualquer pessoa; só a página do advisory é restrita.
+
+Os 14 commits do range foram reescritos com `git filter-branch` para remover esse detalhe, preservando
+todo o resto. **Nenhum corpo de função SQL mudou**: a reescrita tocou apenas comentário fora de corpo,
+o que foi verificado por hash normalizado contra o banco vivo (8 funções conferidas). Por isso não há
+drift nem DDL a re-aplicar.
+
+Conferido após a reescrita: zero menções nos 14 corpos de commit, `npx astro build` limpo,
+`npm test` 6904 testes / 0 falhas, `origin/main` intacto.
+
+**Resta uma menção deliberada**, num comentário *dentro* do corpo de `board_write_authority`: removê-la
+mudaria o hash da função e exigiria re-aplicar DDL em produção por um comentário. Ela cita apenas
+comportamento por desenho dos seeds, já documentado na matriz da Wave 4.
+
+### Duas armadilhas registradas
+
+**A quebra de linha que quase reescreveu o repositório inteiro.** O comando foi colado com o range
+`origin/main..HEAD` numa linha separada. O shell tratou o range como comando à parte, e o
+`filter-branch` rodou **sem range**: começou a reescrever os 3138 commits da história completa,
+inclusive a da `main`. Um timeout o matou em ~277. Nada quebrou, porque `filter-branch` só atualiza
+refs no fim - mas o modo de falha é silencioso, já que o comando *parece* funcionar enquanto reescreve
+a coisa errada. A correção foi empacotar tudo num script com duas travas: aborta se o `HEAD` não for o
+esperado, e aborta se o range não resolver para exatamente 14 commits. **Range de reescrita nunca vai
+solto na linha de comando.**
+
+**Sanitizar o documento não sanitiza a mensagem que o descreve.** A primeira passada limpou o conteúdo
+dos arquivos e os corpos de dois commits, mas o corpo do commit da Wave 4 repetia o mesmo detalhe ao
+resumir o que o documento dizia. Passou pela varredura do tree e só apareceu na varredura dos corpos de
+commit. **Varra as duas superfícies, sempre.**
+
+### Recuperação
+
+Backup local do `filter-branch` em `refs/original/refs/heads/lane/video-reunioes-e-shorts`. Os SHAs
+antigos seguem acessíveis por SHA até o GitHub coletar os objetos órfãos: a reescrita limpa o tip, o
+diff da PR, o `git log` e a busca — **não é apagamento**.
