@@ -95,9 +95,36 @@ desaparece. Verificado com defeito injetado, dos dois lados.
 
 ### Rastreamento
 
-- **A2** -> PR #1914
-- **B1** (conserto mecanico, fora do bloco de decisao) -> PR #1913, mergeada em `8309ab94`
-- **A1, A3, A4** -> a executar, uma de cada vez; A1 depende da A2 ter landado
-- **A5** -> nada a executar; esta decisao E o registro
-- **C1** -> sem objeto: #1586 entregue em 17/08. Acao substituta a decidir.
+| item | PR | estado |
+|---|---|---|
+| **B1** (conserto mecanico, fora do bloco) | #1913 | mergeada em `8309ab94` |
+| **A2** | #1914 | mergeada em `4fab4c4d` |
+| **C1** (correcao da premissa) | #1920 | mergeada em `ce8cc6fb` |
+| **A3** | #1919 | mergeada em `4503171d` |
+| **A4** | - | a executar; segurada ate a fila esvaziar |
+| **A1** | - | a executar DEPOIS da A4, que e onde o check novo tem de nascer |
+| **A5** | - | nada a executar; esta decisao E o registro |
+
 - Padrao sistemico -> #1910
+
+### O que a EXECUCAO revelou, em 22/08
+
+Executar as decisoes produziu tres achados que elas nao previam, e um deles valida a A2.
+
+**A A2 pagou o proprio custo em menos de uma hora.** Uma hora depois de ela landar, outra lane
+aplicou DDL na producao sem o `.sql` na main (`20260822032921`, `20260822033913`). Antes da A2,
+`Phase C` e `ADR-0097` estavam no check required e isso teria deixado **as quatro PRs abertas
+vermelhas** — o 8o congelamento. Com a A2, reportou no `invariants-check` e nao travou ninguem.
+O heartbeat que a A2 exigia abriu a issue sozinho (#1922), 3 minutos depois. Registrado em #1910.
+
+**A fila congelou por uma causa que a auditoria nao tinha medido: o proprio guard da faixa.**
+Entre 03:12 e 03:16, **sete jobs de faixa morreram em quatro refs diferentes**, incluindo o push
+da main, porque o `wait-for-db-lane` esgotou a cota de API do `GITHUB_TOKEN` de que ele mesmo
+depende — o custo por ciclo era `1 + (todos os runs ativos)`, por job em espera. Issue #1923,
+conserto na PR #1924, validado em contencao real. Isto e um congelamento que nenhuma das seis
+decisoes teria evitado.
+
+**A fronteira da A2 pode estar estreita.** `check_schema_invariants` continua no required e leu
+`1` durante a janela entre as duas migrations acima, reprovando uma PR que so mexia em CI. E um
+invariante de DADO pelo criterio da propria A2, e nao entrou na sub-decisao porque nao foi
+considerado. **Decisao em aberto**, medida e documentada em #1925 — nao assumida aqui.
