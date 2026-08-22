@@ -490,6 +490,40 @@ segunda tentativa. Ainda assim, o mecanismo existe e apaga sinal quando disparar
 
 `visual_dark_mode` tambem fez 198 de 198 verde e **nao e required**, o que e coerente.
 
+#### 7.2.1 A terceira cor: o required **cancelado** (#1869)
+
+A pergunta "quantos deveriam ser required" tem um lado que a contagem de verde e vermelho esconde.
+Dos 198 runs, **7 terminaram `cancelled` no `validate`** (3,5%). Um cancelado nao e um verde nem um
+vermelho: ele **bloqueia igual ao vermelho e nao nomeia nada**.
+
+Medi um caso inteiro, com o log na mao (run **32531921000**, 21/08 22:11):
+
+| o que o job fez | evidencia |
+|---|---|
+| steps que executaram | `Set up job`, `checkout`, **`wait-for-db-lane`**, `Post checkout`, `Complete job` |
+| steps de teste que executaram | **nenhum** |
+| tempo dentro da espera | **1455s** (ultima linha: `faixa ocupada por validate (run 32531919008)`) |
+| como terminou | `##[error]The operation was canceled` |
+| duracao total | 1.847.503 ms (30m47s) |
+
+O detalhe que separa diagnostico de hipotese: **nao foi o proprio guard desistindo.** O
+`wait-for-db-lane` tem um caminho de desistencia proprio (`stuck-seconds`) que imprime
+`::error::a faixa do banco esta TRAVADA`. **Essa linha nao aparece no log.** O que aparece e a
+mensagem de cancelamento externo do runner. Ou seja: o job estava esperando **corretamente**, a
+faixa estava andando, e ele foi interrompido de fora.
+
+O custo tem tres partes, e a terceira e a pior:
+
+1. 30m47s de runner gastos sem executar uma assercao.
+2. O check required fica `cancelled` na PR, sem nome de teste e sem causa.
+3. **Nada dispara um novo run.** A PR fica parada ate alguem empurrar de novo. Um vermelho pelo
+   menos convida a agir; um cancelado parece um estado transitorio que vai se resolver sozinho, e
+   nao vai.
+
+Isso interage direto com a recomendacao **A1**: hoje os 287 arquivos estruturais tambem morrem nesse
+cancelamento, porque estao dentro do mesmo job que espera a faixa. Separados, eles teriam respondido
+em ~13s e o cancelamento nao teria apagado o sinal deles.
+
 **Nao concluo que `browser_guards` deva sair.** Zero falhas em 198 runs e evidencia fraca para um
 guard que protege contra classe rara, e ele custa 1m35s (nao esta no caminho critico, que e
 `validate`). O que a medicao diz e outra coisa: **o conjunto required nao esta pesado por ter 3
