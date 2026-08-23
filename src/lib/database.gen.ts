@@ -31810,6 +31810,7 @@ export type Database = {
         Returns: Json
       }
       get_my_reacceptance_obligations: { Args: never; Returns: Json }
+      get_my_responsibilities: { Args: never; Returns: Json }
       get_my_selection_result: { Args: never; Returns: Json }
       get_my_signatures: {
         Args: { p_include_superseded?: boolean }

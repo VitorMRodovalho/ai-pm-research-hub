@@ -10,6 +10,7 @@ import MyMeetingsIsland from '../components/workspace/MyMeetingsIsland';
 import DropoutRiskBanner from '../components/workspace/DropoutRiskBanner';
 import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import MyCardsWidget from '../components/workspace/MyCardsWidget';
+import MyActionItemsWidget from '../components/workspace/MyActionItemsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
 import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import PostPromotionJourney from '../components/onboarding/PostPromotionJourney';
@@ -238,6 +239,10 @@ const WK = {
       <!-- ═══ My Tasks (cross-board) ═══ -->
       <section id="wk-my-tasks">
         <MyCardsWidget client:load lang={lang} />
+        {/* #1942: acao de reuniao que nunca virou card nao aparecia em superficie nenhuma. */}
+        <div class="mt-4">
+          <MyActionItemsWidget client:load lang={lang} />
+        </div>
         <h2 class="text-base font-bold text-[var(--text-primary)] mb-3 mt-5 flex items-center gap-2">
           <span class="text-lg">☑️</span> {t('boards.my_tasks', lang) || 'Minhas atividades'}
         </h2>
