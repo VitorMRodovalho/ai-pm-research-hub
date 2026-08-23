@@ -29168,6 +29168,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      _can_write_board: {
+        Args: { p_board_id: string; p_member_id: string }
+        Returns: boolean
+      }
       _comms_token_expiry_scan: { Args: never; Returns: Json }
       _compute_pert_cutoff_core: {
         Args: {
