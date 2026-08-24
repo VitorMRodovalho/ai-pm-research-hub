@@ -2495,8 +2495,9 @@ const ptBR: Record<string, string> = {
   'admin.settings.fillRequiredCycle': 'Preencha código, nome, abreviação e data início',
   'admin.settings.cycleUpdated': 'Ciclo atualizado',
   'admin.settings.cycleCreated': 'Ciclo criado',
-  'admin.settings.platformResearchersLabel': 'Pesquisadores por tribo',
-  'admin.settings.platformResearchersDesc': 'Limite máximo de pesquisadores por tribo',
+  // #1950: o limite conta o LÍDER. Dizer "pesquisadores" descrevia 8 pesquisadores, e o gate aplica 7+1.
+  'admin.settings.platformResearchersLabel': 'Integrantes por tribo',
+  'admin.settings.platformResearchersDesc': 'Limite de integrantes por tribo — o líder ocupa uma vaga (8 = líder + 7 pesquisadores)',
   'admin.settings.platformMaxTribesLabel': 'Máximo de tribos ativas',
   'admin.settings.platformMaxTribesDesc': 'Limite de tribos ativas no sistema',
   'admin.settings.platformGracePeriodLabel': 'Grace period baseline (dias)',

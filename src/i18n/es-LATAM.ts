@@ -2489,8 +2489,9 @@ const esLATAM: Record<string, string> = {
   'admin.settings.fillRequiredCycle': 'Complete código, nombre, abreviatura y fecha de inicio',
   'admin.settings.cycleUpdated': 'Ciclo actualizado',
   'admin.settings.cycleCreated': 'Ciclo creado',
-  'admin.settings.platformResearchersLabel': 'Investigadores por tribu',
-  'admin.settings.platformResearchersDesc': 'Número máximo de investigadores por tribu',
+  // #1950: el límite cuenta al LÍDER.
+  'admin.settings.platformResearchersLabel': 'Integrantes por tribu',
+  'admin.settings.platformResearchersDesc': 'Límite de integrantes por tribu — el líder ocupa un lugar (8 = líder + 7 investigadores)',
   'admin.settings.platformMaxTribesLabel': 'Máximo de tribus activas',
   'admin.settings.platformMaxTribesDesc': 'Límite de tribus activas en el sistema',
   'admin.settings.platformGracePeriodLabel': 'Grace period baseline (días)',

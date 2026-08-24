@@ -2489,8 +2489,9 @@ const enUS: Record<string, string> = {
   'admin.settings.fillRequiredCycle': 'Fill in code, name, abbreviation, and start date',
   'admin.settings.cycleUpdated': 'Cycle updated',
   'admin.settings.cycleCreated': 'Cycle created',
-  'admin.settings.platformResearchersLabel': 'Researchers per tribe',
-  'admin.settings.platformResearchersDesc': 'Maximum number of researchers per tribe',
+  // #1950: the cap counts the LEADER.
+  'admin.settings.platformResearchersLabel': 'Members per tribe',
+  'admin.settings.platformResearchersDesc': 'Member cap per tribe — the leader takes one seat (8 = leader + 7 researchers)',
   'admin.settings.platformMaxTribesLabel': 'Maximum active tribes',
   'admin.settings.platformMaxTribesDesc': 'Limit of active tribes in the system',
   'admin.settings.platformGracePeriodLabel': 'Baseline grace period (days)',

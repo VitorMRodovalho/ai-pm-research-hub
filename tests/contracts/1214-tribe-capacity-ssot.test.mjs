@@ -71,16 +71,30 @@ const headers = {
   'Content-Type': 'application/json',
 };
 
+// #1950: a chave virou `max_members_per_tribe` porque o valor SEMPRE contou o líder
+// (8 = 1 líder + 7 pesquisadores). O nome antigo NÃO é aceito aqui de propósito: no frontend os
+// dois convivem durante a janela entre os deploys, mas o SSOT tem UM nome só — aceitar os dois no
+// banco deixaria o rename passar pela metade sem ninguém notar.
 async function fetchSetting() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/platform_settings?key=eq.max_researchers_per_tribe&select=value`,
+    `${SUPABASE_URL}/rest/v1/platform_settings?key=eq.max_members_per_tribe&select=value`,
     { headers },
   );
   assert.ok(res.ok, `platform_settings HTTP ${res.status}`);
   const rows = await res.json();
-  assert.equal(rows.length, 1, 'setting max_researchers_per_tribe deve existir');
+  assert.equal(rows.length, 1, 'setting max_members_per_tribe deve existir');
   return Number(rows[0].value);
 }
+
+test(canRun ? 'P2: a chave ANTIGA nao existe mais (o rename foi ate o fim)' : skipMsg, { skip: !canRun }, async () => {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/platform_settings?key=eq.max_researchers_per_tribe&select=key`,
+    { headers },
+  );
+  assert.ok(res.ok, `platform_settings HTTP ${res.status}`);
+  assert.equal((await res.json()).length, 0,
+    'max_researchers_per_tribe nao pode coexistir com a nova: duas chaves = duas verdades de capacidade');
+});
 
 test(canRun ? 'P2: fallback MAX_SLOTS do frontend bate com platform_settings' : skipMsg, { skip: !canRun }, async () => {
   const ssot = await fetchSetting();
@@ -89,15 +103,17 @@ test(canRun ? 'P2: fallback MAX_SLOTS do frontend bate com platform_settings' : 
     `MAX_SLOTS fallback (${maxSlotsMatch[1]}) divergiu do SSOT platform_settings (${ssot}) — atualize src/data/tribes.ts`);
 });
 
-test(canRun ? 'P2: get_homepage_stats expõe max_researchers_per_tribe = SSOT' : skipMsg, { skip: !canRun }, async () => {
+test(canRun ? 'P2: get_homepage_stats expõe max_members_per_tribe = SSOT' : skipMsg, { skip: !canRun }, async () => {
   const ssot = await fetchSetting();
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_homepage_stats`, {
     method: 'POST', headers, body: '{}',
   });
   assert.ok(res.ok, `get_homepage_stats HTTP ${res.status}`);
   const stats = await res.json();
-  assert.equal(stats.max_researchers_per_tribe, ssot,
-    'get_homepage_stats.max_researchers_per_tribe deve espelhar platform_settings');
+  assert.equal(stats.max_members_per_tribe, ssot,
+    'get_homepage_stats.max_members_per_tribe deve espelhar platform_settings');
+  assert.equal(stats.max_researchers_per_tribe, undefined,
+    'o campo antigo deve sumir da resposta: dois campos com o mesmo numero divergem no primeiro que alguem esquecer');
 });
 
 test(canRun ? 'P2: gate server (tribe_capacity_limit) = SSOT' : skipMsg, { skip: !canRun }, async () => {

@@ -238,8 +238,8 @@ const SETTINGS_I18N = {
     cycleUpdated: 'Ciclo atualizado', cycleCreated: 'Ciclo criado', save: 'Salvar',
     saveError: 'Erro ao salvar.', loadError: 'Erro ao carregar.',
     noResults: 'Nenhum resultado encontrado.',
-    platformResearchersLabel: 'Pesquisadores por tribo',
-    platformResearchersDesc: 'Limite máximo de pesquisadores por tribo',
+    platformResearchersLabel: 'Integrantes por tribo',
+    platformResearchersDesc: 'Limite de integrantes por tribo — o líder ocupa uma vaga (8 = líder + 7 pesquisadores)',
     platformMaxTribesLabel: 'Máximo de tribos ativas',
     platformMaxTribesDesc: 'Limite de tribos ativas no sistema',
     platformGracePeriodLabel: 'Grace period baseline (dias)',
@@ -486,7 +486,7 @@ const SETTINGS_I18N = {
 
   // ── Platform Settings ──
   const SETTING_LABELS: Record<string, { label: string; desc: string; type: string }> = {
-    max_researchers_per_tribe: { label: T.platformResearchersLabel, desc: T.platformResearchersDesc, type: 'number' },
+    max_members_per_tribe: { label: T.platformResearchersLabel, desc: T.platformResearchersDesc, type: 'number' },
     max_tribes: { label: T.platformMaxTribesLabel, desc: T.platformMaxTribesDesc, type: 'number' },
     baseline_grace_period_days: { label: T.platformGracePeriodLabel, desc: T.platformGracePeriodDesc, type: 'number' },
   };
