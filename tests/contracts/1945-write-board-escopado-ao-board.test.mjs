@@ -64,8 +64,16 @@ const ALVOS = [
   ['complete_checklist_item', 'complete_checklist_item@p_checklist_item_id uuid, p_completed boolean',                                'v_card.board_id',   H_BOARD],
 ];
 
-/** Escapa o ponto de expressoes como `v_comment.board_item_id` ao virar regex. */
-const rx = (t) => t.replace(/[.]/g, '\\.');
+/**
+ * Escapa metacaracteres ao transformar um identificador (`v_comment.board_item_id`) em regex.
+ *
+ * A primeira versao escapava SO o ponto (`/[.]/g`), e o CodeQL a marcou como
+ * `js/incomplete-sanitization` de severidade alta: escapamento que nao trata a barra invertida e
+ * incompleto por construcao. Aqui a entrada vem da tabela ALVOS deste mesmo arquivo, entao nao
+ * havia exploracao possivel -- mas o padrao errado num arquivo de guard e o tipo de coisa que
+ * alguem copia para um lugar onde a entrada NAO e literal. Escapa-se o conjunto inteiro.
+ */
+const rx = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
