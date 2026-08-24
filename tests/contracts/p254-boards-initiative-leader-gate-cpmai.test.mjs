@@ -132,14 +132,16 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
     });
   });
 
-  describe('gate ladder integration — update_board_item', () => {
-    const block = MIGRATION_SQL.split('CREATE OR REPLACE FUNCTION public.update_board_item')[1]?.split('CREATE OR REPLACE FUNCTION public.move_board_item')[0] || '';
+  describe('gate ladder integration — update_board_item (captura VIGENTE, #1932)', () => {
+    const block = latestFunctionCapture(ROOT, 'update_board_item').block;
 
     it('outer "Insufficient permissions" gate accepts v_is_initiative_leader', () => {
       assert.match(
         block,
-        /NOT public\.can_by_member\(v_caller\.id, 'write_board'\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Insufficient permissions to edit this card/i
+        /NOT public\._can_write_board_item\(v_caller\.id, p_item_id\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Insufficient permissions to edit this card/i
       );
+      // #1953: a forma sem recurso nao pode voltar.
+      assert.doesNotMatch(block, /can_by_member\s*\(\s*v_caller\.id\s*,\s*'write_board'\s*\)/i);
     });
 
     it('baseline_date gate accepts v_is_initiative_leader', () => {

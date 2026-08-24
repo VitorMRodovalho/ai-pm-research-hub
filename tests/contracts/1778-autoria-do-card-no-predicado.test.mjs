@@ -32,6 +32,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
@@ -45,6 +46,14 @@ const MIG_GATE = readFileSync(
   resolve(process.cwd(), 'supabase/migrations/20260815140508_1778_o_predicado_do_checklist_carrega_o_gate_785.sql'),
   'utf8',
 );
+// #1932: `MIG` e `MIG_GATE` afirmam sobre o ATO daquelas migrations e seguem lendo os arquivos.
+// Esta constante e a definicao VIGENTE do predicado, que e sobre o que o invariante de corpo fala:
+// fixar o caminho faria este guard afirmar sobre um corpo que a producao nao executa mais.
+// A chamada tem de ficar na forma canonica `latestFunctionCapture(ROOT, 'nome')`: o scanner do
+// #1932 reconhece a divida como RESOLVIDA por regex, e `process.cwd()` no lugar de ROOT nao casa.
+const ROOT_1778 = process.cwd();
+const PREDICADO_VIGENTE = latestFunctionCapture(ROOT_1778, 'can_manage_card_checklist').block;
+
 const CARD_DETAIL = readFileSync(resolve(process.cwd(), 'src/components/board/CardDetail.tsx'), 'utf8');
 const EF = readFileSync(resolve(process.cwd(), 'supabase/functions/nucleo-mcp/index.ts'), 'utf8');
 
@@ -53,7 +62,9 @@ const RPCS = ['add_checklist_item', 'update_checklist_item', 'delete_checklist_i
 test('#1778 mig: o predicado olha o RECURSO, e nao so a capacidade', () => {
   assert.match(MIG, /CREATE OR REPLACE FUNCTION public\.can_manage_card_checklist\(p_member_id uuid, p_card_id uuid\)/i);
   // capacidade
-  assert.match(MIG, /can_by_member\(p_member_id, 'write_board'\)/);
+  // #1953: a pergunta passou a levar o card. A forma sem recurso nao pode voltar.
+  assert.match(PREDICADO_VIGENTE, /_can_write_board_item\(p_member_id, p_card_id\)/);
+  assert.doesNotMatch(PREDICADO_VIGENTE, /can_by_member\(\s*p_member_id\s*,\s*'write_board'\s*\)/);
   // responsavel
   assert.match(MIG, /board_items bi\s+WHERE bi\.id = p_card_id AND bi\.assignee_id = p_member_id/);
   // autor/contribuidor — a nocao que faltava, e o motivo desta issue

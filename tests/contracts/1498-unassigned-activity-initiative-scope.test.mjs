@@ -31,11 +31,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import { resolve } from 'node:path';
 
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
-const FIX_MIGRATION = '20260805000492_1498_unassigned_activity_requires_initiative_membership.sql';
+// #1932: o invariante fala da definicao VIGENTE, nao do arquivo que a introduziu. Fixar o caminho
+// faz este guard afirmar sobre um corpo que a producao pode nao executar mais, e ficar verde.
+const FIX_MIGRATION = latestFunctionCapture(ROOT, 'complete_checklist_item').file;
 
 /** Remove comentários de linha e de bloco do SQL para que asserções nunca casem com prosa. */
 function stripSqlComments(sql) {
@@ -66,7 +69,7 @@ const UNASSIGNED_REQUIRES_MEMBERSHIP =
 test('1498: a migration do fix existe e redefine a RPC', () => {
   const files = readdirSync(MIGRATIONS_DIR);
   assert.ok(files.includes(FIX_MIGRATION), `${FIX_MIGRATION} deve estar no registro de migrations`);
-  assert.ok(rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, FIX_MIGRATION), 'utf8')),
+  assert.ok(latestFunctionCapture(ROOT, 'complete_checklist_item').block,
     'a migration do #1498 deve conter o CREATE OR REPLACE de complete_checklist_item');
 });
 
@@ -87,7 +90,7 @@ test('1498: o extrator descarta comentario de dentro do corpo', () => {
 });
 
 test('1498: atividade sem responsavel exige pertencimento, nao basta estar autenticado', () => {
-  const block = rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, FIX_MIGRATION), 'utf8'));
+  const block = latestFunctionCapture(ROOT, 'complete_checklist_item').block;
   assert.match(block, UNASSIGNED_REQUIRES_MEMBERSHIP,
     'o ramo assigned_to IS NULL deve estar conjugado com v_is_initiative_member');
   assert.doesNotMatch(block, /v_item\.assigned_to\s*=\s*v_caller\.id\s*OR\s*v_item\.assigned_to\s+IS\s+NULL/i,
@@ -95,7 +98,7 @@ test('1498: atividade sem responsavel exige pertencimento, nao basta estar auten
 });
 
 test('1498: o pertencimento e escopado a INICIATIVA DO BOARD e a engagement ativo', () => {
-  const block = rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, FIX_MIGRATION), 'utf8'));
+  const block = latestFunctionCapture(ROOT, 'complete_checklist_item').block;
   const decl = block.match(/v_is_initiative_member\s*:=[\s\S]*?\);/)?.[0] || '';
   assert.ok(decl, 'v_is_initiative_member deve ser derivado no corpo da funcao');
 
@@ -112,7 +115,7 @@ test('1498: o pertencimento e escopado a INICIATIVA DO BOARD e a engagement ativ
 });
 
 test('1498: a posse da atividade e null-safe (NULL nao pode atravessar o gate)', () => {
-  const block = rpcBlock(readFileSync(resolve(MIGRATIONS_DIR, FIX_MIGRATION), 'utf8'));
+  const block = latestFunctionCapture(ROOT, 'complete_checklist_item').block;
   const decl = block.match(/v_is_activity_owner\s*:=[\s\S]*?;/)?.[0] || '';
   assert.ok(decl, 'v_is_activity_owner deve ser derivado no corpo da funcao');
   assert.match(decl, /coalesce\(\s*v_item\.assigned_to\s*=\s*v_caller\.id\s*,\s*false\s*\)/i,
