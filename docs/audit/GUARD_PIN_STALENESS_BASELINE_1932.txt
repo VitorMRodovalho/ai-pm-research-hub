@@ -13,6 +13,10 @@
 # HISTORICA e nao invariante corrente, o conserto e outro: reescrever a mensagem para dizer isso.
 #
 # Regenerado em 2026-08-22, depois do lote de PII/LGPD. Pares: 174. Guards: 104.
+# 2026-08-24: -1 par (cycle4-tribe-capacity-ssot | tribe_capacity_limit), convertido no #1950.
+#   Foi a PRIMEIRA instancia desta divida encontrada por USO e nao por auditoria: o guard
+#   afirmava 'fallback = 10 (o valor vivo da setting)' enquanto a producao rodava 7 e a
+#   setting valia 8 - dois numeros inexistentes, verdes. Total agora: 173 pares.
 # Movimento nesta volta: -13 / +15.
 #   - as 13 que sairam: os 7 pares de PII/LGPD, parte convertida para a captura vigente e parte
 #     que era FALSO POSITIVO - nome citado so em comentario JS, ou dentro de assert.doesNotMatch,
@@ -74,7 +78,6 @@ tests/contracts/766-pr5-profile-complete-milestone.test.mjs|check_schema_invaria
 tests/contracts/785-confidential-initiative-rls.test.mjs|check_schema_invariants
 tests/contracts/cutoff-approved-modal-button.test.mjs|get_selection_dashboard
 tests/contracts/cycle4-public-verticals.test.mjs|get_public_platform_stats
-tests/contracts/cycle4-tribe-capacity-ssot.test.mjs|tribe_capacity_limit
 tests/contracts/D-stuck-funnel.test.mjs|_delivery_mode_for
 tests/contracts/D-stuck-funnel.test.mjs|detect_stuck_selection_funnel
 tests/contracts/D3-auto-rescue.test.mjs|_selection_unbooked_rescue_cron
