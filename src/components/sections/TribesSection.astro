@@ -21,18 +21,35 @@ const sbAnonForStats = createClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
 let leadersCount = 8;
-// #1214: tribe slot cap derives from the SSOT (platform_settings.max_researchers_per_tribe
-// via get_homepage_stats — same source as the select_tribe server gate). MAX_SLOTS is a
-// fallback for RPC failure only.
+// #1214: tribe slot cap derives from the SSOT (platform_settings via get_homepage_stats —
+// same source as the select_tribe server gate). MAX_SLOTS is a fallback for RPC failure only.
+//
+// #1950: a chave foi renomeada de `max_researchers_per_tribe` para `max_members_per_tribe`
+// porque o valor SEMPRE contou o líder: 8 = 1 líder + 7 pesquisadores, tradeoff ratificado em
+// SPEC_TRIBE_SWITCH_AND_LEADER_REVIEW. O nome antigo descrevia 8 pesquisadores, que é outra coisa.
+// Os dois nomes são aceitos aqui de propósito, durante a janela entre o deploy do frontend e o da
+// migration; o antigo sai quando a migration estiver na main.
 let maxSlots = MAX_SLOTS;
+// #1950: as duas RPCs vão JUNTAS. A de contagem entrou nesta volta e, em série, somaria uma
+// ida-e-volta ao SSR de uma página pública. Elas não dependem uma da outra, então esperar as duas
+// ao mesmo tempo custa o tempo da mais lenta, e não a soma.
+let slotDataRaw: unknown = null;
 try {
-  const { data } = await sbAnonForStats.rpc('get_homepage_stats');
+  const [statsRes, slotsRes] = await Promise.all([
+    sbAnonForStats.rpc('get_homepage_stats'),
+    sbAnonForStats.rpc('count_tribe_slots'),
+  ]);
+  slotDataRaw = slotsRes?.data ?? null;
+  const data = statsRes?.data;
   if (data && typeof data.active_leaders === 'number' && data.active_leaders > 0) {
     leadersCount = data.active_leaders;
   }
-  if (data && typeof data.max_researchers_per_tribe === 'number' && data.max_researchers_per_tribe > 0) {
-    maxSlots = data.max_researchers_per_tribe;
-  }
+  const capFromSsot = (typeof data?.max_members_per_tribe === 'number' && data.max_members_per_tribe > 0)
+    ? data.max_members_per_tribe
+    : (typeof data?.max_researchers_per_tribe === 'number' && data.max_researchers_per_tribe > 0)
+      ? data.max_researchers_per_tribe
+      : null;
+  if (capFromSsot) maxSlots = capFromSsot;
 } catch {}
 const tribesLabel = t('tribes.label', lang).replace('{n}', String(leadersCount));
 
@@ -156,8 +173,33 @@ const TRIBES_MSG = {
   loading: t('tribes.loading', lang),
   trailsUnavailable: t('tribes.trailsUnavailable', lang),
 };
-// SSR: slot counts come from Supabase client-side; use 0 until hydrated
+// #1950: as contagens passam a ser resolvidas no SSR, pela MESMA RPC que o cliente usa
+// (`count_tribe_slots`, SECURITY DEFINER e legível por anon). Antes elas nasciam vazias e só
+// chegavam depois de hidratar — o que impedia ORDENAR por vaga sem a lista pular na frente do
+// usuário. Falha de RPC continua caindo para 0, que é o comportamento anterior.
 const initialCounts: Record<number, number> = {};
+if (slotDataRaw && typeof slotDataRaw === 'object') {
+  for (const [tribeId, n] of Object.entries(slotDataRaw as Record<string, unknown>)) {
+    const parsed = Number(n);
+    if (Number.isFinite(parsed)) initialCounts[Number(tribeId)] = parsed;
+  }
+}
+
+// #1950 (pedido do PM): a vitrine passa a DIRECIONAR, não só listar. Quem tem mais vaga aparece
+// primeiro dentro do quadrante, e a lotada afunda. O quadrante é preservado de propósito: ele é a
+// taxonomia temática do ciclo, e achatá-lo para ordenar por vaga trocaria uma informação por outra.
+//
+// Empate resolvido pelo id, para a ordem ser estável entre renders (sem isso, duas tribos com a
+// mesma ocupação trocariam de lugar a cada deploy, e a lista pareceria instável sem motivo).
+const vacancyOf = (tribeId: number) => Math.max(maxSlots - (initialCounts[tribeId] || 0), 0);
+const byVacancyDesc = (a: { id: number }, b: { id: number }) =>
+  vacancyOf(b.id) - vacancyOf(a.id) || a.id - b.id;
+
+// "Em formação" = metade ou menos da capacidade ocupada. É o recorte que o PM quer destacar para
+// ativar as temáticas novas; deriva do cap vivo, então acompanha a configuração sem literal.
+const formingThreshold = Math.floor(maxSlots / 2);
+const isForming = (tribeId: number) => (initialCounts[tribeId] || 0) <= formingThreshold;
+
 const TRIBE_IDS = safeTribes.map(tr => tr.id);
 ---
 
@@ -196,7 +238,8 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
     <div id="tribesContainer">
       {safeQuadrants.map((quad) => {
-        const tribes = safeTribes.filter((tr) => tr.quadrant === quad.key);
+        // #1950: ordenado por VAGA (desc) dentro do quadrante — ver `byVacancyDesc` acima.
+        const tribes = safeTribes.filter((tr) => tr.quadrant === quad.key).slice().sort(byVacancyDesc);
         if (!tribes.length) return null;
         return (
           <>
@@ -232,6 +275,15 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
 
                   <div class="flex-1 min-w-0">
                     <h3 id={`tn-${tr.id}`} class="text-[.95rem] font-bold truncate">{tr.name}</h3>
+                    {/* #1950: selo de recomendação. Distinto do contador de vagas de propósito —
+                        um número diz quanto cabe, o selo diz o que ajuda a comunidade. */}
+                    <span id={`fm-${tr.id}`}
+                          class="inline-block mt-0.5 px-2 py-[1px] rounded-md text-[.62rem] font-bold
+                                 bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          style={isForming(tr.id) ? '' : 'display:none'}
+                          title={t('tribes.needsPeopleHint', lang)}>
+                      ✨ {t('tribes.needsPeople', lang)}
+                    </span>
                     <div class="text-[.82rem] text-[var(--text-secondary)]">
                       {tr.leader}
                       {tr.leaderLinkedIn && (
@@ -328,7 +380,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
   </div>
 </section>
 
-<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, hasSelectionDeadline: !!TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS: maxSlots, MIN_SLOTS, TRIBE_IDS }}>
+<script define:vars={{ tribeSelectionDeadline: TRIBE_SELECTION_DEADLINE_ISO, hasSelectionDeadline: !!TRIBE_SELECTION_DEADLINE_ISO, TRIBES_MSG, MAX_SLOTS: maxSlots, MIN_SLOTS, TRIBE_IDS, FORMING_THRESHOLD: formingThreshold }}>
   // ── Tribe selection logic ──
   // Uses window.navGetSb() and nav:member event per established Astro patterns.
   // MAX_SLOTS = maxSlots resolved at SSR from get_homepage_stats (#1214: SSOT =
@@ -482,6 +534,11 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
         d.style.background = i < count ? '#70AD47' : '';
         d.style.borderColor = i < count ? '#70AD47' : '';
       });
+
+      // #1950: o selo acompanha a contagem viva. Sem isto ele ficaria fixo no valor do SSR e a
+      // mesma tela mostraria duas verdades — contador atualizado e selo velho.
+      const forming = document.getElementById(`fm-${tid}`);
+      if (forming) forming.style.display = count <= FORMING_THRESHOLD ? '' : 'none';
 
       // Text
       if (text) {

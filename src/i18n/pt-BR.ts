@@ -830,7 +830,11 @@ const ptBR: Record<string, string> = {
   'tribes.deadlineNotice': 'Após o prazo, não será possível trocar de tribo.',
   'tribes.deadlineNoticeClosed': 'Ciclo em curso. Novos pesquisadores entram continuamente via PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'A escolha será liberada quando o cronograma oficial do ciclo for publicado.',
-  'tribes.slots': 'Mín. {min} · Máx. {max} pesquisadores por tribo.',
+  // #1950: o limite conta o LIDER, entao {max}=8 significa 1 lider + 7 pesquisadores.
+  // A copia anterior dizia "{max} pesquisadores", que descrevia 8 pesquisadores e nao o que o gate aplica.
+  'tribes.slots': 'Mín. {min} · Máx. {max} integrantes por tribo (o líder ocupa uma vaga).',
+  'tribes.needsPeople': 'Tribo em formação',
+  'tribes.needsPeopleHint': 'Entrar numa tribo em formação ajuda a ativar a temática.',
   'tribes.loginPrompt': '⚡ Faça login para escolher',
   'tribes.deliverables': 'Entregáveis do Ciclo:',
   'tribes.meetings': '📅 Encontros:',

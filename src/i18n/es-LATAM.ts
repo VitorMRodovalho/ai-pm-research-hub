@@ -830,7 +830,10 @@ const esLATAM: Record<string, string> = {
   'tribes.deadlineNotice': 'Después del plazo, no podrás cambiar de línea.',
   'tribes.deadlineNoticeClosed': 'Ciclo en curso. Nuevos investigadores se incorporan continuamente vía PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'La selección se abrirá cuando se publique el cronograma oficial del ciclo.',
-  'tribes.slots': 'Mín. {min} · Máx. {max} investigadores por línea.',
+  // #1950: el límite cuenta al LÍDER, así {max}=8 significa 1 líder + 7 investigadores.
+  'tribes.slots': 'Mín. {min} · Máx. {max} integrantes por línea (el líder ocupa un lugar).',
+  'tribes.needsPeople': 'Línea en formación',
+  'tribes.needsPeopleHint': 'Entrar en una línea en formación ayuda a activar la temática.',
   'tribes.loginPrompt': '⚡ Ingresa para elegir',
   'tribes.deliverables': 'Entregables del Ciclo:',
   'tribes.meetings': '📅 Reuniones:',

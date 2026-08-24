@@ -29,9 +29,15 @@ const maxSlotsMatch = tribesData.match(/export const MAX_SLOTS = (\d+);/);
 test('P1: TribesSection deriva maxSlots de get_homepage_stats com fallback MAX_SLOTS', () => {
   assert.match(tribesSection, /let maxSlots = MAX_SLOTS;/,
     'maxSlots deve inicializar no fallback MAX_SLOTS');
+  // #1950: a chave virou `max_members_per_tribe` porque o valor SEMPRE contou o líder
+  // (8 = 1 líder + 7 pesquisadores). O nome antigo segue aceito na janela entre os dois deploys,
+  // e a asserção exige os DOIS: sem o novo o rename não chegou, sem o antigo a janela quebra.
   assert.match(tribesSection,
-    /typeof data\.max_researchers_per_tribe === 'number' && data\.max_researchers_per_tribe > 0/,
-    'maxSlots deve ser lido de get_homepage_stats.max_researchers_per_tribe (com type-guard)');
+    /typeof data\?\.max_members_per_tribe === 'number' && data\.max_members_per_tribe > 0/,
+    'maxSlots deve ler get_homepage_stats.max_members_per_tribe (com type-guard)');
+  assert.match(tribesSection,
+    /typeof data\?\.max_researchers_per_tribe === 'number'/,
+    'o nome antigo deve seguir aceito enquanto a migration nao estiver na main');
 });
 
 test('P1: template usa maxSlots (não a constante) para dots e contador', () => {
