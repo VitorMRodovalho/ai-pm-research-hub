@@ -830,7 +830,10 @@ const enUS: Record<string, string> = {
   'tribes.deadlineNotice': 'After the deadline, you will not be able to switch streams.',
   'tribes.deadlineNoticeClosed': 'Cycle in progress. New researchers continuously onboarded via PMI Volunteer Portal.',
   'tribes.deadlineNoticePending': 'Selection will open once the official cycle schedule is published.',
-  'tribes.slots': 'Min. {min} · Max. {max} researchers per stream.',
+  // #1950: the cap counts the LEADER, so {max}=8 means 1 leader + 7 researchers.
+  'tribes.slots': 'Min. {min} · Max. {max} members per stream (the leader takes one seat).',
+  'tribes.needsPeople': 'Stream forming',
+  'tribes.needsPeopleHint': 'Joining a forming stream helps activate the theme.',
   'tribes.loginPrompt': '⚡ Sign in to choose',
   'tribes.deliverables': 'Cycle Deliverables:',
   'tribes.meetings': '📅 Meetings:',
@@ -2486,8 +2489,9 @@ const enUS: Record<string, string> = {
   'admin.settings.fillRequiredCycle': 'Fill in code, name, abbreviation, and start date',
   'admin.settings.cycleUpdated': 'Cycle updated',
   'admin.settings.cycleCreated': 'Cycle created',
-  'admin.settings.platformResearchersLabel': 'Researchers per tribe',
-  'admin.settings.platformResearchersDesc': 'Maximum number of researchers per tribe',
+  // #1950: the cap counts the LEADER.
+  'admin.settings.platformResearchersLabel': 'Members per tribe',
+  'admin.settings.platformResearchersDesc': 'Member cap per tribe — the leader takes one seat (8 = leader + 7 researchers)',
   'admin.settings.platformMaxTribesLabel': 'Maximum active tribes',
   'admin.settings.platformMaxTribesDesc': 'Limit of active tribes in the system',
   'admin.settings.platformGracePeriodLabel': 'Baseline grace period (days)',

@@ -14,18 +14,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+
+const ROOT = process.cwd();
 
 const MIG = readFileSync(
   fileURLToPath(new URL('../../supabase/migrations/20260805000335_cycle4_tribe_capacity_ssot.sql', import.meta.url)),
   'utf8',
 );
 
-test('cap-ssot: helper tribe_capacity_limit lê platform_settings com fallback 10', () => {
+test('cap-ssot: a mig 335 ENTREGOU o helper lendo platform_settings com fallback 10', () => {
   assert.match(MIG, /create or replace function public\.tribe_capacity_limit\(\)/);
   assert.match(MIG, /from public\.platform_settings where key = 'max_researchers_per_tribe'/);
   assert.match(MIG, /coalesce\(\s*\(select \(value #>> '\{\}'\)::int/);
-  assert.match(MIG, /,\s*10\s*\)/, 'fallback = 10 (o valor vivo da setting)');
+  // #1950: a mensagem anterior dizia "fallback = 10 (o valor vivo da setting)". As DUAS metades
+  // envelheceram — o fallback vigente é 8 e a setting vale 8 — e o guard passava verde afirmando
+  // dois números que não existiam. Fixar aqui é legítimo: a pergunta é o que a 335 ENTREGOU, e
+  // migration é história imutável. O presente é o teste seguinte.
+  assert.match(MIG, /,\s*10\s*\)/, 'a 335 entregou fallback 10');
   assert.match(MIG, /revoke all on function public\.tribe_capacity_limit\(\) from public, anon/);
+});
+
+test('cap-ssot VIGENTE: o helper lê max_members_per_tribe com fallback 8 (= líder + 7)', () => {
+  // #1932: afirmar invariante CORRENTE lendo arquivo fixado é o defeito que aquela issue cataloga.
+  // Este par (cycle4-tribe-capacity-ssot | tribe_capacity_limit) era a LINHA 77 da linha de base,
+  // e a consequência apareceu ao usar: o guard acima passava verde dizendo "fallback 10" enquanto
+  // a produção rodava 7. Aqui a fonte é a captura mais nova, não um caminho fixado.
+  const cap = latestFunctionCapture(ROOT, 'tribe_capacity_limit');
+  assert.match(cap.block, /where key = 'max_members_per_tribe'/,
+    'a chave vigente descreve INTEGRANTES: o limite conta o líder (#1950)');
+  assert.doesNotMatch(cap.block, /max_researchers_per_tribe/,
+    'o nome antigo descrevia 8 pesquisadores, que nunca foi o que o gate aplicou');
+  assert.match(cap.block, /coalesce\([\s\S]*?,\s*8\s*\)/,
+    'fallback 8 = 1 líder + 7 pesquisadores; 7 era o valor ANTERIOR da setting, preso no corpo');
 });
 
 test('cap-ssot: as três superfícies inicializam v_max_slots pelo helper (zero literais)', () => {
