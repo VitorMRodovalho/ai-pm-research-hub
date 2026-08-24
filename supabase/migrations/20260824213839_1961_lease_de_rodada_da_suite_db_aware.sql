@@ -5,6 +5,12 @@
 --
 -- Por que tabela e nao pg_advisory_lock: lock de sessao do Postgres morre com a conexao, e
 -- sobre PostgREST cada request pega uma conexao do pool. O lock seria solto na hora.
+--
+-- Por que a aquisicao vive no ON CONFLICT: ler "expirado" num SELECT e depois escrever e
+-- janela para dois entrarem. O predicado decide num comando so.
+--
+-- ATENCAO: o corpo abaixo e a CAPTURA do Phase C. Nao acrescente comentario DENTRO dos
+-- blocos $fn$: o md5 do prosrc vivo deixa de bater e o guard acusa drift (e o drift e achado).
 
 CREATE TABLE IF NOT EXISTS public.test_suite_leases (
   source      text PRIMARY KEY,
@@ -14,15 +20,10 @@ CREATE TABLE IF NOT EXISTS public.test_suite_leases (
 );
 
 COMMENT ON TABLE public.test_suite_leases IS
-  'Lease de exclusao mutua entre rodadas da suite DB-aware (#1961). Uma linha por fonte; '
-  'expires_at e o TTL que impede que uma rodada morta trave todas as seguintes.';
+  'Lease de exclusao mutua entre rodadas da suite DB-aware (#1961). Uma linha por fonte; expires_at e o TTL que impede que uma rodada morta trave todas as seguintes.';
 
 ALTER TABLE public.test_suite_leases ENABLE ROW LEVEL SECURITY;
--- Sem policy de proposito: apenas service_role (que contorna RLS) escreve e le. anon e
--- authenticated nao tem nada aqui, e nao ha PII.
 
--- Aquisicao ATOMICA. O predicado do DO UPDATE decide num unico comando: sem ele, dois
--- processos poderiam ambos ler "expirado" e ambos inserir.
 CREATE OR REPLACE FUNCTION public.acquire_test_suite_lease(
   p_source text,
   p_holder text,
@@ -65,7 +66,6 @@ CREATE OR REPLACE FUNCTION public.release_test_suite_lease(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $fn$
 DECLARE v_n integer;
 BEGIN
-  -- casa o holder: uma rodada nunca solta o lease de outra.
   DELETE FROM public.test_suite_leases WHERE source = p_source AND holder = p_holder;
   GET DIAGNOSTICS v_n = ROW_COUNT;
   RETURN jsonb_build_object('released', v_n > 0, 'source', p_source, 'holder', p_holder);
