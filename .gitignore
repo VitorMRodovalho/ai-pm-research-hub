@@ -129,6 +129,26 @@ docs/drafts/p131_email_*
 docs/drafts/p277_*
 # === END #816 === (sentinel: tests/contracts/938-sensitive-docs-not-tracked.test.mjs parses the block above)
 
+# === #1939 — Barreira de higiene contra `git add -A` (repo PUBLICO) ===
+# DELIBERADAMENTE FORA do bloco #816 acima: aquele bloco e parseado pelo guard
+# tests/contracts/938-sensitive-docs-not-tracked.test.mjs, que (a) exige todo padrao
+# ancorado em `docs/` e (b) REPROVA qualquer arquivo ja rastreado que case com o padrao.
+# `docs/_deliverables/` tem 5 arquivos publicos legitimos rastreados (copy de webinar,
+# comunicado de mudanca de leitura de presenca) — coloca-los la dentro os transformaria
+# em ofensores do guard. A barreira aqui e de HIGIENE (impedir captura acidental por um
+# `add` largo), nao de proibicao: item curado ainda entra com `git add -f`.
+
+# Comunicados, campanhas e assets operacionais. Trazem nome de membro (inclusive no nome
+# do arquivo), link de grupo de WhatsApp e e-mail. NUNCA capturar em massa no repo PUBLICO.
+docs/_deliverables/
+
+# Saida da ferramenta Playwright MCP (logs de console + snapshots de pagina). Descartavel.
+.playwright-mcp/
+
+# Residuo solto na raiz (screenshot de diagnostico avulso).
+/time-700p.png
+# === END #1939 ===
+
 # Deno lockfile — EF deps are managed by the Supabase bundler; CI runs lockless (#1106)
 deno.lock
 
