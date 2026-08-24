@@ -29168,6 +29168,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      _can_write_board: {
+        Args: { p_board_id: string; p_member_id: string }
+        Returns: boolean
+      }
+      _can_write_board_item: {
+        Args: { p_item_id: string; p_member_id: string }
+        Returns: boolean
+      }
       _comms_token_expiry_scan: { Args: never; Returns: Json }
       _compute_pert_cutoff_core: {
         Args: {
@@ -31810,6 +31818,7 @@ export type Database = {
         Returns: Json
       }
       get_my_reacceptance_obligations: { Args: never; Returns: Json }
+      get_my_responsibilities: { Args: never; Returns: Json }
       get_my_selection_result: { Args: never; Returns: Json }
       get_my_signatures: {
         Args: { p_include_superseded?: boolean }

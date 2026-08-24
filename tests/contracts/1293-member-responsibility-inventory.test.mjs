@@ -3,7 +3,10 @@
  * inventory of the 7 ownership surfaces a member holds, the foundation of the
  * responsibility-handoff protocol (#1020).
  *
- * Migration: supabase/migrations/20260805000404_1293_member_responsibility_inventory.sql
+ * Migration: resolvida em tempo de execucao pela captura MAIS NOVA da funcao (helper do #1932).
+ * Fixar o caminho de uma migration faz este guard afirmar sobre texto que a producao nao executa
+ * mais e ficar verde assim mesmo: foi o que aconteceu com o gate abaixo quando o #1942 acrescentou
+ * o carve-out "si mesmo" (a captura de 20260805000404 seguia dizendo "manage_platform OR service_role").
  *
  * Invariants under test:
  *  Static (always):
@@ -22,13 +25,22 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { loadLatestCaptures } from '../helpers/rpc-body-drift-parser.mjs';
 
 const ROOT = process.cwd();
-const MIG = resolve(ROOT, 'supabase/migrations/20260805000404_1293_member_responsibility_inventory.sql');
-const mig = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
+
+// #1932: le a captura MAIS NOVA, nunca um caminho fixo. Um guard fixado numa migration vencida
+// afirma sobre um corpo morto e fica VERDE, que e a classe inteira que o #1932 fecha.
+const CHAVE = 'get_member_responsibility_inventory@p_member_id uuid';
+const { latest } = loadLatestCaptures(MIGRATIONS_DIR);
+const CAP = latest.get(CHAVE);
+if (!CAP) throw new Error(`sem captura de migration para ${CHAVE}`);
+const MIG_FILE = CAP.file;
+const mig = readFileSync(join(MIGRATIONS_DIR, MIG_FILE), 'utf8');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -39,16 +51,23 @@ const OPEN_STATUS_EXCLUDE = ['done', 'archived'];
 const CURATION_ACTIVE = ['curation_pending', 'leader_review'];
 
 test('#1293: migration defines get_member_responsibility_inventory(uuid), SECURITY DEFINER + STABLE', () => {
-  assert.ok(existsSync(MIG), 'migration file present');
+  assert.ok(mig.length > 0, `captura vazia em ${MIG_FILE}`);
   assert.match(mig, /CREATE OR REPLACE FUNCTION public\.get_member_responsibility_inventory\(p_member_id uuid\)/);
   assert.match(mig, /SECURITY DEFINER/);
   assert.match(mig, /\bSTABLE\b/);
 });
 
-test('#1293: gate is manage_platform OR service_role', () => {
+test('#1293: gate is manage_platform OR service_role OR o proprio alvo (#1942)', () => {
   assert.match(mig, /can_by_member\(v_caller, 'manage_platform'\)/);
   assert.match(mig, /'service_role'/);
   assert.match(mig, /requires manage_platform permission/);
+  // #1942: ler o PROPRIO inventario nao depende de manage_platform. Sem esta linha, um
+  // `CREATE OR REPLACE` futuro devolve o portao ao estado em que o responsavel nao se enxerga.
+  assert.match(
+    mig,
+    /v_caller\s*<>\s*p_member_id/,
+    `${MIG_FILE}: o carve-out "si mesmo" sumiu do portao`,
+  );
 });
 
 test('#1293: confidential gate (rls_can_see_initiative, ADR-0105) on initiative-linked surfaces', () => {

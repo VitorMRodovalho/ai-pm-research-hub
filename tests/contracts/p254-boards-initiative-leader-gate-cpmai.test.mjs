@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import { createClient } from '@supabase/supabase-js';
 
 // p254 HF1 — Boards: initiative-leader engagement gate (CPMAI/Fernando).
@@ -14,6 +16,13 @@ import { createClient } from '@supabase/supabase-js';
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000033_p254_boards_initiative_leader_gate_cpmai.sql';
 const MIGRATION_SQL  = readFileSync(MIGRATION_PATH, 'utf8');
+
+// #1932: o bloco de uma funcao tem de vir da captura MAIS NOVA, nao deste arquivo. As asserções
+// sobre a DOCUMENTAÇÃO da migration p254 (WHAT/WHY/ROLLBACK) seguem lendo MIGRATION_SQL, porque
+// documentam aquele ato histórico. As que afirmam a FORMA DO CORPO passam a seguir a definição
+// vigente -- senão este guard fica verde afirmando texto que a produção não executa mais.
+const ROOT = process.cwd();
+
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -123,14 +132,16 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
     });
   });
 
-  describe('gate ladder integration — update_board_item', () => {
-    const block = MIGRATION_SQL.split('CREATE OR REPLACE FUNCTION public.update_board_item')[1]?.split('CREATE OR REPLACE FUNCTION public.move_board_item')[0] || '';
+  describe('gate ladder integration — update_board_item (captura VIGENTE, #1932)', () => {
+    const block = latestFunctionCapture(ROOT, 'update_board_item').block;
 
     it('outer "Insufficient permissions" gate accepts v_is_initiative_leader', () => {
       assert.match(
         block,
-        /NOT public\.can_by_member\(v_caller\.id, 'write_board'\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Insufficient permissions to edit this card/i
+        /NOT public\._can_write_board_item\(v_caller\.id, p_item_id\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Insufficient permissions to edit this card/i
       );
+      // #1953: a forma sem recurso nao pode voltar.
+      assert.doesNotMatch(block, /can_by_member\s*\(\s*v_caller\.id\s*,\s*'write_board'\s*\)/i);
     });
 
     it('baseline_date gate accepts v_is_initiative_leader', () => {
@@ -162,20 +173,33 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
     });
   });
 
-  describe('gate ladder integration — move_board_item', () => {
-    const block = MIGRATION_SQL.split('CREATE OR REPLACE FUNCTION public.move_board_item')[1] || '';
+  describe('gate ladder integration — move_board_item (captura VIGENTE, #1932)', () => {
+    // `latestFunctionCapture` é a chamada que o scanner do #1932 reconhece como dívida RESOLVIDA:
+    // este bloco segue a definição vigente, venha ela de que migration vier.
+    const cap = latestFunctionCapture(ROOT, 'move_board_item');
+    const block = cap.block;
+    const file = cap.file;
 
     it('"mark as done" gate accepts v_is_initiative_leader', () => {
       assert.match(
         block,
-        /p_new_status = 'done'[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Only Leader, GP, card owner, or comms team/i
+        /p_new_status = 'done'[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Only Leader, GP, card owner, or comms team/i,
+        `${file}: o degrau de lider de iniciativa sumiu do gate de conclusao`
       );
     });
 
-    it('outer "Unauthorized requires write_board" gate accepts v_is_initiative_leader', () => {
+    it('outer write_board gate is SCOPED to the board and still accepts v_is_initiative_leader', () => {
+      // #1945: a pergunta passou a levar o board. A forma antiga, sem recurso, nao pode voltar:
+      // ela casava grant de QUALQUER iniciativa.
       assert.match(
         block,
-        /NOT public\.can_by_member\(v_actor\.id, 'write_board'\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Unauthorized: requires write_board permission/i
+        /NOT public\._can_write_board\(v_actor\.id, v_board_id\)[\s\S]*?AND NOT v_is_initiative_leader[\s\S]*?Unauthorized: requires write_board permission/i,
+        `${file}: move_board_item nao pergunta write_board COM o board`
+      );
+      assert.doesNotMatch(
+        block,
+        /can_by_member\s*\(\s*v_actor\.id\s*,\s*'write_board'\s*\)/i,
+        `${file}: voltou a forma sem recurso`
       );
     });
   });
