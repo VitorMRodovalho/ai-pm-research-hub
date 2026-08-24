@@ -174,3 +174,51 @@ test('#1961 db: anon é RECUSADO nas duas RPCs — exercido, não lido do catál
       );
     }
   });
+
+// ── #1969: o orçamento fecha? ─────────────────────────────────────────────────────────
+// Guard aritmético, não de presença. A espera do lease corre DENTRO do `timeout-minutes`
+// do job `validate`, junto com a espera da faixa (#1509) e o trabalho. Se a soma passar do
+// teto, o job morre por timeout do RUNNER — e o `ci.yml` já registra que esse modo de falha
+// NÃO imprime a mensagem de teto estourado. Foi a regressão da #1969, medida em 24/08/2026.
+test('#1969: espera da faixa + espera do lease na CI + pior validate cabem no teto do job', () => {
+  const ci = readFileSync(resolve(ROOT, '.github/workflows/ci.yml'), 'utf8');
+  const lane = readFileSync(resolve(ROOT, '.github/actions/wait-for-db-lane/action.yml'), 'utf8');
+
+  // Teto do job que roda a faixa. Âncora no `uses:`, não no nome solto: a primeira ocorrência
+  // de "wait-for-db-lane" no arquivo é um COMENTÁRIO, e ancorar nela corta o bloco antes do
+  // `timeout-minutes` — foi assim que este guard nasceu falhando por extração, não por orçamento.
+  const usoIdx = ci.indexOf('uses: ./.github/actions/wait-for-db-lane');
+  assert.ok(usoIdx > 0, 'o job da faixa chama a action wait-for-db-lane');
+  const bloco = ci.slice(0, usoIdx);
+  // o `timeout-minutes` do job é o ÚLTIMO antes da chamada, não o primeiro do arquivo
+  const todos = [...bloco.matchAll(/^\s*timeout-minutes:\s*(\d+)\s*$/gm)];
+  assert.ok(todos.length > 0, 'achou timeout-minutes antes da chamada da faixa');
+  const teto = Number(todos[todos.length - 1][1]) * 60;
+  assert.ok(teto > 0, 'o teto do job é um número de minutos');
+
+  // teto de espera da faixa: o default declarado na action
+  const laneWait = Number(lane.match(/max-wait-seconds:[\s\S]*?default:\s*'(\d+)'/)?.[1]);
+  assert.ok(laneWait > 0, 'achou o max-wait-seconds da faixa');
+
+  // teto de espera do lease NA CI
+  const leaseCi = Number(wrapper.match(/NA_CI \? (\d[\d_]*)/)?.[1].replace(/_/g, '')) / 1000;
+  assert.ok(leaseCi > 0, 'o wrapper declara um teto de espera PRÓPRIO para a CI');
+
+  // pior `validate` medido — 11 runs em 08/2026 (min 688s, mediana 763s, MAX 1552s), o mesmo
+  // número que dimensionou `stuck-seconds`. Se a suíte crescer, este guard avisa antes do runner.
+  const PIOR_VALIDATE = 1552;
+
+  const soma = laneWait + leaseCi + PIOR_VALIDATE;
+  assert.ok(
+    soma < teto,
+    `o pior caso não cabe: faixa ${laneWait}s + lease ${leaseCi}s + validate ${PIOR_VALIDATE}s = ${soma}s, ` +
+    `contra teto de ${teto}s. O job morreria por timeout do runner, que não imprime motivo. Ver #1969.`,
+  );
+});
+
+test('#1969: o teto de espera do lease é MENOR na CI que localmente', () => {
+  const ciMs = Number(wrapper.match(/NA_CI \? (\d[\d_]*)/)?.[1].replace(/_/g, ''));
+  const localMs = Number(eval(wrapper.match(/NA_CI \? \d[\d_]* : ([\d_ *]+)\)/)?.[1] ?? '0'));
+  assert.ok(ciMs > 0 && localMs > 0, 'os dois tetos estão declarados');
+  assert.ok(ciMs < localMs, `CI (${ciMs}ms) precisa esperar MENOS que local (${localMs}ms): na CI a faixa do #1509 já ordenou os jobs, e o orçamento é apertado`);
+});
