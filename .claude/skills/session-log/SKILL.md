@@ -8,8 +8,8 @@ Update the backlog log for handoff between sessions.
 
 ## Target files
 
-1. `/home/vitormrodovalho/.claude/projects/-home-vitormrodovalho-Desktop-ai-pm-research-hub/memory/project_issue_gap_opportunity_log.md`
-2. `/home/vitormrodovalho/.claude/projects/-home-vitormrodovalho-Desktop-ai-pm-research-hub/memory/MEMORY.md` (se nova sessão memory foi criada)
+1. `/home/vitormrodovalho/.claude/projects/-home-vitormrodovalho-projects-ai-pm-research-hub/memory/project_issue_gap_opportunity_log.md`
+2. `/home/vitormrodovalho/.claude/projects/-home-vitormrodovalho-projects-ai-pm-research-hub/memory/MEMORY.md` (se nova sessão memory foi criada)
 
 ## Workflow
 
