@@ -25615,6 +25615,27 @@ export type Database = {
         }
         Relationships: []
       }
+      test_suite_leases: {
+        Row: {
+          acquired_at: string
+          expires_at: string
+          holder: string
+          source: string
+        }
+        Insert: {
+          acquired_at?: string
+          expires_at: string
+          holder: string
+          source: string
+        }
+        Update: {
+          acquired_at?: string
+          expires_at?: string
+          holder?: string
+          source?: string
+        }
+        Relationships: []
+      }
       tia_analyses: {
         Row: {
           analysis_data: Json | null
@@ -29476,6 +29497,10 @@ export type Database = {
       accept_privacy_consent: { Args: { p_version?: string }; Returns: Json }
       acknowledge_milestone: {
         Args: { p_milestone_key: string }
+        Returns: Json
+      }
+      acquire_test_suite_lease: {
+        Args: { p_holder: string; p_source: string; p_ttl_minutes?: number }
         Returns: Json
       }
       activate_initiative: { Args: { p_initiative_id: string }; Returns: Json }
@@ -33738,6 +33763,10 @@ export type Database = {
       }
       release_blind_reviews: {
         Args: { p_release_kind?: string; p_session_id: string }
+        Returns: Json
+      }
+      release_test_suite_lease: {
+        Args: { p_holder: string; p_source: string }
         Returns: Json
       }
       remove_event_showcase: { Args: { p_showcase_id: string }; Returns: Json }
