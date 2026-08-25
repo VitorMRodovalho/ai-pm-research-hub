@@ -129,16 +129,33 @@ test('#1977 A (INVERSA): a forma sem recurso não sobrou em nenhuma das 6', () =
 });
 
 test('#1977 A (INVERSA): o ramo vizinho de cada uma sobreviveu intacto', () => {
+  // Dois modos de falha DIFERENTES, com mensagens diferentes de propósito.
+  //
+  // A primeira versão deste teste fixava a chamada literal e, quando o #1990 trocou o helper de
+  // `get_comms_pipeline`, acusou "ESTREITOU o portão" — diagnóstico INVERTIDO: o ramo estava lá.
+  // Nomear a action resolveu aquele caso, mas a lista de helpers abaixo tem o mesmo defeito uma
+  // camada acima: um helper novo faria a regex falhar com o ramo intacto. Por isso a ausência da
+  // ACTION e a ausência de HELPER RECONHECIDO são checadas separadamente.
+  const HELPERS = ['can', 'can_by_member', 'can_org', 'can_org_by_member',
+                   '_can_anywhere', '_can_anywhere_by_member', 'rls_can'];
   for (const [nome, acaoVizinha] of ALVOS) {
     const block = maskLineComments(latestFunctionCapture(ROOT, nome).block);
-    // Qualquer helper de autoridade serve; o que nao pode e a action sumir do portao.
-    const ramo = new RegExp(
-      `public\\.(?:can|can_by_member|can_org_by_member|_can_anywhere|_can_anywhere_by_member)\\([^)]*'${acaoVizinha}'`);
+
+    // (1) A action sumiu do corpo: aí sim o ramo caiu, e "estreitou" é o diagnóstico certo.
+    assert.match(block, new RegExp(`'${acaoVizinha}'`),
+      `${nome} perdeu o ramo vizinho de \`${acaoVizinha}\`: a action não aparece mais no corpo. ` +
+      'A troca do ramo de write_board ESTREITOU o portão, que não é o que #1977 propõe.');
+
+    // (2) A action está lá, mas não atrás de um helper que esta lista conhece. O portão pode estar
+    //     perfeito; o provável é que a LISTA envelheceu. Não conserte o portão por causa desta.
+    const ramo = new RegExp(`public\\.(?:${HELPERS.join('|')})\\([^)]*'${acaoVizinha}'`);
     assert.match(block, ramo,
-      `${nome} perdeu o ramo vizinho de \`${acaoVizinha}\` — a troca do ramo de write_board ESTREITOU ` +
-      'o portão, que não é o que #1977 propõe');
+      `${nome} tem \`${acaoVizinha}\` no corpo, mas não atrás de nenhum helper conhecido ` +
+      `(${HELPERS.join(', ')}). HIPÓTESE mais provável: nasceu um helper de autoridade novo e esta ` +
+      'lista ficou velha — some o nome dele aqui. NÃO troque o portão para calar este teste.');
   }
 });
+
 
 test('#1977 A: a migration de #1977 NÃO tocou `can()`', () => {
   const cap = latestFunctionCapture(ROOT, HELPER);
