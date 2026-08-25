@@ -29174,6 +29174,14 @@ export type Database = {
         }[]
       }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
+      _can_anywhere: {
+        Args: { p_action: string; p_person_id: string }
+        Returns: boolean
+      }
+      _can_anywhere_by_member: {
+        Args: { p_action: string; p_member_id: string }
+        Returns: boolean
+      }
       _can_manage_event: { Args: { p_event_id: string }; Returns: boolean }
       _can_manage_recurring_rule: {
         Args: { p_initiative_id: string; p_member_id: string }
