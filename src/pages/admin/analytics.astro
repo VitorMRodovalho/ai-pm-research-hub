@@ -2,6 +2,7 @@
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import ChartCard from '../../components/analytics/ChartCard.astro';
+import Toast from '../../components/ui/Toast.astro';
 import { createClient } from '@supabase/supabase-js';
 import { loadChapters } from '../../lib/chapters';
 
@@ -273,6 +274,7 @@ const ANALYTICS_I18N = {
       </section>
     </div>
   </div>
+  <Toast />
 </AdminLayout>
 
 <script is:inline define:vars={{ ANALYTICS_I18N, chapterOptions }}>
