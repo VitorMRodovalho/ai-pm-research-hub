@@ -6,6 +6,12 @@
 - Autor: Claude (p42 Track F) + Vitor (PM)
 - Escopo: Cache reconciliation entre `engagements`/`auth_engagements` e `members.operational_role`
 
+> **Leia primeiro a Amendment C (2026-08-25, #1987).** Duas coisas neste documento envelheceram: a
+> escada de prioridade não mora mais em `sync_operational_role_cache()` (ela é
+> `_derive_operational_role(person_id)` desde a #1925), e a "Canonical CASE" da Amendment B lista 11
+> degraus contra 12 na produção de hoje. A Amendment C traz a escada vigente, conferida contra o
+> `prosrc` vivo, e registra por que a duplicação entre o SSOT e a A3 é deliberada.
+
 ## Contexto
 
 Domain Model V4 (ADR-0004 a 0009, cutover 2026-04-13) fez de `auth_engagements` × `engagement_kind_permissions` a fonte de verdade de autoridade. ADR-0011 consagrou `can()` / `can_by_member()` como gate canônico. Persistiu, porém, uma coluna cache em `members`: `operational_role text`, usada por:
@@ -89,19 +95,27 @@ Somente engagements com `is_authoritative = true` entram no cálculo.
 | `A2_observer_role_consistency` | observer → role IN (observer,guest,none) | Garantido via ladder clause 8 + fallback guest. |
 | `A3_active_role_engagement_derivation` | active member → role = derivação da ladder | Garantido DIRETAMENTE pelo trigger. **ESTE é o invariant que a ladder deve espelhar exatamente.** |
 
-**Rule mandatória (daqui em diante)**: qualquer PR que altere a CASE expression em `sync_operational_role_cache()` **DEVE** atualizar `check_schema_invariants().A3` no mesmo commit. O contrário também é true. Violar essa regra cria drift latente como o `comms_leader` descrito acima.
+**Rule mandatória (daqui em diante)**: qualquer PR que altere a CASE expression em `_derive_operational_role()` **DEVE** atualizar `check_schema_invariants().A3` no mesmo commit. O contrário também é true. Violar essa regra cria drift latente como o `comms_leader` descrito acima.
 
 ### Priority ladder amendment rule
 
 Quando um novo `engagement_kind` ou `role` for adicionado:
 
 1. Decidir onde ele entra na ladder (ordem relativa aos existentes).
-2. Atualizar `sync_operational_role_cache()` CASE.
+2. Atualizar `_derive_operational_role()` CASE (o trigger passou a delegar na #1925).
 3. Atualizar `check_schema_invariants().A3` CASE com a MESMA ordenação e mesmos returns.
 4. Adicionar entry em `engagement_kind_permissions` (actions associadas) se for kind/role com autoridade.
 5. Smoke: `SELECT check_schema_invariants()` — A3 deve retornar 0 violations.
+6. Registrar a mudança numa Amendment deste ADR, no MESMO PR. O guard de paridade compara código
+   com código e NÃO lê este arquivo (ver Amendment C).
 
 ## Known drift (to reconcile)
+
+> **Status em 2026-08-25 (#1987): o Drift 1 abaixo está RESOLVIDO.** A Amendment B (2026-05-15) adotou
+> `volunteer.{leader, comms_leader}` → `tribe_leader`, que é exatamente o canonical que a Decisão deste
+> ADR pedia, e o guard de paridade confirma que os dois lados concordam. Medido em 2026-08-25: 0
+> engajamentos autoritativos com `role='comms_leader'`, então o degrau segue sem população, mas já não
+> há divergência. A seção fica como registro histórico.
 
 ### Drift 1 — `comms_leader` mapping divergence
 
@@ -124,12 +138,12 @@ Para reverter este ADR: mudar a docstring da função para apontar invariant A3 
 1. **Alertas estruturados**: futuros PRs que toquem a ladder passam por checklist expressa em ADR, não em comment de código.
 2. **Guardian sem ADVISORY ambíguo**: ADR-0011 Amendment A pode citar este ADR como fundamento do cache que autoriza fast-path.
 3. **Drift `comms_leader` documentado**: visibilidade + path to fix.
-4. **Testes structured**: qualquer migration que adicione/remova role na ladder pode ter test "function.ladder == invariant.A3 ladder".
+4. **Testes structured**: `tests/contracts/role-ladder-parity.test.mjs` compara `function.ladder == invariant.A3 ladder` em CI desde 2026-04-24 (`19d4bd4f`). Não é possibilidade futura: existe, e reprovou de verdade na #1925.
 
 ### Negativas / custos
 
 1. **Manutenção**: cada mudança em kind/role exige 2 updates coordenados (função + invariant). Pre-existe mas agora é dever documentado.
-2. **Sem enforcement automático**: regra "atualize ambos no mesmo commit" depende de autor + reviewer. Futuro: script CI que compara os dois CASE statements.
+2. **Enforcement parcial**: o "script CI" previsto aqui existe desde 2026-04-24 (`role-ladder-parity.test.mjs`) e compara os dois CASE statements cláusula a cláusula. O que segue dependendo de autor + reviewer é a paridade entre o CÓDIGO e o TEXTO deste ADR, que nenhum guard lê. Foi por aí que a escada andou 4 vezes sem a Amendment B ser atualizada (ver Amendment C).
 
 ### Operational cost
 
@@ -191,7 +205,10 @@ ADR-0083 introduced `canFor(action, scope?)` so frontend gates evaluate authorit
 - All committee/workgroup/study_group leadership and membership → `researcher` (overlay; real authority via canFor scoped)
 - All other clauses unchanged.
 
-### Canonical CASE (2026-05-15, current)
+### Canonical CASE (2026-05-15, superseded)
+
+> **Superseded pela Amendment C (2026-08-25).** A escada mudou 4 vezes depois desta data, e esta versão
+> lista 11 degraus contra 12 na produção de hoje. Mantida como registro do que a Amendment B decidiu.
 
 ```sql
 CASE
@@ -241,6 +258,120 @@ Authority for the overlay groups continues to flow via `can()` / `canFor()` scop
 ### Rollback constraint
 
 Reverting Amendment B alone would re-introduce scope-leak risk because ADR-0083 frontend gates expect canFor scoped authority for the 18 migrated sites — they no longer fall back to operational_role exact-match. A rollback would need to revert both the trigger AND the 18 frontend gates in the same release. Practical guidance: don't revert; if cache semantics need to change further, introduce Amendment C.
+
+## Amendment C: a duplicação da escada é deliberada (#1987, 2026-08-25)
+
+**Status:** Accepted 2026-08-25
+**Refs:** #1987 (esta decisão), #1925 (extração do SSOT), #1924
+**Guard:** `tests/contracts/role-ladder-parity.test.mjs`
+**Migration:** `20260825163644_1925_ssot_da_escada_e_reconciliacao_agendada.sql`
+
+### A decisão
+
+A escada de prioridade existe hoje em **duas** expressões, e segue assim de propósito:
+
+| expressão | papel |
+|---|---|
+| `_derive_operational_role(person_id)` | **dono da escada (SSOT).** `sync_operational_role_cache()` e o cron `operational-role-reconcile-daily` CHAMAM esta função. |
+| `check_schema_invariants().A3` | **cópia inline, deliberada.** Deriva o papel esperado com álgebra própria e compara com o cache. |
+
+**A saída "a A3 passa a chamar o SSOT" fica REJEITADA.** Se as duas chamarem a mesma função, um erro
+DENTRO da escada fica invisível para o próprio invariante que existe para pegá-lo: a A3 deixaria de
+medir "a derivação está certa" e passaria a medir apenas "o cache está sincronizado com a derivação",
+que é uma tautologia sobre o trigger.
+
+O que se paga por isso é a chance de as duas divergirem em silêncio. É exatamente esse risco que o
+guard abaixo remove, e é por isso que a duplicação só é aceitável **enquanto o guard existir**.
+
+### O que torna a duplicação segura, e não pode ser apagado junto
+
+`tests/contracts/role-ladder-parity.test.mjs` nasceu em `19d4bd4f` (2026-04-24, um dia antes da data
+deste ADR) e foi reapontado para o SSOT por `97e35eef` (#1925). São 8 testes. Os que importam:
+
+- **paridade cláusula a cláusula:** resultado do `ELSE`, contagem de `WHEN`, e condição + resultado de
+  cada degrau **na ordem**, entre `_derive_operational_role` e `check_schema_invariants().A3`.
+- **o trigger DELEGA:** `sync_operational_role_cache()` não pode voltar a carregar a escada inline, e
+  precisa conter a chamada a `_derive_operational_role(`.
+- **sanidade:** sem condições `WHEN` duplicadas, e no mínimo 10 degraus.
+
+> ⚠️ **A duplicação e o guard são UMA unidade.** Quem "limpar" a cópia da A3 estará, no mesmo gesto,
+> transformando o guard em tautologia, e provavelmente vai apagá-lo por parecer redundante. Nesse
+> momento a independência da A3 acaba sem que nada fique vermelho. Não colapse uma sem decidir
+> conscientemente sobre o outro.
+
+Ele não é teórico: na #1925 ele **reprovou de verdade** (4 testes) quando a escada saiu do trigger.
+Ficou vermelho porque afirma PRESENÇA (`assert.ok`). Um guard que afirmasse ausência teria ficado
+verde e vazio, descrevendo uma escada que já não existia.
+
+### Escada vigente, 12 degraus (conferida contra o `prosrc` vivo em 2026-08-25)
+
+```sql
+CASE
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'manager')        THEN 'manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'co_gp')          THEN 'deputy_manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role = 'deputy_manager') THEN 'deputy_manager'
+  WHEN bool_or(ae.kind = 'volunteer' AND ae.role IN ('leader','comms_leader')) THEN 'tribe_leader'
+  WHEN bool_or(ae.kind = 'sponsor')       THEN 'sponsor'
+  WHEN bool_or(ae.kind = 'chapter_board') THEN 'chapter_liaison'
+  WHEN bool_or(
+    (ae.kind = 'volunteer' AND ae.role IN ('researcher','facilitator','communicator','curator'))
+    OR (ae.kind IN ('committee_member','workgroup_member','study_group_owner')
+        AND ae.role IN ('leader','co_leader','owner','coordinator','researcher','contributor','member','participant'))
+    OR (ae.kind IN ('committee_coordinator','workgroup_coordinator')
+        AND ae.role IN ('leader','co_leader','owner','coordinator'))
+  ) THEN 'researcher'
+  WHEN bool_or(ae.kind = 'external_signer')        THEN 'external_signer'
+  WHEN bool_or(ae.kind = 'institutional_auditor')  THEN 'institutional_auditor'
+  WHEN bool_or(ae.kind = 'observer')               THEN 'observer'
+  WHEN bool_or(ae.kind = 'alumni')                 THEN 'alumni'
+  WHEN bool_or(ae.kind = 'candidate')              THEN 'candidate'
+  ELSE 'guest'
+END
+```
+
+Envelopada por `COALESCE(..., 'guest')` sobre `auth_engagements` filtrado por
+`person_id = p_person_id AND is_authoritative = true`.
+
+### As 4 mudanças que a Amendment B não acompanhou
+
+A Amendment B (2026-05-15) rotulava sua CASE de **"current"** e listava 11 degraus. A escada andou
+quatro vezes desde então, cada uma com decisão registrada na própria migration, e nenhuma chegou a
+este arquivo:
+
+| # | mudança | migration | decisão |
+|---|---|---|---|
+| 1 | `sponsor` sobe acima de `researcher` | `20260805000282_ivan_sponsor_role_precedence.sql` | Wave 1. Medido: dos 5 sponsors autoritativos, só 1 mudava de papel. |
+| 2 | `chapter_board` sobe acima de `researcher`/`observer` | `20260805000285_onda2_ws1_chapter_board_outranks_research_observer.sql` | PM 2026-06-28, "governança sempre vence". |
+| 3 | degrau `institutional_auditor` acrescentado (12º) | `20260805000292_onda2_fu3_institutional_auditor.sql` | Onda 2 FU-3 (#952), ADR-0111. Dormente por construção. |
+| 4 | `co_gp` deixa de resultar `manager` e passa a `deputy_manager` | `20260822032921_activate_deputy_manager_tier_for_co_gp.sql` | PM 2026-08-21, direção A: o tier `deputy_manager` era inalcançável (0 pessoas, sempre) apesar de ter 21 permissões próprias. |
+
+População medida em 2026-08-25, que é o que separa erro de doc urgente de nota de rodapé:
+
+| degrau | engajamentos autoritativos |
+|---|---:|
+| `volunteer × co_gp` | **1** (1 pessoa, afetada hoje) |
+| `institutional_auditor` | 0 (dormente) |
+| `volunteer × comms_leader` | 0 (latente, como em 2026-04-25) |
+
+`check_schema_invariants()` em 2026-08-25: **A3 com 0 violações**, e os 19 invariantes em 0.
+
+### O buraco que isto expõe, e a regra nova
+
+O guard de paridade compara **código com código**. Nenhum guard lê este arquivo `.md`. Foi por isso
+que a "Canonical CASE (current)" da Amendment B pôde ficar errada por três meses com a CI verde o
+tempo todo: a migration #2 acima até cita "ADR-0023 parity ... role-ladder-parity.test.mjs enforces
+it", e de fato a paridade de código foi mantida em todas as quatro. Só o texto ficou para trás.
+
+**Regra acrescentada ao `Priority ladder amendment rule` (passo 6):** a PR que muda a escada emenda
+este ADR no MESMO PR. Não há automação para cobrar isso, e é justamente por não haver que a regra
+precisa estar escrita.
+
+### Resíduo aceito
+
+O reconciliador criado pela #1925 replica o **escopo** da A3 (`member_status='active'` mais as duas
+exclusões por nome: o pseudo-membro compartilhado e as fixtures `_synthetic`). É predicado curto, não
+a escada, e some se um dia o escopo virar helper próprio. Fica registrado como conhecido, não como
+dívida com prazo.
 
 ## Appendix B — `engagement_kind_permissions` relationship
 
