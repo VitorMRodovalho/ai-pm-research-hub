@@ -34,6 +34,7 @@ import {
   DECLARED_INVARIANT_EXCEPTIONS,
   activeExceptions,
 } from '../helpers/invariant-exceptions.mjs';
+import { skipDataInvariant } from '../helpers/data-invariant-gate.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -63,7 +64,21 @@ async function callInvariantRpc() {
 }
 
 // Single-call, multi-assert: one RPC hit, one row per invariant.
-test('ADR-0012 B10: schema invariants report', { skip: !canRun && skipMsg }, async (t) => {
+// #1925 (A3 x CURRENT_DATE): este teste era o unico dos tres que podia congelar a fila sem que
+// ninguem tocasse em dado. A derivacao da A3 le `public.auth_engagements`, que filtra por
+// CURRENT_DATE (medido em 25/08/2026: a view usa CURRENT_DATE = true). CURRENT_DATE e UTC, entao a
+// virada acontece as 21:00 em Sao Paulo: um engajamento que comeca ou vence reescreve a derivacao
+// de quem depende dele SEM UMA UNICA LINHA GRAVADA, e a PR que paga o preco nao tem como consertar.
+//
+// Os outros dois testes deste arquivo NAO saem do required, de proposito:
+//   - `invariant output shape` afirma TIPO e dominio (string, integer, severity in high|medium|low),
+//     que sao funcao do codigo da RPC, nao do dado. O autor da PR consegue consertar.
+//   - `#1850 declared exceptions` ja AVISA em vez de falhar, por design. Nunca congelou nada.
+// Destravar o portao nunca pode apagar mais sinal do que o necessario.
+//
+// O sinal continua estrito no `invariants-check` (cron diario 07:00 UTC), que ja define
+// DATA_INVARIANT_GATE=1 e INVARIANT_STRICT=1 e nao e required.
+test('ADR-0012 B10: schema invariants report', { skip: skipDataInvariant(canRun, skipMsg) }, async (t) => {
   const rows = await callInvariantRpc();
 
   assert.ok(Array.isArray(rows), 'RPC must return an array');
