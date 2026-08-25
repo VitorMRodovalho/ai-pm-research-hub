@@ -117,15 +117,14 @@ const ME_I18N = {
     String(s ?? '').replace(/[&<>"']/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
+  // #1973 — delega ao toast GLOBAL (`src/components/ui/Toast.astro`, ja importado nesta
+  // pagina). Antes esta funcao era uma implementacao LOCAL que procurava `#toast-container`,
+  // id que nao existe em lugar nenhum: o componente renderiza `#toast`. Como a local
+  // SOMBREIA a global, as chamadas caiam num `if (!el) return` e toda mensagem desta tela
+  // evaporava — sucesso e erro. Foi assim que um entrevistador clicou em concluir, recebeu
+  // `Unauthorized: not an assigned interviewer` do servidor, e nao viu nada (#1972).
   function toast(msg: string, type: 'success' | 'error' = 'success') {
-    const el = document.getElementById('toast-container');
-    if (!el) return;
-    const div = document.createElement('div');
-    div.className = `px-4 py-3 rounded-xl text-sm font-semibold shadow-lg ${
-      type === 'error' ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`;
-    div.textContent = msg;
-    el.appendChild(div);
-    setTimeout(() => div.remove(), 4000);
+    (window as any).toast?.(msg, type);
   }
 
   function showOnly(which: 'loading' | 'denied' | 'list' | 'form') {
