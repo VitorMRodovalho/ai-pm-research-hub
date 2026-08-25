@@ -35,7 +35,15 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const TTL_MINUTES = Number(process.env.DB_LEASE_TTL_MINUTES || 60);
-const WAIT_MS = Number(process.env.DB_LEASE_WAIT_MS || 20 * 60 * 1000);
+// #1969 — o teto de espera DEPENDE do ambiente, e a razão é orçamento, não gosto.
+// Na CI a espera do lease corre DENTRO do `timeout-minutes: 95` do job `validate`, junto com a
+// espera da faixa (`wait-for-db-lane`, até 3600s) e o pior `validate` medido (1552s). Com 20 min
+// aqui o pior caso ia a 106 min e o job morria por timeout do RUNNER — que, como o próprio
+// ci.yml avisa, não imprime a mensagem de teto estourado. Curto na CI cabe: 3600+120+1552 = 88 min.
+// E não custa cobertura: `wait-for-db-lane` (#1509) já ordenou os jobs da faixa entre si. O lease
+// existe ali para que a sessão LOCAL o enxergue e espere — esse é o eixo que Actions não alcança.
+const NA_CI = !!process.env.GITHUB_RUN_ID;
+const WAIT_MS = Number(process.env.DB_LEASE_WAIT_MS || (NA_CI ? 120_000 : 20 * 60 * 1000));
 const POLL_MS = Number(process.env.DB_LEASE_POLL_MS || 15_000);
 const SOURCE = 'test_suite_db_aware';
 

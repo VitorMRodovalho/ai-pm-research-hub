@@ -22,11 +22,21 @@ paths:
    - ⚠️ **The with-DB suite WRITES to production and does not clean up after itself** (`tx=rollback` does not
      undo a SECURITY DEFINER INSERT). It therefore does NOT tolerate concurrent execution: two suites over the
      same database see each other's rows. Measured 2026-07-28 (#1505) — two CI runs in the same 7-minute window
-     failed on DIFFERENT subtests of the SAME files, and the same commit passed alone on re-run. CI now
-     serializes via the repo-global concurrency group `supabase-shared-db` (job-level, `cancel-in-progress:
-     false`), but that group does NOT know about your laptop: **do not run `npm test` locally while a CI run is
-     in flight** (`gh run list --limit 5` before starting). A red that vanishes on re-run is the signature —
-     classify it as this before hunting a code cause, and never merge over it.
+     failed on DIFFERENT subtests of the SAME files, and the same commit passed alone on re-run.
+   - **Two serialization layers, and neither replaces the other.** (a) CI jobs that touch the DB wait for each
+     other at RUNTIME via `.github/actions/wait-for-db-lane` (#1509 — it replaced the `supabase-shared-db`
+     concurrency group the #1505 had added; that group no longer exists in any workflow, so don't go looking).
+     (b) `npm run test:behavioural` goes through `scripts/with-db-lease.mjs`, a DB-side lease (#1961) that IS
+     visible to your laptop — which is the axis no Actions-side mechanism can reach. Measured 2026-08-24: two
+     local Claude sessions one second apart drove `ADR-0012 B10` from 232ms to **234.009 ms**, failing on
+     Postgres `57014`.
+   - Missing the lease does NOT fail the run — it warns loudly and names the current holder. Contention must
+     never read as red; a red that vanishes on re-run is what erodes trust in the gate. So the old advice still
+     holds as a habit: check `gh run list --limit 5` before starting, and classify a vanishing red as
+     contention before hunting a code cause. Never merge over it.
+   - ⚠️ The lease wait runs INSIDE the job's `timeout-minutes`, alongside the lane wait. `tests/contracts/1961`
+     locks the arithmetic (lane + lease + worst `validate` < ceiling); if you raise either wait, that guard
+     fails before the runner kills a job without printing why (#1969).
    - When you add/remove a test, register it in BOTH the `"test"` and `"test:contracts"` whitelists in
      `package.json` (SEDIMENT-186.C) before running.
    - Pre-trim baseline-history narrative archived at `docs/audit/DEPLOY_TEST_BASELINE_HISTORY_ARCHIVED_2026-05-30.md`.
