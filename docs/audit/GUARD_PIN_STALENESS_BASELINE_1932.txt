@@ -94,8 +94,6 @@ tests/contracts/p232-229-phase2-leader-extra-visibility.test.mjs|get_selection_d
 tests/contracts/p234-322-volunteer-term-gap-b-classification.test.mjs|admin_offboard_member
 tests/contracts/p234-322-volunteer-term-gap-b-classification.test.mjs|approve_selection_application
 tests/contracts/p234-322-volunteer-term-gap-b-classification.test.mjs|get_my_onboarding
-tests/contracts/p245-curation-view-gates-curate-content.test.mjs|get_curation_dashboard
-tests/contracts/p245-curation-view-gates-curate-content.test.mjs|list_curation_pending_board_items
 tests/contracts/p245-curation-view-gates-curate-content.test.mjs|list_pending_curation
 tests/contracts/p246-229b-final-score-pert-by-track.test.mjs|_compute_pert_cutoff_core
 tests/contracts/p248-opp-246-a-submit-evaluation-canonical-final-score.test.mjs|submit_evaluation

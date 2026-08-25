@@ -21,8 +21,28 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
+
+/**
+ * #1977: tres destas funcoes passaram a ter captura NOVA (a migration de `_can_anywhere`). Fixar o
+ * caminho de uma migration antiga faz o guard afirmar texto que a producao nao executa mais -- e a
+ * classe do #1932. Estas tres leem a captura VIGENTE; `list_pending_curation`, que nao foi tocada,
+ * segue lendo a migration 098.
+ *
+ * O ramo de `write_board` pode ser perguntado por `can_by_member` (forma antiga) ou por
+ * `_can_anywhere_by_member` (#1977). O que este guard afirma e que o ramo EXISTE e que o portao
+ * continua ADITIVO -- nao qual helper o implementa.
+ */
+const corpoVigente = (nome) => maskLineComments(latestFunctionCapture(ROOT, nome).body);
+const RAMO_BOARD = "(?:can_by_member|_can_anywhere_by_member)\\(v_member_id, 'write_board'\\)";
+const ADITIVO = (extra = RAMO_BOARD) => new RegExp(
+  `can_by_member\\(v_member_id, 'curate_content'\\)[\\s\\S]{0,120}OR[\\s\\S]{0,120}public\\.${extra}`,
+);
+/** As duas formas de estreitar para UMA capacidade, que continuam proibidas. */
+const SO_BOARD   = /IF NOT public\.(?:can_by_member|_can_anywhere_by_member)\(v_member_id, 'write_board'\) THEN/;
+const SO_CURATE  = /IF NOT public\.(?:can_by_member|_can_anywhere_by_member)\(v_member_id, 'curate_content'\) THEN/;
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000098_245_curation_view_gates_curate_content.sql');
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 // #185 Item-2: list_curation_board (the 4th, previously-ungated curation reader) gated 2026-06-05.
@@ -46,15 +66,17 @@ test('#245 static: migration 098 exists', () => {
 });
 
 test('#245 static: get_curation_dashboard gates curate_content OR write_board', () => {
-  assert.match(migRaw,
-    /CREATE OR REPLACE FUNCTION public\.get_curation_dashboard[\s\S]*?can_by_member\(v_member_id, 'curate_content'\)[\s\S]{0,80}OR[\s\S]{0,80}can_by_member\(v_member_id, 'write_board'\)/,
-    'get_curation_dashboard gate is additive (curate_content OR write_board)');
+  const corpo = corpoVigente('get_curation_dashboard');
+  assert.match(corpo, ADITIVO(), 'get_curation_dashboard gate is additive (curate_content OR write_board)');
+  assert.doesNotMatch(corpo, SO_BOARD, 'get_curation_dashboard nao pode estreitar para write_board sozinho');
+  assert.doesNotMatch(corpo, SO_CURATE, 'get_curation_dashboard nao pode estreitar para curate_content sozinho');
 });
 
 test('#245 static: list_curation_pending_board_items gates curate_content OR write_board', () => {
-  assert.match(migRaw,
-    /CREATE OR REPLACE FUNCTION public\.list_curation_pending_board_items[\s\S]*?can_by_member\(v_member_id, 'curate_content'\)[\s\S]{0,80}OR[\s\S]{0,80}can_by_member\(v_member_id, 'write_board'\)/,
-    'list_curation_pending_board_items gate is additive');
+  const corpo = corpoVigente('list_curation_pending_board_items');
+  assert.match(corpo, ADITIVO(), 'list_curation_pending_board_items gate is additive');
+  assert.doesNotMatch(corpo, SO_BOARD, 'list_curation_pending_board_items nao pode estreitar para write_board sozinho');
+  assert.doesNotMatch(corpo, SO_CURATE, 'list_curation_pending_board_items nao pode estreitar para curate_content sozinho');
 });
 
 test('#245 static: list_pending_curation gates curate_content OR write', () => {
@@ -76,19 +98,19 @@ test('#245 static: no view RPC narrows to a curate_content-ONLY gate (symmetric 
     'no curation view RPC may gate on curate_content alone (must keep the write_board/write OR-arm)');
 });
 
-test('#185 Item-2 static: migration 112 exists and gates list_curation_board', () => {
+test('#185 Item-2 static: a captura VIGENTE de list_curation_board tem o portao aditivo', () => {
   assert.ok(existsSync(MIG185), 'migration 20260805000112 exists');
-  assert.match(mig185Raw,
-    /CREATE OR REPLACE FUNCTION public\.list_curation_board[\s\S]*?can_by_member\(v_member_id, 'curate_content'\)[\s\S]{0,80}OR[\s\S]{0,80}can_by_member\(v_member_id, 'write_board'\)/,
-    'list_curation_board gate is additive (curate_content OR write_board)');
-  assert.match(mig185Raw, /RAISE EXCEPTION 'Not authenticated'/,
+  const corpo = corpoVigente('list_curation_board');
+  assert.match(corpo, ADITIVO(), 'list_curation_board gate is additive (curate_content OR write_board)');
+  assert.match(corpo, /RAISE EXCEPTION 'Not authenticated'/,
     'list_curation_board raises when caller is not a member');
 });
 
 test('#185 Item-2 static: list_curation_board does not narrow to a single-capability gate', () => {
-  assert.doesNotMatch(mig185Raw, /IF NOT public\.can_by_member\(v_member_id, 'curate_content'\) THEN/,
+  const corpo = corpoVigente('list_curation_board');
+  assert.doesNotMatch(corpo, SO_CURATE,
     'list_curation_board must keep the write_board OR-arm (no curate_content-only narrowing)');
-  assert.doesNotMatch(mig185Raw, /IF NOT public\.can_by_member\(v_member_id, 'write_board'\) THEN/,
+  assert.doesNotMatch(corpo, SO_BOARD,
     'list_curation_board must keep the curate_content OR-arm (no write_board-only gate)');
 });
 
