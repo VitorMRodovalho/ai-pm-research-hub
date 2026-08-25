@@ -29237,6 +29237,10 @@ export type Database = {
       _data_retention_sweep: { Args: { p_dry_run?: boolean }; Returns: Json }
       _data_retention_sweep_cron: { Args: never; Returns: Json }
       _delivery_mode_for: { Args: { p_type: string }; Returns: string }
+      _derive_operational_role: {
+        Args: { p_person_id: string }
+        Returns: string
+      }
       _dispatch_interview_booking_link: {
         Args: {
           p_application_id: string
@@ -29349,6 +29353,7 @@ export type Database = {
         Args: { p_caller_id: string; p_event_id: string }
         Returns: boolean
       }
+      _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
       _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
       _ots_mark_confirmed: {
@@ -29405,6 +29410,10 @@ export type Database = {
       _recompute_application_pert: {
         Args: { p_application_id: string }
         Returns: undefined
+      }
+      _reconcile_operational_role_cache: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
       }
       _recurrence_stockout_rows: {
         Args: { p_horizon_days?: number }

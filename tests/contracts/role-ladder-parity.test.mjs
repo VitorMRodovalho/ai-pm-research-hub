@@ -1,9 +1,17 @@
 // Role ladder parity contract test (ADR-0023)
 // -----------------------------------------------------------------------------
-// Asserts that the CASE ladder in sync_operational_role_cache() matches the
-// expected_role CASE ladder in check_schema_invariants().A3 byte-for-byte
-// (modulo whitespace). ADR-0023 declares invariant parity rule — this test
-// enforces it at build time.
+// Asserts that the CASE ladder matches the expected_role CASE ladder in
+// check_schema_invariants().A3 byte-for-byte (modulo whitespace). ADR-0023 declares the
+// invariant parity rule — this test enforces it at build time.
+//
+// #1925 (25/08/2026): a escada SAIU de `sync_operational_role_cache` e virou
+// `_derive_operational_role(person_id)`. Ela estava inline em duas copias byte-identicas, e
+// o cron de reconciliacao que a #1925 criou seria a TERCEIRA. O trigger agora DELEGA.
+//
+// Este teste continua sendo o unico lugar que compara os DOIS lados, e por isso ele fica: a
+// A3 deriva com a sua propria algebra de proposito, para que um erro DENTRO da escada seja
+// visivel para o invariante em vez de invisivel (ver #1987). Enquanto forem duas expressoes,
+// esta paridade e o que impede a divergencia silenciosa.
 //
 // Extraction strategy:
 //   1. Concatenate all migration files
@@ -112,9 +120,23 @@ function parseClauses(caseInner) {
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
-test('sync_operational_role_cache function body extractable', () => {
+// Dono da escada desde a #1925. Antes era `sync_operational_role_cache`, que agora delega.
+const LADDER_OWNER = '_derive_operational_role';
+
+test('ladder owner function body extractable', () => {
+  const body = findFunctionBody(LADDER_OWNER);
+  assert.ok(body, `latest ${LADDER_OWNER} CREATE OR REPLACE must be extractable`);
+});
+
+test('#1925: sync_operational_role_cache DELEGA a escada, nao a carrega', () => {
+  // Se a escada voltar para dentro do trigger, volta a haver duas copias que podem divergir
+  // em silencio -- e este mesmo teste passaria a comparar a copia errada com a A3.
   const body = findFunctionBody('sync_operational_role_cache');
   assert.ok(body, 'latest sync_operational_role_cache CREATE OR REPLACE must be extractable');
+  assert.strictEqual(findLadderCaseBlock(body), null,
+    'sync_operational_role_cache voltou a carregar a escada inline: a extracao da #1925 foi desfeita');
+  assert.match(body, /_derive_operational_role\(/,
+    'o trigger precisa CHAMAR a escada; sem isso ele nao deriva papel nenhum');
 });
 
 test('check_schema_invariants function body extractable', () => {
@@ -122,10 +144,10 @@ test('check_schema_invariants function body extractable', () => {
   assert.ok(body, 'latest check_schema_invariants CREATE OR REPLACE must be extractable');
 });
 
-test('sync_operational_role_cache ladder CASE block present', () => {
-  const body = findFunctionBody('sync_operational_role_cache');
+test('ladder owner CASE block present', () => {
+  const body = findFunctionBody(LADDER_OWNER);
   const caseInner = findLadderCaseBlock(body);
-  assert.ok(caseInner, 'sync_operational_role_cache must contain role-ladder CASE block');
+  assert.ok(caseInner, `${LADDER_OWNER} must contain role-ladder CASE block`);
 });
 
 test('check_schema_invariants A3 ladder CASE block present', () => {
@@ -135,7 +157,7 @@ test('check_schema_invariants A3 ladder CASE block present', () => {
 });
 
 test('ADR-0023 parity: ladders match clause-by-clause', () => {
-  const syncBody = findFunctionBody('sync_operational_role_cache');
+  const syncBody = findFunctionBody(LADDER_OWNER);
   const invBody = findFunctionBody('check_schema_invariants');
   const syncCase = findLadderCaseBlock(syncBody);
   const invCase = findLadderCaseBlock(invBody);
@@ -176,7 +198,7 @@ test('ADR-0023 parity: ladders match clause-by-clause', () => {
 });
 
 test('ADR-0023 parity: ladder has no duplicate conditions', () => {
-  const body = findFunctionBody('sync_operational_role_cache');
+  const body = findFunctionBody(LADDER_OWNER);
   const caseInner = findLadderCaseBlock(body);
   const { whenClauses } = parseClauses(caseInner);
   const seen = new Set();
@@ -187,7 +209,7 @@ test('ADR-0023 parity: ladder has no duplicate conditions', () => {
 });
 
 test('ADR-0023 parity: ladder has ≥ 10 clauses (sanity check)', () => {
-  const body = findFunctionBody('sync_operational_role_cache');
+  const body = findFunctionBody(LADDER_OWNER);
   const caseInner = findLadderCaseBlock(body);
   const { whenClauses } = parseClauses(caseInner);
   assert.ok(
