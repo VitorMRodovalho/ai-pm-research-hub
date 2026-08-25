@@ -45,8 +45,19 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
+// #1932 — este guard afirmava o CORPO da funcao lendo um arquivo FIXADO, e o corpo mudou de
+// dono: a captura mais nova de `submit_interview_scores` passou a ser a migration do #1972.
+// Guard fixado em texto morto fica VERDE afirmando o que producao nao executa mais.
+//
+// A divisao que ficou: o que e propriedade do CORPO le `latestFunctionCapture` e acompanha o
+// dono atual; o que e propriedade DAQUELE ARQUIVO (existir no caminho canonico, os cross-refs
+// do cabecalho, o NOTIFY do ritual GC-097) continua fixado, porque essas afirmacoes sao sobre
+// a migration do p241 e nao sobre a funcao.
+const corpoVigente = () => latestFunctionCapture(ROOT, 'submit_interview_scores').block;
+
 const MIGRATION_FILE = resolve(
   ROOT,
   'supabase/migrations/20260805000026_p241_watch_240_a_submit_interview_scores_relax_status_gate.sql'
@@ -71,7 +82,7 @@ test('p241 WATCH-240.A: migration file present at canonical path', () => {
 });
 
 test('p241 WATCH-240.A: function signature preserved (5 params + jsonb return + SECDEF + pinned search_path)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   // Use CREATE OR REPLACE (not DROP+CREATE) because signature is unchanged from p113.
   assert.match(body,
     /CREATE OR REPLACE FUNCTION public\.submit_interview_scores\(\s*p_interview_id uuid,\s*p_scores jsonb,\s*p_theme text DEFAULT NULL::text,\s*p_notes text DEFAULT NULL::text,\s*p_criterion_notes jsonb DEFAULT '\{\}'::jsonb\s*\)/i,
@@ -85,7 +96,7 @@ test('p241 WATCH-240.A: function signature preserved (5 params + jsonb return + 
 });
 
 test('p241 WATCH-240.A: hoisted conducted_at-IS-NULL block exists with UPDATE statement', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body,
     /IF v_interview\.conducted_at IS NULL THEN\s+UPDATE public\.selection_interviews\s+SET conducted_at = now\(\)\s+WHERE id = p_interview_id;\s+END IF;/i,
     'Hoisted block must check v_interview.conducted_at IS NULL (idempotent) and UPDATE conducted_at=now() ' +
@@ -93,7 +104,7 @@ test('p241 WATCH-240.A: hoisted conducted_at-IS-NULL block exists with UPDATE st
 });
 
 test('p241 WATCH-240.A: hoisted block precedes the all-submitted check (chronological in body)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   const hoistIdx = body.search(/IF v_interview\.conducted_at IS NULL THEN/);
   const allCheckIdx = body.search(/v_all_interviewers_submitted := NOT EXISTS/);
   assert.ok(hoistIdx > 0, 'Hoist block must be present');
@@ -104,14 +115,14 @@ test('p241 WATCH-240.A: hoisted block precedes the all-submitted check (chronolo
 });
 
 test('p241 WATCH-240.A: all-submitted boolean still computed via the canonical NOT EXISTS pattern', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body,
     /v_all_interviewers_submitted := NOT EXISTS \(\s*SELECT 1 FROM unnest\(v_interview\.interviewer_ids\) iid[\s\S]{0,500}submitted_at IS NOT NULL[\s\S]{0,100}\);/i,
     'All-submitted boolean computation must be preserved (semantic gate for PERT + final_eval transition)');
 });
 
 test('p241 WATCH-240.A: all-submitted branch UPDATEs interview status to "completed" (no conducted_at coupling)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body,
     /IF v_all_interviewers_submitted THEN\s+UPDATE public\.selection_interviews\s+SET status = 'completed'\s+WHERE id = p_interview_id;/i,
     'All-submitted branch must still mark interview row status=completed (sealing the row); the conducted_at column ' +
@@ -119,7 +130,7 @@ test('p241 WATCH-240.A: all-submitted branch UPDATEs interview status to "comple
 });
 
 test('p241 WATCH-240.A: PERT compute + interview_score + final_eval still inside the all-submitted branch', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body, /v_pert_score := ROUND\(\(2 \* v_min_sub \+ 4 \* v_avg_sub \+ 2 \* v_max_sub\) \/ 8, 2\);/i,
     'PERT formula must be preserved verbatim (changes here would alter selection ranking math)');
   assert.match(body,
@@ -144,13 +155,13 @@ test('p241 WATCH-240.A: migration reloads PostgREST schema cache', () => {
 });
 
 test('p241 WATCH-240.A: notification path preserved (PERFORM create_notification + selection_evaluation_complete)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body, /PERFORM public\.create_notification\(\s*sc\.member_id,\s*'selection_evaluation_complete',/i,
     'Notification dispatch to lead committee member must remain in the all-submitted branch');
 });
 
 test('p241 WATCH-240.A: return envelope preserved (success + evaluation_id + all_interviewers_submitted + pert_interview_score)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   assert.match(body, /RETURN jsonb_build_object\(\s*'success',\s*true,\s*'evaluation_id',\s*v_eval_id,\s*'weighted_subtotal',\s*ROUND\(v_weighted_sum,\s*2\),\s*'all_interviewers_submitted',\s*v_all_interviewers_submitted,\s*'pert_interview_score',\s*v_pert_score\s*\);/i,
     'Return envelope must remain unchanged (consumers + MCP tool depend on these keys)');
 });
@@ -160,7 +171,7 @@ test('p241 WATCH-240.A: return envelope preserved (success + evaluation_id + all
 // ===================================================================
 
 test('p241 WATCH-240.A forward-defense: conducted_at=now() must NOT appear inside the all-submitted branch', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   // Extract the all-submitted branch text and assert conducted_at=now() is NOT in it.
   // Branch starts at "IF v_all_interviewers_submitted THEN" and ends at the matching "END IF;"
   // before the RETURN jsonb_build_object call.
@@ -174,7 +185,7 @@ test('p241 WATCH-240.A forward-defense: conducted_at=now() must NOT appear insid
 });
 
 test('p241 WATCH-240.A forward-defense: UPDATE selection_interviews inside all-submitted branch is status-only', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = corpoVigente();
   const branchMatch = body.match(/IF v_all_interviewers_submitted THEN([\s\S]*?)END IF;\s+RETURN jsonb_build_object/);
   assert.ok(branchMatch, 'All-submitted branch must be locatable for regression scan');
   const branchBody = branchMatch[1];
@@ -203,12 +214,10 @@ function makeClient() {
 //   md5(regexp_replace(prosrc, '\s+', ' ', 'g'))
 // The function body is everything between `AS $function$` and `$function$;`.
 function expectedBodyMd5FromMigrationFile() {
-  const sql = readFileSync(MIGRATION_FILE, 'utf8');
-  const match = sql.match(/AS\s+\$function\$([\s\S]+?)\$function\$/);
-  if (!match) {
-    throw new Error('Migration file does not contain a `AS $function$ … $function$` block — cannot derive expected md5');
-  }
-  const normalized = match[1].replace(/\s+/g, ' ');
+  // #1932: o corpo vem da captura VIGENTE, nao de um arquivo fixado. O md5 vivo pertence a
+  // quem definiu a funcao por ULTIMO; comparar contra arquivo vencido acusa drift FALSO — o
+  // guard passaria a reprovar por estar desatualizado, nao por producao ter divergido.
+  const normalized = latestFunctionCapture(ROOT, 'submit_interview_scores').body.replace(/\s+/g, ' ');
   return { md5: createHash('md5').update(normalized).digest('hex'), len: normalized.length };
 }
 
