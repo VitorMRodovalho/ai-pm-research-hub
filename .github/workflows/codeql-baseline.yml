@@ -1,0 +1,62 @@
+name: Ratchet da linha de base do CodeQL (#1966)
+
+# POR QUE ESTE WORKFLOW EXISTE
+#
+# `CodeQL Analysis` roda, reporta e nao segura nada. Medido em 24/08/2026: 101 alertas
+# abertos, 55 ALTOS, o mais antigo de 08/03 — quase seis meses. A #1958 foi o primeiro
+# fechamento por conserto deliberado nesse canal, e so aconteceu porque alguem foi olhar.
+# Check que avisa e nao segura vira ruido, e ninguem le ruido.
+#
+# Tornar o CodeQL required de uma vez travaria TODA PR. A saida e o padrao que o repo ja
+# usa no #938 e no p175: congela o passado numa lista versionada e barra o NOVO. A lista
+# so encolhe.
+#
+# ⚠️ POR QUE NAO RODA EM `pull_request`, e isto foi MEDIDO, nao suposto:
+# a API devolve alertas por ref, e `refs/pull/1970/merge` retornou **0 alertas com 1
+# analise existente** enquanto a main tinha 101. Ou seja, o ref de PR carrega o que a PR
+# INTRODUZ, nao o conjunto inteiro — semantica diferente da linha de base. Comparar os
+# dois passaria a impressao de medir e erraria em silencio, que e exatamente a classe de
+# defeito que este arquivo existe para eliminar.
+#
+# O gate no nivel da PR e decisao de CONFIGURACAO do repo (o check nativo "Code scanning
+# results" com limiar de severidade), nao de codigo. Fica registrado na #1966 para o PM.
+#
+# O que este workflow garante: nenhum achado novo sobrevive mais do que UM merge sem ser
+# nomeado, e a base nunca cresce sem alguem decidir.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # segunda 11:00 UTC, logo depois do audit semanal de bypass
+    - cron: '0 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: read
+
+concurrency:
+  group: codeql-baseline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ratchet:
+    name: codeql-baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      # Sem `--ref`: compara o conjunto INTEIRO de alertas abertos do repo contra a base
+      # versionada. O script recusa rodar sem token — skip aqui seria verde por vacuidade,
+      # e um ratchet que passa sem medir e pior do que ratchet nenhum.
+      - name: Comparar alertas abertos com a linha de base
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/codeql-baseline-check.mjs
