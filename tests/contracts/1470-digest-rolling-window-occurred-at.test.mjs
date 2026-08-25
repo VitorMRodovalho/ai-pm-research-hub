@@ -22,9 +22,21 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const MIGP = fileURLToPath(new URL('../../supabase/migrations/20260805000488_1470_digest_rolling_window_occurred_at.sql', import.meta.url));
 const migRaw = existsSync(MIGP) ? readFileSync(MIGP, 'utf8') : '';
+
+/**
+ * #1990: `get_gamification_category_activity` foi redefinida depois desta migration (troca do
+ * portao resourceless). Fixar o CAMINHO de 20260805000488 faria estas assercoes falarem de um texto
+ * que a producao nao executa mais — a classe do #1932. As assercoes sobre ELA leem a captura
+ * VIGENTE; as de `get_weekly_member_digest`, que ninguem redefiniu, seguem no arquivo original.
+ */
+// ROOT em variavel de proposito: o scanner do #1932 casa `latestFunctionCapture(<algo sem
+// parenteses>, 'nome')`, entao `process.cwd()` inline quebraria o reconhecimento da divida.
+const ROOT = process.cwd();
+const catAtual = maskLineComments(latestFunctionCapture(ROOT, 'get_gamification_category_activity').block);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -35,7 +47,7 @@ const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 test('#1470 static: migration file exists + redefines both rolling-window readers', () => {
   assert.ok(existsSync(MIGP), 'migration 20260805000488 exists');
   assert.match(migRaw, /CREATE OR REPLACE FUNCTION public\.get_weekly_member_digest\(p_member_id uuid\)/, 'redefines get_weekly_member_digest');
-  assert.match(migRaw, /CREATE OR REPLACE FUNCTION public\.get_gamification_category_activity\(p_window_days integer/, 'redefines get_gamification_category_activity');
+  assert.match(catAtual, /CREATE OR REPLACE FUNCTION public\.get_gamification_category_activity\(p_window_days integer/, 'a captura vigente define get_gamification_category_activity');
 });
 
 test('#1470 static: xp_delta windows by occurred_at fact date, not bare created_at', () => {
@@ -47,15 +59,15 @@ test('#1470 static: xp_delta windows by occurred_at fact date, not bare created_
 });
 
 test('#1470 static: category_activity windows (p_window_days + 7d) use occurred_at', () => {
-  assert.match(migRaw, /FILTER \(WHERE COALESCE\(gp\.occurred_at, gp\.created_at\) >= now\(\) - \(p_window_days \|\| ' days'\)::interval\)/i,
+  assert.match(catAtual, /FILTER \(WHERE COALESCE\(gp\.occurred_at, gp\.created_at\) >= now\(\) - \(p_window_days \|\| ' days'\)::interval\)/i,
     'p_window_days window uses occurred_at');
-  assert.match(migRaw, /FILTER \(WHERE COALESCE\(gp\.occurred_at, gp\.created_at\) >= now\(\) - INTERVAL '7 days'\)/i,
+  assert.match(catAtual, /FILTER \(WHERE COALESCE\(gp\.occurred_at, gp\.created_at\) >= now\(\) - INTERVAL '7 days'\)/i,
     '7d window uses occurred_at');
-  assert.doesNotMatch(migRaw, /FILTER \(WHERE gp\.created_at >= now\(\)/i, 'no bare created_at activity window remains');
+  assert.doesNotMatch(catAtual, /FILTER \(WHERE gp\.created_at >= now\(\)/i, 'no bare created_at activity window remains');
 });
 
 test('#1470 static: last_award preserved as the grant timestamp max(created_at)', () => {
-  assert.match(migRaw, /max\(gp\.created_at\) AS last_award/i, 'last_award stays max(created_at) — concession timestamp is out of scope');
+  assert.match(catAtual, /max\(gp\.created_at\) AS last_award/i, 'last_award stays max(created_at) — concession timestamp is out of scope');
 });
 
 test('#1470 static: migration notifies PostgREST', () => {
