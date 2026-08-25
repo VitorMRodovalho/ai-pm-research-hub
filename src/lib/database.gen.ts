@@ -29443,6 +29443,13 @@ export type Database = {
         }[]
       }
       _selection_cutoff_pending_cron: { Args: never; Returns: Json }
+      _selection_cycle_recipients: {
+        Args: { p_cycle_id: string }
+        Returns: {
+          member_id: string
+          via: string
+        }[]
+      }
       _selection_interview_overdue_cron: { Args: never; Returns: Json }
       _selection_status_recompute_cron: { Args: never; Returns: Json }
       _selection_stuck_scheduled_rescue_cron: { Args: never; Returns: Json }
