@@ -140,22 +140,73 @@ test('#1978 db: o portão não virou capacidade geral — a população segue ES
       'marcar no-show é ato de comitê, não capacidade geral');
   });
 
-test('#1978 db: todo ciclo ABERTO tem quem opere as RPCs presas a role=lead',
+// Decisao isolada numa funcao PURA para que o controle positivo nao dependa de mexer em producao:
+// provar que um guard reprova exige injetar o defeito, e o defeito aqui seria "ciclo aberto sem
+// lead", que eu nao vou criar no banco compartilhado so para ver o teste ficar vermelho.
+export function ciclosAbertosSemLead(ciclos, comitePorCicloId) {
+  return (ciclos ?? [])
+    .filter((c) => !((comitePorCicloId[c.id] ?? []).some((r) => r.role === 'lead')))
+    .map((c) => c.cycle_code ?? c.id);
+}
+
+test('#1978: o detector de ciclo-aberto-sem-lead acusa quando deve, e so quando deve', () => {
+  // CONTROLE POSITIVO: com o defeito presente, tem que acusar.
+  assert.deepEqual(
+    ciclosAbertosSemLead(
+      [{ id: 'a', cycle_code: 'sem-lead' }],
+      { a: [{ role: 'evaluator' }, { role: 'observer' }] },
+    ),
+    ['sem-lead'],
+    'um ciclo aberto so com evaluator/observer PRECISA ser acusado — foi exatamente o estado de 25/08',
+  );
+  // CONTROLE NEGATIVO: sem o defeito, tem que ficar quieto.
+  assert.deepEqual(
+    ciclosAbertosSemLead(
+      [{ id: 'b', cycle_code: 'com-lead' }],
+      { b: [{ role: 'lead' }, { role: 'evaluator' }] },
+    ),
+    [],
+    'um ciclo com lead nao pode ser acusado, senao o guard vira ruido e alguem o desliga',
+  );
+  // Um lead em OUTRO ciclo nao vale para este.
+  assert.deepEqual(
+    ciclosAbertosSemLead(
+      [{ id: 'c', cycle_code: 'orfao' }],
+      { c: [{ role: 'evaluator' }], outro: [{ role: 'lead' }] },
+    ),
+    ['orfao'],
+    'lead e por CICLO: um lead noutro ciclo nao cobre este',
+  );
+});
+
+test('#1978 db: nenhum ciclo ABERTO pode ficar sem role=lead',
   { skip: dbGated ? false : skipMsg }, async () => {
-    // O sinal que faltava em 25/08: o ciclo aberto tinha ZERO lead e 13 RPCs com um ramo que não
-    // alcançava ninguém. Aviso, não falha — designar lead é ato de governança, não de código.
+    // Em 25/08 isto era um `console.warn`, e um aviso que ninguem le nao e guard. Passa a REPROVAR.
+    //
+    // Por que vale reprovar: com zero leads, 12 RPCs de selecao caem para quem tem
+    // manage_platform/manage_member (ou seja, so o GP opera o ciclo) e as 4 superficies de
+    // notificacao de comite ficam SEM DESTINATARIO — `PERFORM create_notification(...) FROM
+    // selection_committee WHERE role='lead'` com zero linhas nao chama nada, nao falha e nao avisa.
+    //
+    // Designar lead e ato de governanca, entao o guard nao conserta: ele NOMEIA o ciclo e para a
+    // fila ate alguem decidir. Foi a falta desse sinal que deixou o estado passar despercebido.
     const { data: ciclos, error: e1 } = await sb()
       .from('selection_cycles').select('id, cycle_code, status').eq('status', 'open');
     assert.ifError(e1);
+
+    const comitePorCicloId = {};
     for (const c of ciclos ?? []) {
       const { data: com, error: e2 } = await sb()
         .from('selection_committee').select('member_id, role').eq('cycle_id', c.id);
       assert.ifError(e2);
-      const leads = (com ?? []).filter((r) => r.role === 'lead');
-      if (leads.length === 0) {
-        console.warn(`[#1978] ciclo ABERTO ${c.cycle_code} sem nenhum role='lead': as RPCs presas a ` +
-          'lead caem para quem tem manage_platform, e as notificações de comitê ficam sem destinatário.');
-      }
-      assert.ok(Array.isArray(com));
+      comitePorCicloId[c.id] = com ?? [];
     }
+
+    const semLead = ciclosAbertosSemLead(ciclos, comitePorCicloId);
+    assert.deepEqual(semLead, [],
+      `ciclo(s) ABERTO(s) sem nenhum role='lead': ${semLead.join(', ')}. ` +
+      'Enquanto durar, as RPCs de selecao presas a lead so respondem a quem tem manage_platform, ' +
+      'e as notificacoes de comite nao tem a quem ser entregues. ' +
+      'Conserto e por DADO (designar um lead no comite do ciclo), nao por codigo. ' +
+      'Atencao ao p253: o ciclo precisa manter >= 2 linhas evaluator+can_interview.');
   });
