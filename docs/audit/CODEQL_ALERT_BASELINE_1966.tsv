@@ -1,0 +1,88 @@
+# Linha de base de alertas do CodeQL — #1966
+#
+# Congelada em 2026-08-24 contra a main `2f24493c`, colhida por
+# `gh api .../code-scanning/alerts --paginate --slurp` (SEM `--paginate` a API devolve
+# so a primeira pagina, 23 itens, e nada sinaliza truncamento — foi assim que este
+# backlog foi reportado como "4 altos" duas vezes).
+#
+# POR QUE ISTO EXISTE: `CodeQL` roda, reporta e nao segura nada. Resultado medido:
+# 101 alertas abertos, 55 deles ALTOS, o mais antigo de 08/03/2026. A #1958 foi
+# o primeiro fechamento por conserto deliberado em quase seis meses. Tornar o check
+# required de uma vez travaria toda PR; congelar o passado e barrar o NOVO nao trava.
+#
+# A CHAVE e `rule.id` + `caminho`, nao o numero do alerta: numero muda quando o alerta
+# fecha e reabre, e linha muda a cada edicao acima dela. O que nao pode crescer e
+# quantos achados daquela regra existem naquele arquivo.
+#
+# ESTA LISTA SO ENCOLHE. Conserte o achado e remova a linha; nunca acrescente para
+# silenciar. O guard `.github/workflows/codeql-baseline.yml` reprova em chave NOVA e em
+# contagem que cresce, e `tests/contracts/1966-codeql-baseline-ratchet.test.mjs` reprova
+# se o total declarado aqui divergir do arquivo.
+#
+# TOTAL_ABERTOS=101
+# TOTAL_ALTOS=55
+# TOTAL_CHAVES=62
+#
+# formato: <contagem>\t<severidade>\t<rule.id>\t<caminho>
+1	high	js/bad-tag-filter	src/components/governance/ReviewChainIsland.tsx
+1	high	js/bad-tag-filter	src/components/governance/VersionDiffViewer.tsx
+3	high	js/bad-tag-filter	tests/contracts/version-diff-viewer-style-isolation.test.mjs
+5	high	js/clear-text-logging	supabase/functions/sync-comms-metrics/index.ts
+1	high	js/double-escaping	scripts/audit_i18n_value_parity.mjs
+1	high	js/double-escaping	scripts/calendar_event_importer.ts
+1	high	js/double-escaping	src/components/governance/ChainPDFDocument.tsx
+2	medium	js/identity-replacement	tests/contracts/p253-357-spec-348-v1-cycle4-reseed.test.mjs
+1	medium	js/identity-replacement	tests/contracts/p256-wave1a-315-m1-organization-id-backfill.test.mjs
+1	medium	js/identity-replacement	tests/contracts/p265-382-w4f-content-products-foundation.test.mjs
+3	high	js/incomplete-multi-character-sanitization	src/components/governance/ReviewChainIsland.tsx
+2	high	js/incomplete-multi-character-sanitization	src/components/governance/VersionDiffViewer.tsx
+5	high	js/incomplete-multi-character-sanitization	supabase/functions/nucleo-mcp/governance-html.mjs
+1	high	js/incomplete-multi-character-sanitization	tests/contracts/p517-recurring-link-no-hardcode.test.mjs
+1	high	js/incomplete-multi-character-sanitization	tests/contracts/p518-banner-dismiss-persist.test.mjs
+6	high	js/incomplete-multi-character-sanitization	tests/contracts/version-diff-viewer-style-isolation.test.mjs
+4	high	js/incomplete-sanitization	supabase/functions/sync-artia/index.ts
+1	high	js/incomplete-sanitization	supabase/functions/sync-comms-metrics/index.ts
+1	high	js/incomplete-sanitization	tests/contracts/admin-selection-import-error-rendering.test.mjs
+1	high	js/incomplete-sanitization	tests/contracts/consent-voice-biometric-ui.test.mjs
+1	high	js/incomplete-sanitization	tests/contracts/p519-visible-excused-affordance.test.mjs
+5	high	js/incomplete-url-substring-sanitization	src/components/board/CardDetail.tsx
+2	high	js/incomplete-url-substring-sanitization	src/lib/credly.js
+1	high	js/incomplete-url-substring-sanitization	supabase/functions/sync-credly-all/index.ts
+1	high	js/incomplete-url-substring-sanitization	supabase/functions/sync-knowledge-social-content/index.ts
+2	high	js/incomplete-url-substring-sanitization	supabase/functions/verify-credly/index.ts
+1	high	js/incomplete-url-substring-sanitization	tests/contracts/communication-engine.test.mjs
+1	high	js/incomplete-url-substring-sanitization	tests/contracts/impact-crosstribe.test.mjs
+2	high	js/incomplete-url-substring-sanitization	tests/contracts/p253-357-spec-348-v1-cycle4-reseed.test.mjs
+1	high	js/incomplete-url-substring-sanitization	tests/persona-journeys.spec.ts
+3	medium	js/stack-trace-exposure	src/pages/api/internal/cert-pdf-render/[id].ts
+3	medium	js/stack-trace-exposure	supabase/functions/audit-drive-offboarding-access/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/drive-create-subfolder/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/drive-list-folder-files/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/drive-upload-to-folder/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/extract-cv-text/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/import-calendar-legacy/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/import-trello-legacy/index.ts
+4	medium	js/stack-trace-exposure	supabase/functions/manage-curation-drive-grant/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/ots-stamp/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/ots-upgrade/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/pmi-ai-analyze-research/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/pmi-ai-analyze/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/pmi-ai-briefing/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/pmi-ai-triage/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/pmi-video-test-transcribe/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/publish-instagram/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/publish-linkedin/index.ts
+3	medium	js/stack-trace-exposure	supabase/functions/reconcile-initiative-drive-access/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/resend-webhook/index.ts
+2	medium	js/stack-trace-exposure	supabase/functions/revoke-drive-permission/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-account-claim/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-allocation-notify/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-campaign/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-email-verification/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-global-onboarding/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-notification-email/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-tribe-broadcast/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/send-weekly-member-digest/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/sync-attendance-points/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/sync-credly-all/index.ts
+1	medium	js/stack-trace-exposure	supabase/functions/sync-knowledge-social-content/index.ts
