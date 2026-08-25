@@ -46,14 +46,22 @@ const CHAMADA = /public\._can_anywhere_by_member\(\s*(\w+)\s*,\s*'write_board'\s
 /** A forma que a etapa 3 remove: `can_by_member(x, 'write_board')` sem recurso. */
 const RESOURCELESS = /public\.can_by_member\(\s*\w+\s*,\s*'write_board'(\s*::\s*text)?\s*\)/g;
 
-/** As 6, e o ramo VIZINHO que precisa sobreviver intacto em cada uma. */
+/**
+ * As 6, e a ACTION do ramo VIZINHO que precisa sobreviver em cada uma.
+ *
+ * ⚠️ Aqui se afirma a ACTION, nao a chamada literal. A primeira versao fixava a string
+ * `public.can_by_member(v_caller_id, 'manage_event')`, e o #1990 -- que e a MESMA frente, uma etapa
+ * adiante -- trocou exatamente essa forma em `get_comms_pipeline`. O guard reprovou por uma mudanca
+ * legitima: o ramo continua la, mudou o helper. O que este teste tem a dizer e "a troca do ramo de
+ * `write_board` nao pode ter derrubado o ramo vizinho", e isso independe de qual helper o implementa.
+ */
 const ALVOS = [
-  ['get_comms_pipeline',                "public.can_by_member(v_caller_id, 'manage_event')"],
-  ['get_curation_dashboard',            "public.can_by_member(v_member_id, 'curate_content')"],
-  ['get_curation_queue_state',          "public.can_by_member(v_member_id, 'curate_content')"],
-  ['list_curation_board',               "public.can_by_member(v_member_id, 'curate_content')"],
-  ['list_curation_pending_board_items', "public.can_by_member(v_member_id, 'curate_content')"],
-  ['update_webinar_comms_assets',       "public.can_by_member(v_caller_id, 'manage_event')"],
+  ['get_comms_pipeline',                'manage_event'],
+  ['get_curation_dashboard',            'curate_content'],
+  ['get_curation_queue_state',          'curate_content'],
+  ['list_curation_board',               'curate_content'],
+  ['list_curation_pending_board_items', 'curate_content'],
+  ['update_webinar_comms_assets',       'manage_event'],
 ];
 
 // ─── A: estática sobre a captura ────────────────────────────────────────────────
@@ -121,11 +129,14 @@ test('#1977 A (INVERSA): a forma sem recurso não sobrou em nenhuma das 6', () =
 });
 
 test('#1977 A (INVERSA): o ramo vizinho de cada uma sobreviveu intacto', () => {
-  for (const [nome, vizinho] of ALVOS) {
-    const { block } = latestFunctionCapture(ROOT, nome);
-    assert.ok(block.includes(vizinho),
-      `${nome} perdeu o ramo vizinho \`${vizinho}\` — a troca do ramo de write_board ESTREITOU o portão, ` +
-      'que não é o que #1977 propõe');
+  for (const [nome, acaoVizinha] of ALVOS) {
+    const block = maskLineComments(latestFunctionCapture(ROOT, nome).block);
+    // Qualquer helper de autoridade serve; o que nao pode e a action sumir do portao.
+    const ramo = new RegExp(
+      `public\\.(?:can|can_by_member|can_org_by_member|_can_anywhere|_can_anywhere_by_member)\\([^)]*'${acaoVizinha}'`);
+    assert.match(block, ramo,
+      `${nome} perdeu o ramo vizinho de \`${acaoVizinha}\` — a troca do ramo de write_board ESTREITOU ` +
+      'o portão, que não é o que #1977 propõe');
   }
 });
 
