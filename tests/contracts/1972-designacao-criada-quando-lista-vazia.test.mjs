@@ -26,10 +26,20 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260825012323_1972_designacao_criada_quando_a_lista_nasce_vazia.sql');
 const mig = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+
+// A captura de uma funcao e a migration MAIS NOVA que a recria, nunca um arquivo fixo. Fixar no
+// arquivo E o defeito do #1932, e este teste caiu nele: o #1978 (20260825153916) recriou
+// `submit_interview_scores` para trocar o destinatario da notificacao, e o md5 contra `MIG`
+// passou a acusar drift que ninguem introduziu. Usa o scanner compartilhado do #1932.
+const capturaMaisNova = (fn) => {
+  const c = latestFunctionCapture(ROOT, fn);
+  return { arquivo: c.file, corpo: c.body };
+};
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -68,16 +78,17 @@ test('#1972 db: a migration É a captura — md5 do arquivo bate com o corpo VIV
     // Não basta o texto estar no arquivo: um arquivo que descreve corpo que produção não
     // executa é o defeito do #1932, e ele mordeu duas vezes em 24/08. Aqui a asserção é o
     // md5, com a MESMA normalização que o helper usa (`regexp_replace(prosrc,'\s+',' ','g')`).
-    const corpo = mig.match(/AS \$function\$([\s\S]*?)\$function\$;/)?.[1];
-    assert.ok(corpo, 'o arquivo carrega o corpo entre delimitadores $function$');
-    const md5Arquivo = createHash('md5').update(corpo.replace(/\s+/g, ' ')).digest('hex');
+    const cap = capturaMaisNova('submit_interview_scores');
+    assert.ok(cap, 'alguma migration captura submit_interview_scores');
+    const md5Arquivo = createHash('md5').update(cap.corpo.replace(/\s+/g, ' ')).digest('hex');
 
     const { data, error } = await sb().rpc('_audit_list_public_function_bodies');
     assert.ifError(error);
     const vivas = (data ?? []).filter((f) => f.proname === 'submit_interview_scores');
     assert.equal(vivas.length, 1, `esperava UMA submit_interview_scores viva, achei ${vivas.length}`);
     assert.equal(vivas[0].body_md5, md5Arquivo,
-      'o corpo vivo divergiu do arquivo: a migration deixou de ser a captura (classe do #1932)');
+      `o corpo vivo divergiu da captura mais nova (${cap.arquivo}): a migration deixou de ser a ` +
+      'captura (classe do #1932)');
     assert.equal(vivas[0].is_secdef, true, 'continua SECURITY DEFINER');
   });
 
