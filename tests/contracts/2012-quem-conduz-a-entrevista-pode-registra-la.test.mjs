@@ -202,6 +202,16 @@ test('#2012 static: a tela de auditoria nomeia P0005 (rótulo E cor)', () => {
   assert.match(ADMIN_SRC, /P0005: 'bg-[a-z]+-\d+ text-[a-z]+-\d+'/, 'P0005 sem cor própria');
 });
 
+test('#2012 static: a SPEC normativa registra a correção, e não só o código', () => {
+  // #1987 — guard de código verde deixa o doc normativo apodrecer. A §4.0 desta spec afirmava,
+  // desde a #1594, que a recusa em `schedule_interview` virou retorno estruturado; era verdade
+  // para os gates de FLUXO e falso para o de AUTORIDADE, que seguia levantando.
+  const SPEC = read(resolve(ROOT, 'docs/specs/SPEC_INTERVIEW_BOOKING_INTEGRITY.md'));
+  assert.ok(SPEC.length > 0, 'SPEC_INTERVIEW_BOOKING_INTEGRITY.md tem de existir');
+  assert.match(SPEC, /CORREÇÃO \(#2012/, 'a spec não registra a correção da #2012');
+  assert.match(SPEC, /UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY/, 'a spec não nomeia o código novo');
+});
+
 test('#2012 static: o MCP documenta P0005 no timeline de gate', () => {
   assert.ok(MCP_SRC.length > 0, 'nucleo-mcp/index.ts tem de existir');
   assert.match(MCP_SRC, /P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY/);

@@ -174,6 +174,29 @@ Bypass só com `manage_member`. Existe superfície de leitura das tentativas
 > (`notify_selection_cutoff_approved` deixa de mandar o e-mail checando o retorno). A afirmação
 > acima só vale a partir da migration `20260805000509`.
 
+> ⚠️ **CORREÇÃO (#2012, 2026-08-26).** A correção da #1594 acima vale para os gates de **fluxo**
+> (P0002/P0003/P0004). O gate de **autoridade** de `schedule_interview` continuou levantando
+> `RAISE EXCEPTION 'Unauthorized: must be committee lead or platform admin'` **antes** da primeira
+> chamada de `_log_gate_attempt`, então uma tentativa barrada por autoridade não deixava linha
+> nenhuma. Medido em 26/08/2026: `gate_attempts` com **37** tentativas de `schedule_interview`,
+> **todas** `gate_passed = true`, **zero** recusas em toda a vida da tabela. Ausência de linha não
+> provava ausência de tentativa.
+>
+> A partir da migration `20260826212137` a recusa por autoridade também é retorno estruturado, com
+> código próprio **P0005 / `UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY`** (P0001 não foi reusado: é do
+> `GATE_NO_AI` aposentado pela #1640, e o guard dela afirma que P0001 não volta ao corpo vivo).
+>
+> No mesmo arco, a autoridade de `schedule_interview` ganhou um **terceiro caminho**, na precedência
+> `lead` > `manage_platform` > `self_interviewer`: membro do comitê **do ciclo**, com
+> `can_interview` **e** papel que decide (`evaluator`/`lead`, nunca `observer`), pode criar o
+> registro da entrevista **que conduziu**, informando apenas a si próprio em `interviewer_ids`.
+> `can_interview` sozinho não serve de portão — medido em 26/08, é `true` em **13 de 13** linhas de
+> `selection_committee` (5 delas de `observer`), então é rótulo e não autoridade. O caminho novo
+> **nunca** recebe `p_bypass_gate`, portanto P0002/P0003 e a allow-list de status do #472 corr.3
+> continuam valendo integralmente para ele, e agendar em nome de terceiro segue sendo
+> `lead`/`manage_platform`. Afirmado por
+> `tests/contracts/2012-quem-conduz-a-entrevista-pode-registra-la.test.mjs`.
+
 A rota `/interview-booking/[token]` existe nos três idiomas, valida por
 `validate_interview_booking_token` e expira em 14 dias.
 
