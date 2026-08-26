@@ -3153,12 +3153,17 @@ const SEL_I18N = {
         P0002: 'bg-orange-50 text-orange-700',
         P0003: 'bg-amber-50 text-amber-700',
         P0004: 'bg-purple-50 text-purple-700',
+        // #2012 — a recusa por AUTORIDADE passou a existir nesta tabela. Antes ela levantava
+        // exceção antes do primeiro log e morria no rollback junto com a linha que a explicaria,
+        // então este timeline nunca teve como mostrá-la.
+        P0005: 'bg-slate-100 text-slate-700',
       };
       const gateCodeLabels: Record<string,string> = {
         P0001: 'Sem AI',
         P0002: 'Sem par-revisão',
         P0003: 'Sem score',
         P0004: 'Status inválido',
+        P0005: 'Sem autoridade',
       };
       const rpcLabels: Record<string,string> = {
         schedule_interview: 'Agendar entrevista',
