@@ -122,6 +122,10 @@ const SEL_I18N = {
   consentRevokedTooltip: t('admin.selection.consentRevokedTooltip', lang),
   pdfInvalidBadge: t('admin.selection.pdfInvalidBadge', lang),
   pdfInvalidTooltip: t('admin.selection.pdfInvalidTooltip', lang),
+  // #1997 — "sem conta" nao e "parado": a jornada foi atribuida a alguem que nao consegue abrir
+  // a plataforma, entao 0% ali nao mede desinteresse.
+  noAccountBadge: t('admin.selection.noAccountBadge', lang),
+  noAccountTooltip: t('admin.selection.noAccountTooltip', lang),
   statusGroups: {
     submitted: t('admin.selection.statusGroupSubmitted', lang),
     evaluation: t('admin.selection.statusGroupEvaluation', lang),
@@ -916,6 +920,9 @@ const SEL_I18N = {
     consentRevokedTooltip: 'Consent IA revogado pelo candidato.',
     pdfInvalidBadge: '⚠ PDF inválido',
     pdfInvalidTooltip: 'Arquivo no storage tem menos de 1000 bytes — provavelmente erro Azure SAS ou link placeholder.',
+    // #1997 fallback
+    noAccountBadge: 'sem conta',
+    noAccountTooltip: 'A jornada de onboarding foi atribuída, mas esta pessoa não tem conta na plataforma (members.auth_id nulo). Os passos exigem sessão, então o progresso parado aqui é bloqueio estrutural, não desinteresse. Recuperação: ela precisa entrar com o MESMO e-mail cadastrado no PMI (/guia-pre-onboarding explica).',
     statusGroups: {
       submitted: 'Submetidos', evaluation: 'Avaliação', interview: 'Entrevista',
       approved: 'Aprovados', rejected: 'Rejeitados',
@@ -1075,6 +1082,8 @@ const SEL_I18N = {
   let filteredRows: any[] = [];
   // p153 GAP-152.5 — global latest vep_last_seen_at (ms) so vepBadge helper can flag stale rows
   let latestVepSeenMs = 0;
+  // #1997 — application_ids cuja jornada de onboarding pertence a alguem sem conta na plataforma
+  let blockedNoAccountAppIds: Set<string> = new Set();
   let currentCycleId: string | null = null;
   let currentCycle: any = null;
   let allCycles: any[] = [];
@@ -1774,6 +1783,20 @@ const SEL_I18N = {
         const ms = new Date(ts).getTime();
         if (Number.isFinite(ms) && ms > latestVepSeenMs) latestVepSeenMs = ms;
       }
+      // #1997 — quem tem jornada atribuida e NAO tem conta na plataforma. Uma chamada so,
+      // fora do N+1 abaixo: o 0% de onboarding dessas pessoas e bloqueio estrutural (a jornada
+      // exige sessao e nao ha login vinculado), nao falta de interesse, e a coluna precisa
+      // dizer isso. Falha em silencio: e enriquecimento, nao pode derrubar a lista.
+      blockedNoAccountAppIds = new Set<string>();
+      if (sb) {
+        try {
+          const { data: blocked } = await sb.rpc('get_onboarding_blocked_cohort');
+          for (const bp of (blocked?.people ?? [])) {
+            if (bp?.application_id) blockedNoAccountAppIds.add(String(bp.application_id));
+          }
+        } catch { /* optional enhancement */ }
+      }
+
       // Fetch onboarding % for approved/converted candidates
       const approvedIds = applications
         .filter((r: any) => ['approved', 'converted'].includes(r.status))
@@ -2223,7 +2246,7 @@ const SEL_I18N = {
         <td class="px-3 py-2.5">${pipelineBadges(r)}</td>
         <td class="px-3 py-2.5 whitespace-nowrap">${interviewCell}</td>
         <td class="px-4 py-2.5 text-[11px] text-[var(--text-secondary)] whitespace-nowrap">${fmtApplicationDate(r)}</td>
-        <td class="px-4 py-2.5 text-[12px]" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
+        <td class="px-4 py-2.5 text-[12px] whitespace-nowrap" id="onb-${esc(r.id)}">${r.onboarding_pct != null && r.onboarding_pct >= 0 ? `<span class="font-semibold ${r.onboarding_pct === 100 ? 'text-emerald-600' : r.onboarding_pct >= 50 ? 'text-amber-600' : 'text-[var(--text-muted)]'}">${r.onboarding_pct}%</span>` : '<span class="text-[var(--text-muted)]">—</span>'}${blockedNoAccountAppIds.has(r.id) ? ` <span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800" title="${esc(T.noAccountTooltip || '')}">🔒 ${esc(T.noAccountBadge || 'sem conta')}</span>` : ''}</td>
         <td class="px-4 py-2.5">
           <div class="flex gap-1.5 items-center flex-wrap">
             ${r.status === 'final_eval' ? `

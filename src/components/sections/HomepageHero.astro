@@ -374,9 +374,10 @@ const heroCycleActive = cycleNum
       if (e.detail) onMember(e.detail);
     }) as EventListener);
 
-    // Auth button
+    // Auth button. #1997: mesma identidade canonica de AuthModal.astro
+    // (`document` + 'open-auth'); 'open-auth-modal' no `window` nao tinha ouvinte.
     document.getElementById('hero-auth-btn')?.addEventListener('click', () => {
-      window.dispatchEvent(new CustomEvent('open-auth-modal'));
+      document.dispatchEvent(new CustomEvent('open-auth'));
     });
 
     // ── Helpers ──

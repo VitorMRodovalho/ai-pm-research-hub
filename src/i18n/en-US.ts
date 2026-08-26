@@ -5960,6 +5960,8 @@ const enUS: Record<string, string> = {
   'admin.selection.colInterviewHint': 'Next scheduled interview (status=scheduled). Badge TODAY when date == today SP-tz.',
   'admin.selection.colDate': 'Date',
   'admin.selection.colOnboarding': 'Onboarding',
+  'admin.selection.noAccountBadge': 'no account',
+  'admin.selection.noAccountTooltip': 'The onboarding journey was assigned, but this person has no platform account (members.auth_id is null). The steps require a session, so stalled progress here is a structural block, not disinterest. Recovery: they must sign in with the SAME e-mail registered at PMI (/guia-pre-onboarding walks through it).',
   'admin.selection.bulkSelectedSuffix': 'selected',
   'admin.selection.bulkApprove': 'Approve',
   'admin.selection.bulkReject': 'Reject',

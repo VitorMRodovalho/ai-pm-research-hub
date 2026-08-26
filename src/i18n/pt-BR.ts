@@ -5968,6 +5968,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.colInterviewHint': 'Próxima entrevista agendada (status=scheduled). Badge HOJE quando data == hoje SP-tz.',
   'admin.selection.colDate': 'Data',
   'admin.selection.colOnboarding': 'Onboarding',
+  'admin.selection.noAccountBadge': 'sem conta',
+  'admin.selection.noAccountTooltip': 'A jornada de onboarding foi atribuída, mas esta pessoa não tem conta na plataforma (members.auth_id nulo). Os passos exigem sessão, então o progresso parado aqui é bloqueio estrutural, não desinteresse. Recuperação: ela precisa entrar com o MESMO e-mail cadastrado no PMI (/guia-pre-onboarding explica o passo a passo).',
   'admin.selection.bulkSelectedSuffix': 'selecionados',
   'admin.selection.bulkApprove': 'Aprovar',
   'admin.selection.bulkReject': 'Rejeitar',

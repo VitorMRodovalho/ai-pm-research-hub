@@ -5961,6 +5961,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.colInterviewHint': 'Próxima entrevista programada (status=scheduled). Badge HOY cuando fecha == hoy SP-tz.',
   'admin.selection.colDate': 'Fecha',
   'admin.selection.colOnboarding': 'Onboarding',
+  'admin.selection.noAccountBadge': 'sin cuenta',
+  'admin.selection.noAccountTooltip': 'La jornada de onboarding fue asignada, pero esta persona no tiene cuenta en la plataforma (members.auth_id nulo). Los pasos exigen sesión, así que el progreso detenido aquí es un bloqueo estructural, no desinterés. Recuperación: debe ingresar con el MISMO correo registrado en el PMI (/guia-pre-onboarding explica el paso a paso).',
   'admin.selection.bulkSelectedSuffix': 'seleccionados',
   'admin.selection.bulkApprove': 'Aprobar',
   'admin.selection.bulkReject': 'Rechazar',
