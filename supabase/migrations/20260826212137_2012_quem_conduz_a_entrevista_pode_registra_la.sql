@@ -1,14 +1,14 @@
 -- #2012 — quem conduz a entrevista passa a poder REGISTRA-LA, e a recusa por autoridade
 -- deixa rastro.
 --
--- O CASO (25/08/2026). Fernando Maquiaveli entrevistou a Anastasia Kukova as 20h e nao
--- conseguiu registrar nem pontuar. A plataforma deixava o entrevistador PONTUAR
+-- O CASO (25/08/2026). Um avaliador do comite conduziu uma entrevista as 20h e nao conseguiu
+-- registrar nem pontuar. A plataforma deixava o entrevistador PONTUAR
 -- (`submit_interview_scores`, apos a #1972) e nao deixava CRIAR o registro do que ele
 -- proprio conduziu: `schedule_interview` exigia `selection_committee.role = 'lead'` OU
 -- `manage_platform`. Medido em 26/08 no `cycle4-2026`: 2 das 7 pessoas do comite passavam
--- (Vitor, lead; Fabricio, manage_platform). O botao "Iniciar avaliacao ao vivo" chama esta
+-- (o lead do comite e um admin de plataforma). O botao "Iniciar avaliacao ao vivo" chama esta
 -- RPC com `p_bypass_gate = true`, mas o bypass so vale para quem tem `manage_member` e o
--- portao de ENTRADA acontecia antes dele — para o Fernando o botao nao tinha como funcionar.
+-- portao de ENTRADA acontecia antes dele — para o avaliador o botao nao tinha como funcionar.
 --
 -- O DESENHO E O DA #1972, do outro lado do mesmo fluxo: a designacao e CRIADA, o portao nao
 -- e contornado. Quem registra tem de ser do comite DO CICLO, com `can_interview`, e gravar
@@ -21,7 +21,7 @@
 -- `operate_selection` do #1838 exclui exatamente esse papel. Por isso o predicado pede as DUAS
 -- coisas: `can_interview` E papel diferente de `observer`. O dominio do papel vem do catalogo
 -- (`selection_committee_role_check` = evaluator | lead | observer), nao de lista de nomes.
--- Efeito no cycle4-2026: 2 pessoas -> 3 (entra o Fernando; os 4 observadores seguem fora).
+-- Efeito no cycle4-2026: 2 pessoas -> 3 (entra o avaliador do caso; os 4 observadores seguem fora).
 --
 -- A RECUSA PASSA A COMMITAR. O `RAISE EXCEPTION 'Unauthorized: must be committee lead or
 -- platform admin'` acontecia ANTES do primeiro `_log_gate_attempt`, entao uma tentativa

@@ -4,8 +4,8 @@
  * #2012 — quem CONDUZ a entrevista passa a poder REGISTRÁ-LA, e a recusa por autoridade
  * deixa rastro.
  *
- * SINTOMA (25/08/2026): o Fernando entrevistou a Anastasia Kukova às 20h e não conseguiu criar
- * o registro. A plataforma deixava o entrevistador PONTUAR (`submit_interview_scores`, depois da
+ * SINTOMA (25/08/2026): um avaliador do comitê conduziu uma entrevista às 20h e não conseguiu
+ * criar o registro. A plataforma deixava o entrevistador PONTUAR (`submit_interview_scores`, depois da
  * #1972) e não deixava criar o registro do que ele mesmo conduziu — `schedule_interview` exigia
  * `role='lead'` OU `manage_platform`. Medido em 26/08 no `cycle4-2026`: 2 de 7 passavam.
  *
