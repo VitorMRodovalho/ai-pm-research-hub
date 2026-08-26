@@ -213,9 +213,11 @@ test('#676 live: paused rule generates no events', { skip: sb ? false : 'Supabas
  *
  * Cada entrada carrega a issue que a justifica e some quando a issue fecha.
  */
-const RULES_IN_TRANSITION = new Map([
-  ['2ce8e5f4-0eaf-4039-99bf-4d40b5e5f298', '#1565 — T6 (ROI & Portfólio) trocou de liderança e está redefinindo o dia'],
-]);
+// Vazio desde 26/08/2026: a T6 (ROI & Portfólio) voltou a fechar depois da troca de lideranca
+// (#1565) — medido 13 esperadas contra 13 materializadas, e o ratchet abaixo cobrou a remocao.
+// Nenhuma regra derivava no momento da limpeza. Reabastecer SO com issue aberta que explique
+// a transicao, como manda a mensagem do assert acima.
+const RULES_IN_TRANSITION = new Map([]);
 
 test('#676 live: drift report surfaces missing future occurrences', { skip: sb ? false : 'Supabase env required' }, async () => {
   const { data, error } = await sb.rpc('get_recurring_meeting_drift', { p_horizon_end: HORIZON });
