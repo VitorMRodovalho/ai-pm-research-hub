@@ -22997,6 +22997,7 @@ export type Database = {
           industry: string | null
           interview_auto_rescue_count: number
           interview_manual_rescue_count: number
+          interview_reschedule_escalated_at: string | null
           interview_reschedule_last_nudged_at: string | null
           interview_reschedule_reason: string | null
           interview_reschedule_requested_at: string | null
@@ -23155,6 +23156,7 @@ export type Database = {
           industry?: string | null
           interview_auto_rescue_count?: number
           interview_manual_rescue_count?: number
+          interview_reschedule_escalated_at?: string | null
           interview_reschedule_last_nudged_at?: string | null
           interview_reschedule_reason?: string | null
           interview_reschedule_requested_at?: string | null
@@ -23313,6 +23315,7 @@ export type Database = {
           industry?: string | null
           interview_auto_rescue_count?: number
           interview_manual_rescue_count?: number
+          interview_reschedule_escalated_at?: string | null
           interview_reschedule_last_nudged_at?: string | null
           interview_reschedule_reason?: string | null
           interview_reschedule_requested_at?: string | null
