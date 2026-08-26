@@ -3497,7 +3497,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_application_gate_attempts (p87 Sprint A.3.c — Issue #117)
-  mcp.tool("get_application_gate_attempts", "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS), caller name, payload snapshot (consent/eval_count/score/status at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).", {
+  mcp.tool("get_application_gate_attempts", "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI, retired by #1640 / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS / P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY, #2012), caller name, payload snapshot (consent/eval_count/score/status/authority_path at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).", {
     application_id: z.string().describe("UUID of the selection_applications row")
   }, async (params: any) => {
     const start = Date.now();
@@ -3814,8 +3814,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL: schedule_interview — book interview (committee lead)
-  mcp.tool("schedule_interview", "Books an interview for an application. Authority: must be committee lead (selection_committee.role='lead') or superadmin. Pass interviewer_ids array (members from the committee). Optional calendar_event_id (GCal/Outlook integration).", {
+  // TOOL: schedule_interview — book interview (committee lead, platform admin, or #2012 self-register)
+  mcp.tool("schedule_interview", "Creates the interview record for an application. Authority, in precedence order: committee lead (selection_committee.role='lead'); platform admin (manage_platform); or — #2012 — a member of THIS cycle's committee with can_interview and a deciding role (evaluator/lead, never observer) registering the interview THEY conducted, which requires interviewer_ids to be exactly [their own member id]. That third path never receives the gate bypass, so the peer-review/score gates and the interview-phase status allow-list still apply to it. Scheduling on someone else's behalf remains lead/manage_platform only. A refusal by authority comes back as {success:false, gate_failed_code:'P0005'} and is recorded in gate_attempts.", {
     application_id: z.string().describe("Application UUID"),
     interviewer_ids: z.array(z.string()).describe("Array of member UUIDs who will conduct the interview"),
     scheduled_at: z.string().describe("ISO 8601 timestamp of when the interview will happen"),
