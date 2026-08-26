@@ -31900,6 +31900,7 @@ export type Database = {
         | { Args: never; Returns: Json }
         | { Args: { p_member_id: string }; Returns: Json }
       get_offboarding_dashboard: { Args: never; Returns: Json }
+      get_onboarding_blocked_cohort: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
       get_onboarding_status: {
         Args: { p_application_id: string }

@@ -298,9 +298,12 @@ const WK = {
       const $subGrid = document.getElementById('wk-subprojects-grid');
       const $prodGrid = document.getElementById('wk-production-grid');
 
-      // Login button
+      // Login button. #1997: o unico ouvinte do modal e `document` + 'open-auth'
+      // (AuthModal.astro). Este botao dispachava 'open-auth-modal' no `window` e nao
+      // abria nada — e /workspace e exatamente para onde /onboarding redireciona, o
+      // endereco que os e-mails de aprovacao mandam abrir.
       document.getElementById('wk-login-btn')?.addEventListener('click', () => {
-        window.dispatchEvent(new CustomEvent('open-auth-modal'));
+        document.dispatchEvent(new CustomEvent('open-auth'));
       });
 
       // ── Auth — retry pattern (no page reload) ──
