@@ -1,8 +1,16 @@
 # Handoff 26/08 (tarde) — #1997: quem não tem conta para de ser cobrado
 
-**Estado final:** branch `fix/1997-onboarding-sem-conta`, PR aberta, fila **vazia** quando a DDL foi
-aplicada, zero bypass. Migration `20260826144210`. **A #1997 fica ABERTA de propósito** — 2,5 dos 5
-itens de aceite; os outros 2,5 pedem decisão do PM, não código.
+**Estado final:** branch `fix/1997-onboarding-sem-conta`, **PR #2008** aberta, fila **vazia** quando a
+DDL foi aplicada, zero bypass. Migration `20260826144210`. **A #1997 fica ABERTA de propósito** — 2,5
+dos 5 itens de aceite; os outros 2,5 pedem decisão do PM, não código.
+
+⚠️ **Os 3 checks vermelhos da PR são a queda do GitHub Actions, não o código.** `analyze`, `deno` e
+`gen-types-drift` foram **cancelados no mesmo segundo** (15:17:43 UTC), cada um após exatamente 15
+minutos, **com `steps=0`** na API: nunca receberam runner. `githubstatus.com` confirma **Actions em
+`major_outage`** desde 15:11:58 UTC. Padrão da #1869: required cancelado lê como vermelho e não é.
+**Re-rodar quando o Actions voltar.** Verificação local feita antes do push: `test:contracts`
+**6786 testes, 0 falhas**; `npx astro build` passa; o teste novo 11/11 **com** o de DB rodando (0
+skipped); `check_schema_invariants()` sem violação.
 
 ---
 

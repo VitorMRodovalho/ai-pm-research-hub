@@ -37,7 +37,9 @@
 --  1. `detect_onboarding_overdue` passa a olhar `members.auth_id`. O passo continua sendo
 --     marcado 'overdue' (a verdade do SLA nao muda), mas quem nao tem conta recebe uma
 --     notificacao que aponta para `/guia-pre-onboarding` -- pagina PUBLICA, feita para anon,
---     cujo passo 2 e exatamente "entre na plataforma com o MESMO e-mail do PMI". A RPC passa a
+--     cujo passo 2 e exatamente "entre na plataforma com o MESMO e-mail do PMI". E UM aviso por
+--     PESSOA, nao por passo: a mensagem de quem esta impedido e sempre a mesma, e repeti-la por
+--     etapa vencida so empilha ruido identico (o Farhad ja acumulou 3 assim). A RPC passa a
 --     devolver `blocked_no_account_steps` e `blocked_no_account_people` como serie propria,
 --     ao lado de `notifications_sent`.
 --
