@@ -45,12 +45,43 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIGRATION_FILE = resolve(
   ROOT,
   'supabase/migrations/20260805000025_p240_251_interview_status_transition_trigger.sql'
 );
+
+/**
+ * #1932 — este guard tem DUAS naturezas, e elas precisam de fontes diferentes.
+ *
+ * O que e HISTORIA da migration (o arquivo existir, o `DROP`+`CREATE TRIGGER`, o `REVOKE`, o
+ * escopo do backfill) segue lido do arquivo fixo: a pergunta ali e "aquela migration entregou X".
+ *
+ * O que e INVARIANTE CORRENTE do corpo da funcao (SECDEF, search_path, portao terminal, os dois
+ * ramos) passa a ser lido da CAPTURA MAIS NOVA. Fixar o arquivo para isso e o defeito do #1932:
+ * quando uma migration posterior redefine a funcao — a #2013 redefiniu, em 26/08/2026 — o guard
+ * continua verde descrevendo um corpo que producao nao executa mais, e teria ficado verde do
+ * mesmo jeito se a redefinicao tivesse AFROUXADO o portao terminal.
+ */
+const CURRENT_CAPTURE = latestFunctionCapture(ROOT, '_trg_sync_interview_to_app_status');
+const CURRENT = CURRENT_CAPTURE.body;
+
+/**
+ * `latestFunctionCapture().body` devolve o CORPO (o mesmo texto que o `prosrc` guarda), entao os
+ * atributos de DECLARACAO — nome, SECURITY DEFINER, search_path — nao estao nele. Este recorte
+ * pega o CABECALHO da funcao na captura vigente: do `CREATE ... FUNCTION` ate o `AS $function$`.
+ * Precisa ser o recorte da PROPRIA funcao, e nao o arquivo inteiro: a migration da #2013 define
+ * tres funcoes, e afirmar `SECURITY DEFINER` sobre o arquivo passaria por causa das vizinhas.
+ */
+const CURRENT_HEADER = (() => {
+  const src = readFileSync(resolve(ROOT, 'supabase/migrations', CURRENT_CAPTURE.file), 'utf8');
+  const i = src.indexOf('CREATE OR REPLACE FUNCTION public._trg_sync_interview_to_app_status()');
+  const j = i >= 0 ? src.indexOf('AS $function$', i) : -1;
+  if (i < 0 || j < 0) throw new Error('nao achei o cabecalho de _trg_sync_interview_to_app_status na captura vigente');
+  return src.slice(i, j);
+})();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -71,7 +102,7 @@ test('p240 #251: migration file present at canonical path', () => {
 });
 
 test('p240 #251: trigger function declared with SECURITY DEFINER + pinned search_path', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = CURRENT_HEADER; // #1932: declaracao VIGENTE, recortada da propria funcao
   assert.match(body, /CREATE OR REPLACE FUNCTION public\._trg_sync_interview_to_app_status\(\)/i,
     'Trigger function name must be canonical _trg_sync_interview_to_app_status');
   assert.match(body, /SECURITY DEFINER/i,
@@ -91,7 +122,7 @@ test('p240 #251: trigger is AFTER INSERT OR UPDATE OF status,conducted_at on sel
 });
 
 test('p240 #251: trigger body has terminal-status no-op guard (PM directive: never touch terminal)', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = CURRENT; // #1932: invariante CORRENTE, nao historia
   // All seven terminal/locked statuses must be present in the early-return guard.
   // PM-approved 2026-05-24: trigger nunca toca terminal — preserves audit trail of final decisions.
   for (const term of ['approved', 'rejected', 'converted', 'withdrawn', 'cancelled', 'waitlist', 'final_eval']) {
@@ -103,7 +134,7 @@ test('p240 #251: trigger body has terminal-status no-op guard (PM directive: nev
 });
 
 test('p240 #251: conducted_at OR status=completed branch advances app to interview_done', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = CURRENT; // #1932: invariante CORRENTE, nao historia
   assert.match(body, /IF NEW\.conducted_at IS NOT NULL OR NEW\.status = 'completed' THEN[\s\S]{0,500}UPDATE public\.selection_applications[\s\S]{0,200}SET status = 'interview_done'/i,
     'When interview row has conducted_at set OR status=completed, app status must advance to interview_done');
   assert.match(body, /WHERE id = NEW\.application_id[\s\S]{0,200}AND status IN \(\s*'screening',\s*'objective_eval',\s*'objective_cutoff',\s*'interview_pending',\s*'interview_scheduled'\s*\)/i,
@@ -111,7 +142,7 @@ test('p240 #251: conducted_at OR status=completed branch advances app to intervi
 });
 
 test('p240 #251: scheduled/rescheduled branch advances app to interview_scheduled', () => {
-  const body = readFileSync(MIGRATION_FILE, 'utf8');
+  const body = CURRENT; // #1932: invariante CORRENTE, nao historia
   assert.match(body, /IF NEW\.status IN \(\s*'scheduled',\s*'rescheduled'\s*\) THEN[\s\S]{0,500}UPDATE public\.selection_applications[\s\S]{0,200}SET status = 'interview_scheduled'/i,
     'When interview row is scheduled/rescheduled (not yet conducted), app status must advance to interview_scheduled');
   // The scheduled branch precondition is narrower (excludes interview_scheduled itself
