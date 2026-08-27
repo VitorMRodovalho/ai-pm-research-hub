@@ -91,6 +91,10 @@ o controle ao lado — é a classe do guard vazio que fica verde por vacuidade.
 
 ## O caminho que funcionou — tente ESTE primeiro
 
+> 📘 **O procedimento genérico foi extraído para `docs/operations/BACKUP_RECOVERY_RUNBOOK.md`.**
+> Este bloco fica aqui como o registro do que foi feito neste incidente; o runbook é o que se lê
+> antes do próximo.
+
 O dado foi recuperado **do próprio repositório**, sem restaurar nada e sem subir infra.
 
 `.github/workflows/backup-database.yml` roda `pg_dump` **diário às 23:00 UTC**, publica o
