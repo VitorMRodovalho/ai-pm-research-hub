@@ -29356,6 +29356,10 @@ export type Database = {
         Args: { p_caller_id: string; p_event_id: string }
         Returns: boolean
       }
+      _member_operational_since: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
       _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
