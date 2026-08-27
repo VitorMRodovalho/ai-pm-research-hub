@@ -218,7 +218,11 @@ test('#1656 C: no vivo, *_pct fica em 0-100 e a primitiva *_rate em 0-1', { skip
     const p = Number(m.attendance_pct);
     assert.ok(p >= 0 && p <= 100, `attendance_pct fora de 0-100: ${p}`);
     if (m.attendance_rate != null) {
-      assert.ok(Math.abs(p - Number(m.attendance_rate) * 100) <= 0.5,
+      // Mesma armadilha de ponto flutuante do bloco acima, e desta vez ela mordeu (#2030): com
+      // rate=0.55 / pct=54.5 o delta sai 0.5000000000000071 e o `<= 0.5` cru estoura sem que nada
+      // esteja errado. A tolerancia de 0.5 continua certa (pct tem 1 casa, rate tem 2, entao meio
+      // ponto percentual e o maximo legitimo) - o que faltava era a folga.
+      assert.ok(Math.abs(p - Number(m.attendance_rate) * 100) <= 0.5 + 1e-9,
         `attendance_pct (${p}) diverge de attendance_rate*100 (${Number(m.attendance_rate) * 100}) alem do arredondamento`);
     }
   }

@@ -101,8 +101,12 @@ test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence',
   assert.equal(tribeRules.length, 7, 'seven tribe rules');
   assert.equal(commsRules.length, 2, 'two comms/initiative rules');
 
-  // ISO weekday per tribe (matches #630 confirmed cadence)
-  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 3], [7, 2], [8, 4]]);
+  // ISO weekday per tribe (matches #630 confirmed cadence).
+  // Tribe 6 moved 3 -> 2 on 2026-08-27 (#2030): the tribe ran a duplicated Wednesday series on top
+  // of its real Tuesday one; the PM cancelled the Wednesdays and the rule was corrected to Tuesday.
+  // The map pins the CONFIRMED cadence on purpose - when it disagrees with the DB, check which of
+  // the two is stale before touching either.
+  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 2], [7, 2], [8, 4]]);
   for (const r of tribeRules) {
     assert.equal(r.day_of_week, isoByTribe.get(r.tribe_id), `tribe ${r.tribe_id} ISO weekday`);
     assert.equal(r.frequency, 'weekly', `tribe ${r.tribe_id} is weekly`);
