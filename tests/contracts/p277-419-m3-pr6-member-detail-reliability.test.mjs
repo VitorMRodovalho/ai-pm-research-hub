@@ -118,5 +118,16 @@ test('m3 PR6 DB: type-scoped primitives resolve + sane shape', { skip: dbGated ?
   const { data: rel, error: e2 } = await sb.rpc('get_attendance_reliability_summary', { p_scope: 'global', p_cycle_start: cs });
   assert.ok(!e2, e2?.message);
   assert.ok(Number(rel.present_total) >= 0 && Number(rel.absent_total) >= 0 && Number(rel.excused_total) >= 0, 'recorded counts present');
-  assert.ok(Number(rel.avg_rate) > 0.9 && Number(rel.avg_rate) <= 1, 'global reliability avg ~0.99');
+  // NAO pinar um NIVEL aqui (#2030). `avg_rate` e a media da coorte VIVA e cai toda vez que o selo
+  // grava faltas reais - o antigo `> 0.9` rotulado "~0.99" reprovava o funcionamento normal do
+  // produto (media medida em 27/08: 0.8049, depois de o selo gravar 80 faltas). O nome do teste e
+  // "sane SHAPE": o que nao se move e a forma e a consistencia com os proprios contadores.
+  const relRate = Number(rel.avg_rate);
+  assert.ok(relRate > 0 && relRate <= 1, `avg_rate deve ser fracao 0-1, veio ${rel.avg_rate}`);
+  assert.ok(Math.abs(Number(rel.avg_pct) - relRate * 100) <= 0.05 + 1e-9,
+    `avg_pct (${rel.avg_pct}) nao e avg_rate*100 (${relRate * 100}) dentro de uma casa decimal`);
+  const relRecorded = Number(rel.present_total) + Number(rel.absent_total) + Number(rel.excused_total);
+  assert.ok(relRecorded > 0, 'coorte sem NENHUM registro - o teste passaria por vacuidade');
+  assert.ok(Number(rel.eligible_total) >= relRecorded,
+    `eligible_total (${rel.eligible_total}) menor que present+absent+excused (${relRecorded})`);
 });
