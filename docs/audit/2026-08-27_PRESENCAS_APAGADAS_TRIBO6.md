@@ -1,11 +1,11 @@
-# Presenças apagadas ao cancelar as duplicatas da tribo 6 — 27/08/2026
+# Presenças apagadas ao cancelar as duplicatas da tribo 6 - 27/08/2026
 
-> **RESOLVIDO em 27/08/2026 — ninguém perdeu presença. Ver "Desfecho" no fim.**
+> **RESOLVIDO em 27/08/2026 - ninguém perdeu presença. Ver "Desfecho" no fim.**
 >
 > Registro de incidente e de recuperação. O trigger `trg_cleanup_attendance_on_event_cancel` apagou
 > 14 linhas de presença sem auditoria; não há tabela de histórico e `gamification_points` não
 > referencia estes eventos (#2028). As linhas foram **recuperadas do dump diário do repositório**
-> — o caminho está descrito abaixo e deve ser o PRIMEIRO a ser tentado num próximo incidente.
+> - o caminho está descrito abaixo e deve ser o PRIMEIRO a ser tentado num próximo incidente.
 
 ## O que aconteceu
 
@@ -73,7 +73,7 @@ ORDER BY w.date, m.name;
 ## Desfecho: ninguém perdeu presença
 
 Executado em 27/08/2026, ~04:10 UTC. **A quarta era subconjunto perfeito da terça nas três semanas**
-— toda pessoa marcada na reunião duplicada já estava marcada na que ficou.
+- toda pessoa marcada na reunião duplicada já estava marcada na que ficou.
 
 | semana | terça | quarta | interseção | **só na quarta** | só na terça |
 |---|---:|---:|---:|---:|---:|
@@ -87,9 +87,9 @@ Executado em 27/08/2026, ~04:10 UTC. **A quarta era subconjunto perfeito da ter�
 ⚠️ **Controle positivo, sem o qual o zero não valeria nada.** Um "0 em todas as semanas" é
 indistinguível de uma junção quebrada. A coluna "só na terça" (2, 1 e 3) e as interseções
 não-vazias provam que a comparação enxerga diferença quando ela existe. Nunca publique o zero sem
-o controle ao lado — é a classe do guard vazio que fica verde por vacuidade.
+o controle ao lado - é a classe do guard vazio que fica verde por vacuidade.
 
-## O caminho que funcionou — tente ESTE primeiro
+## O caminho que funcionou - tente ESTE primeiro
 
 > 📘 **O procedimento genérico foi extraído para `docs/operations/BACKUP_RECOVERY_RUNBOOK.md`.**
 > Este bloco fica aqui como o registro do que foi feito neste incidente; o runbook é o que se lê
@@ -129,16 +129,16 @@ checked_in_at, marked_by, excused, excuse_reason, edited_by, edited_at, organiza
 
 | caminho | veredito (medido 27/08) |
 |---|---|
-| **dump diário no artefato do Actions** | **funciona** — lógico, baixa, e não toca em nada |
+| **dump diário no artefato do Actions** | **funciona** - lógico, baixa, e não toca em nada |
 | PITR do Supabase | indisponível: `pitr_enabled = false` |
 | backup físico do Supabase | existe (7 diários), mas **não tem download** e restaura no lugar |
 | restaurar em produção | desfaria os 12 cancelamentos e a correção da regra |
-| arquivos versionados no git | não há dado operacional versionado, e **não deve haver** — o repo é público e presença é dado pessoal |
+| arquivos versionados no git | não há dado operacional versionado, e **não deve haver** - o repo é público e presença é dado pessoal |
 
 ## Lição de processo
 
 Os caminhos de recuperação deviam ter sido levantados **antes** do cancelamento, não depois. O
-backup existia, era acessível e estava a um comando de distância — a perda nunca foi real, mas foi
+backup existia, era acessível e estava a um comando de distância - a perda nunca foi real, mas foi
 tratada como se fosse por horas. Junto com a lição da #2028 (ler a função não é ler o efeito;
 `pg_trigger` sobre a tabela alvo faz parte da leitura), a regra é: **antes de qualquer `UPDATE` de
 estado que possa apagar dado, saber onde está a cópia e como se lê ela.**
