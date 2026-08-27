@@ -12,28 +12,55 @@
  * completes, this script remains in-tree for re-runs / future audits but is
  * not invoked by app code.
  *
+ * ⚠️ COMO INVOCAR (o `node scripts/...` cru NÃO funciona):
+ *
+ *   npm run certs:backfill -- --cert TERM-2026-XXXXXX --dry-run --out-dir /tmp/certs
+ *
+ * ou, na mão, com o hook de resolução do repo:
+ *
+ *   node --import ./scripts/lib/register-ts-resolve.mjs scripts/backfill-cert-pdfs.ts ...
+ *
+ * O Node 22.18+/24 já faz type-stripping, mas NÃO resolve import relativo sem extensão — e
+ * `src/lib/certificates/pdf.ts` importa `"../canonical"`. Sem o hook, o script morre em
+ * `ERR_MODULE_NOT_FOUND` antes de qualquer coisa. Medido em 27/08/2026, quando 47 termos
+ * precisaram de backfill e este script estava inutilizável. Ver `scripts/lib/ts-resolve-hook.mjs`.
+ *
+ * ⚠️⚠️ FUSO HORÁRIO — LEIA ANTES DE RODAR CONTRA PRODUÇÃO.
+ *
+ * O template formata as datas de assinatura com `toLocaleString('pt-BR', ...)` SEM `timeZone`,
+ * então a hora impressa é a do AMBIENTE que renderiza. A produção (Cloudflare Worker) renderiza
+ * em UTC; a sua máquina renderiza no fuso dela. Medido em 27/08/2026: o mesmo termo saiu
+ * `19:43:04` pelo servidor e `15:43:04` numa máquina em America/New_York — e o PDF não diz o
+ * fuso em nenhum dos dois casos.
+ *
+ * Consequência prática: rodar este script SEM `--dry-run` a partir de uma máquina com fuso
+ * diferente de UTC **reescreve a hora impressa em documento assinado**. Enquanto o fuso não for
+ * fixado no template, use este script com `--dry-run` para inspeção, e faça backfill real pelo
+ * endpoint interno (`/api/internal/cert-pdf-render/<id>`), que roda no mesmo ambiente do
+ * original. Ver a issue de fuso do certificado.
+ *
  * Usage:
  *   # All certs WHERE pdf_url IS NULL
  *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
- *     node scripts/backfill-cert-pdfs.ts
+ *     npm run certs:backfill
  *
  *   # Dry-run (no upload, no DB write — only render + local file out)
- *   node scripts/backfill-cert-pdfs.ts --dry-run --out-dir /tmp/cert-pdfs-debug
+ *   npm run certs:backfill -- --dry-run --out-dir /tmp/cert-pdfs-debug
  *
  *   # Single cert sanity check
- *   node scripts/backfill-cert-pdfs.ts --cert CERT-2026-10752E --out-dir /tmp/cert-pdfs-debug
+ *   npm run certs:backfill -- --cert CERT-2026-10752E --out-dir /tmp/cert-pdfs-debug
  *
  *   # Limit count
- *   node scripts/backfill-cert-pdfs.ts --limit 3
+ *   npm run certs:backfill -- --limit 3
  *
  *   # Force re-upload even if pdf_url already set
- *   node scripts/backfill-cert-pdfs.ts --force
+ *   npm run certs:backfill -- --force
  *
  *   # #1098 — event GUEST certificates (event_guest_certificates, persons-anchored):
  *   # same flags, sourced from the guest table; storage path guests/<person_id>/<code>.pdf.
  *   # This is the recovery lane when the autogen 429s on a post-event batch (C3 lesson).
- *   node scripts/backfill-cert-pdfs.ts --guests
- *   node scripts/backfill-cert-pdfs.ts --guests --cert CERT-EVT-2026-ABC123 --out-dir /tmp/cert-pdfs-debug
+ *   npm run certs:backfill -- --guests
+ *   npm run certs:backfill -- --guests --cert CERT-EVT-2026-ABC123 --out-dir /tmp/cert-pdfs-debug
  */
 import { createClient } from '@supabase/supabase-js';
 import { chromium, type Browser } from 'playwright';
