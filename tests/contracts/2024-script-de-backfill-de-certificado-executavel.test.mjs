@@ -52,12 +52,18 @@ test('#2024: existe atalho npm, e ele carrega o hook', () => {
   assert.match(s, /scripts\/backfill-cert-pdfs\.ts/);
 });
 
-test('#2024: o script documenta a invocação correta e a armadilha de fuso', () => {
+test('#2024: o script documenta a invocação correta, e o aviso de fuso saiu com o defeito', () => {
   const src = readFileSync(SCRIPT, 'utf8');
   assert.match(src, /npm run certs:backfill/, 'o cabeçalho tem de ensinar o atalho que funciona');
-  // A armadilha que o conserto EXPÔS: com o script rodando, um backfill local reescreveria a
-  // hora impressa em documento assinado, porque o template não fixa timeZone.
-  assert.match(src, /FUSO HORÁRIO/, 'o cabeçalho tem de avisar sobre o fuso antes de alguém rodar em produção');
+  // Este assert JÁ EXIGIU o contrário. Enquanto o template não fixava `timeZone`, rodar o backfill
+  // de uma máquina fora de UTC reescrevia a hora impressa em documento assinado, e o aviso em caixa
+  // alta era a mitigação. Com o fuso fixado (`America/Sao_Paulo` + deslocamento impresso), a
+  // armadilha deixou de existir — e um aviso sobre um perigo que acabou é ruído que treina a pessoa
+  // a ignorar avisos. O guard segue o conserto em vez de fossilizar a mitigação.
+  assert.doesNotMatch(src, /FUSO HOR[ÁA]RIO/i,
+    'o aviso era a mitigação enquanto o defeito existia; com o fuso fixado ele vira ruído');
+  assert.match(src, /America\/Sao_Paulo/,
+    'o cabeçalho tem de dizer que o fuso está fixado, senão a pessoa não sabe por que é seguro rodar');
 });
 
 test('#2024: a cadeia de import RESOLVE de verdade (não é só texto no README)', () => {
