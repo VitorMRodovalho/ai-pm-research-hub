@@ -3883,6 +3883,9 @@ const enUS: Record<string, string> = {
   'privacy.s3.row11.data': 'Aggregate KPIs, publications, impact hours, top 3 by XP (already public data). No individual attendance or personal information.',
   'privacy.s3.row11.basis': 'Legitimate interest (Art. 7, IX) — co-sponsoring chapters monitor project outcomes. Access restricted to institutional email (@pmiXX.org.br).',
 
+  'privacy.s3.row12.purpose': 'Delivery and custody of the signed Volunteer Agreement',
+  'privacy.s3.row12.data': 'Signed agreement (name, address, phone, date of birth, PMI ID, signatures and timestamps)',
+  'privacy.s3.row12.basis': 'Contract performance (Art. 7, V): each party receives the copy of the instrument it signed. For the institutional archive of the contracting chapter, also Legitimate interest (Art. 7, IX)',
   // S3.1 — Public display of location on the geographic map (opt-in, two levels)
   'privacy.s3map.title': 'Public display of your location on the geographic map',
   'privacy.s3map.intro': 'The homepage shows a map of the geographic distribution of Núcleo IA & GP members. Including your location in an identifiable way on this map is optional and based on your consent, with two levels:',
@@ -3894,7 +3897,8 @@ const enUS: Record<string, string> = {
 
   // S4 — Data sharing
   'privacy.s4.title': 'Data Sharing',
-  'privacy.s4.chapters': 'Sponsoring PMI chapters: aggregated data per chapter (no individual PII)',
+  'privacy.s4.chapters': 'Sponsoring PMI chapters: aggregated data per chapter (no individual PII), for results follow-up. Never the signed instrument',
+  'privacy.s4.signedTerm': 'Contracting chapter (PMI Goias), as a PARTY to the Volunteer Agreement: keeps the signed copy in a restricted-access Drive folder, in the account of the chapter itself. This is not third-party sharing, it is custody by the contracting party',
   'privacy.s4.pmiGlobal': 'PMI Global (VEP): volunteer data per PMI terms',
   'privacy.s4.supabase': 'Supabase (processor): database hosting',
   'privacy.s4.cloudflare': 'Cloudflare (processor): application hosting',
@@ -3964,6 +3968,9 @@ const enUS: Record<string, string> = {
   'privacy.s6ret.row12.retention': '5 years after offboarding',
   'privacy.s6ret.row12.after': 'Anonymization',
 
+  'privacy.s6ret.row13.data': 'Signed agreement copy in restricted Drive folder',
+  'privacy.s6ret.row13.retention': '5 years after offboarding',
+  'privacy.s6ret.row13.after': 'File deletion',
   // S7 — Data subject rights
   'privacy.s7rights.title': 'Your Rights (LGPD Art. 18)',
   'privacy.s7rights.access': 'Access',
