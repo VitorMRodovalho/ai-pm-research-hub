@@ -32,8 +32,13 @@ const LANGS = ['pt-BR', 'en-US', 'es-LATAM'];
 const dict = (lang) => readFileSync(resolve(ROOT, `src/i18n/${lang}.ts`), 'utf8');
 const page = readFileSync(resolve(ROOT, 'src/pages/privacy.astro'), 'utf8');
 
+// Escapa TODOS os metacaracteres, não só o ponto. Escapar `.` e deixar `\` passar é a classe
+// "incomplete string escaping" que o CodeQL aponta: aqui as chaves são literais do próprio arquivo,
+// mas um escape parcial é errado como padrão e não custa nada consertar.
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function value(src, key) {
-  const m = src.match(new RegExp(`'${key.replace(/\./g, '\\.')}':\\s*'((?:[^'\\\\]|\\\\.)*)'`));
+  const m = src.match(new RegExp(`'${escRe(key)}':\\s*'((?:[^'\\\\]|\\\\.)*)'`));
   return m ? m[1] : null;
 }
 
