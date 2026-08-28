@@ -6,8 +6,8 @@ import { loadChapters } from '../lib/chapters';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
-const S3_ROWS = [1,2,3,4,5,6,7,8,9,10,11] as const;
-const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12] as const;
+const S3_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12] as const;
+const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12,13] as const;
 
 // p83 — chapter list rendered dynamically (privacy.s1.chapters i18n key now uses {list} placeholder)
 const sbAnon = createClient(
@@ -99,6 +99,7 @@ const s1ChaptersText = t('privacy.s1.chapters', lang).replace('{list}', privacyC
       <h2 class="text-lg font-bold text-[var(--text-primary)]">4. {t('privacy.s4.title', lang)}</h2>
       <ul class="text-sm text-[var(--text-secondary)] space-y-1 list-disc pl-5">
         <li>{t('privacy.s4.chapters', lang)}</li>
+        <li>{t('privacy.s4.signedTerm', lang)}</li>
         <li>{t('privacy.s4.pmiGlobal', lang)}</li>
         <li>{t('privacy.s4.supabase', lang)}</li>
         <li>{t('privacy.s4.cloudflare', lang)}</li>

@@ -3890,6 +3890,9 @@ const ptBR: Record<string, string> = {
   'privacy.s3.row11.data': 'KPIs agregados, publicações, horas de impacto, top 3 por XP (dados já públicos). Sem dados individuais de presença ou informações pessoais.',
   'privacy.s3.row11.basis': 'Legítimo interesse (Art. 7, IX) — capítulos co-patrocinadores acompanham resultados do projeto. Acesso restrito a email institucional (@pmiXX.org.br).',
 
+  'privacy.s3.row12.purpose': 'Entrega e custódia da via assinada do Termo de Voluntariado',
+  'privacy.s3.row12.data': 'Termo assinado (nome, endereço, telefone, data de nascimento, PMI ID, assinaturas e carimbos de tempo)',
+  'privacy.s3.row12.basis': 'Execução de contrato (Art. 7, V): cada parte recebe a via do instrumento que assinou. Para o arquivo institucional do capítulo contratante, também Legítimo interesse (Art. 7, IX)',
   // S3.1 — Exibição pública de localização no mapa geográfico (opt-in, dois níveis)
   'privacy.s3map.title': 'Exibição pública de localização no mapa geográfico',
   'privacy.s3map.intro': 'A página inicial exibe um mapa de distribuição geográfica dos membros do Núcleo IA & GP. A inclusão da sua localização de forma identificável nesse mapa é opcional e baseada no seu consentimento, com dois níveis:',
@@ -3901,7 +3904,8 @@ const ptBR: Record<string, string> = {
 
   // S4 — Compartilhamento
   'privacy.s4.title': 'Compartilhamento de Dados',
-  'privacy.s4.chapters': 'Capítulos PMI patrocinadores: dados agregados por capítulo (sem PII individual)',
+  'privacy.s4.chapters': 'Capítulos PMI patrocinadores: dados agregados por capítulo (sem PII individual), para acompanhamento de resultados. Nunca o instrumento assinado',
+  'privacy.s4.signedTerm': 'Capítulo contratante (PMI Goiás), como PARTE do Termo de Voluntariado: guarda a via assinada em pasta Drive de acesso restrito, na conta do próprio capítulo. Não é compartilhamento com terceiro, é a custódia de quem contratou',
   'privacy.s4.pmiGlobal': 'PMI Global (VEP): dados de voluntariado conforme termos do PMI',
   'privacy.s4.supabase': 'Supabase (processador): hospedagem do banco de dados',
   'privacy.s4.cloudflare': 'Cloudflare (processador): hospedagem da aplicação',
@@ -3971,6 +3975,9 @@ const ptBR: Record<string, string> = {
   'privacy.s6ret.row12.retention': '5 anos após desligamento',
   'privacy.s6ret.row12.after': 'Anonimização',
 
+  'privacy.s6ret.row13.data': 'Via assinada do Termo em pasta Drive restrita',
+  'privacy.s6ret.row13.retention': '5 anos após desligamento',
+  'privacy.s6ret.row13.after': 'Exclusão do arquivo',
   // S7 — Direitos LGPD
   'privacy.s7rights.title': 'Seus Direitos (LGPD Art. 18)',
   'privacy.s7rights.access': 'Acesso',
