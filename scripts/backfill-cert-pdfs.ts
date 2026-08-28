@@ -25,19 +25,10 @@
  * `ERR_MODULE_NOT_FOUND` antes de qualquer coisa. Medido em 27/08/2026, quando 47 termos
  * precisaram de backfill e este script estava inutilizável. Ver `scripts/lib/ts-resolve-hook.mjs`.
  *
- * ⚠️⚠️ FUSO HORÁRIO — LEIA ANTES DE RODAR CONTRA PRODUÇÃO.
- *
- * O template formata as datas de assinatura com `toLocaleString('pt-BR', ...)` SEM `timeZone`,
- * então a hora impressa é a do AMBIENTE que renderiza. A produção (Cloudflare Worker) renderiza
- * em UTC; a sua máquina renderiza no fuso dela. Medido em 27/08/2026: o mesmo termo saiu
- * `19:43:04` pelo servidor e `15:43:04` numa máquina em America/New_York — e o PDF não diz o
- * fuso em nenhum dos dois casos.
- *
- * Consequência prática: rodar este script SEM `--dry-run` a partir de uma máquina com fuso
- * diferente de UTC **reescreve a hora impressa em documento assinado**. Enquanto o fuso não for
- * fixado no template, use este script com `--dry-run` para inspeção, e faça backfill real pelo
- * endpoint interno (`/api/internal/cert-pdf-render/<id>`), que roda no mesmo ambiente do
- * original. Ver a issue de fuso do certificado.
+ * O fuso do documento está fixado no template desde a #2024 (`America/Sao_Paulo`, com o
+ * deslocamento impresso no PDF), então rodar isto de qualquer máquina produz a mesma hora que a
+ * produção produz. O aviso que vivia aqui — "não rode fora de UTC, reescreve hora em documento
+ * assinado" — era a mitigação enquanto o defeito existia, e saiu junto com ele.
  *
  * Usage:
  *   # All certs WHERE pdf_url IS NULL

@@ -308,15 +308,59 @@ function formatBirthDate(date: string | undefined): string {
 }
 
 /**
+ * #2024 — o carimbo temporal do documento NAO pode depender de onde o PDF foi renderizado.
+ *
+ * Sem `timeZone`, `toLocaleString`/`toLocaleDateString` e os getters locais (`getDate()`,
+ * `getMonth()`) usam o fuso do AMBIENTE. Medido no mesmo termo, mesmo dado no banco:
+ * produção (Worker, UTC) imprimia `24/08/2026, 19:43:04`; uma máquina em `America/New_York`
+ * imprimia `15:43:04`. E nenhuma das duas dizia qual fuso era.
+ *
+ * Pior que a hora: a DATA vira. `2026-08-25T01:00:00Z` é 25/08 em UTC e 24/08 em São Paulo —
+ * o que muda a datação "Goiânia, DD de mês de AAAA" do próprio instrumento.
+ *
+ * Decisão do PM (27/08): o fuso do documento é `America/Sao_Paulo`, onde o termo é datado, e o
+ * PDF passa a DECLARAR o deslocamento junto da hora, para o carimbo ser interpretável fora do
+ * contexto de quem gerou. PDFs já emitidos NÃO são re-renderizados por isto: o artefato fica
+ * congelado em storage (`pdf_url`) e mexer em documento assinado pede decisão própria.
+ *
+ * `timeZoneName` não combina com `dateStyle`/`timeStyle` (o runtime rejeita), daí os componentes
+ * explícitos. E o rótulo é derivado (`shortOffset` → `GMT-3`), nunca a string literal "BRT": o
+ * Brasil já teve horário de verão e pode ter de novo, e um rótulo fixo passaria a mentir sozinho.
+ */
+const DOC_TIME_ZONE = 'America/Sao_Paulo';
+
+/** Instante de assinatura, com o deslocamento impresso: `24/08/2026, 16:43:04 GMT-3`. */
+function formatSignatureInstant(date: string | undefined): string {
+  if (!date) return '—';
+  const dt = new Date(date);
+  if (isNaN(dt.getTime())) return String(date);
+  return dt.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    timeZone: DOC_TIME_ZONE, timeZoneName: 'shortOffset',
+  });
+}
+
+/** Partes de data no fuso do documento — sem isto, o DIA depende de onde renderizou. */
+function docDateParts(date: string | undefined): { d: string; m: number; y: string } | null {
+  const dt = date ? new Date(String(date).length === 10 ? String(date) + 'T12:00:00Z' : date) : new Date();
+  if (isNaN(dt.getTime())) return null;
+  const f = new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric', month: '2-digit', day: '2-digit', timeZone: DOC_TIME_ZONE,
+  }).formatToParts(dt);
+  const get = (t: string) => f.find((x) => x.type === t)?.value ?? '';
+  return { d: get('day'), m: Number(get('month')), y: get('year') };
+}
+
+/**
  * Format a date in the "long" Portuguese style: "09 de abril de 2026"
  */
 function formatLongDate(date: string | undefined): string {
   if (!date) return '—';
-  const clean = String(date).slice(0, 10);
-  const dt = clean.length === 10 ? new Date(clean + 'T12:00:00') : new Date(date);
-  if (isNaN(dt.getTime())) return String(date);
+  const p = docDateParts(date);
+  if (!p) return String(date);
   const months = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-  return `${dt.getDate().toString().padStart(2,'0')} de ${months[dt.getMonth()]} de ${dt.getFullYear()}`;
+  return `${p.d} de ${months[p.m - 1]} de ${p.y}`;
 }
 
 /**
@@ -445,7 +489,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     <div style="display:inline-block;background:#f5f5f5;border:1px solid #ccc;padding:10px 14px;font-size:9px;color:#444;margin:12px 0;font-family:Arial,sans-serif">
       <div style="font-weight:bold;color:#1a365d;margin-bottom:2px">🔏 Documento assinado digitalmente</div>
       <div><b>${(certData.member_name || '').toUpperCase()}</b></div>
-      <div>Data: ${certData.signed_at ? new Date(certData.signed_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' }) : '—'}</div>
+      <div>Data: ${formatSignatureInstant(certData.signed_at)}</div>
       <div>Código: ${certData.verification_code || '—'}</div>
       <div style="color:#1a5490">Verifique em ${CANONICAL_HOST}/verify/${certData.verification_code || ''}</div>
       <div style="font-size:7px;color:#888;margin-top:3px">Fundamento: Lei nº 14.063/2020 Art. 4º §I (assinatura eletrônica simples)</div>
@@ -455,7 +499,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     <div style="display:inline-block;background:#e6f4ea;border:1px solid #34a853;padding:10px 14px;font-size:9px;color:#1e4620;margin:12px 0;font-family:Arial,sans-serif">
       <div style="font-weight:bold;color:#1a5490;margin-bottom:2px">✓ Contra-assinatura institucional</div>
       <div><b>${(certData.counter_signed_by_name || '').toUpperCase()}</b></div>
-      <div>Data: ${new Date(certData.counter_signed_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'medium' })}</div>
+      <div>Data: ${formatSignatureInstant(certData.counter_signed_at)}</div>
       <div>Diretor do PMI Goiás</div>
     </div>` : `
     <div style="display:inline-block;background:#fff3cd;border:1px dashed #dca400;padding:10px 14px;font-size:9px;color:#6b4f00;margin:12px 0;font-family:Arial,sans-serif">
@@ -471,7 +515,7 @@ export function buildVolunteerAgreementHTML(certData: CertificateData): string {
     ? `<div style="display:inline-block;background:#e8f0fe;border:1px solid #4285f4;padding:6px 12px;font-size:8px;color:#1a56db;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
         <div style="font-weight:bold;margin-bottom:1px">📋 Migrado do gov.br — Assinatura eletronica avancada</div>
         ${govbrSigner ? `<div>Signatario institucional: ${govbrSigner}</div>` : ''}
-        <div>Assinatura original em ${certData.signed_at ? new Date(certData.signed_at).toLocaleDateString('pt-BR') : '—'}</div>
+        <div>Assinatura original em ${formatShortDate(certData.signed_at) || '—'}</div>
        </div>`
     : certSource === 'admin_attestation'
     ? `<div style="display:inline-block;background:#fef3cd;border:1px solid #dca400;padding:6px 12px;font-size:8px;color:#6b4f00;margin:8px 0;font-family:Arial,sans-serif;border-radius:4px">
@@ -571,12 +615,10 @@ function recoSealLabel(title: string | undefined): string {
 
 /** dd/mm/yyyy (issuance date printed on the recognition cert). */
 function formatShortDate(date: string | undefined): string {
-  const dt = date
-    ? new Date(String(date).length === 10 ? String(date) + 'T12:00:00' : date)
-    : new Date();
-  if (isNaN(dt.getTime())) return '';
-  return `${dt.getDate().toString().padStart(2, '0')}/${(dt.getMonth() + 1)
-    .toString().padStart(2, '0')}/${dt.getFullYear()}`;
+  // #2024: mesmo fuso do documento — os getters locais faziam o DIA depender do ambiente.
+  const p = docDateParts(date);
+  if (!p) return '';
+  return `${p.d}/${p.m.toString().padStart(2, '0')}/${p.y}`;
 }
 
 /**
@@ -747,7 +789,7 @@ export function buildCertificateHTML(certData: CertificateData): string {
     ${descSection}
     ${period ? `<div style="text-align:center;font-size:12px;color:#666;margin-top:20px">${period}</div>` : ''}
     <div style="text-align:center;margin-top:40px">${sigImg}<div style="border-top:1px solid #333;width:220px;margin:0 auto;padding-top:4px;font-size:11px;color:#333">Vitor Maia Rodovalho, PMP</div><div style="font-size:10px;color:#666">Gestor do Projeto</div></div>
-    <div style="text-align:center;margin-top:24px;font-size:10px;color:#999"><div>Código: ${certData.verification_code || ''}</div><div>${new Date().toLocaleDateString()}</div></div>
+    <div style="text-align:center;margin-top:24px;font-size:10px;color:#999"><div>Código: ${certData.verification_code || ''}</div><div>${formatShortDate(certData.signed_at || (certData as any).issued_at)}</div></div>
     <div style="text-align:center;margin-top:16px;font-size:10px;color:#aaa">${tpl.footer}</div>
     <div style="text-align:center;margin-top:8px;font-size:8px;color:#ccc">${tpl.disclaimer}</div>
   </div>`;
