@@ -9,3 +9,13 @@ __pycache__/
 fotos/
 *-400.png
 *-400.jpg
+# Derivados de retrato (recorte, fusao, corte 3:4, escalas) sao a MESMA pessoa noutro
+# formato. Medido em 28/08/2026: `fotos/` sozinho NAO cobre um derivado solto na raiz do
+# design-kit, e `git check-ignore --no-index scripts/design-kit/joao-cut.png` passava.
+*-cut.png
+*-fade.png
+*-3x4.png
+*-900.png
+# O ZIP entregue a quem trabalha as pecas fora do repo leva os retratos dentro.
+# Ele se remonta com pacote-t11/empacotar.sh; a receita e versionada, o pacote nao.
+webinar-t11-design.zip
