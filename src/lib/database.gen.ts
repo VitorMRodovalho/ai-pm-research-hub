@@ -31248,6 +31248,10 @@ export type Database = {
           sla_deadline: string
         }[]
       }
+      get_certificate_delivery_log: {
+        Args: { p_certificate_id: string }
+        Returns: Json
+      }
       get_chain_audit_report: { Args: { p_chain_id: string }; Returns: Json }
       get_chain_for_pdf: { Args: { p_chain_id: string }; Returns: Json }
       get_chain_workflow_detail: { Args: { p_chain_id: string }; Returns: Json }
@@ -33112,6 +33116,18 @@ export type Database = {
       lock_document_version: {
         Args: { p_change_class?: string; p_gates: Json; p_version_id: string }
         Returns: Json
+      }
+      log_certificate_delivery: {
+        Args: {
+          p_certificate_id: string
+          p_channel: string
+          p_details?: Json
+          p_recipient_kind: string
+          p_recipient_member_id?: string
+          p_recipient_ref?: string
+          p_recipient_secret?: string
+        }
+        Returns: string
       }
       log_cron_run_complete: {
         Args: {
