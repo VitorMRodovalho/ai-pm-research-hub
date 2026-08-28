@@ -1,3 +1,11 @@
 # saidas do render sao artefatos, nao fonte
 out/
 __pycache__/
+
+# Retratos de pessoas reais NUNCA entram no repo publico (#1693, #1694).
+# O `brand.py` resolve FOTOS de $NUCLEO_FOTOS, com default `./fotos` — este ignore garante que o
+# default nao vire commit por descuido. Medido em 28/08/2026 com `git check-ignore --no-index`:
+# antes desta regra, `scripts/design-kit/fotos/*.png` NAO era ignorado.
+fotos/
+*-400.png
+*-400.jpg
