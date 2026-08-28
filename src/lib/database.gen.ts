@@ -10491,7 +10491,7 @@ export type Database = {
           id?: string
           initiative_id?: string | null
           kind: string
-          legal_basis?: string
+          legal_basis: string
           metadata?: Json
           organization_id?: string
           person_id: string
