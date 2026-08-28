@@ -3883,6 +3883,9 @@ const esLATAM: Record<string, string> = {
   'privacy.s3.row11.data': 'KPIs agregados, publicaciones, horas de impacto, top 3 por XP (datos ya públicos). Sin datos individuales de asistencia ni información personal.',
   'privacy.s3.row11.basis': 'Interés legítimo (Art. 7, IX) — capítulos co-patrocinadores acompañan resultados del proyecto. Acceso restringido a email institucional (@pmiXX.org.br).',
 
+  'privacy.s3.row12.purpose': 'Entrega y custodia de la copia firmada del Término de Voluntariado',
+  'privacy.s3.row12.data': 'Término firmado (nombre, dirección, teléfono, fecha de nacimiento, PMI ID, firmas y sellos de tiempo)',
+  'privacy.s3.row12.basis': 'Ejecución de contrato (Art. 7, V): cada parte recibe la copia del instrumento que firmó. Para el archivo institucional del capítulo contratante, también Interés legítimo (Art. 7, IX)',
   // S3.1 — Exhibición pública de ubicación en el mapa geográfico (opt-in, dos niveles)
   'privacy.s3map.title': 'Exhibición pública de tu ubicación en el mapa geográfico',
   'privacy.s3map.intro': 'La página de inicio muestra un mapa de distribución geográfica de los miembros de Núcleo IA & GP. La inclusión de tu ubicación de forma identificable en ese mapa es opcional y se basa en tu consentimiento, con dos niveles:',
@@ -3894,7 +3897,8 @@ const esLATAM: Record<string, string> = {
 
   // S4 — Compartición
   'privacy.s4.title': 'Compartición de Datos',
-  'privacy.s4.chapters': 'Capítulos PMI patrocinadores: datos agregados por capítulo (sin PII individual)',
+  'privacy.s4.chapters': 'Capítulos PMI patrocinadores: datos agregados por capítulo (sin PII individual), para seguimiento de resultados. Nunca el instrumento firmado',
+  'privacy.s4.signedTerm': 'Capítulo contratante (PMI Goiás), como PARTE del Término de Voluntariado: guarda la copia firmada en una carpeta de Drive de acceso restringido, en la cuenta del propio capítulo. No es compartición con terceros, es la custodia de quien contrató',
   'privacy.s4.pmiGlobal': 'PMI Global (VEP): datos de voluntariado conforme términos del PMI',
   'privacy.s4.supabase': 'Supabase (procesador): hospedaje de la base de datos',
   'privacy.s4.cloudflare': 'Cloudflare (procesador): hospedaje de la aplicación',
@@ -3964,6 +3968,9 @@ const esLATAM: Record<string, string> = {
   'privacy.s6ret.row12.retention': '5 años después del desvinculación',
   'privacy.s6ret.row12.after': 'Anonimización',
 
+  'privacy.s6ret.row13.data': 'Copia firmada del Término en carpeta Drive restringida',
+  'privacy.s6ret.row13.retention': '5 años después del desvinculación',
+  'privacy.s6ret.row13.after': 'Eliminación del archivo',
   // S7 — Derechos LGPD
   'privacy.s7rights.title': 'Tus Derechos (LGPD Art. 18)',
   'privacy.s7rights.access': 'Acceso',
