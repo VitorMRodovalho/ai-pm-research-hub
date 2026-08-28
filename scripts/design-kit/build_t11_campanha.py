@@ -62,6 +62,13 @@ ESCALA = {
     # peca de LEITURA: mais itens, corpos ainda acima do piso
     "post":     dict(micro=.026, corpo=.029, dest=.036, prem=.038, virada=.086, rt=.175),
     "linkedin": dict(micro=.027, corpo=.031, dest=.040, prem=.043, virada=.095, rt=.270),
+    # MINIATURA de YouTube: e vista PEQUENA, entao os corpos sao os maiores de todos e o
+    # texto e o mais curto. O piso de 2,6% nao basta aqui; o que manda e caber poucas
+    # palavras grandes ao lado de rostos reconheciveis.
+    "thumb":    dict(micro=.034, corpo=.040, dest=.058, prem=.052, virada=.108, rt=.62),
+    # CARD individual de palestrante: a peca existe para a PESSOA repostar, entao o rosto
+    # e o nome dominam e o tema entra em corpo de leitura.
+    "card":     dict(micro=.022, corpo=.027, dest=.042, prem=.034, virada=.064, rt=.42),
 }
 
 

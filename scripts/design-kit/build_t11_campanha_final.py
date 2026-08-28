@@ -246,9 +246,193 @@ def linkedin(trat):
     return render(f"t11-{trat}-linkedin-1200x627", html, W, H)
 
 
+# ───────────────────────────────────────────── miniatura de YouTube 1280x720
+def thumb(trat):
+    """Miniatura do REPLAY. Nao reaproveita o banner por uma razao de tempo verbal: o
+    banner CONVIDA ("8 de setembro"), e a miniatura e lida DEPOIS do evento. Aqui a pilula
+    diz gravacao, e os dois rostos aparecem grandes, que e o que faz reconhecer numa
+    miniatura vista pequena, as vezes com 200 px de largura."""
+    W, H = 1280, 720
+    m = min(W, H)
+    E = lambda papel: px("thumb", papel, m)
+    if trat == "v6":
+        dupla = """
+.p1 { position:absolute; right:206px; bottom:-46px; width:318px; z-index:2; }
+.p2 { position:absolute; right:-8px; bottom:-60px; width:284px; z-index:1; }"""
+    elif trat == "v5":
+        dupla = """
+.p1 { position:absolute; right:200px; bottom:-24px; width:300px; z-index:2; }
+.p2 { position:absolute; right:-6px; bottom:-48px; width:258px; z-index:1; }"""
+    else:
+        dupla = """
+.p1 { position:absolute; right:236px; bottom:64px; width:222px; z-index:2; }
+.p2 { position:absolute; right:30px; bottom:44px; width:188px; z-index:1; }"""
+    html = f"""<!doctype html><meta charset="utf-8"><style>{CSS_PROPOSTA}{_fundo(W,H)}
+{_css_texto(E, largura_virada=650)}
+.topo {{ position:absolute; left:56px; top:52px; width:680px; z-index:6; }}
+.premissa {{ margin-top:14px; }} .virada {{ margin-top:14px; }}
+.risco {{ width:92px; height:8px; margin-top:20px; }}
+.selo-grav {{ display:inline-flex; align-items:center; margin-top:20px;
+             background:{ORANGE}; color:#170c04; border-radius:99px; padding:10px 22px;
+             font-weight:800; letter-spacing:.09em; text-transform:uppercase;
+             font-size:{E('corpo')}px; }}
+.dir {{ position:absolute; right:0; top:0; bottom:0; width:560px; }}
+.foto {{ width:100%; display:block; }}{_moldura(trat)}{dupla}
+.veu {{ position:absolute; right:0; top:0; bottom:0; width:250px; z-index:0;
+       background:linear-gradient(to right, rgba(13,16,48,.9), rgba(13,16,48,0)); }}
+.pe {{ position:absolute; left:0; right:0; bottom:0; height:110px; z-index:3;
+      background:linear-gradient(to top, rgba(13,16,48,.98) 22%, rgba(13,16,48,0) 100%); }}
+.rod {{ position:absolute; left:56px; bottom:24px; z-index:6; font-size:{E('micro')}px; }}
+</style>
+<div class="dir">
+  <div class="p2"><img class="foto" src="{_uri('rodrigo', trat)}"></div>
+  <div class="p1"><img class="foto" src="{_uri('joao', trat)}"></div>
+</div>
+<span class="veu"></span><span class="pe"></span>
+<div class="topo">
+  <div class="selo">{EYEBROW}</div>
+  <div class="premissa">{TITULO_A}</div>
+  <div class="virada">{TITULO_B}</div>
+  <span class="risco"></span>
+  <div><span class="selo-grav">gravação completa</span></div>
+</div>
+<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+    return render(f"t11-{trat}-youtube-thumb-1280x720", html, W, H)
+
+
+# ───────────────────────────────────────────── card de palestrante 1200x1500
+def card(trat, quem):
+    """Um card por pessoa, para ELA repostar. Por isso o rosto e o nome dominam: quem
+    compartilha quer se reconhecer, e o publico dela nao conhece o evento."""
+    W, H = 1200, 1500
+    m = min(W, H)
+    E = lambda papel: px("card", papel, m)
+    p = A if quem == "joao" else B
+    classe = "retrato mold" if trat == "v3" else "retrato"
+    html = f"""<!doctype html><meta charset="utf-8"><style>{CSS_PROPOSTA}{_fundo(W,H)}
+body {{ display:flex; flex-direction:column; justify-content:space-between;
+       padding:70px 76px 38px; }}
+{_css_texto(E, largura_virada=1000)}
+.topo {{ position:relative; z-index:6; }}
+.premissa {{ margin-top:20px; }} .virada {{ margin-top:18px; }}
+.risco {{ width:110px; height:8px; margin-top:26px; }}
+.palco {{ position:relative; height:720px; }}
+.retrato {{ position:absolute; left:50%; transform:translateX(-50%); bottom:0; width:560px; }}
+.mold {{ overflow:hidden; border-radius:22px; border-left:6px solid {ORANGE}; width:470px; }}
+.foto {{ width:100%; display:block; }}
+.base {{ position:absolute; left:-76px; right:-76px; bottom:-40px; height:300px; z-index:2;
+        background:{BASE_GRAD}; }}
+.ident {{ position:absolute; left:0; right:0; bottom:-2px; z-index:3; text-align:center; }}
+.rod {{ position:relative; z-index:4; display:flex; justify-content:space-between;
+       align-items:flex-end; font-size:{E('micro')}px; gap:24px; }}
+</style>
+<div class="topo">
+  <div class="selo">{EYEBROW}</div>
+  <div class="premissa">{TITULO_A}</div>
+  <div class="virada">{TITULO_B}</div>
+  <span class="risco"></span>
+</div>
+<div class="palco">
+  <div class="{classe}"><img class="foto" src="{_uri(quem, trat)}"></div>
+  <div class="base"></div>
+  <div class="ident"><div class="nm">{p['nome']}</div><div class="cg">{p['cargo']}</div></div>
+</div>
+<div class="rod"><span class="assina">{QUANDO_CURTO} · online e gratuito</span>
+<span class="assina">Realização <b>Núcleo IA &amp; GP</b></span></div>"""
+    return render(f"t11-{trat}-card-{quem}-1200x1500", html, W, H)
+
+
+# ───────────────────────────────────────────── story do DIA do evento 1080x1920
+def story_do_dia(trat, cta="bio"):
+    """Story do dia, em DUAS variantes, porque o CTA depende de COMO a peca e publicada:
+    story postado por API sai SEM link tocavel. A variante `bio` assume isso e manda para a
+    bio, entao pode ir na fila e ninguem precisa estar com o celular na mao as 19h50. A
+    `sticker` so serve postada a mao, com o sticker de link por cima.
+
+    Peca errada por construcao e pior que peca nenhuma: na Tribo 6 a copy desta existia
+    desde 26/07 e a ARTE nunca foi gerada, o que so apareceu as 18h45 do dia do evento."""
+    W, H = 1080, 1920
+    m = min(W, H)
+    E = lambda papel: px("story", papel, m)
+    txt_cta = "link na bio" if cta == "bio" else "toque para entrar"
+    if trat == "v6":
+        dupla = """
+.p1 { position:absolute; left:-58px; bottom:0; width:596px; z-index:1; }
+.p2 { position:absolute; right:-46px; bottom:0; width:518px; z-index:0; }"""
+    elif trat == "v5":
+        dupla = """
+.p1 { position:absolute; left:-40px; bottom:84px; width:498px; z-index:1; }
+.p2 { position:absolute; right:-24px; bottom:0; width:358px; z-index:0; }"""
+    else:
+        dupla = """
+.p1 { position:absolute; left:0; bottom:106px; width:386px; z-index:1; }
+.p2 { position:absolute; right:0; bottom:0; width:322px; z-index:1; }"""
+    html = f"""<!doctype html><meta charset="utf-8"><style>{CSS_PROPOSTA}{_fundo(W,H)}
+body {{ display:flex; flex-direction:column; justify-content:space-between;
+       padding:92px 80px 58px; }}
+{_css_texto(E)}
+.topo {{ position:relative; z-index:6; }}
+.agora {{ display:inline-flex; align-items:center; margin-top:26px; background:{ORANGE};
+         color:#170c04; border-radius:99px; padding:14px 32px; font-weight:800;
+         letter-spacing:.12em; text-transform:uppercase; font-size:{E('corpo')}px; }}
+.cta {{ margin-top:18px; font-size:{E('dest')}px; color:{CYAN}; font-weight:800; }}
+.palco {{ position:relative; height:780px; }}
+.foto {{ width:100%; display:block; }}{_moldura(trat)}{dupla}
+.base {{ position:absolute; left:-80px; right:-80px; bottom:-58px; height:326px; z-index:2;
+        background:{BASE_GRAD}; }}
+.legendas {{ position:absolute; left:0; right:0; bottom:-4px; z-index:3;
+            display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }}
+.legendas > div {{ max-width:46%; }}
+.legendas .d {{ text-align:right; }}
+.rod {{ position:relative; z-index:4; }}
+</style>
+<div class="topo">
+  <div class="selo">{EYEBROW}</div>
+  <div><span class="agora">começa agora</span></div>
+  <div class="virada" style="margin-top:28px">{TITULO_B}</div>
+  <span class="risco"></span>
+  <div class="cta">{txt_cta}</div>
+</div>
+<div class="palco">
+  <div class="p2"><img class="foto" src="{_uri('rodrigo', trat)}"></div>
+  <div class="p1"><img class="foto" src="{_uri('joao', trat)}"></div>
+  <div class="base"></div>
+  <div class="legendas">
+    <div><div class="nm">{A['nome']}</div><div class="cg">{A['cargo']}</div></div>
+    <div class="d"><div class="nm">{B['nome']}</div><div class="cg">{B['cargo']}</div></div>
+  </div></div>
+<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+    return render(f"t11-{trat}-story-dia-{cta}-1080x1920", html, W, H)
+
+
+# A campanha de divulgacao, nas tres direcoes.
 PECAS = [(t, f) for t in ("v3", "v5", "v6") for f in (story, post, linkedin)]
 
+# As pecas de REPLAY e de DIA DO EVENTO ficam a parte porque so fazem sentido depois que a
+# direcao for escolhida: gerar as tres versoes de tudo triplica trabalho que sera descartado.
+# A miniatura e a excecao util, porque serve para comparar as direcoes numa peca pequena.
+#   python3 build_t11_campanha_final.py --extra v6     as 5 pecas, na direcao escolhida
+#   python3 build_t11_campanha_final.py --thumb        so a miniatura, nas 3 direcoes
+EXTRA = [thumb,
+         lambda t: card(t, "joao"),
+         lambda t: card(t, "rodrigo"),
+         lambda t: story_do_dia(t, "bio"),
+         lambda t: story_do_dia(t, "sticker")]
+
 if __name__ == "__main__":
+    import sys
     from PIL import Image
-    for trat, fn in PECAS:
-        p = fn(trat); print("ok", p.name, Image.open(p).size)
+    if "--extra" in sys.argv:
+        t = sys.argv[sys.argv.index("--extra") + 1]
+        assert t in ("v3", "v5", "v6"), f"direcao invalida: {t}"
+        for fn in EXTRA:
+            p = fn(t)
+            print("ok", p.name, Image.open(p).size)
+    elif "--thumb" in sys.argv:
+        for t in ("v3", "v5", "v6"):
+            p = thumb(t)
+            print("ok", p.name, Image.open(p).size)
+    else:
+        for trat, fn in PECAS:
+            p = fn(trat)
+            print("ok", p.name, Image.open(p).size)
