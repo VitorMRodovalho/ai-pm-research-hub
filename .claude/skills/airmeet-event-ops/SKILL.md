@@ -67,7 +67,7 @@ e, para o backdrop do palco (que é `background-image`, não `<img>`), varrer `g
 | Welcome illustration | idem | 1440x720 | recepção |
 | Lounge Banner | idem | **960x120** | gerar com `build_lounge_banner.py` |
 | Stage Backdrop | Branding > Stage | 1920x1080 | palco (centro livre p/ o vídeo) |
-| Waiting Screen | Branding > Stage > Waiting Screen | 16:9 | boas-vindas 1280x720 |
+| Waiting Screen | Branding > Stage > Waiting Screen | **1920x1080** | boas-vindas (o modal pede essa medida, não 1280x720) |
 | Capa da landing | Branding > Landing Page | 1440x810 | banner |
 
 Achados na T6 (26/07): logo, welcome illustration e stage backdrop **já estavam certos**. Os dois errados
@@ -82,9 +82,22 @@ do Airmeet, com rostos de banco de imagem). Sponsors vazio é correto quando nã
 entre título e pill com `scripts/design-kit/qa_measure.py` antes de subir: no primeiro render o pill passou por cima de
 "de IA".
 
-⚠️ **Upload não é o mesmo que ativar.** No Waiting Screen o arquivo sobe, aparece como "Waiting screen 1"
-e o padrão **continua no System default** até marcar o radio. E o radio tem o mesmo vício do campo de
-texto: clicar e navegar não persiste. Marcar, conferir na tela, e só então recarregar para confirmar.
+⚠️ **Upload não é o mesmo que ativar, e isso vale para os DOIS slots do Stage.** O arquivo sobe,
+vira um item NOVO na lista ("Waiting screen 2", "Backdrop 2") e o padrão **continua no item anterior**
+até marcar o radio. Em evento duplicado o item anterior é a arte do webinar passado, então subir a peça
+certa e parar aí deixa a arte errada no ar. E o radio tem o mesmo vício do campo de texto: clicar e
+navegar não persiste. Marcar, conferir na tela, e só então recarregar para confirmar.
+
+⚠️ **Slot que parece VAZIO pode ser imagem que ainda não carregou.** O "Backdrop 1" da T11 apareceu
+como um retângulo cinza liso e eu registrei "vazio"; era a arte da T6, e ela era o PADRÃO. O que
+distingue: `document.querySelectorAll('img')` não listava nenhum asset naquele instante. Antes de
+concluir que um slot está vazio, espere a lista de imagens estabilizar e confira de novo.
+
+⚠️ **Os botões "Upload backdrop" / "Upload waiting screen" abrem um MODAL**, e o `input[type=file]`
+só existe depois disso (`document.querySelectorAll('input[type=file]').length` é 0 antes). O primeiro
+clique por coordenada pode ser engolido: confirme que o modal abriu antes de procurar o input. O
+backdrop ainda tem um SEGUNDO passo depois do "Continue" (editor da área de vídeo) cujo Save fica no
+topo da tela, fora do fluxo da página.
 
 ### Importar speakers (fluxo em massa, testado)
 `.../people/speakers` → **Add Speaker** → aba **Bulk upload speakers**:
@@ -109,8 +122,19 @@ O que falta depois disso é só o convite.
 "Send invites". Conferir a lista de destinatários NA GAVETA antes de confirmar. Resultado esperado:
 "Invitation status" passa de "Not sent" para **"Invite sent"** na tabela.
 
-⚠️ A ordem no site sai como o Airmeet quiser, não como a do CSV. Existe "Rearrange speakers" (arrastar),
-que não vale automatizar. Conferir se a ordem bate com a da programação e ajustar à mão se importar.
+⚠️ A ordem no site sai como o Airmeet quiser, não como a do CSV, e a tabela de admin ordena por
+criação: ela NÃO reflete a ordem publicada. O drawer "Rearrange speakers" é que manda, e ele avisa
+("the order of the speakers on information page"). Verifique na landing, não na tabela.
+
+Automatizar o rearrange FUNCIONA, por teclado (medido 27/08). `left_click_drag` não move nada; o
+componente é `react-beautiful-dnd` (procure `[data-rbd-drag-handle-draggable-id]`), que expõe arrasto
+acessível: foque o handle por JS, `space` levanta, `Up`/`Down` move, `space` solta. O DOM confirma
+cada passo pela região `aria-live` ("You have lifted an item in position 2" → "moved ... to position 1").
+
+E o Save desse drawer: o viewport CSS do Airmeet é bem maior que o screenshot (medido 2494 × 1321
+contra 1512 × 801, fator 1,649). Um clique por coordenada lida do screenshot cai fora do botão e
+falha em SILÊNCIO: o drawer continua aberto e o reload devolve a ordem antiga. Clique pelo elemento
+(`button.click()` via JS) e confirme com reload.
 
 ### Mensagem de boas-vindas (a que o participante vê ao entrar)
 Aba **Branding** → **Webinar Branding** → campo "Welcome Message" (limite 100).
