@@ -88,6 +88,16 @@ até marcar o radio. Em evento duplicado o item anterior é a arte do webinar pa
 certa e parar aí deixa a arte errada no ar. E o radio tem o mesmo vício do campo de texto: clicar e
 navegar não persiste. Marcar, conferir na tela, e só então recarregar para confirmar.
 
+⚠️ **Apagar item da lista: os rótulos RENUMERAM a cada exclusão.** Medido em 29/08/2026, limpando
+4 waiting screens superadas. A que eu havia elegido chamava-se "Waiting screen 5"; depois de cada
+exclusão ela virou 4, 3, 2 e por fim 1. **Apagar por rótulo apaga a errada.** Apague sempre o
+primeiro item NÃO-padrão e confira o radio antes de cada clique. Três salvaguardas ajudam: a
+lixeira do item padrão vem **desabilitada**, aparece um popover "Confirm Deletion ... You won't be
+able to recover it" ancorado no cartão certo, e um toast "Waiting Screen deleted successfully"
+confirma. A lixeira **não responde a `MouseEvent` sintético nem a `.click()` por JS**: precisa de
+clique real por coordenada, ao contrário do Save do backdrop, que só funciona por JS. Nesta UI não
+há regra geral; teste os dois.
+
 ⚠️ **Slot que parece VAZIO pode ser imagem que ainda não carregou.** O "Backdrop 1" da T11 apareceu
 como um retângulo cinza liso e eu registrei "vazio"; era a arte da T6, e ela era o PADRÃO. O que
 distingue: `document.querySelectorAll('img')` não listava nenhum asset naquele instante. Antes de
