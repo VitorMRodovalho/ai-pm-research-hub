@@ -77,13 +77,16 @@ test('#2001 vivo: NENHUM engajamento diverge do catálogo',
 });
 
 test('#2001 estático: o gatilho está ligado na tabela, nos eventos certos', () => {
-  // ⚠️ Este teste é ESTÁTICO de propósito. `_audit_list_public_function_bodies` — a fonte que os
-  // guards de drift usam — NÃO lista funções de gatilho: medido em 28/08, 1230 funções listadas e
-  // nenhum `_trg_*` entre elas. Uma asserção "o gatilho está no banco" contra aquela lista passaria
-  // por vacuidade ou falharia por ausência estrutural, e em nenhum dos casos mediria o gatilho.
+  // ⚠️ CORREÇÃO (28/08, mesma sessão): a versão anterior deste comentário afirmava que
+  // `_audit_list_public_function_bodies` NÃO lista funções de gatilho. É FALSO — ela lista, e
+  // `_trg_engagement_legal_basis_from_catalog` está lá. O erro era meu: eu lia o campo
+  // `function_name`, e o campo é `proname`. Ler o campo errado devolve `undefined` para as 1226
+  // linhas, e o `Set` resultante tem tamanho 1.
   //
-  // O que prova o gatilho VIVO é o teste de divergência zero logo acima, que só se sustenta porque
-  // ele roda. Aqui fixamos a FORMA: tabela, eventos e função.
+  // O teste segue ESTÁTICO mesmo assim, e por um motivo melhor: o que a lista de funções provaria é
+  // que a FUNÇÃO existe, não que o GATILHO está ligado nela. Tabela, eventos e a remoção do default
+  // são forma, e forma se afirma no arquivo. Quem prova o gatilho VIVO é o teste de divergência
+  // zero logo acima, que só se sustenta porque ele roda.
   const src = readFileSync(resolve(ROOT, 'supabase/migrations', TRG.file), 'utf8');
   assert.match(src, /CREATE TRIGGER trg_engagement_legal_basis_from_catalog/,
     'o gatilho precisa ser criado pela mesma migration que define a função');
