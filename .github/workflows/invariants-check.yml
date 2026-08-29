@@ -53,6 +53,7 @@ jobs:
         run: npm ci
 
       - name: Run schema invariants contract test
+        id: invariants
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -76,19 +77,62 @@ jobs:
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
             echo "::warning::SUPABASE_SERVICE_ROLE_KEY secret not configured — test will skip gracefully. Configure in repo Settings → Secrets → Actions to enable live-DB drift detection."
           fi
-          npm run test:contracts:db
+          # #1910: a saida e guardada para o resumo poder CITA-LA. O diagnostico de DDL-lag ja
+          # existe e e bom (`PROD-AHEAD ... NOT drift you authored`), mas vivia so no log bruto do
+          # job — medido em 29/08: uma lane reprovou 4x sem nunca ver o texto. `pipefail` para o
+          # `tee` nao engolir o codigo de saida da suite.
+          set -o pipefail
+          npm run test:contracts:db 2>&1 | tee /tmp/invariants-output.txt
 
       - name: Summarize result
         if: always()
         run: |
           echo "## Schema Invariants Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
           if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
             echo ":warning: Test skipped — \`SUPABASE_SERVICE_ROLE_KEY\` secret not set." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "To enable: repo Settings → Secrets → Actions → New secret" >> $GITHUB_STEP_SUMMARY
             echo "- \`SUPABASE_URL\` = https://ldrfrvwhxsmgaabwmaik.supabase.co" >> $GITHUB_STEP_SUMMARY
             echo "- \`SUPABASE_SERVICE_ROLE_KEY\` = (copy from Supabase dashboard)" >> $GITHUB_STEP_SUMMARY
+
+          elif [ "${{ steps.invariants.outcome }}" != "success" ]; then
+            # #1910: ANTES desta mudanca o resumo dizia ":white_check_mark: Invariants verified"
+            # mesmo com o job vermelho — ele so ramificava na existencia do secret, nunca no
+            # resultado. Um resumo que afirma sucesso no vermelho e pior que resumo nenhum.
+            echo ":x: **Invariantes reprovaram.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # O reporter do `node --test` e o `spec` (NAO TAP, nem quando a saida vai para um
+            # pipe — medido no Node 24), e ele emite codigos ANSI. Sem tirar o ANSI o resumo em
+            # markdown fica com lixo de escape; sem saber o formato, um grep por `^not ok` sai
+            # MUDO. Normalizo uma vez e leio sempre deste arquivo.
+            sed 's/\x1b\[[0-9;]*m//g' /tmp/invariants-output.txt > /tmp/invariants-plain.txt 2>/dev/null || true
+
+            if grep -q 'PROD-AHEAD' /tmp/invariants-plain.txt 2>/dev/null; then
+              # O caso que mais custa a quem NAO causou: o banco compartilhado ja tem a DDL e o
+              # `.sql` ainda nao chegou nesta branch. O texto abaixo e produzido por
+              # tests/helpers/migration-drift-classifier.mjs; aqui ele so sobe para a superficie.
+              echo "### :information_source: Provavelmente NAO e defeito desta PR" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "O banco de producao e compartilhado por todas as branches. Quando uma lane aplica DDL e o \`.sql\` ainda nao chegou na \`main\`, **toda PR aberta** reprova aqui — inclusive as que nao encostam em banco. Rodar \`npm run db:types\` **nao** resolve." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Saida:** rebaseie na \`main\` depois que a migration entrar. Se persistir, veja #1910." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep -A6 'PROD-AHEAD' /tmp/invariants-plain.txt | head -40 >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "### Testes que reprovaram" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            # O bloco depois de "failing tests:" traz nome + assercao de cada reprovado.
+            awk '/failing tests:/{f=1} f' /tmp/invariants-plain.txt 2>/dev/null | head -60 >> $GITHUB_STEP_SUMMARY \
+              || echo '(saida indisponivel)' >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+
           else
             echo ":white_check_mark: Invariants verified against live DB." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
