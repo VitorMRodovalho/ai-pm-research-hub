@@ -124,7 +124,7 @@ runs:
         # (7 jobs de runs independentes morrendo na mesma janela de 30s) porque a mensagem da API
         # nunca chegou ao log.
         api_with_retry() {
-          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out="" errfile msg wait_s rl_waited=0
+          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out="" errfile raw msg wait_s rl_waited=0
           while :; do
             errfile="$(mktemp)"
             if out=$(gh api "$endpoint" --jq "$jq_expr" 2>"$errfile"); then
@@ -132,8 +132,21 @@ runs:
               printf '%s' "$out"
               return 0
             fi
-            msg="$(tr '\n' ' ' < "$errfile" | tail -c 300)"
+            # #2076: guardar SO a cauda cega o classificador abaixo. O GitHub escreve a frase que
+            # nomeia a classe do erro no COMECO da mensagem ("You have exceeded a secondary rate
+            # limit..."), e o `tail -c 300` cortava justamente isso. Medido em 29/08: o que chegou
+            # aqui comecava no meio de uma frase, em " help, please include the request ID", que e
+            # o rabo de "If you reach out to GitHub Support for help, please include...". Sem a
+            # cabeca, `grep 'rate limit'` nao casava, o ramo de espera nunca era tomado, e 8 runs
+            # morreram em 20s de um erro auto-curavel.
+            raw="$(tr '\n' ' ' < "$errfile")"
             rm -f "$errfile"
+            msg="$(printf '%s' "$raw" | head -c 400)"
+            # a cauda continua vindo junto quando a mensagem e longa, para nao perder o que o
+            # comportamento anterior mostrava (request ID e timestamp vivem no fim).
+            if [ "${#raw}" -gt 700 ]; then
+              msg="${msg} [...corte...] $(printf '%s' "$raw" | tail -c 300)"
+            fi
 
             # 3a classe: cota esgotada. Auto-curavel, mas na escala de MINUTOS — as 3 tentativas em
             # ~20s foram dimensionadas para blip de TLS e aqui so aceleram o vermelho. Espera ate o
@@ -141,8 +154,16 @@ runs:
             #
             # Continua FALHANDO FECHADO: estourado RL_MAX_WAIT, retorna erro como antes. O que nao
             # pode acontecer, nunca, e seguir para o banco sem ter lido a faixa (#1509).
-            if printf '%s' "$msg" | grep -qiE 'rate limit|429|too many requests'; then
-              wait_s="$(rate_limit_reset_in)"
+            # #2076: o limite SECUNDARIO tem redacao propria e nao diz "429". Cobrir as duas.
+            if printf '%s' "$msg" | grep -qiE 'rate limit|429|too many requests|secondary rate|abuse detection|wait a few minutes'; then
+              # #2076: num limite SECUNDARIO o relogio da cota primaria e o errado: `core.reset`
+              # pode ja ter passado e devolver 15s, o que produz laco quente e AGRAVA o bloqueio.
+              # O GitHub pede espera na casa de minutos, entao e o piso aqui.
+              if printf '%s' "$msg" | grep -qiE 'secondary rate|abuse detection|wait a few minutes'; then
+                wait_s=120
+              else
+                wait_s="$(rate_limit_reset_in)"
+              fi
               [ "$wait_s" -gt "$RL_MAX_WAIT" ] && wait_s="$RL_MAX_WAIT"
               if [ $(( rl_waited + wait_s )) -gt "$RL_MAX_WAIT" ]; then
                 echo "::error::cota da API esgotada e nao voltou dentro de ${RL_MAX_WAIT}s ($endpoint): ${msg}. Parando em vez de arriscar rodar concorrente (#1509, #1923)." >&2

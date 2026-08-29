@@ -53,6 +53,7 @@ const INIT_I18N = {
   pastMeetings: t('initiative.pastMeetings', lang),
   noUpcoming: t('initiative.noUpcoming', lang),
   driveSection: t('initiative.driveSection', lang),
+  toolsSection: t('initiative.toolsSection', lang),
   driveOpen: t('initiative.driveOpen', lang),
   drivePurpose: {
     workspace: t('initiative.drivePurpose.workspace', lang),
@@ -479,6 +480,53 @@ const INIT_I18N = {
         el.insertAdjacentHTML('beforeend', driveHtml);
       }
     } catch { /* drive section not critical */ }
+
+    // Ferramentas da iniciativa (#2062 passo C) — o link some da vida de quem trabalha nele.
+    //
+    // O /admin/comms e ferramenta de trabalho do Hub de Comunicacao, e vivia SO na gaveta, na secao
+    // `admin`. Pior: o item e `lgpdSensitive`, entao para quem nao passa no portao ele nao aparece
+    // desabilitado — ele SOME. Quem nao tinha acesso nao tinha nem sinal de que a ferramenta existe.
+    //
+    // Config, nao codigo: a lista vem de `initiatives.metadata.tools`, no mesmo padrao do
+    // `metadata.whatsapp_url` que a pagina ja usa. Iniciativa nova com ferramenta nova nao pede
+    // deploy — pede uma linha de metadata (ADR-0009).
+    //
+    // O recorte e "e da iniciativa", nao "tem a designacao": `get_caller_capabilities()` devolve
+    // acoes por escopo e NAO devolve designations (medido em 29/08), entao filtrar por designacao
+    // aqui seria impossivel sem uma chamada nova. Mostrar a quem e do time e o recorte honesto — o
+    // destino continua com o portao dele, e a #2062 e quem vai alinhar os dois.
+    try {
+      const tools = Array.isArray(initData?.initiative?.metadata?.tools) ? initData.initiative.metadata.tools : [];
+      if (tools.length > 0) {
+        const callerId = (window as any).__nucleoCapabilities?.caller_id || null;
+        const { data: membros } = await sb.rpc('get_initiative_members', { p_initiative_id: INITIATIVE_ID });
+        const lista = Array.isArray(membros?.members) ? membros.members : (Array.isArray(membros) ? membros : []);
+        const souDoTime = !!callerId && lista.some((m: any) => String(m?.id || m?.member_id) === String(callerId));
+        if (souDoTime) {
+          const lg = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+          const idioma = lg === '/en' ? 'en' : lg === '/es' ? 'es' : 'pt';
+          const rotulo = (t: any) => t?.label_i18n?.[idioma] || t?.label || t?.href;
+          const toolsHtml = `<div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden mb-4">
+            <div class="px-5 py-3.5 border-b border-[var(--border-subtle)] flex items-center gap-2">
+              <span class="text-lg">🧰</span>
+              <h3 class="text-sm font-bold text-navy">${escapeHtml(I18N.toolsSection || 'Ferramentas da iniciativa')}</h3>
+              <span class="text-[10px] text-[var(--text-muted)] ml-auto">${tools.length}</span>
+            </div>
+            <div class="px-5 py-2">${tools.map((t: any) => {
+              const href = String(t?.href || '');
+              const externo = /^https?:/i.test(href);
+              return `<a href="${escapeHtml(externo ? href : lg + href)}"${externo ? ' target="_blank" rel="noopener noreferrer"' : ''}
+                class="flex items-center gap-3 py-2.5 border-b border-[var(--border-subtle)] last:border-0 no-underline hover:bg-[var(--surface-hover)] -mx-5 px-5 transition-colors">
+                <span class="text-lg shrink-0">${escapeHtml(t?.icon || '🔗')}</span>
+                <span class="flex-1 text-sm font-medium text-[var(--text-primary)] truncate">${escapeHtml(rotulo(t))}</span>
+                <span class="text-[10px] text-[var(--text-muted)] shrink-0">→</span>
+              </a>`;
+            }).join('')}</div>
+          </div>`;
+          el.insertAdjacentHTML('beforeend', toolsHtml);
+        }
+      }
+    } catch { /* tools section not critical */ }
 
     // Events timeline
     try {
