@@ -24,7 +24,12 @@ BASE_GRAD = ("linear-gradient(to top, rgba(9,11,32,.99) 40%, rgba(9,11,32,.74) 6
              " rgba(9,11,32,0) 100%)")
 
 
-SUFIXO = {"v3": "3x4", "v5": "fade", "v6": "cut"}
+SUFIXO = {"v3": "3x4", "v5": "fade", "v6": "cut", "v7": "circ"}
+
+# A assinatura NAO cita "Tribo": para quem chega de fora e jargao interno. E nao
+# carrega marca do PMI global, que nao temos direito de usar; o lockup autorizado
+# e a faixa institucional do kit, que ja traz os 15 capitulos do Brasil.
+ASSINATURA = "Realização <b>Núcleo IA &amp; GP</b> · Capítulos PMI do Brasil"
 
 
 def _uri(nome, trat):
@@ -42,6 +47,50 @@ def _moldura(trat):
 .p1 {{ border-left:6px solid {ORANGE}; }}
 .p2 {{ border-left:6px solid {CYAN}; }}
 .p1 .foto, .p2 .foto {{ border-radius:0; }}"""
+
+
+def _medalhao(trat, fmt):
+    """v7 MEDALHAO: retrato em recorte CIRCULAR do 3:4 original, com anel laranja.
+
+    Nasce da proposta do Joao, que resolveu bem um problema que nos custou uma rodada: a
+    borda. Ele poe o retrato num disco laranja. Aqui o disco vira ANEL e o retrato e um
+    CORTE do original, nao um recorte de fundo, entao nao ha franja de transparencia para
+    aparecer contra o laranja. Ganha o mesmo desenho e perde o defeito.
+
+    Vem por ULTIMO no <style> de proposito: precisa vencer `.legendas` e a geometria do
+    tratamento base, que sao declaradas depois de `dupla`.
+    """
+    if trat != "v7":
+        return ""
+    geo = {
+        "story": ("""
+.p1 {{ position:absolute; left:124px; bottom:342px; width:340px; height:340px; z-index:1; }}
+.p2 {{ position:absolute; right:124px; bottom:342px; width:340px; height:340px; z-index:1; }}
+.legendas {{ bottom:34px; align-items:flex-start; }}
+.legendas > div {{ max-width:47%; text-align:center; }}
+.legendas .d {{ text-align:center; }}
+.base {{ display:none; }}"""),
+        "post": ("""
+.p1 {{ position:absolute; left:92px; bottom:206px; width:302px; height:302px; z-index:1; }}
+.p2 {{ position:absolute; right:92px; bottom:206px; width:302px; height:302px; z-index:1; }}
+.legendas {{ bottom:22px; align-items:flex-start; }}
+.legendas > div {{ max-width:47%; text-align:center; }}
+.legendas .d {{ text-align:center; }}
+.base {{ display:none; }}"""),
+        "linkedin": ("""
+.p1 {{ position:absolute; right:296px; bottom:206px; width:212px; height:212px; z-index:3; }}
+.p2 {{ position:absolute; right:52px; bottom:206px; width:212px; height:212px; z-index:3; }}
+.legendas {{ right:26px; bottom:40px; width:528px; text-align:center;
+            display:flex; justify-content:space-between; gap:0; }}
+.legendas > div {{ width:264px; text-align:center; }}
+.pe {{ display:none; }}
+.veu {{ width:470px; }}"""),
+    }[fmt]
+    return geo.format() + f"""
+.p1, .p2 {{ border-radius:50%; overflow:hidden; box-shadow:0 0 0 9px {ORANGE},
+           0 26px 60px rgba(0,0,0,.42); background:{ORANGE}; }}
+.p1 .foto, .p2 .foto {{ width:100%; height:100%; object-fit:cover;
+                        object-position:50% 50%; }}"""
 
 
 def _cabeca(E, com_sub=False):
@@ -136,15 +185,15 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
        padding:92px 80px 58px; }}
 {_css_texto(E)}{palco}
 .foto {{ width:100%; display:block; }}{_moldura(trat)}
-.base {{ position:absolute; left:-80px; right:-80px; bottom:-58px; height:326px; z-index:2;
+.base {{ position:absolute; left:-80px; right:-80px; bottom:-58px; height:412px; z-index:2;
         background:{BASE_GRAD}; }}
 .legendas {{ position:absolute; left:0; right:0; bottom:-4px; z-index:3;
             display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }}
 .legendas > div {{ max-width:46%; }}
 .legendas .d {{ text-align:right; }}
-.rod {{ position:relative; z-index:4; }}
+.rod {{ position:relative; z-index:4; }}{_medalhao(trat, "story")}
 </style>{_cabeca(E)}{corpo}
-<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+<div class="rod assina">{ASSINATURA}</div>"""
     return render(f"t11-{trat}-story-1080x1920", html, W, H)
 
 
@@ -180,6 +229,7 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
 .legendas > div {{ max-width:46%; }}
 .legendas .d {{ text-align:right; }}
 .rod {{ position:relative; z-index:4; display:flex; justify-content:space-between; gap:26px; }}
+{_medalhao(trat, "post")}
 </style>{_cabeca(E, com_sub=True)}
 <div class="palco">
   <div class="p2"><img class="foto" src="{_uri('rodrigo', trat)}"></div>
@@ -189,7 +239,7 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
     <div><div class="nm">{A['nome']}</div><div class="cg">{A['cargo']}</div></div>
     <div class="d"><div class="nm">{B['nome']}</div><div class="cg">{B['cargo']}</div></div>
   </div></div>
-<div class="rod"><span class="assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</span></div>"""
+<div class="rod"><span class="assina">{ASSINATURA}</span></div>"""
     return render(f"t11-{trat}-post-1080x1350", html, W, H)
 
 
@@ -229,20 +279,25 @@ def linkedin(trat):
        background:linear-gradient(to right, rgba(13,16,48,.92), rgba(13,16,48,0)); }}
 /* a peca e baixa e os dois sangram na base; sem isso o recorte termina num corte reto
    contra a borda inferior, que denuncia a montagem */
-.pe {{ position:absolute; left:0; right:0; bottom:0; height:120px; z-index:3;
-      background:linear-gradient(to top, rgba(13,16,48,.98) 24%, rgba(13,16,48,0) 100%); }}
+.pe {{ position:absolute; left:0; right:0; bottom:0; height:214px; z-index:3;
+      background:linear-gradient(to top, rgba(13,16,48,.99) 42%, rgba(13,16,48,.86) 64%,
+                 rgba(13,16,48,0) 100%); }}
 .legendas {{ position:absolute; right:24px; bottom:16px; z-index:3; text-align:right; }}
 .legendas .cg {{ margin-top:4px; }}
 .legendas .par2 {{ margin-top:12px; }}
-.rod {{ position:absolute; left:56px; bottom:26px; z-index:3; }}
+.rod {{ position:absolute; left:56px; bottom:26px; z-index:3; }}{_medalhao(trat, "linkedin")}
 </style>
 <div class="dir">
   <div class="p2"><img class="foto" src="{_uri('rodrigo', trat)}"></div>
   <div class="p1"><img class="foto" src="{_uri('joao', trat)}"></div>
 </div>
+<div class="legendas">
+  <div><div class="nm">{A['nome']}</div><div class="cg">{A['cargo']}</div></div>
+  <div class="par2"><div class="nm">{B['nome']}</div><div class="cg">{B['cargo']}</div></div>
+</div>
 <span class="veu"></span><span class="pe"></span>
 {_cabeca(E)}
-<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+<div class="rod assina">{ASSINATURA}</div>"""
     return render(f"t11-{trat}-linkedin-1200x627", html, W, H)
 
 
@@ -296,7 +351,7 @@ def thumb(trat):
   <span class="risco"></span>
   <div><span class="selo-grav">gravação completa</span></div>
 </div>
-<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+<div class="rod assina">{ASSINATURA}</div>"""
     return render(f"t11-{trat}-youtube-thumb-1280x720", html, W, H)
 
 
@@ -378,13 +433,13 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
 .cta {{ margin-top:18px; font-size:{E('dest')}px; color:{CYAN}; font-weight:800; }}
 .palco {{ position:relative; height:780px; }}
 .foto {{ width:100%; display:block; }}{_moldura(trat)}{dupla}
-.base {{ position:absolute; left:-80px; right:-80px; bottom:-58px; height:326px; z-index:2;
+.base {{ position:absolute; left:-80px; right:-80px; bottom:-58px; height:412px; z-index:2;
         background:{BASE_GRAD}; }}
 .legendas {{ position:absolute; left:0; right:0; bottom:-4px; z-index:3;
             display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }}
 .legendas > div {{ max-width:46%; }}
 .legendas .d {{ text-align:right; }}
-.rod {{ position:relative; z-index:4; }}
+.rod {{ position:relative; z-index:4; }}{_medalhao(trat, "story")}
 </style>
 <div class="topo">
   <div class="selo">{EYEBROW}</div>
@@ -401,12 +456,12 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
     <div><div class="nm">{A['nome']}</div><div class="cg">{A['cargo']}</div></div>
     <div class="d"><div class="nm">{B['nome']}</div><div class="cg">{B['cargo']}</div></div>
   </div></div>
-<div class="rod assina">Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente</div>"""
+<div class="rod assina">{ASSINATURA}</div>"""
     return render(f"t11-{trat}-story-dia-{cta}-1080x1920", html, W, H)
 
 
 # A campanha de divulgacao, nas tres direcoes.
-PECAS = [(t, f) for t in ("v3", "v5", "v6") for f in (story, post, linkedin)]
+PECAS = [(t, f) for t in ("v3", "v5", "v6", "v7") for f in (story, post, linkedin)]
 
 # As pecas de REPLAY e de DIA DO EVENTO ficam a parte porque so fazem sentido depois que a
 # direcao for escolhida: gerar as tres versoes de tudo triplica trabalho que sera descartado.

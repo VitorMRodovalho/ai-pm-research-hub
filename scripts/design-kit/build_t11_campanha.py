@@ -31,17 +31,17 @@ TITULO_B = "Isso garante que ela continue existindo?"
 TITULO = f"{TITULO_A} {TITULO_B}"
 SUB = "Como fazer stakeholders enxergarem o valor do seu PMO por meio de services e outcomes"
 QUANDO = "8 de setembro · 20h às 21h (Brasília)"
-QUANDO_CURTO = "8 de setembro · 20h"
-EYEBROW = "1º Webinar · Tribo PMO Inteligente"
+QUANDO_CURTO = "8 de setembro · 20h BRT"
+EYEBROW = "1º Webinar · PMO Inteligente"
 ASSIN = ('Núcleo IA &amp; GP<br><span class="mini">iniciativa dos capítulos do PMI no '
          'Brasil, sediada no PMI-GO</span>')
 CTA = "Online e gratuito · inscrição pelo Airmeet"
 
 DUO = [
     dict(foto="joao-900.png", nome="João Henrique Jacinto",
-         cargo="Líder da Tribo PMO Inteligente"),
-    dict(foto="rodrigo-900.png", nome="Rodrigo Santa Rita de Jesus",
-         cargo="Gerente de Projetos Sênior e Delivery Manager"),
+         cargo="Diretor da Zieger<br>PMI Rising Leader Latam 2025"),
+    dict(foto="rodrigo-900.png", nome="Rodrigo Santa Rita",
+         cargo="Gerente de Projetos Sênior<br>Delivery Manager"),
 ]
 def uri(p): return img_uri(FOTOS / p)
 
