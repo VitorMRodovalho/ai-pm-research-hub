@@ -38,8 +38,12 @@ ASSIN = ('Núcleo IA &amp; GP<br><span class="mini">iniciativa dos capítulos do
 CTA = "Online e gratuito · inscrição pelo Airmeet"
 
 DUO = [
+    # O PMP entra na PRIMEIRA linha, junto do cargo, e nao numa terceira: cargo de tres
+    # linhas ja tirou o nome da zona escura do veu nesta familia e derrubou o contraste
+    # para 1,87. Ele estava faltando: o perfil dele assina "Joao Henrique Jacinto, PMP",
+    # e a peca creditava PMP so ao outro palestrante.
     dict(foto="joao-900.png", nome="João Henrique Jacinto",
-         cargo="Diretor da Zieger<br>PMI Rising Leader Latam 2025"),
+         cargo="Diretor da Zieger · PMP<br>PMI Rising Leader Latam 2025"),
     dict(foto="rodrigo-900.png", nome="Rodrigo Jesus",
          cargo="Gerente Sênior de Projetos<br>PMP · Instituto Eldorado"),
 ]
