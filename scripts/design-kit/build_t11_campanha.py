@@ -32,7 +32,7 @@ TITULO = f"{TITULO_A} {TITULO_B}"
 SUB = "Como fazer stakeholders enxergarem o valor do seu PMO por meio de services e outcomes"
 QUANDO = "8 de setembro · 20h às 21h (Brasília)"
 QUANDO_CURTO = "8 de setembro · 20h BRT"
-EYEBROW = "1º Webinar · PMO Inteligente"
+EYEBROW = "Webinar · PMO Inteligente"
 ASSIN = ('Núcleo IA &amp; GP<br><span class="mini">iniciativa dos capítulos do PMI no '
          'Brasil, sediada no PMI-GO</span>')
 CTA = "Online e gratuito · inscrição pelo Airmeet"

@@ -64,8 +64,8 @@ def _medalhao(trat, fmt):
         return ""
     geo = {
         "story": ("""
-.p1 {{ position:absolute; left:124px; bottom:342px; width:340px; height:340px; z-index:1; }}
-.p2 {{ position:absolute; right:124px; bottom:342px; width:340px; height:340px; z-index:1; }}
+.p1 {{ position:absolute; left:88px; bottom:342px; width:340px; height:340px; z-index:1; }}
+.p2 {{ position:absolute; right:88px; bottom:342px; width:340px; height:340px; z-index:1; }}
 .legendas {{ bottom:34px; align-items:flex-start; }}
 .legendas > div {{ max-width:47%; text-align:center; }}
 .legendas .d {{ text-align:center; }}
@@ -85,6 +85,26 @@ def _medalhao(trat, fmt):
 .legendas > div {{ width:264px; text-align:center; }}
 .pe {{ display:none; }}
 .veu {{ width:470px; }}"""),
+        # MINIATURA: os dois medalhoes ocupam a coluna direita (.dir, 560px de largura).
+        # Diametro de 250px = 34,7% da menor dimensao, bem acima do piso de 17%, que e o
+        # que faz reconhecer rosto numa miniatura vista a 200px de largura.
+        "thumb": ("""
+.p1 {{ position:absolute; right:300px; bottom:206px; width:250px; height:250px; z-index:2; }}
+.p2 {{ position:absolute; right:16px; bottom:206px; width:250px; height:250px; z-index:1; }}
+.veu {{ display:none; }}"""),
+        # CARD individual: UM medalhao centrado. O 460px de diametro deixa 10px de folga
+        # contra o topo do .palco (720px) e so a borda inferior entra no veu da base.
+        "card": ("""
+.p1 {{ position:absolute; left:50%; transform:translateX(-50%); bottom:250px;
+      width:460px; height:460px; z-index:1; }}"""),
+        # STORY DO DIA: mesma leitura do story, mas o .palco aqui tem 780px e a base sobe
+        # 412px, entao o medalhao sobe junto para nao ser engolido pelo veu.
+        "story-dia": ("""
+.p1 {{ position:absolute; left:88px; bottom:398px; width:340px; height:340px; z-index:1; }}
+.p2 {{ position:absolute; right:88px; bottom:398px; width:340px; height:340px; z-index:1; }}
+.legendas {{ bottom:-4px; align-items:flex-start; }}
+.legendas > div {{ max-width:47%; text-align:center; }}
+.legendas .d {{ text-align:center; }}"""),
     }[fmt]
     return geo.format() + f"""
 .p1, .p2 {{ border-radius:50%; overflow:hidden; box-shadow:0 0 0 9px {ORANGE},
@@ -338,6 +358,7 @@ def thumb(trat):
 .pe {{ position:absolute; left:0; right:0; bottom:0; height:110px; z-index:3;
       background:linear-gradient(to top, rgba(13,16,48,.98) 22%, rgba(13,16,48,0) 100%); }}
 .rod {{ position:absolute; left:56px; bottom:24px; z-index:6; font-size:{E('micro')}px; }}
+{_medalhao(trat, "thumb")}
 </style>
 <div class="dir">
   <div class="p2"><img class="foto" src="{_uri('rodrigo', trat)}"></div>
@@ -363,7 +384,8 @@ def card(trat, quem):
     m = min(W, H)
     E = lambda papel: px("card", papel, m)
     p = A if quem == "joao" else B
-    classe = "retrato mold" if trat == "v3" else "retrato"
+    classe = ("retrato mold" if trat == "v3" else
+              "retrato p1" if trat == "v7" else "retrato")
     html = f"""<!doctype html><meta charset="utf-8"><style>{CSS_PROPOSTA}{_fundo(W,H)}
 body {{ display:flex; flex-direction:column; justify-content:space-between;
        padding:70px 76px 38px; }}
@@ -380,6 +402,7 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
 .ident {{ position:absolute; left:0; right:0; bottom:-2px; z-index:3; text-align:center; }}
 .rod {{ position:relative; z-index:4; display:flex; justify-content:space-between;
        align-items:flex-end; font-size:{E('micro')}px; gap:24px; }}
+{_medalhao(trat, "card")}
 </style>
 <div class="topo">
   <div class="selo">{EYEBROW}</div>
@@ -439,7 +462,7 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
             display:flex; justify-content:space-between; align-items:flex-end; gap:20px; }}
 .legendas > div {{ max-width:46%; }}
 .legendas .d {{ text-align:right; }}
-.rod {{ position:relative; z-index:4; }}{_medalhao(trat, "story")}
+.rod {{ position:relative; z-index:4; }}{_medalhao(trat, "story-dia")}
 </style>
 <div class="topo">
   <div class="selo">{EYEBROW}</div>
@@ -479,12 +502,12 @@ if __name__ == "__main__":
     from PIL import Image
     if "--extra" in sys.argv:
         t = sys.argv[sys.argv.index("--extra") + 1]
-        assert t in ("v3", "v5", "v6"), f"direcao invalida: {t}"
+        assert t in ("v3", "v5", "v6", "v7"), f"direcao invalida: {t}"
         for fn in EXTRA:
             p = fn(t)
             print("ok", p.name, Image.open(p).size)
     elif "--thumb" in sys.argv:
-        for t in ("v3", "v5", "v6"):
+        for t in ("v3", "v5", "v6", "v7"):
             p = thumb(t)
             print("ok", p.name, Image.open(p).size)
     else:

@@ -1,4 +1,4 @@
-"""Ambientes Airmeet do 1o Webinar da Tribo 11 (PMO Inteligente), 08/09/2026.
+"""Ambientes Airmeet do webinar da Tribo 11 (PMO Inteligente), 08/09/2026.
 
 Copiado de build_airmeet_t6.py conforme o README manda ("copie, troque o conteudo").
 Mesma geometria das pecas da T6, que ja passaram por qa_measure: so o conteudo muda.
@@ -15,21 +15,25 @@ Formatos espelham o kit real (pasta "3 - Ambiente Airmeet" do kit-midia):
 Retratos: NAO versionados (repo publico, pessoas reais). Aponte NUCLEO_FOTOS para a
 pasta do evento, com joao-400.png e rodrigo-400.png dentro.
 """
+import math
+
 from brand import *
+import build_t11_campanha as K
 
 TITULO = "Sua área entrega bem. Isso garante que ela continue existindo?"
 SUB = "Como fazer stakeholders enxergarem o valor do seu PMO por meio de services e outcomes"
 QUANDO = "8 de setembro · 20h às 21h (Brasília)"
 QUANDO_CURTO = "8 de setembro · 20h"
-EYEBROW = "1º Webinar · Tribo PMO Inteligente"
-ASSIN = 'Realização <b>Núcleo IA &amp; GP</b> · Tribo PMO Inteligente'
+EYEBROW = "Webinar · PMO Inteligente"
+ASSIN = 'Realização <b>Núcleo IA &amp; GP</b> · Capítulos PMI do Brasil'
 
-# A ordem aqui e a mesma da pagina publica do Airmeet: o lider da tribo primeiro.
-TIME = [
-    (FOTOS / "joao-400.png", "João Henrique Jacinto", "Líder da Tribo PMO Inteligente"),
-    (FOTOS / "rodrigo-400.png", "Rodrigo Santa Rita de Jesus",
-     "Gerente de Projetos Sênior e Delivery Manager"),
-]
+# Nome, cargo e ordem vem de `build_t11_campanha.DUO`, que e a fonte unica de como estas
+# duas pessoas sao apresentadas em publico. Aqui havia uma SEGUNDA copia da lista, e ela
+# ficou para tras: a correcao de 29/08 (nome e cargo lidos do perfil do proprio Rodrigo)
+# entrou nas pecas de campanha e nao entrou nestas telas, que seguiam anunciando o nome
+# errado no ar. Uma lista so, e a divergencia deixa de ser possivel.
+TIME = [(FOTOS / p["foto"].replace("-900", "-400"), p["nome"],
+         p["cargo"].replace("<br>", " · ")) for p in K.DUO]
 
 
 def faixa_time(size, com_cargo=True):
@@ -64,10 +68,17 @@ h1 {{ font-size:72px; margin-top:22px; max-width:1180px; }}
 
 
 # ------------------------------------------- tela de espera (welcome e waiting screen)
-def _espera(nome, W, H, eyebrow, h1px, subpx, foto, rodape_dir, aviso=None):
+def _espera(nome, W, H, eyebrow, h1px, subpx, rodape_dir, aviso=None):
     """Os dois slots tem a MESMA funcao (tela antes de comecar) e so mudam de proporcao,
     entao dividem o layout: centrado, sem grade de programacao (nao ha agenda aprovada,
-    e inventar horario numa peca publica seria afirmar o que ninguem decidiu)."""
+    e inventar horario numa peca publica seria afirmar o que ninguem decidiu).
+
+    O RETRATO deixou de ser valor absoluto. Ele e fracao da menor dimensao, com o mesmo
+    piso que a campanha cobra, porque o tamanho certo depende do formato e ninguem lembra
+    de reescalar ao trocar de slot. Medido em 29/08/2026, as telas que estavam NO AR
+    tinham retrato a 10,6% (welcome) e 9,4% (waiting) contra um piso de 17%: o rosto
+    existia no arquivo e nao existia para quem olhava a tela."""
+    foto = math.ceil(K.PISO_RETRATO_LEITURA * min(W, H))
     extra = f'<div class="aviso">{aviso}</div>' if aviso else ""
     html = f"""<!doctype html><meta charset="utf-8"><style>{css_base(W,H)}
 .wrap {{ padding:26px 76px 86px; display:flex; flex-direction:column;
@@ -104,14 +115,14 @@ h1 {{ font-size:{h1px}px; margin-top:14px; max-width:{W-220}px; line-height:1.0;
 
 def welcome():
     return _espera("t11-airmeet-02-welcome-1440x720", 1440, 720, "Seja bem-vindo",
-                   h1px=42, subpx=21, foto=76, rodape_dir="Começamos às 20h em ponto")
+                   h1px=42, subpx=21, rodape_dir="Começamos às 20h em ponto")
 
 
 def waiting():
     """1920x1080, e nao os 1280x720 da T6: o proprio modal do slot pede
     "Dimensions: 1920x1080 px" (lido na tela em 27/08). Mesma razao 16:9, mais resolucao."""
     return _espera("t11-airmeet-04-waiting-1920x1080", 1920, 1080, "Estamos começando",
-                   h1px=58, subpx=28, foto=102, rodape_dir="Sessão gravada",
+                   h1px=58, subpx=28, rodape_dir="Sessão gravada",
                    aviso="Deixe seu microfone fechado. As perguntas ficam no chat.")
 
 

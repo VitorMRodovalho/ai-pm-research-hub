@@ -1,4 +1,4 @@
-"""Roda as nove checagens sobre as pecas geradas.
+"""Roda as dez checagens sobre as pecas geradas.
 
 Use DEPOIS de alterar qualquer coisa. Cada checagem aqui nasceu de um defeito que passou
 despercebido e so apareceu quando alguem olhou a peca pronta; a ideia e que o proximo
@@ -18,13 +18,23 @@ capt = {}
 _orig = C.render
 C.render = lambda n, h, w, ht: (capt.__setitem__(n, (h, w, ht)), _orig(n, h, w, ht))[1]
 
+# As pecas de REPLAY e de DIA DO EVENTO ficavam FORA do conjunto checado: o guard olhava
+# so `PECAS`. Isso e o mesmo vacuo que a checagem 2 pega dentro de uma peca, um nivel acima:
+# passar verde porque nao esta olhando. Com a direcao escolhida elas entram.
+#   python3 checar.py --extra v7
+alvos = list(C.PECAS)
+if "--extra" in sys.argv:
+    _t = sys.argv[sys.argv.index("--extra") + 1]
+    assert _t in ("v3", "v5", "v6", "v7"), f"direcao invalida: {_t}"
+    alvos += [(_t, fn) for fn in C.EXTRA]
+
 saidas = {}
-for trat, fn in C.PECAS:
+for trat, fn in alvos:
     p = fn(trat)
-    saidas[p.stem] = p
+    saidas[p.stem] = (p, trat)
 
 total = 0
-for nome, png in saidas.items():
+for nome, (png, trat) in saidas.items():
     html, w, h = capt[nome]
     rs = rects(html, w, h)
     menor = min(w, h)
@@ -54,6 +64,26 @@ for nome, png in saidas.items():
             falhas.add(f"palestrante {i} quase fora do canvas")
         if r["w"] / menor < .17:
             falhas.add(f"retrato pequeno demais: {r['w']/menor*100:.1f}% (piso 17%)")
+
+    # 10. retrato sobre retrato. Nasceu do v7: os dois medalhoes do story se sobrepunham
+    # em 8px, e com o anel laranja de 9px de cada lado a colisao virava 26px visiveis. A
+    # peca passava verde porque havia checagem de foto sobre TEXTO e de foto FORA do
+    # canvas, e nenhuma de foto contra foto. O piso e uma folga real entre as caixas.
+    FOLGA_MIN = 24
+    for i2 in range(len(fotos)):
+        for j in range(i2 + 1, len(fotos)):
+            X, Y = fotos[i2], fotos[j]
+            gx = max(X["x"], Y["x"]) - min(X["x"] + X["w"], Y["x"] + Y["w"])
+            gy = max(X["y"], Y["y"]) - min(X["y"] + X["h"], Y["y"] + Y["h"])
+            # so cobra folga de quem se cruza no outro eixo, e SO no medalhao: retrato em
+            # escada encosta de proposito, e a v5 e a v6 dependem disso.
+            # O gate vem do CATALOGO (`trat`), nao de string no html. Duas tentativas
+            # erradas, medidas em 29/08/2026: procurar "circ" no html devolve sempre False
+            # (o retrato entra como data URI, entao a checagem fica VAZIA, nao vermelha), e
+            # procurar "border-radius:50%" acusa TODA peca, porque e tambem o pontinho do
+            # selo. So o tratamento diz se o retrato e um medalhao.
+            if gx < FOLGA_MIN and gy < FOLGA_MIN and trat == "v7":
+                falhas.add(f"retratos colados: folga de {max(gx, gy):.0f}px (piso {FOLGA_MIN})")
 
     # 6. contraste real do texto, medido no PNG
     for t, cr, piso, onde in ilegiveis(png, html, w, h):
@@ -92,4 +122,4 @@ print()
 if total:
     print(f"\033[31m{total} problema(s).\033[0m\n")
     sys.exit(1)
-print("\033[32mAs nove checagens passaram em todas as pecas.\033[0m\n")
+print("\033[32mAs dez checagens passaram em todas as pecas.\033[0m\n")
