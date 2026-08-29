@@ -4847,6 +4847,7 @@ const esLATAM: Record<string, string> = {
   'initiative.pastMeetings': 'Reuniones Anteriores',
   'initiative.noUpcoming': 'Ningún evento próximo.',
   'initiative.driveSection': 'Drive de la iniciativa',
+  'initiative.toolsSection': 'Herramientas de la iniciativa',
   'initiative.drivePurpose.workspace': 'Workspace',
   'initiative.drivePurpose.minutes': 'Actas',
   'initiative.drivePurpose.shared_resources': 'Recursos',
