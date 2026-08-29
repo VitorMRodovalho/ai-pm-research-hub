@@ -6576,13 +6576,20 @@ export type Database = {
           created_at: string | null
           display_order: number | null
           id: string
+          instagram_handle: string | null
+          instagram_url: string | null
           is_active: boolean | null
           is_contracting_chapter: boolean | null
           legal_name: string
+          linkedin_url: string | null
+          links_source: string | null
+          links_verified_at: string | null
           logo_url: string | null
           state: string
           updated_at: string | null
           vep_name_aliases: string[]
+          website_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           chapter_code: string
@@ -6591,13 +6598,20 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           id?: string
+          instagram_handle?: string | null
+          instagram_url?: string | null
           is_active?: boolean | null
           is_contracting_chapter?: boolean | null
           legal_name: string
+          linkedin_url?: string | null
+          links_source?: string | null
+          links_verified_at?: string | null
           logo_url?: string | null
           state: string
           updated_at?: string | null
           vep_name_aliases?: string[]
+          website_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           chapter_code?: string
@@ -6606,13 +6620,20 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           id?: string
+          instagram_handle?: string | null
+          instagram_url?: string | null
           is_active?: boolean | null
           is_contracting_chapter?: boolean | null
           legal_name?: string
+          linkedin_url?: string | null
+          links_source?: string | null
+          links_verified_at?: string | null
           logo_url?: string | null
           state?: string
           updated_at?: string | null
           vep_name_aliases?: string[]
+          website_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
