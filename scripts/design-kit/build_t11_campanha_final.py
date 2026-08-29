@@ -69,14 +69,14 @@ def _medalhao(trat, fmt):
 .legendas {{ bottom:34px; align-items:flex-start; }}
 .legendas > div {{ max-width:47%; text-align:center; }}
 .legendas .d {{ text-align:center; }}
-.base {{ display:none; }}"""),
+.base {{ height:236px; bottom:-30px; }}"""),
         "post": ("""
-.p1 {{ position:absolute; left:92px; bottom:206px; width:302px; height:302px; z-index:1; }}
-.p2 {{ position:absolute; right:92px; bottom:206px; width:302px; height:302px; z-index:1; }}
+.p1 {{ position:absolute; left:106px; bottom:312px; width:274px; height:274px; z-index:1; }}
+.p2 {{ position:absolute; right:106px; bottom:312px; width:274px; height:274px; z-index:1; }}
 .legendas {{ bottom:22px; align-items:flex-start; }}
 .legendas > div {{ max-width:47%; text-align:center; }}
 .legendas .d {{ text-align:center; }}
-.base {{ display:none; }}"""),
+.base {{ height:236px; bottom:-30px; }}"""),
         "linkedin": ("""
 .p1 {{ position:absolute; right:296px; bottom:206px; width:212px; height:212px; z-index:3; }}
 .p2 {{ position:absolute; right:52px; bottom:206px; width:212px; height:212px; z-index:3; }}
@@ -222,7 +222,7 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
 {_css_texto(E, largura_virada=940)}
 .palco {{ position:relative; height:600px; }}{dupla}
 .foto {{ width:100%; display:block; }}{_moldura(trat)}
-.base {{ position:absolute; left:-74px; right:-74px; bottom:-46px; height:280px; z-index:2;
+.base {{ position:absolute; left:-74px; right:-74px; bottom:-46px; height:392px; z-index:2;
         background:{BASE_GRAD}; }}
 .legendas {{ position:absolute; left:0; right:0; bottom:-2px; z-index:3;
             display:flex; justify-content:space-between; align-items:flex-end; gap:18px; }}

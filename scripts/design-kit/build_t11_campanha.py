@@ -40,8 +40,8 @@ CTA = "Online e gratuito · inscrição pelo Airmeet"
 DUO = [
     dict(foto="joao-900.png", nome="João Henrique Jacinto",
          cargo="Diretor da Zieger<br>PMI Rising Leader Latam 2025"),
-    dict(foto="rodrigo-900.png", nome="Rodrigo Santa Rita",
-         cargo="Gerente de Projetos Sênior<br>Delivery Manager"),
+    dict(foto="rodrigo-900.png", nome="Rodrigo Jesus",
+         cargo="Gerente Sênior de Projetos<br>PMP · Instituto Eldorado"),
 ]
 def uri(p): return img_uri(FOTOS / p)
 
