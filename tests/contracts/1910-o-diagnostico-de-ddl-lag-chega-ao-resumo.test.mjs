@@ -62,6 +62,26 @@ test('#1910: a saída do teste é capturada sem engolir o código de saída', ()
     'a saída precisa ser guardada para poder ser citada');
 });
 
+test('#1910: o fallback do resumo é ALCANÇÁVEL quando não há saída para citar', () => {
+  // ⚠️ Meu primeiro rascunho escrevia:
+  //     grep -E ... arquivo | head -30 >> $SUMMARY || echo '(saida indisponivel)' >> $SUMMARY
+  // e o `||` NUNCA disparava, porque ele lê o status do `head` (0 sempre), não o do `grep`. Com o
+  // arquivo ausente a seção saía como um bloco VAZIO: exatamente o silêncio que #1910 existe para
+  // acabar, agora com uma moldura em volta. Mesma família do pipe que engole o código de saída.
+  const secao = WF.split('Testes que reprovaram')[1] || '';
+  // ⚠️ Tira os comentários ANTES de medir. Na primeira versão este teste reprovou casando o
+  // próprio comentário que descreve o anti-padrão: o guard leu a documentação como se fosse
+  // código. Um guard estático que varre um arquivo precisa olhar só o que executa.
+  const semComentario = (t) => t.split('\n').filter((l) => !/^\s*#/.test(l)).join('\n');
+  const trecho = semComentario(secao.split('else')[0]);
+  assert.doesNotMatch(trecho, /\|\s*head[^\n]*\|\|/,
+    'fallback pendurado num `||` depois de um pipe é inalcançável; use if/else');
+  assert.match(secao, /\bif \[ -s \/tmp\/invariants-plain\.txt \]/,
+    'o resumo precisa checar que há saída ANTES de tentar cita-la');
+  assert.match(secao, /else[\s\S]*nao pode ser lida/,
+    'sem ramo else, "sem saída" e "nenhum teste reprovou" viram o mesmo bloco vazio');
+});
+
 test('#1910: o texto citado é PRODUZIDO pelo classificador, não reescrito aqui', () => {
   // Se o resumo reescrevesse a mensagem, ela divergiria do classificador na primeira mudança, e
   // aí existiriam duas verdades sobre o mesmo defeito.

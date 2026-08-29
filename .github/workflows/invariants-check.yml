@@ -131,8 +131,15 @@ jobs:
             # rodar Node 24 (reporter `spec` SEMPRE, com marcador `x`). Medido em 29/08: v22.23.2
             # na CI, v24.15.0 local. Um padrao que so casa um dos dois sai MUDO no outro, que
             # e exatamente o defeito de #1910 numa roupa nova. Aceito OS DOIS marcadores.
-            grep -E '^ *(not ok |✖ )' /tmp/invariants-plain.txt 2>/dev/null | head -30 >> $GITHUB_STEP_SUMMARY \
-              || echo '(saida indisponivel)' >> $GITHUB_STEP_SUMMARY
+            # ⚠️ `grep ... | head ... || echo fallback` NAO funciona: o `||` le o status do `head`,
+            # que e 0 mesmo quando o grep nao achou nada nem o arquivo existe. O fallback nunca
+            # dispararia e a secao sairia como um bloco VAZIO, que e o mesmo silencio que #1910
+            # existe para acabar. Mesma familia do pipe que engole o codigo de saida da suite.
+            if [ -s /tmp/invariants-plain.txt ] && grep -qE '^ *(not ok |✖ )' /tmp/invariants-plain.txt; then
+              grep -E '^ *(not ok |✖ )' /tmp/invariants-plain.txt | head -30 >> $GITHUB_STEP_SUMMARY
+            else
+              echo '(a saida da suite nao pode ser lida; veja o log do passo acima)' >> $GITHUB_STEP_SUMMARY
+            fi
             echo '```' >> $GITHUB_STEP_SUMMARY
 
           else
