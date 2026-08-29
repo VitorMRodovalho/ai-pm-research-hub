@@ -101,3 +101,38 @@ update public.chapter_registry set
   links_verified_at = '2026-08-29T00:00:00Z',
   links_source  = 'pagina de contato do site oficial do capitulo'
 where chapter_code = 'AM';
+
+-- ── Segunda leva: os 12 capitulos restantes ganham Instagram ─────────────────────────────
+-- Fonte diferente da primeira leva, e por isso `links_source` diz outra coisa: a lista de
+-- contas MARCADAS num post do proprio Nucleo, lida pelo dono em 29/08/2026. Cada linha
+-- casou pelo NOME EXIBIDO da conta contra o `legal_name` da ficha, 15 de 15, sem conta
+-- sobrando de um lado nem capitulo sobrando do outro.
+--
+-- Vale registrar a forca dessa fonte: os tres capitulos da primeira leva, verificados de
+-- forma independente no rodape do site de cada um, aparecem na lista com a arroba
+-- IDENTICA. Duas fontes independentes concordando em 3 de 3 e o que sustenta aceitar as
+-- outras 12 pela lista.
+--
+-- So o Instagram entra aqui. Site, LinkedIn e YouTube destes 12 seguem NULOS, porque a
+-- lista de marcados nao diz nada sobre eles, e preencher por analogia com a arroba seria
+-- exatamente a deducao que esta migration existe para impedir.
+
+update public.chapter_registry set
+  instagram_url = 'https://www.instagram.com/' || h.handle || '/',
+  links_verified_at = '2026-08-29T00:00:00Z',
+  links_source = 'lista de contas marcadas em post do Nucleo no Instagram, casada pelo nome exibido'
+from (values
+  ('BA','pmibahia'),
+  ('PE','pmipe'),
+  ('MG','pmiminasgerais'),
+  ('CE','pmiceara'),
+  ('RS','pmi_riograndedosul'),
+  ('PR','pmipr'),
+  ('SE','pmisergipe'),
+  ('DF','pmidf'),
+  ('ES','pmiespiritosanto'),
+  ('RJ','pmi_rio'),
+  ('SC','pmi.sc'),
+  ('PB','pmiparaiba')
+) as h(code, handle)
+where chapter_registry.chapter_code = h.code;
