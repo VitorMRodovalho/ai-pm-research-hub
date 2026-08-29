@@ -18,12 +18,37 @@ o conteudo desce.
     python3 preparar_circulo.py            # usa NUCLEO_FOTOS
 """
 import pathlib
-from PIL import Image
+
+import numpy as np
+from PIL import Image, ImageFilter
+
 from brand import FOTOS
 
 FOLGA = 0.11          # onde o topo da cabeca deve cair, em fracao do lado do quadrado
 BANDA = (2, 14)       # faixa de linhas usada para amostrar o fundo por coluna
 ESCURO = 95           # luminancia abaixo disso e cabelo, nao fundo
+
+# NORMALIZACAO DO FUNDO (autorizada pelo dono em 29/08/2026). Lado a lado num medalhao
+# pequeno a diferenca de fundo entre os dois retratos passava. No retangulo grande, que
+# mostra 27% mais fundo, viram dois cinzas diferentes colados. Por isso a correcao entrou
+# junto com a escolha do retangulo.
+#
+# O QUE FOI MEDIDO, e a medicao que eu errei primeiro. Perfilando so a faixa ESQUERDA por
+# altura, os dois fundos parecem planos: Joao 172, Rodrigo 134,146,156 do topo ao ombro.
+# Dai eu concluiria um offset constante. Errado: comparando esquerda com DIREITA, o fundo
+# do Rodrigo vai de (134,146,156) a (192,197,199), 51 niveis de gradiente HORIZONTAL,
+# enquanto o do Joao e chapado nos dois lados. Perfilar um eixo so nao mede planura.
+# Por isso a correcao e POR COLUNA, nao por cor unica: uma cor unica acertaria a media e
+# deixaria as duas pontas erradas, uma clara demais e outra escura demais.
+#
+# A correcao mexe SO NO FUNDO, por mascara de distancia. Duas alternativas globais foram
+# descartadas por contas feitas antes de escrever isto:
+#   ganho global      preserva preto mas estoura o realce: o p99 do Rodrigo esta em 209 e
+#                     o ganho no vermelho o jogaria acima de 255.
+#   gamma global      nao estoura, mas levanta a sombra: a camiseta preta dele sairia de
+#                     ~25 para ~61, virando cinza morno. E a pessoa, nao o fundo.
+ALVO_FUNDO = (171, 171, 173)   # neutro, onde o fundo do Joao ja estava
+TOL, RAMPA = 30, 30            # distancia ate a cor da COLUNA: dentro de TOL corrige 100%
 
 
 def _lum(c):
@@ -59,8 +84,77 @@ def fundo_por_coluna(px, w):
     return cores
 
 
+def perfil_do_fundo(a):
+    """Uma cor de fundo POR COLUNA, medida no terco superior, onde ainda nao ha ombro.
+
+    Mediana e nao media, para um fio de cabelo que escape do descarte nao mover a amostra.
+    Coluna tomada pela cabeca fica sem amostra suficiente e e reconstruida por
+    interpolacao das vizinhas validas; no fim um alisamento curto tira o ruido sem tirar
+    o gradiente, que aqui e o sinal, nao o ruido."""
+    H, W, _ = a.shape
+    alto = a[int(H * .02):int(H * .45)]
+    # Descarta escuro (cabelo, cunha preta do canto) E PELE. O filtro de luminancia sozinho
+    # nao basta: pele e CLARA, entao as colunas do rosto passavam por fundo valido e
+    # puxavam o ajuste para o rosado. Medido: com elas dentro, o fundo do Joao saia
+    # (177,158,157) em vez de neutro.
+    val = (alto.mean(axis=2) >= ESCURO) & ((alto[:, :, 0] - alto[:, :, 2]) < 8)
+    perfil = np.full((W, 3), np.nan)
+    minimo = alto.shape[0] * .25
+    # O dominio do ajuste sao as colunas LATERAIS, que sao fundo em toda a altura da banda.
+    # A pessoa ocupa o miolo; ali o valor e extrapolado, e e justamente onde ela cobre.
+    margem = int(W * .25)
+    for x in list(range(margem)) + list(range(W - margem, W)):
+        col = alto[val[:, x], x]
+        if len(col) >= minimo:
+            perfil[x] = np.median(col, axis=0)
+    ok = ~np.isnan(perfil[:, 0])
+    if ok.sum() < 8:
+        return np.tile(np.array(ALVO_FUNDO, float), (W, 1))
+    idx = np.arange(W, dtype=float)
+    # AJUSTE POLINOMIAL, e nao interpolacao mais alisamento. A primeira versao interpolava
+    # coluna a coluna e alisava com janela curta: no Rodrigo funcionou, mas no Joao, cujo
+    # fundo ja estava certo e o deslocamento e de ~1 nivel, o RUIDO do perfil virou LISTRA
+    # VERTICAL na peca, porque cada coluna recebeu um deslocamento ligeiramente diferente.
+    # Iluminacao de estudio e um campo suave e de baixa frequencia: um polinomio de grau 2
+    # descreve o gradiente e, por construcao, nao consegue produzir listra. Grau 1, nao 2:
+    # com o dominio limitado as laterais, grau 2 fica sub-determinado no miolo e oscila.
+    return np.stack([np.polyval(np.polyfit(idx[ok], perfil[ok, c], 1), idx)
+                     for c in range(3)], axis=1)
+
+
+def normalizar_fundo(im: Image.Image, alvo=ALVO_FUNDO):
+    """Leva o FUNDO para `alvo` e deixa a pessoa intacta.
+
+    O deslocamento e o mesmo para todo pixel de fundo, entao a textura e o ruido do estudio
+    sobrevivem: nao e pintar por cima, e transladar. A mascara vem da distancia ate a cor
+    amostrada, com rampa e um blur curto para o contorno do cabelo nao serrilhar, e com a
+    protecao de pele do `recortar.py`, porque vermelho dominante nunca e fundo.
+    """
+    a = np.asarray(im).astype(float)
+    perfil = perfil_do_fundo(a)                 # (W,3)
+    cor = perfil[None, :, :]                    # difunde por linha
+    delta = np.array(alvo, float)[None, None, :] - cor
+
+    d = np.sqrt(((a - cor) ** 2).sum(axis=2))
+    m = np.clip((TOL + RAMPA - d) / RAMPA, 0, 1)
+    pele = np.clip((a[:, :, 0] - a[:, :, 2] - 8) / 18, 0, 1)
+    m = m * (1 - pele)
+    m = np.asarray(Image.fromarray((m * 255).astype(np.uint8))
+                   .filter(ImageFilter.GaussianBlur(1.4))).astype(float) / 255
+
+    fora = np.clip(a + m[:, :, None] * delta, 0, 255)
+    return (Image.fromarray(fora.astype(np.uint8)),
+            perfil[0], perfil[-1], m.mean())
+
+
 def preparar(origem: pathlib.Path, destino: pathlib.Path):
     im = Image.open(origem).convert("RGB")
+    # A normalizacao vem ANTES de fabricar a folga, e a ordem importa: rodando depois, ela
+    # mediria a PROPRIA folga em vez do fundo real. No Rodrigo isso dava 176 no lugar de
+    # 145, porque a folga nasce de uma amostra das linhas 2 a 14, que nos cantos dele caem
+    # dentro da cunha preta e sao descartadas. Antes, a folga ja nasce da cor corrigida e
+    # emenda nenhuma aparece.
+    im, borda_esq, borda_dir, cobertura = normalizar_fundo(im)
     w, h = im.size
     px = im.load()
 
@@ -87,13 +181,17 @@ def preparar(origem: pathlib.Path, destino: pathlib.Path):
     quad = tela.crop((0, 0, lado, lado))
     quad.save(destino)
     conferido = topo_da_cabeca(quad.load(), lado, lado)
-    return topo, desce, conferido / lado * 100
+    return topo, desce, conferido / lado * 100, borda_esq, borda_dir, cobertura
 
 
 if __name__ == "__main__":
     for nome in ("joao", "rodrigo"):
         o = FOTOS / f"{nome}-3x4.png"
         d = FOTOS / f"{nome}-circ.png"
-        topo, desce, agora = preparar(o, d)
+        topo, desce, agora, esq, dir_, cob = preparar(o, d)
         print(f"{nome}: topo estava em {topo}px, desceu {desce}px, "
               f"agora em {agora:.1f}% do quadrado -> {d.name}")
+        print(f"    fundo medido: coluna 0 {esq.round(0).astype(int)}, "
+              f"ultima coluna {dir_.round(0).astype(int)} "
+              f"(gradiente de {dir_.mean()-esq.mean():+.0f} niveis) -> alvo {ALVO_FUNDO}; "
+              f"{cob*100:.0f}% do quadro tratado como fundo")
