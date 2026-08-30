@@ -67,25 +67,40 @@ parecida: ela pertence a outra pessoa.
 Não existe colaboração como no Instagram; o equivalente é pedir republicação. Menção **não se faz
 colando URL**: as URLs servem para achar o perfil certo antes.
 
-### ⚠️ Menção inline: a automação só entrega a PRIMEIRA, e as seguintes corrompem o texto
+### ⚠️ Menção inline: o limite é da AUTOMAÇÃO, não do editor
 
-Medido em 29/08/2026, publicando o anúncio de um webinar. A receita que faz uma menção nascer certa:
-digitar o parcial, **esperar a lista carregar**, e então `Down` mais `Return`. Sai o
-`<a class="ql-mention">` correto.
+Medido em 29/08/2026, publicando o anúncio de um webinar **por automação de teclado**. A receita que
+faz uma menção nascer certa: digitar o parcial, **esperar a lista carregar**, e então `Down` mais
+`Return`. Sai o `<a class="ql-mention">` correto.
 
-Da segunda menção em diante o editor devolve lixo. Três saídas observadas: o nome colado ao texto
+Da segunda menção em diante a automação devolve lixo. Três saídas observadas: o nome colado ao texto
 vizinho, um sufixo herdado de outro item da lista, e num dos casos **a menção anterior foi apagada**.
-Não é falta de espera: as tentativas com pausas maiores falharam igual.
+Pausas maiores não mudaram nada.
+
+**Não conclua daí que o editor não aceita várias menções.** No mesmo dia, o dono da página fez as
+**cinco menções de uma vez, à mão, editando o post já publicado**, e todas saíram corretas. O que
+falha é o caminho sintético, não o produto.
 
 O que fazer, então:
 
-1. **Publique o corpo em texto limpo**, nomeando as pessoas por extenso, sem nenhuma arroba. Um post
-   sem menção tem conserto; um post público com o texto quebrado não.
-2. **Peça a uma pessoa que comente marcando todo mundo.** No comentário o editor é o mesmo, mas o
-   custo de errar é um comentário apagável, e para um humano leva 30 segundos. **O comentário
-   notifica exatamente como a menção no corpo**, então o alcance não se perde.
+1. **Pela automação, publique o corpo em texto limpo**, nomeando as pessoas por extenso, sem nenhuma
+   arroba. Um post sem menção tem conserto; um post público com o texto quebrado dá muito mais
+   trabalho.
+2. **Peça a uma pessoa que adicione as menções.** ✅ **Editar o post já publicado funciona** e é o
+   caminho preferido, porque a menção fica no corpo, onde ela pesa mais. Comentar marcando todo mundo
+   também notifica, e serve quando ninguém tem acesso de edição.
 
-Nunca tente "consertar" um post já publicado editando menção nele: a edição passa pelo mesmo editor.
+### ⚠️ Digitar em blocos come as linhas em branco entre parágrafos
+
+Também medido em 29/08/2026. O arquivo de origem em `publicar/` tinha os parágrafos separados por
+linha vazia, e **o post saiu como um bloco corrido**: o campo é `contenteditable`, e digitar por
+partes colapsou as linhas em branco. Ninguém avisa, e o texto continua legível o bastante para passar
+despercebido.
+
+**Confira contando linha VAZIA, não linha de texto.** A armadilha aqui foi da própria conferência:
+`innerText.split('\n').filter(Boolean)` **descarta as linhas vazias**, então a checagem que deveria
+pegar o defeito o apagava antes de olhar. Meça `(txt.match(/\n\s*\n/g) || []).length` e compare com
+o número de parágrafos do arquivo de origem.
 
 Ao abrir `linkedin.com/company/<slug>/posts/`, se a conta for admin a URL redireciona para o
 dashboard de admin da página. Isso confirma o acesso de publicação como página.
@@ -126,10 +141,16 @@ CDN está redimensionando; se não bate, está cortando, e aí a peça precisa n
 destino. Medido: `747x420` servido contra `1440x810` original, razão 1,779 contra 1,778, ou seja
 sem corte. Parâmetros `?w=&h=` na URL **não provam corte**; só a razão do arquivo que chega prova.
 
-**A prévia do link de um post do Instagram é sempre quadrada, 640x640**, e o WhatsApp ainda recorta
-de novo. Uma peça 4:5 perde as bordas nesse caminho e **não há ajuste possível do nosso lado**. Para
-compartilhar em conversa, mande o **link do evento**, cuja miniatura é a peça inteira; deixe o link
-do post para quem for curtir e comentar.
+**A prévia do link de um post do Instagram é um CORTE agressivo, não um redimensionamento.** Medido:
+`640x640`, razão 1,000, contra 0,800 da peça, e a própria URL do `og:image` traz a diretiva de corte
+`stp=c216.0.648.648a_..._s640x640`. O resultado não é "perder as bordas": **sumiram os dois
+palestrantes e a data**, e a manchete perdeu os dois lados. O que resta é um pedaço de texto ampliado.
+
+Não há ajuste do nosso lado para um post já publicado. **Em conversa, mande o link do EVENTO**, cuja
+miniatura é a peça inteira; deixe o link do post para quem for curtir e comentar.
+
+Existe uma hipótese de mitigação **ainda não testada**: publicar a peça de feed em 1:1, para que não
+sobre nada a extrair. Vale testar num post seguinte e medir, em vez de assumir.
 
 **A grade do perfil no Instagram** corta reels em cima e embaixo e usa o primeiro frame como capa.
 Peça de vídeo precisa de um primeiro frame que já seja a capa, e de margem vertical de sobra.
