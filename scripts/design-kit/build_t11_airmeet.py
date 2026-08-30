@@ -62,19 +62,44 @@ def faixa_time(com_cargo=True):
 
 # ---------------------------------------------------------------- banner 1440x810
 def banner():
+    """Capa da landing, e tambem a MINIATURA que todo link compartilhado do evento carrega.
+
+    Os retratos entram aqui por causa dessa segunda funcao. Medido em 29/08/2026: o card do
+    link do Airmeet no WhatsApp mostrava titulo, data e nada de quem fala, e a decisao de
+    clicar num convite de webinar passa por reconhecer quem esta no palco. A peca estava
+    correta como capa e incompleta como miniatura, que e a superficie onde ela e de fato vista.
+
+    O texto passa a ocupar uma coluna a esquerda em vez da largura toda, e os dois retratos
+    ocupam a direita, no mesmo retangulo de canto arredondado das outras telas.
+    """
     W, H = 1440, 810
+    lado = 210                       # o retrato; dois deles mais a folga cabem na coluna direita
+    col = lado * 2 + 34
+    duo = "".join(
+        f'''<div class="dd"><div class="rt"><img src="{img_uri(f)}"></div>
+        <div class="nm">{n}</div><div class="cg">{c}</div></div>'''
+        for f, n, c in TIME)
     html = f"""<!doctype html><meta charset="utf-8"><style>{css_base(W,H)}
-.wrap {{ padding:52px 84px 130px; display:flex; flex-direction:column; justify-content:center; }}
+.wrap {{ padding:52px 84px 130px; display:flex; flex-direction:column; justify-content:center;
+        max-width:{W - col - 200}px; }}
 .eyebrow {{ font-size:20px; }}
-h1 {{ font-size:72px; margin-top:22px; max-width:1180px; }}
-.sub {{ margin-top:24px; font-size:29px; line-height:1.4; color:{TEXT}; max-width:930px; }}
-.quando {{ display:inline-flex; margin-top:34px; padding:16px 34px; font-size:24px; }}
+h1 {{ font-size:58px; margin-top:20px; }}
+.sub {{ margin-top:20px; font-size:25px; line-height:1.4; color:{TEXT}; }}
+.quando {{ display:inline-flex; margin-top:28px; padding:15px 30px; font-size:22px; }}
 .rodape {{ padding:22px 84px 34px; font-size:20px; }}
-.orb-a {{ width:1150px; height:1150px; right:-430px; top:130px; }}
-.dot {{ width:86px; height:86px; right:130px; top:560px; }}
+.orb-a {{ width:900px; height:900px; right:-380px; top:180px; }}
+.duo {{ position:absolute; right:84px; top:calc(var(--fh) + 46px); display:flex; gap:34px; z-index:5; }}
+.dd {{ width:{lado}px; text-align:center; }}
+.rt {{ width:{lado}px; height:{lado}px; border-radius:22px; overflow:hidden;
+      box-shadow:0 0 0 5px {ORANGE}, 0 22px 50px rgba(0,0,0,.42); }}
+.rt img {{ width:100%; height:100%; object-fit:cover; object-position:50% 42%;
+          border-radius:0; display:block; }}
+.nm {{ font-weight:800; font-size:19px; color:{WHITE}; margin-top:14px; line-height:1.2; }}
+.cg {{ font-size:15px; color:{TEXT_DIM}; margin-top:5px; line-height:1.3; }}
 </style>
-<div class="orb orb-a"></div><div class="dot-cyan dot"></div>
+<div class="orb orb-a"></div>
 <img class="faixa" src="{FAIXA}">
+<div class="duo">{duo}</div>
 <div class="wrap">
   <div class="eyebrow">{EYEBROW}</div>
   <h1>{TITULO}</h1>
