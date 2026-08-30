@@ -6574,6 +6574,7 @@ export type Database = {
           cnpj: string | null
           country: string
           created_at: string | null
+          default_locale: string
           display_order: number | null
           id: string
           instagram_handle: string | null
@@ -6585,7 +6586,10 @@ export type Database = {
           links_source: string | null
           links_verified_at: string | null
           logo_url: string | null
+          region: string | null
           state: string
+          tax_id: string | null
+          tax_id_type: string | null
           updated_at: string | null
           vep_name_aliases: string[]
           website_url: string | null
@@ -6596,6 +6600,7 @@ export type Database = {
           cnpj?: string | null
           country?: string
           created_at?: string | null
+          default_locale?: string
           display_order?: number | null
           id?: string
           instagram_handle?: string | null
@@ -6607,7 +6612,10 @@ export type Database = {
           links_source?: string | null
           links_verified_at?: string | null
           logo_url?: string | null
+          region?: string | null
           state: string
+          tax_id?: string | null
+          tax_id_type?: string | null
           updated_at?: string | null
           vep_name_aliases?: string[]
           website_url?: string | null
@@ -6618,6 +6626,7 @@ export type Database = {
           cnpj?: string | null
           country?: string
           created_at?: string | null
+          default_locale?: string
           display_order?: number | null
           id?: string
           instagram_handle?: string | null
@@ -6629,7 +6638,10 @@ export type Database = {
           links_source?: string | null
           links_verified_at?: string | null
           logo_url?: string | null
+          region?: string | null
           state?: string
+          tax_id?: string | null
+          tax_id_type?: string | null
           updated_at?: string | null
           vep_name_aliases?: string[]
           website_url?: string | null
@@ -18155,9 +18167,11 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          organization_id: string | null
           partnership_end: string | null
           partnership_start: string | null
           partnership_status: string
+          registry_chapter_code: string
         }
         Insert: {
           chapter_code: string
@@ -18165,9 +18179,11 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          organization_id?: string | null
           partnership_end?: string | null
           partnership_start?: string | null
           partnership_status?: string
+          registry_chapter_code: string
         }
         Update: {
           chapter_code?: string
@@ -18175,11 +18191,28 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          organization_id?: string | null
           partnership_end?: string | null
           partnership_start?: string | null
           partnership_status?: string
+          registry_chapter_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partner_chapters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_chapters_registry_chapter_code_fkey"
+            columns: ["registry_chapter_code"]
+            isOneToOne: false
+            referencedRelation: "chapter_registry"
+            referencedColumns: ["chapter_code"]
+          },
+        ]
       }
       partner_entities: {
         Row: {
