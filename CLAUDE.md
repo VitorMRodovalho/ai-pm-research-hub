@@ -37,7 +37,8 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 
 ## Build & Test
 ```bash
-npx astro build          # MUST pass before commit
+npm ci                   # lane worktrees start WITHOUT node_modules; the gate below cannot run until this does
+./node_modules/.bin/astro build   # MUST pass before commit. Not `npx` (pulls a stray version), never piped
 npm test                 # unit + e2e; DB-aware tests require SUPABASE_SERVICE_ROLE_KEY env
 npx wrangler deploy      # Deploy main Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
@@ -68,7 +69,10 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 4. Mark migration as applied: `supabase migration repair --status applied TIMESTAMP`
 
 ### ALWAYS:
-1. Run `npx astro build` — must pass with 0 new errors
+1. Run `./node_modules/.bin/astro build` — must pass with 0 new errors. Verify by the **unpiped exit code**
+   (`cmd > log 2>&1; echo $?`, or `${PIPESTATUS[0]}`) and read the **head** of the log, which is where the tool
+   names the error. `| tail` returns tail's exit code, and that turned a broken build into a reported "exit 0"
+   twice on 2026-08-29. The pre-commit hook is a secret/PII scan, not a build gate: nothing enforces this but you.
 2. `npm test` — 0 failures
 3. No hardcoded legacy URLs (grep for `platform.ai-pm-research-hub.workers.dev`)
 
