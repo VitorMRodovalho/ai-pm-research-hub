@@ -169,7 +169,14 @@ test('bindings: 4 active, each anchored on the policy head or flagged while a Ma
   const agreements = await select('governance_documents?doc_type=eq.cooperation_agreement&status=eq.active&select=id');
   const agreementIds = new Set(agreements.map((a) => a.id));
   const bindings = await select('instrument_version_bindings?status=eq.active&select=bound_document_id,referenced_document_id,pinned_version_id,re_anchor_required');
-  assert.equal(bindings.length, 4, 'exactly 4 active bindings');
+  // #2109: a contagem era o literal `4`, e ele vira MENTIRA no dia em que um quinto acordo de
+  // cooperacao ativo entrar: o teste reprovaria por crescimento LEGITIMO do dominio, e o conserto
+  // natural de quem estiver de plantao e trocar 4 por 5, ate a proxima vez. Derivar do catalogo faz
+  // o guard acompanhar o dominio sozinho.
+  assert.ok(agreements.length > 0,
+    'controle de vacuidade: sem acordo ativo o laco abaixo passaria sem afirmar nada');
+  assert.equal(bindings.length, agreements.length,
+    'um vinculo ativo por acordo de cooperacao ativo (contagem DERIVADA do catalogo, nao literal)');
 
   // Is the current head still under ratification? 'review' is the open state; a ratified
   // chain reads 'active'.
@@ -190,7 +197,7 @@ test('bindings: 4 active, each anchored on the policy head or flagged while a Ma
         'a flagged binding is only legal while the head chain is still in review; the head is already ratified, so this is a re-anchor that was forgotten (use reanchor_instrument_binding)');
     }
   }
-  assert.equal(new Set(bindings.map((b) => b.bound_document_id)).size, 4, 'one binding per distinct agreement');
+  assert.equal(new Set(bindings.map((b) => b.bound_document_id)).size, agreements.length, 'one binding per distinct agreement');
 });
 
 test('check_schema_invariants: AN present, dormant (count 0), and 0 total violations', { skip: !canRun && skipMsg }, async () => {
