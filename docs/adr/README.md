@@ -130,6 +130,7 @@ Este diretório separa decisões técnicas duráveis das notas de governança ge
 - `ADR-0124-drive-membership-provisioning.md` — Drive membership auto-grant + provisioning: reconcile folder-anchored, espelho de grant do ADR-0107 no lado membership.
 - `ADR-0126-member-function-taxonomy-active-member-two-metrics.md` — "Membro ativo" são dois temas: usuário de sistema (is_active AND current_cycle, ~89) vs operacional no Núcleo (operational_role IN manager/deputy_manager/tribe_leader/researcher, ~68); home mostra o operacional, rótulo correto; ladder inalterado.
 - `ADR-0127-canonical-chapter-entity-chapter-hub-participation.md` — Capítulo, hub e participação são três conceitos, não um: `chapter_registry` é a entidade canônica e NÃO recebe `organization_id`; `partner_chapters` é a participação e recebe o tenant mais a FK; `chapters` é aposentada; `region` segue subnacional e o agrupamento internacional vira estrutura própria (#2083).
+- `ADR-0128-chapter-identity-beyond-brazil-code-space-country-locale.md` — Identidade de capitulo alem do Brasil: `chapter_code` segue unico e `country` (NOT NULL) restringe o espaco de codigo (chave composta rejeitada, espalharia a ambiguidade para as 2 FKs); `default_locale` travado nas 3 tags da plataforma e e DEFAULT da jornada, nunca portao; ausencia de capitulo vira motivo, nao NULL nem linha no registry (#2102).
 
 ## Domain Model V4 — Refatoração Arquitetural (Complete, 2026-04-13)
 
