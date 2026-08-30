@@ -27,7 +27,9 @@ nobody reconciled:
 The drift is not marginal, it is total:
 
 - `partner_chapters` and `chapter_registry` both hold 15 rows and their `chapter_code`
-  intersection is **zero**. Two tables of the same size that share no key at all.
+  intersection is **zero**, because one side prefixes the code with `PMI-` and the other
+  does not. Strip the prefix and the two sides are a perfect bijection. See "Step 2 is a
+  deterministic mapping" below.
 - **135** rows of `members` carry a `chapter` value that exists in no registry, across
   **14** distinct spellings, which is every distinct value.
 - **129** rows of `selection_applications` are likewise outside the registry.
@@ -107,45 +109,58 @@ Order matters, because each step depends on the previous one being proven.
 
 1. **Additive only.** `tax_id_type` + `tax_id` and `region` on `chapter_registry`,
    `organization_id` on `partner_chapters`. Nothing breaks, nothing reads it yet.
-2. **Create the links.** See the warning below: this is not reconciliation.
+2. **Link the two sides** by stripping the `PMI-` prefix. Deterministic; see below.
 3. **Foreign key** `partner_chapters.chapter_code` to `chapter_registry(chapter_code)`.
 4. **Backfill** `pmi_chapter_code` and the two columns migrated off `chapters`.
 5. **Retire `chapters`**, only after step 4 is proven.
 6. **Free text to relation** on the two scope-bearing columns.
 
-Steps 1 to 3 are the first window. Step 4 onward depends on what step 2 produces.
+Steps 1 to 3 are one window, because step 2 needs no human adjudication.
 
-### Step 2 is link creation, not reconciliation
+### Step 2 is a deterministic mapping
 
-The word matters. *Reconciliation* presupposes that a correspondence exists and the work
-is to find it. That is not the case here: the intersection between
-`partner_chapters.chapter_code` and `chapter_registry.chapter_code` is **zero**, with 15
-rows on each side. There is nothing to reconcile. What exists is **creating the link from
-scratch**, deciding for each of the 15 `partner_chapters` rows which registry chapter it
-refers to.
+An earlier reading held that step 2 was link creation with no answer key, on the grounds
+that the `chapter_code` intersection is zero. The zero is real, but its cause is
+formatting, not semantics: `partner_chapters` writes `PMI-GO` where `chapter_registry`
+writes `GO`. Measured 2026-08-29:
 
-Three consequences:
+| check | result |
+|---|---:|
+| raw `chapter_code` intersection | **0** |
+| rows matching after stripping `^PMI-` | **15 of 15** |
+| distinct registry targets elected | **15** |
+| registry rows left with no partnership | **0** |
+| partner rows without the `PMI-` prefix | **0** |
 
-- **A reconciler can be checked against the correspondence it should have found. A link
-  creation has no answer key.** Every row is a new assertion about the world.
-- **Where the link is not obvious from the name, the decision belongs to the PM**, not to
-  an algorithm. A wrong call here writes the wrong chapter into a table that becomes a
-  scope source.
-- The negative control stops being a robustness check and becomes **the only test** that
-  separates a correct link from an invented one.
+Two further signals corroborate the mapping independently of the code:
 
-Before any DDL in step 3, produce the 15-row table of proposed links with the evidence
-for each, and submit it for human review. Rows without clear evidence stay blank rather
-than receiving a guess.
+- **Name.** `partner_chapters.chapter_name` matches `chapter_registry.state || ', Brazil
+  Chapter'`, with exactly one candidate per row. `AM` is the only row that needs
+  `vep_name_aliases`, because it is recorded as "Amazonia Chapter"; it is the single
+  populated alias row in the table, and it earns its place here.
+- **Contract.** The 5 rows with `partnership_status = 'signed'` are `CE, DF, GO, MG, RS`,
+  and the 5 registry rows with `cnpj` filled are the same five. Zero divergence between
+  the two sets, across two tables and two unrelated columns.
+
+Step 2 is therefore a single deterministic `UPDATE`, not fifteen human assertions, and it
+does not gate on review. The 15-row evidence table was produced and checked before this
+section was written.
 
 ## Verification contract
 
 - Capture the **before** counts (5 / 15 / 15 / 14 / 16, and the three drift figures) as a
   live baseline, and prove the **after** with a fresh query. Never derive "before" by
   reasoning backward from "after".
-- **Mandatory negative control:** inject a chapter with a divergent spelling and prove
-  the linking finds it. A linker that only gets right what was already right has not been
-  tested.
+- **Mandatory negative control, and it belongs to step 6, not step 2.** Step 2 has a
+  deterministic key; step 6 does not, because `members.chapter` (14 spellings) and
+  `selection_applications.chapter` (16 values) have none. Inject a chapter with a
+  divergent spelling there and prove the linking finds it. A linker that only gets right
+  what was already right has not been tested.
+- The step 2 mapping was itself exercised against synthetic rows, read-only: a divergent
+  alias is found, a non-existent code returns nothing, and a row whose code and name
+  disagree is reported as a disagreement instead of being silently resolved. The match is
+  case- and accent-sensitive, which is harmless across these 15 uniform rows and is
+  exactly what will bite in step 6.
 - Before running the linker, count the divergences **outside** the intended scope, so
   that "it touched something it should not have" is discoverable rather than discovered
   later.
@@ -159,13 +174,21 @@ than receiving a guess.
 rewriting the chapter model, because the tenant lives on the participation and not on the
 chapter. The tax identifier stops being Brazil-only.
 
-**Cost.** Step 2 is manual and needs the PM. Fifteen assertions have to be made and
-checked by a person, and no automation removes that.
+**Cost.** Lower than first assessed. Step 2 was expected to need fifteen human
+assertions; measurement found a deterministic prefix instead, so the manual cost falls to
+step 6, where the free-text columns genuinely have no key.
 
 **Risk accepted.** Retiring `chapters` removes the only table that today carries
 `organization_id` and `region` together. That pairing was never used (one organization,
 `pmi_chapter_code` NULL throughout), so nothing depends on it, but the retirement is only
 safe after step 4 proves the columns landed.
+
+**Risk introduced by the code scheme.** `BA` in the registry is Bahia, and "Buenos Aires"
+abbreviates to BA just as naturally. A synthetic probe confirmed that `PMI-BA` carrying an
+Argentine name resolves to Bahia on the code signal alone, with only the name signal
+objecting. The pilot chapter must therefore not be registered as `BA`. Choosing a code
+scheme that survives non-Brazilian chapters belongs to #2085, where the international
+grouping is designed.
 
 ## What this ADR does not decide
 
