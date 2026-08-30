@@ -64,9 +64,28 @@ parecida: ela pertence a outra pessoa.
 
 ## LinkedIn, pelo navegador
 
-Menção **não se faz colando URL**: digite `@` mais o nome no compositor e escolha na lista. As URLs
-servem para achar o perfil certo antes. Não existe colaboração como no Instagram; o equivalente é
-pedir republicação.
+Não existe colaboração como no Instagram; o equivalente é pedir republicação. Menção **não se faz
+colando URL**: as URLs servem para achar o perfil certo antes.
+
+### ⚠️ Menção inline: a automação só entrega a PRIMEIRA, e as seguintes corrompem o texto
+
+Medido em 29/08/2026, publicando o anúncio de um webinar. A receita que faz uma menção nascer certa:
+digitar o parcial, **esperar a lista carregar**, e então `Down` mais `Return`. Sai o
+`<a class="ql-mention">` correto.
+
+Da segunda menção em diante o editor devolve lixo. Três saídas observadas: o nome colado ao texto
+vizinho, um sufixo herdado de outro item da lista, e num dos casos **a menção anterior foi apagada**.
+Não é falta de espera: as tentativas com pausas maiores falharam igual.
+
+O que fazer, então:
+
+1. **Publique o corpo em texto limpo**, nomeando as pessoas por extenso, sem nenhuma arroba. Um post
+   sem menção tem conserto; um post público com o texto quebrado não.
+2. **Peça a uma pessoa que comente marcando todo mundo.** No comentário o editor é o mesmo, mas o
+   custo de errar é um comentário apagável, e para um humano leva 30 segundos. **O comentário
+   notifica exatamente como a menção no corpo**, então o alcance não se perde.
+
+Nunca tente "consertar" um post já publicado editando menção nele: a edição passa pelo mesmo editor.
 
 Ao abrir `linkedin.com/company/<slug>/posts/`, se a conta for admin a URL redireciona para o
 dashboard de admin da página. Isso confirma o acesso de publicação como página.
@@ -94,3 +113,23 @@ capítulo primário e secundário.
 
 Confira no **perfil**, não só no post: a grade corta o reel em 12,5% em cima e embaixo, e a capa
 padrão é o primeiro frame. Ver `[LL] #2068`.
+
+
+## Depois de publicar: confira a superfície, não o arquivo
+
+Três defeitos desta campanha tinham a mesma forma: **a peça estava certa no arquivo e errada onde
+ela é de fato vista**. Vale rodar estas conferências no fim, não no começo.
+
+**A miniatura do link do evento.** Leia o `og:image` da página do evento e **baixe exatamente o que
+o crawler recebe**, com a query string e tudo. Compare a razão com a da peça original: se bate, o
+CDN está redimensionando; se não bate, está cortando, e aí a peça precisa nascer na razão de
+destino. Medido: `747x420` servido contra `1440x810` original, razão 1,779 contra 1,778, ou seja
+sem corte. Parâmetros `?w=&h=` na URL **não provam corte**; só a razão do arquivo que chega prova.
+
+**A prévia do link de um post do Instagram é sempre quadrada, 640x640**, e o WhatsApp ainda recorta
+de novo. Uma peça 4:5 perde as bordas nesse caminho e **não há ajuste possível do nosso lado**. Para
+compartilhar em conversa, mande o **link do evento**, cuja miniatura é a peça inteira; deixe o link
+do post para quem for curtir e comentar.
+
+**A grade do perfil no Instagram** corta reels em cima e embaixo e usa o primeiro frame como capa.
+Peça de vídeo precisa de um primeiro frame que já seja a capa, e de margem vertical de sobra.
