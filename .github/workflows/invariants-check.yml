@@ -10,7 +10,7 @@ on:
     - cron: '0 7 * * *'
   workflow_dispatch:
 
-# #1505 — ver ci.yml: cancelar em voo um job que fala com a producao deixa residuo.
+# #1505 ver ci.yml: cancelar em voo um job que fala com a producao deixa residuo.
 concurrency:
   group: invariants-${{ github.ref }}
   cancel-in-progress: false
@@ -18,9 +18,9 @@ concurrency:
 jobs:
   check-invariants:
     runs-on: ubuntu-latest
-    # #1509 — o trabalho em si leva ~5 min, mas a ESPERA pela faixa do banco corre dentro do
+    # #1509 o trabalho em si leva ~5 min, mas a ESPERA pela faixa do banco corre dentro do
     # mesmo orcamento. Com `timeout-minutes: 5` o job morria esperando, e um job morto por
-    # timeout do runner nao imprime a mensagem de teto estourado — volta a ser um gate que
+    # timeout do runner nao imprime a mensagem de teto estourado volta a ser um gate que
     # nao rodou por motivo obscuro, que e o que este issue existe para eliminar.
     # Regra: timeout do job > teto de espera + trabalho. Travado no guard.
     #
@@ -29,11 +29,11 @@ jobs:
     # (12 runs, 11/08/2026: min 39s, mediana 49s) + folga. Quem desiste primeiro continua
     # sendo a `stuck-seconds` de 1800s, que acusa fila TRAVADA em vez de fila longa.
     timeout-minutes: 70
-    # #1509 — este job e `validate` (ci.yml) falam com o MESMO banco de producao e nao
+    # #1509 este job e `validate` (ci.yml) falam com o MESMO banco de producao e nao
     # podem se sobrepor, mas a serializacao nao usa mais o grupo `supabase-shared-db` do
     # #1505 (o nome saiu de todos os workflows, de proposito): a fila do
     # GitHub guarda um pendente por grupo e cancela o anterior quando um terceiro chega,
-    # e era ESTE job que evaporava — run 30373280532, commit 1fbf630c, zero steps
+    # e era ESTE job que evaporava run 30373280532, commit 1fbf630c, zero steps
     # executados, conclusion `cancelled`, sobre um commit que aplicava DDL.
     permissions:
       contents: read
@@ -53,6 +53,7 @@ jobs:
         run: npm ci
 
       - name: Run schema invariants contract test
+        id: invariants
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -65,7 +66,7 @@ jobs:
           # nunca pode apagar o sinal. Travado por
           # tests/contracts/1850-excecoes-declaradas-de-invariante.test.mjs.
           INVARIANT_STRICT: '1'
-          # A2 (auditoria de 21/08) — liga os invariantes de DADO que saíram do check
+          # A2 (auditoria de 21/08) liga os invariantes de DADO que saíram do check
           # required. Fora daqui eles ficam skipped com a razão dita no nome do skip.
           # A lógica está em `tests/helpers/data-invariant-gate.mjs`, e a justificativa é a
           # mesma do INVARIANT_STRICT acima: este job não é required, então ele pode dizer a
@@ -74,21 +75,73 @@ jobs:
           DATA_INVARIANT_GATE: '1'
         run: |
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "::warning::SUPABASE_SERVICE_ROLE_KEY secret not configured — test will skip gracefully. Configure in repo Settings → Secrets → Actions to enable live-DB drift detection."
+            echo "::warning::SUPABASE_SERVICE_ROLE_KEY secret not configured test will skip gracefully. Configure in repo Settings → Secrets → Actions to enable live-DB drift detection."
           fi
-          npm run test:contracts:db
+          # #1910: a saida e guardada para o resumo poder CITA-LA. O diagnostico de DDL-lag ja
+          # existe e e bom (`PROD-AHEAD ... NOT drift you authored`), mas vivia so no log bruto do
+          # job. Medido em 29/08: uma lane reprovou 4x sem nunca ver o texto. `pipefail` para o
+          # `tee` nao engolir o codigo de saida da suite.
+          set -o pipefail
+          npm run test:contracts:db 2>&1 | tee /tmp/invariants-output.txt
 
       - name: Summarize result
         if: always()
         run: |
           echo "## Schema Invariants Check" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
           if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
-            echo ":warning: Test skipped — \`SUPABASE_SERVICE_ROLE_KEY\` secret not set." >> $GITHUB_STEP_SUMMARY
+            echo ":warning: Test skipped. \`SUPABASE_SERVICE_ROLE_KEY\` secret not set." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "To enable: repo Settings → Secrets → Actions → New secret" >> $GITHUB_STEP_SUMMARY
             echo "- \`SUPABASE_URL\` = https://ldrfrvwhxsmgaabwmaik.supabase.co" >> $GITHUB_STEP_SUMMARY
             echo "- \`SUPABASE_SERVICE_ROLE_KEY\` = (copy from Supabase dashboard)" >> $GITHUB_STEP_SUMMARY
+
+          elif [ "${{ steps.invariants.outcome }}" != "success" ]; then
+            # #1910: ANTES desta mudanca o resumo dizia ":white_check_mark: Invariants verified"
+            # mesmo com o job vermelho, porque so ramificava na existencia do secret e nunca no
+            # resultado. Um resumo que afirma sucesso no vermelho e pior que resumo nenhum.
+            echo ":x: **Invariantes reprovaram.**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            # O reporter do `node --test` emite codigos ANSI. Sem tirar o ANSI o resumo em
+            # markdown sai com lixo de escape. Normalizo uma vez e leio sempre deste arquivo.
+            sed 's/\x1b\[[0-9;]*m//g' /tmp/invariants-output.txt > /tmp/invariants-plain.txt 2>/dev/null || true
+
+            if grep -q 'PROD-AHEAD' /tmp/invariants-plain.txt 2>/dev/null; then
+              # O caso que mais custa a quem NAO causou: o banco compartilhado ja tem a DDL e o
+              # `.sql` ainda nao chegou nesta branch. O texto abaixo e produzido por
+              # tests/helpers/migration-drift-classifier.mjs; aqui ele so sobe para a superficie.
+              echo "### :information_source: Provavelmente NAO e defeito desta PR" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "O banco de producao e compartilhado por todas as branches. Quando uma lane aplica DDL e o \`.sql\` ainda nao chegou na \`main\`, **toda PR aberta** reprova aqui, inclusive as que nao encostam em banco. Rodar \`npm run db:types\` **nao** resolve." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo "**Saida:** rebaseie na \`main\` depois que a migration entrar. Se persistir, veja #1910." >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              grep -A6 'PROD-AHEAD' /tmp/invariants-plain.txt | head -40 >> $GITHUB_STEP_SUMMARY
+              echo '```' >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "### Testes que reprovaram" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            # ⚠️ O FORMATO DEPENDE DA VERSAO DO NODE, e as duas convivem: a CI roda Node 22
+            # (reporter TAP quando a saida vai para um pipe) e a maquina de quem desenvolve pode
+            # rodar Node 24 (reporter `spec` SEMPRE, com marcador `x`). Medido em 29/08: v22.23.2
+            # na CI, v24.15.0 local. Um padrao que so casa um dos dois sai MUDO no outro, que
+            # e exatamente o defeito de #1910 numa roupa nova. Aceito OS DOIS marcadores.
+            # ⚠️ `grep ... | head ... || echo fallback` NAO funciona: o `||` le o status do `head`,
+            # que e 0 mesmo quando o grep nao achou nada nem o arquivo existe. O fallback nunca
+            # dispararia e a secao sairia como um bloco VAZIO, que e o mesmo silencio que #1910
+            # existe para acabar. Mesma familia do pipe que engole o codigo de saida da suite.
+            if [ -s /tmp/invariants-plain.txt ] && grep -qE '^ *(not ok |✖ )' /tmp/invariants-plain.txt; then
+              grep -E '^ *(not ok |✖ )' /tmp/invariants-plain.txt | head -30 >> $GITHUB_STEP_SUMMARY
+            else
+              echo '(a saida da suite nao pode ser lida; veja o log do passo acima)' >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+
           else
             echo ":white_check_mark: Invariants verified against live DB." >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
