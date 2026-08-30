@@ -263,6 +263,56 @@ body {{ display:flex; flex-direction:column; justify-content:space-between;
     return render(f"t11-{trat}-post-1080x1350", html, W, H)
 
 
+# ─────────────────────────────────────────────────────── post quadrado 1080x1080
+def post_quadrado(trat):
+    """A peca de feed em 1:1, para o teste da #2095.
+
+    Motivo: a previa do link de um post do Instagram e um CORTE quadrado, nao um
+    redimensionamento. Medido em 29/08/2026 sobre a peca 4:5: chega 640x640, razao
+    1,000 contra 0,800, com `stp=c216.0.648.648a` na propria URL do og:image, e o
+    corte come os dois palestrantes e a data.
+
+    POR QUE O LAYOUT E OUTRO, e nao a mesma peca "achatada". Medido antes de decidir:
+    no 4:5 o bloco de texto termina em y=669 e o retrato comeca em 690, com 21px de
+    folga. Em 1080x1080 o texto termina em 651 e sobram 429px para retrato, legendas
+    e rodape. Empilhado, o medalhao teria de cair para ~191px, isto e 17,7% da menor
+    dimensao, raspando o piso de 17% contra os 25,4% de hoje. Passaria no guard e
+    devolveria a queixa que abriu a campanha: a foto minuscula.
+
+    Entao o quadrado gasta LARGURA em vez de altura, com os medalhoes numa coluna a
+    direita, o mesmo arranjo ja validado no banner do Airmeet.
+    """
+    W, H = 1080, 1080
+    E = lambda p: px("post", p, min(W, H))
+    D = 240                                   # diametro: 22,2% da menor dimensao
+    COL = 390                                 # coluna dos medalhoes
+    duo = "".join(
+        f'''<div class="dd"><div class="rt"><img class="foto" src="{_uri(q, trat)}"></div>
+        <div class="nm">{d["nome"]}</div><div class="cg">{d["cargo"]}</div></div>'''
+        for q, d in (("joao", A), ("rodrigo", B)))
+    ESQ = W - 74 * 2 - COL - 44
+    html = f"""<!doctype html><meta charset="utf-8"><style>{CSS_PROPOSTA}{_fundo(W,H)}
+body {{ display:flex; flex-direction:column; justify-content:space-between;
+       padding:64px 74px 34px; }}
+{_css_texto(E, largura_virada=ESQ)}
+.linha {{ flex:1; display:flex; align-items:center; justify-content:space-between; gap:44px; }}
+.esq {{ width:{ESQ}px; }}
+.selo {{ white-space:nowrap; }}
+.duo {{ width:{COL}px; display:flex; flex-direction:column; gap:30px; align-items:center; }}
+.dd {{ text-align:center; }}
+.rt {{ width:{D}px; height:{D}px; border-radius:50%; overflow:hidden; margin:0 auto 12px;
+      border:9px solid {ORANGE}; }}
+.rt img {{ width:100%; height:100%; object-fit:cover; display:block; }}
+.rod {{ position:relative; z-index:4; display:flex; justify-content:space-between; gap:26px; }}
+</style>
+<div class="linha">
+  <div class="esq">{_cabeca(E, com_sub=False)}</div>
+  <div class="duo">{duo}</div>
+</div>
+<div class="rod"><span class="assina">{ASSINATURA}</span></div>"""
+    return render(f"t11-{trat}-post-quadrado-1080x1080", html, W, H)
+
+
 # ───────────────────────────────────────────────────────────── linkedin 1200x627
 def linkedin(trat):
     W, H = 1200, 627
@@ -492,6 +542,7 @@ PECAS = [(t, f) for t in ("v3", "v5", "v6", "v7") for f in (story, post, linkedi
 #   python3 build_t11_campanha_final.py --extra v6     as 5 pecas, na direcao escolhida
 #   python3 build_t11_campanha_final.py --thumb        so a miniatura, nas 3 direcoes
 EXTRA = [thumb,
+         post_quadrado,
          lambda t: card(t, "joao"),
          lambda t: card(t, "rodrigo"),
          lambda t: story_do_dia(t, "bio"),
