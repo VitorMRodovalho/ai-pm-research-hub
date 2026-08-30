@@ -117,7 +117,8 @@ Order matters, because each step depends on the previous one being proven.
 
 1. **Additive only.** `tax_id_type` + `tax_id` and `region` on `chapter_registry`,
    `organization_id` on `partner_chapters`. Nothing breaks, nothing reads it yet.
-2. **Link the two sides** by stripping the `PMI-` prefix. Deterministic; see below.
+2. **Link the two sides** additively: a new canonical column on `partner_chapters`, not a
+   rewrite of the existing one. Deterministic; direction settled below.
 3. **Foreign key** `partner_chapters.chapter_code` to `chapter_registry(chapter_code)`.
 4. **Backfill** `pmi_chapter_code` and the two columns migrated off `chapters`.
 5. **Retire `chapters`**, only after step 4 is proven.
@@ -186,6 +187,36 @@ Two further signals corroborate the mapping independently of the code:
 Step 2 is therefore a single deterministic `UPDATE`, not fifteen human assertions, and it
 does not gate on review. The 15-row evidence table was produced and checked before this
 section was written.
+
+#### Which side normalizes, and why the answer is "neither"
+
+An earlier draft of this ADR left the direction unstated, and the foreign key in decision 2
+implied the destructive one: make `partner_chapters.chapter_code` hold the registry form, so
+the key can point at it. Measuring the consequence rules that out.
+
+`partner_chapters.chapter_code` holds the **display** form (`PMI-CE`), and so does
+`members.chapter`. They join directly today: **128** members match a partner row on equality,
+with no conversion. Rewriting `partner_chapters` to the bare form silently drops that join to
+zero. It does not raise an error, it starts returning nothing, and the readers are not
+hypothetical: **4** functions read `partner_chapters` today (`apply_partner_chapter_tags`,
+`enrich_applications_from_csv`, `import_vep_applications`, `parse_vep_chapters`), three of
+which also touch a `chapter` column. That is the VEP ingestion path, and the countersign work
+in #2104 would join the same way.
+
+Decision: **the link is additive.** `partner_chapters` keeps its existing column, which is a
+display code and should eventually be named like one, and gains a **new** canonical column
+carrying the registry form, which is what the foreign key in decision 2 points at. Nothing
+that reads the display form breaks, the canonical link exists, and the duality stops being
+implicit. It is the same pair `src/lib/chapters.ts` already models as `chapter_code` plus
+`display_code`.
+
+Two consequences worth stating, because they are easy to get wrong later:
+
+- The rename of the display column is a **separate, later step**, after its four readers
+  migrate. Renaming it in this step would recreate the same silent breakage by another route.
+- Any new predicate over chapter identity should read the **canonical** column. Any predicate
+  that must match `members.chapter` reads the **display** one, until step 6 turns that column
+  into a relation and the question disappears.
 
 ## Verification contract
 
