@@ -94,11 +94,30 @@ tmp/
 #       (638 runbook, 641 annex, 642 DPA sub-processor inventory, RoPA). Do NOT add it here.
 
 # Internal meetings, agendas, briefings (named people + strategy)
+#
+# ⚠️ #1960: these were anchored at the START of the name and covered 0 of the 1031 files in
+# docs/, because the house convention prefixes a date (2026-08-07_ata_lideranca_...) and
+# sometimes a project (p269_briefing_...). Three real files sat untracked and unignored in a
+# PUBLIC repo. The token therefore needs a BOUNDARY: start of name, or right after a "_".
+#
+# ⚠️ Do NOT "simplify" these to *ATA_*. "DATA_" CONTAINS "ATA_", so that pattern swallows
+# docs/legal/, docs/specs/ and docs/archive/ files that are public on purpose and under
+# contract tests. The negative control in tests/contracts/1960-*.test.mjs asserts exactly that.
+#
+# .gitignore is case-sensitive by default and the real files mix cases (lowercase "ata",
+# uppercase "BRIEFING"), so the classes below carry both.
 docs/**/ATA_*
 docs/**/PAUTA_*
 docs/**/BRIEFING_*
 docs/**/DEMO_SCRIPT_*
 docs/**/*briefing_reuniao*
+docs/**/[Aa][Tt][Aa]_*
+docs/**/[Pp][Aa][Uu][Tt][Aa]_*
+docs/**/[Bb][Rr][Ii][Ee][Ff][Ii][Nn][Gg]_*
+docs/**/*_[Aa][Tt][Aa]_*
+docs/**/*_[Pp][Aa][Uu][Tt][Aa]_*
+docs/**/*_[Bb][Rr][Ii][Ee][Ff][Ii][Nn][Gg]_*
+docs/**/*_[Dd][Ee][Mm][Oo]_[Ss][Cc][Rr][Ii][Pp][Tt]_*
 
 # Unsigned legal / IP instrument drafts + legal opinions (pareceres) — NOT the docs/legal/ compliance SSOT
 docs/instrumentos-ip/
