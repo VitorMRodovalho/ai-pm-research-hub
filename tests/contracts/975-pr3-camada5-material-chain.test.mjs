@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATION_PATH = join(
@@ -28,6 +29,7 @@ const MIGRATION_PATH = join(
   '../../supabase/migrations/20260805000303_975_pr3_camada5_material_ratification_chain.sql',
 );
 const sql = readFileSync(MIGRATION_PATH, 'utf8');
+const ROOT_975 = join(__dirname, '../..');
 
 // #1152 (2026-07-21): committee_majority was a stub `false` in #975 (this migration);
 // ACTIVATED later by mig 20260805000474 (Comitê de Curadoria roster via `ip_committee`).
@@ -67,6 +69,25 @@ test('PR-3: _can_sign_gate — partner_consultation = president_others predicate
   assert.match(fn[0], /WHEN 'committee_majority' THEN false/, 'committee_majority was a stub false in #975 (dormant until the Comitê de Curadoria roster existed; activated in #1152)');
   // president_others must NOT be repurposed — still present as its own WHEN
   assert.match(fn[0], /WHEN 'president_others' THEN/, 'president_others must remain (not repurposed)');
+});
+
+test('#975 PR-3 (invariante CORRENTE): partner_consultation segue com o MESMO predicado de president_others', () => {
+  // O teste acima afirma o que a migration #975 escreveu, que e fato historico e nao muda.
+  // Este afirma que o INVARIANTE continua valendo hoje, lendo a captura mais nova em vez de
+  // uma migration fixa. A #2104 trocou o predicado (literal -> derivado da tabela) e a
+  // igualdade entre os dois ramos TEM de sobreviver a essa troca; e ela o ponto do #975 PR-3,
+  // nao o texto do predicado.
+  const cap = latestFunctionCapture(ROOT_975, '_can_sign_gate');
+  const ramo = (nome) => {
+    const m = cap.block.match(new RegExp(`WHEN '${nome}' THEN([\\s\\S]*?)(?=\\n\\s*(?:--[^\\n]*\\n\\s*)*WHEN '|\\n\\s*ELSE\\b)`));
+    return m && m[1].replace(/\s+/g, ' ').trim();
+  };
+  const po = ramo('president_others');
+  const pc = ramo('partner_consultation');
+  assert.ok(po, 'president_others deve ser parseavel na captura mais nova');
+  assert.ok(pc, 'partner_consultation deve ser parseavel na captura mais nova');
+  assert.equal(pc, po,
+    `partner_consultation e president_others divergiram em ${cap.file}; o carater consultivo vive em _gate_threshold_met, nunca no predicado (#654/#975)`);
 });
 
 test('#1152: committee_majority ACTIVATED — ip_committee predicate + Comitê de Curadoria roster (mig 474)', () => {

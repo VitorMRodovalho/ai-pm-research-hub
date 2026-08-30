@@ -56,5 +56,10 @@ test('#1152 — president_go requires legal_signer and has NO voluntariado_direc
     /voluntariado_director/,
     'president_go must NOT carve out voluntariado_director (#1152 — that role is the instrument counterparty, not a version gate)'
   );
-  assert.match(branch, /v_member\.chapter = 'PMI-GO'/, 'president_go still scoped to PMI-GO board');
+  // #2104: a INTENCAO e "escopado a SEDE"; o literal 'PMI-GO' era so a implementacao dela,
+  // e foi trocado pela flag canonica. Afirmar o literal amarrava o guard a uma implementacao
+  // que a #2104 existe para remover. Se alguem "consertar" isto de volta para a constante,
+  // estara reintroduzindo o hardcode que quebra capitulo estrangeiro.
+  assert.match(branch, /is_contracting_chapter/,
+    'president_go continua escopado a SEDE, agora pela flag canonica em vez do literal (#2104)');
 });

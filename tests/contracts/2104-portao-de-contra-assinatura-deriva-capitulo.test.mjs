@@ -14,6 +14,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 const GATE_PATH = 'supabase/migrations/20260830181254_2104_portao_de_contra_assinatura_deriva_capitulo_e_status_vira_auditavel.sql';
 const INVARIANT_PATH = 'supabase/migrations/20260830195633_2104_invariante_AQ_capitulo_contratante_tem_participacao.sql';
@@ -67,6 +72,14 @@ describe('#2104 — _can_sign_gate deriva capitulo, nao compara com literal', ()
   });
 
   describe('o invariante AQ trava o acoplamento da sede', () => {
+    it('a captura MAIS NOVA de check_schema_invariants ja contem o AQ', () => {
+      // Lido por latestFunctionCapture e nao por caminho fixo: fixar a migration faria este
+      // guard vencer na proxima captura, que e a divida que o #1932 cobra.
+      const cap = latestFunctionCapture(ROOT, 'check_schema_invariants');
+      assert.match(cap.block, /AQ_contracting_chapter_has_participation/,
+        `a captura mais nova (${cap.file}) nao contem o invariante AQ`);
+    });
+
     it('a migration do invariante monta o corpo SERVER-SIDE, nao transcreve 46 KB', () => {
       assert.match(INVARIANT_SQL, /SELECT p\.prosrc INTO v_src/);
       assert.match(INVARIANT_SQL, /CREATE OR REPLACE FUNCTION public\.check_schema_invariants/);
