@@ -64,9 +64,43 @@ parecida: ela pertence a outra pessoa.
 
 ## LinkedIn, pelo navegador
 
-Menção **não se faz colando URL**: digite `@` mais o nome no compositor e escolha na lista. As URLs
-servem para achar o perfil certo antes. Não existe colaboração como no Instagram; o equivalente é
-pedir republicação.
+Não existe colaboração como no Instagram; o equivalente é pedir republicação. Menção **não se faz
+colando URL**: as URLs servem para achar o perfil certo antes.
+
+### ⚠️ Menção inline: o limite é da AUTOMAÇÃO, não do editor
+
+Medido em 29/08/2026, publicando o anúncio de um webinar **por automação de teclado**. A receita que
+faz uma menção nascer certa: digitar o parcial, **esperar a lista carregar**, e então `Down` mais
+`Return`. Sai o `<a class="ql-mention">` correto.
+
+Da segunda menção em diante a automação devolve lixo. Três saídas observadas: o nome colado ao texto
+vizinho, um sufixo herdado de outro item da lista, e num dos casos **a menção anterior foi apagada**.
+Pausas maiores não mudaram nada.
+
+**Não conclua daí que o editor não aceita várias menções.** No mesmo dia, o dono da página fez as
+**cinco menções de uma vez, à mão, editando o post já publicado**, e todas saíram corretas. O que
+falha é o caminho sintético, não o produto.
+
+O que fazer, então:
+
+1. **Pela automação, publique o corpo em texto limpo**, nomeando as pessoas por extenso, sem nenhuma
+   arroba. Um post sem menção tem conserto; um post público com o texto quebrado dá muito mais
+   trabalho.
+2. **Peça a uma pessoa que adicione as menções.** ✅ **Editar o post já publicado funciona** e é o
+   caminho preferido, porque a menção fica no corpo, onde ela pesa mais. Comentar marcando todo mundo
+   também notifica, e serve quando ninguém tem acesso de edição.
+
+### ⚠️ Digitar em blocos come as linhas em branco entre parágrafos
+
+Também medido em 29/08/2026. O arquivo de origem em `publicar/` tinha os parágrafos separados por
+linha vazia, e **o post saiu como um bloco corrido**: o campo é `contenteditable`, e digitar por
+partes colapsou as linhas em branco. Ninguém avisa, e o texto continua legível o bastante para passar
+despercebido.
+
+**Confira contando linha VAZIA, não linha de texto.** A armadilha aqui foi da própria conferência:
+`innerText.split('\n').filter(Boolean)` **descarta as linhas vazias**, então a checagem que deveria
+pegar o defeito o apagava antes de olhar. Meça `(txt.match(/\n\s*\n/g) || []).length` e compare com
+o número de parágrafos do arquivo de origem.
 
 Ao abrir `linkedin.com/company/<slug>/posts/`, se a conta for admin a URL redireciona para o
 dashboard de admin da página. Isso confirma o acesso de publicação como página.
@@ -94,3 +128,29 @@ capítulo primário e secundário.
 
 Confira no **perfil**, não só no post: a grade corta o reel em 12,5% em cima e embaixo, e a capa
 padrão é o primeiro frame. Ver `[LL] #2068`.
+
+
+## Depois de publicar: confira a superfície, não o arquivo
+
+Três defeitos desta campanha tinham a mesma forma: **a peça estava certa no arquivo e errada onde
+ela é de fato vista**. Vale rodar estas conferências no fim, não no começo.
+
+**A miniatura do link do evento.** Leia o `og:image` da página do evento e **baixe exatamente o que
+o crawler recebe**, com a query string e tudo. Compare a razão com a da peça original: se bate, o
+CDN está redimensionando; se não bate, está cortando, e aí a peça precisa nascer na razão de
+destino. Medido: `747x420` servido contra `1440x810` original, razão 1,779 contra 1,778, ou seja
+sem corte. Parâmetros `?w=&h=` na URL **não provam corte**; só a razão do arquivo que chega prova.
+
+**A prévia do link de um post do Instagram é um CORTE agressivo, não um redimensionamento.** Medido:
+`640x640`, razão 1,000, contra 0,800 da peça, e a própria URL do `og:image` traz a diretiva de corte
+`stp=c216.0.648.648a_..._s640x640`. O resultado não é "perder as bordas": **sumiram os dois
+palestrantes e a data**, e a manchete perdeu os dois lados. O que resta é um pedaço de texto ampliado.
+
+Não há ajuste do nosso lado para um post já publicado. **Em conversa, mande o link do EVENTO**, cuja
+miniatura é a peça inteira; deixe o link do post para quem for curtir e comentar.
+
+Existe uma hipótese de mitigação **ainda não testada**: publicar a peça de feed em 1:1, para que não
+sobre nada a extrair. Vale testar num post seguinte e medir, em vez de assumir.
+
+**A grade do perfil no Instagram** corta reels em cima e embaixo e usa o primeiro frame como capa.
+Peça de vídeo precisa de um primeiro frame que já seja a capa, e de margem vertical de sobra.
