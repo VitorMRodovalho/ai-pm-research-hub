@@ -153,4 +153,16 @@ Existe uma hipótese de mitigação **ainda não testada**: publicar a peça de 
 sobre nada a extrair. Vale testar num post seguinte e medir, em vez de assumir.
 
 **A grade do perfil no Instagram** corta reels em cima e embaixo e usa o primeiro frame como capa.
-Peça de vídeo precisa de um primeiro frame que já seja a capa, e de margem vertical de sobra.
+O tile é 242x322 (razão 0,75) e o reel é 9:16 (0,563), então sobra `0,563 / 0,75 = 75%` da altura:
+**12,5% saem em cima e 12,5% embaixo**. O post de feed 4:5 não sofre, perde ~3% de cada lado.
+
+Antes de publicar um reel, rode a checagem e **olhe o contato**:
+
+    python3 scripts/design-kit/checar_reel.py <video.mp4>
+
+Ela recorta os quadros como a grade recorta e responde as duas perguntas da #2068: se há conteúdo
+na faixa que será decepada, e se o primeiro quadro presta como capa (ou em que segundo está o
+melhor). Sai `grade.png`, que é o que o perfil mostra, e sai diferente de zero quando reprova.
+
+Ela mede **detalhe**, não texto: acusa "tem coisa que vai ser cortada", não "tem texto ali". O
+`grade.png` continua sendo o juiz.

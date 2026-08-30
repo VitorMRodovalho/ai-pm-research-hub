@@ -61,8 +61,27 @@ test('#632 mig147 DB: the unlocked-draft admin SELECT policy is live', { skip: d
     .select('id, locked_at, version_label')
     .eq('version_label', 'draft-rev-juridica-2026-06-07');
   assert.ifError(e2);
-  // #1153 Onda 1: the volunteer_term_template's draft-rev-juridica-2026-06-07 (v8) was superseded
-  // by v9 (docx V2, locked into the Onda 1 chain) and discarded, so the package is down to 8 here.
-  assert.equal(rows.length, 8, 'the 8 still-pending revised-package drafts present (Termo advanced to v9 in #1153 Onda 1)');
+  // Decrements of the revised package, each one a deliberate publish — update BOTH the number
+  // and this list when another instrument leaves the pending set:
+  //   9 -> 8  #1153 Onda 1: the volunteer_term_template's v8 was superseded by v9 (docx V2,
+  //           locked into the Onda 1 chain) and discarded.
+  //   8 -> 6  #632, 2026-08-30: Política de Governança de PI and Adendo de PI were realigned to
+  //           the approved 2026-07-06 generation, relabelled 'v0' and locked into their chains.
+  assert.equal(rows.length, 6, 'the 6 still-pending revised-package drafts present');
+  // The count above is a ratchet, not a floor: publishing the last one would empty this set, and
+  // an empty set satisfies every() vacuously. Assert non-empty so the guard can never go green by
+  // having nothing left to look at.
+  assert.ok(rows.length > 0, 'the pending set must not be empty — an empty set passes every() vacuously');
   assert.ok(rows.every(r => r.locked_at === null), 'all remaining drafts stay unlocked (gated for legal review)');
+
+  // Other direction: the ones that DID leave must be locked and published under 'v0'. Without this,
+  // the guard would stay green if a publish silently failed halfway and left a v0 draft unlocked.
+  const { data: published, error: e3 } = await sb
+    .from('document_versions')
+    .select('id, locked_at, published_at, version_label')
+    .eq('version_label', 'v0');
+  assert.ifError(e3);
+  assert.equal(published.length, 2, 'Política de Governança de PI and Adendo de PI are the two v0 instruments');
+  assert.ok(published.every(r => r.locked_at !== null && r.published_at !== null),
+    'every v0 instrument is locked and published — a v0 sitting unlocked means a half-done publish');
 });

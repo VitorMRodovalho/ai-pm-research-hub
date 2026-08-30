@@ -146,20 +146,58 @@ async function select(path) {
   return res.json();
 }
 
-test('backfill: exactly 4 active bindings, each agreement->policy pinned to the policy head', { skip: !canRun && skipMsg }, async () => {
+// The pin has TWO legal states, not one. The previous assertion froze the state right after
+// the 2026-06-30 backfill (it even named the version, v2.7-p128), so ANY Material change to
+// the Policy turned it red without anything being wrong.
+//
+// Publishing a Material change moves `governance_documents.current_version_id`, and a trigger
+// flags every binding for re-anchor. Re-anchoring is deliberately NOT automatic: the recorded
+// decision on each binding's `pin_clause_ref` (#974 PR-2, 2026-06-30) reserves it for
+// ratification — "re-ancora expressa via reanchor_instrument_binding AO RATIFICAR. Nenhuma
+// obrigacao contratual aos acordantes ate a ratificacao."
+//
+// So both of these are correct:
+//   (i)  anchored on the head AND not flagged            -> steady state
+//   (ii) off the head AND flagged AND the head's chain still open -> Material change in flight
+//
+// And this must NEVER hold: flagged while the head's chain is already ratified. That is a
+// forgotten re-anchor, and it is exactly the failure the old assertion could not see, because
+// it could not tell "someone published" apart from "someone forgot".
+test('bindings: 4 active, each anchored on the policy head or flagged while a Material change is in flight', { skip: !canRun && skipMsg }, async () => {
   const [pol] = await select('governance_documents?doc_type=eq.policy&select=id,current_version_id');
   assert.ok(pol, 'one policy doc must exist');
   const agreements = await select('governance_documents?doc_type=eq.cooperation_agreement&status=eq.active&select=id');
   const agreementIds = new Set(agreements.map((a) => a.id));
   const bindings = await select('instrument_version_bindings?status=eq.active&select=bound_document_id,referenced_document_id,pinned_version_id,re_anchor_required');
-  assert.equal(bindings.length, 4, 'exactly 4 active bindings');
+  // #2109: a contagem era o literal `4`, e ele vira MENTIRA no dia em que um quinto acordo de
+  // cooperacao ativo entrar: o teste reprovaria por crescimento LEGITIMO do dominio, e o conserto
+  // natural de quem estiver de plantao e trocar 4 por 5, ate a proxima vez. Derivar do catalogo faz
+  // o guard acompanhar o dominio sozinho.
+  assert.ok(agreements.length > 0,
+    'controle de vacuidade: sem acordo ativo o laco abaixo passaria sem afirmar nada');
+  assert.equal(bindings.length, agreements.length,
+    'um vinculo ativo por acordo de cooperacao ativo (contagem DERIVADA do catalogo, nao literal)');
+
+  // Is the current head still under ratification? 'review' is the open state; a ratified
+  // chain reads 'active'.
+  const headChains = await select(`approval_chains?version_id=eq.${pol.current_version_id}&select=status`);
+  const headChainOpen = headChains.some((c) => c.status === 'review');
+
   for (const b of bindings) {
     assert.equal(b.referenced_document_id, pol.id, 'each binding references the policy doc');
-    assert.equal(b.pinned_version_id, pol.current_version_id, 'each binding pins the policy head (v2.7-p128)');
-    assert.equal(b.re_anchor_required, false, 'fresh backfill pins are not flagged for re-anchor');
     assert.ok(agreementIds.has(b.bound_document_id), 'each binding is bound to an active cooperation_agreement');
+
+    if (b.pinned_version_id === pol.current_version_id) {
+      assert.equal(b.re_anchor_required, false,
+        'a binding already anchored on the head must not be flagged for re-anchor');
+    } else {
+      assert.equal(b.re_anchor_required, true,
+        'a binding off the head must be flagged for re-anchor — an unflagged stale pin is a silent drift');
+      assert.ok(headChainOpen,
+        'a flagged binding is only legal while the head chain is still in review; the head is already ratified, so this is a re-anchor that was forgotten (use reanchor_instrument_binding)');
+    }
   }
-  assert.equal(new Set(bindings.map((b) => b.bound_document_id)).size, 4, 'one binding per distinct agreement');
+  assert.equal(new Set(bindings.map((b) => b.bound_document_id)).size, agreements.length, 'one binding per distinct agreement');
 });
 
 test('check_schema_invariants: AN present, dormant (count 0), and 0 total violations', { skip: !canRun && skipMsg }, async () => {
