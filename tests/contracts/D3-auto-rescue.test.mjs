@@ -160,10 +160,13 @@ test('DB: column interview_auto_rescue_count exists, NOT NULL, default 0', { ski
   assert.equal(ai.violation_count, 0, 'cap=1 respected (baseline 0)');
 });
 
-test('DB: invariant total is 43, 0 violations', { skip: dbGated ? false : skipMsg }, async () => {
+test('DB: invariant floor (>= 44), 0 violations', { skip: dbGated ? false : skipMsg }, async () => {
   const { data, error } = await sb.rpc('check_schema_invariants');
   assert.ok(!error, error?.message);
-  // #785 PR-2 (mig 232) added AJ_confidential_visibility_gate_present → 37; #333 (mig 259) added AK_voice_biometric_consent_enforcement → 38; #209 (mig 263) added AL_drive_revocation_terminal_consistency → 39; #301 (mig 268) added AM_drive_curation_grant_terminal_consistency → 40; #973 PR-1 (mig 301) added NO invariant → still 40; #974 PR-2 (mig 302) added AN_no_dynamic_remission_cooperation → 41; #1269 (mig 398) added AO_active_member_stale_tribe_id_after_leave → 42; #1221 fatia 1 (mig 403) added AP_interim_grant_reverted_when_cert_issued → 43.
-  assert.equal(data.length, 43, `expected 43 invariants, got ${data.length}`);
+  // PISO, nao igualdade (#2104). Acrescentar invariante e CRESCIMENTO LEGITIMO, e a
+  // igualdade transformava isso em reprovacao: o comentario aqui era um changelog de
+  // meses, uma linha por PR que somou um. O que importa afirmar e que nenhum invariante
+  // SUMIU (o piso pega remocao) e que nenhum esta violado.
+  assert.ok(data.length >= 44, `invariantes nao podem SUMIR; esperado >= 44, veio ${data.length}`);
   assert.equal(unexpectedViolations(data).length, 0, violationsMessage(data));
 });

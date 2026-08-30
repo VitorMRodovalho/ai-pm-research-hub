@@ -25,36 +25,38 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 const MIG_DASH_PATH = 'supabase/migrations/20260805000157_625_admin_dashboard_active_members_exclude_pre_onboarding.sql';
 // The #625 file-level assertions (anchor / ACL / NOTIFY) stay pinned to the #625 migration (158).
 const MIG_GATE_PATH = 'supabase/migrations/20260805000158_625_can_sign_gate_volunteers_in_role_active_exclude_pre_onboarding.sql';
 const MIG_DASH = readFileSync(MIG_DASH_PATH, 'utf8');
 const MIG_GATE = readFileSync(MIG_GATE_PATH, 'utf8');
-// _can_sign_gate's CANONICAL capture moves whenever a PR legitimately extends it: #975 PR-3 (mig 303,
-// Gate Matrix v3) re-captured it verbatim + added committee_majority/partner_consultation. The live
-// md5 drift check + branch reproductions below track this canonical body (which still contains the
-// #625 branch verbatim). Repoint when _can_sign_gate is next re-captured.
-// Repointed to mig 474 (#1152 item 2): committee_majority activated (stub `false` ->
-// `'ip_committee' = ANY(designations)`) when the Comitê de Curadoria was constituted. president_go
-// (legal_signer-only, mig 353) and the #625 volunteers_in_role_active branch are preserved verbatim.
-const MIG_GATE_CANONICAL_PATH = 'supabase/migrations/20260805000474_1152_committee_majority_activate_ip_committee_roster.sql';
-const MIG_GATE_CANONICAL = readFileSync(MIG_GATE_CANONICAL_PATH, 'utf8');
-// get_admin_dashboard's CANONICAL capture moved to #1437 / ADR-0126 (mig 467), which re-captured it
-// verbatim from live + repointed the active_members KPI and the adoption_7d denominator to the canonical
-// research-team set (v_operational_members = 68; was the is_active AND current_cycle_active AND NOT
-// member_is_pre_onboarding predicate). Prior canonical was #932 Part 2 (mig 321). The live md5 drift
-// check tracks this canonical body; the #625 static assertions still read mig 157. Repoint on the next re-capture.
-// Repointed to mig 480 (#1464 Onda 3): get_admin_dashboard's cpmai_current KPI now windows the cycle by
-// COALESCE(occurred_at, created_at) (fact date). Only that predicate changed; the #1437 KPI set is preserved.
-const MIG_DASH_CANONICAL_PATH = 'supabase/migrations/20260805000480_1464_gamification_occurred_at_cycle_windowing.sql';
-const MIG_DASH_CANONICAL = readFileSync(MIG_DASH_CANONICAL_PATH, 'utf8');
+
+// #2104: os dois caminhos CANONICOS fixos sairam daqui. Cada um carregava, no proprio comentario,
+// o pedido "Repoint on the next re-capture", e cada um ja tinha sido repontado duas vezes. Isso e
+// divida recorrente: a cada CREATE OR REPLACE alguem tinha de lembrar de voltar neste arquivo, e
+// quando esquecia o vermelho aparecia com cara de drift real em vez de cara de pin vencido.
+// Agora a captura e resolvida por latestFunctionCapture (ver abaixo), que le a arvore e nao vence.
 
 const bodyOf = (src, fnName) =>
   (src.match(new RegExp(`CREATE OR REPLACE FUNCTION public\\.${fnName}[\\s\\S]*?AS \\$function\\$([\\s\\S]*?)\\$function\\$;`)) || [])[1] ?? '';
 const DASH_BODY = bodyOf(MIG_DASH, 'get_admin_dashboard');
-const DASH_BODY_CANONICAL = bodyOf(MIG_DASH_CANONICAL, 'get_admin_dashboard');
-const GATE_BODY = bodyOf(MIG_GATE_CANONICAL, '_can_sign_gate');
+// #2104: mesma divida, mesma forma. Convertido junto porque o arquivo estava aberto e porque
+// esperar a proxima recaptura de get_admin_dashboard so adia o mesmo vermelho.
+const DASH_BODY_CANONICAL = bodyOf(latestFunctionCapture(ROOT, 'get_admin_dashboard').block, 'get_admin_dashboard');
+// #2104: era caminho FIXO para a mig 474, e o proprio comentario acima pedia "Repoint when
+// _can_sign_gate is next re-captured". Ja tinha sido repontado duas vezes (303 -> 474), que e a
+// definicao de divida recorrente: a cada CREATE OR REPLACE alguem precisa lembrar de vir aqui.
+// latestFunctionCapture le a captura mais nova da arvore e nao vence nunca.
+//
+// ATENCAO: .block e o CREATE INTEIRO com cabecalho; o bodyOf extrai o miolo entre $function$,
+// que e o que casa com prosrc. Trocar um pelo outro da md5 diferente com cara de drift real.
+const GATE_BODY = bodyOf(latestFunctionCapture(ROOT, '_can_sign_gate').block, '_can_sign_gate');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
