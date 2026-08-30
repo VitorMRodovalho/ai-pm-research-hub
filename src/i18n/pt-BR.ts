@@ -4854,6 +4854,7 @@ const ptBR: Record<string, string> = {
   'initiative.pastMeetings': 'Reuniões Anteriores',
   'initiative.noUpcoming': 'Nenhum evento próximo.',
   'initiative.driveSection': 'Drive da iniciativa',
+  'initiative.toolsSection': 'Ferramentas da iniciativa',
   'initiative.drivePurpose.workspace': 'Workspace',
   'initiative.drivePurpose.minutes': 'Atas',
   'initiative.drivePurpose.shared_resources': 'Recursos',
