@@ -37,14 +37,17 @@ const ROOT = process.cwd();
 // additive: guard + audit) and deferred to #816's destructive history rewrite. Ratchet DOWN
 // as the rewrite lands: delete the corresponding lines below.
 const BASELINE = new Set([
-  // Group 1 — confirmed PII / legal (known escapees; motivated this guard). TODO: purge in #816 rewrite.
-  'docs/drafts/p269_briefing_reuniao_advogada_cr050_frontiers.pdf',
-  'docs/drafts/p277_email_desligamento_alumni_malu_andressa.md',
-  // Group 2 — internal / legal-draft docs surfaced by the 2nd-pass audit. TODO: purge in #816 rewrite.
-  'docs/drafts/v2.7_p153_tap_cpmai_v1.docx',
-  'docs/editorial/drafts/FRONTIERS_EDITORIAL_GUIDE_v1_DRAFT.html',
-  // Group 3 — commercial pitch-deck build tooling — UNTRACKED via `git rm --cached` (still local,
-  // still gitignored). Ratcheted OUT of the baseline once removed from HEAD. See #816.
+  // VAZIA desde 2026-08-29. Os 4 arquivos dos grupos 1 e 2 sairam do HEAD por `git rm --cached`,
+  // na mesma mudanca que esvaziou esta lista: o terceiro teste abaixo EXIGE que a baseline encolha
+  // junto ("stale entries no longer tracked"), entao untrack e poda nao podem vir em commits
+  // separados sem deixar o guard vermelho no meio.
+  //
+  // Os quatro continuam em disco e cobertos por padrao no bloco #816, entao nao voltam por
+  // `git add -A`. O HISTORICO ainda os carrega: tirar de la exige reescrita + force-push, que e
+  // decisao separada e nao foi tomada aqui.
+  //
+  // A catraca so desce. NUNCA reintroduza uma entrada aqui para silenciar o guard: se um arquivo
+  // sensivel voltar a ser rastreado, o certo e `git rm --cached`, nao alargar a lista.
 ]);
 
 /**

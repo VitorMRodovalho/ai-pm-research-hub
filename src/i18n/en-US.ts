@@ -4846,6 +4846,7 @@ const enUS: Record<string, string> = {
   'initiative.pastMeetings': 'Past Meetings',
   'initiative.noUpcoming': 'No upcoming events.',
   'initiative.driveSection': 'Initiative Drive',
+  'initiative.toolsSection': 'Initiative tools',
   'initiative.drivePurpose.workspace': 'Workspace',
   'initiative.drivePurpose.minutes': 'Minutes',
   'initiative.drivePurpose.shared_resources': 'Resources',
