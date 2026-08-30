@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-08-29
 **Source:** Issue [#2083](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2083) (phase 0 of the Hub LATAM lane). Raised while scoping the Spanish-speaking expansion pilot ([#2082](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2082)): every journey the pilot needs (a chapter selection committee seeing only its own candidates, sponsor filtering by chapter, chapter-scoped required attendance, ambassador reach) would today be built on a free-text column.
-**Related:** ADR-0005 (`initiatives` as the domain primitive), ADR-0006 (`persons` + `engagements` model identity), ADR-0007 (`can()` is the authority SSOT), [#2084](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2084) (`organization_id` scope never exercised), [#2085](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2085) (region axis and ambassador authority).
+**Related:** ADR-0005 (`initiatives` as the domain primitive), ADR-0006 (`persons` + `engagements` model identity), ADR-0007 (`can()` is the authority SSOT), [#2084](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2084) (`organization_id` scope never exercised), [#2085](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2085) (region axis and ambassador authority), ADR-0104 (chapter affiliations SSOT, which already supplies the `pmi_memberships` snapshot and the `display_code` convention step 6 depends on).
 **SSOT reused:** `chapter_registry.chapter_code`, which is already the target of the only two chapter foreign keys in the schema.
 
 ---
@@ -30,14 +30,22 @@ The drift is not marginal, it is total:
   intersection is **zero**, because one side prefixes the code with `PMI-` and the other
   does not. Strip the prefix and the two sides are a perfect bijection. See "Step 2 is a
   deterministic mapping" below.
-- **135** rows of `members` carry a `chapter` value that exists in no registry, across
-  **14** distinct spellings, which is every distinct value.
-- **129** rows of `selection_applications` are likewise outside the registry.
+- **135** rows of `members` and **129** rows of `selection_applications` carry a `chapter`
+  value that matches no registry code, which is every distinct value on both sides. That
+  figure is the raw comparison, and it is misleading for the same reason as the one above:
+  these columns hold the `PMI-` display form. Normalized, **12 of 14** spellings in
+  `members` resolve (128 of 135 rows) and **13 of 16** in `selection_applications` (123 of
+  129 rows). The real residue is small and is described under step 6.
 
-`members` is the sharpest illustration: it holds **both** `entry_chapter_code`, which is
-a constrained foreign key, **and** `chapter`, which is free text and has fully drifted.
-The operational surfaces read the free-text one. Any scope test written today would be
-comparing strings that already diverged, and would pass by accident.
+`members` is the sharpest illustration: it holds **both** `entry_chapter_code`, which is a
+constrained foreign key, **and** `chapter`, which is unconstrained text. The operational
+surfaces read the free-text one, and the imbalance is not marginal: **52** `SECURITY
+DEFINER` functions read `members.chapter` with no reliable chapter source anywhere in their
+body, against **9** functions in the whole schema that mention `entry_chapter_code` at all.
+Among the 52 are `get_chapter_dashboard`, `get_chapter_selection_summary`,
+`exec_chapter_comparison`, `get_public_leaderboard` and `admin_list_members_with_pii`,
+which are precisely the scoped surfaces the pilot's journeys exercise. A scope test written
+against that column today compares strings, and passes by accident.
 
 ### Why the three tables are not three candidates
 
@@ -117,6 +125,39 @@ Order matters, because each step depends on the previous one being proven.
 
 Steps 1 to 3 are one window, because step 2 needs no human adjudication.
 
+### Step 6 is a code refactor, not a data reconciliation
+
+The `PMI-` prefix is not drift either. `src/lib/chapters.ts` declares `display_code` with
+the comment "PMI-GO, PMI-CE, ... (for matching members.chapter)", served by the
+`get_active_chapters()` RPC. The convention is deliberate and already modelled, so the two
+free-text columns normalize the same way step 2 does. What remains after normalization:
+
+| column | spellings | rows | resolve by prefix | genuine residue |
+|---|---:|---:|---|---|
+| `members.chapter` | 14 | 135 | 12 spellings, 128 rows | `Externo` (1 row), `Outro` (6 rows) |
+| `selection_applications.chapter` | 16 | 129 | 13 spellings, 123 rows | `PMI-EM` (1), `PMI-GOI` (2), `PMI-RIO` (3) |
+
+Two things follow, and they point in opposite directions.
+
+**The data side is small, but the residue resolves per row, not per spelling.** `PMI-GOI`
+is Goiás in both rows, corroborated by `chapter_affiliation` and `pmi_memberships`. But
+`PMI-RIO` is **not one chapter**: two of its three rows resolve to Rio Grande do Sul and
+only one to Rio de Janeiro, each corroborated by that row's own `pmi_memberships` snapshot.
+The string "Rio" matches two registry chapters, so any per-spelling rule would have written
+the wrong chapter into two rows. `Externo`, `Outro` and `PMI-EM` are not chapters at all.
+
+**The code side is the real cost.** The 52 `SECURITY DEFINER` functions above keep reading a
+text column regardless of how clean the data becomes. That is the work step 6 actually
+buys, and it is refactor, not reconciliation.
+
+### The foreign-chapter case already exists in the data
+
+The `PMI-EM` row belongs to a member of a non-Brazilian PMI chapter. The model has nowhere
+to put it: `chapter_registry` holds 15 Brazilian chapters, and the free-text columns absorb
+the case silently. This is the same case the
+expansion multiplies, and it argues that the registry needs foreign chapters as rows
+before the pilot, not after. Belongs to #2085 together with the code scheme.
+
 ### Step 2 is a deterministic mapping
 
 An earlier reading held that step 2 was link creation with no answer key, on the grounds
@@ -175,8 +216,11 @@ rewriting the chapter model, because the tenant lives on the participation and n
 chapter. The tax identifier stops being Brazil-only.
 
 **Cost.** Lower than first assessed. Step 2 was expected to need fifteen human
-assertions; measurement found a deterministic prefix instead, so the manual cost falls to
-step 6, where the free-text columns genuinely have no key.
+assertions; measurement found a deterministic prefix instead. The same prefix turned out to
+govern the two free-text columns, so step 6's data reconciliation is small as well: 13 rows
+in total, resolved per row rather than per spelling. The cost that remains is the code
+refactor of the 52 `SECURITY DEFINER` functions that read `members.chapter`, and that one
+does not shrink.
 
 **Risk accepted.** Retiring `chapters` removes the only table that today carries
 `organization_id` and `region` together. That pairing was never used (one organization,
