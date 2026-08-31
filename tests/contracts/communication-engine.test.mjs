@@ -218,6 +218,46 @@ test('send-campaign detects language', () => {
   assert.ok(content.includes('language') || content.includes('langKey'), 'Must handle language detection');
 });
 
+// O teste acima e um includes: ficaria verde mesmo com o mapeamento quebrado.
+// Este afirma o COMPORTAMENTO. campaign_recipients.language migra de subtag nua
+// (pt) para tag completa (pt-BR/en-US/es-LATAM); casamento por igualdade exata
+// mandaria en-US para o ELSE e renderizaria portugues para quem pediu ingles.
+// O casamento tem de ser por PREFIXO, que aceita as duas formas.
+test('send-campaign mapeia idioma por prefixo, aceitando tag completa e subtag nua', () => {
+  const content = readFile('supabase/functions/send-campaign/index.ts');
+
+  // Ancora na DECLARACAO, nao em 'cita langKey e tem ='. Um comentario futuro que
+  // mencione langKey com '=' viraria a linha "encontrada" — e o padrao que ja mordeu
+  // esta casa: guard estatico casando o proprio comentario que descreve o alvo.
+  const linha = content.split('\n').find((l) => /^\s*const\s+langKey\s*=/.test(l));
+  assert.ok(linha, 'Deve existir a declaracao `const langKey =`');
+
+  assert.ok(
+    /startsWith\(\s*['"]en['"]\s*\)/.test(linha) && /startsWith\(\s*['"]es['"]\s*\)/.test(linha),
+    `langKey deve casar por prefixo (startsWith), nao por igualdade exata. Linha: ${linha}`
+  );
+  assert.ok(
+    !/===\s*['"]en['"]/.test(linha) && !/===\s*['"]es['"]/.test(linha),
+    `langKey nao pode usar igualdade exata contra subtag nua — tag completa cairia no ELSE. Linha: ${linha}`
+  );
+
+  // As chaves do JSONB de campaign_templates continuam sendo subtag nua
+  // (pt/en/es): o mapa traduz tag -> chave, e nao renomeia a chave. As duas
+  // pontas do invariante: o template e indexado por langKey, E o fallback
+  // continua sendo a chave CURTA — se alguem trocar por 'pt-BR', a busca no
+  // JSONB passa a nao achar nada e todo template cai vazio.
+  for (const campo of ['subject', 'body_html', 'body_text']) {
+    assert.ok(
+      content.includes(`tmpl.${campo}[langKey]`),
+      `tmpl.${campo} deve ser indexado por langKey`
+    );
+    assert.ok(
+      content.includes(`tmpl.${campo}['pt']`),
+      `o fallback de tmpl.${campo} deve usar a chave CURTA do JSONB, nao a tag completa`
+    );
+  }
+});
+
 test('send-campaign has auth check', () => {
   const content = readFile('supabase/functions/send-campaign/index.ts');
   assert.ok(content.includes('auth.getUser'), 'Must verify auth token');

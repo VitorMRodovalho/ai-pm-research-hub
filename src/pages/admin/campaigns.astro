@@ -605,7 +605,7 @@ const CAMPAIGNS_I18N = {
             const raw = (document.getElementById('ext-contacts') as HTMLTextAreaElement).value;
             extContacts = raw.split('\n').filter(l => l.trim()).map(l => {
               const [name, email] = l.split(',').map(s => s.trim());
-              return { name: name || '', email: email || '', language: 'en' };
+              return { name: name || '', email: email || '', language: 'en-US' };
             }).filter(c => c.email.includes('@'));
           }
 

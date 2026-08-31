@@ -143,8 +143,12 @@ Deno.serve(async (req) => {
     for (const r of recipients) {
       if (r.unsubscribed) continue
 
-      const lang = r.language || 'pt'
-      const langKey = lang === 'en' ? 'en' : lang === 'es' ? 'es' : 'pt'
+      // Aceita tag completa (pt-BR/en-US/es-LATAM) E subtag nua legada (pt/en/es):
+      // o prefixo casa os dois, entao esta EF pode ser deployada ANTES ou DEPOIS
+      // da migracao que alinha campaign_recipients.language. Igualdade exata
+      // mandava en-US para o ELSE, e o argentino recebia portugues em silencio.
+      const lang = (r.language || 'pt-BR').toLowerCase()
+      const langKey = lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt'
 
       let toEmail = ''
       let memberName = ''
