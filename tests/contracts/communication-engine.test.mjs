@@ -226,8 +226,11 @@ test('send-campaign detects language', () => {
 test('send-campaign mapeia idioma por prefixo, aceitando tag completa e subtag nua', () => {
   const content = readFile('supabase/functions/send-campaign/index.ts');
 
-  const linha = content.split('\n').find((l) => l.includes('langKey') && l.includes('='));
-  assert.ok(linha, 'Deve existir a linha que deriva langKey');
+  // Ancora na DECLARACAO, nao em 'cita langKey e tem ='. Um comentario futuro que
+  // mencione langKey com '=' viraria a linha "encontrada" — e o padrao que ja mordeu
+  // esta casa: guard estatico casando o proprio comentario que descreve o alvo.
+  const linha = content.split('\n').find((l) => /^\s*const\s+langKey\s*=/.test(l));
+  assert.ok(linha, 'Deve existir a declaracao `const langKey =`');
 
   assert.ok(
     /startsWith\(\s*['"]en['"]\s*\)/.test(linha) && /startsWith\(\s*['"]es['"]\s*\)/.test(linha),
@@ -239,11 +242,20 @@ test('send-campaign mapeia idioma por prefixo, aceitando tag completa e subtag n
   );
 
   // As chaves do JSONB de campaign_templates continuam sendo subtag nua
-  // (pt/en/es): o mapa traduz tag -> chave, e nao renomeia a chave.
-  assert.ok(
-    content.includes("tmpl.subject[langKey]") || content.includes('tmpl.subject[langKey]'),
-    'O template continua indexado pela chave curta derivada de langKey'
-  );
+  // (pt/en/es): o mapa traduz tag -> chave, e nao renomeia a chave. As duas
+  // pontas do invariante: o template e indexado por langKey, E o fallback
+  // continua sendo a chave CURTA — se alguem trocar por 'pt-BR', a busca no
+  // JSONB passa a nao achar nada e todo template cai vazio.
+  for (const campo of ['subject', 'body_html', 'body_text']) {
+    assert.ok(
+      content.includes(`tmpl.${campo}[langKey]`),
+      `tmpl.${campo} deve ser indexado por langKey`
+    );
+    assert.ok(
+      content.includes(`tmpl.${campo}['pt']`),
+      `o fallback de tmpl.${campo} deve usar a chave CURTA do JSONB, nao a tag completa`
+    );
+  }
 });
 
 test('send-campaign has auth check', () => {
