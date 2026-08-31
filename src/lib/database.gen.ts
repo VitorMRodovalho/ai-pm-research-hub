@@ -5004,7 +5004,7 @@ export type Database = {
           external_name: string | null
           first_opened_at: string | null
           id: string
-          language: string | null
+          language: string
           last_user_agent: string | null
           member_id: string | null
           open_count: number | null
@@ -5031,7 +5031,7 @@ export type Database = {
           external_name?: string | null
           first_opened_at?: string | null
           id?: string
-          language?: string | null
+          language?: string
           last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
@@ -5058,7 +5058,7 @@ export type Database = {
           external_name?: string | null
           first_opened_at?: string | null
           id?: string
-          language?: string | null
+          language?: string
           last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
@@ -5498,7 +5498,7 @@ export type Database = {
           id: string
           issued_at: string | null
           issued_by: string | null
-          language: string | null
+          language: string
           member_id: string
           pdf_url: string | null
           period_end: string | null
@@ -5529,7 +5529,7 @@ export type Database = {
           id?: string
           issued_at?: string | null
           issued_by?: string | null
-          language?: string | null
+          language?: string
           member_id: string
           pdf_url?: string | null
           period_end?: string | null
@@ -5560,7 +5560,7 @@ export type Database = {
           id?: string
           issued_at?: string | null
           issued_by?: string | null
-          language?: string | null
+          language?: string
           member_id?: string
           pdf_url?: string | null
           period_end?: string | null
@@ -20103,7 +20103,7 @@ export type Database = {
           is_featured: boolean | null
           is_published: boolean | null
           keywords: string[] | null
-          language: string | null
+          language: string
           organization_id: string
           pdf_url: string | null
           publication_date: string | null
@@ -20130,7 +20130,7 @@ export type Database = {
           is_featured?: boolean | null
           is_published?: boolean | null
           keywords?: string[] | null
-          language?: string | null
+          language?: string
           organization_id?: string
           pdf_url?: string | null
           publication_date?: string | null
@@ -20157,7 +20157,7 @@ export type Database = {
           is_featured?: boolean | null
           is_published?: boolean | null
           keywords?: string[] | null
-          language?: string | null
+          language?: string
           organization_id?: string
           pdf_url?: string | null
           publication_date?: string | null
@@ -33418,6 +33418,7 @@ export type Database = {
         }
         Returns: Json
       }
+      normalize_platform_language: { Args: { p_lang: string }; Returns: string }
       notify_editorial_change_awareness: {
         Args: {
           p_document_id: string
