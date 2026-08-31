@@ -186,6 +186,13 @@ def main():
                 f"({max(pior['topo'], pior['base'])/med_miolo*100:.0f}% do detalhe do miolo)")
 
         # ── defeito 2: a capa padrao e um quadro com a CAIXA DE CONTEUDO ainda vazia
+        # A mediana e a referencia; com serie curta demais ela vira quase uma amostra
+        # so, e se essa amostra cair num quadro vazio a razao da 1,0 e o portao fica
+        # QUIETO. Avisa em vez de aprovar em silencio.
+        if len(linhas) < 3:
+            print(f"  \033[33maviso\033[0m so {len(linhas)} quadro(s) amostrados: a mediana "
+                  f"da caixa nao e confiavel e o defeito 2 pode passar batido. "
+                  f"Use --passo menor.")
         med_caixa = np.median([l["caixa"] for l in linhas]) or 1e-9
         razao0 = inicio_caixa[0] / med_caixa
         vazios = 0
