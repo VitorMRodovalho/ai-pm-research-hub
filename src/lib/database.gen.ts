@@ -5004,7 +5004,7 @@ export type Database = {
           external_name: string | null
           first_opened_at: string | null
           id: string
-          language: string | null
+          language: string
           last_user_agent: string | null
           member_id: string | null
           open_count: number | null
@@ -5031,7 +5031,7 @@ export type Database = {
           external_name?: string | null
           first_opened_at?: string | null
           id?: string
-          language?: string | null
+          language?: string
           last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
@@ -5058,7 +5058,7 @@ export type Database = {
           external_name?: string | null
           first_opened_at?: string | null
           id?: string
-          language?: string | null
+          language?: string
           last_user_agent?: string | null
           member_id?: string | null
           open_count?: number | null
@@ -33418,6 +33418,7 @@ export type Database = {
         }
         Returns: Json
       }
+      normalize_platform_language: { Args: { p_lang: string }; Returns: string }
       notify_editorial_change_awareness: {
         Args: {
           p_document_id: string
