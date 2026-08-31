@@ -218,6 +218,34 @@ test('send-campaign detects language', () => {
   assert.ok(content.includes('language') || content.includes('langKey'), 'Must handle language detection');
 });
 
+// O teste acima e um includes: ficaria verde mesmo com o mapeamento quebrado.
+// Este afirma o COMPORTAMENTO. campaign_recipients.language migra de subtag nua
+// (pt) para tag completa (pt-BR/en-US/es-LATAM); casamento por igualdade exata
+// mandaria en-US para o ELSE e renderizaria portugues para quem pediu ingles.
+// O casamento tem de ser por PREFIXO, que aceita as duas formas.
+test('send-campaign mapeia idioma por prefixo, aceitando tag completa e subtag nua', () => {
+  const content = readFile('supabase/functions/send-campaign/index.ts');
+
+  const linha = content.split('\n').find((l) => l.includes('langKey') && l.includes('='));
+  assert.ok(linha, 'Deve existir a linha que deriva langKey');
+
+  assert.ok(
+    /startsWith\(\s*['"]en['"]\s*\)/.test(linha) && /startsWith\(\s*['"]es['"]\s*\)/.test(linha),
+    `langKey deve casar por prefixo (startsWith), nao por igualdade exata. Linha: ${linha}`
+  );
+  assert.ok(
+    !/===\s*['"]en['"]/.test(linha) && !/===\s*['"]es['"]/.test(linha),
+    `langKey nao pode usar igualdade exata contra subtag nua — tag completa cairia no ELSE. Linha: ${linha}`
+  );
+
+  // As chaves do JSONB de campaign_templates continuam sendo subtag nua
+  // (pt/en/es): o mapa traduz tag -> chave, e nao renomeia a chave.
+  assert.ok(
+    content.includes("tmpl.subject[langKey]") || content.includes('tmpl.subject[langKey]'),
+    'O template continua indexado pela chave curta derivada de langKey'
+  );
+});
+
 test('send-campaign has auth check', () => {
   const content = readFile('supabase/functions/send-campaign/index.ts');
   assert.ok(content.includes('auth.getUser'), 'Must verify auth token');
