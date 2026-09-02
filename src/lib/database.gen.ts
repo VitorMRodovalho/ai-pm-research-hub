@@ -29060,6 +29060,7 @@ export type Database = {
         }[]
       }
       _audit_curation_artifact_snapshot_security: { Args: never; Returns: Json }
+      _audit_doc_type_check_values: { Args: never; Returns: string[] }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
       _audit_function_execute_acl: {
         Args: { p_names: string[] }
@@ -32464,6 +32465,10 @@ export type Database = {
       give_consent_via_token: {
         Args: { p_consent_type?: string; p_evidence?: Json; p_token: string }
         Returns: Json
+      }
+      governance_doc_type_out_of_flow: {
+        Args: { p_doc_type: string }
+        Returns: string
       }
       governance_document_is_unsigned_draft: {
         Args: { p_document_id: string }
