@@ -6702,6 +6702,7 @@ export type Database = {
           data_access_expires_at: string | null
           id: string
           last_sync_at: string | null
+          metric_kind: string
           oauth_refresh_token: string | null
           oauth_token: string | null
           organization_id: string
@@ -6718,6 +6719,7 @@ export type Database = {
           data_access_expires_at?: string | null
           id?: string
           last_sync_at?: string | null
+          metric_kind: string
           oauth_refresh_token?: string | null
           oauth_token?: string | null
           organization_id?: string
@@ -6734,6 +6736,7 @@ export type Database = {
           data_access_expires_at?: string | null
           id?: string
           last_sync_at?: string | null
+          metric_kind?: string
           oauth_refresh_token?: string | null
           oauth_token?: string | null
           organization_id?: string
