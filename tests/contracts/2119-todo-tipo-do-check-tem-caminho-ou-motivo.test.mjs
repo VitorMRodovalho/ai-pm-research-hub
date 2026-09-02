@@ -49,9 +49,11 @@ test(dbGated ? '#2119: todo tipo do CHECK tem cadeia OU motivo de fora-do-fluxo'
   assert.ok(Array.isArray(tipos) && tipos.length > 0,
     'nao consegui ler os tipos do CHECK: sem denominador, este guard nao mede nada');
 
-  // PISO CONTRA VACUIDADE: o CHECK tem de ter crescido para 15 nesta entrega.
-  assert.ok(tipos.length >= 15,
-    `o CHECK admite ${tipos.length} tipos; esperava ao menos 15 apos a #2119/#2120`);
+  // PISO CONTRA VACUIDADE: o CHECK so cresce. 15 apos a #2119/#2120, 16 apos business_case
+  // (#2119, 02/09/2026). O piso sobe junto com o CHECK — um piso que fica para tras deixa de
+  // detectar o encolhimento silencioso do denominador, que e contra o que ele existe.
+  assert.ok(tipos.length >= 16,
+    `o CHECK admite ${tipos.length} tipos; esperava ao menos 16 apos business_case entrar`);
 
   const semCaminho = [];
   const foraDoFluxo = [];
