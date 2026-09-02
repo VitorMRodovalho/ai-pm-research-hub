@@ -585,9 +585,151 @@ async function fetchYouTubeMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
   return items
 }
 
-const MEDIA_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<MediaItem[]>> = {
+function linkedInHeaders(token: string) {
+  return {
+    'Authorization': `Bearer ${token}`,
+    'LinkedIn-Version': LINKEDIN_VERSION,
+    'X-Restli-Protocol-Version': '2.0.0',
+  }
+}
+
+// #2133: per-post metrics for LinkedIn. The channel had a CHANNEL_FETCHER (the org's
+// daily aggregate) but no MEDIA_FETCHER, so `if (mediaFetcher && ...)` skipped it in
+// silence and the log still said success. The 11 rows that exist were written by
+// publish-linkedin at publish time and never updated: all zeros, synced_at == published_at.
+//
+// Two ways to learn WHICH posts exist, tried in this order:
+//
+//   (a) ask LinkedIn  — /rest/posts?q=author covers posts published BY HAND, which is
+//       what COMO-PUBLICAR mandates for event posts (mentions and collaborator invites
+//       are not available through the API). Those are exactly the posts that matter and
+//       the only ones the local list can never have.
+//   (b) fall back to the URNs already stored — covers only what the publisher itself
+//       posted, but still backfills rows that today read as zero engagement.
+//
+// Which path ran is logged explicitly, because "no rows" must not be ambiguous between
+// "the org published nothing" and "the scope refused the listing".
+async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promise<MediaItem[]> {
+  const token = cfg.oauth_token
+  const orgUrn = (cfg.config as any)?.organization_urn
+  if (!token || !orgUrn) return []
+
+  const headers = linkedInHeaders(token)
+  const known: { urn: string; published_at: string | null }[] = []
+  let discovery: 'author_listing' | 'stored_urns' | 'none' = 'none'
+
+  // (a) discovery by author
+  try {
+    const resp = await fetchWithRetry(
+      `https://api.linkedin.com/rest/posts?q=author&author=${encodeURIComponent(orgUrn)}&count=50&sortBy=LAST_MODIFIED`,
+      { headers }
+    )
+    if (resp.ok) {
+      const data = await resp.json()
+      for (const el of data?.elements || []) {
+        const urn = el?.id || el?.urn
+        if (!urn) continue
+        const created = el?.createdAt ?? el?.firstPublishedAt
+        known.push({
+          urn,
+          published_at: typeof created === 'number' ? new Date(created).toISOString() : null,
+        })
+      }
+      discovery = 'author_listing'
+      console.info(`LinkedIn media: author listing returned ${known.length} post(s)`)
+    } else {
+      // Name the refusal. A 403 here means the granted scope does not cover the listing,
+      // which is a different problem from "the org has no posts".
+      console.warn(
+        `LinkedIn media: author listing ${resp.status}: ${(await resp.text()).slice(0, 300)}`
+      )
+    }
+  } catch (e) {
+    console.warn('LinkedIn media: author listing failed:', e)
+  }
+
+  // (b) fall back to what the publisher already recorded
+  if (known.length === 0) {
+    const { data: stored } = await sb
+      .from('comms_media_items')
+      .select('external_id, published_at')
+      .eq('channel', 'linkedin')
+      .order('published_at', { ascending: false })
+      .limit(50)
+    for (const r of stored || []) {
+      known.push({ urn: (r as any).external_id, published_at: (r as any).published_at ?? null })
+    }
+    if (known.length > 0) {
+      discovery = 'stored_urns'
+      console.info(`LinkedIn media: falling back to ${known.length} stored URN(s)`)
+    }
+  }
+
+  if (known.length === 0) {
+    console.warn('LinkedIn media: no posts discovered by either path')
+    return []
+  }
+
+  // Per-post statistics. Same endpoint as the org aggregate; the slice is the
+  // shares=/ugcPosts= parameter, chosen by the URN type.
+  const items: MediaItem[] = []
+  for (const { urn, published_at } of known) {
+    const param = urn.includes(':ugcPost:') ? 'ugcPosts' : 'shares'
+    try {
+      const statResp = await fetchWithRetry(
+        `https://api.linkedin.com/rest/organizationalEntityShareStatistics?q=organizationalEntity` +
+        `&organizationalEntity=${encodeURIComponent(orgUrn)}` +
+        `&${param}=List(${encodeURIComponent(urn)})`,
+        { headers }
+      )
+      if (!statResp.ok) {
+        console.warn(
+          `LinkedIn media: stats ${statResp.status} for ${urn}: ${(await statResp.text()).slice(0, 200)}`
+        )
+        continue
+      }
+      const statData = await statResp.json()
+      const t = statData?.elements?.[0]?.totalShareStatistics
+      if (!t) continue
+
+      items.push({
+        channel: 'linkedin',
+        external_id: urn,
+        media_type: urn.includes(':ugcPost:') ? 'UGC_POST' : 'SHARE',
+        caption: null,
+        permalink: `https://www.linkedin.com/feed/update/${urn}/`,
+        thumbnail_url: null,
+        published_at,
+        likes: parseInteger(t.likeCount) ?? 0,
+        comments: parseInteger(t.commentCount) ?? 0,
+        shares: parseInteger(t.shareCount) ?? 0,
+        saves: 0,
+        reach: parseInteger(t.impressionCount) ?? null,
+        views: parseInteger(t.uniqueImpressionsCount) ?? null,
+        payload: {
+          api: 'linkedin_share_stats',
+          version: LINKEDIN_VERSION,
+          discovery,
+          clicks: parseInteger(t.clickCount),
+          engagement: typeof t.engagement === 'number' ? t.engagement : null,
+        },
+      })
+    } catch (e) {
+      console.warn(`LinkedIn media: stats failed for ${urn}:`, e)
+    }
+  }
+
+  console.info(`LinkedIn media: ${items.length} of ${known.length} post(s) had statistics (discovery=${discovery})`)
+  return items
+}
+
+// Partial<>, because not every channel has one. The plain Record<> said the lookup was
+// always defined, so TypeScript never flagged the missing 'linkedin' key and the
+// `if (mediaFetcher && ...)` guard read as dead code to the compiler (#2133).
+const MEDIA_FETCHERS: Partial<Record<string, (cfg: ChannelConfig, sb: SupabaseClient) => Promise<MediaItem[]>>> = {
   instagram: fetchInstagramMedia,
   youtube: fetchYouTubeMedia,
+  linkedin: fetchLinkedInMedia,
 }
 
 const CHANNEL_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<NormalizedMetric[]>> = {
@@ -869,9 +1011,14 @@ async function syncFromChannelConfigs(
       // Fetch and upsert per-post media items
       let mediaCount = 0
       const mediaFetcher = MEDIA_FETCHERS[cfg.channel]
+      // #2133: a channel with no MEDIA_FETCHER used to skip here without a trace, and the
+      // run still logged success. Say it out loud instead.
+      if (!mediaFetcher) {
+        console.warn(`Comms media: channel '${cfg.channel}' has no MEDIA_FETCHER — per-post metrics are NOT collected`)
+      }
       if (mediaFetcher && !dryRun) {
         try {
-          const mediaItems = await mediaFetcher(activeCfg)
+          const mediaItems = await mediaFetcher(activeCfg, sb)
           if (mediaItems.length > 0) {
             const { error: mediaError } = await sb
               .from('comms_media_items')
@@ -926,6 +1073,26 @@ async function syncFromChannelConfigs(
           }
         } catch (e) { console.warn(`Media fetch ${cfg.channel}:`, e) }
       }
+
+      // #2133: the run above logged `upserted_rows: metrics.length`, which is the DAILY
+      // aggregate only. Without this second write the same "success, 1 row" meant both
+      // "posts were read" and "the channel has no fetcher and nothing was tried".
+      await logRun(sb, {
+        run_key: runKey,
+        source: `api_${cfg.channel}`,
+        triggered_by: triggeredBy,
+        status: 'success',
+        fetched_rows: metrics.length,
+        upserted_rows: dryRun ? 0 : metrics.length,
+        invalid_rows: 0,
+        context: {
+          dry_run: dryRun,
+          channel: cfg.channel,
+          media_items: mediaCount,
+          media_fetcher: mediaFetcher ? 'present' : 'absent',
+        },
+        finished: true,
+      }).catch(() => {})
 
       channelResults.push({ channel: cfg.channel, status: 'success', rows: metrics.length, media_items: mediaCount })
     } catch (e) {
