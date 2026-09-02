@@ -157,7 +157,7 @@ BEGIN
     INTO v_antes FROM public.document_versions WHERE document_id = v_doc_id;
 
   SELECT count(*) INTO v_n FROM public.document_versions
-   WHERE document_id = v_doc_id AND version_label IN ('M01','M02');
+   WHERE document_id = v_doc_id AND version_label IN ('M01','M02','M03');
   IF v_n <> 0 THEN RAISE EXCEPTION 'rotulo de destino ja ocupado (% linhas)', v_n; END IF;
 
   UPDATE public.document_versions SET version_label='M01'
@@ -170,9 +170,23 @@ BEGIN
   GET DIAGNOSTICS v_n = ROW_COUNT;
   IF v_n <> 1 THEN RAISE EXCEPTION 'v2 R01->M02: renomeei % linhas', v_n; END IF;
 
+  -- Normalizacao do zero a esquerda. Sem ela o acervo sai com M01, M02, M3, e a proxima
+  -- rodada nao tem forma obvia: M4 ou M04. Duas familias de numeracao na mesma pagina de
+  -- assinaturas e defeito barato de evitar agora e caro de corrigir depois, porque esta
+  -- janela fecha junto com a pre-condicao de rascunho nao assinado logo acima.
+  UPDATE public.document_versions SET version_label='M03'
+   WHERE document_id=v_doc_id AND version_number=3 AND version_label='M3';
+  GET DIAGNOSTICS v_n = ROW_COUNT;
+  IF v_n <> 1 THEN RAISE EXCEPTION 'v3 M3->M03: renomeei % linhas (rotulo de origem nao era M3?)', v_n; END IF;
+
   SELECT count(*) INTO v_n FROM public.document_versions
    WHERE document_id = v_doc_id AND version_label ~ '^R[0-9]';
   IF v_n <> 0 THEN RAISE EXCEPTION 'o espaco aprovado ainda tem % rotulo(s) ocupado(s)', v_n; END IF;
+
+  -- Pos-condicao de forma: toda minuta deste documento passa a ser M seguido de dois digitos.
+  SELECT count(*) INTO v_n FROM public.document_versions
+   WHERE document_id = v_doc_id AND version_label !~ '^M[0-9]{2}$';
+  IF v_n <> 0 THEN RAISE EXCEPTION '% rotulo(s) fora do formato M99', v_n; END IF;
 
   SELECT string_agg(version_number||'='||version_label, ' | ' ORDER BY version_number)
     INTO v_depois FROM public.document_versions WHERE document_id = v_doc_id;
