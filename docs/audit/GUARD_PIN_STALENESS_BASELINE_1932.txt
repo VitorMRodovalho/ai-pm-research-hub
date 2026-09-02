@@ -102,7 +102,6 @@ tests/contracts/p252-356-spec-348-v1-admin-ui.test.mjs|get_member_detail
 tests/contracts/p256-wave1a-315-m3-intake-library-rpcs.test.mjs|create_governance_document_intake
 tests/contracts/p256-wave1a-315-m3-intake-library-rpcs.test.mjs|list_governance_library
 tests/contracts/p257-315-w1b-legacy-chain-backfill.test.mjs|check_schema_invariants
-tests/contracts/p262-312-w4a-gate-templates-6-doc-types.test.mjs|resolve_default_gates
 tests/contracts/p263-312-w4d-governance-document-reader-secdef.test.mjs|get_governance_document_reader
 tests/contracts/p265-382-w4f-content-products-foundation.test.mjs|check_schema_invariants
 tests/contracts/p265-382-w4f-content-products-foundation.test.mjs|get_content_product_reader
