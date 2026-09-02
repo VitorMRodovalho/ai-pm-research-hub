@@ -10,10 +10,16 @@ export type GovernanceMergeResult = {
   applied: string[];
 };
 
+// #2120: `assignment_term` (Termo de Cessao de Direitos Patrimoniais) entra aqui NA MESMA
+// entrega em que entra no CHECK. Se o tipo existir no banco e faltar neste Set, o documento
+// renderiza com `{{ }}` cru no corpo, porque `shouldRenderGovernanceMergeFields` e o portao
+// que decide se os merge fields sao substituidos. Um termo de cessao per-inventor sairia com
+// os marcadores visiveis na pagina de assinatura.
 const GOVERNANCE_LEGAL_DOC_TYPES = new Set([
   'cooperation_agreement',
   'accession_term',
   'data_processing_agreement',
+  'assignment_term',
 ]);
 
 const PLATFORM_VALUES: Record<string, string> = {
