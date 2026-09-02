@@ -32462,6 +32462,10 @@ export type Database = {
         Args: { p_consent_type?: string; p_evidence?: Json; p_token: string }
         Returns: Json
       }
+      governance_document_is_unsigned_draft: {
+        Args: { p_document_id: string }
+        Returns: boolean
+      }
       gp_record_image_consent_revocation: {
         Args: {
           p_effective_at?: string
@@ -34619,6 +34623,14 @@ export type Database = {
           p_timezone?: string
           p_type?: string
           p_visibility?: string
+        }
+        Returns: Json
+      }
+      update_governance_document_meta: {
+        Args: {
+          p_description?: string
+          p_document_id: string
+          p_title?: string
         }
         Returns: Json
       }
