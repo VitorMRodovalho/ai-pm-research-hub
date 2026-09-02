@@ -18,8 +18,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+// ROOT em constante de proposito: o scanner do #1932 reconhece quem lê a captura vigente pelo
+// padrão `latestFunctionCapture(<expressão simples>, 'nome')`, e uma chamada com `join(a, b)`
+// inline não casa — o guard apareceria como dívida mesmo já lendo a definição corrente.
+const ROOT = join(__dirname, '../..');
 const MIGRATION_PATH = join(
   __dirname,
   '../../supabase/migrations/20260805000301_571_pr1_camada5_change_class_and_business_days.sql',
@@ -49,14 +54,33 @@ test('PR-1 migration: add_business_days is STABLE, never IMMUTABLE (§9.2)', () 
   assert.match(fn[0], /SET search_path TO 'public', 'pg_temp'/, 'add_business_days must pin search_path');
 });
 
-test('PR-1 migration: lock_document_version DROP(2-arg)+CREATE(3-arg DEFAULT NULL)', () => {
-  const sql = readFileSync(MIGRATION_PATH, 'utf8');
-  assert.match(sql, /DROP FUNCTION IF EXISTS public\.lock_document_version\(uuid, jsonb\);/, 'must DROP the old 2-arg signature');
+// #2151 — este teste AFIRMAVA a assinatura lendo `20260805000301`, o arquivo em que ela nasceu.
+// Isso e' fixar captura: quando a #2151 reescreveu `lock_document_version` para recusar documento
+// com cadeia aberta, o guard passou a descrever um texto que producao nao executa mais, e o ratchet
+// do #1932 o pegou — que e' exatamente o trabalho dele. Agora resolve pela captura MAIS RECENTE,
+// entao reescrever a funcao move o guard junto.
+//
+// A afirmacao do DROP da assinatura de 2 argumentos fica no bloco historico abaixo, e nao aqui: ela
+// descreve um EVENTO de 20260805000301 (a migracao de 2 para 3 args), nao o estado vigente. Misturar
+// as duas e' o que fazia um guard de contrato depender de um arquivo que nunca mais muda.
+test('PR-1: a assinatura VIGENTE de lock_document_version tem 3 args com DEFAULT NULL', () => {
+  const FN = latestFunctionCapture(ROOT, 'lock_document_version');
   assert.match(
-    sql,
-    /CREATE OR REPLACE FUNCTION public\.lock_document_version\(p_version_id uuid, p_gates jsonb, p_change_class text DEFAULT NULL\)/,
-    'must CREATE the 3-arg signature with p_change_class DEFAULT NULL (backward-compatible)',
+    FN.block,
+    /CREATE OR REPLACE FUNCTION public\.lock_document_version\(p_version_id uuid, p_gates jsonb, p_change_class text DEFAULT NULL(?:::text)?\)/,
+    'a assinatura vigente tem de manter os 3 args com p_change_class DEFAULT NULL (compat)',
   );
+  // O DEFAULT e' o que mantem a compatibilidade com quem chama com 2 argumentos. Perde-lo e' quebra
+  // de contrato silenciosa: o Postgres RECUSA `CREATE OR REPLACE` que omita o default, mas um
+  // DROP+CREATE passaria.
+  assert.doesNotMatch(FN.block, /DROP FUNCTION[^;]*lock_document_version/,
+    'a captura vigente nao pode nascer de DROP+CREATE: isso reabriria a ACL (CREATE FUNCTION nasce com EXECUTE para PUBLIC)');
+});
+
+test('PR-1 (historico): 20260805000301 foi onde a assinatura passou de 2 para 3 argumentos', () => {
+  const sql = readFileSync(MIGRATION_PATH, 'utf8');
+  assert.match(sql, /DROP FUNCTION IF EXISTS public\.lock_document_version\(uuid, jsonb\);/,
+    'o registro historico do DROP da assinatura de 2 args vive neste arquivo');
 });
 
 test('PR-1 migration: immutability trigger freezes change_class once locked (§9.2)', () => {

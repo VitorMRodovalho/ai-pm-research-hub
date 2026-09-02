@@ -7383,6 +7383,7 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.notFound': 'no encontrado(s)',
   'comp.affiliationQueue.affUnverified': 'No verificada',
   'comp.affiliationQueue.affExpiredVep': 'Vencida (VEP)',
+  'comp.affiliationQueue.staleVsVep': 'El VEP difiere',
   'comp.affiliationQueue.affExpiringVep': 'Vence pronto (VEP)',
   'comp.affiliationQueue.affActiveVep': 'Activa (VEP)',
   'comp.affiliationQueue.thExpiry': 'Vencimiento',

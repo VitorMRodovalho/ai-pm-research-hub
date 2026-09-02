@@ -14,7 +14,7 @@
 // #1041 expiry column/farol. Migrate from "verify everything by hand" → "review the auto-derived
 // and confirm exceptions" without loosening the write boundary (SPEC_996_FILIACAO_JOURNEY.md).
 import { useState, useEffect, useCallback, useRef, useMemo, Fragment } from 'react';
-import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard, ExternalLink } from 'lucide-react';
+import { Loader2, SearchCheck, CalendarClock, ShieldCheck, Info, ArrowUpDown, BadgeCheck, Filter, Search, ChevronDown, ChevronRight, IdCard, ExternalLink, RefreshCw } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { unifiedBrChapters, soonestChapterExpiry, type PmiMembershipEntry, type ChapterAffiliation } from '../../lib/affiliation-chapters';
 import { validityFarol, toneClasses, VEP_STATUS_TONE, COHORT_TONE } from '../../lib/statusFarol';
@@ -86,7 +86,7 @@ function fmtDate(raw: string | null | undefined, withTime = false): string {
   return withTime ? d.toLocaleString('pt-BR') : d.toLocaleDateString('pt-BR');
 }
 
-interface Farol { emoji: string; label: string; cls: string; provisional: boolean; key: 'expired' | 'soon' | 'ok' | 'unverified'; }
+interface Farol { emoji: string; label: string; cls: string; provisional: boolean; key: 'expired' | 'soon' | 'ok' | 'unverified'; stale?: boolean; staleHint?: string; }
 
 /**
  * Verification farol. A GP-recorded verification (append-only latest_verification) is
@@ -94,24 +94,69 @@ interface Farol { emoji: string; label: string; cls: string; provisional: boolea
  * VEP expiry (soonestChapterExpiry, SSOT-first #1192) so the GP triages at a glance and opens the
  * modal only to confirm.
  */
+interface StaleVep { hint: string }
+
+/**
+ * #2152 — a verificação gravada envelheceu contra o VEP?
+ *
+ * Só acusa quando as TRÊS condições valem ao mesmo tempo, e cada uma existe para evitar um falso
+ * positivo diferente:
+ *
+ *   1. a verificação pinta mal (vencida, ou inativa) — senão não há nada que o operador precise
+ *      olhar, e sinalizar divergência num registro já verde vira ruído;
+ *   2. o VEP diz `ok` — não basta divergir, tem de divergir PARA MELHOR. Se o VEP também diz
+ *      vencida, as duas fontes concordam no que importa e não há contradição a exibir;
+ *   3. o VEP foi visto DEPOIS da verificação — sem isto, um VEP velho contradiria uma verificação
+ *      manual recente e a tela pediria para "reverificar" o que acabou de ser verificado à mão,
+ *      invertendo a autoridade que o desenho dá a quem verifica.
+ *
+ * Não altera o veredito: quem decide segue sendo a verificação. Isto só torna visível uma
+ * contradição que a tela já tinha na mão e não mostrava.
+ */
+function staleAgainstVep(r: QueueRow, v: LatestVerification): StaleVep | undefined {
+  const pintaMal = v.membership_active === false
+    || (!!v.membership_expires_on && (daysUntilDateOnly(v.membership_expires_on) ?? 0) < 0);
+  if (!pintaMal) return undefined;
+
+  const vep = soonestChapterExpiry(r.chapter_affiliations, r.pmi_memberships);
+  if (vep.status !== 'ok' || !vep.expiry) return undefined;
+
+  // O VEP precisa ser MAIS NOVO que a verificação. Datas ausentes reprovam o teste em vez de
+  // passarem por omissão: sem saber qual é mais recente, não há base para contradizer.
+  const vistoVep = r.vep_last_seen_at ? Date.parse(r.vep_last_seen_at) : NaN;
+  const verificado = v.created_at ? Date.parse(v.created_at) : NaN;
+  if (Number.isNaN(vistoVep) || Number.isNaN(verificado) || vistoVep <= verificado) return undefined;
+
+  return { hint: `VEP diz filiação ativa até ${formatDateOnly(vep.expiry) || vep.expiry} (lido em `
+    + `${fmtDate(r.vep_last_seen_at)}), mas a verificação de ${fmtDate(v.created_at)} está desatualizada. `
+    + `Use "verificar via VEP" para regravar.` };
+}
+
 // #1132 — emoji + colour come from the shared validity farol (src/lib/statusFarol);
 // this function keeps only the business logic that picks the farol key + label + provisional.
 function farol(r: QueueRow, t: (k: string, f?: string) => string): Farol {
-  const mk = (key: Farol['key'], label: string, provisional: boolean): Farol => {
+  const mk = (key: Farol['key'], label: string, provisional: boolean, stale?: StaleVep): Farol => {
     const f = validityFarol(key);
-    return { emoji: f.emoji, label, cls: f.cls, provisional, key };
+    return { emoji: f.emoji, label, cls: f.cls, provisional, key, stale: !!stale, staleHint: stale?.hint };
   };
   const v = r.latest_verification;
   if (v) {
-    if (v.membership_active === false) return mk('expired', t('comp.affiliationQueue.affInactive', 'Filiação inativa'), false);
+    // #2152 — a verificação continua AUTORITATIVA e o veredito não muda aqui. O que muda é que a
+    // divergência com o VEP deixa de ser invisível. Medido em 02/09/2026: 9 membros ativos
+    // apareciam como "Filiação vencida" porque a verificação ficou congelada no vencimento
+    // anterior, enquanto o VEP — que esta MESMA tela já carrega — informava filiação ativa. As
+    // duas fontes estavam na mesma linha e ninguém as comparava, então a tela dizia "vence em
+    // 363d" ao lado de "Filiação vencida" sem que nada acusasse a contradição.
+    const stale = staleAgainstVep(r, v);
+    if (v.membership_active === false) return mk('expired', t('comp.affiliationQueue.affInactive', 'Filiação inativa'), false, stale);
     if (v.membership_expires_on) {
       // #1511 — `membership_expires_on` é coluna `date`: dias de calendário. A conta
       // antiga marcava "vencida" a partir das 21h da véspera (UTC-3).
       const days = daysUntilDateOnly(v.membership_expires_on) ?? 0;
-      if (days < 0) return mk('expired', t('comp.affiliationQueue.affExpired', 'Filiação vencida'), false);
-      if (days <= 30) return mk('soon', t('comp.affiliationQueue.affExpiring', 'Vence em breve'), false);
+      if (days < 0) return mk('expired', t('comp.affiliationQueue.affExpired', 'Filiação vencida'), false, stale);
+      if (days <= 30) return mk('soon', t('comp.affiliationQueue.affExpiring', 'Vence em breve'), false, stale);
     }
-    return mk('ok', t('comp.affiliationQueue.affVerified', 'Verificada'), false);
+    return mk('ok', t('comp.affiliationQueue.affVerified', 'Verificada'), false, stale);
   }
   const s = soonestChapterExpiry(r.chapter_affiliations, r.pmi_memberships);
   if (s.status === 'expired') return mk('expired', t('comp.affiliationQueue.affExpiredVep', 'Vencida (VEP)'), true);
@@ -711,10 +756,20 @@ export default function AffiliationQueueIsland() {
                         : <span className="text-[var(--text-muted)]">—</span>}
                     </td>
                     <td className="px-3 py-2 text-center">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.cls} ${f.provisional ? 'border border-dashed border-current' : ''}`}
-                        title={f.provisional ? t('comp.affiliationQueue.provisionalHint', 'Status derivado do VEP — ainda não confirmado pela Diretoria de Filiação') : f.label}>
-                        {f.emoji} {f.label}
-                      </span>
+                      <div className="space-y-0.5">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${f.cls} ${f.provisional ? 'border border-dashed border-current' : ''}`}
+                          title={f.provisional ? t('comp.affiliationQueue.provisionalHint', 'Status derivado do VEP — ainda não confirmado pela Diretoria de Filiação') : f.label}>
+                          {f.emoji} {f.label}
+                        </span>
+                        {/* #2152 — a contradição entre a verificação e o VEP deixa de ser invisível.
+                            O veredito acima não muda; este selo diz que há motivo para reverificar. */}
+                        {f.stale && (
+                          <div className="text-[10px] text-amber-600 flex items-center justify-center gap-0.5 font-semibold"
+                            title={f.staleHint}>
+                            <RefreshCw size={10} /> {t('comp.affiliationQueue.staleVsVep', 'VEP diverge')}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="px-3 py-2 text-center">
                       <button onClick={() => requireAttest(() => openVerify(r))}

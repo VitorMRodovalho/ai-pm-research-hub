@@ -7392,6 +7392,7 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.notFound': 'não encontrado(s)',
   'comp.affiliationQueue.affUnverified': 'Não verificada',
   'comp.affiliationQueue.affExpiredVep': 'Vencida (VEP)',
+  'comp.affiliationQueue.staleVsVep': 'VEP diverge',
   'comp.affiliationQueue.affExpiringVep': 'Vence em breve (VEP)',
   'comp.affiliationQueue.affActiveVep': 'Ativa (VEP)',
   'comp.affiliationQueue.thExpiry': 'Vencimento',
