@@ -615,7 +615,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   if (!token || !orgUrn) return []
 
   const headers = linkedInHeaders(token)
-  const known: { urn: string; published_at: string | null }[] = []
+  const known: { urn: string; published_at: string | null; caption: string | null }[] = []
   let discovery: 'author_listing' | 'stored_urns' | 'none' = 'none'
 
   // (a) discovery by author
@@ -630,9 +630,17 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
         const urn = el?.id || el?.urn
         if (!urn) continue
         const created = el?.createdAt ?? el?.firstPublishedAt
+        // #2142: the listing already carries the post text; not storing it left 49 of 50
+        // rows with caption null, and Top Content rendered every LinkedIn card as
+        // "(sem caption)". `commentary` is the current field; the ugcPost shape nests the
+        // same text under specificContent, kept as fallback for older posts.
+        const text = el?.commentary
+          ?? el?.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text
+          ?? null
         known.push({
           urn,
           published_at: typeof created === 'number' ? new Date(created).toISOString() : null,
+          caption: typeof text === 'string' && text.trim() ? text.slice(0, 500) : null,
         })
       }
       discovery = 'author_listing'
@@ -652,12 +660,16 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   if (known.length === 0) {
     const { data: stored } = await sb
       .from('comms_media_items')
-      .select('external_id, published_at')
+      .select('external_id, published_at, caption')
       .eq('channel', 'linkedin')
       .order('published_at', { ascending: false })
       .limit(50)
     for (const r of stored || []) {
-      known.push({ urn: (r as any).external_id, published_at: (r as any).published_at ?? null })
+      known.push({
+        urn: (r as any).external_id,
+        published_at: (r as any).published_at ?? null,
+        caption: (r as any).caption ?? null,
+      })
     }
     if (known.length > 0) {
       discovery = 'stored_urns'
@@ -673,7 +685,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   // Per-post statistics. Same endpoint as the org aggregate; the slice is the
   // shares=/ugcPosts= parameter, chosen by the URN type.
   const items: MediaItem[] = []
-  for (const { urn, published_at } of known) {
+  for (const { urn, published_at, caption } of known) {
     const param = urn.includes(':ugcPost:') ? 'ugcPosts' : 'shares'
     try {
       const statResp = await fetchWithRetry(
@@ -696,7 +708,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
         channel: 'linkedin',
         external_id: urn,
         media_type: urn.includes(':ugcPost:') ? 'UGC_POST' : 'SHARE',
-        caption: null,
+        caption,
         permalink: `https://www.linkedin.com/feed/update/${urn}/`,
         thumbnail_url: null,
         published_at,
