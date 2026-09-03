@@ -5,8 +5,11 @@
 
 ## Estado ao encerrar
 
-`main 00e98393` (PR #2161, squash, CI 13/13, sem `--admin`) · fila com 0 PRs · 0 pushes diretos
-hoje, então a janela de bypass segue em 2 de 2 (#2157) e eu não avancei nela.
+`main 60c13855` · fila com 0 PRs · 0 pushes diretos hoje, então a janela de bypass segue em 2 de 2
+(#2157) e eu não avancei nela.
+
+Duas PRs na sessão, ambas squash e com CI cheio, nenhuma com `--admin`: **#2161** (as quatro
+decisões, `00e98393`, 13 checks) e **#2163** (este handoff e o arranque, `60c13855`, 12 checks).
 
 Na main, tudo verde, incluindo `Deploy to Cloudflare Workers`, `CI Validate`, `Schema Invariants` e
 o `Ratchet da linha de base do CodeQL (#1966)`.
