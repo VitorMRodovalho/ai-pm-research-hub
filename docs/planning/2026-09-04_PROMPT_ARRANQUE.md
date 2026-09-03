@@ -13,8 +13,8 @@ gh issue list --state open --limit 30
 ```
 
 Estado ao encerrar 03/09, para você comparar e **não** para acreditar:
-`main 00e98393` · fila 0 PRs · 4 migrations de 03/09 aplicadas e na main · EFs `nucleo-mcp` v268 e
-`sync-comms-metrics` v47.
+`main 60c13855` · fila 0 PRs · 4 migrations de 03/09 aplicadas e na main · EFs `nucleo-mcp` v268 e
+`sync-comms-metrics` v47 · janela de bypass em 2 de 2, sem push direto na sessão.
 
 ## A primeira coisa da manhã, e ela tem prazo natural
 
