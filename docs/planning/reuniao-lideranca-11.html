@@ -1,0 +1,775 @@
+<title>Condução da Liderança #11</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+
+<style>
+/* ─── tokens: light é a base completa ─────────────────────────────── */
+:root{
+  --ground:#F3F6F6;
+  --surface:#FFFFFF;
+  --surface-2:#EEF3F2;
+  --ink:#14191A;
+  --ink-2:#38464A;
+  --muted:#5A6668;
+  --line:#D8E0E0;
+  --line-strong:#B9C6C6;
+  --accent:#0B6E5F;
+  --accent-ink:#085548;
+  --accent-soft:#E1F0EC;
+  --crit:#A32723;
+  --crit-soft:#FBE9E8;
+  --warn:#8A5A12;
+  --warn-soft:#FAF0DF;
+  --ok:#1F6F45;
+  --ok-soft:#E4F2EA;
+  --shadow:0 1px 2px rgba(20,25,26,.06), 0 8px 24px -12px rgba(20,25,26,.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0D1112;
+    --surface:#151B1C;
+    --surface-2:#1C2425;
+    --ink:#E9EEED;
+    --ink-2:#C0CBCA;
+    --muted:#8FA09F;
+    --line:#26302F;
+    --line-strong:#3A4746;
+    --accent:#4FC0A8;
+    --accent-ink:#8FDCCA;
+    --accent-soft:#122F2A;
+    --crit:#F0918C;
+    --crit-soft:#331A19;
+    --warn:#E0AC63;
+    --warn-soft:#2E2413;
+    --ok:#6FC896;
+    --ok-soft:#12291D;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0D1112;
+  --surface:#151B1C;
+  --surface-2:#1C2425;
+  --ink:#E9EEED;
+  --ink-2:#C0CBCA;
+  --muted:#8FA09F;
+  --line:#26302F;
+  --line-strong:#3A4746;
+  --accent:#4FC0A8;
+  --accent-ink:#8FDCCA;
+  --accent-soft:#122F2A;
+  --crit:#F0918C;
+  --crit-soft:#331A19;
+  --warn:#E0AC63;
+  --warn-soft:#2E2413;
+  --ok:#6FC896;
+  --ok-soft:#12291D;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px 96px}
+
+/* ─── tipografia ──────────────────────────────────────────────────── */
+h1,h2,h3,h4{text-wrap:balance;margin:0}
+.serif{font-family:"Instrument Serif", Georgia, "Times New Roman", serif;font-weight:400;letter-spacing:.005em}
+.mono{font-family:"IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;font-variant-numeric:tabular-nums}
+.eyebrow{
+  font-family:"IBM Plex Mono", ui-monospace, monospace;
+  font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;
+}
+.lede{font-size:17px;line-height:1.6;color:var(--ink-2);max-width:66ch}
+p{margin:0 0 12px}
+p:last-child{margin-bottom:0}
+a{color:var(--accent);text-underline-offset:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* ─── cabeçalho ───────────────────────────────────────────────────── */
+.masthead{
+  border-bottom:1px solid var(--line);
+  background:var(--surface);
+  margin-bottom:40px;
+}
+.masthead .wrap{padding-top:34px;padding-bottom:30px}
+.mast-grid{display:grid;grid-template-columns:1fr auto;gap:28px;align-items:end}
+@media (max-width:760px){.mast-grid{grid-template-columns:1fr;align-items:start}}
+h1.title{font-size:clamp(38px,6vw,60px);line-height:1.02;margin:10px 0 14px}
+h1.title em{font-style:italic;color:var(--accent)}
+.mast-facts{display:flex;flex-direction:column;gap:8px;text-align:right}
+@media (max-width:760px){.mast-facts{text-align:left}}
+.fact{display:flex;gap:10px;justify-content:flex-end;align-items:baseline}
+@media (max-width:760px){.fact{justify-content:flex-start}}
+.fact b{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.fact span{font-size:12px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+
+/* ─── seções ──────────────────────────────────────────────────────── */
+section{margin:0 0 56px}
+.sec-head{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.sec-head h2{font-size:clamp(24px,3.2vw,32px);line-height:1.15}
+.sec-head .sub{font-size:14px;color:var(--muted);max-width:70ch}
+
+/* ─── caixa de destaque ───────────────────────────────────────────── */
+.note{
+  background:var(--accent-soft);
+  border:1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius:2px;
+  padding:16px 18px;
+  font-size:14.5px;
+  color:var(--ink);
+}
+.note.warn{background:var(--warn-soft);border-color:color-mix(in srgb, var(--warn) 34%, transparent)}
+.note.crit{background:var(--crit-soft);border-color:color-mix(in srgb, var(--crit) 34%, transparent)}
+.note b{font-weight:600}
+
+/* ─── métricas do diagnóstico ─────────────────────────────────────── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.metric{background:var(--surface);padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.metric .n{font-family:"IBM Plex Mono",monospace;font-size:28px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.metric .k{font-size:12px;color:var(--muted);line-height:1.35}
+.metric.is-crit .n{color:var(--crit)}
+.metric.is-warn .n{color:var(--warn)}
+.metric.is-ok .n{color:var(--ok)}
+
+/* ─── barra de tempo de fala ──────────────────────────────────────── */
+.airtime{display:flex;flex-direction:column;gap:7px;margin-top:6px}
+.at-row{display:grid;grid-template-columns:190px 1fr 52px;gap:12px;align-items:center;font-size:13px}
+@media (max-width:620px){.at-row{grid-template-columns:130px 1fr 46px;gap:8px;font-size:12px}}
+.at-bar{height:14px;background:var(--surface-2);position:relative;border-radius:1px;overflow:hidden}
+.at-bar i{display:block;height:100%;background:var(--accent);border-radius:1px}
+.at-row.gp .at-bar i{background:var(--warn)}
+.at-pct{text-align:right;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.at-name{color:var(--ink-2)}
+.at-row.gp .at-name{font-weight:600;color:var(--ink)}
+
+/* ─── run of show ─────────────────────────────────────────────────── */
+.ros{border:1px solid var(--line);background:var(--surface)}
+.ros-block{display:grid;grid-template-columns:88px 1fr;border-bottom:1px solid var(--line)}
+.ros-block:last-child{border-bottom:0}
+.ros-clock{
+  border-right:1px solid var(--line);
+  padding:14px 12px;
+  background:var(--surface-2);
+  display:flex;flex-direction:column;gap:2px;align-items:flex-end;justify-content:flex-start;
+}
+.ros-clock .from{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ros-clock .dur{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.ros-body{padding:14px 18px}
+.ros-body h3{font-size:16.5px;font-weight:600;margin-bottom:4px}
+.ros-body p{font-size:13.5px;color:var(--ink-2);margin-bottom:0;max-width:72ch}
+.ros-block.is-cap .ros-clock{background:var(--warn-soft)}
+.ros-block.is-cap .ros-clock .from{color:var(--warn)}
+.ros-tag{
+  display:inline-block;margin-left:8px;vertical-align:2px;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 7px;border-radius:2px;background:var(--warn-soft);color:var(--warn);
+  border:1px solid color-mix(in srgb, var(--warn) 34%, transparent);font-weight:600;
+}
+
+/* ─── grade de tribos ─────────────────────────────────────────────── */
+.tribes{display:grid;grid-template-columns:repeat(auto-fill,minmax(322px,1fr));gap:14px}
+.tribe{
+  background:var(--surface);border:1px solid var(--line);border-radius:2px;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.tribe-top{display:flex;gap:12px;align-items:flex-start;padding:14px 16px 12px;border-bottom:1px solid var(--line)}
+.tribe-num{
+  font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;
+  background:var(--accent);color:#fff;padding:3px 8px;border-radius:2px;flex:none;letter-spacing:.02em;
+}
+:root[data-theme="dark"] .tribe-num{color:#0D1112}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tribe-num{color:#0D1112}}
+.tribe-id{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tribe-id h3{font-size:16px;font-weight:600;line-height:1.2}
+.tribe-id .lead{font-size:12.5px;color:var(--muted)}
+.tribe-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)}
+.ts{background:var(--surface);padding:9px 6px;text-align:center;display:flex;flex-direction:column;gap:1px}
+.ts b{font-family:"IBM Plex Mono",monospace;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.ts span{font-size:10px;color:var(--muted);letter-spacing:.03em;text-transform:uppercase;line-height:1.2}
+.ts.bad b{color:var(--crit)}
+.ts.mid b{color:var(--warn)}
+.ts.good b{color:var(--ok)}
+.tribe-ask{padding:12px 16px 14px;font-size:13px;color:var(--ink-2);border-top:1px solid var(--line);flex:1}
+.tribe-ask .eyebrow{margin-bottom:5px;display:block}
+.tribe-ask ul{margin:0;padding-left:16px;display:flex;flex-direction:column;gap:4px}
+
+/* ─── tabelas ─────────────────────────────────────────────────────── */
+.tscroll{overflow-x:auto;border:1px solid var(--line);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.who{white-space:nowrap;font-weight:500}
+.pill{
+  display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;
+  padding:2px 7px;border-radius:2px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;
+}
+.pill.crit{background:var(--crit-soft);color:var(--crit)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.neutral{background:var(--surface-2);color:var(--muted)}
+
+/* ─── mesa de decisão ─────────────────────────────────────────────── */
+.decks{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.deck{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);padding:16px 18px;border-radius:2px}
+.deck.q-warn{border-left-color:var(--warn)}
+.deck.q-crit{border-left-color:var(--crit)}
+.deck h3{font-size:16px;font-weight:600;margin-bottom:6px}
+.deck p{font-size:13.5px;color:var(--ink-2)}
+.deck .ask{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line-strong);font-size:13px;color:var(--ink)}
+.deck .ask b{font-weight:600;color:var(--accent-ink)}
+
+/* ─── ledger do que mudou ─────────────────────────────────────────── */
+.ledger{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);background:var(--surface)}
+.led-row{display:grid;grid-template-columns:1fr auto;gap:16px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:baseline}
+.led-row:last-child{border-bottom:0}
+.led-row .what{font-size:13.5px;color:var(--ink-2)}
+.led-row .what b{color:var(--ink);font-weight:600}
+.led-row .delta{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;white-space:nowrap;color:var(--accent-ink)}
+
+/* ─── lista de recomendações ──────────────────────────────────────── */
+.recs{display:flex;flex-direction:column;gap:12px;counter-reset:rec}
+.rec{display:grid;grid-template-columns:34px 1fr;gap:14px;background:var(--surface);border:1px solid var(--line);padding:14px 16px;border-radius:2px}
+.rec::before{
+  counter-increment:rec;content:counter(rec);
+  font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600;color:var(--accent);
+  border-right:1px solid var(--line);padding-right:12px;
+}
+.rec h3{font-size:15.5px;font-weight:600;margin-bottom:3px}
+.rec p{font-size:13.5px;color:var(--ink-2)}
+
+footer{border-top:1px solid var(--line);padding-top:20px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+footer p{max-width:76ch}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="mast-grid">
+      <div>
+        <span class="eyebrow">Núcleo IA &amp; GP · quinzenal · 03 setembro 2026</span>
+        <h1 class="title serif">Condução da <em>Liderança #11</em></h1>
+        <p class="lede">Material de condução para Fernando Maquiaveli e Fabricio Costa. O Vitor não estará presente, e é a primeira vez que isso acontece. Tudo aqui foi medido no banco hoje, entre 13h e 17h UTC.</p>
+      </div>
+      <div class="mast-facts">
+        <div class="fact"><b>19:00</b><span>início</span></div>
+        <div class="fact"><b>90 min</b><span>orçamento</span></div>
+        <div class="fact"><b>12</b><span>tribos</span></div>
+        <div class="fact"><b>82</b><span>ações abertas</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ───────────────────────── DIAGNÓSTICO ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Ponto de partida</span>
+    <h2 class="serif">O que a #10 mostra sobre como esta reunião gasta tempo</h2>
+    <p class="sub">Três reuniões têm duração real registrada na própria ata, extraída da transcrição. A #10 é a que interessa, porque foi a última e a que estourou.</p>
+  </div>
+
+  <div class="metrics">
+    <div class="metric is-crit"><span class="n">132</span><span class="k">minutos reais da #10 contra 90 previstos</span></div>
+    <div class="metric"><span class="n">92</span><span class="k">minutos da #8, dentro do previsto</span></div>
+    <div class="metric"><span class="n">75</span><span class="k">minutos da #9, abaixo do previsto</span></div>
+    <div class="metric is-crit"><span class="n">0</span><span class="k">das 9 últimas reuniões tiveram pauta publicada</span></div>
+    <div class="metric is-warn"><span class="n">37</span><span class="k">minutos do bloco estratégico que partiu o rito ao meio</span></div>
+  </div>
+
+  <p style="margin-top:18px;max-width:70ch">A #10 não estourou porque as tribos falaram demais. Ela estourou porque a rodada das tribos foi <b>partida em duas</b>: começou em 00:01, foi interrompida no minuto 29 por um bloco estratégico de 37 minutos (congressos, expansão LATAM, proposta Anthropic, governança de parcerias) e só voltou em 01:06. As tribos que ficaram para o fim pagaram a conta.</p>
+
+  <div class="note warn" style="margin:18px 0 26px">
+    <b>O sintoma mais direto:</b> Paulo Alves, líder da Tribo 14, falou <b>8 palavras</b> em 132 minutos. Honório, líder da Tribo 10, falou 266. A tribo que apresenta por último não apresenta.
+  </div>
+
+  <span class="eyebrow" style="display:block;margin-bottom:10px">Distribuição da fala na #10, por palavras transcritas (20.958 no total)</span>
+  <div class="airtime">
+    <div class="at-row gp"><span class="at-name">Vitor Rodovalho</span><span class="at-bar"><i style="width:100%"></i></span><span class="at-pct">25,3%</span></div>
+    <div class="at-row gp"><span class="at-name">Roberto Macêdo</span><span class="at-bar"><i style="width:58.5%"></i></span><span class="at-pct">14,8%</span></div>
+    <div class="at-row"><span class="at-name">Fernando Maquiaveli</span><span class="at-bar"><i style="width:34%"></i></span><span class="at-pct">8,6%</span></div>
+    <div class="at-row gp"><span class="at-name">Fabricio Costa</span><span class="at-bar"><i style="width:32%"></i></span><span class="at-pct">8,1%</span></div>
+    <div class="at-row"><span class="at-name">Jhonathan Brandão</span><span class="at-bar"><i style="width:30.4%"></i></span><span class="at-pct">7,7%</span></div>
+    <div class="at-row"><span class="at-name">Ana Carla Cavalcante</span><span class="at-bar"><i style="width:26.5%"></i></span><span class="at-pct">6,7%</span></div>
+    <div class="at-row"><span class="at-name">Henrique Diniz</span><span class="at-bar"><i style="width:23.7%"></i></span><span class="at-pct">6,0%</span></div>
+    <div class="at-row"><span class="at-name">Adailson Santos</span><span class="at-bar"><i style="width:22.9%"></i></span><span class="at-pct">5,8%</span></div>
+    <div class="at-row"><span class="at-name">Messias Reis</span><span class="at-bar"><i style="width:22.1%"></i></span><span class="at-pct">5,6%</span></div>
+    <div class="at-row"><span class="at-name">Marcos Klemz</span><span class="at-bar"><i style="width:16.2%"></i></span><span class="at-pct">4,1%</span></div>
+    <div class="at-row"><span class="at-name">Hayala Curto</span><span class="at-bar"><i style="width:15.4%"></i></span><span class="at-pct">3,9%</span></div>
+    <div class="at-row"><span class="at-name">Jefferson Pinto</span><span class="at-bar"><i style="width:8.3%"></i></span><span class="at-pct">2,1%</span></div>
+    <div class="at-row"><span class="at-name">Honório Dias</span><span class="at-bar"><i style="width:5.1%"></i></span><span class="at-pct">1,3%</span></div>
+    <div class="at-row"><span class="at-name">Paulo Alves</span><span class="at-bar"><i style="width:0.4%"></i></span><span class="at-pct">0,0%</span></div>
+  </div>
+  <p style="margin-top:14px;max-width:70ch;font-size:13.5px;color:var(--muted)">GP e presidência (Vitor, Roberto, Fabricio) somam <b>48,2%</b> da fala. Com o Vitor ausente, 25 pontos percentuais ficam vagos. Ou eles voltam para as tribos, ou a reunião encolhe.</p>
+</section>
+
+<!-- ───────────────────────── RUN OF SHOW ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Roteiro proposto</span>
+    <h2 class="serif">90 minutos, com o bloco estratégico no fim</h2>
+    <p class="sub">Duas decisões já foram tomadas na própria #10 e estão embutidas aqui: inverter a ordem de apresentação (01:42:36) e enxugar o ritual (02:10:24). A terceira é nova: o bloco estratégico vai para o fim, com teto, para que quem estourar seja ele e não as tribos.</p>
+  </div>
+
+  <div class="ros">
+    <div class="ros-block">
+      <div class="ros-clock"><span class="from">19:00</span><span class="dur">5 min</span></div>
+      <div class="ros-body">
+        <h3>Abertura pelo one pager</h3>
+        <p>Fernando abre com a tabela de tribos desta página. Não é relatório, é contexto: todo mundo já chega sabendo onde a própria tribo está antes de falar. Este one pager é a ação de 20/08 que estava aberta com o Vitor.</p>
+      </div>
+    </div>
+    <div class="ros-block">
+      <div class="ros-clock"><span class="from">19:05</span><span class="dur">42 min</span></div>
+      <div class="ros-body">
+        <h3>Rito por tribo, ordem invertida, 3min30 cada <span class="ros-tag">cronometrado</span></h3>
+        <p>Ordem: 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 1. Quem sempre fica para o fim começa. Cada líder responde as perguntas do próprio card mais abaixo. Fabricio cronometra e corta; assunto que não couber vira item da mesa de decisão, não extensão do bloco.</p>
+      </div>
+    </div>
+    <div class="ros-block">
+      <div class="ros-clock"><span class="from">19:47</span><span class="dur">10 min</span></div>
+      <div class="ros-body">
+        <h3>Fila de retorno e curadoria</h3>
+        <p>82 ações abertas e 9 cards parados em revisão de líder. Não ler item a item: usar a tabela por responsável e pedir data ou baixa para as 4 mais antigas de cada um.</p>
+      </div>
+    </div>
+    <div class="ros-block">
+      <div class="ros-clock"><span class="from">19:57</span><span class="dur">15 min</span></div>
+      <div class="ros-body">
+        <h3>Mesa de decisão</h3>
+        <p>Quatro decisões que já estão maduras e não precisam do Vitor. Estão detalhadas adiante, cada uma com a pergunta fechada que a resolve.</p>
+      </div>
+    </div>
+    <div class="ros-block is-cap">
+      <div class="ros-clock"><span class="from">20:12</span><span class="dur">13 min</span></div>
+      <div class="ros-body">
+        <h3>Bloco estratégico <span class="ros-tag">teto rígido</span></h3>
+        <p>Anthropic, LATAM, congressos, licenças de ferramenta. Foi o que consumiu 37 minutos na #10, no meio da reunião. Aqui vai no fim e com teto: se estourar, estoura contra o encerramento, não contra as tribos.</p>
+      </div>
+    </div>
+    <div class="ros-block">
+      <div class="ros-clock"><span class="from">20:25</span><span class="dur">5 min</span></div>
+      <div class="ros-body">
+        <h3>Fechamento: ações com dono e data</h3>
+        <p>Ler apenas as ações novas, cada uma com responsável e data. Registrar pelo MCP na hora, para não repetir o padrão de 82 abertas contra 5 fechadas em toda a série.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── TRIBOS ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Rito por tribo · na ordem de apresentação</span>
+    <h2 class="serif">As doze tribos, com o número e a pergunta</h2>
+    <p class="sub">Presença é dos últimos 60 dias em reuniões de tribo. Cards e atividades são o estado de agora. XP é o ganho dos últimos 60 dias, já incluindo os entregáveis reconhecidos hoje.</p>
+  </div>
+
+  <div class="tribes">
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T14</span><div class="tribe-id"><h3>Fluência em IA</h3><span class="lead">Paulo Alves de Oliveira Junior · 5 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts mid"><b>76%</b><span>presença</span></div>
+        <div class="ts"><b>13</b><span>cards</span></div>
+        <div class="ts mid"><b>4</b><span>vencidos</span></div>
+        <div class="ts"><b>540</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Você falou 8 palavras na última reunião. O que a tribo precisa que não está sendo dito aqui?</li>
+          <li>Nenhum card em <i>done</i> em 13. Qual é a primeira entrega e em que semana?</li>
+          <li>Sprint 0 e Sprint 3 são entregáveis de portfólio ou etapa interna?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T13</span><div class="tribe-id"><h3>Dados em Projetos de IA</h3><span class="lead">Adailson Santos · 2 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>100%</b><span>presença</span></div>
+        <div class="ts"><b>8</b><span>cards</span></div>
+        <div class="ts mid"><b>4</b><span>vencidos</span></div>
+        <div class="ts"><b>553</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Presença 100% sobre 2 pessoas e 12 registros. A tribo tem massa crítica para o ciclo 4?</li>
+          <li>Ficou de apresentar o kit de qualidade de dados em 15 minutos, e de acionar as tribos 4 e 7. Ambas venceram em agosto.</li>
+          <li>Nenhuma atividade tem data. Vale abrir datas nos dois cards em curso?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T12</span><div class="tribe-id"><h3>Produtividade Aumentada</h3><span class="lead">Jhonathan Brandão · 8 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts mid"><b>79%</b><span>presença</span></div>
+        <div class="ts"><b>41</b><span>cards</span></div>
+        <div class="ts bad"><b>21</b><span>sem data</span></div>
+        <div class="ts"><b>970</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Maior quadro do núcleo em número de cards e o que tem menos data: 21 dos 41 abertos sem prazo.</li>
+          <li>Só 8 atividades para 41 cards, nenhuma com data. O trabalho está no card ou fora da plataforma?</li>
+          <li>7 cards aguardam sua decisão de portfólio, incluindo o Artigo 1 e o formulário da pesquisa.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T11</span><div class="tribe-id"><h3>PMO Inteligente</h3><span class="lead">João Henrique Jacinto · 7 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>90%</b><span>presença</span></div>
+        <div class="ts"><b>34</b><span>cards</span></div>
+        <div class="ts bad"><b>57</b><span>ativ. vencidas</span></div>
+        <div class="ts good"><b>1471</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Melhor presença e maior volume de atividade do núcleo, e ao mesmo tempo 57 atividades vencidas de 122. Passar a régua nas datas.</li>
+          <li>Webinar de 08/09 é o único do calendário do núcleo. Slides e roteiro ainda em <i>todo</i>.</li>
+          <li>13 cards para decidir, e a maioria é alocação individual (<i>Base inicial de Services, nome</i>). Sugestão: manter fora do portfólio.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T10</span><div class="tribe-id"><h3>Governança Assistida</h3><span class="lead">Honorio Dias Barbosa Filho · 2 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>100%</b><span>presença</span></div>
+        <div class="ts"><b>9</b><span>cards</span></div>
+        <div class="ts"><b>1</b><span>vencido</span></div>
+        <div class="ts"><b>360</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>2 membros e 2 reuniões em 60 dias. Continua esperando a próxima leva de aprovados?</li>
+          <li>Dois cards seus estão parados em revisão de líder, e o revisor é você mesmo. Como destravar?</li>
+          <li>Manual de Governança entrou no portfólio hoje. Confere que é o entregável certo?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T9</span><div class="tribe-id"><h3>IA em Projetos &amp; Construção</h3><span class="lead">Henrique Diniz S. Silva · 7 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts mid"><b>78%</b><span>presença</span></div>
+        <div class="ts"><b>12</b><span>cards</span></div>
+        <div class="ts bad"><b>8</b><span>vencidos</span></div>
+        <div class="ts"><b>725</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>8 dos 12 cards vencidos, a pior proporção do núcleo, e nenhum em <i>done</i>.</li>
+          <li>Data do webinar de novembro venceu hoje como ação, e a de agosto (braço direito) venceu em 07/08.</li>
+          <li>2 das 7 reuniões sem nenhum registro de presença.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T8</span><div class="tribe-id"><h3>Inclusão, Colaboração e Comunicação</h3><span class="lead">Ana Carla Cavalcante · 8 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>82%</b><span>presença</span></div>
+        <div class="ts"><b>26</b><span>cards</span></div>
+        <div class="ts good"><b>17</b><span>portfólio</span></div>
+        <div class="ts good"><b>1785</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Maior XP e maior volume de entrega do núcleo. Vale ser o caso de referência do bloco.</li>
+          <li>6 entregas suas entraram no portfólio hoje (3 submissões, 2 artigos, o AI Community Day).</li>
+          <li>Cronograma para o comitê de ética vence em 10/09, e a integração Claude/Trello ficou de ser demonstrada.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T7</span><div class="tribe-id"><h3>Governança &amp; Trustworthy AI</h3><span class="lead">Marcos Antunes Klemz · 5 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>89%</b><span>presença</span></div>
+        <div class="ts"><b>17</b><span>cards</span></div>
+        <div class="ts mid"><b>10</b><span>sem data</span></div>
+        <div class="ts"><b>982</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Ficou de apresentar o framework em bloco de 30 minutos. Cabe no formato novo? Sugestão: virar bloco próprio da Geral, não da liderança.</li>
+          <li>7 ações abertas, a maior fila individual depois do GP, com 4 vencidas e a mais antiga de 14/05.</li>
+          <li>10 dos 17 cards sem data.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T6</span><div class="tribe-id"><h3>ROI &amp; Portfólio</h3><span class="lead">Messias Reis da Silva · 8 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts mid"><b>77%</b><span>presença</span></div>
+        <div class="ts"><b>15</b><span>cards</span></div>
+        <div class="ts good"><b>80</b><span>ativ. c/ dono e data</span></div>
+        <div class="ts good"><b>1295</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Melhor higiene de atividade do núcleo: 80 das 98 com responsável e data. É o padrão a copiar.</li>
+          <li>Card de artigo parado em revisão de líder desde 19/08, o mais antigo da fila.</li>
+          <li>Único webinar já realizado (04/08). O que faltou para o segundo entrar no calendário?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T5</span><div class="tribe-id"><h3>Talentos &amp; Upskilling</h3><span class="lead">Jefferson Pinto · 3 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>100%</b><span>presença</span></div>
+        <div class="ts"><b>9</b><span>cards</span></div>
+        <div class="ts bad"><b>9</b><span>vencidos</span></div>
+        <div class="ts"><b>240</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Reorganizou o quadro hoje às 15h38, arquivando 19 cards. Vale contar o critério: é limpeza de ciclo?</li>
+          <li>Todos os 9 cards restantes estão vencidos, e todos entraram no portfólio hoje (sprints com data-base).</li>
+          <li>3 membros e 2 reuniões em 60 dias. A tribo tem tamanho para o ciclo 4?</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T4</span><div class="tribe-id"><h3>Cultura &amp; Change</h3><span class="lead">Fernando Maquiaveli · 8 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts bad"><b>60%</b><span>presença</span></div>
+        <div class="ts"><b>32</b><span>cards</span></div>
+        <div class="ts bad"><b>0</b><span>ativ. c/ dono e data</span></div>
+        <div class="ts good"><b>1150</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Pior presença do núcleo: 60%, com 16 das 23 faltas justificadas. É saída ou é horário?</li>
+          <li>15 atividades e <b>nenhuma</b> com responsável e data ao mesmo tempo.</li>
+          <li>4 pílulas em revisão de líder desde ontem, todas sem responsável no card.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tribe">
+      <div class="tribe-top"><span class="tribe-num">T1</span><div class="tribe-id"><h3>Radar Tecnológico</h3><span class="lead">Hayala Curto · 8 membros</span></div></div>
+      <div class="tribe-stats">
+        <div class="ts good"><b>85%</b><span>presença</span></div>
+        <div class="ts"><b>21</b><span>cards</span></div>
+        <div class="ts mid"><b>12</b><span>sem data</span></div>
+        <div class="ts good"><b>1158</b><span>xp 60d</span></div>
+      </div>
+      <div class="tribe-ask">
+        <span class="eyebrow">Perguntar</span>
+        <ul>
+          <li>Ficou de fixar janela de 2 semanas por entrega, com data cravada. Saiu do papel?</li>
+          <li>Ebook, cartilha e relatório PMI Infinity entraram no portfólio hoje.</li>
+          <li>Ficou de conduzir a sessão de IA no desenvolvimento de software para quem resiste à adoção.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ───────────────────────── FILA DE RETORNO ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Itens de retorno</span>
+    <h2 class="serif">82 ações abertas, 5 fechadas em toda a série</h2>
+    <p class="sub">Somando as reuniões #3, #4, #8, #9 e #10. A série cria cerca de 20 ações por sessão e fecha cerca de uma. Não é problema de memória: é que ninguém dá baixa.</p>
+  </div>
+
+  <div class="note crit" style="margin-bottom:20px">
+    <b>Um item já foi cobrado em três reuniões seguidas:</b> travar a janela de webinar de cada tribo para formar o calendário. Hoje o calendário tem <b>1 webinar futuro para 12 tribos</b> (Tribo 11, 08/09). Se for cobrar uma coisa só na fila, é esta.
+  </div>
+
+  <div class="tscroll">
+    <table>
+      <thead><tr><th>Responsável</th><th class="num">Abertas</th><th class="num">Vencidas</th><th class="num">De 20/08</th><th class="num">De 06/08</th><th class="num">Até 23/07</th><th>Mais antiga</th></tr></thead>
+      <tbody>
+        <tr><td class="who">Vitor Rodovalho <span class="pill neutral">ausente</span></td><td class="num">18</td><td class="num">10</td><td class="num">6</td><td class="num">4</td><td class="num">8</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Sem responsável nomeado</td><td class="num">9</td><td class="num">4</td><td class="num">0</td><td class="num">4</td><td class="num">5</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Marcos Antunes Klemz</td><td class="num">7</td><td class="num">4</td><td class="num">2</td><td class="num">1</td><td class="num">4</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Ana Carla Cavalcante</td><td class="num">6</td><td class="num">4</td><td class="num">3</td><td class="num">1</td><td class="num">2</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Fernando Maquiaveli</td><td class="num">6</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Adailson Santos</td><td class="num">5</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num">2</td><td class="num">23/07</td></tr>
+        <tr><td class="who">Hayala Curto</td><td class="num">5</td><td class="num">3</td><td class="num">2</td><td class="num">2</td><td class="num">1</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Messias Reis da Silva</td><td class="num">5</td><td class="num">2</td><td class="num">2</td><td class="num">3</td><td class="num">0</td><td class="num">06/08</td></tr>
+        <tr><td class="who">Fabricio Costa</td><td class="num">4</td><td class="num">2</td><td class="num">0</td><td class="num">1</td><td class="num">3</td><td class="num">28/05</td></tr>
+        <tr><td class="who">Henrique Diniz S. Silva</td><td class="num">4</td><td class="num">2</td><td class="num">2</td><td class="num">2</td><td class="num">0</td><td class="num">06/08</td></tr>
+        <tr><td class="who">Jhonathan Brandão</td><td class="num">3</td><td class="num">2</td><td class="num">2</td><td class="num">0</td><td class="num">1</td><td class="num">23/07</td></tr>
+        <tr><td class="who">Jefferson Pinto</td><td class="num">3</td><td class="num">3</td><td class="num">0</td><td class="num">0</td><td class="num">3</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Honorio Dias Barbosa Filho</td><td class="num">2</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">23/07</td></tr>
+        <tr><td class="who">Paulo Alves de Oliveira Junior</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">1</td><td class="num">23/07</td></tr>
+        <tr><td class="who">Roberto Macêdo</td><td class="num">1</td><td class="num">0</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">20/08</td></tr>
+        <tr><td class="who">Herlon Alves de Sousa</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td class="num">14/05</td></tr>
+        <tr><td class="who">Débora Moura</td><td class="num">1</td><td class="num">1</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td class="num">14/05</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="margin-top:12px;font-size:13px;color:var(--muted);max-width:72ch">As 9 sem responsável nomeado são as que começam com <i>TODOS OS LÍDERES</i>. Item de todos é item de ninguém: nenhuma delas foi fechada, e a mais antiga é de 14/05.</p>
+</section>
+
+<!-- ───────────────────────── CURADORIA ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Comitê de Curadoria · Fabricio Costa, Roberto Macêdo, Sarah Rodovalho</span>
+    <h2 class="serif">Nove cards parados em revisão de líder</h2>
+    <p class="sub">Todos estão em <i>leader_review</i> e nenhum tem revisor de líder atribuído. Sete dos nove já estão com o trabalho concluído, esperando só a revisão.</p>
+  </div>
+
+  <div class="tscroll">
+    <table>
+      <thead><tr><th>Tribo</th><th>Card</th><th>Situação</th><th>Parado desde</th><th>Responsável</th></tr></thead>
+      <tbody>
+        <tr><td class="num">T6</td><td>Artigo LinkedIn Newsletter, Maio</td><td><span class="pill ok">concluído</span></td><td class="num">19/08</td><td>Fabricio Costa</td></tr>
+        <tr><td class="num">T10</td><td>Vídeo de apresentação da tribo</td><td><span class="pill ok">concluído</span></td><td class="num">20/08</td><td>Honorio Dias</td></tr>
+        <tr><td class="num">T10</td><td>Arquiteturas de referência, Sprint 2</td><td><span class="pill warn">a fazer</span></td><td class="num">27/08</td><td>Honorio Dias</td></tr>
+        <tr><td class="num">T11</td><td>Vídeo de apresentação da tribo</td><td><span class="pill ok">concluído</span></td><td class="num">01/09</td><td>João Henrique Jacinto</td></tr>
+        <tr><td class="num">T11</td><td>Estruturar visão da Tribo 11</td><td><span class="pill ok">concluído</span></td><td class="num">01/09</td><td>João Henrique Jacinto</td></tr>
+        <tr><td class="num">T4</td><td>Pílulas fase 1, publicar pílula 2</td><td><span class="pill ok">concluído</span></td><td class="num">02/09</td><td><span class="pill crit">sem dono</span></td></tr>
+        <tr><td class="num">T4</td><td>Pílulas fase 1, publicar pílula 3</td><td><span class="pill ok">concluído</span></td><td class="num">02/09</td><td><span class="pill crit">sem dono</span></td></tr>
+        <tr><td class="num">T4</td><td>Pílulas fase 1, publicar pílula 4</td><td><span class="pill ok">concluído</span></td><td class="num">02/09</td><td><span class="pill crit">sem dono</span></td></tr>
+        <tr><td class="num">T4</td><td>Pílulas fase 1, publicar pílula 5 (extra)</td><td><span class="pill ok">concluído</span></td><td class="num">02/09</td><td><span class="pill crit">sem dono</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note" style="margin-top:16px">
+    Dois padrões para levar ao comitê: <b>ninguém está nomeado como revisor</b> em nenhum dos nove, e nos dois casos da T10 o autor e o revisor seriam a mesma pessoa. As quatro pílulas da T4 entraram ontem e já são metade da fila.
+  </div>
+</section>
+
+<!-- ───────────────────────── MESA DE DECISÃO ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Mesa de decisão · 15 minutos</span>
+    <h2 class="serif">Quatro decisões que não dependem do Vitor</h2>
+    <p class="sub">Cada uma vem com a pergunta fechada que a resolve, para não virar debate aberto.</p>
+  </div>
+
+  <div class="decks">
+    <div class="deck q-crit">
+      <h3>Calendário de webinars</h3>
+      <p>Pedido em 23/07, 06/08 e 20/08. Resultado: 1 webinar futuro no núcleo inteiro, o da Tribo 11 em 08/09. A Tribo 6 fez o único já realizado, em 04/08.</p>
+      <p class="ask"><b>Pergunta:</b> cada líder diz agora a semana (não a data) do webinar da sua tribo até dezembro. Quem não disser hoje fica de fora do calendário do ciclo 4.</p>
+    </div>
+
+    <div class="deck q-warn">
+      <h3>41 cards esperando decisão de portfólio</h3>
+      <p>São entregáveis prováveis sem data-base nem entrega registrada, então a régua automática não decide por eles. A maior parte está na T11 (13), T12 (7), T1 e T9 (5 cada).</p>
+      <p class="ask"><b>Pergunta:</b> card de alocação individual (<i>Base inicial de Services, nome</i>) entra no portfólio ou fica como tarefa de contribuinte? A resposta resolve 8 dos 13 da T11 de uma vez.</p>
+    </div>
+
+    <div class="deck q-warn">
+      <h3>Revisor de curadoria nomeado</h3>
+      <p>Nove cards em revisão de líder, zero com revisor atribuído, e dois em que autor e revisor seriam a mesma pessoa.</p>
+      <p class="ask"><b>Pergunta:</b> o comitê nomeia um revisor por tribo, ou a revisão de líder passa a ser sempre de um líder de outra tribo?</p>
+    </div>
+
+    <div class="deck">
+      <h3>Formato do bloco de framework</h3>
+      <p>Marcos ficou de apresentar o framework da T7 em 30 minutos na reunião de liderança. Trinta minutos é um terço do orçamento total desta reunião.</p>
+      <p class="ask"><b>Pergunta:</b> esse bloco vai para a Reunião Geral de 10/09, que tem 70 minutos livres na Agenda Viva, em vez de ocupar a liderança?</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────────────── O QUE MUDOU ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Transparência</span>
+    <h2 class="serif">O que já foi ajustado hoje, antes da reunião</h2>
+    <p class="sub">A ação de 06/08 pedia varrer os cards e marcar o que é artefato como reportável ao portfólio. Foi feita hoje, apenas onde a evidência era objetiva: cards com data-base pactuada ou entrega registrada.</p>
+  </div>
+
+  <div class="ledger">
+    <div class="led-row"><span class="what"><b>33 cards</b> passaram a contar como item de portfólio. Todos tinham data-base ou data de entrega, então já eram tratados como entregáveis em tudo, menos na marcação.</span><span class="delta">62 → 95</span></div>
+    <div class="led-row"><span class="what"><b>66 cards</b> ganharam tag de tipo (publicação, framework, pesquisa, webinar, ferramenta, poc, artefato de workshop). Sem a tag, o entregável some do filtro do painel de portfólio.</span><span class="delta">+66</span></div>
+    <div class="led-row"><span class="what"><b>18 entregas concluídas</b> receberam o XP de entregável que estava pendente, a 15 pessoas. 16 na base de 30 pontos e 2 com bônus de prazo.</span><span class="delta">+560 XP</span></div>
+    <div class="led-row"><span class="what">O XP foi carimbado com a <b>data real da entrega</b>, não com a data de hoje, para que entrega de julho pontue em julho.</span><span class="delta">17 datas</span></div>
+    <div class="led-row"><span class="what">Cards de confiança alta ainda fora do portfólio.</span><span class="delta">0</span></div>
+    <div class="led-row"><span class="what">Itens de portfólio ainda sem tag de tipo.</span><span class="delta">1</span></div>
+  </div>
+
+  <div class="note warn" style="margin-top:18px">
+    <b>Efeito no ranking:</b> os 560 pontos mudam a posição relativa das tribos, e chegaram hoje. Se alguém perguntar por que o número mudou, a resposta é esta linha: não houve nova entrega, houve reconhecimento de entrega que já existia e não estava pontuada. As tribos mais afetadas são T8, T11 e T1.
+  </div>
+</section>
+
+<!-- ───────────────────────── RECOMENDAÇÕES ───────────────────────── -->
+<section>
+  <div class="sec-head">
+    <span class="eyebrow">Jornada da reunião</span>
+    <h2 class="serif">Cinco mudanças de rito, em ordem de impacto</h2>
+    <p class="sub">Derivadas do que foi medido, não de preferência. As duas primeiras já tinham sido decididas na própria #10 e nunca foram executadas.</p>
+  </div>
+
+  <div class="recs">
+    <div class="rec">
+      <div>
+        <h3>Publicar a pauta antes, sempre</h3>
+        <p>Nenhuma das 9 últimas reuniões de liderança teve pauta registrada. A última com pauta foi a #1, em abril. Sem pauta publicada, a ordem é decidida na hora e o bloco estratégico entra onde couber, que foi exatamente o que aconteceu no minuto 29 da #10.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div>
+        <h3>Bloco estratégico no fim, com teto</h3>
+        <p>Na #10 ele ficou no meio e consumiu 37 minutos, empurrando metade das tribos para depois da hora e meia. No fim e com teto, quem estoura é o assunto que pode esperar, não a tribo que esperou.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div>
+        <h3>Ordem invertida a cada reunião, e rotativa</h3>
+        <p>Decidido na #10 e ainda não aplicado. Se a ordem for sempre a mesma, a mesma tribo é sempre a última. Rotacionar quem abre resolve o caso do Paulo com 8 palavras.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div>
+        <h3>Dar baixa nas ações dentro da reunião</h3>
+        <p>82 abertas contra 5 fechadas em cinco reuniões. Reservar os 10 minutos da fila para <b>fechar</b>, não para reler: cada líder dá baixa ou data nas quatro mais antigas dele, ao vivo, pelo MCP.</p>
+      </div>
+    </div>
+    <div class="rec">
+      <div>
+        <h3>Selar a lista de presença ao fim de cada reunião</h3>
+        <p>A #10 não teve a lista selada, e 8 das 98 reuniões de tribo dos últimos 60 dias não têm registro nenhum de presença. Selar fecha o número e evita a discussão sobre cálculo de presença que já apareceu na #9.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>Procedência dos números.</b> Tudo nesta página saiu de consulta ao banco da plataforma em 03/09/2026, entre 13h e 17h UTC, exceto a distribuição de fala e as durações reais, que vieram da transcrição da reunião de 20/08 gravada no Drive. Duração real da #10 confirmada em dois lugares independentes: o último carimbo da transcrição (02:12:18) e o cabeçalho da ata.</p>
+  <p style="margin-top:10px"><b>Uma ressalva honesta.</b> Números de quadro envelhecem em horas: durante o próprio levantamento, o líder da Tribo 5 arquivou 19 cards às 15h38. Se um número aqui divergir do que a tela mostrar na hora, a tela está certa.</p>
+</footer>
+
+</div>
