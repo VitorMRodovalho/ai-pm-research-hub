@@ -26,12 +26,63 @@ const corpoDaTool = () => {
   return rest.slice(0, j > 0 ? j : rest.length);
 };
 
-test('#1548 a tool existe e cobre o ciclo: ler, confirmar, não-realizado', () => {
+test('#1548 a tool existe e cobre o ciclo: ler, reservar, confirmar, não-realizado', () => {
   const corpo = corpoDaTool();
-  assert.match(corpo, /z\.enum\(\["list", "confirm", "no_show"\]\)/, 'as três ações têm de existir');
-  for (const rpc of ['get_meeting_preparation', 'get_geral_agenda_viva', 'confirm_agenda_block', 'confirm_event_blocks', 'revoke_agenda_block_xp']) {
+  // #2158: o ciclo era só o de VEREDITO (confirmar quem apresentou, marcar quem faltou). Faltava
+  // o de INTENÇÃO: `reserve_agenda_block` existia no banco desde a #1548 e nunca foi exposta, o
+  // que deixava um agente capaz de estornar XP de uma apresentação e incapaz de inscrever
+  // alguém para apresentar.
+  assert.match(corpo, /z\.enum\(\["list", "reserve", "confirm", "no_show"\]\)/, 'as quatro ações têm de existir');
+  for (const rpc of ['get_meeting_preparation', 'get_geral_agenda_viva', 'reserve_agenda_block', 'confirm_agenda_block', 'confirm_event_blocks', 'revoke_agenda_block_xp']) {
     assert.ok(corpo.includes(`"${rpc}"`), `a tool não alcança ${rpc}`);
   }
+});
+
+test('#2158 reservar é SELF-SCOPED e não inventa reserva em nome de outro membro', () => {
+  const corpo = corpoDaTool();
+  // A RPC resolve o dono de auth.uid() e há UNIQUE (event_id, owner_member_id): não existe
+  // reservar EM NOME DE outro membro. Terceiro se expressa nomeando quem apresenta em
+  // `guest_name`. Um parâmetro de dono aqui seria a tool contrariando a RPC que ela embrulha.
+  assert.ok(
+    !/p_owner_member_id|p_member_id:\s*params/.test(corpo),
+    'a tool não pode passar dono/membro-alvo para reserve_agenda_block: a reserva é do chamador',
+  );
+  assert.match(corpo, /guest_name/, 'o caminho de terceiro (nomear quem apresenta) tem de existir');
+  assert.match(
+    corpo, /EM SEU NOME/,
+    'o preview tem de dizer a quem a reserva pertence — o XP da confirmação vai para o dono',
+  );
+});
+
+test('#2158 reservar NÃO é gateado por manage_event', () => {
+  const corpo = corpoDaTool();
+  // Medido em 03/09/2026: `reserve_agenda_block` é exercida por 80 dos 100 membros ativos e
+  // `manage_event` por 14. A RPC pede a capacidade própria; se a tool anunciasse manage_event
+  // para reservar, a descrição mentiria sobre quem pode chamar.
+  const i = corpo.indexOf('if (params.action === "reserve")');
+  assert.ok(i > 0, 'o ramo de reserve sumiu');
+  const ramo = corpo.slice(i, corpo.indexOf('// ── writes: preview por padrao', i));
+  assert.ok(ramo.length > 0, 'não consegui delimitar o ramo de reserve');
+
+  // A primeira versão deste guard procurava a PALAVRA `manage_event` no ramo e reprovava por
+  // casar o comentário que explica justamente por que ela não é usada, mais o `next_actions` que
+  // avisa que CONFIRMAR (depois, outra ação) exige manage_event. Os dois são legítimos. O que não
+  // pode existir é o PORTÃO: uma checagem de autoridade por manage_event dentro do ramo, ou um
+  // envelope de auditoria anunciando manage_event como a permissão exercida.
+  const semComentarios = ramo.replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(
+    !/canV4\([^)]*manage_event/.test(semComentarios),
+    'o ramo de reserve não pode checar manage_event: quem gateia é a RPC, por reserve_agenda_block',
+  );
+  assert.ok(
+    !/permission:\s*"[^"]*manage_event/.test(semComentarios),
+    'o envelope de auditoria do reserve não pode anunciar manage_event como a permissão exercida',
+  );
+  assert.match(
+    ramo, /permission:\s*"reserve_agenda_block/,
+    'o envelope tem de nomear a capacidade que a RPC de fato exige',
+  );
+  assert.match(ramo, /reserve_agenda_block/, 'o ramo tem de nomear a capacidade que a RPC exige');
 });
 
 test('#1548 NENHUMA escrita executa sem confirm=true (ADR-0018 W1)', () => {
@@ -42,21 +93,42 @@ test('#1548 NENHUMA escrita executa sem confirm=true (ADR-0018 W1)', () => {
   // As chamadas de escrita têm de estar DEPOIS do gate no fluxo. Se qualquer uma aparecer antes,
   // existe um caminho que grava sem preview.
   const antesDoGate = corpo.slice(0, iGate);
-  for (const rpc of ['confirm_agenda_block', 'confirm_event_blocks', 'revoke_agenda_block_xp']) {
+  // #2158: `reserve_agenda_block` entra na mesma lista. Ela não move XP, mas ocupa a pauta de uma
+  // Reunião Geral e é irreversível pelo MCP (não há ação de cancelar), então também não pode
+  // executar sem o chamador ter visto o que vai acontecer.
+  for (const rpc of ['reserve_agenda_block', 'confirm_agenda_block', 'confirm_event_blocks', 'revoke_agenda_block_xp']) {
     assert.ok(
       !new RegExp(`sb\\.rpc\\(\\s*["'\`]?${rpc}`).test(antesDoGate),
-      `${rpc} é chamada ANTES do confirm-gate — existe caminho que concede/estorna XP sem preview`,
+      `${rpc} é chamada ANTES do confirm-gate — existe caminho que grava sem preview`,
     );
   }
 });
 
-test('#1548 o preview lista os alvos exatos, não só um aviso', () => {
+test('#1548 o preview de confirm/no_show lista os alvos exatos, não só um aviso', () => {
   const corpo = corpoDaTool();
-  const iGate = corpo.indexOf('params.confirm !== true');
+  // Ancorado no bloco de ESCRITA-VEREDITO, e não no primeiro `params.confirm !== true` que
+  // aparecer: desde a #2158 o primeiro gate é o do `reserve`, cujo preview mostra OCUPAÇÃO em vez
+  // de alvos. Procurar "o primeiro" faria este teste medir o bloco errado e passar por acidente.
+  const iSecao = corpo.indexOf('// ── writes: preview por padrao');
+  assert.ok(iSecao > 0, 'a seção de escrita confirm/no_show sumiu');
+  const iGate = corpo.indexOf('params.confirm !== true', iSecao);
+  assert.ok(iGate > iSecao, 'o confirm-gate de confirm/no_show sumiu');
   const bloco = corpo.slice(iGate, iGate + 1800);
   assert.match(bloco, /event_agenda_blocks/, 'o preview tem de consultar os blocos alvo');
   assert.match(bloco, /targets:/, 'o preview tem de devolver a lista de alvos');
   assert.match(bloco, /target_count:/, '"confirmar o evento" sem contagem é verbo sem objeto');
+  assert.match(bloco, /next_call:/, 'o preview tem de dizer como executar');
+});
+
+test('#2158 o preview de reserve mostra a ocupação, que é o que faz a reserva ser recusada', () => {
+  const corpo = corpoDaTool();
+  const i = corpo.indexOf('if (params.action === "reserve")');
+  assert.ok(i > 0, 'o ramo de reserve sumiu');
+  const iGate = corpo.indexOf('params.confirm !== true', i);
+  assert.ok(iGate > i, 'reservar tem de passar pelo confirm-gate como as outras escritas');
+  const bloco = corpo.slice(iGate, iGate + 1800);
+  assert.match(bloco, /capacity/, 'o preview tem de dizer quanto da pauta já está tomado');
+  assert.match(bloco, /cap_min/, 'sem o teto declarado, o chamador só descobre o limite ao ser recusado');
   assert.match(bloco, /next_call:/, 'o preview tem de dizer como executar');
 });
 
