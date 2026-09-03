@@ -7383,6 +7383,7 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.notFound': 'not found',
   'comp.affiliationQueue.affUnverified': 'Not verified',
   'comp.affiliationQueue.affExpiredVep': 'Expired (VEP)',
+  'comp.affiliationQueue.staleVsVep': 'VEP disagrees',
   'comp.affiliationQueue.affExpiringVep': 'Expiring soon (VEP)',
   'comp.affiliationQueue.affActiveVep': 'Active (VEP)',
   'comp.affiliationQueue.thExpiry': 'Expiry',
