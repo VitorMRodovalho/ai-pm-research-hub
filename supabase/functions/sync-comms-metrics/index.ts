@@ -1,6 +1,24 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// #2161: as URLs desta EF carregam segredo na QUERY — `key=` do YouTube, `access_token=` do
+// Meta — e o erro desta funcao e logado pelos chamadores com `console.warn('Media fetch ...', e)`.
+// Enquanto a mensagem carregava a URL crua, a chave ia para o log em texto claro. Eram 4 alertas
+// HIGH `js/clear-text-logging` abertos desde 02/09 (alerta #142 e irmaos, na linha de base do
+// #1966), TODOS por este unico caminho: segredo -> URL -> mensagem de erro -> console.warn.
+//
+// A redacao mantem origem e path, que e o que serve para diagnosticar QUAL endpoint falhou, e
+// descarta a query inteira, que e onde o segredo mora. Nao se filtra parametro por nome: uma
+// whitelist de nomes de parametro erra no proximo provedor que chamar o campo de outra coisa.
+function redactUrl(u: string): string {
+  try {
+    const p = new URL(u);
+    return `${p.origin}${p.pathname}`;
+  } catch {
+    return '(url ilegivel)';
+  }
+}
+
 // Retry with exponential backoff for external API calls
 async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries = 3): Promise<Response> {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -8,11 +26,18 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries
       const response = await fetch(url, options);
       if (response.ok || response.status < 500) return response;
     } catch (error) {
-      if (attempt === maxRetries - 1) throw error;
+      if (attempt === maxRetries - 1) {
+        // Re-embrulhado, e nao re-lancado: a mensagem que o Deno monta para falha de rede inclui
+        // a URL ("error sending request for url (https://...)"), entao propagar o erro original
+        // reintroduziria o vazamento por outra porta. Fica o NOME do erro, que separa timeout de
+        // DNS de TLS, mais o endpoint redigido.
+        const nome = error instanceof Error ? error.name : 'erro desconhecido';
+        throw new Error(`fetch falhou em ${redactUrl(url)} (${nome})`);
+      }
     }
     await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
   }
-  throw new Error(`Failed after ${maxRetries} retries: ${url}`);
+  throw new Error(`Failed after ${maxRetries} retries: ${redactUrl(url)}`);
 }
 
 type RawMetric = Record<string, unknown>
