@@ -70,9 +70,13 @@ test('#2153 so URN de IMAGEM vira origem — video e documento ficam de fora', (
 });
 
 test('#2153 as tres formas medidas da listagem sao lidas', () => {
-  for (const forma of ['media?.id', 'multiImage?.images?.\\[0\\]?.id', 'article?.thumbnail']) {
-    assert.match(
-      semComentarios, new RegExp(forma.replace(/\?/g, '\\?')),
+  // Substring LITERAL, e nao RegExp montada a partir de variavel. A primeira versao fazia
+  // `new RegExp(forma.replace(/\?/g, '\\?'))`, que escapa `?` e deixa `\` sem escape — o CodeQL
+  // acusou js/incomplete-sanitization (HIGH) nesta linha, e com razao. O mesmo cuidado ja estava
+  // registrado no teste do #965: "no RegExp built from a variable".
+  for (const forma of ['c?.media?.id', 'c?.multiImage?.images?.[0]?.id', 'c?.article?.thumbnail']) {
+    assert.ok(
+      semComentarios.includes(forma),
       `a forma ${forma} nao e lida: ela responde por parte dos 30 posts com imagem`,
     );
   }
