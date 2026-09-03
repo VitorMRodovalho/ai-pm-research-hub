@@ -45,14 +45,29 @@ const FN = latestFunctionCapture(ROOT, 'opt_out_all_pillars');
 // de alguem e ato sobre pessoa real, que cabe ao PM. O guard e um ratchet: pode cair, nunca subir.
 const BASELINE_SEM_AVALIACAO = 1;
 
-test('#2004 estático: promove SÓ de submitted', () => {
+// ⚠️ Esta asserção MUDOU em 03/09/2026, e a mudança é a correção da decisão de 28/08.
+//
+// A opção C restringiu a origem da promoção a `submitted`, e o guard afirmava exatamente isso
+// (`IF v_app_status = 'submitted' THEN`). Só que a medição que embasou a decisão, transcrita no
+// cabeçalho acima, mostra que `submitted` era a ÚNICA origem com ZERO avaliação: foram removidas
+// quatro origens nunca exercidas e mantida a única que produzia o salto. Em 03/09 o mesmo caminho
+// repetiu e o ratchet subiu de 1 para 2.
+//
+// A decisão nova é mais simples: o opt-out não promove de origem nenhuma.
+//
+// Por que a asserção deixou de casar a FORMA do IF: um guard textual não distingue "promover a
+// partir da lista" de "recusar a partir da lista" — as duas escrevem a mesma string em direções
+// opostas (classe do guard que classifica uma direção e fica verde na outra). Então o guard passa
+// a exigir a AUSÊNCIA do que só existe para promover: o nome do estado e a escrita na tabela.
+test('#2004 estático: o opt-out NÃO promove, de origem nenhuma', () => {
   assert.ok(FN, 'opt_out_all_pillars não foi capturada por nenhuma migration');
-  const b = FN.body;
-  assert.match(b, /IF v_app_status = 'submitted' THEN/,
-    'a promoção precisa ser condicionada a submitted, e só');
-  // A lista antiga aceitava quatro origens. Se ela voltar, o salto volta com ela.
-  assert.doesNotMatch(b, /v_app_status IN \(\s*'submitted'\s*,\s*'screening'/,
-    'a lista de quatro origens voltou — de objective_eval em diante, promover pula a régua');
+  // Comentários fora ANTES de medir: o texto que explica o anti-padrão cita o anti-padrão, e um
+  // guard que casa o próprio comentário reprova (ou passa) pelo motivo errado (#1910).
+  const code = FN.body.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n');
+  assert.doesNotMatch(code, /interview_pending/,
+    'o corpo executável voltou a citar o estado de aguardando entrevista — aqui só há um motivo para citá-lo: promover');
+  assert.doesNotMatch(code, /UPDATE\s+selection_applications/i,
+    'o opt-out voltou a escrever em selection_applications: a promoção foi reintroduzida');
 });
 
 test('#2004 estático: a recusa deixa rastro, em vez de silêncio', () => {
@@ -67,10 +82,15 @@ test('#2004 estático: a ESCOLHA do candidato continua registrada em qualquer st
   // movendo o INSERT dos 5 pilares para dentro do IF, o candidato perde o registro da própria opção.
   const b = FN.body;
   const insertPos = b.indexOf('INSERT INTO pmi_video_screenings');
-  const gatePos = b.indexOf("IF v_app_status = 'submitted' THEN");
-  assert.ok(insertPos > -1 && gatePos > -1, 'não achei o insert dos pilares ou o portão');
-  assert.ok(insertPos < gatePos,
-    'o registro do opt-out foi para dentro do portão: quem não é promovido perderia o registro da escolha');
+  const rastroPos = b.indexOf('opt_out_promotion_refused');
+  assert.ok(insertPos > -1 && rastroPos > -1, 'não achei o insert dos pilares ou o rastro da recusa');
+  assert.ok(insertPos < rastroPos,
+    'o registro dos 5 pilares saiu de antes do rastro: a escolha do candidato tem de ser gravada primeiro');
+  // O INSERT dos pilares não pode ficar condicionado a status nenhum: opt-out é direito do
+  // candidato em qualquer estado, e só a PROMOÇÃO era o que estava sob portão.
+  const antesDoInsert = b.slice(0, insertPos);
+  assert.doesNotMatch(antesDoInsert, /IF\s+v_app_status/,
+    'apareceu um IF sobre status antes do insert dos pilares: a escolha voltou a ficar condicionada');
 });
 
 test('#2004 vivo: ninguém NOVO chega a interview_pending sem avaliação (ratchet)',
