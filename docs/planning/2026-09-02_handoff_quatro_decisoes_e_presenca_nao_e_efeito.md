@@ -69,11 +69,37 @@ verde prova que o código subiu, **não** que o extrator funciona contra a API r
 honesta é `count(caption)` do LinkedIn **subir de 1**, e isso só acontece no próximo sync (cron de
 madrugada). Verificar amanhã, ou disparar o sync com a fila livre.
 
-## Issues abertas de propósito
+## Issues abertas ao encerrar
 
-`#2151` (acervo limpo e gate aplicado; a issue fica pelo registro), `#2152` (as 9 corrigidas e o
-sinal na tela; o cron segue como pergunta), `#2153` (imagem do LinkedIn), `#2155` (fechada pela
-#2156, confira).
+| # | estado | o que é |
+|---|---|---|
+| #2149 | fechada | ACL das duas RPCs |
+| #2155 | fechada | guard p262 que afirmava 5 portões contra 3 reais |
+| #2151 | **aberta** | acervo limpo e gate aplicado; fica pelo registro |
+| #2152 | **aberta** | as 9 corrigidas e o sinal na tela; falta decidir se o cron diário também avisa |
+| #2153 | **aberta** | imagem do card do LinkedIn (0 de 50 em thumbnail e cache) |
+| #2157 | **aberta** | meu push direto na main; janela de bypass em **2/2** |
+| #2158 | **aberta** | Agenda Viva no MCP: falta `reserve` |
+| #2159 | **aberta** | auditoria de PII: os dois logs existem e não se cruzam |
+
+### As três que nasceram no fim da sessão
+
+**#2157 — bypass no limiar.** Pushei o handoff direto na main sem PR. Conta como 1 evento; com o
+arranque de 30/08, a janela de 7 dias está em **2 de 2**. A política pede pausar merges quando o
+limiar é atingido, e **um terceiro push direto ultrapassa**. Handoff e planning vão por PR.
+
+**#2158 — Agenda Viva no MCP não tem `reserve`.** Surgiu de um pedido real no grupo (reservar 10 min
+na pauta da Geral de 10/09). Medido: `reserve_agenda_block` existe no banco, executável por
+`authenticated`, e tem **0 ocorrências** no manifesto e **0** na EF do MCP. A tool `agenda_blocks`
+expõe `list`, `confirm` e `no_show` — **duas delas escrevem**. Então não é "rota indisponível" (a
+escrita existe) nem só "restrição por desenho" (há lacuna real): a superfície cobre o *veredito* e
+não a *intenção*. Falta decidir a autoridade de reservar para si × para terceiro.
+
+**#2159 — a auditoria de PII já existe e não se cruza.** `mcp_usage_log` tem 2.862 linhas e 223
+tools, com `member_id` em 95,7% — e **`auth_user_id` em 0 de 2.862**, coluna morta que descreve
+exatamente a pergunta que se quer responder. `pii_access_log` tem 34.585 linhas com accessor e alvo,
+mas o `context` é o nome da RPC, não o canal. Dá para responder "quem leu PII" e "quem chamou o
+MCP", e **não** "qual credencial, por qual canal, leu PII de quem".
 
 ## Lanes
 
