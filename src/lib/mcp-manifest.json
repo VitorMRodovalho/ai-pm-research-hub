@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-26T21:49:21.441Z",
+  "generated_at": "2026-09-03T02:03:09.705Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -200,7 +200,7 @@
     },
     {
       "name": "agenda_blocks",
-      "description": "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as duas acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
+      "description": "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; para inscrever outra pessoa, nomeie-a em guest_name (+ external_guest se for de fora). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false

@@ -10670,12 +10670,18 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // (#1552) fez a pendencia ficar VISIVEL no `prepare` e no `close`; esta tool a torna ACIONAVEL.
   mcp.tool(
     "agenda_blocks",
-    "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as duas acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
+    "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; para inscrever outra pessoa, nomeie-a em guest_name (+ external_guest se for de fora). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
     {
-      action: z.enum(["list", "confirm", "no_show"]).describe("Agenda-block operation."),
-      event_id: z.string().optional().describe("Event UUID. action='list' — opcional (sem ele, janela corrente). action='confirm' — confirma TODOS os blocos reservados do evento."),
+      action: z.enum(["list", "reserve", "confirm", "no_show"]).describe("Agenda-block operation."),
+      event_id: z.string().optional().describe("Event UUID. action='list' — opcional (sem ele, janela corrente). action='reserve' — REQUERIDO, e tem de ser uma das 2 proximas Reunioes Gerais. action='confirm' — confirma TODOS os blocos reservados do evento."),
       block_id: z.string().optional().describe("Block UUID. action='confirm' — um bloco so. action='no_show' — REQUERIDO."),
       reason: z.string().optional().describe("action='no_show' — por que o bloco nao foi realizado. Fica no ledger junto do estorno."),
+      format_slug: z.string().optional().describe("action='reserve' — REQUERIDO. Formato do bloco (prompt_semana|review_ferramenta|insight_rapido|pilula_quinzena|case_aplicado|demo_pratica|convidado|espaco_aberto). Define os pontos-base e a duracao sugerida."),
+      title: z.string().optional().describe("action='reserve' — REQUERIDO. Titulo do que sera apresentado."),
+      duration_min: z.number().optional().describe("action='reserve' — REQUERIDO. Multiplo de 5, positivo. O evento tem teto de 90 min somando reservados e confirmados."),
+      guest_name: z.string().optional().describe("action='reserve' — quem de fato apresenta, quando nao e o proprio chamador. A reserva continua em nome do chamador; este campo NOMEIA o apresentador."),
+      material_url: z.string().optional().describe("action='reserve' — link do material (slides, doc, repo)."),
+      external_guest: z.boolean().optional().describe("action='reserve' — true quando o apresentador nomeado em guest_name nao e membro do Nucleo."),
       confirm: z.boolean().optional().describe("Passe confirm=true para executar. Omitido/false devolve preview com os alvos exatos (ADR-0018 W1). Vale para confirm e no_show."),
     },
     async (params: any) => {
@@ -10710,6 +10716,104 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
             "meeting_minutes action='close': fechar a reuniao (o envelope acusa bloco pendente)",
           ],
           audit: { tool: "agenda_blocks", semantic_domain: dom, pii_level: "low", permission: "RPC-enforced (LGPD PD-5 layering via _agenda_block_owner_visible)", source_tools: [rpc], caller_member_id: member.id, gate_checked: "get_meeting_preparation: auth + rls_can_see_initiative; get_geral_agenda_viva: anon-OK com camadas", resource_id: params.event_id ?? null, extra: { action: "list" } },
+        });
+      }
+
+      // ── reserve (#2158) ─────────────────────────────────────────────────────
+      // A RPC `reserve_agenda_block` existe no banco desde a #1548 e nunca foi exposta: a tool
+      // cobria o ciclo de VEREDITO (confirmar quem apresentou, marcar quem faltou) e deixava de
+      // fora o de INTENCAO (reservar o espaco). Um agente podia estornar XP de uma apresentacao e
+      // nao podia inscrever ninguem para apresentar.
+      //
+      // Duas coisas a RPC ja decide, e que esta tool NAO redecide (medidas em 03/09/2026):
+      //  - a autoridade e `reserve_agenda_block`, capacidade PROPRIA, e nao `manage_event` como as
+      //    outras duas acoes. Sao 80 dos 100 membros ativos contra 14: gatear reserva por
+      //    manage_event cortaria a audiencia a um sexto e contrariaria o corpo da RPC.
+      //  - a reserva e SEMPRE do chamador (`owner_member_id` resolve de auth.uid(), e ha UNIQUE
+      //    por evento+dono). Reservar "pela tribo" se expressa NOMEANDO quem apresenta em
+      //    `guest_name` (+ `external_guest`), caminho ja usado em 8 dos 22 blocos confirmados.
+      //    Nao existe reservar EM NOME DE outro membro, e esta tool nao inventa esse caminho.
+      //
+      // As demais regras (janela das 2 proximas gerais, teto de 90 min, 1 bloco por pessoa,
+      // reativacao de bloco cancelado) tambem moram na RPC. O preview daqui as ANTECIPA para o
+      // chamador, mas quem recusa e ela — o preview nao e o portao.
+      if (params.action === "reserve") {
+        if (!isUUID(params.event_id ?? "")) return invalid("action='reserve' requires event_id (UUID) da Reuniao Geral.", "Use action='list' sem event_id para ver as proximas.");
+        if (!params.format_slug) return invalid("action='reserve' requires format_slug.", "Formatos ativos: prompt_semana, review_ferramenta, insight_rapido, pilula_quinzena, case_aplicado, demo_pratica, convidado, espaco_aberto.");
+        if (!params.title || !String(params.title).trim()) return invalid("action='reserve' requires title (nao vazio).");
+        const dur = Number(params.duration_min);
+        if (!Number.isInteger(dur) || dur <= 0 || dur % 5 !== 0) {
+          return invalid("duration_min tem de ser inteiro positivo e multiplo de 5.", "Ex.: 5, 10, 15, 20.");
+        }
+
+        if (params.confirm !== true) {
+          // O preview mostra a OCUPACAO, que e o que faz a reserva ser recusada com mais
+          // frequencia. Sem isto o chamador so descobre o teto ao levar 'capacity_exceeded'.
+          const { data: ocupados } = await sb
+            .from("event_agenda_blocks")
+            .select("duration_min, status")
+            .eq("event_id", params.event_id)
+            .in("status", ["reserved", "confirmed"]);
+          const usados = (ocupados ?? []).reduce((s: number, b: any) => s + (Number(b.duration_min) || 0), 0);
+          await logUsage(sb, member.id, "agenda_blocks", true, undefined, start, "preview");
+          return ok({
+            action: "reserve",
+            preview: true,
+            event_id: params.event_id,
+            reserva_em_nome_de: { member_id: member.id, name: (member as any).name ?? null },
+            apresentador_nomeado: params.guest_name ?? null,
+            capacity: { used_min: usados, requested_min: dur, cap_min: 90, remaining_after_min: 90 - (usados + dur) },
+            warning: "A reserva fica EM SEU NOME (o XP da confirmacao vai para voce). Para inscrever outra pessoa, o caminho e nomea-la em guest_name, nao reservar por ela. Passe confirm=true para executar.",
+            next_call: {
+              action: "reserve", event_id: params.event_id, format_slug: params.format_slug,
+              title: params.title, duration_min: dur,
+              ...(params.guest_name ? { guest_name: params.guest_name } : {}),
+              ...(params.material_url ? { material_url: params.material_url } : {}),
+              ...(params.external_guest ? { external_guest: params.external_guest } : {}),
+              confirm: true,
+            },
+          });
+        }
+
+        const { data: rdata, error: rerror } = await sb.rpc("reserve_agenda_block", {
+          p_event_id: params.event_id,
+          p_format_slug: params.format_slug,
+          p_title: params.title,
+          p_duration_min: dur,
+          p_guest_name: params.guest_name ?? null,
+          p_material_url: params.material_url ?? null,
+          p_external_guest: params.external_guest ?? false,
+        });
+        if (rerror) { await logUsage(sb, member.id, "agenda_blocks", false, rerror.message, start); return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "internal_error", message: rerror.message })); }
+        // A RPC devolve {error: '...'} no CORPO em vez de estourar. Sem este ramo, um
+        // 'capacity_exceeded' ou um 'access_denied' viraria "sucesso" no envelope (#1525/#1532).
+        if ((rdata as any)?.error) {
+          const code = String((rdata as any).error);
+          await logUsage(sb, member.id, "agenda_blocks", false, code, start);
+          return ok(buildSemanticError({
+            tool: "agenda_blocks", semantic_domain: dom,
+            code: code === "access_denied" ? "unauthorized" : "invalid_input",
+            message: code + ((rdata as any).detail ? `: ${(rdata as any).detail}` : ""),
+            action: code === "access_denied"
+              ? "Reservar exige a capacidade reserve_agenda_block."
+              : (code === "already_reserved"
+                  ? "Voce ja tem bloco neste evento; um bloco por pessoa por evento."
+                  : (code === "capacity_exceeded"
+                      ? "A pauta chegou ao teto de 90 min. Use action='list' para ver o que ja esta reservado."
+                      : "Use action='list' para conferir evento, formato e janela.")),
+          }));
+        }
+        await logUsage(sb, member.id, "agenda_blocks", true, undefined, start);
+        return semanticOk({
+          data: { action: "reserve", event_id: params.event_id, block_id: (rdata as any)?.block_id ?? null, result: rdata ?? null },
+          summary: `Bloco reservado em ${params.event_id} (${dur} min, ${params.format_slug}), em nome de ${(member as any).name ?? member.id}`
+            + (params.guest_name ? `, apresentado por ${params.guest_name}` : "")
+            + `. Restam ${(rdata as any)?.capacity_remaining_min ?? "?"} min na pauta.`,
+          next_actions: [
+            "agenda_blocks action='list': reler a pauta com o bloco novo",
+            "agenda_blocks action='confirm': depois da reuniao, conceder o XP (exige manage_event)",
+          ],
+          audit: { tool: "agenda_blocks", semantic_domain: dom, pii_level: "low", permission: "reserve_agenda_block (RPC-enforced)", source_tools: ["reserve_agenda_block"], caller_member_id: member.id, gate_checked: "can_by_member(caller, 'reserve_agenda_block') dentro da RPC", resource_id: (rdata as any)?.block_id ?? params.event_id ?? null, extra: { action: "reserve", confirmed: true, self_scoped: true } },
         });
       }
 
