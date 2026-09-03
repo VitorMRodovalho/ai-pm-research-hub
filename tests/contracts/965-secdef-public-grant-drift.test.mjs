@@ -82,11 +82,18 @@ const ALLOWLIST = new Set([
   //    confirmed anon-callable live before the revoke (HTTP 204). The MCP-wrapper hint on
   //    recompute_all_active_pert_cutoffs was a comment reference only, not a call site.
   //    Locked by tests/contracts/1551-cron-family-acl-sweep.test.mjs. ──
+  // ── Ratcheted DOWN (mig 20260903022949, #2159): log_mcp_usage saiu da varredura, e por
+  //    DERIVACAO, nao por revoke. A entrada anterior dizia, com razao, que revogar anon aqui
+  //    encerraria o rastro em silencio: `createAuthenticatedClient(token?)` usa a anon-key e so
+  //    acrescenta Authorization SE houver token, entao o caminho que registra "Not authenticated"
+  //    (388 chamadas de logUsage(sb, null, ...)) roda como anon, e logUsage engole a excecao. O
+  //    revoke foi tentado na mig 20260903015614 e DESFEITO na 20260903022949 exatamente por isso.
+  //    O que tirou a funcao da varredura foi o corpo passar a fazer
+  //    COALESCE(p_auth_user_id, auth.uid()) — e a varredura exclui quem consulta auth.uid().
+  //    Ou seja, a correcao que a propria nota de #1551 pedia ("the fix is a body derivation, not
+  //    an ACL change") foi feita, e o spoofing de p_auth_user_id deixou de existir: o valor da
+  //    sessao vence o que o chamador manda. `anon` MANTEM EXECUTE de proposito. ──
   '_audit_secdef_initiative_reader_gates',
-  'log_mcp_usage',                        // #1551: KEPT — the MCP EF logs through anon-key+caller-JWT and
-                                          // logUsage() swallows errors, so revoking silently ends the audit
-                                          // trail instead of failing loudly. Caller-supplied p_member_id is a
-                                          // spoofing surface whose fix is a body derivation, not an ACL change.
   'register_video_screening',
 ]);
 
