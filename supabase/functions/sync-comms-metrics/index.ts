@@ -453,6 +453,31 @@ type MediaItem = {
 // #889: download a remote image (IG thumbnail/media URL — short-lived cdninstagram)
 // and cache it in the public 'comms-media' bucket; returns the stable public URL.
 // Non-fatal: any failure returns null and the caller leaves cached_image_url unset.
+// #2153: um URN de imagem do LinkedIn nao e baixavel. `/rest/images/{urn}` devolve um
+// `downloadUrl` acompanhado de `downloadUrlExpiresAt` — medido em 03/09/2026, a URL trazia
+// `e=1790208...` na query, ou seja, expira. Por isso o resultado NAO e persistido em
+// `thumbnail_url`: ele so serve de origem para o cacheMediaImage, que grava a copia estavel.
+// Falha e sempre nao-fatal: imagem ausente nunca pode derrubar a coleta de metricas.
+async function resolveLinkedInImageUrl(token: string | null, imageUrn: string): Promise<string | null> {
+  if (!token || !imageUrn.startsWith('urn:li:image:')) return null
+  try {
+    const resp = await fetchWithRetry(
+      `https://api.linkedin.com/rest/images/${encodeURIComponent(imageUrn)}`,
+      { headers: linkedInHeaders(token) }
+    )
+    if (!resp.ok) {
+      console.warn(`LinkedIn image: ${resp.status} for ${imageUrn}`)
+      return null
+    }
+    const data = await resp.json()
+    const url = data?.downloadUrl
+    return typeof url === 'string' && url.startsWith('http') ? url : null
+  } catch (e) {
+    console.warn('LinkedIn image resolve failed', imageUrn, e instanceof Error ? e.message : e)
+    return null
+  }
+}
+
 async function cacheMediaImage(sb: any, channel: string, externalId: string, srcUrl: string): Promise<string | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort('timeout'), 15_000)
@@ -615,7 +640,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   if (!token || !orgUrn) return []
 
   const headers = linkedInHeaders(token)
-  const known: { urn: string; published_at: string | null; caption: string | null }[] = []
+  const known: { urn: string; published_at: string | null; caption: string | null; image_urn: string | null }[] = []
   let discovery: 'author_listing' | 'stored_urns' | 'none' = 'none'
 
   // (a) discovery by author
@@ -637,10 +662,26 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
         const text = el?.commentary
           ?? el?.specificContent?.['com.linkedin.ugc.ShareContent']?.shareCommentary?.text
           ?? null
+        // #2153: a mesma listagem carrega a referencia de midia, e ela vem em TRES formas.
+        // Medido em 03/09/2026 sobre os 50 posts da organizacao:
+        //   content.media.id = urn:li:image: ......... 16
+        //   content.multiImage.images[0].id .......... 9
+        //   content.article.thumbnail ................ 5   (todos os 5 artigos tem)
+        //   content.media.id = urn:li:video: ......... 5   (nao e imagem; fica de fora)
+        //   content.media.id = urn:li:document: ...... 3   (idem)
+        //   content.reference (artigo/link externo) .. 7   (nao traz imagem no elemento)
+        //   sem content .............................. 5
+        // Ou seja, 30 dos 50 tem imagem alcancavel por este caminho. O prefixo e conferido nas
+        // tres formas de proposito: `media.id` tambem carrega video e documento, e cair neles
+        // faria o resolver pedir /rest/images de um URN que nao e imagem.
+        const c = el?.content
+        const cand = [c?.media?.id, c?.multiImage?.images?.[0]?.id, c?.article?.thumbnail]
+        const imageUrn = cand.find((v: unknown) => typeof v === 'string' && v.startsWith('urn:li:image:')) ?? null
         known.push({
           urn,
           published_at: typeof created === 'number' ? new Date(created).toISOString() : null,
           caption: typeof text === 'string' && text.trim() ? text.slice(0, 500) : null,
+          image_urn: imageUrn as string | null,
         })
       }
       discovery = 'author_listing'
@@ -660,7 +701,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   if (known.length === 0) {
     const { data: stored } = await sb
       .from('comms_media_items')
-      .select('external_id, published_at, caption')
+      .select('external_id, published_at, caption, payload')
       .eq('channel', 'linkedin')
       .order('published_at', { ascending: false })
       .limit(50)
@@ -669,6 +710,9 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
         urn: (r as any).external_id,
         published_at: (r as any).published_at ?? null,
         caption: (r as any).caption ?? null,
+        // #2153: mesmo motivo da legenda — o upsert reescreve `payload` inteiro, entao um dia
+        // em que a listagem por autor falhasse apagaria o image_urn ja descoberto.
+        image_urn: (r as any).payload?.image_urn ?? null,
       })
     }
     if (known.length > 0) {
@@ -685,7 +729,7 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
   // Per-post statistics. Same endpoint as the org aggregate; the slice is the
   // shares=/ugcPosts= parameter, chosen by the URN type.
   const items: MediaItem[] = []
-  for (const { urn, published_at, caption } of known) {
+  for (const { urn, published_at, caption, image_urn } of known) {
     const param = urn.includes(':ugcPost:') ? 'ugcPosts' : 'shares'
     try {
       const statResp = await fetchWithRetry(
@@ -722,6 +766,10 @@ async function fetchLinkedInMedia(cfg: ChannelConfig, sb: SupabaseClient): Promi
           api: 'linkedin_share_stats',
           version: LINKEDIN_VERSION,
           discovery,
+          // #2153: guardado como URN, nao como URL. O /rest/images devolve um `downloadUrl` com
+          // `downloadUrlExpiresAt`, entao gravar a URL daria um link que morre; quem persiste e
+          // o cache do #889, e o URN e a chave estavel para chegar nela.
+          image_urn: image_urn ?? null,
           clicks: parseInteger(t.clickCount),
           engagement: typeof t.engagement === 'number' ? t.engagement : null,
         },
@@ -1053,33 +1101,59 @@ async function syncFromChannelConfigs(
               })), { onConflict: 'channel,external_id' })
             if (!mediaError) mediaCount = mediaItems.length
 
-            // #889: cache Instagram thumbnails to Storage (cdninstagram URLs expire;
-            // image posts have no thumbnail_url at all). Idempotent (skip already-cached)
-            // and non-fatal (a download failure never breaks the metrics sync).
-            if (cfg.channel === 'instagram') {
+            // #889: cache thumbnails to Storage (cdninstagram URLs expire; image posts have no
+            // thumbnail_url at all). Idempotent (skip already-cached) and non-fatal (a download
+            // failure never breaks the metrics sync).
+            //
+            // #2153: o gate era `=== 'instagram'` e por isso o LinkedIn nunca passou por aqui —
+            // 0 de 50 linhas com imagem, e todo card do Top Content caindo no placeholder de
+            // camera. A maquina ja era generica (cacheMediaImage recebe `channel`); o que faltava
+            // era a URL de ORIGEM, que no LinkedIn exige resolver o URN numa segunda chamada.
+            //
+            // Cada canal so difere em COMO chega na origem:
+            //   instagram → a propria listagem ja traz media_url/thumbnail_url
+            //   linkedin  → payload.image_urn, resolvido em /rest/images
+            // O resto (pular ja cacheado, baixar, subir, gravar cached_image_url) e comum.
+            if (cfg.channel === 'instagram' || cfg.channel === 'linkedin') {
+              const ch = cfg.channel
               try {
                 const ids = mediaItems.map(m => m.external_id)
                 const { data: existing } = await sb
                   .from('comms_media_items')
                   .select('external_id, cached_image_url')
-                  .eq('channel', 'instagram')
+                  .eq('channel', ch)
                   .in('external_id', ids)
                 const alreadyCached = new Set(
                   (existing || []).filter((r: any) => r.cached_image_url).map((r: any) => r.external_id)
                 )
+                let resolved = 0
+                let semOrigem = 0
                 for (const m of mediaItems) {
                   if (alreadyCached.has(m.external_id)) continue
-                  // video → thumbnail_url (an image); image/carousel → media_url
-                  const src = m.media_type === 'VIDEO' ? m.thumbnail_url : (m.media_url || m.thumbnail_url)
-                  if (!src) continue
-                  const publicUrl = await cacheMediaImage(sb, 'instagram', m.external_id, src)
+                  let src: string | null = null
+                  if (ch === 'instagram') {
+                    // video → thumbnail_url (an image); image/carousel → media_url
+                    src = (m.media_type === 'VIDEO' ? m.thumbnail_url : (m.media_url || m.thumbnail_url)) ?? null
+                  } else {
+                    const urn = (m.payload as any)?.image_urn
+                    // A resolucao so acontece para quem ainda nao esta cacheado, entao e uma
+                    // chamada por post na vida, e nao uma por sync.
+                    src = typeof urn === 'string' ? await resolveLinkedInImageUrl(activeCfg.oauth_token, urn) : null
+                  }
+                  if (!src) { semOrigem++; continue }
+                  const publicUrl = await cacheMediaImage(sb, ch, m.external_id, src)
                   if (publicUrl) {
+                    resolved++
                     await sb.from('comms_media_items')
                       .update({ cached_image_url: publicUrl })
-                      .eq('channel', 'instagram')
+                      .eq('channel', ch)
                       .eq('external_id', m.external_id)
                   }
                 }
+                // #2153: dito em voz alta porque "0 cacheadas" tem duas causas muito diferentes —
+                // ja estava tudo cacheado, ou nenhuma origem foi alcancada. Sem esta linha as
+                // duas leem igual no log, que foi como o defeito passou despercebido ate agora.
+                console.info(`Comms media cache [${ch}]: ${resolved} cacheada(s), ${semOrigem} sem origem, ${alreadyCached.size} ja tinha(m)`)
               } catch (e) { console.warn('Comms media cache:', e) }
             }
           }
