@@ -318,6 +318,39 @@ const OPERACOES_MANUAIS_CONHECIDAS = new Set([
   // lista guarda `gate_attempts.id`. São colunas diferentes. "O ID que falhou não está na lista"
   // NÃO prova ofensor novo — cruze pelas duas chaves antes de concluir qualquer coisa.
   'ec7336f2-8c04-4a44-b1fc-794c83bd435c',
+
+  // 03/09/2026 13:44:53Z, 13:45:04Z, 13:45:08Z e 13:45:15Z — QUATRO tentativas na MESMA
+  // candidatura, mesma recusa (`P0002` / `GATE_NO_PEER_REVIEW`), nenhum token emitido.
+  //
+  // ⚠️ ESTAS QUATRO ENTRAM POR UM MOTIVO DIFERENTE DAS SEIS ACIMA, e a diferença importa mais que
+  // as entradas: **a causa foi encontrada e está FECHADA**. Não é "operação manual conhecida".
+  //
+  // O que aconteceu, medido em 04/09: o defeito da #2004 promovia a `interview_pending` a partir
+  // do opt-out de vídeo, sem avaliação objetiva. A promoção indevida ocorreu às 13:44:48.599Z e a
+  // primeira tentativa de emitir o convite caiu **4,5 segundos depois**. O portão de peer review
+  // recusou, corretamente, as quatro vezes. A #2004 fechou em 04/09 (PR #2168): a promoção foi
+  // removida e as duas candidaturas afetadas voltaram a `submitted`.
+  //
+  // ⚠️ A #2171 CONCLUIU QUE ESTAS ERAM DE CLASSE DIFERENTE DAS SEIS ACIMA, E A PREMISSA CAIU.
+  // Ela apoiava isso em `payload->>'dispatch_source'` ser nulo aqui e (supostamente) preenchido
+  // lá. Medido sobre as 29 linhas sem ator pós-cutoff, as 4 novas E as 6 já nomeadas:
+  //
+  //     linhas sem ator pós-cutoff .................. 29
+  //     que TÊM a chave `dispatch_source` no payload ... 0
+  //
+  // A chave não existe em nenhuma. O nulo vinha de sondar chave ausente, e o operador devolveu o
+  // `ELSE`. E é estrutural: `dispatch_source` é o parâmetro `p_source` de
+  // `_dispatch_interview_booking_link`, que só aparece no `jsonb` de RETORNO e num ramo
+  // condicional do `admin_audit_log`. `_issue_interview_booking_token_core`, que é quem escreve
+  // `gate_attempts`, NÃO recebe o parâmetro. Nenhum caminho de escrita jamais poderia gravá-la.
+  //
+  // 📌 Por isso o discriminador do guard continua sendo allowlist, e por isso ele precisa mudar:
+  // ver #2179. Enquanto o guard não tiver um sinal que ele possa LER, cada evento explicado custa
+  // uma entrada aqui — e esta lista existe para encolher, não para crescer.
+  '65677bb6-b108-48c2-bbd0-260590a1990f',
+  '5a04b1cd-0493-439c-bf36-f034b394a2c0',
+  '6eadfe97-0023-42ae-b852-cc770687158f',
+  'e644f79b-23f9-4359-a9d5-a62d747f13c5',
 ]);
 
 // A2: a Camada B le LINHAS DE PRODUCAO, entao um despacho manual legitimo do PM a reprova em
