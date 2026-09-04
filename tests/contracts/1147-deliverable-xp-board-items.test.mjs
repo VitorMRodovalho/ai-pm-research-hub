@@ -27,13 +27,43 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { readdirSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000376_1147_deliverable_xp_from_board_items.sql');
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 // executable SQL only (strip `-- ...` lines; the header narrates the retired trigger by name).
 const code = migRaw.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n');
+
+/**
+ * ⚠️ #1932 (medido em 04/09/2026): as asserções de ESCOPO abaixo liam a migration de 05/08 e por
+ * isso afirmavam TEXTO MORTO. Duas já estavam vencidas sem ninguém notar:
+ *
+ *   - a cláusula do gatilho virou `status, is_portfolio_item, assignee_id` na #1880 (20/08);
+ *   - o disparo por borda deixou de exigir transição de status na #2175 (04/09).
+ *
+ * Um guard fixado num `.sql` superado continua verde para sempre, porque o arquivo não muda. O que
+ * ele afirma é história, não a definição vigente. Daí a leitura passar pela captura MAIS NOVA.
+ * A migration de 05/08 segue conferida na existência: ela é o marco de quando o XP mudou para
+ * `board_items`, e isso é fato histórico legítimo de afirmar.
+ */
+// `block` traz o CREATE inteiro (assinatura + corpo); `body` traz só o miolo. As asserções abaixo
+// afirmam sobre os dois, então a leitura usa o bloco.
+const FN = latestFunctionCapture(ROOT, 'trg_board_item_deliverable_xp');
+const fnCode = FN.block.split('\n').filter((l) => !/^\s*--/.test(l)).join('\n');
+
+/** A captura mais nova do CREATE TRIGGER (a #2175 troca só a função; o gatilho vem da #1880). */
+const trigCode = (() => {
+  const dir = resolve(ROOT, 'supabase/migrations');
+  const hit = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()
+    .filter((f) => /CREATE TRIGGER trg_board_item_deliverable_xp/
+      .test(readFileSync(resolve(dir, f), 'utf8'))).pop();
+  if (!hit) return '';
+  return readFileSync(resolve(dir, hit), 'utf8')
+    .split('\n').filter((l) => !/^\s*--/.test(l)).join('\n');
+})();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -89,27 +119,36 @@ const BACKFILL_REFS = [
 // ── STATIC: the XP trigger moved to board_items with the ratified scope ─────────
 test('#1147 static: migration exists and installs the board_items XP trigger', () => {
   assert.ok(existsSync(MIG), 'migration 20260805000376 exists on disk');
-  assert.match(code, /CREATE OR REPLACE FUNCTION public\.trg_board_item_deliverable_xp\(\)/);
-  assert.match(code, /CREATE TRIGGER trg_board_item_deliverable_xp\s*\n?\s*AFTER INSERT OR UPDATE OF status ON public\.board_items/,
-    'trigger fires on INSERT and UPDATE OF status (catches every write path, RPC or direct)');
+  assert.match(fnCode, /CREATE OR REPLACE FUNCTION public\.trg_board_item_deliverable_xp\(\)/);
+  // #1880: o gatilho vigia TODAS as colunas do predicado que podem virar depois do status. Vigiar
+  // só `status` deixava card elegível sem pagar quando a flag ou o assignee mudavam depois.
+  assert.match(trigCode, /CREATE TRIGGER trg_board_item_deliverable_xp\s*\n?\s*AFTER INSERT OR UPDATE OF status, is_portfolio_item, assignee_id ON public\.board_items/,
+    'trigger fires on INSERT and on UPDATE of every eligibility column (#1880)');
 });
 
 test('#1147 static: ratified scope — done + tribe board + portfolio item, mirrors and unassigned excluded', () => {
-  assert.match(code, /NEW\.status = 'done'/, "fires on the board_items vocabulary ('done', not 'completed')");
-  assert.match(code, /TG_OP = 'INSERT' OR OLD\.status IS DISTINCT FROM 'done'/,
-    'edge-fires only when the card just became done (no re-grant on unrelated updates)');
-  assert.match(code, /NEW\.is_portfolio_item IS TRUE/, 'PM 2026-07-08: only portfolio items score (anti-inflation)');
-  assert.match(code, /NEW\.is_mirror IS NOT TRUE/, 'mirrors are projections of the work, not the work');
-  assert.match(code, /NEW\.assignee_id IS NOT NULL/, 'no recipient, no grant');
-  assert.match(code, /pb\.board_scope = 'tribe'/, 'only tribe-scope boards');
+  assert.match(fnCode, /NEW\.status = 'done'/, "fires on the board_items vocabulary ('done', not 'completed')");
+  // #2175: a borda deixou de ser "o status virou" e passou a ser "o card PASSOU A SER elegível".
+  // A comparação de OLD.status é NULL-safe de propósito: com `=` a expressão viraria NULL e o IF
+  // não dispararia em silêncio. Ver tests/contracts/2175-*.test.mjs.
+  assert.match(fnCode, /OLD\.status IS NOT DISTINCT FROM 'done'/,
+    'edge-fires when the card was NOT eligible before and is now (#2175), NULL-safe on OLD.status');
+  assert.doesNotMatch(fnCode, /OLD\.status IS DISTINCT FROM 'done'/,
+    'a guarda de transição de status voltou: card já done nunca pagaria (#2175)');
+  assert.match(fnCode, /NEW\.is_portfolio_item IS TRUE/, 'PM 2026-07-08: only portfolio items score (anti-inflation)');
+  assert.match(fnCode, /NEW\.is_mirror IS NOT TRUE/, 'mirrors are projections of the work, not the work');
+  assert.match(fnCode, /NEW\.assignee_id IS NOT NULL/, 'no recipient, no grant');
+  assert.match(fnCode, /pb\.board_scope = 'tribe'/, 'only tribe-scope boards');
 });
 
+// Estas três afirmam sobre a função VIVA, então leem a captura mais nova (#1932). Ler o `.sql` de
+// 05/08 as manteria verdes mesmo se a definição vigente tivesse mudado — que é o defeito acima.
 test('#1147 static: grants via _grant_auto_xp (idempotency + rule lookup delegated)', () => {
-  assert.match(code, /_grant_auto_xp\(\s*\n?\s*'deliverable_completed'/,
+  assert.match(fnCode, /_grant_auto_xp\(\s*\n?\s*'deliverable_completed'/,
     'must reuse the shared grant path — its EXISTS(ref_id,category,member) guard is the reopen→redone dedup');
-  assert.match(code, /COALESCE\(NEW\.due_date, NEW\.baseline_date\)/,
+  assert.match(fnCode, /COALESCE\(NEW\.due_date, NEW\.baseline_date\)/,
     'deadline = due_date with baseline_date fallback (issue: map baseline/due to the bonus)');
-  assert.match(code, /COALESCE\(NEW\.actual_completion_date, CURRENT_DATE\)/,
+  assert.match(fnCode, /COALESCE\(NEW\.actual_completion_date, CURRENT_DATE\)/,
     'on-time compares the completion date move_board_item writes in the same UPDATE');
 });
 
