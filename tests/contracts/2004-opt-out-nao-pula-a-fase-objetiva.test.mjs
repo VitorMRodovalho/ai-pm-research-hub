@@ -41,9 +41,20 @@ const sb = () => createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSessi
 
 const FN = latestFunctionCapture(ROOT, 'opt_out_all_pillars');
 
-// O caso historico da issue segue em producao: a decisao foi sobre o PORTAO, e mover a candidatura
-// de alguem e ato sobre pessoa real, que cabe ao PM. O guard e um ratchet: pode cair, nunca subir.
-const BASELINE_SEM_AVALIACAO = 1;
+// O guard e um ratchet: pode cair, nunca subir.
+//
+// Baseline 1 -> 0 em 04/09/2026, e a queda e o ratchet fazendo o trabalho dele. Em 03/09 o mesmo
+// caminho promoveu uma SEGUNDA candidatura e o numero subiu para 2, o que mostrou que deixar o caso
+// historico parado em `interview_pending` nao era neutro: era manter viva a leitura de que uma
+// candidatura sem avaliacao naquele estado e tolerada. Decisao do GP (04/09): as duas voltaram a
+// `submitted` via `admin_update_application`, com os 5 pilares de opt-out PRESERVADOS (a escolha do
+// candidato continua registrada; o que voltou atras foi so a promocao) e rastro em `admin_audit_log`
+// sob `selection.optout_promotion_reverted`.
+//
+// Por que a devolucao teve de ser um ato explicito: `recompute_application_status` e SO-PARA-FRENTE
+// (`can_r > cur_r`), e com zero avaliacoes objetivas o status canonico sai NULL, entao a candidatura
+// e filtrada fora do reconciliador. Nenhuma rodada de auto-cura iria desfazer isso.
+const BASELINE_SEM_AVALIACAO = 0;
 
 // ⚠️ Esta asserção MUDOU em 03/09/2026, e a mudança é a correção da decisão de 28/08.
 //
