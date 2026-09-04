@@ -18993,6 +18993,7 @@ export type Database = {
         Row: {
           accessed_at: string
           accessor_id: string | null
+          actor_kind: string
           context: string
           deletion_artifacts: Json | null
           fields_accessed: string[]
@@ -19003,6 +19004,7 @@ export type Database = {
         Insert: {
           accessed_at?: string
           accessor_id?: string | null
+          actor_kind: string
           context: string
           deletion_artifacts?: Json | null
           fields_accessed: string[]
@@ -19013,6 +19015,7 @@ export type Database = {
         Update: {
           accessed_at?: string
           accessor_id?: string | null
+          actor_kind?: string
           context?: string
           deletion_artifacts?: Json | null
           fields_accessed?: string[]
