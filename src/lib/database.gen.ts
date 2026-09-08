@@ -14537,6 +14537,132 @@ export type Database = {
           },
         ]
       }
+      interview_agenda_probes: {
+        Row: {
+          booking_url: string
+          created_at: string
+          cycle_id: string | null
+          days_open: number | null
+          error: string | null
+          id: string
+          member_id: string | null
+          ok: boolean
+          organization_id: string | null
+          probed_at: string
+          slots_visible: number | null
+          window_end: string | null
+          window_start: string | null
+        }
+        Insert: {
+          booking_url: string
+          created_at?: string
+          cycle_id?: string | null
+          days_open?: number | null
+          error?: string | null
+          id?: string
+          member_id?: string | null
+          ok?: boolean
+          organization_id?: string | null
+          probed_at?: string
+          slots_visible?: number | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Update: {
+          booking_url?: string
+          created_at?: string
+          cycle_id?: string | null
+          days_open?: number | null
+          error?: string | null
+          id?: string
+          member_id?: string | null
+          ok?: boolean
+          organization_id?: string | null
+          probed_at?: string
+          slots_visible?: number | null
+          window_end?: string | null
+          window_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_agenda_probes_cycle_id_fkey"
+            columns: ["cycle_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_agenda_probes_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       knowledge_assets: {
         Row: {
           created_at: string
@@ -24273,6 +24399,8 @@ export type Database = {
       }
       selection_dispatch_url_log: {
         Row: {
+          agenda_days_open: number | null
+          agenda_probed_at: string | null
           application_id: string
           booked_at: string | null
           booked_interview_id: string | null
@@ -24292,6 +24420,8 @@ export type Database = {
           track: string
         }
         Insert: {
+          agenda_days_open?: number | null
+          agenda_probed_at?: string | null
           application_id: string
           booked_at?: string | null
           booked_interview_id?: string | null
@@ -24311,6 +24441,8 @@ export type Database = {
           track: string
         }
         Update: {
+          agenda_days_open?: number | null
+          agenda_probed_at?: string | null
           application_id?: string
           booked_at?: string | null
           booked_interview_id?: string | null
@@ -31757,6 +31889,24 @@ export type Database = {
         Returns: Json
       }
       get_initiative_stats: { Args: { p_initiative_id: string }; Returns: Json }
+      get_interview_agenda_health: {
+        Args: never
+        Returns: {
+          booking_url: string
+          bookings_total: number
+          can_interview: boolean
+          cycle_id: string
+          days_open: number
+          dispatches_total: number
+          member_id: string
+          member_name: string
+          probe_error: string
+          probe_ok: boolean
+          probed_at: string
+          routing_blocked: boolean
+          slots_visible: number
+        }[]
+      }
       get_interview_booking_funnel: {
         Args: { p_cycle_id: string }
         Returns: Json
@@ -33729,6 +33879,18 @@ export type Database = {
           p_scan_source: string
         }
         Returns: string
+      }
+      record_interview_agenda_probe: {
+        Args: {
+          p_booking_url: string
+          p_days_open?: number
+          p_error?: string
+          p_ok?: boolean
+          p_slots_visible?: number
+          p_window_end?: string
+          p_window_start?: string
+        }
+        Returns: Json
       }
       record_member_activity: { Args: { p_page?: string }; Returns: undefined }
       record_milestone: {

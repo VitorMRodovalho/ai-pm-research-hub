@@ -47,11 +47,22 @@ const sb = () => createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSessi
 const capDispatch = () => latestFunctionCapture(ROOT, '_dispatch_interview_booking_link');
 const capRecord = () => latestFunctionCapture(ROOT, 'record_interview_agenda_probe');
 
-/** A migration desta onda, lida pelo nome — a tabela e as políticas não são função e não têm captura. */
+/**
+ * A onda inteira, lida pelo nome — a tabela, as políticas e os GRANT/REVOKE não são função e não
+ * têm captura por `latestFunctionCapture`.
+ *
+ * ⚠️ São QUATRO arquivos, não um: a DDL saiu em quatro `apply_migration` (duas delas correção de
+ * erro cometido na própria aplicação), e o guard ADR-0097 exige um `.sql` por tracking row. Ler
+ * só o primeiro deixaria este arquivo afirmando sobre um recorte e ficando verde por ausência —
+ * foi o que aconteceu quando a onda foi dividida, e este guard reprovou, que era o esperado.
+ */
 function migracaoDaOnda() {
-  const f = readdirSync(MIGRATIONS).filter((x) => x.includes('2188_sonda_de_agenda')).sort().pop();
-  assert.ok(f, 'a migration da #2188 sumiu do diretório');
-  return readFileSync(join(MIGRATIONS, f), 'utf8');
+  const arquivos = readdirSync(MIGRATIONS).filter((x) => /^20260908\d{6}_2188_/.test(x)).sort();
+  // Piso explícito: se a onda encolher, o denominador encolhe junto e as asserções abaixo passariam
+  // a valer sobre menos texto sem ninguém perceber.
+  assert.ok(arquivos.length >= 4,
+    `esperava os 4 arquivos da onda #2188, achei ${arquivos.length}: ${JSON.stringify(arquivos)}`);
+  return arquivos.map((f) => readFileSync(join(MIGRATIONS, f), 'utf8')).join('\n');
 }
 
 /**
@@ -194,10 +205,12 @@ test('#2188 static: a tabela nova nasce fechada, e as funções não nascem com 
   assert.match(sql, /CREATE POLICY rpc_only_deny_all ON public\.interview_agenda_probes FOR ALL USING \(false\)/,
     'a tabela ganhou caminho direto: o desenho é RPC-only, como em selection_interviewer_blackouts (#1590 onda B)');
 
-  // `CREATE FUNCTION` nasce com EXECUTE para PUBLIC; sem REVOKE explícito, anon executa.
+  // `CREATE FUNCTION` nasce com EXECUTE para PUBLIC, E o Supabase concede a `anon` NOMINALMENTE —
+  // revogar de PUBLIC não alcança uma concessão nominal. Medido em 08/09: depois do primeiro
+  // apply, as duas funções ainda tinham anon. Por isso o REVOKE tem de citar o papel.
   for (const fn of ['record_interview_agenda_probe', 'get_interview_agenda_health']) {
-    const re = new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\(`);
-    assert.match(sql, re, `${fn} não revoga EXECUTE de PUBLIC`);
+    const re = new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\([^;]*FROM PUBLIC, anon`);
+    assert.match(sql, re, `${fn}: o REVOKE não nomeia anon, e FROM PUBLIC sozinho não o alcança`);
   }
   assert.doesNotMatch(sql, /GRANT EXECUTE ON FUNCTION public\.record_interview_agenda_probe[^;]*anon/,
     'a escrita da sonda foi concedida a anon');
@@ -254,6 +267,33 @@ test('#2188 db: sondagem que afirma ter medido sem número é recusada',
     // Limpa a linha do controle: a tabela é lida pela fase 2, e sujeira de teste com URL que não
     // existe no comitê viraria "agenda sem dono" numa apuração futura.
     if (ok?.probe_id) await c.from('interview_agenda_probes').delete().eq('id', ok.probe_id);
+  });
+
+// As DUAS grafias, e a ordem importa pouco: o CI exporta `SUPABASE_ANON_KEY` e o `.env` local usa
+// `PUBLIC_SUPABASE_ANON_KEY`. Gatear só na segunda faria este teste SKIPAR em silêncio no CI, que
+// é onde ele mais precisa rodar — e há um guard (#1518) que reprova exatamente esse descuido.
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
+const anonGated = !!(SUPABASE_URL && ANON_KEY);
+
+test('#2188 db: anon NAO escreve sondagem — exercendo o privilégio, não lendo a linha do REVOKE',
+  { skip: anonGated ? false : 'Skipped: SUPABASE_ANON_KEY (ou PUBLIC_SUPABASE_ANON_KEY) required' }, async () => {
+    // O guard #883 afirmou por MESES a LINHA de um REVOKE enquanto o privilégio real era o oposto,
+    // e nesta própria onda o `FROM PUBLIC` deixou `anon` com EXECUTE. Texto de migration não é
+    // privilégio: o único jeito honesto de afirmar isso é chamando como anon.
+    const anon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false } });
+    const r = await anon.rpc('record_interview_agenda_probe', {
+      p_booking_url: 'https://calendar.app.google/__anon_nao_deveria_gravar__',
+    });
+    assert.notEqual(r.error, null,
+      'anon executou record_interview_agenda_probe: uma sondagem forjada (ok=true, days_open=0) ' +
+      'é exatamente o que a fase 2 leria para tirar um avaliador do rodízio');
+
+    // Controle positivo na MESMA medição: a recusa acima só significa "barrado por privilégio" se
+    // o mesmo cliente anon consegue falar com o PostgREST. Sem isto, uma URL errada ou uma chave
+    // inválida produziria o mesmo erro e leria como segurança.
+    const controle = await anon.rpc('get_public_platform_stats');
+    assert.equal(controle.error, null,
+      `o cliente anon não fala com o PostgREST, então a recusa acima não prova nada: ${controle.error?.message}`);
   });
 
 test('#2188 db: nenhuma linha antiga do log finge ter sido medida',
