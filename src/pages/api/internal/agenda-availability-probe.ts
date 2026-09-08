@@ -185,6 +185,9 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
       error: divergencia,
     };
   } catch (e: any) {
+    // O texto da exceção vai para o LOG do Worker e para a tabela (RLS deny-all, só service_role
+    // lê), nunca para a resposta HTTP: `js/stack-trace-exposure`. Ver a montagem da Response.
+    console.error('[agenda-probe] render falhou', { url, erro: e?.message ?? String(e) });
     return { ...base, error: `render_failed: ${e?.message ?? String(e)}` };
   } finally {
     if (page) {
@@ -230,11 +233,14 @@ export const POST: APIRoute = async ({ request }) => {
     sb.from('members').select('id, interview_booking_url').not('interview_booking_url', 'is', null),
   ]);
   if (ciclos.error || comite.error || membros.error) {
+    // Erro do Postgres nomeia tabela, coluna e constraint: fica no log, não na resposta.
+    console.error('[agenda-probe] leitura das agendas falhou', {
+      ciclos: ciclos.error?.message,
+      comite: comite.error?.message,
+      membros: membros.error?.message,
+    });
     return new Response(
-      JSON.stringify({
-        error: 'query_failed',
-        detail: ciclos.error?.message ?? comite.error?.message ?? membros.error?.message,
-      }),
+      JSON.stringify({ error: 'query_failed' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   }
@@ -281,8 +287,12 @@ export const POST: APIRoute = async ({ request }) => {
       sondagens.push(await sondar(browser, url));
     }
   } catch (e: any) {
+    // `js/stack-trace-exposure`: a mensagem de uma exceção pode carregar caminho de arquivo, versão
+    // de dependência e forma interna. Ela vai para o log do Worker, onde o dono a lê; a resposta
+    // HTTP recebe só a classe do erro.
+    console.error('[agenda-probe] falha ao abrir o browser', e?.message ?? String(e));
     return new Response(
-      JSON.stringify({ error: 'browser_failed', detail: e?.message ?? String(e) }),
+      JSON.stringify({ error: 'browser_failed' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   } finally {
@@ -304,8 +314,21 @@ export const POST: APIRoute = async ({ request }) => {
       p_ok: s.ok,
       p_error: s.error,
     });
-    gravadas.push(error ? { booking_url: s.booking_url, write_error: error.message } : data);
+    if (error) {
+      // Mensagem de erro do Postgres nomeia tabela, coluna e constraint. Fica no log.
+      console.error('[agenda-probe] gravação falhou', { url: s.booking_url, erro: error.message });
+      gravadas.push({ booking_url: s.booking_url, escrita: 'falhou' });
+    } else {
+      gravadas.push(data);
+    }
   }
+
+  // A resposta HTTP leva a CLASSE do erro, nunca o texto da exceção (`js/stack-trace-exposure`).
+  // O texto completo continua em dois lugares onde é útil e não é público: o log do Worker e a
+  // coluna `error` de `interview_agenda_probes`, que tem RLS deny-all e só o service_role lê.
+  // Foi esse texto que apontou `grade_vazia` na primeira execução real, então ele não se perde —
+  // só deixa de sair pela porta da frente.
+  const classeDoErro = (e: string | null) => (e ? e.split(':')[0] : null);
 
   return new Response(
     JSON.stringify({
@@ -313,7 +336,15 @@ export const POST: APIRoute = async ({ request }) => {
       probed: sondagens.length,
       fechadas: sondagens.filter((s) => s.ok && s.days_open === 0).length,
       cegas: sondagens.filter((s) => !s.ok).length,
-      sondagens,
+      sondagens: sondagens.map((s) => ({
+        booking_url: s.booking_url,
+        ok: s.ok,
+        days_open: s.days_open,
+        slots_visible: s.slots_visible,
+        window_start: s.window_start,
+        window_end: s.window_end,
+        error_class: classeDoErro(s.error),
+      })),
       gravadas,
     }),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
