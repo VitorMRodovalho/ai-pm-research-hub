@@ -19,15 +19,14 @@
 # contagem que cresce, e `tests/contracts/1966-codeql-baseline-ratchet.test.mjs` reprova
 # se o total declarado aqui divergir do arquivo.
 #
-# TOTAL_ABERTOS=101
-# TOTAL_ALTOS=55
-# TOTAL_CHAVES=62
+# TOTAL_ABERTOS=96
+# TOTAL_ALTOS=50
+# TOTAL_CHAVES=61
 #
 # formato: <contagem>\t<severidade>\t<rule.id>\t<caminho>
 1	high	js/bad-tag-filter	src/components/governance/ReviewChainIsland.tsx
 1	high	js/bad-tag-filter	src/components/governance/VersionDiffViewer.tsx
 3	high	js/bad-tag-filter	tests/contracts/version-diff-viewer-style-isolation.test.mjs
-5	high	js/clear-text-logging	supabase/functions/sync-comms-metrics/index.ts
 1	high	js/double-escaping	scripts/audit_i18n_value_parity.mjs
 1	high	js/double-escaping	scripts/calendar_event_importer.ts
 1	high	js/double-escaping	src/components/governance/ChainPDFDocument.tsx
