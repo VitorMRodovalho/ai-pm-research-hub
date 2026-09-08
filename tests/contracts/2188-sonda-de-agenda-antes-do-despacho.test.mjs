@@ -33,7 +33,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIGRATIONS = join(ROOT, 'supabase/migrations');
@@ -51,18 +51,38 @@ const capRecord = () => latestFunctionCapture(ROOT, 'record_interview_agenda_pro
  * A onda inteira, lida pelo nome — a tabela, as políticas e os GRANT/REVOKE não são função e não
  * têm captura por `latestFunctionCapture`.
  *
- * ⚠️ São QUATRO arquivos, não um: a DDL saiu em quatro `apply_migration` (duas delas correção de
+ * ⚠️ São CINCO arquivos, não um: a DDL saiu em cinco `apply_migration` (três delas correção de
  * erro cometido na própria aplicação), e o guard ADR-0097 exige um `.sql` por tracking row. Ler
  * só o primeiro deixaria este arquivo afirmando sobre um recorte e ficando verde por ausência —
  * foi o que aconteceu quando a onda foi dividida, e este guard reprovou, que era o esperado.
  */
-function migracaoDaOnda() {
+function arquivosDaOnda() {
   const arquivos = readdirSync(MIGRATIONS).filter((x) => /^20260908\d{6}_2188_/.test(x)).sort();
   // Piso explícito: se a onda encolher, o denominador encolhe junto e as asserções abaixo passariam
   // a valer sobre menos texto sem ninguém perceber.
-  assert.ok(arquivos.length >= 4,
-    `esperava os 4 arquivos da onda #2188, achei ${arquivos.length}: ${JSON.stringify(arquivos)}`);
-  return arquivos.map((f) => readFileSync(join(MIGRATIONS, f), 'utf8')).join('\n');
+  assert.ok(arquivos.length >= 5,
+    `esperava os 5 arquivos da onda #2188, achei ${arquivos.length}: ${JSON.stringify(arquivos)}`);
+  return arquivos;
+}
+
+function migracaoDaOnda() {
+  return arquivosDaOnda().map((f) => readFileSync(join(MIGRATIONS, f), 'utf8')).join('\n');
+}
+
+/**
+ * O cron VIGENTE, não a soma de todas as versões dele.
+ *
+ * ⚠️ `cron.schedule` faz upsert por nome, então a onda tem DUAS definições do mesmo job em arquivos
+ * diferentes: a primeira lendo um GUC (que esta plataforma não consegue setar) e a segunda lendo o
+ * Vault. Concatenar tudo faria um `doesNotMatch` contra o GUC falhar para sempre, e — pior — faria
+ * um `match` a favor do Vault passar mesmo que a versão viva fosse a antiga. Vale a ÚLTIMA captura,
+ * pelo mesmo motivo que `latestFunctionCapture` existe.
+ */
+function sqlDoCron() {
+  const comCron = arquivosDaOnda()
+    .filter((f) => readFileSync(join(MIGRATIONS, f), 'utf8').includes("cron.schedule(\n  'interview-agenda-probe'"));
+  assert.ok(comCron.length > 0, 'nenhum arquivo da onda agenda o job interview-agenda-probe');
+  return readFileSync(join(MIGRATIONS, comCron[comCron.length - 1]), 'utf8');
 }
 
 /**
@@ -221,8 +241,21 @@ test('#2188 static: a tabela nova nasce fechada, e as funções não nascem com 
   assert.match(sql, /can_by_member\(v_caller, 'manage_member'\)/,
     'o leitor da saúde das agendas não é escopado por capacidade');
 
-  // O cron não pode bater num 401 quatro vezes ao dia quando o segredo não está configurado.
-  assert.match(sql, /COALESCE\(current_setting\('app\.agenda_probe_internal_secret', true\), ''\) <> ''/,
+  // O segredo vem do VAULT, não de um GUC. Medido em 08/09 ao tentar configurar:
+  // `ALTER DATABASE postgres SET app.<...>` devolve `42501 permission denied to set parameter`,
+  // porque o role do Supabase não é superuser. Um cron lendo GUC ficaria para sempre no ramo
+  // "sem segredo, não chama nada": verde, silencioso e inútil.
+  // ⚠️ Medir o CÓDIGO, não os comentários. O cabeçalho deste arquivo de migration cita
+  // `current_setting('app.agenda_probe_internal_secret')` para EXPLICAR o defeito, e um
+  // `doesNotMatch` sobre o texto cru casaria a própria explicação e reprovaria para sempre.
+  const cron = maskLineComments(sqlDoCron());
+  assert.match(cron, /vault\.decrypted_secrets[\s\S]{0,120}agenda_probe_internal_secret/,
+    'o cron não lê o segredo do Vault');
+  assert.doesNotMatch(cron, /current_setting\('app\.agenda_probe_internal_secret'/,
+    'o cron voltou a ler de um GUC que esta plataforma não consegue setar');
+
+  // E sem segredo ele não pode disparar: 401 recorrente é ruído que ninguém investiga.
+  assert.match(cron, /WHERE EXISTS \(\s*SELECT 1 FROM vault\.decrypted_secrets/,
     'o cron dispara mesmo sem o segredo configurado');
 });
 

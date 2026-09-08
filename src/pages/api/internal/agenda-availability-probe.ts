@@ -117,18 +117,30 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
     await page.waitForSelector('[role="grid"]', { timeout: 20000 });
 
     const leitura: LeituraDaPagina = await page.evaluate(() => {
-      const cells = Array.from(document.querySelectorAll('[role="gridcell"]'))
-        .map((c) => {
-          const b = c.querySelector('button');
-          return (b?.getAttribute('aria-label') ?? c.getAttribute('aria-label') ?? '').trim();
-        })
+      const grid = document.querySelector('[role="grid"]');
+
+      // ⚠️ NÃO use `[role="gridcell"]`. A grade é uma `<table role="grid">` cujas células são `<td>`
+      // SEM role explícito: o papel gridcell é IMPLÍCITO, existe na árvore de acessibilidade e não
+      // no DOM. A primeira versão desta sonda casou esse seletor e voltou 0 células nas quatro
+      // agendas — porque foi escrita a partir do snapshot de acessibilidade, que é uma projeção do
+      // DOM e não o DOM. Quem carrega o aria-label do dia é o `<button data-grid-cell>` dentro do
+      // `<td>`. O fallback para qualquer `button` do grid tolera o Google largar o dataset.
+      const botoesDoDia = grid
+        ? (() => {
+            const comDataset = Array.from(grid.querySelectorAll('button[data-grid-cell]'));
+            return comDataset.length > 0 ? comDataset : Array.from(grid.querySelectorAll('button'));
+          })()
+        : [];
+
+      const cells = botoesDoDia
+        .map((b) => (b.getAttribute('aria-label') ?? '').trim())
         .filter((s) => s.length > 0);
 
       const slots = Array.from(document.querySelectorAll('button'))
         .map((b) => (b.textContent ?? '').trim())
         .filter((t) => /^\d{1,2}:\d{2}$/.test(t)).length;
 
-      const grid = document.querySelector('[role="grid"]');
+      // O mês exibido vem do aria-label da própria `<table role="grid">` ("September 2026").
       const monthLabel = grid?.getAttribute('aria-label')?.trim() ?? null;
 
       const semDisponibilidade = (document.body.innerText ?? '')
