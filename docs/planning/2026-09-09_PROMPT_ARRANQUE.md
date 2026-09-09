@@ -99,3 +99,166 @@ pode ser criado** nesta plataforma, então o PDF de certificado de convidado de 
 
 E o corolário: **guarde a diferença entre "não sei" e "é zero"**. Uma coluna booleana impediu que
 um seletor errado registrasse "quatro agendas fechadas" e esvaziasse o rodízio.
+
+---
+
+# ADENDO, carimbado 09/09 as 12h15 BRT
+
+> O texto acima foi escrito as 10h55 e **envelheceu**. Isto e o que mudou desde entao.
+> Continua valendo: re-meca antes de decidir.
+
+## Estado agora
+
+`main 2812f2a3` · fila com **1 PR** (a `#2204`, ver abaixo) · 3 PRs mergeadas depois do arranque
+original (`#2200` handoff, `#2201` este arranque, `#2203` setup-lane).
+
+## O item 1 do arranque MUDOU de natureza
+
+Os 3 convites **venceram as 11:00**, como previsto. Mas o motivo de nao terem sido reemitidos nao
+foi o relogio, e sim uma medicao que muda o desenho da tarefa:
+
+⚠️ **`issue_interview_booking_token` NAO envia e-mail.** Ela chama
+`_issue_interview_booking_token_core`, que emite o token e grava o log, e o core nao tem
+`net.http_post` nem notificacao. Reemitir por ela renova o token EM SILENCIO, e dois dos tres
+candidatos nunca abriram convite algum. Quem envia e `_dispatch_interview_booking_link`, interna
+(ACL so `postgres` + `service_role`) e sujeita a `GATE_NO_PEER_REVIEW` (a mesma da `#2171`).
+
+Antes de reemitir, meca se os tres passam no gate, e prefira o caminho da UI se existir botao de
+reenvio que orquestre token mais e-mail.
+
+## O item 2 do arranque esta MEIO FEITO
+
+O webinar de 08/09 foi parcialmente fechado. A lane `ai-pm-research-hub-ff` cuidou do video e a
+main aplicou as escritas, na ordem que a `#2205` documenta.
+
+**Feito:**
+- `webinars.youtube_url = https://youtu.be/qdHhUUxWIrg`, por UPDATE direto com `RETURNING`
+  (NUNCA `upsert_webinar`, ver `#1604`). Conferido: `initiative_id` e `sympla_event_url`
+  sobreviveram.
+- Evento `ac40ecfc-a8fb-4eb6-bc75-b3533fd2edb5` criado por `link_webinar_event(id, NULL)`, DEPOIS
+  do passo anterior, impersonando o GP para a auditoria nao nascer sem ator. Conferido: a gravacao
+  foi copiada para o evento, `initiative_id` presente, `audience_level='tribe'`.
+
+**Falta, e nesta ordem:**
+1. **presenca dos 23 membros** (de 58 presentes; os outros 35 sao publico externo). A lane mediu
+   por `md5(lower(email))` e ficou de mandar os `member_id`. Sem os uuid nao da para montar o
+   INSERT.
+2. `status = 'completed'` (hoje ainda `planned`).
+3. card `be0a1980-cd62-458c-88f8-f2fcfb2646f4` (**venceu em 09/09**) e amarrar
+   `webinars.board_item_id`, que segue nulo.
+
+⚠️ **A gravacao e publica**, verificado de forma independente pelo feed RSS do canal
+(`videos.xml?channel_id=UCIEiHte8f_AVwCXP2wZ7DjQ`), e nao pelo oembed, que responde para
+`unlisted` tambem e portanto nao prova nada.
+
+## O item 3 do arranque esta FEITO, mas a PR nao mergeou ainda
+
+`#2204` fecha os 8 alertas do Dependabot pela politica `#611` (PR local de higiene). Cinco pacotes
+transitivos, todos acima do piso do advisory. **Confira se ela mergeou antes de mexer em
+dependencia.**
+
+Duas coisas aprendidas ali, e a segunda quase passou:
+- `npm audit fix` subiu `@tiptap/core` SOZINHO e quebrou o build
+  (`[MISSING_EXPORT] cancelPositionCheck`). Pacote de monorepo nao sobe sozinho.
+- O `npm outdated` revelou que `extension-image` e `extension-placeholder` ainda estavam em 3.23.1
+  contra core 3.31.3. Passava no build por nao importarem o simbolo removido, e quebraria em
+  RUNTIME. Os seis `@tiptap/*` estao agora em 3.31.3.
+
+⚠️ **Fica fora, e e decisao:** `extract-zip <- @puppeteer/browsers <- @cloudflare/puppeteer`,
+high no `npm audit` e AUSENTE no Dependabot (bases de advisory diferentes). O unico fix e
+downgrade major do `@cloudflare/puppeteer`, que quebraria o `cert-pdf-render` e a sonda da `#2188`.
+O `extract-zip` so roda no download do Chrome em ambiente local/CI, nunca no runtime do Worker.
+
+## Auditoria de versoes, ja medida, para nao refazer
+
+**Em dia com o ultimo estavel:** Astro `7.3.2`, wrangler `4.130.0`, `@astrojs/cloudflare` `14.3.1`,
+MCP SDK `1.30.0`. Postgres `17.6.1.084`, Node `v24.19.0`.
+
+**27 pacotes npm atras**, sendo 24 minor/patch e **3 major que sao decisao**:
+
+| pacote | em uso | ultimo | nota |
+| --- | --- | --- | --- |
+| `typescript` | 6.0.3 | **7.0.2** | compilador reescrito em Go; ganho no gate de build |
+| `@tanstack/react-table` | 8.21.3 | 9.2.4 | mexe em componente de UI |
+| `globals` | 16.5.0 | 17.12.0 | so lint |
+
+**Dois desalinhamentos que valem nome:**
+- `@supabase/supabase-js` **11 minors atras** (2.105.4 contra 2.116.0), e e o cliente que fala com
+  producao o tempo todo;
+- o **CLI do Supabase e 2.117.0 e o CI pina 2.109.0** no `gen-types-drift`. Gerar tipos com a
+  versao local produz diff diferente do CI, entao **use a pinada**: `npx -y supabase@2.109.0`.
+- no MCP (Deno): `zod` pinado em 4.3.6 contra 4.5.4; `hono` 4.12.9.
+
+## O QUE NAO FOI FEITO, e e o pedido de maior valor
+
+O dono pediu, e ficou para esta sessao:
+
+1. **Documentacao oficial dos ultimos 45 dias** de Anthropic, OpenAI, Google, xAI, Meta, GitHub,
+   Supabase e Cloudflare: o que ha de relevante em seguranca, oportunidade de melhoria ou pivotada.
+2. **Oportunidades de latencia e confiabilidade na rota MCP.** O contexto que o dono deu importa:
+   com o ChatGPT interagindo por voz, um MCP rapido vira diferencial competitivo, nao so conforto.
+
+Nao foi feito por falta de contexto na sessao anterior, nao por falta de escopo. Fazer com contexto
+esgotado produziria leitura rasa de oito fontes.
+
+## Regra de processo NOVA, estabelecida pelo dono em 09/09
+
+**Qualquer escrita em banco que uma lane precise fazer vai para a main.** A lane prepara, avisa, a
+main aplica. Excecao unica, e testavel: se `grep -rl "<tabela>" tests/contracts/` vier **vazio** e
+a escrita for o proprio produto da lane, linha a linha, ela pode escrever direto.
+
+Ja gravado em `feedback-merge-to-main-is-main-session-only`.
+
+## Rotina NOVA ao abrir qualquer lane
+
+```bash
+scripts/setup-lane.sh ../.wt-<lane> [branch]
+```
+
+Ja esta no `CLAUDE.md`, primeira linha do bloco Build & Test. A `.wt-campanha` ja foi preparada por
+ele e esta em `lane/webinar-t11-pos-evento`, em dia com a main.
+
+## Issues abertas depois do arranque original
+
+- **`#2202`** `[LL]` worktree de lane nasce sem `.env` e sem `node_modules`, e os tres sintomas sao
+  silenciosos (virou o `setup-lane.sh`).
+- **`#2205`** o MCP nao tem camada semantica para fechar webinar: 6 escritas cruas, ordem tacita,
+  armadilha de perda silenciosa e auditoria sem ator. **Mesma familia da `#2192`.**
+
+## Duas armadilhas que me pegaram, e vao pegar de novo
+
+**Um vigia de merge que afirma sucesso sem verificar.** Montei um laco que esperava
+`gh pr checks` ficar sem pendentes e entao mergeava. Ele disse "MERGEADO" com a PR aberta: logo
+depois de um push, os checks do commit novo **ainda nao comecaram**, e `gh pr checks` nao lista
+quem nao reportou. Pior, eu tinha engolido o erro do `gh pr merge` com `>/dev/null`. **Exija
+contagem MINIMA de checks e confira o codigo de saida do merge.**
+
+**O `.env` da arvore principal nao tem tudo.** `SUPABASE_ACCESS_TOKEN` vem do AMBIENTE do shell.
+Sem ele o `db:types` faz no-op silencioso com exit 0.
+
+## PEDIDO DO DONO (09/09, 12h): plano de atualizacao de dependencias
+
+**Atualizar os 27 pacotes atrasados, incluindo os minors, e o `zod`. Manter tudo atualizado e com
+a documentacao das atualizacoes em dia.** O plano de COMO fazer e para esta sessao definir.
+
+Sugestao de fatiamento, aprendida hoje na `#2204`:
+
+1. **Onda 1, minor/patch em lote** (24 pacotes). Baixo risco, mas rode o gate entre lotes, nao so
+   no fim. Cuidado com FAMILIA: `@tiptap/*` (6), `@radix-ui/*` (4) e `playwright`/`@playwright/test`
+   sobem JUNTOS ou o build quebra por export ausente.
+2. **Onda 2, `zod`** 4.3.6 -> 4.5.4, que vive na EF do MCP (Deno, `npm:zod@`), nao no npm local.
+   Exige deploy da EF e smoke do MCP, nao so o gate do repo.
+3. **Onda 3, os 3 majors, um por PR**: `typescript` 6->7 (compilador em Go; o mais valioso e o mais
+   arriscado), `@tanstack/react-table` 8->9 (UI), `globals` 16->17 (so lint, comece por ele).
+4. **`@supabase/supabase-js`** 2.105.4 -> 2.116.0: 11 minors, cliente que fala com producao.
+   Merece PR propria com smoke das rotas.
+
+**A licao que justifica o fatiamento:** `npm audit fix` subiu `@tiptap/core` sozinho e o build
+morreu com `[MISSING_EXPORT] cancelPositionCheck`. Depois, o `npm outdated` mostrou que duas
+extensions do mesmo monorepo ainda estavam sete minors atras, passando no build por nao importarem
+o simbolo removido. **Pacote de monorepo nao sobe sozinho, e "o build passou" nao prova que a
+familia esta consistente.** Meca a familia inteira com `npm outdated` depois de cada onda.
+
+**Documentacao das atualizacoes:** o dono quer isso em dia. Cada onda deve dizer, na PR, o que
+subiu, de onde para onde, e o que foi exercido para provar. As PRs `#2204` e as da `#2188` de
+08/09 servem de modelo.
