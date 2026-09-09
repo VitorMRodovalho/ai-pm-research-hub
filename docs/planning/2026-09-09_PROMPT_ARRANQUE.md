@@ -262,3 +262,58 @@ familia esta consistente.** Meca a familia inteira com `npm outdated` depois de 
 **Documentacao das atualizacoes:** o dono quer isso em dia. Cada onda deve dizer, na PR, o que
 subiu, de onde para onde, e o que foi exercido para provar. As PRs `#2204` e as da `#2188` de
 08/09 servem de modelo.
+
+---
+
+# DELTA FINAL, carimbado 09/09 as 13h30 BRT (fim da sessao, antes do clear)
+
+`main f73b7005` · fila com **1 PR: a #2204**, e ela esta VERMELHA.
+
+## O unico item que trava: `browser_guards` na #2204
+
+Os 8 alertas do Dependabot estao corretamente resolvidos. O que trava e um check, e o
+**diagnostico completo esta no comentario da propria PR** (`gh pr view 2204 --comments`).
+
+Resumo, para nao reabrir caminho ja andado:
+
+- erro: `[PARSE_ERROR]` do **rolldown** ao escanear `src/components/ErrorBoundary.tsx` no scan de
+  dependencias do Vite, seguido de `TypeError: Cannot read properties of null (reading 'useState')`;
+- ⚠️ **a hipotese do tiptap CAIU.** Nao e o editor. A cadeia suspeita e **Vite / rolldown / React**,
+  e o candidato e `react`/`react-dom` **19.2.6 -> 19.2.8**, que entrou no bolo do `npm audit fix`;
+- **nao e flake:** o script ja tenta 2x e falhou nas duas, e o check passou nas #2203 e #2206, que
+  nao tocam `package.json`;
+- **por que o gate local nao pegou:** `astro build` e `npm test` passam. Quem quebra e o DEV SERVER,
+  que o `browser-guards.test.mjs` sobe antes do chromium. Build e dev usam caminhos diferentes;
+- reproduzir: `npx playwright install chromium && npm run test:browser:guards`;
+- **saida pragmatica:** fatiar. Deixar entrar o que nao mexe em React (`browserslist`, `svgo`,
+  `fflate`, `postcss-selector-parser`) fecha **6 dos 8 alertas** de imediato, e isola
+  `react`/`react-dom`/`@tiptap/*` numa PR propria.
+
+## O webinar de 08/09 esta FECHADO. Nao refazer.
+
+`status=completed`, gravacao `youtu.be/qdHhUUxWIrg`, evento `ac40ecfc`, **23 presencas todas com
+`registered_by`**, card `be0a1980` em `done`, `board_item_id` amarrado, `initiative_id` preservado.
+
+A nota de alcance em `events.notes` foi marcada como **"Registro PROVISORIO ate a #2207"**, porque
+a lane abriu a #2207 (modelagem de audiencia) e texto livre sem data de validade vira modelo por
+acidente.
+
+**Aprendizado para a proxima marcacao de presenca:** use `register_attendance_batch`, NAO
+`admin_bulk_mark_attendance`. Medi as duas: so a primeira grava ator. A segunda cai direto na #2176.
+
+## Issues abertas pela lane, que eu nao toquei
+
+- **#2207** modelagem de audiencia de evento (inscritos e participantes, interno e externo). Medicao
+  util que ela ja fez: `events.external_attendees` preenchida em **1 de 740** eventos (coluna morta),
+  e `persons` tem 134 linhas contra 135 membros, entao modelar externo nominalmente joga ~35
+  titulares LGPD novos por evento la dentro.
+- **#2208** backfill de legendas do acervo: **113 de 122 videos sem legenda**.
+
+## Ordem sugerida para a proxima sessao
+
+1. **#2204**, decidir entre investigar o React ou fatiar. E o unico item que segura a fila.
+2. **Os 27 npm + `zod`**, com o plano de 4 ondas ja escrito acima nesta mesma pagina.
+3. **A pesquisa das docs dos ultimos 45 dias** nos oito provedores, e as oportunidades de latencia
+   do MCP. **E o pedido de maior valor e continua intocado**, adiado duas vezes por falta de
+   contexto, nao por falta de escopo.
+4. Os 3 convites de entrevista, que venceram e precisam do caminho que ENVIA e-mail.
