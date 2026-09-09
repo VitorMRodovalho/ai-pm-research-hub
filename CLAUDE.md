@@ -37,6 +37,7 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 
 ## Build & Test
 ```bash
+scripts/setup-lane.sh ../.wt-<lane> [branch]   # RODE ISTO AO ABRIR QUALQUER LANE, antes de qualquer coisa
 npm ci                   # lane worktrees start WITHOUT node_modules; the gate below cannot run until this does
 ./node_modules/.bin/astro build   # MUST pass before commit. Not `npx` (pulls a stray version), never piped
 npm test                 # unit + e2e; DB-aware tests require SUPABASE_SERVICE_ROLE_KEY env
