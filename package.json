@@ -53,12 +53,12 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-table": "^8.21.3",
-    "@tiptap/extension-image": "^3.22.2",
-    "@tiptap/extension-link": "^3.22.2",
-    "@tiptap/extension-placeholder": "^3.22.2",
-    "@tiptap/pm": "^3.22.2",
-    "@tiptap/react": "^3.22.2",
-    "@tiptap/starter-kit": "^3.22.2",
+    "@tiptap/extension-image": "^3.31.3",
+    "@tiptap/extension-link": "^3.31.3",
+    "@tiptap/extension-placeholder": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "@turbodocx/html-to-docx": "^1.20.1",
     "astro": "^7.2.2",
     "chart.js": "^4.5.1",
@@ -91,6 +91,10 @@
     "devalue": "^5.8.1",
     "esbuild": "^0.28.1",
     "undici": "^7.29.0",
-    "sharp": "^0.35.0"
+    "sharp": "^0.35.0",
+    "browserslist": "^4.28.7",
+    "svgo": "^4.1.0",
+    "fflate": "^0.8.3",
+    "postcss-selector-parser": "^7.1.3"
   }
 }
