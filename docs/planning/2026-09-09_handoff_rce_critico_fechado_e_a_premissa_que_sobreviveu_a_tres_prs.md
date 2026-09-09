@@ -134,6 +134,38 @@ uma FALHA**, enquanto as recusas legítimas levam 752 ms (#2213).
 
 ---
 
+## ADENDO, depois deste handoff já estar mergeado: a armadilha 1 tem uma consequência (#2219)
+
+Ao mergear este próprio documento, o `browser_guards` reprovou numa PR que **só adiciona um `.md`**.
+O re-run passou, mas o log tinha a informação: **duas falhas de classes diferentes na mesma
+execução.** Na tentativa 1 o servidor subiu e o `workerd` falhou ao resolver o módulo virtual de um
+`<script>` inline do `BaseLayout.astro`; na tentativa 2 o servidor **nem subiu**.
+
+A causa é a armadilha 1 desta mesma página, vista do outro lado. O harness faz
+`devServer?.kill('SIGTERM')` (`tests/browser-guards.test.mjs:677`), mas `devServer` é o wrapper
+`npm run dev`, **não o daemon**. O `run_browser_guards_with_retry.sh` só faz `sleep 5` entre as
+tentativas. Resultado: **a tentativa 2 nasce com o dev server da tentativa 1 ainda vivo, e falha
+por causa dele. O retry não é um retry.**
+
+Duas consequências que valem mais que o flake:
+
+1. **Um retry que não limpa transforma falha transitória em falha aparentemente determinística.**
+   Esconde o flake e inventa um defeito.
+2. O argumento *"o script tenta duas vezes e falhou nas duas, então não é flake"*, usado na #2204
+   para sustentar três dias de investigação, **era mais frágil do que parecia**. Naquele caso a
+   conclusão continua certa por outro motivo (a tentativa 1 falhava com um `PARSE_ERROR`
+   determinístico, reproduzido local, que sumiu ao segurar o astro na linha 7.2). Da próxima vez
+   pode sustentar uma conclusão errada.
+
+Isto também **explica o travamento local** mencionado ao longo do dia: eram daemons vazados dos
+próprios runs anteriores, e matei dois `workerd` órfãos. Não era confundidor inexplicado da máquina.
+
+Registrado na **#2219**, com proposta: parar o daemon entre tentativas, **verificar** a parada em
+vez de confiar nela, e distinguir no relatório "servidor não subiu" de "servidor subiu e o locator
+estourou".
+
+---
+
 ## Aberto, e o que cada coisa espera
 
 | # | o que é | espera |
@@ -142,6 +174,7 @@ uma FALHA**, enquanto as recusas legítimas levam 752 ms (#2213).
 | **#2213** | MCP mede só de dentro do handler, e falha devagar | timer ponta a ponta **primeiro** |
 | **#2214** | spec MCP 2026-07-28 contra SDK 2025-11-25 | vigia: SDK publicar versão que declare a nova |
 | **#2217** | plano de dependências, 30 atrasados re-medidos | ondas 1 a 4, na ordem escrita lá |
+| **#2219** | o retry do `browser_guards` não limpa o daemon entre tentativas | limpar e **verificar** a parada |
 | #2205 #2207 #2208 | camada semântica de webinar, audiência de evento, legendas | abertas pela lane, não toquei |
 
 **Nenhuma PR aberta.** A fila está vazia, o que é a melhor hora para abrir lane.
