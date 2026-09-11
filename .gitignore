@@ -174,3 +174,13 @@ deno.lock
 # Python bytecode dos scripts de skill
 __pycache__/
 *.pyc
+
+# === #2239 — Links vivos para o mount do Google Drive (rclone/FUSE) ===
+# `_drive/` sao symlinks para `~/gdrive`, criados por `drive-link.sh`; `_drive-docs/` e a
+# materializacao local de docs nativos. Fora do git por conteudo (e da nuvem, nunca do repo),
+# e fora do BUILD por desempenho: o scanner de fontes anda a arvore do projeto, segue os links,
+# entra no FUSE e passa a esperar ida e volta de rede por diretorio. Medido em 11/09/2026: com
+# `_drive/` visivel o `astro build` PENDURA; com estas linhas, termina em 4,5 s. A barreira ja
+# existia no ignore GLOBAL do usuario, que o git honra e o scanner do build nao le.
+_drive/
+_drive-docs/
