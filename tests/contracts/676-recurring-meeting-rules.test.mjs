@@ -112,8 +112,24 @@ test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence',
     assert.equal(r.frequency, 'weekly', `tribe ${r.tribe_id} is weekly`);
     assert.ok(r.initiative_id, `tribe ${r.tribe_id} rule anchored to an initiative`);
   }
-  // exactly one biweekly among the comms rules (Thursday alignment)
-  assert.equal(commsRules.filter((r) => r.frequency === 'biweekly').length, 1, 'one biweekly comms rule');
+  // As duas regras de comms passaram a WEEKLY em 11/09/2026, e nenhuma e mais biweekly.
+  //
+  // O time de comunicacao decidiu em 03/09 ("Cadencia definida: as reunioes do grupo passam a ser
+  // semanais, toda quinta-feira", ata do evento b35926e5) e a plataforma so soube em 11/09: a serie
+  // de quintas virou weekly e a de tercas foi pausada, porque o time nao se reune mais as tercas.
+  //
+  // Este assert dizia 'exactly one biweekly'. Seguindo a propria instrucao do bloco acima ("when it
+  // disagrees with the DB, check which of the two is stale"), o estale era o teste: o banco passou a
+  // descrever o que a tribo faz. Se a cadencia mudar de novo, mude AQUI junto, senao o teste volta a
+  // afirmar texto morto.
+  assert.equal(
+    commsRules.filter((r) => r.frequency === 'biweekly').length, 0,
+    'nenhuma regra de comms e biweekly desde 11/09/2026 (decisao da ata de 03/09)',
+  );
+  assert.ok(
+    commsRules.some((r) => r.frequency === 'weekly' && r.status === 'active'),
+    'ao menos uma regra de comms ativa e semanal: se ZERO, a cadencia foi perdida em vez de corrigida',
+  );
 });
 
 test('#676 live: tribe_meeting_slots is a derived cache of the tribe rules', { skip: sb ? false : 'Supabase env required' }, async () => {
