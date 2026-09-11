@@ -91,12 +91,14 @@ async function lerTudo(tabela, colunas) {
   return [...porId.values()];
 }
 
-/** Devolve os pares sobrepostos, já separados nos dois baldes. Não julga: só mede. */
-async function medirSobreposicoes() {
-  const eventos = await lerTudo('events', 'id, date, time_start, title, type, audience_level, initiative_id');
-  // `id` entra porque é a chave do Map de deduplicação em lerTudo(), não porque o cálculo precise dele.
-  const presencas = await lerTudo('attendance', 'id, event_id, member_id');
-
+/**
+ * Monta os pares sobrepostos a partir de listas já lidas. PURA de propósito: sem ela não há como
+ * injetar um par com dupla presença REAL e provar que o gate ainda reprova, e um gate que ninguém
+ * consegue exercer com defeito conhecido é decoração.
+ *
+ * ⚠️ `presencas` tem de conter APENAS linhas com `present = true`. Ver a nota em medirSobreposicoes().
+ */
+function montarPares(eventos, presencas) {
   const membrosPorEvento = new Map();
   for (const p of presencas) {
     if (!p.event_id || !p.member_id) continue;
@@ -136,6 +138,33 @@ async function medirSobreposicoes() {
     }
   }
   return pares;
+}
+
+/**
+ * Lê o vivo e delega o cálculo. Não julga: só mede.
+ *
+ * O filtro `present = true` é o coração deste gate, e ele faltava até 11/09/2026.
+ *
+ * O predicado lia `attendance` inteira e contava QUALQUER linha como "pessoa nos dois", inclusive
+ * FALTA. Isso inverte o sinal que o teste diz medir: a justificativa escrita lá em cima é "uma
+ * pessoa não pode estar em dois encontros ao mesmo tempo" e "cada presença gera sua linha de ponto,
+ * então isso é XP em dobro". Uma falta é o oposto disso e não gera ponto nenhum.
+ *
+ * O comentário logo abaixo já dizia "COM presença registrada" desde o início. Era o código que
+ * discordava do comentário, e o comentário estava certo.
+ *
+ * Como apareceu: o cron `attendance-seal-window-daily` (40 11 * * *) sela FALTAS em lote. Em 09 e
+ * 10/09/2026 ele escreveu 25 linhas, todas `present = false`, e empurrou o gate para vermelho na
+ * `main` sem ninguém ter escrito nada à mão. Medido no momento do conserto: os 3 pares que
+ * reprovavam tinham ZERO pessoas presentes nos dois lados, e o único par com dupla presença real
+ * (19/03, 6 pessoas) estava isento por tipo/audiência diferentes. O gate reprovava exatamente onde
+ * não havia defeito e passava onde havia presença dupla de verdade.
+ */
+async function medirSobreposicoes() {
+  const eventos = await lerTudo('events', 'id, date, time_start, title, type, audience_level, initiative_id');
+  // `id` entra porque é a chave do Map de deduplicação em lerTudo(), não porque o cálculo precise dele.
+  const linhas = await lerTudo('attendance', 'id, event_id, member_id, present');
+  return montarPares(eventos, linhas.filter((p) => p.present === true));
 }
 
 test('#1536 nenhum par sobreposto com MESMO tipo e MESMA audiência', { skip: !sb }, async () => {
@@ -180,4 +209,63 @@ test('#1536 a allowlist não guarda par que deixou de existir', { skip: !sb }, a
     [],
     'entrada da allowlist não corresponde a nenhum par sobreposto vivo: remover do array',
   );
+});
+
+/**
+ * CONTROLE do filtro de `present`, com fixture sintética.
+ *
+ * Mexer num gate para ele parar de reprovar é o padrão perigoso da casa. Sem este teste não há como
+ * distinguir "afinei o sinal" de "ceguei o portão": as duas mudanças deixam a suíte verde.
+ *
+ * Roda SEM Supabase de propósito. O controle de um gate que só existe contra o banco vivo some
+ * exatamente nos ambientes onde o gate mais precisa ser confiável.
+ */
+const SLOT = { date: '2026-01-15', time_start: '19:00:00', initiative_id: 'ini-1' };
+const evA = { ...SLOT, id: 'ev-a', title: 'Reunião A', type: 'tribo', audience_level: 'tribe' };
+const evB = { ...SLOT, id: 'ev-b', title: 'Reunião B', type: 'tribo', audience_level: 'tribe' };
+
+/** Reproduz a composição de produção: filtra `present` e só então monta os pares. */
+const comoEmProducao = (linhas) => montarPares([evA, evB], linhas.filter((p) => p.present === true));
+
+test('#1536 controle: dupla presença REAL continua reprovando', () => {
+  const pares = comoEmProducao([
+    { id: 'p1', event_id: 'ev-a', member_id: 'm1', present: true },
+    { id: 'p2', event_id: 'ev-b', member_id: 'm1', present: true },
+  ]);
+
+  assert.equal(pares.length, 1, 'o par com a MESMA pessoa presente nos dois tem de ser detectado');
+  assert.equal(pares[0].overlap, 1);
+  assert.equal(pares[0].mesmoTipoEAudiencia, true, 'mesmo type e audience_level cai no balde que falha SEMPRE');
+});
+
+test('#1536 controle: FALTA dos dois lados não é sobreposição', () => {
+  const pares = comoEmProducao([
+    { id: 'p1', event_id: 'ev-a', member_id: 'm1', present: false },
+    { id: 'p2', event_id: 'ev-b', member_id: 'm1', present: false },
+  ]);
+
+  assert.deepEqual(pares, [], 'quem faltou nos dois não esteve em lugar nenhum, e não pontuou em dobro');
+});
+
+test('#1536 controle: presente em um e ausente no outro não é sobreposição', () => {
+  const pares = comoEmProducao([
+    { id: 'p1', event_id: 'ev-a', member_id: 'm1', present: true },
+    { id: 'p2', event_id: 'ev-b', member_id: 'm1', present: false },
+  ]);
+
+  assert.deepEqual(pares, [], 'estar em UM encontro é o comportamento correto, não contradição física');
+});
+
+test('#1536 controle: o filtro não engole a pessoa que de fato esteve nos dois', () => {
+  // Mistura: m1 pontuou em dobro (defeito real), m2 faltou nos dois (ruído do cron de selagem).
+  // O gate tem de ver m1 e ignorar m2, senão o ruído afoga o sinal ou o filtro leva o sinal junto.
+  const pares = comoEmProducao([
+    { id: 'p1', event_id: 'ev-a', member_id: 'm1', present: true },
+    { id: 'p2', event_id: 'ev-b', member_id: 'm1', present: true },
+    { id: 'p3', event_id: 'ev-a', member_id: 'm2', present: false },
+    { id: 'p4', event_id: 'ev-b', member_id: 'm2', present: false },
+  ]);
+
+  assert.equal(pares.length, 1);
+  assert.equal(pares[0].overlap, 1, 'conta m1 e só m1: a falta de m2 não infla nem cancela o achado');
 });

@@ -187,29 +187,56 @@ test('#1945 C: o helper DISCRIMINA no vivo — próprio board sim, board alheio 
   // Uma camada estatica fica verde se o helper passar a devolver true para tudo, que e como o
   // alcance cruzado voltaria sem tocar em nenhuma das 6 RPCs. Aqui a pergunta e outra: ele ainda
   // separa o board proprio do alheio?
-  const boards = await tabela('project_boards?select=id,initiative_id&is_active=eq.true&initiative_id=not.is.null&order=id&limit=8');
+  //
+  // Amostra CONSTRUIDA, nao sorteada (#2233). A primeira versao pegava 8 boards por ordem de id e
+  // 5 pesquisadores SEM `order`, e exigia que algum passasse em uns e falhasse em outros. Em
+  // 11/09/2026 ela reprovou, e a causa nao era nenhuma das duas que a mensagem nomeava: medido no
+  // vivo, 24 dos 58 pesquisadores ativos DISCRIMINAVAM naquele mesmo conjunto de 8 boards. Os 5
+  // que o PostgREST devolveu eram das tribos 4, 13, 1, 1 e nenhuma; os 8 boards eram das tribos
+  // 2, 6, 8, 9, 14 e tres sem tribo. Intersecao vazia, entao os 40 veredictos deram false e o
+  // contador ficou em zero por AUSENCIA DE SOBREPOSICAO, com o helper intacto. Sem `order`, a
+  // ordem que o PostgREST devolve e fisica: uma vez que ela desliza para um recorte ruim, o teste
+  // reprova todo dia, sem ninguem ter escrito nada -- e a leitura obvia e culpar o codigo certo.
+  //
+  // O par proprio/alheio abaixo e montado de proposito, como o #1953 C ja fazia no mesmo arquivo
+  // (mesma licao, paga duas vezes). Medido com o par construido: 55 de 55 pesquisadores passam no
+  // proprio board e 0 de 55 passam no alheio. Custa 2 chamadas por pessoa e para em 3, contra as
+  // 40 do sorteio, o que tambem alivia a faixa serializada do banco (#1908).
+  const inits  = await tabela('initiatives?select=id,legacy_tribe_id&legacy_tribe_id=not.is.null&limit=200');
+  const boards = await tabela('project_boards?select=id,initiative_id&is_active=eq.true&initiative_id=not.is.null&limit=200');
+  const pesqs  = await tabela('members?select=id,tribe_id&is_active=eq.true&operational_role=eq.researcher&tribe_id=not.is.null&limit=40');
   assert.ok(boards.length >= 2, 'sem dois boards de iniciativa para exercer o helper');
-  // Amostra pequena de proposito: a suite roda na faixa serializada do banco (#1908), e esta
-  // camada custa uma chamada por par. 5 x 8 basta para provar que o helper separa.
+  assert.ok(pesqs.length > 0, 'sem pesquisador ativo com tribo para exercer o helper');
 
-  const pesquisadores = await tabela('members?select=id,tribe_id&is_active=eq.true&operational_role=eq.researcher&limit=5');
-  assert.ok(pesquisadores.length > 0, 'sem pesquisador ativo para exercer o helper');
+  const initPorTribo = new Map(inits.map(i => [i.legacy_tribe_id, i.id]));
+  const boardPorInit = new Map();
+  for (const b of boards) if (!boardPorInit.has(b.initiative_id)) boardPorInit.set(b.initiative_id, b.id);
 
-  let discriminou = 0;
-  for (const m of pesquisadores) {
-    const veredito = [];
-    for (const b of boards) {
-      veredito.push(await rpc('_can_write_board', { p_member_id: m.id, p_board_id: b.id }));
-    }
-    const sim = veredito.filter(Boolean).length;
-    // O que NAO pode acontecer: passar em TODOS os boards. Isso e o gate inerte.
-    assert.notEqual(sim, boards.length,
-      `helper devolveu true em TODOS os ${boards.length} boards para um pesquisador — gate inerte, o alcance cruzado voltou`);
-    if (sim > 0 && sim < boards.length) discriminou++;
+  let exercidos = 0;
+  for (const m of pesqs) {
+    const initProprio  = initPorTribo.get(m.tribe_id);
+    const boardProprio = initProprio && boardPorInit.get(initProprio);
+    const boardAlheio  = boards.find(b => b.initiative_id !== initProprio)?.id;
+    if (!boardProprio || !boardAlheio) continue;
+
+    const proprio = await rpc('_can_write_board', { p_member_id: m.id, p_board_id: boardProprio });
+    const alheio  = await rpc('_can_write_board', { p_member_id: m.id, p_board_id: boardAlheio });
+
+    assert.equal(proprio, true,
+      `pesquisador NEGADO no board da propria tribo (${m.tribe_id}) — o estreitamento passou do ponto`);
+    // Esta e a guarda de gate inerte: se o helper voltasse a devolver true para tudo, o board
+    // alheio passaria. A versao anterior pedia o mesmo por contagem, e a contagem podia ficar em
+    // zero sem que nada estivesse errado.
+    assert.equal(alheio, false,
+      'pesquisador AUTORIZADO em board de outra iniciativa — gate inerte, o alcance cruzado voltou');
+    exercidos++;
+    if (exercidos >= 3) break;
   }
 
-  assert.ok(discriminou > 0,
-    'nenhum pesquisador passou em ALGUM board e falhou em outro: ou os seeds mudaram, ou o helper virou constante');
+  // Sem isto, apagar os engajamentos deixaria o teste verde por vacuo: zero par montado e zero
+  // assercao exercida lem-se igual a zero defeito.
+  assert.ok(exercidos > 0,
+    'nenhum par (board proprio, board alheio) pode ser montado: os seeds mudaram e este guard virou vacuo');
 });
 
 test('#1945 C: quem tem write_board de escopo organization passa em qualquer board', {
