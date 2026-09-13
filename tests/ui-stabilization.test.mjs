@@ -895,7 +895,15 @@ test('navigation home anchors curated to the funnel (C4 polish, PD-NAV)', () => 
 test('ci heartbeat monitor tracks CI Validate status on main', () => {
   const heartbeat = read('.github/workflows/ci-heartbeat-monitor.yml');
   assert.equal(heartbeat.includes('name: CI Heartbeat Monitor'), true);
-  assert.equal(heartbeat.includes("cron: '*/30 * * * *'"), true);
+  // #2255 (13/09/2026): `*/30` passou a `0 * * * *`. A cadencia agora e fixada por requisito
+  // DECLARADO de janela de deteccao (caminho de publicacao ~16 min + carencia de 60 min = pior caso
+  // ~2 h), escrito no proprio workflow. Este pin NAO afirma que a cadencia esta certa — ele obriga
+  // quem a mudar a passar por aqui, o que e um detector de MUDANCA, nao de correcao.
+  //
+  // E ele funcionou: eu tinha argumentado que travar o valor do cron seria "atrito sem protecao", e
+  // foi este pin que transformou a minha mudanca de cadencia em decisao explicita em vez de deixa-la
+  // passar junto de outra coisa. Mantido de proposito.
+  assert.equal(heartbeat.includes("cron: '0 * * * *'"), true);
   assert.equal(heartbeat.includes("workflow_id = 'ci.yml'"), true);
   assert.equal(heartbeat.includes("alertTitle = '[CI Monitor] CI Validate failing on main'"), true);
   assert.equal(heartbeat.includes('issues: write'), true);

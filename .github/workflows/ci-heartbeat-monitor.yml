@@ -2,7 +2,26 @@ name: CI Heartbeat Monitor
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # Cadencia HORARIA, fixada por requisito declarado de janela de deteccao, nao por inercia
+    # (#2255, 13/09/2026). O que cada numero significa, para quem for mexer:
+    #
+    #   caminho normal de publicacao   `CI Validate` ~14 min + deploy ~2 min  = ~16 min
+    #   carencia do monitor_deploy_lag  60 min sobre a IDADE DO COMMIT da main
+    #   pior caso de deteccao           carencia + um intervalo = ~2 h
+    #
+    # ⚠️ A carencia e o intervalo andam JUNTOS. Baixar a carencia sem baixar o intervalo nao
+    # estreita a janela (o limite passa a ser o intervalo); subir o intervalo sem subir a carencia
+    # faz o alerta disparar em merge normal. Mexa nos dois ou em nenhum.
+    #
+    # POR QUE NAO MAIS RARO: 4x ao dia deixaria uma publicacao travada invisivel por ate 6 h, e
+    # publicacao travada e silenciosa por construcao (`skipped` nao e vermelho — ver #2255).
+    # POR QUE NAO MAIS FREQUENTE: `*/30` fazia 321 runs em 7 dias (medido 13/09, todos `schedule`,
+    # zero `workflow_dispatch`, contra um teto de 336 do cron) para uma checagem de segundos.
+    #
+    # A base economica e ZERO enquanto o repo for publico (Actions e gratis em repo publico). Se a
+    # visibilidade mudar, o heartbeat vira a maior linha da conta e a cadencia volta a ser decisao
+    # de custo, nao so de janela. Cadencia e visibilidade ficam acopladas.
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -221,3 +240,122 @@ jobs:
             }
 
             core.setOutput('state', 'healthy');
+
+  # #2255 (13/09/2026) — o portao da A3 fica `skipped` em silencio, e ate agora nao havia como
+  # perguntar a producao qual commit ela roda.
+  #
+  # O QUE ESTE JOB FECHA: `skipped` nao e vermelho. Nao falha check, nao abre issue, nao aparece em
+  # varredura que procure `failure`. Medido em 13/09: 9 SHAs da main tiveram skip e NUNCA um success,
+  # e 5 dos ultimos 12 `CI Validate` da main falharam (todos por `browser_guards`, que e a #2231).
+  # Nenhum sinal dizia isso. O job acima (`monitor_ci_validate`) ve a CAUSA; este ve a CONSEQUENCIA,
+  # e sao coisas diferentes: um `CI Validate` que falha e recupera sozinho deixa o alerta de causa
+  # fechado e a producao atrasada do mesmo jeito, ate alguem mergear outra coisa.
+  #
+  # ⚠️ TRES ESTADOS, NAO DOIS, e a distincao e o coracao deste job:
+  #
+  #   in_sync      a rota respondeu e o SHA bate com a main   -> fecha alerta
+  #   behind       a rota respondeu e o SHA NAO bate          -> alerta (apos a carencia)
+  #   unreachable  nao deu para ler (rede, 5xx, timeout)      -> NAO alerta e NAO FECHA
+  #
+  # `unreachable` NAO PODE fechar um alerta aberto. Tratar "nao consegui medir" como "esta tudo bem"
+  # e a forma mais comum de um detector mentir na direcao perigosa: bastaria o site oscilar para o
+  # alerta de atraso sumir sozinho. Site fora do ar e problema de outro monitor, nao deste.
+  #
+  # A CARENCIA existe porque atraso curto e NORMAL: o caminho `CI Validate` (~14 min) + deploy (~2
+  # min) deixa a producao legitimamente atras da main logo depois de cada merge. Sem carencia este
+  # job alertaria em todo merge e viraria ruido — e alerta que quase sempre erra treina a ignorar.
+  # A carencia e medida sobre a IDADE DO COMMIT da main, nao sobre o tempo desde o ultimo deploy:
+  # o que interessa e "ha quanto tempo existe codigo nao publicado", nao "ha quanto tempo nao publico".
+  monitor_deploy_lag:
+    runs-on: ubuntu-latest
+    env:
+      SITE_ORIGIN: https://nucleoia.vitormr.dev
+      GRACE_MINUTES: '60'
+    steps:
+      - name: Check deployed provenance against main
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const alertTitle = '[CI Monitor] Producao atrasada em relacao a main';
+            const origin = process.env.SITE_ORIGIN;
+            const graceMinutes = Number(process.env.GRACE_MINUTES);
+
+            const head = await github.rest.repos.getCommit({ owner, repo, ref: 'main' });
+            const headSha = head.data.sha;
+            const headDate = new Date(head.data.commit.committer.date);
+            const headAgeMin = (Date.now() - headDate.getTime()) / 60000;
+
+            let state = 'unreachable';
+            let deployed = null;
+            let detail = '';
+            try {
+              const res = await fetch(`${origin}/api/version`, {
+                headers: { 'Cache-Control': 'no-cache' },
+                signal: AbortSignal.timeout(20000),
+              });
+              if (!res.ok) {
+                detail = `HTTP ${res.status}`;
+              } else {
+                deployed = await res.json();
+                state = deployed?.sha === headSha ? 'in_sync' : 'behind';
+              }
+            } catch (e) {
+              detail = String(e?.message || e);
+            }
+
+            core.info(`main=${headSha} idade=${headAgeMin.toFixed(1)}min estado=${state} publicado=${deployed?.sha || '-'} ${detail}`);
+            core.setOutput('state', state);
+
+            const openIssues = await github.rest.issues.listForRepo({ owner, repo, state: 'open', per_page: 100 });
+            const existingAlert = openIssues.data.find((issue) => issue.title === alertTitle);
+
+            // `unreachable`: nao sabemos. Nao alerta, e sobretudo NAO FECHA um alerta aberto.
+            if (state === 'unreachable') {
+              core.warning(`Nao foi possivel ler ${origin}/api/version (${detail}). Nenhuma conclusao tirada, alerta preservado como estava.`);
+              return;
+            }
+
+            if (state === 'behind') {
+              if (headAgeMin < graceMinutes) {
+                core.info(`Atras da main, mas dentro da carencia (${headAgeMin.toFixed(1)}min < ${graceMinutes}min). Publicacao normal em curso.`);
+                return;
+              }
+              const body = [
+                'A producao esta servindo um commit diferente do HEAD da `main`, ha mais tempo que a carencia.',
+                '',
+                `- \`main\`: \`${headSha}\` (${headDate.toISOString()}, ha ${Math.round(headAgeMin)} min)`,
+                `- publicado: \`${deployed?.sha || 'SEM CARIMBO'}\`${deployed?.built_at ? ` (build ${deployed.built_at})` : ''}`,
+                deployed?.deploy_run_id ? `- run do deploy publicado: https://github.com/${owner}/${repo}/actions/runs/${deployed.deploy_run_id}` : '',
+                '',
+                'Causa mais provavel (#2255): o `CI Validate` pos-merge falhou, e o Deploy terminou como',
+                '`skipped`. `skipped` nao e vermelho, entao nada mais avisa.',
+                '',
+                'Acao sugerida:',
+                '1. `gh run list --workflow="CI Validate" --branch main --limit 5` e ver a conclusao do HEAD.',
+                '2. Se foi flake (#2231), `gh run rerun <id> --failed`; o Deploy dispara de novo ao ficar verde.',
+                '3. Se foi falha real, corrigir e empurrar.',
+                '4. Escotilha: `workflow_dispatch` no Deploy publica sem esperar o portao.',
+              ].filter(Boolean).join('\n');
+
+              if (existingAlert) {
+                await github.rest.issues.createComment({ owner, repo, issue_number: existingAlert.number, body: `Atraso ainda ativo.\n\n${body}` });
+                core.info(`Updated existing deploy-lag issue #${existingAlert.number}`);
+              } else {
+                const created = await github.rest.issues.create({ owner, repo, title: alertTitle, body });
+                core.info(`Created deploy-lag issue #${created.data.number}`);
+              }
+              return;
+            }
+
+            // in_sync
+            if (existingAlert) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existingAlert.number,
+                body: `Heartbeat detectou recuperacao: a producao voltou ao HEAD da main.\n\n- SHA: \`${headSha}\`${deployed?.built_at ? `\n- build: ${deployed.built_at}` : ''}`,
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: existingAlert.number, state: 'closed' });
+              core.info(`Closed recovered deploy-lag issue #${existingAlert.number}`);
+            }

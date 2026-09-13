@@ -56,6 +56,19 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+      # #2255 — o carimbo de proveniencia. Sem ele nao ha como perguntar a producao qual commit ela
+      # roda, e o `skipped` silencioso deste portao (ver o cabecalho) fica invisivel nas duas pontas.
+      #
+      # ⚠️ O SHA tem de ser o MESMO que o `checkout` acima usou (`workflow_run.head_sha`), nunca
+      # `github.sha`: num `workflow_run` o `github.sha` e o HEAD do branch padrao NO MOMENTO do run,
+      # que e a armadilha 1 do cabecalho. Carimbar `github.sha` publicaria o codigo de um commit e
+      # declararia outro — pior que nao carimbar, porque o numero teria cara de medicao.
+      # No `workflow_dispatch` nao existe `workflow_run`, e ai `github.sha` E o commit escolhido.
+      - name: Carimbar a proveniencia do build (#2255)
+        run: |
+          echo "PUBLIC_RELEASE_SHA=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_ENV"
+          echo "PUBLIC_RELEASE_BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "PUBLIC_RELEASE_RUN_ID=${{ github.run_id }}" >> "$GITHUB_ENV"
       - run: npm run build
         env:
           PUBLIC_SUPABASE_URL: https://ldrfrvwhxsmgaabwmaik.supabase.co
