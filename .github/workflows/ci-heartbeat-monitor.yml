@@ -2,7 +2,26 @@ name: CI Heartbeat Monitor
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # Cadencia HORARIA, fixada por requisito declarado de janela de deteccao, nao por inercia
+    # (#2255, 13/09/2026). O que cada numero significa, para quem for mexer:
+    #
+    #   caminho normal de publicacao   `CI Validate` ~14 min + deploy ~2 min  = ~16 min
+    #   carencia do monitor_deploy_lag  60 min sobre a IDADE DO COMMIT da main
+    #   pior caso de deteccao           carencia + um intervalo = ~2 h
+    #
+    # ⚠️ A carencia e o intervalo andam JUNTOS. Baixar a carencia sem baixar o intervalo nao
+    # estreita a janela (o limite passa a ser o intervalo); subir o intervalo sem subir a carencia
+    # faz o alerta disparar em merge normal. Mexa nos dois ou em nenhum.
+    #
+    # POR QUE NAO MAIS RARO: 4x ao dia deixaria uma publicacao travada invisivel por ate 6 h, e
+    # publicacao travada e silenciosa por construcao (`skipped` nao e vermelho — ver #2255).
+    # POR QUE NAO MAIS FREQUENTE: `*/30` fazia 321 runs em 7 dias (medido 13/09, todos `schedule`,
+    # zero `workflow_dispatch`, contra um teto de 336 do cron) para uma checagem de segundos.
+    #
+    # A base economica e ZERO enquanto o repo for publico (Actions e gratis em repo publico). Se a
+    # visibilidade mudar, o heartbeat vira a maior linha da conta e a cadencia volta a ser decisao
+    # de custo, nao so de janela. Cadencia e visibilidade ficam acopladas.
+    - cron: '0 * * * *'
   workflow_dispatch:
 
 permissions:

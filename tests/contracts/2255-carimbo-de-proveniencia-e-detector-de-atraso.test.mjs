@@ -123,6 +123,14 @@ test('#2255: o heartbeat tem o job que compara o publicado com a main', () => {
     'o heartbeat deve declarar o job monitor_deploy_lag');
   assert.match(yml, /\/api\/version/,
     'o job deve consultar a rota de proveniencia');
+  // PISO NA CARENCIA, e nao no valor do cron. O defeito real e alguem baixar a carencia abaixo do
+  // caminho normal de publicacao (`CI Validate` ~14 min + deploy ~2 min = ~16 min): a partir dai o
+  // job alerta em TODA fusao, e alerta que quase sempre erra treina a ignorar — que e como o sinal
+  // morre. Travar o valor do CRON num teste seria atrito sem proteger nada: a cadencia e decisao de
+  // janela de deteccao, e mudar ela nao introduz defeito nenhum por si.
+  const grace = Number((yml.match(/GRACE_MINUTES:\s*'?(\d+)'?/) || [])[1]);
+  assert.ok(Number.isFinite(grace) && grace >= 30,
+    `a carencia deve ser >= 30 min (caminho normal de publicacao e ~16 min); achei ${grace}`);
   assert.match(yml, /GRACE_MINUTES/,
     [
       'O detector DEVE ter carencia.',
