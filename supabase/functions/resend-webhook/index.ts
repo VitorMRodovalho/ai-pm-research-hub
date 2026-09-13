@@ -91,7 +91,15 @@ Deno.serve(async (req) => {
     }
 
     // 3. Process via RPC (idempotent updates)
-    const validEvents = ['email.delivered', 'email.opened', 'email.clicked', 'email.bounced', 'email.complained']
+    // #2130 — `email.suppressed` NAO ESTAVA nesta lista. Ele era gravado em `email_webhook_events`
+    // (o insert acontece ANTES do filtro) e caia no `else` abaixo, entao nunca virava decisao: 43
+    // sinais de parada registrados e zero processados. `email.delivery_delayed` tinha o mesmo
+    // destino (57). `email.sent` fica FORA de proposito: e ruido de aceite, nao desfecho — quem
+    // mede o envio do dia le `email_webhook_events` direto (#1424 Fase B).
+    //
+    // ⚠️ Admitir um tipo aqui sem ramo correspondente no `CASE` de `process_email_webhook` faz a RPC
+    // levantar CASE_NOT_FOUND (o CASE nao tem ELSE, de proposito). Os dois andam JUNTOS.
+    const validEvents = ['email.delivered', 'email.opened', 'email.clicked', 'email.bounced', 'email.complained', 'email.suppressed', 'email.delivery_delayed']
     if (validEvents.includes(eventType)) {
       const { error: rpcErr } = await sb.rpc('process_email_webhook', {
         p_resend_id: resendId,
