@@ -74,7 +74,20 @@ test('#1424 Fase A: a coalesced multi-notification email is built and covers all
   assert.ok(/coalesced-notification\//.test(EF),
     'EF must use a coalesced Idempotency-Key for the grouped email.');
   // Every row the email covered is marked sent in one batch update.
-  assert.ok(/\.update\(\{\s*email_sent_at[\s\S]{0,60}\}\)\s*\.in\(\s*['"]id['"]\s*,/.test(EF),
+  //
+  // ⚠️ A JANELA CRESCEU EM #2130, e por que isso NAO afrouxa nada: o update do ramo de sucesso
+  // passou a carregar `resend_id` e `email_delivery_status` junto de `email_sent_at` (o id do aceite
+  // era jogado fora, e era a unica chave capaz de ligar o envio ao desfecho do webhook). A janela
+  // original de 60 caracteres entre a chave e o `})` passaria a REPROVAR uma mudanca puramente
+  // aditiva. Em vez de alargar a janela no vacuo, a asserção agora recorta o RAMO DE SUCESSO e
+  // afirma dentro dele: o alvo ficou mais especifico, nao menos.
+  //
+  // Defeito injetado para provar que ainda reprova (12/09/2026): trocar `.in('id', s.ids)` por
+  // `.eq('id', s.ids[0])` no ramo de sucesso — reprova, como deve.
+  const iOk = EF.indexOf('if (res.ok)');
+  assert.ok(iOk > 0, 'EF must have an if (res.ok) success branch.');
+  const okBranch = EF.slice(iOk, EF.indexOf('} else {', iOk));
+  assert.ok(/\.update\(\{[\s\S]{0,400}email_sent_at[\s\S]{0,400}\}\)\s*\.in\(\s*['"]id['"]\s*,/.test(okBranch),
     'EF must mark ALL covered rows sent via .in(\'id\', ids) after a successful send.');
 });
 

@@ -17543,12 +17543,16 @@ export type Database = {
           delivery_mode: string
           digest_batch_id: string | null
           digest_delivered_at: string | null
+          email_delivery_at: string | null
+          email_delivery_reason: string | null
+          email_delivery_status: string | null
           email_sent_at: string | null
           id: string
           is_read: boolean | null
           link: string | null
           read_at: string | null
           recipient_id: string
+          resend_id: string | null
           source_id: string | null
           source_type: string | null
           title: string
@@ -17561,12 +17565,16 @@ export type Database = {
           delivery_mode?: string
           digest_batch_id?: string | null
           digest_delivered_at?: string | null
+          email_delivery_at?: string | null
+          email_delivery_reason?: string | null
+          email_delivery_status?: string | null
           email_sent_at?: string | null
           id?: string
           is_read?: boolean | null
           link?: string | null
           read_at?: string | null
           recipient_id: string
+          resend_id?: string | null
           source_id?: string | null
           source_type?: string | null
           title: string
@@ -17579,12 +17587,16 @@ export type Database = {
           delivery_mode?: string
           digest_batch_id?: string | null
           digest_delivered_at?: string | null
+          email_delivery_at?: string | null
+          email_delivery_reason?: string | null
+          email_delivery_status?: string | null
           email_sent_at?: string | null
           id?: string
           is_read?: boolean | null
           link?: string | null
           read_at?: string | null
           recipient_id?: string
+          resend_id?: string | null
           source_id?: string | null
           source_type?: string | null
           title?: string

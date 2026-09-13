@@ -792,7 +792,13 @@ Deno.serve(async (req) => {
       }
       for (const n of newestRichByType.values()) individualToSend.push(n)
       if (richDupIds.length) {
-        await sb.from('notifications').update({ email_sent_at: nowIso }).in('id', richDupIds)
+        // #2130 — estas linhas recebem `email_sent_at` SEM QUE NADA SEJA ENVIADO, de proposito (é a
+        // dedup). Marca-las como 'accepted' faria o campo significar duas coisas, e um detector de
+        // nao-entrega leria "aceito pelo provedor" onde nunca houve provedor.
+        await sb.from('notifications').update({
+          email_sent_at: nowIso,
+          email_delivery_status: 'deduplicated',
+        }).in('id', richDupIds)
         deduped += richDupIds.length
       }
 
@@ -849,8 +855,18 @@ Deno.serve(async (req) => {
 
           if (res.ok) {
             sent++
+            // #2130 — o id devolvido no aceite era JOGADO FORA, e era a unica chave capaz de ligar
+            // este envio ao desfecho que o webhook traz depois ("o provedor aceitou" e "a pessoa
+            // recebeu" sao dois fatos com tempos diferentes). `?? null` importa: se o parse falhar,
+            // o comportamento anterior fica preservado inteiro — nenhum ramo de DECISAO do envio
+            // muda aqui, a captura e puramente aditiva.
+            const accepted = await res.json().catch(() => ({} as Record<string, unknown>))
             // Mark every row this email covered as sent.
-            await sb.from('notifications').update({ email_sent_at: new Date().toISOString() }).in('id', s.ids)
+            await sb.from('notifications').update({
+              email_sent_at: new Date().toISOString(),
+              resend_id: (accepted as { id?: string })?.id ?? null,
+              email_delivery_status: 'accepted',
+            }).in('id', s.ids)
           } else {
             const err = await res.json().catch(() => ({}))
             errors.push(`${member.email}: ${err.message || res.status}`)
