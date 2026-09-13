@@ -35,10 +35,34 @@ paths:
 Rule:
 - `mcp__claude_ai_Supabase__execute_sql` is for **read-only or DML** (SELECT, INSERT/UPDATE/DELETE on data, NOTIFY, EXPLAIN). Test calls during validation are fine.
 - `mcp__claude_ai_Supabase__apply_migration` is for **all DDL** (CREATE/ALTER/DROP on tables, functions, types, policies, triggers, indexes, views; GRANT/REVOKE; COMMENT ON). Including `CREATE OR REPLACE FUNCTION`.
-- **`apply_migration` via MCP applies DDL to remote DB only.** It does NOT (a) write a local migration file, NOR (b) register the version in `supabase_migrations.schema_migrations`. Caught 2x in p86 (Wave 5d shipping). Manual sync required:
-  1. After `apply_migration` succeeds, `Write` a local file at `supabase/migrations/<timestamp>_<name>.sql` with the same SQL (timestamp = next-greater than current head; `SELECT version FROM supabase_migrations.schema_migrations ORDER BY version DESC LIMIT 1` to find current).
-  2. Run `supabase migration repair --status applied <timestamp>` to register in CLI tracking + sync to `schema_migrations` table.
-  3. `NOTIFY pgrst, 'reload schema'` via `execute_sql` if the change affects PostgREST surface (RPC signatures, view shapes, policies on exposed tables).
+- **`apply_migration` via MCP applies DDL to remote DB AND registers a tracking row.** It does not write a
+  local migration file, but it DOES insert a row into `supabase_migrations.schema_migrations`, stamped with
+  its own **wall-clock** version (e.g. `20260913020632`) and the `name` you passed.
+
+  > ⚠️ **This line used to say the opposite** ("it does NOT register the version"), and that sentence caused
+  > the same defect three times — 2026-07-17 (#1408), 2026-07-18 (#1419) and 2026-09-13 (#2130). Following it,
+  > you run `migration repair`, which inserts a SECOND row for your local file's version. The result is two
+  > tracking rows for one migration, one of them with no local file, and
+  > `tests/contracts/rpc-migration-coverage.test.mjs` reports it as `NEW missing-file drift`.
+  >
+  > Measured 2026-09-13: `apply_migration` registered `20260913020632` (1 statement, the whole blob) while
+  > `repair` registered `20260912234500` (10 statements). Same `name`, both live.
+  >
+  > **And do not confirm it by probing the version you expect** — `WHERE version = '<your timestamp>'` returns
+  > 0 and reads as "not registered". Query by `name`, or by today's date prefix.
+
+  **Preferred ritual — ONE `apply_migration` call, then adopt its version (no `repair`, nothing to delete):**
+  1. `apply_migration(name, query)`.
+  2. Read the version it registered: `SELECT version FROM supabase_migrations.schema_migrations WHERE name = '<name>' ORDER BY version DESC LIMIT 1`.
+  3. Write the local file as `supabase/migrations/<that version>_<name>.sql`, byte-identical to what you applied.
+     The row is now canonical: `statements` is already populated, and the tracking table is never touched by hand.
+  4. `NOTIFY pgrst, 'reload schema'` via `execute_sql` if the change affects the PostgREST surface.
+
+  This works whenever the registered (real-date) version sorts AFTER the current head — true since the sequence
+  returned to real dates. If you made SEVERAL `apply_migration` calls, each left its own row: prefer editing the
+  local file and re-applying the WHOLE file over stacking corrective calls, and if rows are already stacked,
+  delete the extras by **EXACT** version (never `LIKE`), then verify with a FRESH `execute_sql` — a
+  `DELETE ... RETURNING` plus a sibling `count(*)` in ONE statement shows the pre-delete snapshot.
 - Without the manual sync, `tests/contracts/rpc-migration-coverage.test.mjs` will fail in CI when a new function appears in `pg_proc` without a `CREATE FUNCTION` block in any migration — catches accidental DDL via the wrong tool **and** the apply_migration MCP gap.
 - **Contract test CI gate (p174 sediment)**: the Q-C orphan check requires `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` env vars; without them tests SKIP silently (offline baseline check still passes). Confirmed fix: `.github/workflows/ci.yml` `Run Unit Tests` step now uses `${{ secrets.SUPABASE_URL }}` + `${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}` (p174, 2026-05-17). Without those secrets configured in GH repo settings, the gate still silently skips — verify periodically that CI is actually running the DB-aware tests, not just the offline baseline.
 - **Phase C body-hash drift gate (p175 extension)**: orphan check alone misses the case where a function IS captured by SOME migration but the live body has since diverged (the drift class that motivated p52/p174). Phase C compares `md5(regexp_replace(prosrc, '\s+', ' ', 'g'))` between live (via `_audit_list_public_function_bodies()` RPC) and the latest CREATE FUNCTION capture per `(name, normalized_args)` key. Baseline allowlist of currently-drifted keys lives at `docs/audit/RPC_BODY_DRIFT_ALLOWLIST_P175.txt` (225 entries at p175). Tests ratchet DOWN as drift is recovered via apply_migration. Shared parser at `tests/helpers/rpc-body-drift-parser.mjs` (consumed by both the test and `scripts/audit-rpc-body-drift.mjs`); SQL-side normalization must stay byte-equivalent to the helper's `normalizeBody()` — break it and EVERY function appears drifted.
