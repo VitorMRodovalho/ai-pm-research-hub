@@ -6,8 +6,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
+
+/**
+ * #2130 — as asserções sobre `process_email_webhook` liam um `.sql` FIXADO de marco/2026.
+ *
+ * Por que isso virou defeito em 12/09/2026: a onda de #2130 substituiu o corpo da funcao por
+ * `CREATE OR REPLACE` numa migration nova. O guard continuou lendo o arquivo de marco, entao passou
+ * a afirmar TEXTO MORTO — ficaria verde mesmo se a funcao vigente fosse quebrada inteira. E o
+ * scanner de pinos vencidos do #1932 nao enxerga esse par, porque este arquivo nomeia a funcao por
+ * `mig.includes(...)` em vez da forma `bodyOf(MIG, 'nome')` que o scanner reconhece (e exatamente a
+ * #2116).
+ *
+ * As asserções de SCHEMA (colunas, indice, tabela com RLS) seguem fixadas no arquivo original de
+ * proposito: elas afirmam uma entrega HISTORICA, que nasceu ali e nao se move.
+ */
+const capturaWebhookRPC = () => maskLineComments(latestFunctionCapture(ROOT, 'process_email_webhook').block);
 
 function readFile(rel) {
   const p = resolve(ROOT, rel);
@@ -44,22 +60,24 @@ test('email_webhook_events table exists with RLS', () => {
 // ═══════════════════════════════════════════════
 
 test('process_email_webhook RPC handles all 5 event types', () => {
-  const mig = readFile('supabase/migrations/20260319100061_w_camp_analytics_resend_webhooks.sql');
+  const body = capturaWebhookRPC();
   const events = ['email.delivered', 'email.opened', 'email.clicked', 'email.bounced', 'email.complained'];
   for (const e of events) {
-    assert.ok(mig.includes(e), `process_email_webhook must handle ${e}`);
+    assert.ok(body.includes(e), `process_email_webhook must handle ${e} (captura VIGENTE, nao o .sql de marco)`);
   }
 });
 
 test('process_email_webhook is SECURITY DEFINER', () => {
-  const mig = readFile('supabase/migrations/20260319100061_w_camp_analytics_resend_webhooks.sql');
-  assert.ok(/process_email_webhook[\s\S]*?SECURITY\s+DEFINER/i.test(mig));
+  // `CREATE OR REPLACE` que OMITE o atributo o reseta em silencio, entao esta asserção so vale
+  // contra a captura vigente.
+  assert.match(capturaWebhookRPC(), /SECURITY\s+DEFINER/i);
 });
 
 test('process_email_webhook uses COALESCE for idempotent timestamps', () => {
-  const mig = readFile('supabase/migrations/20260319100061_w_camp_analytics_resend_webhooks.sql');
-  const coalesceCount = (mig.match(/COALESCE\(delivered_at|COALESCE\(opened_at|COALESCE\(clicked_at|COALESCE\(bounced_at|COALESCE\(complained_at/g) || []).length;
-  assert.ok(coalesceCount >= 4, 'Must use COALESCE for idempotent timestamp updates');
+  const body = capturaWebhookRPC();
+  const coalesceCount = (body.match(/COALESCE\(delivered_at|COALESCE\(opened_at|COALESCE\(clicked_at|COALESCE\(bounced_at|COALESCE\(complained_at/g) || []).length;
+  assert.ok(coalesceCount >= 4,
+    `Must use COALESCE for idempotent timestamp updates (captura VIGENTE; achei ${coalesceCount})`);
 });
 
 test('get_campaign_analytics RPC exists and requires admin', () => {
