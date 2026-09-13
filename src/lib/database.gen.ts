@@ -17919,6 +17919,13 @@ export type Database = {
             referencedRelation: "v_tribe_active_members"
             referencedColumns: ["member_id"]
           },
+          {
+            foreignKeyName: "onboarding_progress_step_key_fkey"
+            columns: ["step_key"]
+            isOneToOne: false
+            referencedRelation: "onboarding_steps"
+            referencedColumns: ["id"]
+          },
         ]
       }
       onboarding_steps: {
