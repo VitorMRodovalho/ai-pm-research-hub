@@ -3,8 +3,8 @@
   "$id": "ADR-0022-notification-types-catalog",
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.7",
-  "updated_at": "2026-05-23",
+  "version": "W1.8",
+  "updated_at": "2026-09-14",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into weekly digest sent Saturday 12:00 UTC via send-weekly-member-digest EF. Default for most types.",
@@ -177,6 +177,10 @@
     "selection_noshow_unrecovered": {
       "delivery_mode": "digest_weekly",
       "rationale": "ÉPICO D (2026-06-18): admin/GP-facing alert that a candidate no-showed an interview (selection_interviews.status=noshow) with no recovery row after noshow_recovery_grace days and no future slot — invisible to _selection_interview_overdue_cron. Emitted by detect_stuck_selection_funnel cron. digest_weekly: in-app immediate, email batched."
+    },
+    "unlinked_accounts_detected": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2285 (2026-09-14) - emitted by the weekly cron wrapper public.detect_unlinked_accounts_cron() to every active member with manage_platform, deduped on a 25-day window (weekly measurement, monthly nudge). Carries the COUNT only; the masked list stays behind detect_unlinked_accounts(). Immediate rather than digest_weekly on purpose: get_weekly_member_digest builds its sections from a per-type allowlist while consumed_notification_ids does not filter by type, so a type in no section is stamped digest_delivered_at without ever being rendered (measured: 76 of 78 rows across two sibling types - see #2286)."
     }
   },
   "implementation": {

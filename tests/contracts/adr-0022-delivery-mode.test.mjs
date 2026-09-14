@@ -274,8 +274,15 @@ test('ADR-0022 Amendment D: catalog metadata bumped per latest selection workstr
   // spot the latest active milestone in the catalog file alone.
   assert.ok(['W1.4', 'W1.5', 'W1.6', 'W1.7', 'W1.8', 'W1.9', 'W1.10'].includes(catalog.version),
     `Catalog version must be ≥ W1.4 (Amendment D shipping). Got "${catalog.version}".`);
-  assert.equal(catalog.updated_at, '2026-05-23',
-    'Catalog updated_at must be 2026-05-23 (p228 selection workstream ship date).');
+  // #2285 (2026-09-14): era `assert.equal(catalog.updated_at, '2026-05-23')`. Um pino de
+  // igualdade numa data congela o campo para sempre: QUALQUER onda posterior que acrescente um
+  // tipo ao catalogo (o que o proprio catalogo MANDA fazer, "in the same migration") tinha de
+  // ou mentir a data ou derrubar este teste. A lista de versoes ao lado ja antecipava
+  // crescimento ate W1.10, entao o pino de data contradizia a propria intencao do guard.
+  // O que ele protege de verdade e o catalogo nao REGREDIR para antes do ship do Amendment D,
+  // e isso a desigualdade preserva.
+  assert.ok(catalog.updated_at >= '2026-05-23',
+    `Catalog updated_at must not predate the p228 selection workstream ship (2026-05-23). Got "${catalog.updated_at}".`);
 });
 
 test('ADR-0022 Amendment D: _delivery_mode_for helper explicit-case parity with selection policy', () => {
