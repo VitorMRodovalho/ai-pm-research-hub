@@ -125,6 +125,64 @@ essa contagem não foi feita.
 
 ---
 
+## 5b. A pergunta do dono, e por que ela desmonta a seção 5
+
+> *"Quero explicação do porquê algo que funciona parou de funcionar."*
+
+A cobrança é certeira e **corrige a seção 5**. Se "nenhuma das duas jornadas cria conta" fosse a
+história inteira, ninguém teria conta — e **56 de 66** membros criados em 150 dias têm. A jornada
+não está estruturalmente quebrada. Há um terceiro caminho, e eu não o tinha olhado.
+
+**Primeira medição, feita em 14/09.** Tempo médio entre o registro de membro e a criação da conta,
+por mês de entrada:
+
+| mês | entrantes | criaram conta | dias médios até a conta | sem conta há +14d |
+|---|---|---|---|---|
+| 05/2026 | 4 | 3 | **+0,1** | 1 |
+| 06/2026 | 32 | 30 | **−6,3** | 2 |
+| 07/2026 | 13 | 12 | **−11,1** | 1 |
+| 08/2026 | 14 | 11 | **−18,5** | 3 |
+| 09/2026 | 2 | 0 | — | 0 |
+
+O número é **negativo e cresce em módulo**: a conta existe ANTES do registro de membro. O caminho
+que funciona não é "vira membro → recebe e-mail → cria conta", é o inverso — a pessoa já se
+cadastrou sozinha lá atrás, na candidatura, e o registro de membro veio depois.
+
+Se isso se confirmar, a resposta muda de forma: **talvez o e-mail de onboarding nunca tenha sido um
+caminho de entrada.** Não haveria regressão com data, e sim uma dependência num passo anterior que
+ninguém mediu.
+
+**Hipótese rival, MORTA na mesma sessão.** "Os que ficam sem conta são importados do VEP e nunca
+tocaram o site":
+
+| origem | tem conta | pessoas |
+|---|---|---|
+| VEP | **sim** | **53** |
+| VEP | não | 4 |
+| não-VEP | sim | 3 |
+| não-VEP | não | 6 |
+
+VEP tem **93%** de contas. A origem VEP explica o contrário do que a hipótese dizia.
+
+### O que fazer com isto, e como NÃO medir
+
+São **10 pessoas** sem conta em 150 dias. Com 10 casos, agregado é ruído: **reconstrua o caminho de
+cada uma**, uma a uma. A pergunta por pessoa é "qual passo ela não deu, e existia caminho para
+dar?".
+
+⚠️ **Duas armadilhas na métrica, e eu caí na primeira antes de perceber.**
+
+1. `avg` esconde a distribuição. Um punhado de contas muito antigas puxa a média para −18 sem que a
+   maioria tenha esse comportamento. Use **mediana**, e olhe o histograma.
+2. "Tem conta hoje" **mistura quem nunca vai ter com quem ainda não teve tempo**. A comparação entre
+   coortes só vale com **janela fixa**: criou conta em até N dias da entrada. Sem isso, a coorte
+   recente sempre parece pior, e a conclusão "parou de funcionar" nasce do próprio recorte.
+
+O caso `c9c2058d` é um dos 10 e tem um sinal extra que os outros não têm: a pessoa **clicou** num
+link morto, o que prova intenção. Comece por ela, mas não generalize a partir dela.
+
+---
+
 ## 6. Estado operacional, para não redescobrir
 
 - **PR #2270** aberta na lane `lane/entrada-e-onboarding` (worktree `../.wt-entrada`). Traz a ação
