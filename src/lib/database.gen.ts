@@ -29568,6 +29568,7 @@ export type Database = {
         Args: { p_caller_id: string; p_event_id: string }
         Returns: boolean
       }
+      _mask_email: { Args: { p_email: string }; Returns: string }
       _member_operational_since: {
         Args: { p_member_id: string }
         Returns: string
@@ -29613,6 +29614,10 @@ export type Database = {
           p_scope?: string
         }
         Returns: Json
+      }
+      _portal_member_for_application: {
+        Args: { p_application_id: string }
+        Returns: string
       }
       _prior_gates_satisfied: {
         Args: { p_chain_id: string; p_gate_kind: string }
@@ -31046,6 +31051,7 @@ export type Database = {
         Args: { p_dry_run?: boolean }
         Returns: Json
       }
+      detect_unlinked_accounts: { Args: never; Returns: Json }
       dismiss_onboarding: { Args: never; Returns: undefined }
       dismiss_visitor_lead: {
         Args: { p_lead_id: string; p_reason?: string }
@@ -34099,6 +34105,7 @@ export type Database = {
         Args: { p_application_id: string; p_reason: string }
         Returns: Json
       }
+      request_portal_account_setup: { Args: { p_token: string }; Returns: Json }
       request_secondary_email_verification: {
         Args: { p_email: string }
         Returns: Json

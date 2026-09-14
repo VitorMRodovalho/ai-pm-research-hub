@@ -21,6 +21,39 @@ interface OnboardingStepDef {
   type?: string;
 }
 
+/**
+ * #2273 defeito A — a entrada do CATÁLOGO (`onboarding_steps`), que é onde os rótulos sempre
+ * estiveram. O JSONB por ciclo (`cycle.onboarding_steps`) está em 0 e NUNCA teve os passos do
+ * catálogo, então todo passo caía no fallback `?? step.step_key` e a pessoa lia
+ * `complete_profile`, `volunteer_term`, `first_meeting` em vez de texto humano.
+ *
+ * As três línguas vêm juntas e quem escolhe é este componente: o banco não conhece o locale do
+ * visitante, e um parâmetro de idioma mudaria a assinatura de uma RPC que a página SSR já chama.
+ */
+interface StepCatalogEntry {
+  key: string;
+  step_order: number;
+  icon: string | null;
+  is_required: boolean;
+  applies_to_role: string[] | null;
+  label: Partial<Record<Lang, string>>;
+  description: Partial<Record<Lang, string>>;
+}
+
+/**
+ * #2273 defeito B — o que o portal precisa saber para dizer COM QUAL e-mail entrar.
+ *
+ * `masked_email` é o primário do MEMBRO, mascarado no servidor. Ele importa porque o
+ * reconhecimento liga conta nova a membro por esse endereço: quem entra com outro nasce ghost,
+ * some do próprio registro, e o suporte vira arqueologia.
+ */
+interface AccountState {
+  member_exists: boolean;
+  has_account: boolean;
+  masked_email: string | null;
+  can_request_setup: boolean;
+}
+
 interface VideoScreening {
   pillar: string;
   question_index: number;
@@ -53,6 +86,9 @@ interface ConsumePayload {
     phase: string;
     onboarding_steps: OnboardingStepDef[];
   };
+  /** #2273 — ADITIVO. Ausente no payload de antes da migration, daí o opcional. */
+  step_catalog?: StepCatalogEntry[];
+  account_state?: AccountState;
   onboarding_progress: OnboardingProgressEntry[];
   video_screenings?: VideoScreening[];
   token_metadata: {
@@ -143,6 +179,10 @@ export default function PMIOnboardingPortal({
   const [profileError, setProfileError] = useState<string | null>(null);
   const [enrichmentStatus, setEnrichmentStatus] = useState<any | null>(null);
   // #1595 — link governado de agendamento, emitido sob demanda (um clique = um despacho auditado).
+  // #2273 defeito B — a segunda via de acesso (o link por e-mail). O caminho primário é o OAuth
+  // logo acima dela, que é como 88% das contas nascem.
+  const [accessBusy, setAccessBusy] = useState(false);
+  const [accessState, setAccessState] = useState<string | null>(null);
   const [bookingUrl, setBookingUrl] = useState<string | null>(null);
   const [bookingBusy, setBookingBusy] = useState(false);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -205,6 +245,9 @@ export default function PMIOnboardingPortal({
   }
 
   const { application: app, cycle, onboarding_progress: progress, token_metadata } = payload;
+  // #2273 — ausente enquanto o payload vier da RPC anterior à migration; o bloco inteiro degrada
+  // para o link de sempre em vez de quebrar.
+  const accountState = payload.account_state ?? null;
   const videoScreenings = payload.video_screenings ?? [];
   const isInterviewMode = videoScreenings.length >= 5 && videoScreenings.every(v => v.status === 'opted_out');
   const hasVoiceConsent = Boolean(app.has_voice_biometric_consent && !app.has_voice_biometric_revoked);
@@ -212,6 +255,70 @@ export default function PMIOnboardingPortal({
 
   const expiresAtDate = new Date(token_metadata.expires_at);
   const daysLeft = Math.max(0, Math.floor((expiresAtDate.getTime() - Date.now()) / 86400000));
+
+  /**
+   * #2273 defeito A — o rótulo de um passo, resolvido na ordem que reflete quem é a fonte de
+   * verdade: CATÁLOGO primeiro, JSONB do ciclo como herança, e a chave crua só como último
+   * recurso visível.
+   *
+   * A ordem importa. Antes, o JSONB era a única fonte consultada, e ele está vazio — o resultado
+   * era a chave crua em 100% dos passos. O catálogo tem as 11 linhas com label e descrição nas
+   * três línguas; ele sempre teve.
+   *
+   * O JSONB continua como segundo lugar de propósito: um ciclo que um dia carregue rótulo
+   * próprio segue sendo respeitado, e nada do que já existe é descartado por esta mudança.
+   */
+  const stepCatalog = useMemo(() => {
+    const m = new Map<string, StepCatalogEntry>();
+    for (const e of payload.step_catalog ?? []) m.set(e.key, e);
+    return m;
+  }, [payload.step_catalog]);
+
+  const stepText = (stepKey: string): { label: string; desc?: string } => {
+    const fromCatalog = stepCatalog.get(stepKey);
+    if (fromCatalog) {
+      // pt-BR é o fallback de idioma porque é a língua em que o catálogo está integralmente
+      // preenchido; um locale sem tradução mostra texto humano, nunca a chave.
+      const label = fromCatalog.label?.[lang] ?? fromCatalog.label?.['pt-BR'];
+      const desc = fromCatalog.description?.[lang] ?? fromCatalog.description?.['pt-BR'];
+      if (label) return { label: fromCatalog.icon ? `${fromCatalog.icon} ${label}` : label, desc: desc ?? undefined };
+    }
+    const fromCycle = cycle.onboarding_steps?.find(s => s.key === stepKey) ?? null;
+    if (fromCycle?.label) return { label: fromCycle.label, desc: fromCycle.description };
+    return { label: stepKey };
+  };
+
+  /**
+   * #2273 defeito B — abre o login SEM tirar a pessoa do portal.
+   *
+   * O `AuthModal` vive no `BaseLayout` e escuta `document` + `'open-auth'`. A identidade do evento
+   * é exatamente essa, e não outra: a #1997 mediu um botão que despachava `'open-auth-modal'` em
+   * `window` e não abria nada — e era o botão de `/workspace`, que é para onde `/onboarding`
+   * redireciona, o endereço que os e-mails de aprovação mandam abrir.
+   */
+  const openLogin = () => {
+    document.dispatchEvent(new CustomEvent('open-auth'));
+  };
+
+  /**
+   * A segunda via: pede ao servidor um link de acesso. Nenhum e-mail sai daqui — quem escolhe o
+   * destinatário é a RPC, lendo o primário do MEMBRO. Se o cliente pudesse informar o endereço, a
+   * pessoa poderia criar o acesso num e-mail que o reconhecimento não conhece e entrar como ghost.
+   */
+  const handleRequestAccess = async () => {
+    setAccessBusy(true);
+    setAccessState(null);
+    try {
+      const { data, error } = await sb.rpc('request_portal_account_setup', { p_token: token });
+      if (error) throw new Error(error.message);
+      setAccessState((data as any)?.state ?? 'sent');
+    } catch (e: any) {
+      setAccessState('error');
+      setErrorMsg(e?.message ?? String(e));
+    } finally {
+      setAccessBusy(false);
+    }
+  };
 
   const roleLabel = (() => {
     const map: Record<string, string> = {
@@ -829,9 +936,7 @@ export default function PMIOnboardingPortal({
           </div>
           <ul className="divide-y divide-gray-100">
             {progress.map(step => {
-              const def = cycle.onboarding_steps.find(s => s.key === step.step_key) ?? null;
-              const label = def?.label ?? step.step_key;
-              const desc = def?.description;
+              const { label, desc } = stepText(step.step_key);
               const done = step.status === 'completed' || step.status === 'skipped';
               return (
                 <li key={step.step_key} className="py-3 flex items-start gap-3">
@@ -874,6 +979,26 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
+      {/*
+        #2273 defeito B — a jornada fecha AQUI.
+
+        Antes, a única ação à frente de quem foi aprovado era um botão para `/onboarding`, que
+        redireciona (302) para `/workspace`: uma tela que não conhece a pessoa e pede um login que
+        ela ainda não tem. O percurso medido era e-mail → portal → botão → muro → e-mail.
+
+        O que mudou, e por quê:
+
+          (a) O portal diz COM QUAL e-mail entrar. Essa é a informação que faltava, e ela decide
+              tudo: o reconhecimento liga conta nova a membro pelo e-mail PRIMÁRIO DO MEMBRO, e
+              quem entra com outro endereço nasce ghost — some do próprio registro.
+          (b) O login abre aqui mesmo, nos mesmos provedores. Não é um caminho novo: 88% das contas
+              já nascem de OAuth (google 107, linkedin_oidc 31, azure 7, contra 23 de OTP). A
+              pessoa sempre pôde criar a conta sozinha; ninguém dizia a ela que era esse o passo.
+          (c) A segunda via, por link no e-mail, para quem não tem conta OAuth naquele endereço.
+
+        Depois do login, o vínculo é feito pelo mecanismo que já existe e funciona — o first_link
+        de `get_member_by_auth`, com 68 eventos registrados. Nada aqui inventa identidade nova.
+      */}
       {isApproved && (
         <section className="bg-green-50 border border-green-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-green-900 mb-2">
@@ -882,12 +1007,73 @@ export default function PMIOnboardingPortal({
           <p className="text-green-800 text-sm mb-4">
             {T('pmi.onboarding.approvedBody')}
           </p>
-          <a
-            href={lang === 'en-US' ? '/en/onboarding' : lang === 'es-LATAM' ? '/es/onboarding' : '/onboarding'}
-            className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            {T('pmi.onboarding.goToFullOnboarding')} →
-          </a>
+
+          {accountState?.masked_email && (
+            <div className="bg-white border border-green-300 rounded-lg p-4 mb-4">
+              <p className="text-sm text-gray-700 mb-1">
+                {accountState.has_account
+                  ? T('pmi.onboarding.access.signInWith')
+                  : T('pmi.onboarding.access.useThisEmail')}
+              </p>
+              <p className="font-mono text-base font-semibold text-gray-900">{accountState.masked_email}</p>
+              <p className="text-xs text-gray-600 mt-2">{T('pmi.onboarding.access.whyThisEmail')}</p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3 items-center">
+            <button
+              type="button"
+              onClick={openLogin}
+              className="inline-block bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium"
+            >
+              {accountState?.has_account
+                ? T('pmi.onboarding.access.signInCta')
+                : T('pmi.onboarding.access.createAccessCta')} →
+            </button>
+
+            {accountState?.can_request_setup && accessState !== 'sent' && (
+              <button
+                type="button"
+                disabled={accessBusy}
+                onClick={handleRequestAccess}
+                className="text-sm text-green-800 underline hover:text-green-900 disabled:text-gray-400"
+              >
+                {accessBusy ? '...' : T('pmi.onboarding.access.emailLinkCta')}
+              </button>
+            )}
+          </div>
+
+          {accessState === 'sent' && (
+            <p className="mt-3 text-sm text-green-900 bg-green-100 border border-green-300 rounded-lg p-3">
+              ✓ {T('pmi.onboarding.access.emailLinkSent')}
+            </p>
+          )}
+          {accessState === 'rate_limited' && (
+            <p className="mt-3 text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-lg p-3">
+              {T('pmi.onboarding.access.rateLimited')}
+            </p>
+          )}
+          {accessState === 'already_linked' && (
+            <p className="mt-3 text-sm text-gray-700 bg-gray-50 border border-gray-300 rounded-lg p-3">
+              {T('pmi.onboarding.access.alreadyLinked')}
+            </p>
+          )}
+          {accessState && !['sent', 'rate_limited', 'already_linked'].includes(accessState) && (
+            <p className="mt-3 text-sm text-red-800 bg-red-50 border border-red-300 rounded-lg p-3">
+              {T('pmi.onboarding.access.requestFailed')}
+            </p>
+          )}
+
+          {/* Quem já entrou uma vez chega ao cockpit direto. Fica como link, e não como a ação
+              principal: para quem AINDA não tem sessão, este era exatamente o muro. */}
+          <p className="mt-4">
+            <a
+              href={lang === 'en-US' ? '/en/onboarding' : lang === 'es-LATAM' ? '/es/onboarding' : '/onboarding'}
+              className="text-sm text-green-800 underline hover:text-green-900"
+            >
+              {T('pmi.onboarding.goToFullOnboarding')} →
+            </a>
+          </p>
         </section>
       )}
 

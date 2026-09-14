@@ -52,6 +52,16 @@ const ALLOWLIST = new Set([
   'confirm_account_claim',
   'confirm_secondary_email',
   'consume_onboarding_token',
+  // #2273 — segunda via de acesso do portal do token, para candidatura `approved` cujo membro
+  // ainda não tem conta. É da MESMA classe das vizinhas acima: o portal é anônimo e o token de 32
+  // bytes É a credencial, então sem token não há resposta (`invalid_or_expired`) e não há
+  // enumeração a proteger. O que ela protege é a caixa de entrada de terceiro, com teto de 3
+  // pedidos por hora por candidatura contados no próprio audit.
+  // O ponto que a torna segura NÃO é o gate, e sim o que ela recusa carregar: ela não aceita
+  // e-mail por parâmetro. O destinatário é o primário do MEMBRO, resolvido no servidor — se o
+  // cliente pudesse escolher, um acesso nasceria num endereço que o reconhecimento não conhece e
+  // a pessoa entraria como ghost.
+  'request_portal_account_setup',
   'give_consent_via_token',
   'revoke_consent_via_token',
   'update_application_profile_via_token',
