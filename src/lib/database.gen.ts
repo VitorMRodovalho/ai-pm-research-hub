@@ -29715,6 +29715,17 @@ export type Database = {
         Args: { p_initiative_id?: string; p_window_days?: number }
         Returns: Json
       }
+      _unlinked_accounts_rows: {
+        Args: never
+        Returns: {
+          auth_created_at: string
+          email: string
+          last_sign_in_at: string
+          member_id: string
+          member_since: string
+          member_status: string
+        }[]
+      }
       _v4_active_initiatives_with_leaders: {
         Args: never
         Returns: {
@@ -31052,6 +31063,10 @@ export type Database = {
         Returns: Json
       }
       detect_unlinked_accounts: { Args: never; Returns: Json }
+      detect_unlinked_accounts_cron: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
       dismiss_onboarding: { Args: never; Returns: undefined }
       dismiss_visitor_lead: {
         Args: { p_lead_id: string; p_reason?: string }
