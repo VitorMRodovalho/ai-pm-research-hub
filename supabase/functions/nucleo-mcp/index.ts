@@ -12366,9 +12366,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W6b · admin_dashboard (R) — GP cockpit; each RPC self-gates (manage_platform/view_internal_analytics/view_chapter_dashboards) ──
   mcp.tool(
     "admin_dashboard",
-    "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
+    "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]), 'unlinked_accounts' — contas de acesso sem cadastro apontando para elas (e-mail sempre MASCARADO; o cron semanal da #2285 avisa, esta e a superficie para agir). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
     {
-      scope: z.enum(["admin","annual_kpis","chapter","chapter_needs","in_dashboard","vep_divergence","volunteer_funnel","volunteer_funnel_stats","role_transitions","cycle_report","exec_cycle_report","cycle_evolution","public_impact","ai_suggestions","ai_processing_log"]).describe("Which admin surface."),
+      scope: z.enum(["admin","annual_kpis","chapter","chapter_needs","in_dashboard","vep_divergence","volunteer_funnel","volunteer_funnel_stats","role_transitions","cycle_report","exec_cycle_report","cycle_evolution","public_impact","ai_suggestions","ai_processing_log","unlinked_accounts"]).describe("Which admin surface."),
       chapter: z.string().optional().describe("chapter/chapter_needs/role_transitions — chapter code."),
       cycle: z.number().int().optional().describe("annual_kpis/cycle_report — numeric cycle."),
       year: z.number().int().optional().describe("annual_kpis — year."),
@@ -12409,13 +12409,19 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           if (!isUUID(params.application_id)) return invalid("scope='ai_suggestions' requires application_id (UUID).");
           ({ data, error } = await sb.rpc("list_ai_suggestions", { p_application_id: params.application_id, p_evaluation_type: params.evaluation_type ?? null, p_only_pending: params.only_pending ?? false })); source = "list_ai_suggestions"; break;
         case "ai_processing_log": ({ data, error } = await sb.rpc("list_ai_processing_log", { p_application_id: params.application_id ?? null, p_purpose: params.purpose ?? null, p_status: params.status ?? null, p_limit: params.limit ?? 50 })); source = "list_ai_processing_log"; break;
+        // #2287: a RPC existe desde a #2273 e o cron da #2285 avisa quando ela acha algo, mas ate
+        // aqui NENHUMA superficie a alcancava — o alerta chegava e nao havia onde agir sem abrir o
+        // banco. O e-mail mascarado sai da propria RPC; esta ferramenta nao desmascara nada.
+        case "unlinked_accounts": ({ data, error } = await sb.rpc("detect_unlinked_accounts")); source = "detect_unlinked_accounts"; break;
         default: return invalid(`Unknown scope '${params.scope}'.`);
       }
       if (error) { await logUsage(sb, member.id, "admin_dashboard", false, error.message, start); return ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: selErr("admin_dashboard", error.message), message: error.message })); }
       if ((data as any)?.error) { const em = String((data as any).error); await logUsage(sb, member.id, "admin_dashboard", false, em, start); return ok(buildSemanticError({ tool: "admin_dashboard", semantic_domain: dom, code: selErr("admin_dashboard", em), message: em })); }
       await logUsage(sb, member.id, "admin_dashboard", true, undefined, start);
       const PUBLIC_SCOPES = ["public_impact","cycle_evolution"];
-      const HIGH_SCOPES = ["ai_suggestions","vep_divergence"];
+      // `unlinked_accounts` entra aqui: o e-mail sai mascarado, mas a lista e um mapa de pessoas que
+      // estao a um passo de entrar, e o proprio corpo da RPC trata isso como leitura nao-publica.
+      const HIGH_SCOPES = ["ai_suggestions","vep_divergence","unlinked_accounts"];
       return semanticOk({
         data: { scope: params.scope, result: data },
         summary: `admin_dashboard scope='${params.scope}' ok.`,

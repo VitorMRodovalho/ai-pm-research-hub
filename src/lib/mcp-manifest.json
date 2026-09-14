@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-13T23:05:16.650Z",
+  "generated_at": "2026-09-14T18:15:04.308Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -1614,7 +1614,7 @@
     },
     {
       "name": "admin_dashboard",
-      "description": "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
+      "description": "GP/analytics cockpit (absorbs get_admin_dashboard/get_annual_kpis/get_chapter_dashboard/get_chapter_needs/get_in_dashboard/get_vep_divergence_report/get_volunteer_funnel(_stats)/get_role_transitions/get+exec_cycle_report/get_cycle_evolution/get_public_impact_data/list_ai_suggestions/list_ai_processing_log). Set `scope`: 'admin', 'annual_kpis' ([cycle, year]), 'chapter' (chapter), 'chapter_needs' ([chapter]), 'in_dashboard', 'vep_divergence', 'volunteer_funnel' ([cycle_code]), 'volunteer_funnel_stats' ([cycle_id]), 'role_transitions' ([cycle_code, tribe_id, chapter]), 'cycle_report' ([cycle]), 'exec_cycle_report' ([cycle_code]), 'cycle_evolution', 'public_impact', 'ai_suggestions' (application_id [+ evaluation_type, only_pending]), 'ai_processing_log' ([application_id, purpose, status, limit]), 'unlinked_accounts' — contas de acesso sem cadastro apontando para elas (e-mail sempre MASCARADO; o cron semanal da #2285 avisa, esta e a superficie para agir). Authority enforced by each RPC (manage_platform / view_chapter_dashboards / view_internal_analytics; COI recusal on vep_divergence). Numbers come from the live RPC (grounding rule — never recite). Read-only. Stable envelope.",
       "domain": "board",
       "permission": "admin",
       "is_sensitive": false
