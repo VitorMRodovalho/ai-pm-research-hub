@@ -59,6 +59,10 @@ Cada linha abaixo saiu de consulta viva ao corpo da função ou ao componente, n
 - **O portal não cria conta.** Nenhum `signUp` nem `signInWithOtp` no componente.
 - **As duas jornadas não se tocam.** `grep '/claim'` nas superfícies do portal e do `/onboarding`
   volta **vazio**.
+- **56 de 66** membros criados em 150 dias **têm conta**. A jornada não está quebrada; o que
+  falha é uma borda de **10 pessoas**. Ver 5b.
+- **Não é origem VEP.** VEP: 53 de 57 com conta (93%). Não-VEP: 3 de 9 (33%). A origem explica o
+  oposto da hipótese.
 - **`request_account_claim` exige `auth.uid()`.** Primeira linha do corpo:
   `IF v_uid IS NULL THEN RETURN 'not_authenticated'`. Ele é o plano B de quem **já entrou** e não foi
   reconhecido. Não é porta de entrada.
@@ -99,6 +103,10 @@ aconteceu aqui), o do MEMBRO é o que o login consulta. Qualquer fluxo de criaç
 ---
 
 ## 5. A pergunta de arquitetura, que ninguém respondeu ainda
+
+> ⚠️ **Leia a 5b antes de agir sobre esta seção.** A premissa abaixo — "ninguém cria conta" —
+> foi **desmentida por medição** na mesma sessão. A seção fica de pé porque o mapa das duas jornadas
+> continua correto; o que caiu foi a conclusão que eu tirei dele.
 
 Hoje existem **duas jornadas de entrada**, completas e desconexas:
 
