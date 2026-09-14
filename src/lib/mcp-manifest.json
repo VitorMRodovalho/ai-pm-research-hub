@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-03T02:03:09.705Z",
+  "generated_at": "2026-09-13T23:05:16.650Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -2489,7 +2489,7 @@
     },
     {
       "name": "selection_decide",
-      "description": "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+      "description": "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member), 'reissue_onboarding' (application_id [+ ttl_days]; manage_member — reemite o link de onboarding de candidatura submitted OU approved, #2265: `dispatch_pending_welcomes` so alcanca `submitted` e nao havia caminho de volta para quem ja foi aprovado, nem administrativo. SEM confirm=true devolve o DRY-RUN da propria RPC, com destinatario e links ainda vivos; COM confirm=true emite token e dispara e-mail para pessoa real. Recusa reemitir por cima de link ainda valido). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
       "domain": "selection",
       "permission": "read",
       "is_sensitive": false

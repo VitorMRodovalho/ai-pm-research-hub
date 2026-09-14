@@ -11123,9 +11123,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W4 · selection_decide (W) — cycle decisions; GP-heavy, RPC-gated ──────────
   mcp.tool(
     "selection_decide",
-    "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
+    "Cycle-level selection decisions (absorbs approve_selection_application + notify_selection_cutoff_approved + compute_pert_cutoff + recalculate_cycle_rankings + manage_selection_committee + update_application_contact). Set `action`: 'approve' (application_id + decision{} — DESTRUCTIVE→confirm; manage_platform), 'notify_cutoff' (application_id; committee-lead/manage_member), 'compute_cutoff' (cycle_id + role [+ filter_active_only, score_column]; manage_member), 'recalc_rankings' (cycle_id + reason — DESTRUCTIVE→confirm; manage_platform), 'committee' (cycle_id + committee_action add|remove|update + member_id [+ committee_role, interview_booking_url, can_interview]; add/remove = promote, update = própria linha OU manage_member — #1590 onda C: `interview_booking_url` é o campo que decide o rodízio de entrevistas e até esta onda só se editava por SQL direto; trocar o PAPEL exige promote e RELIGAR can_interview exige manage_member), 'update_contact' (application_id [+ phone, linkedin_url]; manage_member), 'reissue_onboarding' (application_id [+ ttl_days]; manage_member — reemite o link de onboarding de candidatura submitted OU approved, #2265: `dispatch_pending_welcomes` so alcanca `submitted` e nao havia caminho de volta para quem ja foi aprovado, nem administrativo. SEM confirm=true devolve o DRY-RUN da propria RPC, com destinatario e links ainda vivos; COM confirm=true emite token e dispara e-mail para pessoa real. Recusa reemitir por cima de link ainda valido). NOTE: raw compute_application_scores stays a service-role helper (not surfaced). Every write logs an audit block. Stable envelope.",
     {
-      action: z.enum(["approve", "notify_cutoff", "compute_cutoff", "recalc_rankings", "committee", "update_contact"]).describe("Decision operation."),
+      action: z.enum(["approve", "notify_cutoff", "compute_cutoff", "recalc_rankings", "committee", "update_contact", "reissue_onboarding"]).describe("Decision operation."),
       application_id: z.string().optional().describe("Application UUID — approve / notify_cutoff / update_contact."),
       decision: z.record(z.string(), z.any()).optional().describe("approve — decision payload (e.g. {outcome, notes})."),
       cycle_id: z.string().optional().describe("Cycle UUID — compute_cutoff / recalc_rankings / committee."),
@@ -11138,6 +11138,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       committee_role: z.string().optional().describe("action='committee' — role (evaluator|lead|observer). Em 'update', mudar o papel exige promote."),
       interview_booking_url: z.string().optional().describe("committee_action='add'|'update' — agenda de entrevista DESTA linha do comitê (precedência committee_override). Deve começar com https://. String vazia limpa o campo."),
       can_interview: z.boolean().optional().describe("committee_action='add'|'update' — desligamento PERMANENTE do rodízio. Desligar-se é autosserviço; RELIGAR exige manage_member. Para pausa temporária use interview_manage action='block'."),
+      ttl_days: z.number().int().optional().describe("reissue_onboarding — validade do link novo em dias (1..90, default 14)."),
       phone: z.string().optional().describe("update_contact — candidate phone."),
       linkedin_url: z.string().optional().describe("update_contact — candidate LinkedIn URL."),
       confirm: z.boolean().optional().describe("approve / recalc_rankings — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
@@ -11151,7 +11152,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       const denied = (m: string, a?: string) => ok(buildSemanticError({ tool: "selection_decide", semantic_domain: dom, code: "unauthorized", message: m, action: a }));
 
       // Proactive canV4 fail-fast mirroring each RPC's internal gate (nicer error + no round-trip).
-      const GATE: Record<string, string> = { approve: "manage_platform", recalc_rankings: "manage_platform", compute_cutoff: "manage_member", notify_cutoff: "manage_member", committee: "promote", update_contact: "manage_member" };
+      const GATE: Record<string, string> = { approve: "manage_platform", recalc_rankings: "manage_platform", compute_cutoff: "manage_member", notify_cutoff: "manage_member", committee: "promote", update_contact: "manage_member", reissue_onboarding: "manage_member" };
       const need = GATE[params.action];
       // #1590 onda C — o fail-fast proativo existe para dar erro melhor, NÃO para ser um segundo
       // gate. No autosserviço (o membro do comitê editando a PRÓPRIA linha de roteamento) ele
@@ -11195,6 +11196,20 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           // update que só troca a URL rebaixaria um lead em silêncio. Em 'add' a própria RPC
           // aplica COALESCE(p_role,'evaluator'), então o comportamento de antes não muda.
           rpc = "manage_selection_committee"; rpcArgs = { p_cycle_id: params.cycle_id, p_action: params.committee_action, p_member_id: params.member_id, p_role: params.committee_role ?? (params.committee_action === "add" ? "evaluator" : null), p_interview_booking_url: params.interview_booking_url ?? null, p_can_interview: typeof params.can_interview === "boolean" ? params.can_interview : null }; break;
+        case "reissue_onboarding":
+          // #2265 — reemite o link de onboarding de uma candidatura submitted OU approved.
+          //
+          // ⚠️ NAO entra no confirm-gate sintetico acima, de PROPOSITO. Aquele devolve um preview
+          // fabricado sem chamar a RPC. Aqui o preview e o proprio `p_dry_run` da funcao, que
+          // devolve o DESTINATARIO real, o status da candidatura e quantos links ainda estao vivos.
+          // Um preview que nao consulta o estado nao deixa ninguem decidir se deve enviar.
+          //
+          // Sem `confirm=true` -> dry_run: nada e emitido e nenhum e-mail sai.
+          // Com `confirm=true` -> emite token novo e dispara o e-mail para uma pessoa real.
+          if (!isUUID(params.application_id)) return invalid("action='reissue_onboarding' requires application_id.");
+          rpc = "reissue_onboarding_link";
+          rpcArgs = { p_application_id: params.application_id, p_ttl_days: params.ttl_days ?? 14, p_dry_run: params.confirm !== true };
+          break;
         case "update_contact":
           if (!isUUID(params.application_id)) return invalid("action='update_contact' requires application_id.");
           rpc = "update_application_contact"; rpcArgs = { p_application_id: params.application_id, p_phone: params.phone ?? null, p_linkedin_url: params.linkedin_url ?? null }; break;
