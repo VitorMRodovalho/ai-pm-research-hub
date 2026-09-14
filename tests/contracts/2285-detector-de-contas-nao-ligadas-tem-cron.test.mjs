@@ -65,18 +65,28 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 const sb = () => createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 
-/** A migration desta onda, achada pelo conteúdo e não por nome fixo: renomear o arquivo não
- *  pode deixar o guard verde por não encontrar nada (um guard que não acha fica vazio, não
- *  vermelho). */
-function migrationDaOnda() {
+/** A migration que VALE para o cron: a ÚLTIMA que o (re)define, por ordem de nome de arquivo —
+ *  que é a ordem em que o Postgres as aplica, e `CREATE OR REPLACE` faz a última vencer.
+ *
+ *  A primeira versão exigia EXATAMENTE UMA, e isso estava errado por construção: qualquer onda
+ *  posterior que tocasse o corpo (a #2287 tocou, três horas depois) derrubaria o guard sem que
+ *  nada tivesse regredido. Guard que confunde "mudou" com "quebrou" é guard que alguém desliga.
+ *
+ *  A busca é por CONTEÚDO, não por nome fixo: renomear o arquivo não pode deixar o guard verde
+ *  por não encontrar nada — por isso o controle positivo abaixo. */
+function ultimaQueDefine(assinatura) {
   const achados = readdirSync(MIGRATIONS)
     .filter(f => f.endsWith('.sql'))
+    .sort()
     .map(f => readFileSync(join(MIGRATIONS, f), 'utf8'))
-    .filter(src => src.includes('CREATE OR REPLACE FUNCTION public.detect_unlinked_accounts_cron('));
-  assert.equal(achados.length, 1,
-    `esperada exatamente 1 migration definindo detect_unlinked_accounts_cron, achadas ${achados.length}`);
-  return achados[0];
+    .filter(src => src.includes(`CREATE OR REPLACE FUNCTION public.${assinatura}`));
+  assert.ok(achados.length >= 1,
+    `nenhuma migration define ${assinatura}: o guard ficaria verde por não achar nada, que é o ` +
+    'modo de falhar mais silencioso que existe');
+  return achados[achados.length - 1];
 }
+
+const migrationDaOnda = () => ultimaQueDefine('detect_unlinked_accounts_cron(');
 
 /** Corpo de uma função, ancorado na assinatura COM o parêntese: `detect_unlinked_accounts` é
  *  prefixo de `detect_unlinked_accounts_cron`, e um indexOf solto pegaria a função errada. */
@@ -115,12 +125,15 @@ test('A · o wrapper de cron NÃO tem gate de sessão, e a medição ignora os c
 // B — o ACL, que é a proteção real
 // ═══════════════════════════════════════════════════════════════════════════
 test('B · worker e wrapper são revogados de anon E de authenticated', () => {
-  const src = migrationDaOnda();
+  // Cada função é checada na migration que a DEFINE. O wrapper é redefinido por ondas
+  // posteriores (a #2287 redefiniu); o worker não. Procurar as duas num arquivo só faria o guard
+  // reprovar por ter MUDADO, não por ter quebrado.
   const alvos = [
-    ['public._unlinked_accounts_rows\\(\\)', 'o worker devolve o endereço CRU'],
-    ['public.detect_unlinked_accounts_cron\\(boolean\\)', 'o wrapper dispara notificação'],
+    ['_unlinked_accounts_rows(', 'public._unlinked_accounts_rows\\(\\)', 'o worker devolve o endereço CRU'],
+    ['detect_unlinked_accounts_cron(', 'public.detect_unlinked_accounts_cron\\(boolean\\)', 'o wrapper dispara notificação'],
   ];
-  for (const [fn, porque] of alvos) {
+  for (const [assinatura, fn, porque] of alvos) {
+    const src = ultimaQueDefine(assinatura);
     for (const papel of ['anon', 'authenticated']) {
       assert.ok(
         new RegExp(`REVOKE ALL ON FUNCTION ${fn} FROM ${papel};`).test(src),
@@ -134,8 +147,20 @@ test('B · worker e wrapper são revogados de anon E de authenticated', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 // C — o agendamento existe e aponta para o wrapper
 // ═══════════════════════════════════════════════════════════════════════════
+/** O AGENDAMENTO é criado uma vez e não se repete a cada mudança de corpo, então ele é procurado
+ *  em qualquer migration — separado de `migrationDaOnda()`, que rastreia o corpo da função. */
+function migrationDoAgendamento() {
+  const achados = readdirSync(MIGRATIONS)
+    .filter(f => f.endsWith('.sql'))
+    .sort()
+    .map(f => readFileSync(join(MIGRATIONS, f), 'utf8'))
+    .filter(src => src.includes("cron.schedule(\n  'unlinked-accounts-detect-weekly'"));
+  assert.ok(achados.length >= 1, 'nenhuma migration agenda unlinked-accounts-detect-weekly');
+  return achados[achados.length - 1];
+}
+
 test('C · o cron está agendado e chama o WRAPPER, não a RPC com portão', () => {
-  const src = migrationDaOnda();
+  const src = migrationDoAgendamento();
   assert.match(src, /cron\.schedule\(\s*\n?\s*'unlinked-accounts-detect-weekly'/,
     'o job precisa ser agendado por nome (cron.schedule faz upsert por nome, então reaplicar ' +
     'a migration é idempotente)');
@@ -225,7 +250,7 @@ test('G · o tipo está no catálogo ADR-0022 e no corpo do helper', () => {
     'digest_weekly aqui significa nunca entregue: get_weekly_member_digest monta as seções por ' +
     'lista branca de tipos, e consumed_notification_ids NÃO filtra por tipo, então um tipo fora ' +
     'de toda seção é carimbado como entregue sem nunca ser renderizado (#2286)');
-  const corpo = corpoDe(migrationDaOnda(), '_delivery_mode_for(');
+  const corpo = corpoDe(ultimaQueDefine('_delivery_mode_for('), '_delivery_mode_for(');
   assert.match(corpo, /WHEN 'unlinked_accounts_detected'\s+THEN 'transactional_immediate'/,
     'o helper não conhece o tipo, então ele cai no ELSE — que é digest_weekly, o caminho que engole');
 });
