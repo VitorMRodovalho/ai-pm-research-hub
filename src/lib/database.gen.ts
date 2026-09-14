@@ -34056,6 +34056,14 @@ export type Database = {
         Args: { p_member_id: string; p_reason: string }
         Returns: Json
       }
+      reissue_onboarding_link: {
+        Args: {
+          p_application_id: string
+          p_dry_run?: boolean
+          p_ttl_days?: number
+        }
+        Returns: Json
+      }
       reject_certificate: {
         Args: { p_certificate_id: string; p_reason: string }
         Returns: Json
