@@ -2,12 +2,26 @@ import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { chromium } from 'playwright';
+import {
+  classifyDevServerLine,
+  explainWithDevServerState,
+  SINGLETON_BLOCKED,
+  FATAL_EXCEPTION,
+} from './helpers/dev-server-watch.mjs';
 
 const START_TIMEOUT_MS = 45_000;
+// Medido na irmã `scripts/smoke-routes.mjs`: com SIGTERM no grupo o `npm` morre e o `astro dev`
+// NÃO. A janela abaixo é o que se dá antes de escalar para SIGKILL.
+const GRACE_MS = Number(process.env.BROWSER_GUARDS_GRACE_MS || 2_000);
 
 let devServer;
+let matarServidor = async () => {};
 let port = Number(process.env.BROWSER_TEST_PORT || 0);
 let base = '';
+
+// #2279: o que o dev server disse sobre si mesmo. Sem isto, uma queda do servidor chega ao passo
+// como "Timeout 30000ms exceeded" — um sintoma que não nomeia nada.
+const devState = { fatal: null, singleton: null };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -36,6 +50,18 @@ function resolveAvailablePort(preferredPort) {
 async function waitForServer() {
   const startedAt = Date.now();
   while (Date.now() - startedAt < START_TIMEOUT_MS) {
+    // #2279: o `astro dev` é SINGLETON. Se outro servidor já está de pé, ele imprime o aviso e
+    // SAI — e esperar os 45s inteiros por uma porta onde nunca haverá nada entrega
+    // "Server did not start within 45000ms", que descreve o relógio e não a causa. Medido em
+    // 14/09: a tentativa 2 do retry morreu exatamente assim, tornando o retry decorativo.
+    if (devState.singleton) {
+      throw new Error(
+        `o \`astro dev\` recusou subir: já existe outro dev server vivo.\n` +
+        `  ${devState.singleton.detail}\n` +
+        `  Ele é SINGLETON, então a porta nova (${port}) nunca responderia. Quase sempre é o ` +
+        `servidor de uma tentativa anterior que não foi morto junto com o \`npm\` (#2279).`,
+      );
+    }
     try {
       const res = await fetch(`${base}/`, { redirect: 'manual' });
       if (res.status >= 200 && res.status < 500) return;
@@ -47,14 +73,66 @@ async function waitForServer() {
   throw new Error(`Server did not start within ${START_TIMEOUT_MS}ms`);
 }
 
+/** Re-emite a saída do dev server (o passo continua vendo tudo) e classifica o que passa. */
+function watchDevServerOutput(child) {
+  const consumir = (stream, saida) => {
+    if (!stream) return;
+    let resto = '';
+    stream.on('data', (chunk) => {
+      saida.write(chunk);
+      const texto = resto + chunk.toString('utf8');
+      const linhas = texto.split('\n');
+      resto = linhas.pop() ?? '';
+      for (const linha of linhas) {
+        const achado = classifyDevServerLine(linha);
+        if (!achado) continue;
+        if (achado.kind === SINGLETON_BLOCKED) devState.singleton ??= achado;
+        if (achado.kind === FATAL_EXCEPTION) devState.fatal ??= achado;
+      }
+    });
+  };
+  consumir(child.stdout, process.stdout);
+  consumir(child.stderr, process.stderr);
+}
+
 async function run() {
   port = await resolveAvailablePort(port || 0);
   base = `http://127.0.0.1:${port}`;
+  // #2279: `detached` põe o filho num grupo PRÓPRIO, para que o kill alcance a árvore inteira.
+  // Sem isso `devServer.kill()` mata só o `npm`, e o `astro dev` sobrevive reparentado ao init —
+  // segurando o singleton e condenando a tentativa seguinte do retry. A irmã
+  // `scripts/smoke-routes.mjs` já tinha essa lição; este harness nunca a recebeu.
+  // A saída vai para pipe (e é re-emitida) porque `inherit` não deixa ninguém classificá-la.
   devServer = spawn(
     'npm',
     ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port), '--strictPort'],
-    { stdio: 'inherit', shell: false }
+    { stdio: ['ignore', 'pipe', 'pipe'], shell: false, detached: true }
   );
+  watchDevServerOutput(devServer);
+
+  const sinalizarGrupo = (sinal) => {
+    if (!devServer?.pid) return false;
+    try {
+      process.kill(-devServer.pid, sinal); // negativo = o GRUPO, não só o `npm`
+      return true;
+    } catch {
+      return false; // grupo já encerrado
+    }
+  };
+  matarServidor = async () => {
+    if (!sinalizarGrupo('SIGTERM')) return;
+    await sleep(GRACE_MS);
+    sinalizarGrupo('SIGKILL');
+  };
+
+  // O `finally` cobre falha e sucesso, mas NÃO cobre este processo ser morto por fora — e é aí
+  // que o `astro dev` sobrevive ao pai e bloqueia a próxima tentativa.
+  const encerrar = (codigo) => () => {
+    matarServidor().finally(() => process.exit(codigo));
+  };
+  process.once('SIGTERM', encerrar(143));
+  process.once('SIGINT', encerrar(130));
+
   await waitForServer();
   const browser = await chromium.launch({ headless: true });
   try {
@@ -674,11 +752,20 @@ async function run() {
     console.log('Browser guard, home runtime, webinars/curatorship admin, and analytics readonly test passed.');
   } finally {
     await browser.close();
-    devServer?.kill('SIGTERM');
+    // #2279: matar o GRUPO, e escalar. `devServer.kill('SIGTERM')` alcançava só o `npm`, e o
+    // `astro dev` seguia vivo segurando o singleton — o que fazia a tentativa 2 do retry falhar
+    // SEMPRE, com "Server did not start within 45000ms".
+    await matarServidor();
   }
 }
 
-run().catch((error) => {
-  console.error(error?.stack || error?.message || error);
+run().catch(async (error) => {
+  // A causa real, quando o dev server disse qual foi. Sem isto o passo entrega o sintoma
+  // ("Timeout 30000ms exceeded") e o motivo fica enterrado no meio do log do vite.
+  const explicado = explainWithDevServerState(error, devState);
+  console.error(explicado?.stack || explicado?.message || explicado);
+  // O `await` é o que dá tempo ao SIGKILL: sair na hora deixaria o órfão de pé, e a próxima
+  // tentativa morreria no singleton.
+  await matarServidor();
   process.exit(1);
 });
