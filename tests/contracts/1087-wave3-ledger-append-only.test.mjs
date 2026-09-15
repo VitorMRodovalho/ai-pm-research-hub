@@ -115,6 +115,81 @@ test('wave3 offline: latest capture of every migration-defined function is ledge
     `latest-captured function bodies must not DELETE from gamification_points (LGPD erasure is the only carve-out): ${offenders.join(', ')}`);
 });
 
+// ── OFFLINE: Edge Functions are business logic too, and the scan above never saw them ──
+// #2296 (15/09/2026). A invariante no topo deste arquivo diz "APPEND-ONLY **for business logic**".
+// A varredura acima le corpos de funcao SQL e migrations. A logica de negocio do Credly nao mora
+// em nenhum dos dois: mora em Edge Function. Medido em 15/09, com controle positivo (a mesma
+// forma de busca acha 2 `.insert(` no mesmo corpus, entao ela nao estava vazia):
+//
+//   supabase/functions/sync-credly-all/index.ts   3 DELETE no ledger
+//   supabase/functions/verify-credly/index.ts     3 DELETE no ledger
+//
+// Ou seja: o portao esta VERDE ha meses e a invariante que ele afirma esta sendo violada na
+// superficie que ele nao enumera. Nao e o guard que esta errado, e o ESCOPO dele que nunca
+// considerou EF — a nota de escopo acima raciocina sobre migrations, nao sobre Edge Functions.
+//
+// ⚠️ Esta camada NAO reprova o acervo de pe. Um portao que reprova tudo para de discriminar e
+// bloqueia ate a PR que REDUZ a divida. Ela gateia o DELTA: a linha de base abaixo e dado, com
+// data e motivo, e qualquer chamada NOVA (ou arquivo novo) fica vermelha. Baixar um numero exige
+// baixar a linha de base junto, que e a catraca.
+//
+// Por que nao consertar os 6 agora: cada um e um caminho de auto-cura com comportamento proprio
+// (dedup de linha repetida, colapso da familia CPMAI, limpeza de curso de trilha), e troca-los por
+// estorno muda saldo de gente. Fica como onda propria. O que NAO pode acontecer e nascer o setimo
+// em silencio — e e isso que esta camada impede.
+const EF_DIR = resolve(ROOT, 'supabase/functions');
+const LEDGER_DELETE_EF_RE = /from\(\s*['"`]gamification_points['"`]\s*\)[\s\S]{0,400}?\.delete\(\)/g;
+const EF_LEDGER_DELETE_BASELINE = new Map([
+  ['sync-credly-all/index.ts', 3],
+  ['verify-credly/index.ts', 3],
+]);
+
+function scanEdgeFunctions() {
+  const achados = new Map();
+  const walk = (dir, prefix) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) walk(full, rel);
+      else if (entry.name.endsWith('.ts')) {
+        const n = (readFileSync(full, 'utf8').match(LEDGER_DELETE_EF_RE) || []).length;
+        if (n > 0) achados.set(rel, n);
+      }
+    }
+  };
+  walk(EF_DIR, '');
+  return achados;
+}
+
+test('wave3 offline: nenhuma Edge Function NOVA apaga do ledger (catraca, nao veto)', () => {
+  const achados = scanEdgeFunctions();
+
+  // Controle positivo do proprio scanner: se ele parasse de enxergar, ficaria VAZIO, e vazio leria
+  // como "divida quitada". Ausencia de achado tem de ser indistinguivel de scanner quebrado, entao
+  // exigimos que ele continue achando o que sabemos existir.
+  assert.ok(achados.size > 0,
+    'o scanner de EF nao achou NADA, e sabemos que ha 6 chamadas. Ele quebrou (mudou a forma do ' +
+    'codigo? mudou o diretorio?), e um scanner vazio lê como divida zerada');
+
+  const novos = [];
+  const reduzidos = [];
+  for (const [arquivo, n] of achados) {
+    const base = EF_LEDGER_DELETE_BASELINE.get(arquivo);
+    if (base === undefined) novos.push(`${arquivo} (${n} DELETE, arquivo NOVO)`);
+    else if (n > base) novos.push(`${arquivo} (${n} DELETE, linha de base ${base})`);
+    else if (n < base) reduzidos.push(`${arquivo}: ${base} -> ${n}`);
+  }
+
+  assert.deepEqual(novos, [],
+    'DELETE novo no ledger a partir de Edge Function. A forma de desfazer num ledger append-only e ' +
+    'LINHA COMPENSATORIA (estorno), nunca remocao — o carve-out de DELETE aqui e Art. 18 da LGPD, ' +
+    `nunca revogacao de negocio (#1087 onda 3, #2296): ${novos.join(', ')}`);
+
+  assert.deepEqual(reduzidos, [],
+    'a divida DIMINUIU, e isto e boa noticia: baixe EF_LEDGER_DELETE_BASELINE junto, senao a ' +
+    `catraca destrava e o proximo DELETE volta a passar despercebido: ${reduzidos.join(', ')}`);
+});
+
 // ── DB-gated: the three converted functions are live exactly as captured in mig 333 ──
 test('wave3 live: converted RPCs live bodies == mig-333 capture (no drift loophole)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });

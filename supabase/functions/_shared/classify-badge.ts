@@ -31,6 +31,39 @@ export const PMI_NONTRIAL_KEYWORDS = [
   { keywords: ['hybrid project management'], code: 'AGILE_HYBRID_PM' },
 ]
 
+// ── Non-PMI training / formation (15 XP, category: course) — #2296 ──────────
+// GP-approved 2026-09-15. These are TRAINING (a course, a program, a record of achievement),
+// not a credential and not mere attendance. Checked AFTER the credential ladders on purpose
+// (see the ordering note in classifyBadge). They fell into fallback 'badge' (10) because every
+// course keyword above is PMI-specific.
+//
+// ⚠️ Deliberately NOT here, and left in fallback 'badge' on purpose: attendance and membership
+// ("CertiProf Online Summit Attendee", "ACMP Member Badge", "APM Student", "Construction
+// Management Association of America Member"), recognition and loyalty tiers ("Mentor Silver",
+// "Instructor Recognition - *", "FY26 LevelUp *", "FY24/FY26 Value *"), community service
+// ("Worldwide Communities - Community Champion/SME", "Connected Communities - Engagement Lead",
+// "Chapter Leader"), survey participation ("Survey Contributor of The Agile Adoption Report"),
+// "Lifelong Learning", "IPMA-UCL Megaproject CEO participant" (the name says participant) and
+// "Microsoft Global Hackathon". Participation is worth 10, and that is the decision, not an
+// oversight. Under-mapping is recoverable by the monthly detector; over-mapping silently moves
+// someone's rank.
+export const TRAINING_KEYWORDS = [
+  'construction project communications',
+  'construction performance', 'construction technology', 'digital construction',
+  'organizational transformation',
+  'people management essentials',
+  'data-driven decision',
+  'notion essentials',
+  'red hat training',
+  'sap cloud alm', 'sap solution manager', 'sap business technology platform',
+  'sap s/4hana cloud', 'sap successfactors',
+  'forward program',
+  'accessibility in action',
+  'black leadership academy',
+  'human resource associate',
+  'sales associate certificate',
+]
+
 // ── cert_cpmai (45 XP) — check BEFORE cert_pmi_senior since 'cpmai' overlaps ──
 export const CERT_CPMAI_KEYWORDS = [
   'cpmai', 'pmi-cpmai', 'cognitive project management',
@@ -80,6 +113,29 @@ export const SPECIALIZATION_KEYWORDS = [
   'scaled professional scrum',
   'green project manager', 'sustainable project professional',
   'cloud essentials', 'well-architected',
+  // ⚠️ NAO acrescente aqui, sem decisao NOVA do dono: 'devops essentials'/'depc', 'onetrust',
+  // 'oracle certified'/'oracle database'. O #1209 (GP, 08/07) fixou em
+  // tests/edge-functions/classify-badge.test.mjs que certificacao FORA DO DOMINIO do nucleo
+  // (nucleo = IA + GP) fica em `badge`/10, e essas tres sao nomeadas la, uma a uma. A decisao de
+  // 15/09 foi tomada sem essa regra na tela, entao ela NAO a revoga. Mesmo caso de
+  // 'essentials for projects' e 'product and project collaboration' na lista de treinamento.
+  //
+  // ⚠️ E a regra como escrita NAO bate com o acervo: 'aws', 'azure', 'fortinet', 'isc2' e
+  // 'cybersecurity' ja estao nesta lista valendo 25, e sao tao fora de IA+GP quanto Oracle.
+  // Isso e uma inconsistencia REAL do repo, nao um detalhe — e ela precisa de decisao, nao de
+  // mais uma palavra-chave.
+  // #2296 (GP-approved 2026-09-15): THIRD-PARTY professional certifications previously in
+  // fallback 'badge'. They land here, not in `cert_pmi_*`: that ladder is the PMI credential
+  // ladder (PMP, PgMP, DASM/DASSM, PMO-CP), and 'specialization' is already where every
+  // non-PMI credential lives (AWS, Azure, ITIL, TOGAF, PRINCE2, ISC2, PRINCE2, Scrum Alliance).
+  'public-private partnership',
+  'lgpdf', 'lei geral de proteção de dados',
+  'okrcpc', 'okrmpc',
+  'professional agile leadership', 'pal-ebm',
+  'professional scrum',          // PSK I and SPS; 'professional scrum master' already above
+  'sap certified',
+  'office 365', 'microsoft ppm',
+  'google data analytics',
 ]
 
 // ── knowledge_ai_pm (20 XP) ──
@@ -166,6 +222,15 @@ export function classifyBadge(name: string, slug: string): { category: string; p
 
   if (SPECIALIZATION_KEYWORDS.some(kw => combined.includes(kw))) {
     return classified('specialization')
+  }
+
+  // Non-PMI training → course (#2296). Deliberadamente DEPOIS das escadas de credencial e de
+  // `specialization`: "SAP Certified - Managing SAP S/4HANA Cloud Public Edition Projects" carrega
+  // AS DUAS naturezas, e a credencial tem de vencer. Com este bloco antes de `specialization`, ele
+  // caia em `course` (15) enquanto o irmao "SAP Certified - Project Manager - SAP Activate" ia para
+  // `specialization` (25) — dois badges "SAP Certified" com precos diferentes por acidente de ordem.
+  if (TRAINING_KEYWORDS.some(kw => combined.includes(kw))) {
+    return classified('course')
   }
 
   if (KNOWLEDGE_AI_PM_KEYWORDS.some(kw => combined.includes(kw))) {
