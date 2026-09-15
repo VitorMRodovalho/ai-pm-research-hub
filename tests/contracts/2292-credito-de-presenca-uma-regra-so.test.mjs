@@ -84,15 +84,36 @@ test('#2292 cancelar reuniao PRESERVA o credito, repontando antes de apagar', { 
     'o repoint precisa vir ANTES do DELETE — depois dele o vinculo credito->evento ja nao existe');
 });
 
-test('#2292 limpar presenca APAGA o credito junto', { skip: dbGated ? false : skipMsg }, async () => {
+test('#2292 limpar presenca ESTORNA o credito, e nunca o apaga', { skip: dbGated ? false : skipMsg }, async () => {
   const f = await corpo('clear_member_attendance');
 
-  assert.match(f.prosrc, /DELETE\s+FROM\s+public\.gamification_points/i,
-    'limpar presenca e afirmar que o registro esta errado; o placar nao pode continuar contando');
-  // Os dois formatos historicos de ref_id precisam ser cobertos, ou a limpeza deixa
-  // justamente a linha que a de-duplicacao nao consegue mais resolver.
-  assert.match(f.prosrc, /ref_id\s*=\s*p_event_id/i,
-    'o formato antigo (ref_id = evento) tambem precisa ser apagado');
+  // O ledger e append-only (#1087 onda 3). A primeira versao deste conserto APAGAVA a linha —
+  // que e a direcao que a propria issue #2292 propunha — e o guard
+  // 1087-wave3-ledger-append-only reprovou. O estorno da o mesmo efeito no placar e mantem a
+  // historia, que e o motivo de a invariante existir.
+  assert.doesNotMatch(f.prosrc, /DELETE\s+FROM\s+public\.gamification_points/i,
+    'gamification_points e ledger append-only: estorne, nao apague (o carve-out de DELETE e so Art. 18 da LGPD)');
+  assert.match(f.prosrc, /INSERT\s+INTO\s+public\.gamification_points/i,
+    'o estorno e uma linha NOVA de pontos negativos, no molde de revoke_agenda_block_xp');
+  assert.match(f.prosrc, /-\s*s\.pts/,
+    'a linha de estorno precisa carregar o saldo NEGADO, nao um valor fixo');
+  // Os dois formatos historicos de ref_id precisam entrar no saldo, ou o estorno deixa de
+  // fora justamente a linha que a de-duplicacao nao consegue resolver.
+  assert.match(f.prosrc, /COALESCE\s*\(\s*a2\.event_id\s*,\s*gp\.ref_id\s*\)/i,
+    'o saldo precisa resolver os DOIS formatos de ref_id');
+  // A presenca em si continua sendo apagada: e a tabela de presenca que afirma o fato.
+  assert.match(f.prosrc, /DELETE\s+FROM\s+public\.attendance/i,
+    'a linha de presenca continua sendo removida');
+});
+
+test('#2292 a de-duplicacao olha o SALDO, nao a existencia de linha', { skip: dbGated ? false : skipMsg }, async () => {
+  const f = await corpo('_sync_attendance_points_worker');
+
+  // Com o ledger append-only, um credito estornado deixa +N e -N. Um EXISTS leria "ja tem
+  // credito" e recusaria PARA SEMPRE re-creditar alguem cuja presenca foi removida por engano
+  // e depois re-adicionada. O SUM > 0 e o que torna o estorno reversivel.
+  assert.match(f.prosrc, /HAVING\s+SUM\s*\(\s*gp\.points\s*\)\s*>\s*0/i,
+    'a de-duplicacao precisa ser por SALDO positivo, senao o estorno vira porta de mao unica');
 });
 
 test('#2292 a EF nao carrega uma segunda copia da regra', { skip: false }, async () => {
