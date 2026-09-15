@@ -47,6 +47,15 @@ const GAM_I18N = {
   lbPillarDrillTitle: t('gamification.lb.pillarDrillTitle', lang),
   lbPillarBonus: t('gamification.lb.pillarBonus', lang),
   lbCertLifetimeNote: t('gamification.lb.certLifetimeNote', lang),
+  lbMeTitle: t('gamification.lb.meTitle', lang),
+  lbMeRank: t('gamification.lb.meRank', lang),
+  lbMeGoTo: t('gamification.lb.meGoTo', lang),
+  lbMeGap: t('gamification.lb.meGap', lang),
+  lbMeTop: t('gamification.lb.meTop', lang),
+  lbMeLead: t('gamification.lb.meLead', lang),
+  lbMeWhere: t('gamification.lb.meWhere', lang),
+  lbMeWhereNone: t('gamification.lb.meWhereNone', lang),
+  lbMeNotRanked: t('gamification.lb.meNotRanked', lang),
   trTitle: t('gamification.tr.title', lang),
   trFormula: t('gamification.tr.formula', lang),
   trEmpty: t('gamification.tr.empty', lang),
@@ -290,6 +299,7 @@ const SCORING_I18N = {
         <div class="px-5 pt-2.5 text-[11px] text-[var(--text-muted)] flex items-start gap-1">
           <span aria-hidden="true">ℹ️</span><span>{t('gamification.lb.cycleWindowNote', lang)}</span>
         </div>
+        <div class="px-5 pt-2.5" id="leaderboard-me"></div>
         <div class="p-5" id="leaderboard-list">
           <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
         </div>
@@ -784,6 +794,8 @@ const SCORING_I18N = {
         return right - left;
       });
 
+    renderMyPosition(rankedRows);
+
     const maxPts = Math.max(...rankedRows.map((m: any) => leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points), 1);
     const modeLabel = leaderboardMode === 'lifetime' ? I.modeLifetime : I.modeCycle;
 
@@ -830,7 +842,7 @@ const SCORING_I18N = {
       ].filter(Boolean).join(' · ');
 
       return `
-      <div data-lb-row="${m.member_id || i}">
+      <div data-lb-row="${m.member_id || i}"${isMe ? ' id="lb-me-row"' : ''}>
         <div class="flex items-center gap-3 py-3 border-b border-[var(--border-subtle)] ${i < 3 ? 'bg-amber-50/30' : ''} ${isMe ? 'ring-2 ring-orange/30 rounded-lg' : ''}">
           <div class="w-8 text-center font-bold text-[13px] text-[var(--text-muted)] flex-shrink-0">${medal || rank}</div>
           ${photo}
@@ -874,6 +886,84 @@ const SCORING_I18N = {
       { pillar: 'champions',     pts: v('champions_points', 'cycle_champions_points') },
       { pillar: 'bonus',         pts: v('bonus_points', 'cycle_bonus_points') },
     ];
+  }
+
+  // ── #2297 — "o que eu faco para subir" ──────────────────────────────────────
+  // As tres analises de 14/09 concordaram que a pergunta "como funciona a pontuacao" esta
+  // resolvida (composicao por pilar + regua viva) e que esta NAO fecha: para saber o que fazer, a
+  // pessoa rolava a lista inteira, decorava os numeros do rival, abria outra pagina e subtraia de
+  // cabeca.
+  //
+  // Nenhuma RPC nova: `leaderboardData` ja traz os pilares de todo mundo, e `pillarDrillRows` ja e
+  // a decomposicao AUDITAVEL (soma exatamente os pontos exibidos). Isto so faz a subtracao que a
+  // pessoa estava fazendo no papel.
+  //
+  // ⚠️ E nao expoe nada novo: a composicao por pilar de qualquer um da lista ja esta a um clique
+  // pelo botao `pillar-drill`. O que muda e o trabalho, nao o acesso.
+  function renderMyPosition(rankedRows: any[]) {
+    const el = document.getElementById('leaderboard-me');
+    if (!el) return;
+    if (!MEMBER) { el.innerHTML = ''; return; }
+
+    const idx = rankedRows.findIndex((r: any) => r.member_id === MEMBER.id);
+    if (idx === -1) {
+      // Diz que nao aparece, em vez de nao dizer nada: silencio aqui lê como "o ranking quebrou".
+      el.innerHTML = `<div class="rounded-lg bg-[var(--surface-base)] border border-[var(--border-subtle)] px-3 py-2 text-[11px] text-[var(--text-muted)]">${escapeHtml(I.lbMeNotRanked || '')}</div>`;
+      return;
+    }
+
+    const pts = (m: any) => Number(leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points) || 0;
+    const mine = rankedRows[idx];
+    const acima = idx > 0 ? rankedRows[idx - 1] : null;
+    const abaixo = rankedRows[idx + 1] || null;
+
+    let linhaGap = '';
+    let onde = '';
+    if (acima) {
+      const falta = Math.max(0, pts(acima) - pts(mine));
+      linhaGap = (I.lbMeGap || '').replace('{n}', String(falta)).replace('{rank}', String(idx));
+      // Onde a diferenca esta: pilar a pilar, so os em que o de cima lidera, do maior para o menor.
+      const meus = pillarDrillRows(mine, leaderboardMode);
+      const deles = pillarDrillRows(acima, leaderboardMode);
+      const pillarName = (k: string) => k === 'bonus' ? (I.lbPillarBonus || 'Bonus') : ((I.pillarNames || {})[k] || k);
+      const difs = deles
+        .map((r: any, i: number) => ({ pillar: r.pillar, dif: r.pts - meus[i].pts }))
+        .filter((d: any) => d.dif > 0)
+        .sort((a: any, b: any) => b.dif - a.dif)
+        .slice(0, 3);
+      onde = difs.length
+        ? `<div class="mt-1.5">
+             <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)]">${escapeHtml(I.lbMeWhere || '')}</div>
+             ${difs.map((d: any) => `<div class="flex items-center gap-2 text-[11px] py-0.5"><span class="w-28 shrink-0">${PILLAR_EMOJI[d.pillar] || '⭐'} ${escapeHtml(pillarName(d.pillar))}</span><span class="font-semibold text-orange">+${d.dif}</span></div>`).join('')}
+           </div>`
+        : `<div class="mt-1.5 text-[11px] text-[var(--text-muted)]">${escapeHtml(I.lbMeWhereNone || '')}</div>`;
+    } else {
+      linhaGap = escapeHtml(I.lbMeTop || '');
+      if (abaixo) {
+        linhaGap += ' ' + (I.lbMeLead || '').replace('{n}', String(Math.max(0, pts(mine) - pts(abaixo))));
+      }
+    }
+
+    const resumo = (I.lbMeRank || '')
+      .replace('{rank}', String(idx + 1))
+      .replace('{total}', String(rankedRows.length))
+      .replace('{pts}', String(pts(mine)));
+
+    el.innerHTML = `
+      <div class="rounded-lg bg-[var(--surface-base)] border border-orange/30 px-3 py-2.5">
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div>
+            <div class="text-[10px] font-bold uppercase tracking-wide text-orange">${escapeHtml(I.lbMeTitle || '')}</div>
+            <div class="text-[12px] font-semibold text-[var(--text-primary)]">${escapeHtml(resumo)}</div>
+          </div>
+          <button type="button" data-action="lb-go-to-me"
+                  class="min-h-[32px] px-3 py-1.5 rounded-full text-[11px] font-bold bg-orange/10 text-orange border-0 cursor-pointer">
+            ${escapeHtml(I.lbMeGoTo || '')}
+          </button>
+        </div>
+        <div class="text-[11px] text-[var(--text-secondary)] mt-1">${escapeHtml(linhaGap)}</div>
+        ${onde}
+      </div>`;
   }
 
   function renderPillarBreakdown(m: any): string {
@@ -1808,6 +1898,16 @@ const SCORING_I18N = {
       case 'pillar-drill':
         togglePillarDrill(target);
         break;
+      case 'lb-go-to-me': {
+        // A linha propria ja e marcada com `isMe`; o que faltava era chegar ate ela sem rolar
+        // a lista inteira. Mesmo padrao de scroll que o certificado ja usa neste arquivo.
+        // Ancora EXPLICITA, nao classe: `ring-2` fica no div INTERNO e `data-lb-row` no externo,
+        // entao um seletor combinando os dois casa NADA — e `scrollIntoView` em null nao faz nada
+        // e nao reclama, que e a pior forma de um botao quebrar.
+        const minha = document.getElementById('lb-me-row');
+        minha?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        break;
+      }
       case 'mp-set-scope': {
         const scope = target.dataset.scope as 'cycle' | 'lifetime';
         if (scope) setMpScope(scope);
