@@ -18,6 +18,24 @@ such and never let it become a stated antes/depois.
   reasoning backward from "after".
 - Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
 
+## Antes de propor uma DECISÃO sobre uma tabela, leia os guards dela (MANDATÓRIO)
+
+**IMPORTANT — YOU MUST:** antes de montar opções para o dono sobre o que fazer com os DADOS de uma
+tabela (apagar, corrigir, migrar, rotular), rode `grep -rl "<tabela>" tests/contracts/` e **leia o
+que esses guards afirmam**. Uma opção recomendada por quem não leu o guard é recomendação sem
+lastro.
+
+- Incidente que originou a regra (2026-09-15, #2292): levei ao dono três opções sobre 224 linhas
+  de XP com "apagar" marcada como recomendada. `gamification_points` é um **ledger append-only**
+  desde a onda 3 da #1087, e o comentário do próprio guard diz que o carve-out de `DELETE` é Art.
+  18 da LGPD, *"never for a business revoke"*. A opção alinhada com a norma era outra, e estava na
+  mesma tela sem que eu soubesse por quê.
+- Isto é a irmã da regra que já existia para **escrita** (`grep` antes de escrever no banco
+  compartilhado, porque derruba PR alheia). Mesmo comando, outra pergunta: lá "quem quebra se eu
+  escrever", aqui **"quem já decidiu como se escreve"**.
+- Se a tabela for um ledger, a forma de desfazer é **linha compensatória**, nunca remoção — e
+  então todo leitor que contava LINHA precisa passar a ler SALDO. Na #2292 foram quatro.
+
 ## Domain Model V4 (concluído 2026-04-13)
 Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` para decisões e histórico. Decisões-chave:
 - `can()` / `can_by_member()` é a source of truth para autoridade (ADR-0007)
@@ -41,6 +59,9 @@ scripts/setup-lane.sh ../.wt-<lane> [branch]   # RODE ISTO AO ABRIR QUALQUER LAN
 npm ci                   # lane worktrees start WITHOUT node_modules; the gate below cannot run until this does
 ./node_modules/.bin/astro build   # MUST pass before commit. Not `npx` (pulls a stray version), never piped
 npm test                 # unit + e2e; DB-aware tests require SUPABASE_SERVICE_ROLE_KEY env
+npm run test:verdict     # PREFIRA ISTO local: `npm test` sao DOIS blocos com DOIS sumarios, e
+                         # quem le o primeiro le metade da suite. O veredito consolida e tem um
+                         # terceiro estado: bloco que morreu SEM reportar nao conta como aprovado.
 npx wrangler deploy      # Deploy main Worker
 supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ```
