@@ -188,6 +188,11 @@ Deno.serve(async (req) => {
     // Nunca ecoa o endereço: a resposta do pg_net fica em `net._http_response`.
     return json({ ok: true, link_kind: linkKind })
   } catch (err) {
-    return json({ error: 'Unhandled', detail: String(err) }, 500)
+    // O erro fica no log da EF e NAO no corpo: a mensagem de um erro do Auth ou do Postgres
+    // carrega o endereco (`duplicate key ... (email)=(...)`), e o corpo desta resposta vai para
+    // `net._http_response`, exatamente o lugar que o comentario do topo diz nunca alcancar.
+    // Ver #2302 (js/stack-trace-exposure) e o comentario de PII no inicio do arquivo.
+    console.error('[send-portal-account-setup] unhandled', err)
+    return json({ error: 'Unhandled' }, 500)
   }
 })
