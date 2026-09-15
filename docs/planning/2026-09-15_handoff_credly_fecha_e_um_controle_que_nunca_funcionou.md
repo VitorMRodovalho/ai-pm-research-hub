@@ -157,7 +157,8 @@ SELECT count(*) FILTER (WHERE violation_count > 0) FROM public.check_schema_inva
 
 ```bash
 # storage: o bucket publico e as linhas que apontam para ele (tem de bater 1:1)
-# a API de list NAO recursa: varra por prefixo (knowledge-bulk/geral e /adm) ou reporta 2 onde ha 256
+# a API de list NAO recursa e devolve PASTA como objeto: varra por prefixo, ou reporta 2 onde ha 256.
+# Os prefixos ficam no registro privado do PMO, nao aqui — este repo e publico.
 ```
 
 ---
