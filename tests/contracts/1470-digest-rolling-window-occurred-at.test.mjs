@@ -82,15 +82,37 @@ test('#1470 behavioural: occurred_at 7d window excludes the historical backfill 
     assert.ifError(error);
     const now = Date.now();
     const win = now - 7 * 24 * 3600 * 1000;
+    // EARNED only (points > 0), e nao a soma crua. #2292 (2026-09-15) restaurou 224 creditos
+    // duplicados e emitiu 224 ESTORNOS de -10 sobre eles: linhas NEGATIVAS com created_at de
+    // hoje e occurred_at antigo. Na soma crua elas ENTRAM na janela de created_at e saem da de
+    // occurred_at, o que derruba `byCreated` (chegou a -897) e inverte a desigualdade — sem que
+    // nada de errado tenha acontecido. A intencao do teste sempre foi sobre backfill de fato
+    // GANHO; somar so o positivo e o mesmo criterio que get_member_xp_pillars ja usa
+    // (`FILTER (WHERE p.points > 0)`, #1087 onda 3).
     let byCreated = 0, byOccurred = 0;
+    let reversalsRecentCreated = 0, reversalsInOccurredWindow = 0;
     for (const r of data || []) {
       const c = new Date(r.created_at).getTime();
       const eff = new Date(r.occurred_at || r.created_at).getTime();
-      if (c >= win) byCreated += r.points;
-      if (eff >= win) byOccurred += r.points;
+      if (r.points > 0) {
+        if (c >= win) byCreated += r.points;
+        if (eff >= win) byOccurred += r.points;
+      } else if (r.points < 0 && c >= win) {
+        reversalsRecentCreated += 1;
+        if (eff >= win) reversalsInOccurredWindow += 1;
+      }
     }
     // the fix window (occurred_at) must not exceed the bug window (created_at): historical facts
     // whose created_at is recent but occurred_at is old are dropped from the fact-date window.
     assert.ok(byOccurred <= byCreated,
       `occurred_at window (${byOccurred}) must be <= created_at window (${byCreated}) — historical backfill is excluded`);
+
+    // O estorno de um fato ANTIGO nao pode entrar na janela de fato-recente. Sem isto, reverter
+    // um credito de marco tiraria pontos do digest de hoje — que e o defeito do #1470 com o
+    // sinal trocado. So afirma quando ha estorno recente para observar (tres estados).
+    if (reversalsRecentCreated > 0) {
+      assert.equal(reversalsInOccurredWindow, 0,
+        `${reversalsInOccurredWindow} de ${reversalsRecentCreated} estornos criados nos ultimos 7 dias ` +
+        'caem na janela de occurred_at: um estorno precisa carregar o occurred_at do credito que reverte');
+    }
   });
