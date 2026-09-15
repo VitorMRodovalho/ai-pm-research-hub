@@ -17,9 +17,14 @@ const EF_CONTRACTS = [
     imports: ['_shared/cors.ts', '_shared/classify-badge.ts'],
   },
   {
+    // #2292 — esta EF nao implementa mais a regra do credito de presenca: ela autentica,
+    // resolve o escopo e DELEGA. O contrato mudou junto, de proposito. Exigir que ela
+    // referencie 'attendance'/'gamification_points' seria exigir que ela volte a falar
+    // com as tabelas, que e exatamente a segunda implementacao que a #2292 eliminou.
     name: 'sync-attendance-points',
-    tables: ['attendance', 'gamification_points'],
-    imports: ['_shared/cors.ts', '_shared/attendance-xp.ts'],
+    tables: ['members'],
+    imports: ['_shared/cors.ts', '_shared/service-auth.ts'],
+    externalServices: ['_sync_attendance_points_worker'],
   },
   {
     name: 'verify-credly',
@@ -154,10 +159,6 @@ for (const ef of EF_CONTRACTS) {
 // Verify _shared modules exist
 test('_shared/classify-badge.ts exists', () => {
   assert.ok(existsSync(join(EF_ROOT, '_shared', 'classify-badge.ts')));
-});
-
-test('_shared/attendance-xp.ts exists', () => {
-  assert.ok(existsSync(join(EF_ROOT, '_shared', 'attendance-xp.ts')));
 });
 
 test('_shared/email-utils.ts exists', () => {

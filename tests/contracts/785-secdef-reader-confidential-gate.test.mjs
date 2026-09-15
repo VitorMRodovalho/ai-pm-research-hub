@@ -60,6 +60,10 @@ const ALLOWLIST = {
   platform_activity_summary: 'gp-only (manage_platform gate — sees confidential anyway)',
   detect_operational_alerts: 'system/cron aggregate, manage_platform-gated + tribe-scoped',
   check_code_schema_drift: 'dev helper, no member data',
+  // #2292 — contadores de auditoria do ledger de presenca. Le `events` so para RESOLVER o
+  // ref_id polimorfico; nao devolve nenhuma linha de evento, so quatro inteiros agregados
+  // sobre a plataforma inteira. Grant e service_role apenas (REVOKE de PUBLIC e anon).
+  _audit_attendance_xp_duplicates: 'audit counters only (4 aggregate ints, no row data); service_role-only grant',
   // self-scoped to caller
   export_my_data: 'self-scoped (auth.uid own data, LGPD export)',
   get_my_cards: 'self-scoped (caller assignments)',

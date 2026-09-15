@@ -1,13 +1,25 @@
+// sync-attendance-points
+//
+// #2292 — esta EF DEIXOU de implementar a regra do credito de presenca. Ela autentica,
+// resolve o escopo, e delega para `public._sync_attendance_points_worker(p_member_id)`,
+// que e a regra.
+//
+// POR QUE. Ate 2026-09-15 existiam DUAS implementacoes: esta EF (que o cron chama, e
+// portanto a que de fato roda) e a RPC `sync_attendance_points()` (que declarava a
+// regra e nao era chamada por superficie nenhuma). Divergiam em cinco pontos — filtro
+// de cancelado, filtro de e.type, criterio de de-duplicacao, origem dos pontos, e
+// formato gravado de ref_id — e a assimetria do criterio de de-duplicacao produzia
+// credito em dobro POR CONSTRUCAO: a RPC checa os dois formatos e grava o antigo, esta
+// EF so conhecia o novo. Medido: 224 pares duplicados, e 100% deles eram exatamente um
+// par uma-linha-da-RPC + uma-linha-desta-EF. Nao havia um par de outra forma.
+//
+// A constante POINTS_PER_ATTENDANCE saiu junto: o valor vem de `gamification_rules`,
+// que e o catalogo. Uma constante no codigo e uma segunda fonte, e uma segunda fonte so
+// parece inofensiva enquanto os dois numeros coincidem.
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsHeaders } from '../_shared/cors.ts'
-import { POINTS_PER_ATTENDANCE, ATTENDANCE_CATEGORY } from '../_shared/attendance-xp.ts'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
-
-const CATEGORY = ATTENDANCE_CATEGORY
-// Keep batch size small to avoid PostgREST URL length limits on .in() queries
-// Each UUID is 36 chars; 100 * 36 = 3.6KB, well within the ~8KB limit
-const LOOKUP_BATCH = 100
-const INSERT_BATCH = 200
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,6 +56,8 @@ Deno.serve(async (req) => {
 
   const sb = createClient<any, "public", any>(supabaseUrl, serviceRoleKey)
 
+  // null = varrer todo mundo. Um membro nao-admin so sincroniza a si mesmo, e e esse
+  // escopo que a EF precisa resolver antes de delegar: o worker nao tem sessao.
   let callerMemberId: string | null = null
 
   if (!isServiceRole) {
@@ -68,58 +82,15 @@ Deno.serve(async (req) => {
   }
 
   try {
-    let attendanceQuery = sb
-      .from('attendance')
-      .select('id, member_id')
-      .eq('present', true)
+    const { data, error } = await sb.rpc('_sync_attendance_points_worker', { p_member_id: callerMemberId })
+    if (error) throw error
 
-    if (callerMemberId) {
-      attendanceQuery = attendanceQuery.eq('member_id', callerMemberId)
-    }
-
-    const { data: attendanceRows, error: attendanceError } = await attendanceQuery
-    if (attendanceError) throw attendanceError
-    if (!attendanceRows || attendanceRows.length === 0) {
-      return jsonResponse({ success: true, points_created: 0 })
-    }
-
-    const attendanceIds = attendanceRows.map((r) => r.id)
-
-    // Look up existing ref_ids in small batches to avoid URL length limits
-    const existingRefIds = new Set<string>()
-    for (let i = 0; i < attendanceIds.length; i += LOOKUP_BATCH) {
-      const batch = attendanceIds.slice(i, i + LOOKUP_BATCH)
-      const { data: existing, error: existingError } = await sb
-        .from('gamification_points')
-        .select('ref_id')
-        .eq('category', CATEGORY)
-        .in('ref_id', batch)
-
-      if (existingError) throw existingError
-      for (const row of existing || []) {
-        if (row.ref_id) existingRefIds.add(row.ref_id)
-      }
-    }
-
-    const toInsert = attendanceRows
-      .filter((a) => !existingRefIds.has(a.id))
-      .map((a) => ({
-        member_id: a.member_id,
-        category: CATEGORY,
-        points: POINTS_PER_ATTENDANCE,
-        reason: 'Presença em evento',
-        ref_id: a.id,
-      }))
-
-    if (toInsert.length > 0) {
-      for (let i = 0; i < toInsert.length; i += INSERT_BATCH) {
-        const batch = toInsert.slice(i, i + INSERT_BATCH)
-        const { error: insertError } = await sb.from('gamification_points').insert(batch)
-        if (insertError) throw insertError
-      }
-    }
-
-    return jsonResponse({ success: true, points_created: toInsert.length })
+    // O worker devolve jsonb; points_created e a chave que gamification.astro le.
+    return jsonResponse({
+      success: true,
+      points_created: data?.points_created ?? 0,
+      points_per_attendance: data?.points_per_attendance ?? null,
+    })
   } catch (error) {
     return jsonResponse({ success: false, error: extractError(error) }, 500)
   }

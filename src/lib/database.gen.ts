@@ -29186,6 +29186,15 @@ export type Database = {
           event_type: string
         }[]
       }
+      _audit_attendance_xp_duplicates: {
+        Args: never
+        Returns: {
+          duplicated_pairs: number
+          duplicated_points: number
+          orphan_rows: number
+          total_attendance_points: number
+        }[]
+      }
       _audit_can_authuid_function_bodies: {
         Args: never
         Returns: {
@@ -29690,6 +29699,10 @@ export type Database = {
       _should_offer_enrichment: {
         Args: { p_ai_analysis: Json }
         Returns: boolean
+      }
+      _sync_attendance_points_worker: {
+        Args: { p_member_id?: string }
+        Returns: Json
       }
       _sync_interview_to_event: {
         Args: { p_interview_id: string }
