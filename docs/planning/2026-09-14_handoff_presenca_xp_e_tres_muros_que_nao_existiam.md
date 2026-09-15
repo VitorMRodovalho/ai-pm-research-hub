@@ -3,8 +3,11 @@
 > **Nada aqui é medição.** Carimbado em 14/09, ~21h BRT. **Re-meça antes de decidir.**
 > Repositório público: este documento não nomeia ninguém, por norma.
 
-**Estado ao encerrar, para COMPARAR:** `main ebb36c54` · **nenhuma PR aberta** · issues abertas
-deste arco: **#2286, #2291, #2292, #2295, #2296, #2297**.
+**Estado ao encerrar, para COMPARAR:** `main ecb36a59` · **nenhuma PR aberta** · issues abertas
+deste arco: **#2286, #2291, #2292, #2295, #2296, #2297**. Lições na `[LL]` **#588**.
+
+> **Seção 9 é a mais nova** e cobre o que aconteceu DEPOIS da primeira versão deste documento:
+> sync das instruções globais, medição dos buckets públicos, e **duas decisões pendentes do dono**.
 
 ---
 
@@ -205,3 +208,87 @@ SELECT count(*) FILTER (WHERE designations && ARRAY['curator'])    AS curador,
 > estado (seção 7) antes de decidir qualquer coisa. Seguir a fila da seção 4, começando pelo item
 > 1 (#2292, ordem interna 3 → 2 → 1), com o conserto escopado do CodeQL junto por ser rápido.
 > **Não** implementar segmentação de ranking antes de os três bloqueadores fecharem.
+
+---
+
+## 9. Adendo — o que veio DEPOIS da primeira versão deste documento
+
+### Instruções globais: cinco meses de divergência silenciosa, corrigida
+
+O PMO pai reportou "CLI do Gemini ausente". **Medição certa, conclusão errada:** o consumidor do
+`~/.gemini/GEMINI.md` é o **Antigravity**, que está instalado (`~/.local/bin/antigravity`,
+`/usr/share/antigravity`, perfil com `mcp`/`skills`/`knowledge`/`conversations`). O arquivo nunca
+foi para um CLI. É a mesma classe da seção 1: procurar o consumidor pelo nome do arquivo em vez de
+procurar quem lê.
+
+**O achado real estava ao lado.** O próprio `GEMINI.md` declara: *"the same content lives in
+`~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`. **Keep the three in sync — divergence here is
+silent**"*. A divergência já tinha acontecido:
+
+| arquivo | bytes | modificado | seções |
+|---|---|---|---|
+| `~/.gemini/GEMINI.md` | 3961 | 13/09 | 5 |
+| `~/.codex/AGENTS.md` | 3865 | 13/09 | 5 |
+| **`~/.claude/CLAUDE.md`** | **1789** | **19/04** | **2** |
+
+Faltavam três seções inteiras no do Claude: **Measurement discipline**, **Machines** e **Repository
+visibility**. Sincronizado por união (os bullets de atribuição mais ricos do Claude foram
+preservados, não substituídos): 5.326 bytes, 5 seções, dentro do teto de 12.000.
+
+⚠️ **E eu editei a cópia, não a autoridade.** Existe `~/projects/claude-config-global` (repo
+privado, 13/09) cujo `sync.sh` copia repo → `~/.claude/`. Descobri isso **depois** de já ter
+editado, lendo o `MEMORY.md` do PMO pai. Terminou bem por acaso: a lane do pai commitou o conteúdo
+e o `sync.sh` reporta `IN SYNC`.
+
+O pai corrigiu o `sync.sh` a partir deste caso: agora compara mtime, devolve `OVERTAKEN` com exit 4
+quando a cópia é mais nova, e **recusa** oferecer o `--apply` que descartaria o trabalho.
+
+### Medição dos buckets públicos (autorizada, sem ação)
+
+**Três** buckets públicos, não dois — `member-photos` (112 objetos) também é, e não estava no
+escopo.
+
+| bucket | objetos | tamanho | natureza |
+|---|---|---|---|
+| `comms-media` | 184 | 362 MB | material de divulgação já publicado (Instagram 72, LinkedIn 30, reels 27). Mime restrito, teto de 50 MB. **Público por desenho** |
+| `documents` | 261 | 231 MB | **importação única de 10/03**, tudo sob `knowledge-bulk/`: 163 PDF, 62 jpeg, 21 planilhas, 10 png, 5 txt. Sem restrição de mime nem de tamanho |
+
+⚠️ **Falso positivo meu, e ele quase virou incidente.** A primeira classificação acusou 12 arquivos
+com nome sugerindo documento pessoal (`cpf|rg|identidade`). A regex usou `rg` **sem fronteira de
+palavra** e casou "emergente", "organization", "organizations", "vargas". Com fronteira:
+**0 rg, 0 cpf, 0 identidade**. Reportar os 12 teria criado uma suspeita de vazamento inexistente,
+e alguém teria agido sobre ela.
+
+**O que a medição NÃO alcança**, e não deve ser apresentado como se alcançasse: o conteúdo das 21
+planilhas (nome de planilha não diz o que há dentro) e se o acervo de 10/03 foi importado com
+intenção de ser público — há material de terceiros ali, e a pergunta de direito autoral é separada
+da de privacidade.
+
+### DUAS DECISÕES PENDENTES DO DONO
+
+1. **Bloco de ponteiro no topo do `~/.claude/CLAUDE.md`**, dizendo que o arquivo é cópia e que a
+   fonte é `~/projects/claude-config-global`. Hoje nada no arquivo diz isso — foi por isso que a
+   edição saiu do sistema de registro. O PMO pai concorda com o texto e **recusou fazer a pedido de
+   par**, corretamente. Precisa sair do dono para ele. Alternativa levantada e não decidida: uma
+   linha idêntica nos três arquivos, o que torna o drift entre eles visível pelo próprio `diff`.
+2. **A pergunta de design de métrica do ranking** (#2297): se 56% dos pontos do topo vêm de uma
+   dimensão exercida por 93% dos líderes e **1,7% dos pesquisadores**, o ranking mede contribuição
+   ou papel? Bloqueada pelos três itens da seção 4.
+
+### Lição de canal entre agentes, que serve à ADR de roteamento do PMO pai
+
+Uma mensagem do PMO pai **nunca chegou** a esta sessão. O envio devolveu `success` com `msg_id`, a
+sessão nunca girou (mesma referência, 6 dias de pé), e o conteúdo não existe no contexto.
+
+**`success` do envio não é entrega** — a mesma lição da onda #2130 deste repo, agora no canal entre
+sessões. Requisito que entra na ADR: todo passo entre agentes precisa de confirmação de
+**recebimento pelo destinatário**, não de confirmação de envio pelo remetente. Se uma mensagem
+Claude-para-Claude some em silêncio, um handoff Claude-para-Codex some também.
+
+### Nota de CI
+
+A PR deste handoff reprovou com **24 testes** no `validate`, todos DB-aware, com **HTTP 522** em
+chamadas sem relação entre si. É infraestrutura (origem não respondeu), não dado nem código:
+controle independente mostrou o Supabase em HTTP 200 / 0,32 s minutos depois, e o re-run passou
+12/12 sem nenhuma mudança. **Classifique 522 e 57014 como indisponibilidade antes de caçar causa
+de código** — e não mergeie por cima, porque o re-run é barato.
