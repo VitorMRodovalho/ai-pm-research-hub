@@ -3,8 +3,8 @@
   "$id": "ADR-0022-notification-types-catalog",
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.8",
-  "updated_at": "2026-09-14",
+  "version": "W1.9",
+  "updated_at": "2026-09-16",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into weekly digest sent Saturday 12:00 UTC via send-weekly-member-digest EF. Default for most types.",
@@ -137,6 +137,10 @@
     "selection_termo_due": {
       "delivery_mode": "transactional_immediate",
       "rationale": "p159 (2026-05-14): post-VEP-Active candidate email carrying volunteer term link + next steps + Lorena (signatory). Helper updated p159; catalog backfilled p228 W2 Leaf 1 per PM Policy Matrix (#260, 2026-05-23). Candidate-facing operational; bypasses notify_delivery_mode_pref=suppress_all per W2 Leaf 6."
+    },
+    "volunteer_term_pending": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2325 (2026-09-16): o LEMBRETE de que o termo segue aberto, emitido por notify_pending_volunteer_agreements (botao do painel admin). Antes saia como type system, que este catalogo manda suprimir — 26 avisos a 16 pessoas entre 08/07 e 14/09 que nunca deixaram a plataforma. Tipo proprio, e nao reuso de selection_termo_due, porque aquele anuncia a ABERTURA do termo no aceite do VEP e e alvo de _replay_selection_notifications_p228. transactional_immediate porque digest_weekly carimba como entregue o que nenhuma secao renderiza (#2286). Dedup de 7 dias vive no emissor."
     },
     "selection_approved": {
       "delivery_mode": "transactional_immediate",
