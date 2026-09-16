@@ -1536,6 +1536,7 @@ const ptBR: Record<string, string> = {
   'role.chapter_liaison': 'Ponto Focal',
   'role.deputy_manager': 'Vice-GP',
   'role.institutional_auditor': 'Auditor Institucional',
+  'role.alumni': 'Egresso',
 
   // ── Attendance page ──
   'attendance.title': 'Presença & Horas de Impacto',
@@ -3287,6 +3288,9 @@ const ptBR: Record<string, string> = {
   'gamification.lb.meWhere': 'Onde está a diferença',
   'gamification.lb.meWhereNone': 'A diferença não vem de um pilar só.',
   'gamification.lb.meNotRanked': 'Você ainda não aparece neste ranking.',
+  'gamification.lb.layerAll': 'Todas as camadas',
+  'gamification.lb.layerNote': 'Ao escolher uma camada, o ranking e a sua posição passam a comparar só quem está nela.',
+  'gamification.lb.layerOf': 'na camada {layer}',
   'gamification.tr.title': 'Ranking de Tribos — Ciclo 4',
   'gamification.tr.formula': 'Score = (média pontos × 1) + (membros ativos × 10)',
   'gamification.tr.empty': 'Nenhum dado de tribo disponível.',

@@ -56,6 +56,9 @@ const GAM_I18N = {
   lbMeWhere: t('gamification.lb.meWhere', lang),
   lbMeWhereNone: t('gamification.lb.meWhereNone', lang),
   lbMeNotRanked: t('gamification.lb.meNotRanked', lang),
+  lbLayerAll: t('gamification.lb.layerAll', lang),
+  lbLayerNote: t('gamification.lb.layerNote', lang),
+  lbLayerOf: t('gamification.lb.layerOf', lang),
   trTitle: t('gamification.tr.title', lang),
   trFormula: t('gamification.tr.formula', lang),
   trEmpty: t('gamification.tr.empty', lang),
@@ -299,6 +302,7 @@ const SCORING_I18N = {
         <div class="px-5 pt-2.5 text-[11px] text-[var(--text-muted)] flex items-start gap-1">
           <span aria-hidden="true">ℹ️</span><span>{t('gamification.lb.cycleWindowNote', lang)}</span>
         </div>
+        <div class="px-5 pt-2.5" id="leaderboard-layers"></div>
         <div class="px-5 pt-2.5" id="leaderboard-me"></div>
         <div class="p-5" id="leaderboard-list">
           <p class="text-[var(--text-muted)] text-sm text-center py-6">{t('gamification.loading', lang)}</p>
@@ -547,6 +551,8 @@ const SCORING_I18N = {
   // now-cycle-scoped rank). The 'Todos os tempos' toggle still shows lifetime.
   // The button active-state at :308-311 is pre-set to cycle=active to match this.
   let leaderboardMode: 'cycle' | 'lifetime' = 'cycle';
+  // #2297 2a metade — camada selecionada no ranking. '' = todas.
+  let leaderboardLayer = '';
   let tribeMode: 'cycle' | 'lifetime' = 'cycle';
   let lifetimePointsByMember: Record<string, number> = {};
   let trailProgressByMember = new Map();
@@ -775,6 +781,74 @@ const SCORING_I18N = {
     loadTribeRanking();
   }
 
+  // ── #2297 2a metade — SEGMENTACAO POR CAMADA ───────────────────────────────
+  // Pedido do GP (14/09): "separar camadas por funcao". Decisao do dono (15/09): segmentar por
+  // `operational_role`, que e a UNICA das tres fontes que PARTICIONA a base (as outras duas,
+  // `designations` e `engagements.role`, deixariam a maioria sem camada).
+  //
+  // ⚠️ A lista de camadas e DERIVADA do que o ranking devolve, nunca de uma lista de nomes.
+  // Medido em 15/09: a proposta enumerava 7 camadas sobre 96 pessoas contadas com `is_active`,
+  // mas `get_gamification_leaderboard` NAO filtra `is_active` — o predicado dele e
+  // `gamification_opt_out = false AND (current_cycle_active OR tem ponto na janela do ciclo)`.
+  // Sobre esse denominador ha 95 pessoas e OITO camadas: aparece `alumni` com 6, todas inativas,
+  // que entram pelo ramo "tem ponto no ciclo". Uma lista fixa de 7 nomes sumiria com essas 6
+  // pessoas da tela em silencio.
+  //
+  // `alumni` e estado de ciclo de vida, nao funcao: medido, `operational_role = 'alumni'` e
+  // `member_status = 'alumni'` sao o MESMO conjunto (31 pessoas), porque a coluna e cache de
+  // trigger. Por isso o rotulo em pt-BR e "Egresso", que le como estado.
+  function roleLabelFor(key: string): string {
+    try {
+      const el = document.getElementById('role-labels-data');
+      if (el) {
+        const labels = JSON.parse(el.textContent || '{}');
+        if (labels[key]) return labels[key];
+      }
+    } catch {}
+    return key;
+  }
+
+  function deriveLayers(rows: any[]): { key: string; count: number }[] {
+    const counts = new Map<string, number>();
+    (rows || []).forEach((r: any) => {
+      const k = String(r.operational_role || '').trim();
+      if (!k) return;
+      counts.set(k, (counts.get(k) || 0) + 1);
+    });
+    return [...counts.entries()]
+      .map(([key, count]) => ({ key, count }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+  }
+
+  function renderLayerChips(allRows: any[]) {
+    const el = document.getElementById('leaderboard-layers');
+    if (!el) return;
+    const layers = deriveLayers(allRows);
+    // Anon/ghost usa `get_public_leaderboard`, que nao devolve `operational_role`: sem camada
+    // alguma, a faixa inteira desaparece em vez de virar um "Todas" solitario.
+    if (layers.length < 2) { el.innerHTML = ''; return; }
+
+    const chip = (key: string, rotulo: string, n: number) => {
+      const on = leaderboardLayer === key;
+      return `<button type="button" data-action="set-leaderboard-layer" data-layer="${escapeHtml(key)}"
+        class="min-h-[32px] px-2.5 py-1 rounded-full text-[11px] font-bold border-0 cursor-pointer ${on ? 'bg-navy text-white' : 'bg-[var(--surface-base)] text-[var(--text-secondary)]'}"
+        aria-pressed="${on ? 'true' : 'false'}">${escapeHtml(rotulo)} <span class="opacity-70">${n}</span></button>`;
+    };
+
+    el.innerHTML = `
+      <div class="flex flex-wrap items-center gap-1.5">
+        ${chip('', I.lbLayerAll || 'Todas', allRows.length)}
+        ${layers.map((l) => chip(l.key, roleLabelFor(l.key), l.count)).join('')}
+      </div>
+      <div class="text-[11px] text-[var(--text-muted)] mt-1.5">${escapeHtml(I.lbLayerNote || '')}</div>`;
+  }
+
+  function setLeaderboardLayer(layer: string) {
+    leaderboardLayer = layer;
+    renderLeaderboard();
+    try { (window as any).__nucleoTrack?.('leaderboard_filtered', { filter_type: layer ? `layer:${layer}` : 'layer:all' }); } catch {}
+  }
+
   function renderLeaderboard() {
     const el = document.getElementById('leaderboard-list')!;
     if (!leaderboardData?.length) {
@@ -782,7 +856,7 @@ const SCORING_I18N = {
       return;
     }
 
-    const rankedRows = (leaderboardData || [])
+    const allRanked = (leaderboardData || [])
       .map((m: any) => ({
         ...m,
         cycle_points: Number(m.cycle_points || 0),
@@ -794,6 +868,17 @@ const SCORING_I18N = {
         return right - left;
       });
 
+    // #2297 — a camada filtra DEPOIS da ordenacao global, entao o posto exibido e o posto DENTRO
+    // da camada, que e o ponto do pedido: comparar com par, nao com a base inteira.
+    let rankedRows = allRanked;
+    if (leaderboardLayer) {
+      const daCamada = allRanked.filter((m: any) => String(m.operational_role || '') === leaderboardLayer);
+      // Se a camada esvaziou entre dois carregamentos, volta para todas em vez de mostrar lista
+      // vazia: lista vazia aqui le como "o ranking quebrou".
+      if (daCamada.length) rankedRows = daCamada; else leaderboardLayer = '';
+    }
+
+    renderLayerChips(allRanked);
     renderMyPosition(rankedRows);
 
     const maxPts = Math.max(...rankedRows.map((m: any) => leaderboardMode === 'lifetime' ? m.lifetime_points : m.cycle_points), 1);
@@ -944,10 +1029,15 @@ const SCORING_I18N = {
       }
     }
 
-    const resumo = (I.lbMeRank || '')
+    let resumo = (I.lbMeRank || '')
       .replace('{rank}', String(idx + 1))
       .replace('{total}', String(rankedRows.length))
       .replace('{pts}', String(pts(mine)));
+    // Com camada ativa, `{total}` passa a ser o tamanho da CAMADA. Sem nomea-la, "de 54" le como
+    // se fosse a base inteira.
+    if (leaderboardLayer) {
+      resumo += ' ' + (I.lbLayerOf || '').replace('{layer}', roleLabelFor(leaderboardLayer));
+    }
 
     el.innerHTML = `
       <div class="rounded-lg bg-[var(--surface-base)] border border-orange/30 px-3 py-2.5">
@@ -1885,6 +1975,12 @@ const SCORING_I18N = {
       case 'set-leaderboard-mode': {
         const mode = target.dataset.mode as 'cycle' | 'lifetime';
         if (mode) setLeaderboardMode(mode);
+        break;
+      }
+      case 'set-leaderboard-layer': {
+        // `?? ''` e nao `|| ''`: a chip "Todas" carrega data-layer="" de proposito, e um
+        // truthy-check trataria a volta para "todas" como clique sem acao.
+        setLeaderboardLayer(target.dataset.layer ?? '');
         break;
       }
       case 'set-tribe-mode': {
