@@ -1531,6 +1531,7 @@ const enUS: Record<string, string> = {
   'role.chapter_liaison': 'Chapter Liaison',
   'role.deputy_manager': 'Deputy PM',
   'role.institutional_auditor': 'Institutional Auditor',
+  'role.alumni': 'Alumni',
 
   // ── Attendance page ──
   'attendance.title': 'Attendance & Impact Hours',
@@ -3280,6 +3281,9 @@ const enUS: Record<string, string> = {
   'gamification.lb.meWhere': 'Where the gap is',
   'gamification.lb.meWhereNone': 'The gap does not come from a single pillar.',
   'gamification.lb.meNotRanked': 'You do not appear in this ranking yet.',
+  'gamification.lb.layerAll': 'All layers',
+  'gamification.lb.layerNote': 'Pick a layer and both the ranking and your position compare only the people in it.',
+  'gamification.lb.layerOf': 'in the {layer} layer',
   'gamification.tr.title': 'Research Stream Ranking — Cycle 4',
   'gamification.tr.formula': 'Score = (avg points × 1) + (active members × 10)',
   'gamification.tr.empty': 'No stream data available.',

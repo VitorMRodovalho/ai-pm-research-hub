@@ -1531,6 +1531,7 @@ const esLATAM: Record<string, string> = {
   'role.chapter_liaison': 'Punto Focal',
   'role.deputy_manager': 'Vice-GP',
   'role.institutional_auditor': 'Auditor Institucional',
+  'role.alumni': 'Egresado',
 
   // ── Attendance page ──
   'attendance.title': 'Asistencia & Horas de Impacto',
@@ -3280,6 +3281,9 @@ const esLATAM: Record<string, string> = {
   'gamification.lb.meWhere': 'Dónde está la diferencia',
   'gamification.lb.meWhereNone': 'La diferencia no viene de un solo pilar.',
   'gamification.lb.meNotRanked': 'Aún no apareces en este ranking.',
+  'gamification.lb.layerAll': 'Todas las capas',
+  'gamification.lb.layerNote': 'Al elegir una capa, el ranking y tu posición comparan solo a quienes están en ella.',
+  'gamification.lb.layerOf': 'en la capa {layer}',
   'gamification.tr.title': 'Ranking de Líneas — Ciclo 4',
   'gamification.tr.formula': 'Score = (promedio puntos × 1) + (miembros activos × 10)',
   'gamification.tr.empty': 'Sin datos de líneas disponibles.',

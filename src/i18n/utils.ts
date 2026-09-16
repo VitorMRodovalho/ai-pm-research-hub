@@ -79,15 +79,26 @@ export function getRoleLabel(role: string, lang: Lang = DEFAULT_LANG): string {
 
 /**
  * Get localized role labels map (for use in client-side JS).
+ *
+ * #2297 — DERIVADO do dicionario, nao de uma lista de nomes. A lista fixa anterior tinha 11
+ * papeis e omitia `chapter_liaison`, `deputy_manager` e `alumni`, que sao valores VIVOS de
+ * `members.operational_role`. Um consumidor que pedisse o rotulo de um papel fora da lista
+ * recebia o proprio valor cru de volta, e o papel parecia nao existir.
+ *
+ * Derivar pelo prefixo faz qualquer entrada `role.*` nova aparecer sozinha, o que e o padrao do
+ * repo (guard derivado do catalogo em vez de lista de nomes). Ampliar e seguro aqui porque os
+ * dois consumidores (`Nav.astro`, `TeamSection.astro`) leem por CHAVE com fallback para o valor
+ * cru, e nenhum ITERA o mapa: ganhar chaves nao muda o que eles renderizam.
  */
 export function getRoleLabelsMap(lang: Lang = DEFAULT_LANG): Record<string, string> {
-  const roles = [
-    'manager', 'tribe_leader', 'comms_leader', 'researcher', 'ambassador',
-    'curator', 'sponsor', 'founder', 'facilitator', 'communicator', 'guest'
-  ];
   const map: Record<string, string> = {};
-  for (const r of roles) {
-    map[r] = t(`role.${r}`, lang);
+  const dict = dictionaries[lang] ?? dictionaries[DEFAULT_LANG];
+  for (const key of Object.keys(dict)) {
+    // Só o nível raiz: `attendance.role.x` e `profile.oprole.x` sao outros namespaces.
+    if (!key.startsWith('role.')) continue;
+    const role = key.slice('role.'.length);
+    if (!role || role.includes('.')) continue;
+    map[role] = t(key, lang);
   }
   return map;
 }
