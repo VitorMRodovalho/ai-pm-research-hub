@@ -17,9 +17,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
-const MIG = resolve(ROOT, 'supabase/migrations/20260805000400_1217_initiative_roster_members_from_primitive.sql');
+// ⚠️ #1932: este guard FIXAVA a migration de 05/08 e afirmava o corpo dela. Quando a #2334
+// redefiniu `get_initiative_roster_members` (para unir os visitantes), o texto fixado continuou
+// no disco e este guard seguiu VERDE descrevendo um corpo que a produção não executa mais — o
+// modo de falha que o #1932 existe para pegar, e que ele pegou. Agora lê a captura VIGENTE.
+const MIG_ORIGINAL = resolve(ROOT, 'supabase/migrations/20260805000400_1217_initiative_roster_members_from_primitive.sql');
 const PAGE = resolve(ROOT, 'src/pages/tribe/[id].astro');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
@@ -27,11 +32,14 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
-const mig = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
+const captura = latestFunctionCapture(ROOT, 'get_initiative_roster_members');
+// `block` inclui o cabeçalho (assinatura, SECURITY DEFINER); `body` traz só o miolo.
+const mig = captura?.block ?? '';
 const page = existsSync(PAGE) ? readFileSync(PAGE, 'utf8') : '';
 
 test('#1217: migration defines get_initiative_roster_members from the roster primitive', () => {
-  assert.ok(existsSync(MIG), 'migration file present');
+  assert.ok(mig, 'nenhuma migration define get_initiative_roster_members — sem captura, este guard ' +
+    'ficaria VERDE por não achar nada, que é o modo de falhar mais silencioso que existe');
   assert.match(mig, /CREATE OR REPLACE FUNCTION public\.get_initiative_roster_members\(p_initiative_id uuid\)/);
   assert.match(mig, /FROM public\.v_initiative_roster r/, 'roster derives from the engagement primitive, not the cache');
   assert.ok(!/\.initiative_id\s*=\s*p_initiative_id[\s\S]*FROM public\.public_members\b(?![\s\S]*v_initiative_roster)/.test(mig) || /v_initiative_roster/.test(mig), 'primitive is the source');
@@ -42,14 +50,38 @@ test('#1217: RPC is confidential-gated and SECURITY DEFINER (LGPD/ADR-0105 parit
   assert.match(mig, /IF NOT public\.rls_can_see_initiative\(p_initiative_id\) THEN\s*RETURN '\[\]'::jsonb;/);
 });
 
-test('#1217: RPC grants are authenticated-only (tribe page denies anon before members load)', () => {
-  assert.match(mig, /REVOKE ALL ON FUNCTION public\.get_initiative_roster_members\(uuid\) FROM PUBLIC, anon;/);
-  assert.match(mig, /GRANT EXECUTE ON FUNCTION public\.get_initiative_roster_members\(uuid\) TO authenticated, service_role;/);
+test('#1217: a concessão original revoga anon (a migration que CONCEDEU é a fonte do ACL)', () => {
+  // ⚠️ O ACL não vive no corpo da função: `CREATE OR REPLACE` PRESERVA os grants. Afirmar o GRANT
+  // contra a captura vigente reprovaria sobre estado correto toda vez que alguém redefinisse o
+  // corpo sem repetir a concessão — que é o caminho normal. Então esta camada olha a migration que
+  // de fato concedeu, e a camada viva abaixo confirma o efeito no catálogo.
+  assert.ok(existsSync(MIG_ORIGINAL), 'a migration que concedeu o ACL sumiu do disco');
+  const orig = readFileSync(MIG_ORIGINAL, 'utf8');
+  assert.match(orig, /REVOKE ALL ON FUNCTION public\.get_initiative_roster_members\(uuid\) FROM PUBLIC, anon;/);
+  assert.match(orig, /GRANT EXECUTE ON FUNCTION public\.get_initiative_roster_members\(uuid\) TO authenticated, service_role;/);
+});
+
+test('#1217 DB: anon NÃO alcança a RPC hoje (o ACL vigente, não o texto que o concedeu)',
+  { skip: !dbGated && skipMsg }, async () => {
+  const anonKey = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonKey) return;
+  const anon = createClient(SUPABASE_URL, anonKey, { auth: { persistSession: false } });
+  const { error } = await anon.rpc('get_initiative_roster_members',
+    { p_initiative_id: '00000000-0000-0000-0000-000000000000' });
+  assert.ok(error, 'anon executou a RPC de roster: o REVOKE se perdeu em algum CREATE OR REPLACE');
+  assert.notEqual(error.code, 'PGRST202',
+    'anon foi barrado porque a função sumiu do schema cache, não porque o ACL a protege');
 });
 
 test('#1217: DISTINCT ON person keeps the highest-authority role (leader wins)', () => {
-  assert.match(mig, /SELECT DISTINCT ON \(r\.person_id\)/);
-  assert.match(mig, /WHEN 'leader' THEN 0/);
+  // O alias deixou de ser fixo em `r` quando a #2334 passou a unir efetivos e visitantes numa
+  // subconsulta (`u`). O que este guard protege é a PRECEDÊNCIA — uma pessoa aparece uma vez, com
+  // o papel de maior autoridade —, não a letra do alias.
+  assert.match(mig, /SELECT DISTINCT ON \(\w+\.person_id\)/,
+    'a deduplicação por pessoa sumiu: a mesma pessoa passaria a aparecer duas vezes no roster');
+  assert.match(mig, /WHEN 'leader' THEN 0/,
+    'a prioridade de líder sumiu da ordenação: o DISTINCT ON poderia eleger um papel menor e o ' +
+    'líder desapareceria da própria tribo — a regressão original do #1217');
 });
 
 test('#1217: tribe page loads the members list via the RPC (not public_members.initiative_id cache)', () => {
