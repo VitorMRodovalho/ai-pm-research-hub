@@ -4796,7 +4796,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_weekly_member_digest — preview/inspect a member's pending weekly digest
-  mcp.tool("get_weekly_member_digest", "Returns the weekly digest payload for a member: 7 sections (cards, engagements, events, publications, broadcasts, governance, achievements) + consumed_notification_ids. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.", {
+  mcp.tool("get_weekly_member_digest", "Returns the weekly digest payload for a member: 9 sections (cards, engagements, events, attendance_reminders_pending, publications, broadcasts, governance, other_notifications, achievements) + consumed_notification_ids, which since #2286 lists exactly the ids that went into those sections. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.", {
     member_id: z.string().describe("Member UUID")
   }, async (params: { member_id: string }) => {
     const start = Date.now();

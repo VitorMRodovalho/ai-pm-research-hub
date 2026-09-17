@@ -147,6 +147,13 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
   const broadcasts = sections.broadcasts || []
   const governance = sections.governance_pending || []
   const engagements = sections.engagements_new || []
+  // #2286: tres secoes que a RPC monta e este renderizador nunca desenhou. As duas
+  // primeiras existem desde p95 #99 (1A/1B) e tinham ZERO ocorrencia no repositorio:
+  // o carimbo `digest_delivered_at` as consumia e o e-mail jamais as mostrou.
+  // `other_notifications` e o balde do ELSE da RPC — o que garante que um tipo novo
+  // apareca por default em vez de sumir por omissao.
+  const attendancePending = sections.attendance_reminders_pending || []
+  const otherNotifications = sections.other_notifications || []
   const achievements = sections.achievements || {}
   const certs = achievements.certificates_issued || []
   const xp = Number(achievements.xp_delta || 0)
@@ -174,15 +181,24 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
       ${items.map(x => `<li>${escapeHtml(x.title || x.type || 'Sem título')}</li>`).join('')}
     </ul>`
 
+  // #2286: as notificacoes da sobra so tem valor com um trecho do corpo — o titulo
+  // sozinho ("Voce tem pendencias") nao diz de que se trata.
+  const renderNotificationList = (items: any[]) => items.length === 0 ? '' :
+    `<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">
+      ${items.map(x => `<li><strong>${escapeHtml(x.title || x.type || 'Sem título')}</strong>${x.body ? ` — ${escapeHtml(String(x.body).slice(0, 160))}${String(x.body).length > 160 ? '…' : ''}` : ''}</li>`).join('')}
+    </ul>`
+
+  const newAssignments = cards.new_assignments || []
   const overdue = cards.overdue_7plus || []
   const thisWeek = cards.this_week_pending || []
   const nextWeek = cards.next_week_due || []
-  const cardsCount = overdue.length + thisWeek.length + nextWeek.length
+  const cardsCount = overdue.length + thisWeek.length + nextWeek.length + newAssignments.length
 
   let cardsContent = ''
   if (overdue.length > 0) cardsContent += `<p style="margin: 0 0 6px 0; color: #d32f2f; font-size: 13px; font-weight: 600;">Atrasados há mais de 7 dias:</p>${renderCardList(overdue, true)}`
   if (thisWeek.length > 0) cardsContent += `<p style="margin: 12px 0 6px 0; color: #f57c00; font-size: 13px; font-weight: 600;">Esta semana (vencem nos próximos 7 dias atrás):</p>${renderCardList(thisWeek, true)}`
   if (nextWeek.length > 0) cardsContent += `<p style="margin: 12px 0 6px 0; color: #1976d2; font-size: 13px; font-weight: 600;">Próxima semana:</p>${renderCardList(nextWeek, false)}`
+  if (newAssignments.length > 0) cardsContent += `<p style="margin: 12px 0 6px 0; color: #388e3c; font-size: 13px; font-weight: 600;">Novas atribuições:</p>${renderNotificationList(newAssignments)}`
 
   const certsContent = certs.length > 0
     ? `<p style="margin: 0 0 6px 0; color: #495057; font-size: 13px; line-height: 1.6;">Certificados emitidos:</p>${renderTitleList(certs)}`
@@ -192,7 +208,7 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
     : ''
   const achievementsCount = certs.length + (xp > 0 ? 1 : 0)
 
-  const totalItems = cardsCount + events.length + pubs.length + broadcasts.length + governance.length + engagements.length + achievementsCount
+  const totalItems = cardsCount + events.length + pubs.length + broadcasts.length + governance.length + engagements.length + achievementsCount + attendancePending.length + otherNotifications.length
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
@@ -208,6 +224,8 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
         ${pubs.length > 0 ? sectionBlock('📚 Publicações novas', pubs.length, '#7b1fa2', renderTitleList(pubs)) : ''}
         ${governance.length > 0 ? sectionBlock('⚖️ Governança pendente', governance.length, '#c62828', renderTitleList(governance)) : ''}
         ${achievementsCount > 0 ? sectionBlock('🏆 Conquistas', achievementsCount, '#ffa000', certsContent + xpContent) : ''}
+        ${attendancePending.length > 0 ? sectionBlock('✅ Presença a confirmar', attendancePending.length, '#0288d1', renderNotificationList(attendancePending)) : ''}
+        ${otherNotifications.length > 0 ? sectionBlock('🔔 Outras notificações', otherNotifications.length, '#5e35b1', renderNotificationList(otherNotifications)) : ''}
 
         <div style="text-align: center; margin: 24px 0 0 0;">
           <a href="https://nucleoia.vitormr.dev/profile" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir minha plataforma</a>
