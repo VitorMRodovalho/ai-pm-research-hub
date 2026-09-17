@@ -187,6 +187,7 @@ const TRIBE_I18N = {
     colEngagement: t('tribe.commsHub.colEngagement', lang),
     colLeads: t('tribe.commsHub.colLeads', lang),
   },
+  visitorLabel: t('tribe.roster.visitor', lang),
   oproleLabels: {
     manager: t('profile.oprole.manager', lang),
     deputy_manager: t('profile.oprole.deputyManager', lang),
@@ -1354,9 +1355,15 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     const opRole = m.operational_role || 'researcher';
     const roleColor = OPROLE_COLORS[opRole] || '#94A3B8';
     const roleLabel = OPROLE_LABELS[opRole] || opRole;
-    const roleBadge = opRole !== 'none' && opRole !== 'guest'
-      ? `<span class="inline-block px-2 py-0.5 rounded-md text-[.6rem] font-bold uppercase" style="background:${roleColor}22;color:${roleColor}">${escapeHtml(roleLabel)}</span>`
-      : '';
+    // #2334: o visitante (engajamento `observer` na tribo) tem de ser rotulado PELO VINCULO COM
+    // ESTA TRIBO, nao pelo cache global `operational_role`. Um lider em formacao visitando uma
+    // tribo e `tribe_leader` no cache e apareceria como "Lider de Tribo" numa tribo que ele nao
+    // lidera — foi exatamente o que a tela mostrou em 17/09.
+    const roleBadge = m.is_visitor
+      ? `<span class="inline-block px-2 py-0.5 rounded-md text-[.6rem] font-bold uppercase border border-dashed" style="background:#94A3B815;color:#64748B;border-color:#94A3B8">${escapeHtml(I18N.visitorLabel || 'Visitante')}</span>`
+      : (opRole !== 'none' && opRole !== 'guest'
+        ? `<span class="inline-block px-2 py-0.5 rounded-md text-[.6rem] font-bold uppercase" style="background:${roleColor}22;color:${roleColor}">${escapeHtml(roleLabel)}</span>`
+        : '');
 
     const desigs: string[] = m.designations || [];
     const desigBadges = desigs.map((d: string) =>
@@ -2100,6 +2107,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
               comms_leader: 3,
             };
             members.sort((a: any, b: any) => {
+              // #2334: visitante sempre depois dos efetivos — o cache de papel dele pode ser
+              // `tribe_leader` e o jogaria para o topo de uma tribo que ele nao lidera.
+              if (!!a.is_visitor !== !!b.is_visitor) return a.is_visitor ? 1 : -1;
               const ap = ROLE_PRIO[a.operational_role] ?? 9;
               const bp = ROLE_PRIO[b.operational_role] ?? 9;
               if (ap !== bp) return ap - bp;

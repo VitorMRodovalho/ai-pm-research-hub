@@ -1770,6 +1770,7 @@ const esLATAM: Record<string, string> = {
   'profile.oprole.communicator': 'Multiplicador',
   'profile.oprole.none': 'Sin rol operativo',
   'profile.oprole.guest': 'Invitado',
+  'tribe.roster.visitor': 'Visitante',
   'profile.desig.sponsor': 'Patrocinador',
   'profile.desig.chapterLiaison': 'Punto Focal',
   'profile.desig.ambassador': 'Embajador',

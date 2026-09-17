@@ -1776,6 +1776,7 @@ const ptBR: Record<string, string> = {
   'profile.oprole.communicator': 'Multiplicador',
   'profile.oprole.none': 'Sem papel operacional',
   'profile.oprole.guest': 'Convidado',
+  'tribe.roster.visitor': 'Visitante',
   'profile.desig.sponsor': 'Patrocinador',
   'profile.desig.chapterLiaison': 'Ponto Focal',
   'profile.desig.ambassador': 'Embaixador',
