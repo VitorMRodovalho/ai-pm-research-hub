@@ -141,10 +141,22 @@ houve descarte.
 
 ## 5. Operacao: o convite da reuniao de lideranca
 
-O convite da quinzenal **nao** estava faltando para os lideres em geral — medido: **12 de 12
-lideres COM tribo ja estavam convidados**. Faltavam exatamente os **2 lideres em formacao**, que
-nao tem iniciativa e por isso ficaram fora de uma lista montada por quem tem tribo. Mesma lacuna
-estrutural das **#2333/#2334**: o modelo trata "lider" como quem ja tem tribo.
+O convite da quinzenal **nao** estava faltando para os lideres em geral — medido: dos **14**
+lideres `volunteer/leader` ativos, **12 ja estavam convidados**. Faltavam 2.
+
+⚠️ **A causa nao esta decidida pelo dado, e as duas hipoteses coincidem.** Os 2 que faltavam sao
+ao mesmo tempo (a) os unicos **lideres em formacao** (sem iniciativa) e (b) os **2 aprovados mais
+recentemente** — concedidos em 14 e 15/08, contra 13/04 a 06/07 de todos os outros. O convite foi
+criado em 20/07 e atualizado por ultimo em 03/09, entao os dois chegaram depois da criacao e
+escaparam da atualizacao de setembro. Como os dois conjuntos sao o MESMO conjunto, esta medicao
+**nao distingue** "ficou fora porque nao tem tribo" de "ficou fora porque entrou depois da ultima
+edicao manual". Para separar, seria preciso um lider em formacao antigo ou um lider com tribo
+recente — nenhum dos dois existe hoje.
+
+O que a medicao AFIRMA com seguranca: **nao existe automacao nenhuma.** A lista de convidados da
+serie e mantida a mao, e nada dispara quando um engajamento `role='leader'` ativo e criado. Por
+isso o conserto vale independentemente de qual hipotese for a verdadeira. Relacionado a
+**#2333/#2334**, onde o modelo trata "lider" como quem ja tem tribo.
 
 Os dois foram adicionados **na serie** (nao so na instancia de hoje — senao a falha volta na
 proxima quinzena), mais uma pesquisadora como opcional. ⚠️ Havia **duas pessoas de mesmo primeiro
