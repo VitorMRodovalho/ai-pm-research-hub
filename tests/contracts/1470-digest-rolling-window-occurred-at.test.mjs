@@ -31,12 +31,18 @@ const migRaw = existsSync(MIGP) ? readFileSync(MIGP, 'utf8') : '';
  * #1990: `get_gamification_category_activity` foi redefinida depois desta migration (troca do
  * portao resourceless). Fixar o CAMINHO de 20260805000488 faria estas assercoes falarem de um texto
  * que a producao nao executa mais — a classe do #1932. As assercoes sobre ELA leem a captura
- * VIGENTE; as de `get_weekly_member_digest`, que ninguem redefiniu, seguem no arquivo original.
+ * VIGENTE.
+ *
+ * #2286 (17/09/2026): `get_weekly_member_digest` TAMBEM foi redefinida — o carimbo do digest passou
+ * a derivar do que foi renderizado. A frase que estava aqui ("que ninguem redefiniu") deixou de ser
+ * verdade no mesmo commit, e o meta-guard do #1932 reprovou antes do push. As assercoes dela agora
+ * leem a captura vigente pelo mesmo motivo que as da irma: o arquivo de agosto virou historia.
  */
 // ROOT em variavel de proposito: o scanner do #1932 casa `latestFunctionCapture(<algo sem
 // parenteses>, 'nome')`, entao `process.cwd()` inline quebraria o reconhecimento da divida.
 const ROOT = process.cwd();
 const catAtual = maskLineComments(latestFunctionCapture(ROOT, 'get_gamification_category_activity').block);
+const digestAtual = maskLineComments(latestFunctionCapture(ROOT, 'get_weekly_member_digest').block);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -46,16 +52,16 @@ const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 // ── STATIC ────────────────────────────────────────────────────────────────────────
 test('#1470 static: migration file exists + redefines both rolling-window readers', () => {
   assert.ok(existsSync(MIGP), 'migration 20260805000488 exists');
-  assert.match(migRaw, /CREATE OR REPLACE FUNCTION public\.get_weekly_member_digest\(p_member_id uuid\)/, 'redefines get_weekly_member_digest');
+  assert.match(digestAtual, /CREATE OR REPLACE FUNCTION public\.get_weekly_member_digest\(p_member_id uuid\)/, 'a captura vigente define get_weekly_member_digest');
   assert.match(catAtual, /CREATE OR REPLACE FUNCTION public\.get_gamification_category_activity\(p_window_days integer/, 'a captura vigente define get_gamification_category_activity');
 });
 
 test('#1470 static: xp_delta windows by occurred_at fact date, not bare created_at', () => {
   // the xp_delta subquery uses COALESCE(occurred_at, created_at)
-  assert.match(migRaw, /'xp_delta',[\s\S]*?FROM public\.gamification_points gp\s*\n\s*WHERE gp\.member_id = p_member_id\s*\n\s*AND COALESCE\(gp\.occurred_at, gp\.created_at\) >= v_window_start/i,
+  assert.match(digestAtual, /'xp_delta',[\s\S]*?FROM public\.gamification_points gp\s*\n\s*WHERE gp\.member_id = p_member_id\s*\n\s*AND COALESCE\(gp\.occurred_at, gp\.created_at\) >= v_window_start/i,
     'xp_delta uses COALESCE(occurred_at, created_at) >= v_window_start');
   // and NOT the old bare created_at window on gamification_points
-  assert.doesNotMatch(migRaw, /gp\.member_id = p_member_id\s*\n\s*AND gp\.created_at >= v_window_start/i, 'no bare created_at window remains in xp_delta');
+  assert.doesNotMatch(digestAtual, /gp\.member_id = p_member_id\s*\n\s*AND gp\.created_at >= v_window_start/i, 'no bare created_at window remains in xp_delta');
 });
 
 test('#1470 static: category_activity windows (p_window_days + 7d) use occurred_at', () => {

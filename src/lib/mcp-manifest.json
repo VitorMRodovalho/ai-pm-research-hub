@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-14T18:15:04.308Z",
+  "generated_at": "2026-09-17T15:22:44.466Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 396,
   "by_domain": {
@@ -2734,7 +2734,7 @@
     },
     {
       "name": "get_weekly_member_digest",
-      "description": "Returns the weekly digest payload for a member: 7 sections (cards, engagements, events, publications, broadcasts, governance, achievements) + consumed_notification_ids. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.",
+      "description": "Returns the weekly digest payload for a member: 9 sections (cards, engagements, events, attendance_reminders_pending, publications, broadcasts, governance, other_notifications, achievements) + consumed_notification_ids, which since #2286 lists exactly the ids that went into those sections. Used by send-weekly-member-digest cron (Saturday 12 UTC) and by admins/PM previewing what a member will receive.",
       "domain": "health",
       "permission": "read",
       "is_sensitive": false
