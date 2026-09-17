@@ -1770,6 +1770,7 @@ const enUS: Record<string, string> = {
   'profile.oprole.communicator': 'Communicator',
   'profile.oprole.none': 'No operational role',
   'profile.oprole.guest': 'Guest',
+  'tribe.roster.visitor': 'Visitor',
   'profile.desig.sponsor': 'Sponsor',
   'profile.desig.chapterLiaison': 'Chapter Liaison',
   'profile.desig.ambassador': 'Ambassador',
