@@ -110,7 +110,7 @@ test('#2341 db: aposentar SEM motivo e RECUSADO pelo banco (exercido, nao lido d
     // um catalogo diz o que esta declarado, e so a escrita diz o que acontece.
     const alvo = '__fixture-2341-sem-motivo';
     const { error } = await sb().from('digest_cron_expectations').insert({
-      jobname: alvo, purpose: 'fixture do guard #2341',
+      jobname: alvo, description: 'fixture do guard #2341',
       expected_schedule: '0 12 * * 6', max_days_between_runs: 8,
       retired_at: new Date().toISOString(), retired_reason: null,
     });
@@ -118,6 +118,9 @@ test('#2341 db: aposentar SEM motivo e RECUSADO pelo banco (exercido, nao lido d
     if (!error) await sb().from('digest_cron_expectations').delete().eq('jobname', alvo);
     assert.ok(error, 'retired_at sem retired_reason tem de ser RECUSADO — sem isso a tabela ' +
       'volta a guardar silencio sem causa (#2341)');
+    // ⚠️ O assert abaixo checa o TIPO do erro, nao a sua existencia — e foi ele que pegou o
+    // rename de `purpose` para `description`: o insert falhou com PGRST204 (coluna inexistente),
+    // nao com violacao de CHECK. Um `assert.ok(error)` generico teria passado pelo motivo errado.
     assert.match(String(error.message + ' ' + (error.code ?? '')), /23514|check|violates/i,
       `esperava violacao de CHECK, veio: ${error.code} ${error.message}`);
   });

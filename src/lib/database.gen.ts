@@ -8800,28 +8800,28 @@ export type Database = {
       digest_cron_expectations: {
         Row: {
           created_at: string
+          description: string
           expected_schedule: string
           jobname: string
           max_days_between_runs: number
-          purpose: string
           retired_at: string | null
           retired_reason: string | null
         }
         Insert: {
           created_at?: string
+          description: string
           expected_schedule: string
           jobname: string
           max_days_between_runs: number
-          purpose: string
           retired_at?: string | null
           retired_reason?: string | null
         }
         Update: {
           created_at?: string
+          description?: string
           expected_schedule?: string
           jobname?: string
           max_days_between_runs?: number
-          purpose?: string
           retired_at?: string | null
           retired_reason?: string | null
         }
