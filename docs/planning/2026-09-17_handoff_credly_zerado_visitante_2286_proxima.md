@@ -182,6 +182,36 @@ SELECT (SELECT count(*) FROM public._credly_unmapped_rows()) detector_credly,   
 
 ---
 
+## 6b. PEDIDO ABERTO do dono (17/09, nao executado): renomear a tribo 4 nos 3 idiomas
+
+O dono pediu **"transformacao organizacional" no lugar de "change"** na tribo 4. Ao medir, o nome
+JA ESTA DIVERGENTE entre as duas tabelas — quem for executar precisa saber disso antes:
+
+| onde | valor medido em 17/09 |
+|---|---|
+| `initiatives.title` (V4) | **"Cultura & Transformacao Organizacional"** — ja renomeado |
+| `tribes.name` (legado) | "Cultura & Change" |
+| `tribes.name_i18n` | pt: "Cultura & Change" · en: "Culture & Change" · es: "Cultura & Cambio" |
+| `initiatives.metadata->name_i18n` | pt: "Cultura & Change" · en: "Culture & Change" · es: "Cultura & Cambio" |
+
+⚠️ **O `pt` do i18n nunca foi traduzido** — esta "Cultura & Change" nos dois lugares, ou seja, o
+i18n pt-BR carrega a palavra inglesa. Isso e anterior ao pedido.
+
+⇒ Sao **QUATRO** superficies para alinhar, nao uma. O V4 ja foi mudado em algum momento e o legado
+ficou para tras; renomear so onde a tela de admin mostra repetiria a divergencia num terceiro lugar.
+
+Nomes sugeridos (nao aplicados, decisao do dono):
+- pt: `Cultura & Transformacao Organizacional`
+- en: `Culture & Organizational Transformation`
+- es: `Cultura & Transformacion Organizacional`
+
+**Antes de escrever:** `grep -rl "Cultura & Change" tests/ src/ supabase/ docs/` — a varredura de
+17/09 achou o nome em `src/lib/admin/constants.ts`, `src/i18n/pt-BR.ts`, `src/i18n/es-LATAM.ts`,
+`src/components/admin/modals/AllocateTribeModal.astro`, `src/pages/admin/webinars.astro` e em varias
+migrations historicas (essas NAO se reescrevem: migration e historia imutavel).
+
+Tela onde o dono viu: `/admin/initiatives`.
+
 ## 7. Prompt de arranque sugerido
 
 > Ler `docs/planning/2026-09-17_handoff_credly_zerado_visitante_2286_proxima.md`.
