@@ -18,6 +18,31 @@ such and never let it become a stated antes/depois.
   reasoning backward from "after".
 - Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
 
+## Asserção de guard amarra CONDIÇÃO ao RESULTADO — presença de string não é prova (MANDATÓRIO)
+
+**IMPORTANT — YOU MUST:** ao escrever um guard que afirma sobre um corpo (SQL, TS, `.astro`), a
+asserção tem de casar **a condição junto com o resultado que ela produz**, dentro do bloco que
+decide. `includes('x')` ou `/x/` solto num corpo de centenas de linhas fica **verde com o
+mecanismo removido**, porque a string sobrevive em algum lugar que não decide nada.
+
+- Três incidentes em 17/09/2026, todos pegos pelo teste de mutação e **nenhum por leitura**:
+  1. `#2335`: `/is_visitor/` solto passava com o campo **removido do UNION** — a string sobrevivia
+     nos comentários.
+  2. `#2286`: `ef.includes('other_notifications')` passava com o **bloco do e-mail removido** —
+     casava o comentário que eu mesmo escrevi para explicar a seção.
+  3. `#2341`: `/retired_at IS NOT NULL/` passava com a **classificação inteira neutralizada** —
+     casava a contagem de `retired_jobs` no `RETURN`.
+- **A forma que funciona:** recortar o bloco que decide e afirmar dentro dele, ligando os dois lados
+  — `assert.match(bloco, /retired_at IS NOT NULL\s+THEN\s+'aposentado'/)`, não
+  `assert.match(corpo, /retired_at/)`. Para TS, mascarar comentários antes de medir
+  (`maskJsComments`); para SQL, `maskLineComments`.
+- **Mutação é obrigatória, e a mutação tem de MUDAR O ARQUIVO de fato** (compare o md5 antes e
+  depois; uma mutação que não aplicou lê como "guard aprovou"). Cada asserção precisa de uma
+  mutação que a faça reprovar, e o controle sem mutação precisa passar no fim.
+- **Mutar o ARQUIVO não exercita camada VIVA.** Quando o guard afirma sobre o banco, a prova é
+  evidência direta + controle positivo — exercer a função com impersonação e mostrar o estado
+  mudando nos dois sentidos, como em `#2341` (expectativa sem cron ⇒ `red`).
+
 ## Antes de propor uma DECISÃO sobre uma tabela, leia os guards dela (MANDATÓRIO)
 
 **IMPORTANT — YOU MUST:** antes de montar opções para o dono sobre o que fazer com os DADOS de uma
