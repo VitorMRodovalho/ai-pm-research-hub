@@ -8797,6 +8797,36 @@ export type Database = {
         }
         Relationships: []
       }
+      digest_cron_expectations: {
+        Row: {
+          created_at: string
+          expected_schedule: string
+          jobname: string
+          max_days_between_runs: number
+          purpose: string
+          retired_at: string | null
+          retired_reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          expected_schedule: string
+          jobname: string
+          max_days_between_runs: number
+          purpose: string
+          retired_at?: string | null
+          retired_reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          expected_schedule?: string
+          jobname?: string
+          max_days_between_runs?: number
+          purpose?: string
+          retired_at?: string | null
+          retired_reason?: string | null
+        }
+        Relationships: []
+      }
       document_comment_edits: {
         Row: {
           comment_id: string
@@ -29327,6 +29357,17 @@ export type Database = {
         }[]
       }
       _audit_curation_artifact_snapshot_security: { Args: never; Returns: Json }
+      _audit_digest_cron_coverage: {
+        Args: never
+        Returns: {
+          ativo: boolean
+          esta_no_cron: boolean
+          jobname: string
+          retired: boolean
+          schedule_esperado: string
+          schedule_real: string
+        }[]
+      }
       _audit_doc_type_check_values: { Args: never; Returns: string[] }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
       _audit_function_execute_acl: {
