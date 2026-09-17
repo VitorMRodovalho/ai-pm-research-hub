@@ -108,25 +108,45 @@ test('C · toda categoria decidida existe no classificador (domínio derivado, n
   }
 });
 
-test('D · nenhum badge com decisão registrada aparece no detector',
+test('D · o detector é EXATAMENTE o universo menos os decididos (diferença simétrica)',
   { skip: !dbGated && skipMsg }, async () => {
   const c = sb();
+
+  // ⚠️ ESTA CAMADA FOI REESCRITA quando a fila zerou. A primeira versão afirmava "nenhum decidido
+  // aparece no detector" e carregava um controle positivo exigindo detector NÃO-VAZIO — e o próprio
+  // comentário dela previa o que aconteceu: registradas as 39 decisões, o detector ficou vazio e o
+  // controle passou a reprovar sobre estado correto. Contagem e não-vazio eram os sinais errados.
+  //
+  // O sinal certo é DIFERENÇA SIMÉTRICA nos dois sentidos, que funciona com a fila cheia OU vazia:
+  //   universo − decididos  deve ser exatamente o que o detector lista  (nada esquecido)
+  //   decididos − universo  deve ser vazio                              (nenhuma decisão órfã)
+  const { data: pontos, error: e0 } = await c
+    .from('gamification_points').select('reason')
+    .eq('category', 'badge').ilike('reason', 'Credly:%');
+  assert.equal(e0, null, `leitura de gamification_points falhou: ${e0?.message}`);
+  const universo = new Set(pontos.map(p => p.reason.replace(/^Credly:\s*/, '')));
+  assert.ok(universo.size > 0,
+    'nenhum lançamento Credly em `badge`: o universo está vazio e esta camada não mediria nada');
+
   const { data: decisoes, error: e1 } = await c.from(TABELA).select('badge_name');
   assert.equal(e1, null);
+  const decididos = new Set(decisoes.map(d => d.badge_name));
+
   const { data: pendentes, error: e2 } = await c.rpc('_credly_unmapped_rows');
   assert.equal(e2, null, `_credly_unmapped_rows falhou: ${e2?.message}`);
+  const listados = new Set(pendentes.map(p => p.badge_name));
 
-  const decididos = new Set(decisoes.map(d => d.badge_name));
-  const vazando = pendentes.filter(p => decididos.has(p.badge_name)).map(p => p.badge_name);
-  assert.deepEqual(vazando, [],
-    `o detector listou badge que JÁ tem decisão registrada: ${vazando.join(', ')}. O filtro do ` +
-    'detector parou de funcionar (ou o nome divergiu do que a tabela guarda).');
+  const esperado = [...universo].filter(n => !decididos.has(n)).sort();
+  const obtido = [...listados].sort();
+  assert.deepEqual(obtido, esperado,
+    'o detector divergiu de (universo − decididos). Se sobrou nome que já tem decisão, o filtro ' +
+    'parou de funcionar ou o nome divergiu do que a tabela guarda; se falta nome sem decisão, o ' +
+    'detector ficou cego para badge novo — que é a razão de ele existir.');
 
-  // Controle positivo: o detector não pode estar vazio por acidente — se estivesse, a asserção
-  // acima passaria sem medir nada, que é o modo de falhar mais silencioso que existe.
-  assert.ok(pendentes.length > 0,
-    'o detector voltou VAZIO. Ou toda decisão foi registrada (então esta camada perdeu o poder de ' +
-    'discriminar e precisa de outro controle), ou a consulta quebrou.');
+  const orfas = [...decididos].filter(n => !universo.has(n));
+  assert.deepEqual(orfas, [],
+    `há decisão registrada para badge que não existe em gamification_points: ${orfas.join(', ')}. ` +
+    'Ou o nome foi digitado errado (e a decisão nunca vai casar), ou o lançamento foi estornado.');
 });
 
 test('E · o classificador VIVO concorda com cada decisão registrada',
