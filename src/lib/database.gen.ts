@@ -7950,6 +7950,110 @@ export type Database = {
           },
         ]
       }
+      credly_badge_decisions: {
+        Row: {
+          badge_name: string
+          created_at: string
+          decided_by: string | null
+          decided_category: string
+          decided_on: string
+          decision_source: string
+          rationale: string
+          updated_at: string
+        }
+        Insert: {
+          badge_name: string
+          created_at?: string
+          decided_by?: string | null
+          decided_category: string
+          decided_on: string
+          decision_source: string
+          rationale: string
+          updated_at?: string
+        }
+        Update: {
+          badge_name?: string
+          created_at?: string
+          decided_by?: string | null
+          decided_category?: string
+          decided_on?: string
+          decision_source?: string
+          rationale?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credly_badge_decisions_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       cron_run_log: {
         Row: {
           completed_at: string | null
