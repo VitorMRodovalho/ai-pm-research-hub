@@ -126,11 +126,45 @@ loudness a menos não é, e o YouTube atenua quem passa de −14 mas **não ampl
   dispensou o passo 5 (deslocar legendas), que é o que mais custa quando existe.
 - **Sem miniatura**, por padrão medido: as três Lideranças anteriores usam frame automático.
 
+## 5b. ⚠️ PENDENTE: o vídeo não está registrado no evento, e o portão estava fechado
+
+A Liderança #12 está no ar, mas `events.youtube_url` e `events.recording_url` seguem **NULL**.
+Registrar **é** a convenção da casa, não invenção: das 24 reuniões de liderança, **8 têm** o link, e
+entre as recentes são #6, #8, #9 e #10 — todas as que tiveram vídeo publicado.
+
+⚠️ **Isto corrige uma afirmação do handoff anterior** (`..._hook_de_ddl_e_o_que_ficou.md`, seção 6),
+que diz que essas colunas estão "NULL em TODAS as reuniões de liderança" e conclui que **"o campo é
+morto"**. Falso: aquela leitura olhou só #11 a #18 (recentes e futuras) e generalizou. Medido em
+18/09: **49 de 753** eventos têm `youtube_url`, e **8 de 24** entre as lideranças. O campo é vivo, e
+NULL ali **é** evidência de ausência.
+
+**Não apliquei porque o portão estava fechado:** 1 PR aberta (#2367) e **4 jobs de banco em voo**.
+Escrita de DADO no banco compartilhado derruba PR alheia igual a DDL — é o ponto cego que a #2363
+consertou hoje de manhã, e seria irônico atropelá-lo à noite.
+
+**Nenhum guard trava essas colunas:** 118 arquivos em `tests/contracts/` leem `events`, e
+`grep -rln 'youtube_url\|recording_url' tests/contracts/` volta **vazio**.
+
+Aplicar quando as DUAS contagens derem zero (formato copiado da #10, que usa o link curto):
+
+```sql
+UPDATE events
+SET youtube_url   = 'https://youtu.be/JodNJgeltgw',
+    recording_url = 'https://youtu.be/JodNJgeltgw'
+WHERE title = 'Reunião de Liderança #12';
+-- conferir DEPOIS, com consulta nova:
+-- SELECT title, youtube_url, recording_url FROM events WHERE title = 'Reunião de Liderança #12';
+```
+
+⚠️ A #11 (03/09) também está sem vídeo e sem link — mas ali o vídeo **nunca foi publicado**, então é
+outro trabalho, não este.
+
 ## 6. ABERTO
 
 | # | o que | estado |
 |---|---|---|
 | — | `auth_analytics.py` | **precisa do dono** (login no navegador) |
+| — | `events.youtube_url` da Liderança #12 | **UPDATE pronto na seção 5b**, portão estava fechado |
 | #2367 | reforma da skill `youtube-publicacao` | **PR aberta**, CI rodando |
 | — | 23 vídeos **não listados** ainda sem idioma declarado | fora do escopo autorizado hoje |
 | #2362 | `REVOKE` + guard derivado de `_test_*` | issue aberta, **não aplicado** |
