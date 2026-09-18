@@ -23,10 +23,15 @@ descrição (3.546 chars), 15 tags, `categoryId=27`, `privacyStatus=unlisted`,
 Nada pendente neste item. `duration` lia `P0D` no carimbo porque o YouTube ainda processava; não é
 defeito.
 
-**Limpeza não feita, de propósito:** `~/projects/_pmo/youtube/lideranca-17set/` tem **13 GB**
-(3 wavs + 4 mp4s). Apagar é irreversível e o dono não autorizou. Para limpar, manter `origem.mp4`,
-`final3.mp4`, `meta.json`, `tx/` e `legendas/`, e remover `audio_master.wav`, `audio_norm*.wav`,
-`audio16k.wav`, `final.mp4`, `final2.mp4`, `final4.mp4`.
+**Limpeza FEITA** (autorizada pelo dono, 18/09 ~17h50 UTC): o diretório de trabalho saiu de
+**12.999 MB para 2.180 MB**, liberando **10.818 MB**. Removidos, um a um e cada qual confirmado:
+`audio_master.wav`, `audio16k.wav`, `audio_norm{,2,3,4}.wav`, `final.mp4`, `final2.mp4`,
+`final4.mp4` — todos derivados e regeneráveis a partir de `origem.mp4`.
+
+Mantidos e **verificados depois** da remoção: `origem.mp4` (md5 `1264e7e9…`, idêntico ao do Drive),
+`final3.mp4` (1.172.572.022 bytes), `tx/` e `legendas/` com 1.165 cues nos três idiomas, e
+`meta.json`. Antes de apagar, cinco salvaguardas foram conferidas: vídeo `unlisted` com
+`uploadStatus=uploaded`, três faixas servindo, md5 da origem, presença do final3 e a transcrição.
 
 ## 2. O canal: 53 vídeos com idioma errado, corrigidos
 
