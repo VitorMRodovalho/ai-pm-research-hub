@@ -11797,6 +11797,33 @@ export type Database = {
           },
         ]
       }
+      event_type_digest_audience: {
+        Row: {
+          audience: string
+          created_at: string
+          event_type: string
+          rationale: string
+          retired_at: string | null
+          retired_reason: string | null
+        }
+        Insert: {
+          audience: string
+          created_at?: string
+          event_type: string
+          rationale: string
+          retired_at?: string | null
+          retired_reason?: string | null
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          event_type?: string
+          rationale?: string
+          retired_at?: string | null
+          retired_reason?: string | null
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           agenda_posted_at: string | null
@@ -29369,6 +29396,16 @@ export type Database = {
         }[]
       }
       _audit_doc_type_check_values: { Args: never; Returns: string[] }
+      _audit_event_type_digest_coverage: {
+        Args: never
+        Returns: {
+          aposentado: boolean
+          audiencia: string
+          declarado: boolean
+          event_type: string
+          eventos_na_base: number
+        }[]
+      }
       _audit_function_acl: { Args: { p_function_name: string }; Returns: Json }
       _audit_function_execute_acl: {
         Args: { p_names: string[] }
@@ -29869,6 +29906,7 @@ export type Database = {
         Args: { p_breach: string }
         Returns: Json
       }
+      _test_meeting_close_summary_roundtrip: { Args: never; Returns: Json }
       _tribe_journey_health_data: {
         Args: { p_initiative_id?: string; p_window_days?: number }
         Returns: Json
