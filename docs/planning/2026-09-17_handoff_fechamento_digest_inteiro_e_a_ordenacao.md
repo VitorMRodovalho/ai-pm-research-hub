@@ -3,8 +3,10 @@
 > **Nada aqui e medicao viva.** Carimbado em 18/09 ~02h UTC (23h BRT de 17/09).
 > **Re-meca antes de decidir.** Repositorio publico: este documento nao nomeia ninguem.
 
-**Estado ao encerrar:** `main b95c4b31` · **0 PRs abertas** · invariantes **0 de 44** ·
+**Estado ao encerrar:** `main 70e20051` · **0 PRs abertas** · invariantes **0 de 44** ·
 deploy da main **success** · EF `send-notification-email` **v40** · lane `fix/2351-rota-de-ata` **aberta**.
+> ⚠️ As tres decisoes do dono foram executadas depois deste texto ser escrito — **leia a secao 7b**
+> antes de agir, em especial o hook novo que pede confirmacao antes de `apply_migration`.
 
 ---
 
@@ -181,6 +183,69 @@ permissao nao se edita por pedido de par, mesmo correto — par nao concede esca
 
 ---
 
+## 7b. ADENDO (madrugada de 18/09): as tres decisoes executadas, e um erro meu
+
+O dono decidiu as tres pendencias no mesmo dia. **Todas executadas e mergeadas na PR #2357.**
+
+### Decisao 1 — `browser_guards`: MANTER required, instrumentar primeiro
+
+⚠️ **Dado que mudou a leitura:** o job **ja tentava 2x internamente**
+(`scripts/run_browser_guards_with_retry.sh`, cooldown 5s). Logo cada uma das 10 falhas do dia
+representa **duas** tentativas perdidas, e "flake que o retry conserta" nao se sustenta.
+
+O diagnostico existia so no log bruto (classe do #1910). Agora o script **classifica a assinatura**
+e escreve no `GITHUB_STEP_SUMMARY`:
+
+| assinatura | significado |
+|---|---|
+| `workerd-nao-resolve-BaseLayout` | o flake conhecido do #2343 — **nao e o seu diff**, re-rode |
+| `workerd-jsg-throw` · `timeout-playwright` · `porta-ou-conexao` | outras causas nomeadas |
+| `assinatura-NAO-classificada` | **falha NOVA** — leia o log ANTES de re-rodar |
+
+O ultimo e o terceiro estado: "nao reconheci" nunca se confunde com "sem problema". Mexe em UM
+fator de proposito — o cooldown segue 5s, porque mudar retry e medicao juntos impediria atribuir a
+melhora a qualquer um dos dois.
+
+### Decisao 2 — ordenacao de DDL: hook PreToolUse + regra
+
+Hook em `.claude/settings.json`, matcher `mcp__*__apply_migration`: consulta a fila de PRs e devolve
+`permissionDecision: "ask"` nomeando o motivo quando ela nao esta vazia. Regra MANDATORIA nova no
+`CLAUDE.md` (secao "ANTES de `apply_migration`"). **So o hook e mecanismo** — a regra ja existia em
+memoria nas tres primeiras mordidas e nao impediu nenhuma.
+
+⚠️ **Consequencia pratica para quem assumir:** se aparecer um pedido de confirmacao antes de uma
+DDL, e isto funcionando. Confirme **so** se a ordem ja foi combinada (ex.: com a lane).
+
+### Decisao 3 — settings: 2 linhas inertes e 7 worktrees
+
+Removidas `Write(.env)` e `Write(.git/*)` do principal (o `Edit(` equivalente ja cobria as duas —
+**nao havia brecha**, so o aviso de startup). Os 7 worktrees derivados receberam o `Edit(.git/*)`
+irmao; medido depois: **0 derivados, 0 JSON invalido**.
+
+### ⚠️ O erro que eu cometi no meio disso, e por que importa
+
+A primeira tentativa de alinhar os worktrees usou `s.find()` **sem conferir o retorno**. Recebeu
+`-1` (a entrada nao tem virgula naqueles arquivos), usei `-1` como indice, e **corrompi o JSON dos 7
+arquivos de permissao**. Pior: eu validava **depois** de gravar. Restaurados do git sem perda
+(`git -C <wt> checkout -- .claude/settings.json`) e refeito validando **antes** de escrever.
+
+**E o MESMO padrao que este handoff documenta na secao 5** — verificar a condicao num lugar e
+produzir o resultado em outro. Escrevi a regra para guards as 22h e a violei em Python as 23h. Quem
+for mexer em arquivo de configuracao: **valide o parse ANTES de gravar, e confira o retorno de
+qualquer busca antes de usa-lo como indice.**
+
+### Higiene da maquina
+
+- Dev server orfao (`astro dev --port 39903`, 7h de vida, 1,5 GB) **morto** com OK do dono: liberou
+  **1,65 GB**. Era o que impedia `test:browser:guards` local.
+- ⚠️ **NAO e deste projeto, mas fica registrado:** 7 processos `npm exec astro` orfaos com `cwd` em
+  **`19SGPL-PMIGO`**, reparentados ao systemd, somando **420 MB**, o mais antigo com **1 dia e 12h**.
+  Nenhum escuta porta. Nao foram tocados — sao de outro projeto, e a norma do PMO manda passar pelo
+  fluxo dele.
+- Bundler local do Docker com a rede morta (**~61 B/s medidos de dentro do container**, contra
+  0,088 s do host). Contorno: **`supabase functions deploy --use-api`** (bundle no servidor),
+  que publicou em segundos. Vale como primeira tentativa nesta maquina.
+
 ## 8. Comandos para re-medir
 
 ```bash
@@ -225,5 +290,6 @@ SELECT (SELECT count(*) FILTER (WHERE violation_count>0) FROM public.check_schem
 > consertou.
 > **ANTES de qualquer DDL: `gh pr list --state open` vazio.** A ordenacao mordeu quatro vezes em
 > 17/09 (secao 2), inclusive contra a propria `main`.
-> Tres decisoes esperando o dono: rebaixar `browser_guards` de required (#2343), o hook de
-> `apply_migration` (#2340), e as duas linhas inertes do `settings.json` (secao 7).
+> As tres decisoes que estavam pendentes **ja foram tomadas e executadas** (secao 7b): o
+> `browser_guards` fica required e foi instrumentado, o hook de `apply_migration` esta ativo, e o
+> `settings.json` foi limpo nos 8 checkouts. Nao reabra essas tres.
