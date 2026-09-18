@@ -18,6 +18,30 @@ such and never let it become a stated antes/depois.
   reasoning backward from "after".
 - Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
 
+## ANTES de `apply_migration`: a fila de PRs tem de estar VAZIA (MANDATÓRIO)
+
+**IMPORTANT — YOU MUST:** rode `gh pr list --state open` e confirme **zero** PRs abertas antes de
+qualquer `apply_migration`. `apply_migration` atinge o banco **compartilhado** na hora, e enquanto o
+`.sql` não está no ref sob teste, aquele ref **não explica o estado do banco** — o vermelho está
+CORRETO. A `main` **não é exceção**.
+
+- Quatro mordidas em 17/09/2026, todas da mesma regra:
+  1. `test:verdict` local rodando durante o CI da própria PR ⇒ fixture órfã violou invariante e
+     derrubou **15 asserções** (a suíte escreve em produção e o `cleanup()` morre com a rede);
+  2. branch criada a partir da `main` **depois** de aplicar DDL ⇒ PR de um único `.md` reprovou por
+     tabela órfã;
+  3. DDL aplicada com a `main` ainda sem o arquivo ⇒ **3 alertas do CI Monitor** e ~1h de produção
+     desalinhada;
+  4. a quarta foi **evitada** aplicando com a fila vazia — custo zero.
+- **Um hook `PreToolUse` agora pergunta** (`.claude/settings.json`, matcher
+  `mcp__*__apply_migration`): com PR aberta ele devolve `permissionDecision: ask` e nomeia o
+  motivo. O hook é o mecanismo; esta seção é o porquê. Memória não intercepta — a regra já existia
+  em memória nas três primeiras mordidas e não impediu nenhuma.
+- **Aplicar e commitar são UM passo.** Depois do `apply_migration`: ler a versão registrada,
+  nomear o `.sql` com ela, conferir o md5 do corpo vivo contra o arquivo, commitar. Sem intervalo.
+- **Não rode `npm run test:verdict` enquanto o CI de qualquer PR sua estiver no ar.** Nem o
+  `with-db-lease` (local × local) nem o `wait-for-db-lane` (job × job) cobrem o eixo **local × CI**.
+
 ## Asserção de guard amarra CONDIÇÃO ao RESULTADO — presença de string não é prova (MANDATÓRIO)
 
 **IMPORTANT — YOU MUST:** ao escrever um guard que afirma sobre um corpo (SQL, TS, `.astro`), a
