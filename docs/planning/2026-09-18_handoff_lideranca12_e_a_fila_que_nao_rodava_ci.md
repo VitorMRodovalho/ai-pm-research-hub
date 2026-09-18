@@ -19,6 +19,12 @@ Medido antes e depois, das duas pontas, com consulta nova em cada lado:
 | ações estruturadas | 0 | **21** |
 | decisões registradas | 0 | **4** |
 
+⚠️ **Dois denominadores, um `count`, e é assim que nasce reconciliação fantasma.** `meeting_action_items`
+guarda **ação e decisão na mesma tabela**, discriminadas por `kind`. Um `count(*)` cru devolve **25** para
+esta reunião; o `action_count` do retorno do `close` devolve **21**, porque conta só `kind='action'`. Os dois
+estão certos. Quem comparar os números sem o `WHERE kind` vai achar que perdeu 4 linhas. **Conte por `kind`,
+sempre.**
+
 **A fonte foi a transcrição integral da gravação** (notas automáticas do Google Meet, 156 KB),
 puxada por `rclone cat`. Nada foi inferido.
 
@@ -190,7 +196,11 @@ SELECT e.type, e.title,
        (COALESCE(e.minutes_text,'')='' AND e.minutes_url IS NULL) AS sem_ata,
        (SELECT count(*) FROM public.attendance a WHERE a.event_id=e.id AND a.present)  AS presentes,
        (SELECT count(*) FROM public.attendance a WHERE a.event_id=e.id AND a.excused)  AS justificados,
-       (SELECT count(*) FROM public.meeting_action_items m WHERE m.event_id=e.id)      AS itens
+       -- separe por kind: a tabela guarda acoes E decisoes na mesma relacao
+       (SELECT count(*) FROM public.meeting_action_items m
+          WHERE m.event_id=e.id AND m.kind='action')   AS acoes,
+       (SELECT count(*) FROM public.meeting_action_items m
+          WHERE m.event_id=e.id AND m.kind='decision') AS decisoes
 FROM public.events e WHERE e.date='2026-09-17' ORDER BY e.type;
 
 -- o conserto da #2351 continua vivo? (o resumo tem de aparecer DUAS vezes no corpo)
