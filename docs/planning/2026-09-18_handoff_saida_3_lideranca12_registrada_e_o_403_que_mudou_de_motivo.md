@@ -206,7 +206,8 @@ gravar, morre no 401.
 |---|---|---|
 | — | ~~habilitar YouTube Analytics API~~ | ✅ **feito pelo dono**, API respondendo (seção 14) |
 | — | impressões e CTR do canal | **fora da Analytics API v2**; só Studio ou Reporting API em lote |
-| — | mover a pasta de backups para fora da mãe **e cifrar** | decidido, **não executado** (seção 13) |
+| — | ~~mover a pasta de backups para fora da mãe~~ | ✅ **feito e verificado** nos dois lados (seção 13) |
+| — | cifrar os backups antes do upload | decidido, **não executado** (seção 13) |
 | — | onde mora a CHAVE da cifra | **decisão nova, sem dono** (seção 13) |
 | — | `Knowledge Insights Auto Sync` 401, 20/20 vermelho | achado novo, **sem issue** |
 | — | 23 vídeos não listados ainda sem idioma declarado | fora do escopo autorizado |
@@ -285,9 +286,39 @@ antes do upload. As duas, não uma, por defesa em profundidade: se um dia algué
 conteúdo ainda é texto cifrado, e a proteção deixa de depender de ninguém errar a ACL para sempre.
 Descartadas explicitamente: "só sair da mãe", "Shared Drive novo" e "fora do Drive".
 
-**Não executado, e nada foi tocado por esta sessão.** Fica combinado que a mesma sonda não-dona
-verifica o conserto depois do move: deixar de enxergar a pasta **e** continuar enxergando os outros
-filhos da mãe é evidência de que a herança foi cortada, e não de que a sonda parou de funcionar.
+### ✅ Executado pela sessão par e VERIFICADO, ainda dentro da sessão
+
+A pasta nova nasceu na raiz privada da conta de serviço, fora da mãe, e a antiga (vazia) foi
+removida. Nada disso foi tocado por esta sessão: só medido.
+
+| braço | resultado |
+|---|---|
+| sonda **não-dona** vê a pasta nova? | **não** (`not found`) |
+| pasta antiga | **não** (`not found`) — sumiu |
+| controle positivo A: listagem da mãe | 5 itens mais paginação |
+| controle positivo B: `get_file_metadata` num filho conhecido da mãe | retornou o registro |
+
+O controle B importa porque é **a mesma chamada** que devolveu `not found` nos dois primeiros
+braços: o not-found é resposta, não ferramenta quebrada.
+
+**O discriminador que caiu de graça, e que era a hipótese concorrente certa:** a listagem da mãe traz
+uma pasta cujo dono é a **mesma conta de serviço** que criou a pasta nova, e a sonda **enxerga essa**.
+Logo "a sonda não vê a pasta nova" não é "a sonda não vê pastas dessa conta". O que mudou é a
+**posição**, não a titularidade.
+
+Bônus de diferença simétrica: antes do move a pasta antiga era o 5º item da mãe; depois, o 5º item é
+outra pasta. A remoção aparece como **mudança na mesma listagem**, não apenas como ausência.
+
+**⚠️ E a ressalva que o braço negativo NÃO cobre, que quase passou:** uma conta não-dona não
+distingue "privada" de "inexistente" — as duas devolvem `not found`. Se a criação tivesse falhado em
+silêncio, a medição acima seria **idêntica**. A existência só se prova do lado do dono.
+
+Fechada com **instrumento e credencial independentes**, a partir desta máquina e não repetindo a
+medição da sessão par: `rclone lsjson` no remote da conta de serviço lista a pasta na raiz, com
+`IsDir=true` e o ID batendo, entre 9 diretórios (controle positivo).
+
+⇒ **dono vê (existe) + não-dono não vê (privada) = destino provado privado E real.** As duas metades
+precisam existir; nenhuma sozinha decide.
 
 **Decisão nova que esta abre e que ninguém pegou:** onde mora a chave da cifra. Chave junto do
 backup anula a cifra.
