@@ -18,10 +18,25 @@ such and never let it become a stated antes/depois.
   reasoning backward from "after".
 - Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
 
-## ANTES de `apply_migration`: a fila de PRs tem de estar VAZIA (MANDATÓRIO)
+## ANTES de `apply_migration`: fila de PRs vazia **E** nenhum job de banco em voo (MANDATÓRIO)
 
-**IMPORTANT — YOU MUST:** rode `gh pr list --state open` e confirme **zero** PRs abertas antes de
-qualquer `apply_migration`. `apply_migration` atinge o banco **compartilhado** na hora, e enquanto o
+**IMPORTANT — YOU MUST:** antes de qualquer `apply_migration`, confirme **DUAS** condições, não uma:
+
+```bash
+gh pr list --state open                       # (1) zero PRs abertas
+gh run list --limit 30 --json name,status \
+  --jq '[.[]|select(.status!="completed")|select(.name|test("Validate|Invariants|DB Types"))]|length'
+                                              # (2) zero jobs de banco em voo — SEM --branch
+```
+
+⚠️ **Fila de PRs vazia NÃO é banco livre, e o próprio ato de esvaziá-la é o que arma o perigo.**
+Mergear **zera** `gh pr list` e, no mesmo segundo, **dispara** `CI Validate` e `Schema Invariants`
+sobre a `main`, no mesmo banco compartilhado. Medido em 18/09: `gh pr list` vazio com 2 jobs de banco
+rodando. É o instante em que a tela parece mais liberada e em que mais dá vontade de escrever.
+**Não recorte por `--branch`:** o recorte por branch zera no instante do merge, e é ele que cria o
+ponto cego. Filtre por **nome de job**, porque são esses três que disputam o banco.
+
+O resto continua valendo: `apply_migration` atinge o banco **compartilhado** na hora, e enquanto o
 `.sql` não está no ref sob teste, aquele ref **não explica o estado do banco** — o vermelho está
 CORRETO. A `main` **não é exceção**.
 
@@ -33,9 +48,12 @@ CORRETO. A `main` **não é exceção**.
   3. DDL aplicada com a `main` ainda sem o arquivo ⇒ **3 alertas do CI Monitor** e ~1h de produção
      desalinhada;
   4. a quarta foi **evitada** aplicando com a fila vazia — custo zero.
-- **Um hook `PreToolUse` agora pergunta** (`.claude/settings.json`, matcher
-  `mcp__*__apply_migration`): com PR aberta ele devolve `permissionDecision: ask` e nomeia o
-  motivo. O hook é o mecanismo; esta seção é o porquê. Memória não intercepta — a regra já existia
+- **Um hook `PreToolUse` pergunta** (`.claude/settings.json`, matcher `mcp__*__apply_migration`):
+  ele devolve `permissionDecision: ask` e **nomeia qual das duas condições disparou**, contando PRs
+  abertas E jobs de banco em voo. ⚠️ A primeira versão do hook (17/09) consultava **só** a fila de
+  PRs, e por isso teria liberado uma DDL em 18/09 com dois jobs de banco rodando na `main`: **o
+  mecanismo herdou o ponto cego da regra que mecanizava.** Exercitado nos dois sentidos antes de
+  subir, e a versão antiga fica silenciosa no caso exato em que a nova dispara. O hook é o mecanismo; esta seção é o porquê. Memória não intercepta — a regra já existia
   em memória nas três primeiras mordidas e não impediu nenhuma.
 - **Aplicar e commitar são UM passo.** Depois do `apply_migration`: ler a versão registrada,
   nomear o `.sql` com ela, conferir o md5 do corpo vivo contra o arquivo, commitar. Sem intervalo.
