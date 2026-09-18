@@ -64,6 +64,14 @@ const ALLOWLIST = {
   // ref_id polimorfico; nao devolve nenhuma linha de evento, so quatro inteiros agregados
   // sobre a plataforma inteira. Grant e service_role apenas (REVOKE de PUBLIC e anon).
   _audit_attendance_xp_duplicates: 'audit counters only (4 aggregate ints, no row data); service_role-only grant',
+  // #2345 — cobertura de audiencia por TIPO de evento, para o guard de CI. Le `events` so para
+  // agrupar por `type` e CONTAR; nao devolve id, titulo, data nem initiative_id de evento nenhum.
+  // A saida e taxonomia (o nome do tipo) mais um inteiro por tipo. Grant e service_role apenas
+  // (REVOKE de PUBLIC e anon), e a RPC do digest que ela audita e self-scoped e ja esta neste
+  // allowlist. Ressalva honesta: um tipo usado EXCLUSIVAMENTE por iniciativa confidencial teria
+  // sua existencia revelada pela contagem — hoje nao existe (os 11 tipos vivos sao transversais),
+  // e o dia que existir a contencao certa e filtrar pelo gate, nao alargar esta linha.
+  _audit_event_type_digest_coverage: 'audit coverage only (type + count per type, no row data); service_role-only grant',
   // self-scoped to caller
   export_my_data: 'self-scoped (auth.uid own data, LGPD export)',
   get_my_cards: 'self-scoped (caller assignments)',
