@@ -387,7 +387,7 @@ Você pode perguntar em linguagem natural — o assistente escolhe a ferramenta 
 - \`get_my_tribe_members\` — Membros ativos da sua tribo
 - \`get_my_tribe_attendance\` — Grade de presença da tribo
 - \`get_my_board_status\` — Cards do board agrupados por status
-- \`get_meeting_notes\` — Últimas atas de reunião
+- \`meeting_minutes\` com \`action='read'\` — Últimas atas de reunião
 - \`search_board_cards\` — Busca full-text em cards
 - \`list_tribe_webinars\` — Webinars da tribo
 - \`get_event_detail\` — Detalhe de evento (agenda, ata, action items) — passe event_id`);
@@ -404,7 +404,7 @@ Rotas como \`get_my_tribe_members\` retornarão "No tribe assigned" — isso é 
         sections.push(`### Escrita (líder/gestor)
 - \`create_board_card\` — Criar card no board da tribo
 - \`update_card_status\` — Mover card entre colunas (backlog→in_progress→review→done)
-- \`create_meeting_notes\` — Criar ata de reunião (precisa event_id)
+- \`meeting_minutes\` com \`action='write'\` — Criar ata de reunião (precisa event_id)
 - \`register_attendance\` — Registrar presença (precisa event_id + member_id)
 - \`register_showcase\` — Registrar protagonismo em reunião geral (event_id + member_id + tipo: case_study/tool_review/prompt_week/quick_insight/awareness). Premia 15-25 XP.
 - \`send_notification_to_tribe\` — Notificar toda a tribo
@@ -1279,36 +1279,6 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL 7: get_meeting_notes (unified — reads from events.minutes_text)
-  mcp.tool("get_meeting_notes", "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.", { tribe_id: z.number().optional().describe("Tribe ID (1-8). If omitted, uses your assigned tribe."), limit: z.number().optional().describe("Number of recent notes. Default: 5") }, async (params: { tribe_id?: number; limit?: number }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
-    const tribeId = params.tribe_id || member.tribe_id;
-    if (!tribeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "No tribe", start); return err(NO_TRIBE_HINT); }
-    const initiativeId = await resolveInitiativeId(sb, tribeId);
-    if (!initiativeId) { await logUsage(sb, member.id, "get_meeting_notes", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
-    const { data, error } = await sb.from("events")
-      .select("id, title, date, type, initiative_id, minutes_text, minutes_posted_at, minutes_posted_by, minutes_edited_at, agenda_text, youtube_url, duration_minutes")
-      .eq("initiative_id", initiativeId)
-      .not("minutes_text", "is", null)
-      .order("date", { ascending: false })
-      .limit(params.limit || 5);
-    if (error) { await logUsage(sb, member.id, "get_meeting_notes", false, error.message, start); return err(error.message); }
-    // Enrich with posted_by name and attendee count
-    const enriched = await Promise.all((data || []).map(async (ev: any) => {
-      let posted_by_name = null;
-      if (ev.minutes_posted_by) {
-        const { data: m } = await sb.from("members").select("name").eq("id", ev.minutes_posted_by).maybeSingle();
-        posted_by_name = m?.name || null;
-      }
-      const { count } = await sb.from("attendance").select("id", { count: "exact", head: true }).eq("event_id", ev.id);
-      return { ...ev, tribe_id: tribeId, minutes_posted_by_name: posted_by_name, attendee_count: count || 0 };
-    }));
-    await logUsage(sb, member.id, "get_meeting_notes", true, undefined, start);
-    return ok(enriched);
-  });
-
   // TOOL 8: get_my_notifications
   mcp.tool("get_my_notifications", "Returns your unread notifications.", {}, async () => {
     const start = Date.now();
@@ -1382,42 +1352,6 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (error) { await logUsage(sb, member.id, "update_card_status", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_card_status", true, undefined, start);
     return ok({ action: "update_card_status", status: "updated", card_id: params.card_id, new_status: params.status });
-  });
-
-  // TOOL 13: create_meeting_notes (unified — writes to events.minutes_text via upsert_event_minutes RPC)
-  mcp.tool("create_meeting_notes", "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.", { event_id: z.string().describe("UUID of the event"), content: z.string().describe("Notes content (Markdown)"), decisions: z.string().optional().describe("Key decisions, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside a decision are preserved verbatim."), action_items: z.string().optional().describe("Action items, one per line (newline-separated) — appended to content. Do NOT comma-separate; commas inside an action are preserved verbatim.") }, async (params: any) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "create_meeting_notes", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!(await canV4(sb, member.id, 'write'))) { await logUsage(sb, member.id, "create_meeting_notes", false, "Unauthorized", start); return err("Unauthorized"); }
-    // Build full content with optional decisions and action items.
-    // #170: split list params on NEWLINE only — never on bare "," — because meeting notes use
-    // commas inside clauses and responsible-party lists ("Fabrício, Fernando e Sávio"), and the
-    // old comma-split shredded single decisions/actions into bogus bullets (corrupted Fabricio's notes).
-    const splitItems = (raw?: string): string[] =>
-      raw ? String(raw).split(/\r?\n/).map((s: string) => s.trim()).filter(Boolean) : [];
-    let fullContent = params.content;
-    const decisions = splitItems(params.decisions);
-    const actionItems = splitItems(params.action_items);
-    if (decisions.length > 0) fullContent += "\n\n### Decisões\n" + decisions.map((d: string) => `- ${d}`).join("\n");
-    if (actionItems.length > 0) fullContent += "\n\n### Ações\n" + actionItems.map((a: string) => `- [ ] ${a}`).join("\n");
-    // #170: refuse to persist serialization-corruption markers — fail BEFORE the DB write so a bad
-    // payload never reaches events.minutes_text. U+FFFD never appears in valid UTF-8 prose; a bare
-    // "[object Object]" *line* means a non-string was passed and String()-ified (a real bullet, not
-    // prose that merely mentions the term — anchored to a whole line to avoid false positives).
-    const hasReplacementChar = fullContent.includes("�");
-    const hasObjectArtifact = /^\s*(?:-\s*(?:\[ \]\s*)?)?\[object Object\]\s*$/m.test(fullContent);
-    if (hasReplacementChar || hasObjectArtifact) {
-      const label = hasReplacementChar ? "replacement character (U+FFFD)" : "[object Object]";
-      await logUsage(sb, member.id, "create_meeting_notes", false, `Rejected: corruption marker ${label}`, start);
-      return err(`Refusing to save meeting notes — content contains a corruption marker (${label}). Re-send clean UTF-8 text.`);
-    }
-    // Use the unified upsert_event_minutes RPC (has audit log + edit history + researcher timeframe)
-    const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: fullContent });
-    if (error) { await logUsage(sb, member.id, "create_meeting_notes", false, error.message, start); return err(error.message); }
-    if (data?.error) { await logUsage(sb, member.id, "create_meeting_notes", false, data.error, start); return err(data.error); }
-    await logUsage(sb, member.id, "create_meeting_notes", true, undefined, start);
-    return ok({ action: "create_meeting_notes", status: "saved", event_id: params.event_id });
   });
 
   // TOOL 14: register_attendance
@@ -6655,7 +6589,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // board_item_event_links). Structured action items replace markdown-only.
   // ───────────────────────────────────────────────────────────────
 
-  mcp.tool("create_action_item", "Create a structured meeting action item. Replaces markdown-only action items from create_meeting_notes. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.", {
+  mcp.tool("create_action_item", "Create a structured meeting action item. Replaces markdown-only action items from meeting_minutes action='write'. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.", {
     event_id: z.string().describe("UUID of the event this action item belongs to"),
     description: z.string().describe("Action item text (e.g. 'Maria atualizar card-xyz até 2026-04-30')"),
     assignee_id: z.string().optional().describe("UUID of assignee member (optional)"),
@@ -6784,19 +6718,6 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  mcp.tool("get_meeting_preparation", "Returns prep pack for upcoming meeting: event details, expected attendees (engagement-derived from initiative), pending action items from prior meetings (90d window), open cards on initiative board (with at-risk flag based on forecast > baseline + 7d OR no update in 14d), recent meetings summary. Authenticated only. ADR-0048 (#84 Onda 2). Use case: 'Prepare-me para a reunião X com a tribo Y'.", {
-    event_id: z.string().describe("UUID of the upcoming event")
-  }, async (params: { event_id: string }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "get_meeting_preparation", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
-    const { data, error } = await sb.rpc("get_meeting_preparation", { p_event_id: params.event_id });
-    if (error) { await logUsage(sb, member.id, "get_meeting_preparation", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "get_meeting_preparation", true, undefined, start);
-    return ok(data);
-  });
-
   mcp.tool("register_decision", "Register a meeting decision (semantic kind='decision' with multi-card link fanout). Decisions are auto-completed (status='completed') and resolved immediately. Optional related_card_ids[] creates board_item_event_links of link_type='decision' to each card. Requires manage_event (ADR-0047, #84 Onda 2). Distinct from create_action_item with kind='decision' in that this RPC's signature is decision-first (title required) and supports card fanout.", {
     event_id: z.string().describe("UUID of the event where decision was made"),
     title: z.string().describe("Short decision title (e.g. 'Aprovar publicação do artigo X em Q3')"),
@@ -6863,35 +6784,6 @@ function registerTools(mcp: McpServer, sb: Sb) {
     });
     if (error) { await logUsage(sb, member.id, "update_card_during_meeting", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "update_card_during_meeting", true, undefined, start);
-    return ok(data);
-  });
-
-  mcp.tool("meeting_close", "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. p171 #9 (Track B): also accepts suggested_champion_ids[] — member UUIDs the closer suggests for Champion. UI /admin/gamification deep-link reads these for prefill/nudge. Returns drift_signal flag + counter set + suggestions_count. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo + sugiro Champion pra Y e Z'.", {
-    event_id: z.string().describe("UUID of the meeting event to close"),
-    summary: z.string().optional().describe("Optional summary appended to events.notes"),
-    suggested_champion_ids: z.array(z.string()).optional().describe("Optional array of member UUIDs the closer suggests for Champion. Max 10. Same-org validated. Persisted to events.suggested_champion_ids for UI prefill.")
-  }, async (params: { event_id: string; summary?: string; suggested_champion_ids?: string[] }) => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    if (!member) { await logUsage(sb, null, "meeting_close", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!isUUID(params.event_id)) return err("event_id must be a UUID");
-    if (params.suggested_champion_ids) {
-      if (params.suggested_champion_ids.length > 10) return err("suggested_champion_ids: max 10");
-      for (const id of params.suggested_champion_ids) {
-        if (!isUUID(id)) return err(`suggested_champion_ids: '${id}' is not a UUID`);
-      }
-    }
-    if (!(await canV4(sb, member.id, 'manage_event'))) {
-      await logUsage(sb, member.id, "meeting_close", false, "Unauthorized", start);
-      return err("Unauthorized — requires manage_event.");
-    }
-    const { data, error } = await sb.rpc("meeting_close", {
-      p_event_id: params.event_id,
-      p_summary: params.summary ?? null,
-      p_suggested_champion_ids: params.suggested_champion_ids ?? null,
-    });
-    if (error) { await logUsage(sb, member.id, "meeting_close", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member.id, "meeting_close", true, undefined, start);
     return ok(data);
   });
 
@@ -10480,8 +10372,25 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (params.action === "write") {
         if (!params.content || !params.content.trim()) return invalid("action='write' requires content.", "Pass content (Markdown).");
         let text = params.content;
-        if (params.decisions && params.decisions.trim()) text += `\n\n## Decisões\n` + String(params.decisions).split("\n").map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- ${l}`).join("\n");
-        if (params.action_items && params.action_items.trim()) text += `\n\n## Ações\n` + String(params.action_items).split("\n").map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- [ ] ${l}`).join("\n");
+        if (params.decisions && params.decisions.trim()) text += `\n\n## Decisões\n` + String(params.decisions).split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- ${l}`).join("\n");
+        if (params.action_items && params.action_items.trim()) text += `\n\n## Ações\n` + String(params.action_items).split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- [ ] ${l}`).join("\n");
+        // #170 (portado para a rota canonica em #2351): recusa marcador de corrupcao de
+        // serializacao ANTES da escrita, para que um payload ruim nunca chegue em
+        // events.minutes_text. U+FFFD nao aparece em prosa UTF-8 valida; uma LINHA inteira
+        // "[object Object]" significa que um nao-string foi String()-ificado (ancorado a linha
+        // para nao acusar prosa que apenas cite o termo).
+        //
+        // O gate vivia dentro de create_meeting_notes. A #2351 retirou aquela tool do registro
+        // por ser rota duplicada, e a divisao por NEWLINE ja existia aqui — mas esta quarentena
+        // NAO. Sem portar, a remocao teria custado metade da correcao do #170, que nasceu de
+        // corrupcao real de 7 atas.
+        const hasReplacementChar = text.includes("�");
+        const hasObjectArtifact = /^\s*(?:-\s*(?:\[ \]\s*)?)?\[object Object\]\s*$/m.test(text);
+        if (hasReplacementChar || hasObjectArtifact) {
+          const label = hasReplacementChar ? "replacement character (U+FFFD)" : "[object Object]";
+          await logUsage(sb, member.id, "meeting_minutes", false, `Rejected: corruption marker ${label}`, start);
+          return invalid(`Refusing to save meeting notes — content contains a corruption marker (${label}).`, "Re-send clean UTF-8 text.");
+        }
         const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: text, p_url: params.minutes_url ?? null });
         if (error) { await logUsage(sb, member.id, "meeting_minutes", false, error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: error.message })); }
         await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
@@ -12558,7 +12467,6 @@ const ACTIONS_ALLOWLIST: Set<string> = new Set([
   "manage_selection_committee",
   "mark_interview_status",
   "mark_member_excused",
-  "meeting_close",
   "member_add_alternate_email",
   "member_list_emails",
   "member_remove_alternate_email",

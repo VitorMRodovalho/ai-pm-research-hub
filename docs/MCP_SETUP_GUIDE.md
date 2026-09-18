@@ -136,7 +136,7 @@ node scripts/audit-mcp-tool-matrix.mjs --runtime
 | `get_my_tribe_members` | Members of your tribe with roles |
 | `get_upcoming_events` | Next events with dates, times, and links |
 | `get_my_xp_and_ranking` | Your XP breakdown and leaderboard position |
-| `get_meeting_notes` | Meeting minutes from your tribe |
+| `meeting_minutes` (`action='read'`) | Meeting minutes from your tribe |
 | `get_my_notifications` | Your unread and recent notifications |
 | `search_board_cards` | Search cards across boards you have access to |
 | `get_hub_announcements` | Platform-wide announcements |
@@ -160,7 +160,7 @@ node scripts/audit-mcp-tool-matrix.mjs --runtime
 |------|-------------|
 | `create_board_card` | Create a new card on your tribe's board |
 | `update_card_status` | Move a card to a different column |
-| `create_meeting_notes` | Create meeting minutes |
+| `meeting_minutes` (`action='write'`) | Create meeting minutes |
 | `register_attendance` | Register attendance for a tribe meeting |
 | `send_notification_to_tribe` | Send a notification to all tribe members |
 | `create_tribe_event` | Create a new tribe meeting or event |
