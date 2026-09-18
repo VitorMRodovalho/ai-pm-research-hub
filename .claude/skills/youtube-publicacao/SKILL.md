@@ -62,9 +62,26 @@ mente sobre o master. Quem monta a cadeia a partir do número do derivado corrig
 `ebur128` no master confirmou `−15,7 / +0,9`: dois caminhos independentes, e é assim que se sabe
 que o número é do sinal e não do método.
 
-**Com destino AAC, mirar `TP=-2`, não `-1.5`.** Medido no mesmo vídeo: alvo `-2` no `loudnorm` e o
-arquivo final fechou em **−1,2 dBTP**, ou seja, a codificação AAC devolveu 0,8 dB de pico. Com alvo
-`-1.5`, o mesmo acréscimo colocaria o resultado acima de −1 e fora do alvo.
+**Com destino AAC, mirar abaixo de `-1`, e o quanto abaixo NÃO é constante.** Medido em 2026-09-13:
+alvo `-2` e final em **−1,2 dBTP** (0,8 dB devolvidos). Medido em 2026-09-18, na Liderança de 17/09,
+quatro execuções do MESMO arquivo: wav −2,0 → final **+1,4**; wav −4,9 → **−2,8**; wav −3,9 → **−2,8**;
+wav −2,9 → **+0,5**. O acréscimo variou de **1,1 a 3,4 dB sem padrão previsível**, e entre wav −3,9 e
+−2,9 ele saltou 2,3 dB para 1 dB de diferença na entrada. ⇒ **Não existe margem que se possa calcular
+de antemão: só a medição do arquivo final decide.** Comece em `TP=-4` e ajuste pelo que o final medir.
+
+⚠️ **`Peak:` no `ebur128` é SAMPLE peak; o true peak vem DEPOIS, sob `True peak:`.** Um
+`grep -E 'I:|LRA:|Peak:'` casa a linha errada e devolve um número que não é o do alvo. Em 18/09 isso
+mostrou "Peak: 1.4" para um arquivo cujo true peak era outro, e a leitura errada quase virou
+diagnóstico. Filtre por `peak` minúsculo (`grep -i peak`) e leia as DUAS linhas.
+
+⚠️ **Não passe `linear=true` em fala que precisa de ganho e já tem pico positivo.** A passada de
+análise devolve `normalization_type`, e em 18/09 ela disse `dynamic`. Forçar `linear` criou um impasse
+onde não havia: com `TP=-2` o loudness fechou em −14,3 e o pico **estourou** (+1,4); com `TP=-5` o pico
+entrou mas o loudness voltou a **−15,9**, que é o valor do ORIGINAL, ou seja, ganho zero. Ganho linear
+acerta o volume OU o pico, nunca os dois. **Respeite o `normalization_type` que a análise devolveu.**
+
+**Quando os dois alvos não fecham juntos, proteja o PICO.** Clipping é defeito audível; 1,3 dB de
+loudness a menos não é, e o YouTube atenua quem passa de −14 mas **não amplifica quem fica abaixo**.
 
 **Re-medir o arquivo final.** Confirmação de comando não prova pós-condição.
 
@@ -77,6 +94,12 @@ inglês sobre áudio em português e saiu inutilizável ("Wow. Rodrigo to the bo
 ~/.venvs/video/bin/whisperx audio.wav --language pt --model large-v3 \
   --device cuda --compute_type float16 --batch_size 8 --output_format all --output_dir tx
 ```
+
+⚠️ **`nvidia-smi` quebrado NÃO é "sem GPU".** Medido em 18/09 na MSI GS66: `nvidia-smi` falhou com
+`Failed to initialize NVML: Driver/library version mismatch` (NVML 595.91 contra kernel 595.84) e
+`torch.cuda.is_available()` no mesmo instante devolveu **True**, com a RTX 3070 Ti visível e um
+matmul 4096² rodando em 0,35 s. Aceitar o instrumento quebrado teria trocado ~15 min de GPU por
+horas de CPU. **Pergunte ao runtime que vai rodar, e confirme com uma alocação real, não com a flag.**
 
 ### 4. Traduzir LOCAL para es-LATAM e en-US
 
@@ -140,12 +163,29 @@ falha; a forma com `=` é a que funciona.
 - **Enquadramento institucional, sempre:** "Núcleo IA & GP, iniciativa dos capítulos do PMI no
   Brasil, sediada no PMI-GO". **Nunca** "o Núcleo e os capítulos do PMI", que os põe como
   co-realizadores separados. Não reivindicar evento oficial do PMI nem PDU.
+- **São DOIS campos de idioma, e o defeito mora nos dois.** `defaultAudioLanguage` é o idioma do
+  ÁUDIO (orienta ASR e legenda automática); `defaultLanguage` é o idioma dos METADADOS. Medido em
+  18/09/2026, nos 93 públicos: **37 Shorts com `defaultAudioLanguage` AUSENTE** e `defaultLanguage`
+  `pt-PT`, mais **15 longos** com áudio correto e metadados em `pt-PT`. ⚠️ **Campo vazio não é
+  neutro: o YouTube preenche sozinho, e preencheu `pt-PT` num canal brasileiro.** Uma leitura que
+  funda os dois campos numa variável só (`audio or meta`) conta 53 "pt-PT" e esconde que 37 deles
+  são, na verdade, AUSÊNCIA. Leia e corrija os dois separadamente.
+- ⚠️ **Corrigir `defaultLanguage` não basta: existe uma `localizations` espelhada.** Ao definir o
+  idioma, o YouTube cria uma localização naquele código com título e descrição iguais aos do
+  snippet. Medido em 18/09: os 15 longos tinham `localizations` com **uma única chave, `pt-PT`**,
+  título idêntico ao padrão. Trocar só o campo deixa a localização órfã e o vídeo segue anunciado
+  como português de Portugal. Mova a chave (`loc["pt-BR"] = loc.pop("pt-PT")`) no mesmo `update`,
+  com `part="snippet,localizations"`.
 - **`defaultAudioLanguage`:** declarar corretamente. Auditoria de 09/09/2026 encontrou 53 vídeos
   marcados `pt-PT` e 30 `en-US` num canal brasileiro. O idioma declarado orienta ASR, busca e
   tradução automática do YouTube: errado ali, tudo a jusante degrada. O `upload.py` passou a
   enviar `defaultAudioLanguage` e `defaultLanguage` a partir do `meta.json`; até 11/09/2026 ele
   não tinha o campo, então o que estava escrito na regra não tinha como ser cumprido pela
   ferramenta.
+- **Capítulos: o primeiro TEM de ser `0:00`, ou nenhum deles existe.** O YouTube só ativa a faixa
+  de capítulos com primeiro carimbo em `0:00`, no mínimo 3 capítulos e pelo menos 10 s entre eles.
+  E **acima de 1 h o formato é `H:MM:SS`**: `61:19` não é reconhecido, `1:01:19` é. Num vídeo de
+  2h11 isso atinge metade da lista. Valide as cinco regras antes de subir, não depois.
 - **Capítulos** na descrição, nos tempos do vídeo CORTADO. 55 dos 67 vídeos longos não têm.
   **Ancorar cada carimbo numa frase encontrada na transcrição, nunca copiar da nota automática.**
   O resumo do Gemini da reunião de 10/09/2026 errou de forma sistemática: a marca cai no fim do
@@ -154,6 +194,10 @@ falha; a forma com `=` é a que funciona.
   delas repetida em dois tópicos diferentes. Conferir de 3 a 5 por amostra não basta quando o erro
   é sistemático: confira todos, procurando a frase-âncora de cada tópico.
 - **Playlist** resolvida pelo SSOT `src/data/youtube-playlists.ts`, nunca id chumbado.
+- **Miniatura:** a regra abaixo vale para vídeo PÚBLICO. Para reunião interna não listada o padrão
+  da casa é **frame automático**: medido em 18/09, as miniaturas das três Lideranças do Ciclo 4 são
+  frames do próprio vídeo, não peças desenhadas. ⚠️ `maxres` presente NÃO prova miniatura custom —
+  o YouTube gera essa resolução sozinho para vídeo HD. Baixe a imagem e olhe.
 - **Miniatura:** não reaproveitar o banner do evento. O texto dele é convite no futuro ("dia 4,
   19h"), errado para replay. Gerar variante com o design-kit.
 
@@ -176,6 +220,24 @@ confirmar por superfície independente.
 
 Para provar que ficou público, **não** usar oembed: ele responde para não listado também. Usar o
 feed RSS do canal (`videos.xml?channel_id=...`), que só lista público.
+
+## Auditar o acervo: o `playlistItems` de uploads DEVOLVE DUPLICATA
+
+Medido em 18/09/2026: a playlist de uploads do canal devolveu **123 itens brutos para 118 vídeos
+únicos** — 5 Shorts aparecem duas vezes. Quem conta linhas em vez de ids distintos infla o acervo e
+contamina toda métrica derivada: naquela sessão, "123 vídeos, 98 públicos" era na verdade **118 e
+93**, e um mês de Shorts foi reportado com 31 quando eram 26.
+
+```python
+ids = []
+for it in pagina["items"]:
+    vid = it["contentDetails"]["videoId"]
+    if vid not in ids: ids.append(vid)     # dedup NA COLETA, nao depois
+```
+
+⚠️ **O sintoma aparece tarde e disfarçado:** um `dict` indexado por id colapsa as duplicatas em
+silêncio, e a contagem cai sem erro nenhum ("43 alvos, 38 gravados, faltaram: nenhum"). Se as duas
+contagens divergem e nada faltou, **a lista de entrada tinha repetido**.
 
 ## Cota da API é o gargalo, planeje por ela
 
