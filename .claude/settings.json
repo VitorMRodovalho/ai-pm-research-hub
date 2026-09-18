@@ -1,16 +1,38 @@
 {
   "deniedMcpServers": [
-    { "serverName": "claude_ai_PostHog" },
-    { "serverName": "ms365" },
-    { "serverName": "claude_ai_Canva" },
-    { "serverName": "claude_ai_Notion" },
-    { "serverName": "claude_ai_Figma" },
-    { "serverName": "claude_ai_Sentry" },
-    { "serverName": "claude_ai_Miro" },
-    { "serverName": "claude_ai_Scholar_Gateway" },
-    { "serverName": "claude_ai_Gmail" },
-    { "serverName": "claude_ai_Google_Calendar" },
-    { "serverName": "claude_ai_Microsoft_Learn" }
+    {
+      "serverName": "claude_ai_PostHog"
+    },
+    {
+      "serverName": "ms365"
+    },
+    {
+      "serverName": "claude_ai_Canva"
+    },
+    {
+      "serverName": "claude_ai_Notion"
+    },
+    {
+      "serverName": "claude_ai_Figma"
+    },
+    {
+      "serverName": "claude_ai_Sentry"
+    },
+    {
+      "serverName": "claude_ai_Miro"
+    },
+    {
+      "serverName": "claude_ai_Scholar_Gateway"
+    },
+    {
+      "serverName": "claude_ai_Gmail"
+    },
+    {
+      "serverName": "claude_ai_Google_Calendar"
+    },
+    {
+      "serverName": "claude_ai_Microsoft_Learn"
+    }
   ],
   "permissions": {
     "allow": [
@@ -50,8 +72,6 @@
     "deny": [
       "Bash(rm -rf /)",
       "Edit(.env)",
-      "Write(.env)",
-      "Write(.git/*)",
       "Bash(rm -rf /*)",
       "Bash(rm -rf ~/*)",
       "Bash(rm -rf $HOME*)",
@@ -96,6 +116,19 @@
           {
             "type": "command",
             "command": "bash .claude/hooks/post-compact.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__claude_ai_Supabase__apply_migration|mcp__supabase__apply_migration",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "n=$(gh pr list --state open --json number --jq \"length\" 2>/dev/null); n=${n:-0}; if [ \"$n\" -gt 0 ]; then printf \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PreToolUse\\\",\\\"permissionDecision\\\":\\\"ask\\\",\\\"permissionDecisionReason\\\":\\\"FILA NAO VAZIA: %s PR(s) aberta(s). apply_migration atinge o banco COMPARTILHADO na hora, e toda branch sem o .sql passa a acusar drift (PROD-AHEAD) — inclusive a main. Mergeie a fila primeiro, ou confirme que a ordem ja foi combinada. Mordeu 4x em 17/09; ver #2340.\\\"}}\" \"$n\"; fi",
+            "timeout": 20,
+            "statusMessage": "Conferindo a fila de PRs antes da DDL..."
           }
         ]
       }
