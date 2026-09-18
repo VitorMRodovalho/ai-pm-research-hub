@@ -3,31 +3,30 @@
 > **Nada aqui é medição viva.** Carimbado em 18/09 ~17h40 UTC, antes de um reboot da máquina.
 > **Re-meça antes de decidir.** Repositório público: este documento não nomeia terceiros.
 
-**Estado ao encerrar:** `main f4e7d2d5` · **1 PR aberta** (#2367) · upload da Liderança #12 em curso
-no momento do carimbo.
+**Estado ao encerrar:** `main f4e7d2d5` · **1 PR aberta** (#2367) · Liderança #12 **publicada** como
+não listada (`JodNJgeltgw`), com legendas e playlist confirmadas.
 
 ---
 
-## 1. ⚠️ A primeira coisa a conferir depois do reboot
+## 1. A Liderança #12 ESTÁ NO AR (não listada)
 
-O upload de 1,09 GB da Liderança #12 estava em **89%** quando este documento foi escrito. **Reboot
-mata upload em andamento** — a Data API não retoma sozinha.
+**Concluído antes do reboot.** `https://youtu.be/JodNJgeltgw`
 
-```bash
-# o video entrou?
-cd ~/projects/_pmo/youtube && ~/.venvs/youtube/bin/python list_uploads.py | head -5
-# procurar por: 2026-09-17 - Liderança Ciclo 04
-```
+Pós-condição relida do YouTube campo a campo, não aceita pelo retorno da chamada: título,
+descrição (3.546 chars), 15 tags, `categoryId=27`, `privacyStatus=unlisted`,
+`defaultAudioLanguage=pt-BR`, `defaultLanguage=pt-BR`, `madeForKids=false` — **todos batem** com o
+`meta.json` aprovado. **43 capítulos** na descrição. Playlist `PLfWCBF5VAWZM` passou de 3 para
+**4 itens** e contém o vídeo.
 
-- **Se ENTROU:** faltam as 3 faixas de legenda (`subir_legendas.py`, 400 unidades de cota cada,
-  1.200 no total) e a conferência da playlist. Os `.vtt` prontos e validados estão em
-  `~/projects/_pmo/youtube/lideranca-17set/legendas/`.
-- **Se NÃO entrou:** o arquivo publicável é `lideranca-17set/final3.mp4` (NÃO o `final.mp4`, nem o
-  `final2`, nem o `final4` — ver seção 4), e o `meta.json` ao lado já está completo e aprovado pelo
-  dono. Basta repetir `upload.py --video final3.mp4 --meta meta.json`.
+**Três faixas de legenda** (pt, es, en) inseridas e conferidas: `draft=False`, `status=serving`.
 
-**O diretório de trabalho tem 13 GB** (3 wavs + 4 mp4s). Depois do upload confirmado, limpar
-deixando `origem.mp4` e `final3.mp4`.
+Nada pendente neste item. `duration` lia `P0D` no carimbo porque o YouTube ainda processava; não é
+defeito.
+
+**Limpeza não feita, de propósito:** `~/projects/_pmo/youtube/lideranca-17set/` tem **13 GB**
+(3 wavs + 4 mp4s). Apagar é irreversível e o dono não autorizou. Para limpar, manter `origem.mp4`,
+`final3.mp4`, `meta.json`, `tx/` e `legendas/`, e remover `audio_master.wav`, `audio_norm*.wav`,
+`audio16k.wav`, `final.mp4`, `final2.mp4`, `final4.mp4`.
 
 ## 2. O canal: 53 vídeos com idioma errado, corrigidos
 
@@ -126,7 +125,6 @@ loudness a menos não é, e o YouTube atenua quem passa de −14 mas **não ampl
 
 | # | o que | estado |
 |---|---|---|
-| — | legendas + playlist da Liderança #12 | **depende da seção 1** |
 | — | `auth_analytics.py` | **precisa do dono** (login no navegador) |
 | #2367 | reforma da skill `youtube-publicacao` | **PR aberta**, CI rodando |
 | — | 23 vídeos **não listados** ainda sem idioma declarado | fora do escopo autorizado hoje |
