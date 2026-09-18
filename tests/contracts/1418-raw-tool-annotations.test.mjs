@@ -124,8 +124,12 @@ test('#1418: classifyRawTool ordering matches this guard (destructive-name check
   assert.ok(iDestrName < iDestrPref && iDestrPref < iReadPref, 'classifier rule order regressed');
 });
 
-test('#1418: raw catalog still has 342 registered tools (drift tripwire)', () => {
-  assert.equal(REGISTERED.length, 342, `expected 342 raw tools, got ${REGISTERED.length}`);
+test('#1418: raw catalog still has 338 registered tools (drift tripwire)', () => {
+  // 342 -> 338 em 17/09 (#2351): as 4 tools de ata que `meeting_minutes` ja declarava absorver
+  // (create_meeting_notes, meeting_close, get_meeting_notes, get_meeting_preparation) sairam do
+  // registro. A absorcao existia so na prosa da descricao, e 8 tools com `meeting` no nome nao
+  // deixavam um agente saber qual era a canonica.
+  assert.equal(REGISTERED.length, 338, `expected 338 raw tools, got ${REGISTERED.length}`);
 });
 
 test('#1418: every registered raw tool classifies to exactly one class', () => {

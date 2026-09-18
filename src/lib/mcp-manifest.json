@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-17T15:22:44.466Z",
+  "generated_at": "2026-09-18T01:58:35.601Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 396,
+  "total": 392,
   "by_domain": {
     "personal": 23,
     "tribe": 130,
     "board": 79,
-    "events": 23,
+    "events": 19,
     "governance": 26,
     "comms": 19,
     "partners": 12,
@@ -17,8 +17,8 @@
     "health": 22
   },
   "by_permission": {
-    "read": 277,
-    "write": 108,
+    "read": 274,
+    "write": 107,
     "admin": 11
   },
   "sensitive_count": 11,
@@ -907,7 +907,7 @@
     },
     {
       "name": "create_action_item",
-      "description": "Create a structured meeting action item. Replaces markdown-only action items from create_meeting_notes. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.",
+      "description": "Create a structured meeting action item. Replaces markdown-only action items from meeting_minutes action='write'. Optional FKs link to a board card or checklist item, enabling card↔meeting traceability (ADR-0045/0046, #84 Onda 1+2). kind: 'action' | 'decision' | 'followup' | 'general'. Decisions auto-mark status='completed'. Requires manage_event.",
       "domain": "tribe",
       "permission": "write",
       "is_sensitive": false
@@ -1725,20 +1725,6 @@
       "is_sensitive": false
     },
     {
-      "name": "get_meeting_notes",
-      "description": "Returns recent meeting notes/minutes for your tribe. Full Markdown content from events.",
-      "domain": "events",
-      "permission": "read",
-      "is_sensitive": false
-    },
-    {
-      "name": "get_meeting_preparation",
-      "description": "Returns prep pack for upcoming meeting: event details, expected attendees (engagement-derived from initiative), pending action items from prior meetings (90d window), open cards on initiative board (with at-risk flag based on forecast > baseline + 7d OR no update in 14d), recent meetings summary. Authenticated only. ADR-0048 (#84 Onda 2). Use case: 'Prepare-me para a reunião X com a tribo Y'.",
-      "domain": "events",
-      "permission": "read",
-      "is_sensitive": false
-    },
-    {
       "name": "get_near_events",
       "description": "Returns events happening soon (within a time window). More immediate than get_upcoming_events.",
       "domain": "events",
@@ -1774,24 +1760,10 @@
       "is_sensitive": false
     },
     {
-      "name": "meeting_close",
-      "description": "Atomic meeting close: marks events.minutes_posted_at + minutes_posted_by, counts structured action items vs markdown drift (- [ ] in minutes_text), counts board_item_event_links + showcases. Idempotent (already-closed events return their existing close timestamp + counters). Optional summary appended to events.notes with header. p171 #9 (Track B): also accepts suggested_champion_ids[] — member UUIDs the closer suggests for Champion. UI /admin/gamification deep-link reads these for prefill/nudge. Returns drift_signal flag + counter set + suggestions_count. Requires manage_event. ADR-0049 (#84 Onda 2). Use case: 'Fecha a reunião X com este resumo + sugiro Champion pra Y e Z'.",
-      "domain": "events",
-      "permission": "read",
-      "is_sensitive": false
-    },
-    {
       "name": "meeting_minutes",
       "description": "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
       "domain": "events",
       "permission": "read",
-      "is_sensitive": false
-    },
-    {
-      "name": "create_meeting_notes",
-      "description": "Create or update meeting minutes for a tribe meeting. Writes to events.minutes_text with audit trail.",
-      "domain": "events",
-      "permission": "write",
       "is_sensitive": false
     },
     {

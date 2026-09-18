@@ -279,7 +279,10 @@ test('MCP: all write tools use canV4', () => {
   const writeTools = [
     'create_board_card',
     'update_card_status',
-    'create_meeting_notes',
+    // 'create_meeting_notes' saiu do registro em 17/09 (#2351) — era rota duplicada de
+    // `meeting_minutes action='write'`. A rota canonica e SEMANTICA e passa por
+    // eventWriteGate() (canSee + manage_event com escopo de iniciativa), nao por canV4
+    // solto; quem afirma essa autoridade e tests/contracts/semantic-envelope-w3.test.mjs.
     'register_attendance',
     'register_showcase',
     'send_notification_to_tribe',

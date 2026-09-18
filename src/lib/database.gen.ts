@@ -29906,6 +29906,7 @@ export type Database = {
         Args: { p_breach: string }
         Returns: Json
       }
+      _test_meeting_close_summary_roundtrip: { Args: never; Returns: Json }
       _tribe_journey_health_data: {
         Args: { p_initiative_id?: string; p_window_days?: number }
         Returns: Json
