@@ -179,8 +179,9 @@ print(build('youtubeAnalytics','v2',credentials=c).reports().query(
   metrics='views,estimatedMinutesWatched,averageViewPercentage').execute())"
 ```
 
-Só depois disso as perguntas de impressões, CTR e retenção ficam mediáveis, e só então o SEO do
-canal deixa de ser palpite.
+> ✅ **RESOLVIDO no fim da sessão.** O dono habilitou a API e a chamada acima passou. Mas a promessa
+> desta seção estava grande demais: veja a seção 14, onde duas das três métricas que eu disse que
+> destravariam **não existem nesta API**.
 
 ## 10. ⚠️ Achado novo: `Knowledge Insights Auto Sync` está vermelho há semanas, em silêncio
 
@@ -203,7 +204,10 @@ gravar, morre no 401.
 
 | # | o que | estado |
 |---|---|---|
-| — | habilitar YouTube Analytics API no projeto `768053773084` | **precisa de você** (login + console) |
+| — | ~~habilitar YouTube Analytics API~~ | ✅ **feito pelo dono**, API respondendo (seção 14) |
+| — | impressões e CTR do canal | **fora da Analytics API v2**; só Studio ou Reporting API em lote |
+| — | mover a pasta de backups para fora da mãe **e cifrar** | decidido, **não executado** (seção 13) |
+| — | onde mora a CHAVE da cifra | **decisão nova, sem dono** (seção 13) |
 | — | `Knowledge Insights Auto Sync` 401, 20/20 vermelho | achado novo, **sem issue** |
 | — | 23 vídeos não listados ainda sem idioma declarado | fora do escopo autorizado |
 | — | `upload.py` corrigido mas **não versionado** (`_pmo` ignora `youtube/*`) | só no disco |
@@ -218,3 +222,109 @@ gravar, morre no 401.
 O aviso do handoff anterior sobre `nvidia-smi` (NVML 595.91 contra kernel 595.84, lido como "sem
 GPU") **não foi re-medido nesta sessão**. Se houve reboot, re-meça antes de confiar nos dois
 sentidos.
+
+---
+
+> **Seções 13 e 14 foram acrescentadas depois do merge do handoff**, e cobrem o que aconteceu
+> entre o fechamento e o fim da sessão.
+
+## 13. Quase-incidente de PII num Drive compartilhado: a lista de permissões não é o efeito
+
+> ⚠️ **Escrito sem identificadores de propósito.** Repositório público, e o achado descreve
+> configuração de Drive de uma organização terceira. Sem e-mail de conta, sem ID de pasta, sem
+> nomear a organização. Os identificadores estão na sessão par e devem ir para o tracker
+> **privado**, que é onde referência nominal pode viver (norma de 2026-09-13).
+
+Uma sessão par pediu confirmação de que uma pasta nova, criada dentro de uma pasta compartilhada
+para receber backup de site **com PII de filiado**, estava restrita. A medição dela: a listagem de
+permissões da pasta nova mostrava **só a conta dona**, nenhuma herança. Conclusão dela: restrita.
+
+**A conclusão estava invertida, e a medição dela estava certa.** As duas coisas ao mesmo tempo.
+
+### O que a sonda não-dona mostrou
+
+Usei uma conta que **não é dona** da pasta nova e que tem acesso à pasta-mãe:
+
+| sonda | resultado |
+|---|---|
+| lê a pasta-mãe (**controle positivo**) | sim, com carimbo de "compartilhada comigo" |
+| lê a pasta nova | **sim** |
+| `canAddChildren` na pasta nova | **`true`** — escrita, não só leitura |
+| carimbo de "compartilhada comigo" na pasta nova | **ausente** |
+
+O carimbo ausente é o ponto: a pasta nova nunca foi compartilhada com a sonda **diretamente**. O
+acesso chega **pela mãe**. Isso é a herança, viva.
+
+E a mãe carrega uma permissão de **domínio inteiro** com papel de leitor. Não é "algumas pessoas":
+é todo mundo do domínio, herdando na pasta "restrita".
+
+### A regra, que é o que sobrevive a este caso
+
+**Em My Drive, `permissions.list` de um filho NÃO enumera o que ele herda do pai.** "Só o dono" na
+lista é perfeitamente compatível com acesso total de todo mundo que tem a mãe. Quem lê a lista está
+lendo uma **projeção**, e a projeção não responde à pergunta de efeito.
+
+⇒ Para saber quem enxerga, **olhe com uma conta que não seja a dona, e leve um controle positivo**
+(ela precisa enxergar algo que deveria enxergar, senão o "não vejo" é indistinguível de sonda sem
+acesso nenhum).
+
+**E não existe conserto por permissão:** My Drive não deixa um filho ser mais restrito que o pai.
+Herança só adiciona acesso, nunca subtrai; não há revoke de acesso herdado. Enquanto a pasta estiver
+dentro da mãe compartilhada, qualquer aperto aplicado nela é decorativo. Isso mata a classe inteira
+de "crio uma subpasta restrita dentro da pasta compartilhada".
+
+### Desfecho
+
+**Não houve vazamento, e isso foi verificado, não suposto.** Consulta por filhos da pasta nova
+devolveu vazio; a **mesma forma de consulta** na mãe devolveu 5 itens mais paginação, inclusive a
+própria pasta nova. A consulta sabe devolver linha, logo o vazio é ausência real. A pasta foi criada
+e nunca recebeu arquivo. O upload foi suspenso antes de subir.
+
+**Decisão do dono, 2026-09-18:** tirar a pasta de dentro da mãe **e** cifrar os arquivos no cliente
+antes do upload. As duas, não uma, por defesa em profundidade: se um dia alguém reexpuser a pasta, o
+conteúdo ainda é texto cifrado, e a proteção deixa de depender de ninguém errar a ACL para sempre.
+Descartadas explicitamente: "só sair da mãe", "Shared Drive novo" e "fora do Drive".
+
+**Não executado, e nada foi tocado por esta sessão.** Fica combinado que a mesma sonda não-dona
+verifica o conserto depois do move: deixar de enxergar a pasta **e** continuar enxergando os outros
+filhos da mãe é evidência de que a herança foi cortada, e não de que a sonda parou de funcionar.
+
+**Decisão nova que esta abre e que ninguém pegou:** onde mora a chave da cifra. Chave junto do
+backup anula a cifra.
+
+## 14. ⚠️ A Analytics API foi habilitada, e a seção 9 prometeu mais do que ela entrega
+
+O dono habilitou a API no fim da sessão e a chamada passou. Primeira medição viva do canal, 90 dias
+(2026-06-20 → 2026-09-18): **2.151 views · 5.191 minutos · 231 s de duração média · 9,3% assistido
+em média · 67 inscritos ganhos**.
+
+**Mas duas das três métricas que a seção 9 prometia destravar não existem nesta API.**
+
+`impressions` e `impressionClickThroughRate` retornam `Unknown identifier (impressions) given in
+field parameters.metrics`. Não é escopo, não é permissão, não é propagação: **a Analytics API v2 não
+tem essas métricas.** Elas só saem pelo YouTube Studio ou pela Reporting API em lote, que é outro
+mecanismo, com outra autenticação e outro formato.
+
+⇒ Destravou **retenção e fontes de tráfego**. **Impressões e CTR seguem fora**, por motivo
+estrutural. Das três causas opostas que a seção 3 do handoff anterior queria separar ("o YouTube não
+mostra" × "mostra e ninguém clica" × "clicam e abandonam"), a primeira e a segunda **continuam
+indistinguíveis** por este caminho.
+
+**Regra:** habilitar o acesso não cria a métrica. Antes de prometer que um portão destravado responde
+uma pergunta, confira se a resposta existe no vocabulário da API, e não só se a porta abre.
+
+### O que passou a ser mediável, e já contradiz o senso comum
+
+Fontes de tráfego, 90 dias:
+
+| fonte | views | minutos |
+|---|---:|---:|
+| feed de Shorts | 716 | **50** |
+| link externo | 332 | **1.545** |
+| inscritos | 198 | 876 |
+| vídeo relacionado | 155 | 827 |
+| busca do YouTube | 151 | 165 |
+
+**Os Shorts trazem a maior fatia de views e a menor de minutos**: 716 views rendem 50 minutos,
+contra 332 views de link externo rendendo 1.545. Isso sustenta, por caminho independente e agora com
+medição direta, o que a seção 3 do handoff anterior tinha inferido por views/dia.
