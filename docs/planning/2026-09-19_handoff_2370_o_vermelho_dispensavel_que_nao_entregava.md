@@ -122,3 +122,76 @@ tinha respondido "TEM" para 44 de 44, porque a sonda testava presença de saída
 3. **O que escorrega não é o número, é a frase em volta dele.** Na revisão cruzada com a lane
    `pmigo-plataforma`, quatro afirmações caíram, duas de cada lado, e **nenhuma era erro de
    medição** — todas eram erro de enunciado sobre o que a medição provava.
+
+---
+
+## 9. Adendo: o que só apareceu ao responder as perguntas do dono
+
+> Carimbado 19/09 ~08h40 UTC, depois do merge das seções 1 a 8. **Re-meça antes de decidir.**
+
+Quatro achados que não existiam quando este documento foi escrito, porque nasceram das perguntas
+que vieram depois: "qual a recomendação", "vou perder estatística de comunicação" e "o cron do
+Credly foi corrigido".
+
+### 9.1 A estatística de comunicação NÃO está em risco pelo que mexemos, mas há prazo
+
+Medido por canal, em `comms_metrics_daily`:
+
+| canal | data mais recente | atraso |
+|---|---|---|
+| instagram, linkedin, youtube | 2026-09-19 | **0 dias** |
+| newsletter | 2026-03-08 | 195 dias, **1 linha na vida** |
+
+Quem entrega é o `pg_cron` **jobid 21**, diário 06:00 UTC, **30 de 30 verdes em 30 dias**. O
+workflow do GitHub nunca gravou linha: **zero** registros com `triggered_by=github_actions`.
+
+⚠️ **Mas há um prazo real, e ele não tem relação com a #2370** (ver **#2378**): o acesso a dados
+do **Instagram expira em 2026-09-26** e o canal **não tem refresh token**, logo não renova
+sozinho. O LinkedIn expira em 2026-10-27 e tem refresh token.
+
+**Eu apontei o risco errado primeiro.** Disse "o token do LinkedIn em 38 dias é o risco real"
+olhando só `token_expires_at`. A coluna que continha o prazo mais próximo era outra,
+`data_access_expires_at`, e só apareceu quando pedi a data absoluta em vez do número de dias.
+⇒ **Pedir a data absoluta não é só higiene de registro: foi o que trocou qual canal era o urgente.**
+
+### 9.2 O detector existe e funciona; o que falta é quem o acione
+
+Verifiquei em vez de supor, e a suposição estava errada: `_comms_token_expiry_scan` **vigia as
+duas colunas**. Ele já criou dois avisos de Instagram (18/09 e 19/09), os dois com
+`acknowledged = false`.
+
+E há precedente no mesmo `comms_token_alerts`: em agosto o token do LinkedIn expirou e ficou
+**4 dias** com "Métricas não estão sendo atualizadas" entre o aviso de véspera e a resolução.
+⇒ O gargalo não é detecção, é que **o alerta mora numa tela que alguém precisa visitar**.
+
+### 9.3 O `pg_cron` do Credly nunca esteve quebrado
+
+Vale desconfundir, porque a #2370 misturava as duas coisas:
+
+- `pg_cron` **jobid 14**: **7 de 7 sucessos em 30 dias**, última em 16/09 03:00. Sempre entregou.
+- O **workflow do GitHub**: esse sim estava em HTTP 504 com entrega zero, e foi o que as PRs
+  #2375 e #2376 consertaram.
+
+### 9.4 Consequência de consertar em vez de remover
+
+O Credly agora tem **dois caminhos vivos**: o `pg_cron` a cada 5 dias e o workflow toda segunda
+às 08:00. A operação é idempotente, então não corrompe, mas é trabalho em dobro contra a API do
+Credly. Se for reduzir a um, o candidato a sair é o workflow, porque o cron é o que tem histórico.
+
+### 9.5 Recomendação revista sobre o passo 5
+
+**Não arquivar agora.** Quando a pergunta foi feita, arquivar era a forma de fechar a escrita.
+Já não é: desativar os 4 syncs fechou, e os workflows que seguem ativos lá (`CI Validate`,
+`CodeQL`) **não têm `schedule:`** (medido), então não disparam sem push, e não há push há 180 dias.
+
+O que sobra de arquivar é impedir reativação acidental, ao custo de congelar 33 issues e 5 PRs.
+Mais barato e com o mesmo efeito: **apagar os 4 secrets de lá** (todos de 2026-03-08; o de
+knowledge já foi rotacionado e está morto), e decidir sobre as 33 issues antes de arquivar.
+Nenhuma delas foi lida.
+
+### 9.6 Recomendação firme sobre `Comms Metrics Sync` deste repo
+
+**Remover, ou ao menos tirar o `schedule:`.** Consertar exigiria inventar um feed externo que não
+existe em nenhum dos dois repositórios, para duplicar o que o `pg_cron` jobid 21 faz há 30 dias
+sem falhar. Enquanto isso, ele produz um verde por dia afirmando sucesso sem trabalho, e esse
+verde entra na superfície sobre a qual o audit semanal de bypass raciocina.
