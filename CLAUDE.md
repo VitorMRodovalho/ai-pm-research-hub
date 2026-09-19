@@ -195,6 +195,11 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - i18n: `.claude/rules/i18n.md`
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
+- **TODA mudança entra por PR, inclusive a que só mexe em documentação** (`.md`, `CLAUDE.md`,
+  `.claude/rules/`, `.claude/settings.json`, hooks). Decisão do dono, 2026-09-18: push direto de doc
+  passa como `Bypassed rule violations` e **conta como evento de bypass** na ADR-0122, porque a
+  métrica é "push sem PR associada" e não olha o conteúdo. Doc inofensiva suja a superfície sobre a
+  qual o audit semanal raciocina. Detalhe em `.claude/rules/bypass-protocol.md`.
 - **Bypass protocol (--admin / direct push)**: `.claude/rules/bypass-protocol.md` (post-p209 governance — Option C Híbrido + weekly cron audit at `.github/workflows/bypass-audit-weekly.yml`)
 - V4 refactor invariants (historical, archived): `docs/refactor/refactor-in-progress-RULES-ARCHIVED.md`
 

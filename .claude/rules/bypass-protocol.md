@@ -49,6 +49,23 @@ Use as comment template in PR:
 - Week bypass count (pre-merge): <run audit query>
 ```
 
+## Mudança SÓ de documentação também vai por PR (decisão do dono, 2026-09-18)
+
+**Não existe carve-out para doc.** Commit de `.md`, de `CLAUDE.md`, de `.claude/rules/`, de
+`.claude/settings.json` ou de hook entra por PR como qualquer outro.
+
+Motivo, medido no mesmo dia: dois pushes diretos de documentação e configuração passaram com
+`Bypassed rule violations — 4 of 4 required status checks are expected`. Eram inofensivos no
+conteúdo e **contam como evento de bypass** no audit semanal pela ADR-0122, porque a métrica é
+"push na main sem PR associada" e não olha o que mudou.
+
+⇒ Push direto de doc **suja a superfície sobre a qual o audit raciocina**. Um audit cuja contagem
+mistura mudança de risco com mudança de texto perde a capacidade de dizer alguma coisa — e o
+custo de evitar isso é abrir uma PR, que leva um minuto.
+
+A exceção continua sendo a mesma de sempre: emergência que satisfaça os critérios de bypass
+legítimo da seção acima, com issue aberta antes.
+
 ## Direct push to main (no PR)
 
 Same criteria applies, with addition:
