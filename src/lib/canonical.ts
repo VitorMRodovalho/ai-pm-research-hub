@@ -57,3 +57,43 @@ export const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;
 
 /** Host printed on certificate PDFs for the verification link (chapter-institutional). */
 export const CERT_VERIFY_HOST = "nucleoia.pmigo.org.br";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WHY `nucleoia.pmigo.org.br` STILL 301s, AND WHY THAT IS NOT A BUG
+// (measured 2026-09-19; nothing below is inferred from code alone)
+//
+// The app moved from Cloudflare Pages to the Worker `platform`. The Worker is
+// the only production owner today, and Pages was left serving PR previews only:
+// the project has `production_deployments_enabled: false`, so every push to
+// `main` creates a deployment that is born `is_skipped: true` and never builds.
+// That is DELIBERATE — turning it back on resurrects two services answering for
+// the same app, which is the thing the migration removed.
+//
+// `nucleoia.pmigo.org.br` did NOT come along. It is a CNAME at HostGator
+// pointing to `ai-pm-research-hub.pages.dev`, and it is a custom domain on the
+// Pages project. So it is served by the frozen Pages production build, whose
+// LEGACY_HOSTS still listed it — hence the 301 to CANONICAL_HOST. Following the
+// redirect it reaches the app in one hop, which is why nobody noticed.
+//
+// It could not come along: Workers Custom Domains require "an active Cloudflare
+// zone" and refuse "a zone you do not own" (Cloudflare docs). The zone
+// `pmigo.org.br` lives on HostGator nameservers (ns854/855) and is NOT in this
+// Cloudflare account — the Worker's own domain record points at a zone id this
+// account reads as "Invalid zone identifier".
+//
+// CONSEQUENCES, so nobody re-derives this:
+//   · Do NOT "fix" it by enabling Pages production deployments. That undoes the
+//     migration's single-owner property.
+//   · Do NOT remove the Pages custom domain either: the HostGator CNAME would
+//     then point at a project that does not claim the host, and Cloudflare's own
+//     docs say that produces a 522.
+//   · Serving the chapter domain WITHOUT a redirect requires the zone in a
+//     Cloudflare account the Worker can reach — i.e. moving `pmigo.org.br`
+//     nameservers. That is a chapter-side decision with a DNS window, and it
+//     also moves the chapter WordPress DNS (root A record, HostGator IP), which
+//     is otherwise untouched by anything here.
+//   · Two co-equal entrances are possible for SERVING; what cannot be duplicated
+//     is the OAuth issuer / MCP base identity, which is what CANONICAL_HOST is.
+//     Co-hosting 200 on both while the canonical stays here breaks no registered
+//     MCP client; flipping the canonical does (see the checklist above).
+// ─────────────────────────────────────────────────────────────────────────────
