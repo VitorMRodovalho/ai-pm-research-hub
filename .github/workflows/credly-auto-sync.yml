@@ -1,6 +1,24 @@
 # S10 — Credly Auto Sync (weekly)
 # Invokes sync-credly-all Edge Function to refresh badge data.
 # Requires: sync-credly-all deployed; SUPABASE_SERVICE_ROLE_KEY configured (#58).
+#
+# #2370 — por que este workflow NAO espera a resposta da funcao.
+#
+# A EF nao emite byte nenhum ate terminar o lote inteiro, entao o relogio de IDLE do gateway
+# e, na pratica, o tempo total do lote. Em 4 corridas (24/08, 31/08, 07/09 e 14/09) o lote
+# passou de 150s e o gateway devolveu
+#   {"code":"IDLE_TIMEOUT","message":"Request idle timeout limit (150s) reached"}
+# com ZERO membro carimbado na janela de cada uma — medido em members.credly_verified_at.
+# Esperar pela conexao, portanto, nao e o que faz o trabalho acontecer: e so o que faz o
+# workflow ficar vermelho quando o lote demora.
+#
+# O pg_cron (jobid 14) prova o contrario no mesmo banco: ele desiste de esperar em 3s
+# (timeout_milliseconds := 3000) e ainda assim o lote COMPLETA — 68 membros carimbados entre
+# 03:00:07 e 03:00:22 em 16/09. A EF sobrevive ao caller desconectar.
+#
+# Dai o desenho: despachar sem segurar a conexao, e entao afirmar a ENTREGA lendo o dado.
+# Verde aqui significa "membro carimbado", nao "requisicao aceita" — que e a distincao que
+# fez este workflow e o de comms ficarem verdes (ou vermelhos) sem relacao com o trabalho.
 
 name: Credly Auto Sync
 
@@ -15,6 +33,12 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  # Quanto esperar pela resposta antes de considerar a chamada DESPACHADA e seguir para a
+  # verificacao. Nao e o tempo do lote: medido em 19/09, o lote leva 40-53s. Este numero
+  # so precisa ser maior que o handshake.
+  DISPATCH_TIMEOUT_S: '25'
+  # Janela total para o carimbo aparecer no dado, contando a partir do despacho.
+  VERIFY_WINDOW_S: '300'
 
 permissions:
   contents: read
@@ -40,26 +64,86 @@ jobs:
         if: steps.check.outputs.skip == 'true'
         run: echo "Skipped — secrets not configured"
 
-      - name: Trigger sync-credly-all
+      - name: Despachar sync-credly-all (sem segurar a conexao)
+        id: dispatch
         if: steps.check.outputs.skip != 'true'
         run: |
-          set -euo pipefail
+          set -uo pipefail
           URL="${SUPABASE_URL%/}/functions/v1/sync-credly-all"
-          echo "Calling: $URL"
+
+          # Marco temporal ANTES do despacho: e contra ele que a entrega sera afirmada.
+          # Um segundo de folga para tras absorve o desvio de relogio entre runner e banco.
+          SINCE=$(date -u -d '1 second ago' +%Y-%m-%dT%H:%M:%SZ)
+          echo "since=$SINCE" >> "$GITHUB_OUTPUT"
+          echo "Despachando: $URL  (marco: $SINCE)"
+
           HTTP_CODE=$(curl -sS -o /tmp/credly_sync_resp.json -w "%{http_code}" \
+            --max-time "$DISPATCH_TIMEOUT_S" \
             -X POST "$URL" \
             -H "Content-Type: application/json" \
             -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
             -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
             -d '{"triggered_by":"github_actions_cron"}')
+          RC=$?
 
-          echo "HTTP_CODE=$HTTP_CODE"
-          cat /tmp/credly_sync_resp.json || true
-
-          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
-            echo "Credly sync returned HTTP $HTTP_CODE"
+          # 28 = operation timeout. Nao e falha: e o caso normal deste desenho. A EF segue
+          # rodando do lado do servidor, e o passo seguinte e que decide se ela entregou.
+          if [ "$RC" -eq 28 ]; then
+            echo "Sem resposta em ${DISPATCH_TIMEOUT_S}s — despachado. A verificacao decide."
+            exit 0
+          fi
+          if [ "$RC" -ne 0 ]; then
+            echo "curl falhou com rc=$RC (nao e timeout de espera)"
             exit 1
           fi
+
+          echo "HTTP_CODE=$HTTP_CODE"
+          head -c 400 /tmp/credly_sync_resp.json || true
+          echo
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Credly sync respondeu HTTP $HTTP_CODE"
+            exit 1
+          fi
+
+      - name: Verificar ENTREGA no dado (verde = membro carimbado)
+        if: steps.check.outputs.skip != 'true'
+        env:
+          SINCE: ${{ steps.dispatch.outputs.since }}
+        run: |
+          set -uo pipefail
+          REST="${SUPABASE_URL%/}/rest/v1/members"
+          DEADLINE=$(( $(date +%s) + VERIFY_WINDOW_S ))
+          N=0
+
+          while :; do
+            BODY=$(curl -sS -G "$REST" \
+              --data-urlencode "select=id" \
+              --data-urlencode "credly_verified_at=gte.$SINCE" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+            RC=$?
+            if [ "$RC" -ne 0 ]; then
+              echo "Leitura de verificacao falhou (rc=$RC) — nao e veredito, e instrumento."
+              exit 1
+            fi
+            # Conta, nunca "tem saida ou nao": um corpo de erro tambem e saida.
+            N=$(printf '%s' "$BODY" | jq 'if type=="array" then length else -1 end')
+            if [ "$N" -lt 0 ]; then
+              echo "Resposta inesperada do PostgREST: $(printf '%s' "$BODY" | head -c 200)"
+              exit 1
+            fi
+            echo "membros carimbados desde $SINCE: $N"
+            [ "$N" -gt 0 ] && break
+            [ "$(date +%s)" -ge "$DEADLINE" ] && break
+            sleep 10
+          done
+
+          if [ "$N" -eq 0 ]; then
+            echo "NAO ENTREGUE: nenhum membro carimbado em ${VERIFY_WINDOW_S}s desde $SINCE."
+            echo "Este e exatamente o caso que as 4 corridas de IDLE_TIMEOUT produziam em silencio."
+            exit 1
+          fi
+          echo "ENTREGUE: $N membros carimbados desde $SINCE"
 
       - name: Upload response artifact
         if: always()

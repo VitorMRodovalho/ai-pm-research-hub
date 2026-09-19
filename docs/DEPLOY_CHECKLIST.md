@@ -121,13 +121,19 @@ Env vars are set in `.github/workflows/deploy.yml` build step:
 | **CI Validate** | push/PR em `main` e `dev` | ✅ `quality_gate` aprovado (validate + browser_guards) |
 | **Issue Reference Gate** | push/PR em `main` e `dev` | ✅ exige issue link em trilha crítica |
 | **CodeQL Analysis** | push/PR em main | ✅ Passa (upload: false até Code scanning habilitado) |
-| **Project Governance Sync** | diário 09:15 UTC, push em gov paths | ✅ Passa (usa GITHUB_TOKEN) |
-| **Knowledge Insights** | seg/qui 10:30 UTC | ✅ Passa (skip quando secrets ausentes) |
-| **Credly Auto Sync** | seg 08:00 UTC | ✅ Passa (skip até #58) |
-| **Comms Metrics Sync** | diário 07:30 UTC | ✅ Passa (skip até #57) |
+| **Project Governance Sync** | diário 09:15 UTC, push em gov paths | ✅ Passa (usa GITHUB_TOKEN). **Não chama Edge Function**: gera snapshot e artefato, não escreve no banco |
+| **Knowledge Insights** | seg/qui 10:30 UTC | ✅ Passa. Foi **401 em 56 de 56 corridas** até 18/09/2026, quando o `SYNC_KNOWLEDGE_INSIGHTS_SECRET` foi alinhado (#2370) |
+| **Credly Auto Sync** | seg 08:00 UTC | ✅ Passa. **Despacha sem segurar a conexão e afirma a entrega lendo `members.credly_verified_at`** — o verde significa membro carimbado (#2370) |
+| **Comms Metrics Sync** | diário 07:30 UTC | ⚠️ **Verde por skip**: `COMMS_METRICS_SOURCE_URL` nunca foi configurado, então a corrida agendada sai antes de chamar a EF. Quem entrega é o `pg_cron` (#2370) |
 | **Dependabot Updates** | PRs do Dependabot | Padrão GitHub ao abrir PR de deps |
 
 **Nenhum workflow é legado/Codex** — todos têm propósito atual. Dependabot não é nosso workflow, é o fluxo padrão do GitHub.
+
+> ⚠️ **Workflow agendado verde não quer dizer trabalho feito, e vermelho não quer dizer trabalho perdido.**
+> Medido em #2370: `Comms Metrics Sync` acumulou 29 verdes em 30 dias sem chamar a EF uma vez, e as
+> 4 corridas de `Credly Auto Sync` que devolveram `IDLE_TIMEOUT` (HTTP 504) entregaram zero — enquanto
+> o `pg_cron` entregava o mesmo lote em 15 s. Ao ler esta tabela, pergunte **quem o scheduler chama**,
+> não qual workflow está verde. O inventário de quem entrega de fato está em `PROJECT_ON_TRACK.md`.
 
 ---
 

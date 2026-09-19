@@ -71,15 +71,22 @@
 
 ## 3. Edge Functions — Lacuna crítica
 
-| Função | Chamada de | Existe no repo? |
-|--------|------------|-----------------|
-| verify-credly | profile.astro | ✅ |
-| sync-comms-metrics | GitHub Action, external | ✅ |
-| sync-knowledge-insights | GitHub Action | ✅ |
-| **sync-credly-all** | gamification.astro, credly-auto-sync.yml | ✅ |
-| **sync-attendance-points** | gamification.astro | ✅ |
+| Função | Chamada de | Quem ENTREGA hoje | Existe no repo? |
+|--------|------------|-------------------|-----------------|
+| verify-credly | profile.astro | a própria tela | ✅ |
+| sync-comms-metrics | GitHub Action, external, `pg_cron` | **`pg_cron` jobid 21**, diário 06:00 UTC | ✅ |
+| sync-knowledge-insights | GitHub Action | **`knowledge-insights-auto-sync.yml`**, seg/qui 10:30 UTC | ✅ |
+| **sync-credly-all** | gamification.astro, credly-auto-sync.yml, `pg_cron` | **`pg_cron` jobid 14**, a cada 5 dias 03:00 UTC | ✅ |
+| **sync-attendance-points** | gamification.astro | a própria tela | ✅ |
 
 **Status:** lacuna de versionamento corrigida; o risco atual é apenas drift documental caso este quadro não seja mantido sincronizado.
+
+> **A coluna "quem entrega" existe porque a coluna "chamada de" não respondia à pergunta que importa** (#2370).
+> Havia três caminhos para `sync-credly-all` — a tela, o workflow e o `pg_cron` — e nenhum inventário
+> dizia qual deles fazia o trabalho. O único que entregava era o `pg_cron`; o workflow devolvia HTTP 504
+> havia meses e o vermelho não bloqueava nada. **Quando duas implementações de uma regra existem, a
+> pergunta não é qual está certa, é qual o scheduler chama.** Ao acrescentar uma função aqui, preencha
+> esta coluna com o caminho medido, não com o caminho previsto.
 
 ---
 
