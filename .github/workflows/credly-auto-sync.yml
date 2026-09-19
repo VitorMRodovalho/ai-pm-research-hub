@@ -69,6 +69,12 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         run: |
           set -uo pipefail
+          # ⚠️ `set -uo pipefail` NAO desliga o `-e`: o Actions invoca cada step como
+          # `bash -e {0}`, entao o errexit ja vem ligado da INVOCACAO, e uma atribuicao
+          # `VAR=$(cmd)` com status nao-zero aborta o script ANTES de qualquer checagem de $?.
+          # Medido em 19/09: sem o `set +e` abaixo, a run 35428770394 morreu com exit 28 no
+          # curl — o proprio codigo que o passo existe para tratar como caso normal.
+          set +e
           URL="${SUPABASE_URL%/}/functions/v1/sync-credly-all"
 
           # Marco temporal ANTES do despacho: e contra ele que a entrega sera afirmada.
@@ -111,6 +117,7 @@ jobs:
           SINCE: ${{ steps.dispatch.outputs.since }}
         run: |
           set -uo pipefail
+          set +e   # mesmo motivo do passo anterior: o `-e` vem de `bash -e {0}`
           REST="${SUPABASE_URL%/}/rest/v1/members"
           DEADLINE=$(( $(date +%s) + VERIFY_WINDOW_S ))
           N=0
