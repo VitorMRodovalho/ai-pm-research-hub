@@ -132,6 +132,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/ground-numbers.py",
+            "timeout": 15
+          }
+        ]
+      }
     ]
   }
 }
