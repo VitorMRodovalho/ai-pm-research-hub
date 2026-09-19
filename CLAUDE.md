@@ -3,8 +3,9 @@
 ## Grounding — numbers must come from a live tool result (MANDATORY)
 
 **IMPORTANT — YOU MUST:** any DB count, %, metric, cohort size, denominator, version number, or test baseline
-that enters a user-decision prompt, an `AskUserQuestion` option, a commit message, a PR body, a SPEC, or a memory
-file MUST be produced by a tool call **in the current turn**. NEVER recite or "correct" a number from memory,
+that enters a user-decision prompt, an `AskUserQuestion` option, a commit message, a PR body, a SPEC, a memory
+file, **or any number stated to the owner in plain prose**, MUST be produced by a tool call **in the current
+turn**. NEVER recite or "correct" a number from memory,
 from `MEMORY.md`, from a handoff, or from a prior turn — **re-query the source of truth** (`execute_sql`
 read-only / MCP RPC / `npm view` / `curl` / `npm test`). A simulation/estimate is NOT a measurement; label it as
 such and never let it become a stated antes/depois.
@@ -16,7 +17,21 @@ such and never let it become a stated antes/depois.
   transcript above the question.
 - antes→depois: capture BOTH from live queries (BEFORE pre-apply, AFTER post-apply). Never derive "before" by
   reasoning backward from "after".
-- Re-ground numbers at each PR boundary; do not carry them in working memory across a long multi-PR session.
+- **Re-ground a number whenever YOU write to the source that produced it** — not "at each PR boundary". The PR
+  boundary is a code-work cadence and never fires in a session of platform ops, Drive, calendar or external
+  comms. Measured 2026-09-18: a count of members was stated, then *I* created a member, then the same count was
+  repeated across three turns. **The number you invalidated yourself is the one that least feels like it needs
+  re-measuring**, because "I just measured this" is still fresh. Also re-ground at each PR boundary, and do not
+  carry numbers in working memory across a long session.
+- **Prose is the surface that travels.** Commit messages and PR bodies stay in the repo; prose to the owner is
+  the one he *forwards*. On 2026-09-18 a "~20 chapters" left here in prose and reached a WhatsApp group with the
+  partners; the real count was 16. The tilde protected nothing — it became "20" the first time it was repeated.
+  A `Stop` hook (`.claude/hooks/ground-numbers.py`) now flags counts asserted in prose with no tool result behind
+  them in the last two turns. It **warns, never blocks** (15% firing rate, measured), and it only catches numbers
+  that never came from a tool at all — a number that came from a tool once and went stale is still on you.
+- **Counting visual elements in a document requires enumeration, never estimate.** Logos in a slide grid, rows in
+  a table image, icons: count them out and show the sum (`4+3+3+3+3 = 16`). An eyeballed count produces a
+  plausible wrong number, and plausible is exactly what survives repetition.
 
 ## ANTES de `apply_migration`: fila de PRs vazia **E** nenhum job de banco em voo (MANDATÓRIO)
 
