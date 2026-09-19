@@ -1,5 +1,59 @@
 # Prompt de arranque - sessão seguinte à de 19/09
 
+> # 🛑 LEIA ISTO ANTES DE USAR AS PRIORIDADES ABAIXO
+>
+> **As 8 verticais e a tabela de prioridades deste documento estão SUPERADAS.** Elas foram
+> derivadas das ~40 issues tocadas recentemente, não do corpus. O dono recusou, e com razão: é
+> amostra por recência apresentada como mapa temático. Este documento adverte contra esse erro
+> na seção 5 e o comete na seção 3.
+>
+> **Ele fica no repositório de propósito**, com este aviso, porque o erro e a correção valem mais
+> juntos do que o registro limpo.
+>
+> ## Por onde arrancar de verdade
+>
+> 1. **Plano aprovado:** `~/.claude/plans/floating-kindling-teacup.md`
+> 2. **Dados já coletados e verificados:** `~/.claude/backlog-recon-2026-09-20/ESTADO.md`
+>    (fora de repo git de propósito: contém corpo de issue de trackers privados)
+>
+> ## O que a medição corrigiu
+>
+> | este documento diz | a medição diz |
+> |---|---|
+> | 390 issues abertas | **435**, no escopo do Núcleo, em **6 repositórios** |
+> | 8 verticais que eu inventei | o repo **já tem** taxonomia de lanes: rótulos `onda:*` |
+> | 185 de 390 com PR mergeada | a janela tinha **400 de 1123 PRs**: eu via 36% do universo |
+> | wiki dentro de "camada de conhecimento" | wiki é **repositório próprio**; a lane não é rastreada por issue |
+> | não menciona | lane de **domínio e site do PMI-GO** |
+> | não menciona | **33 issues** no repo v2, que são o que trava o passo 5 da #2370 |
+>
+> ## Estado já medido, não refazer
+>
+> - **Coleta conferida contra a contagem autoritativa do servidor, repo a repo. Todos bateram.**
+> - **Avanço:** 209 sem PR · 98 tocada (1 PR) · 128 trabalhada (2+) · soma **435** ✔
+>   Nenhuma faixa vazia nem total, logo a faixa discrimina.
+> - **Checkbox não mede avanço:** 597 caixas, **0 marcadas**, com controle positivo provando que o
+>   instrumento acha caixa marcada. Não reintroduzir esse sinal.
+> - **O resíduo foi medido e é 222.** O classificador por título decide 213 sozinho (casa
+>   exatamente um tema) e deixa 222 para julgamento (87 sem tema + 135 ambíguas). Classificar pelo
+>   corpo resolve cobertura e **destrói** discriminação: 5,4 temas por issue.
+>   ⇒ **222 itens de julgamento com taxonomia fechada justificam o fan-out.** Retomar em B2.
+>
+> ## Uma decisão espera por você
+>
+> 4 dos 6 repositórios do escopo são privados e o maior é público. Proposta: o documento de
+> reconciliação completo vai para o tracker **privado**, e no repositório público fica só a parte
+> que é dele, mais um ponteiro sem conteúdo.
+>
+> ## Primeiro comando da sessão limpa
+>
+> ```bash
+> cat ~/.claude/backlog-recon-2026-09-20/ESTADO.md
+> ```
+>
+> ---
+
+
 > **Nada aqui é medição viva.** Carimbado em 19/09/2026 ~15h50 UTC.
 > **Re-meça antes de decidir.** Repositório público: não nomeia o repositório privado
 > envolvido na #2370 nem identificadores de conta. Esses vivem na memória privada
