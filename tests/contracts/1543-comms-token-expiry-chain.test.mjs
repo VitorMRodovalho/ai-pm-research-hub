@@ -144,12 +144,36 @@ test("#1543 'unknown' está no vocabulário e é distinguível de dispensa human
     .eq('acknowledged', true)
     .is('acknowledged_by', null);
   assert.equal(errAutos, null, `leitura falhou: ${errAutos?.message}`);
+
+  // #2382: a resolução automática virou SIMÉTRICA, e por isso esta asserção deixou de poder ser
+  // "o tipo é 'unknown'". O que a torna legítima não é o tipo, é a PREMISSA ter desaparecido:
+  //   - 'unknown'            → a sonda descobriu um prazo, e o alerta dizia que não havia nenhum;
+  //   - 'warning' / 'urgent' → o canal deixou de ter prazo, e o alerta falava de um prazo.
+  // Afirmar só o tipo ficaria verde com o mecanismo errado: bastaria alguém auto-resolver um
+  // 'warning' de um canal que AINDA TEM prazo, que é justamente a dispensa que exige ato humano.
+  // Por isso o guard amarra a condição ao resultado, e não aceita 'warning'/'urgent' sem checar
+  // que o canal está hoje sem prazo nenhum.
+  const { data: canais, error: errCanais } = await sb
+    .from('comms_channel_config')
+    .select('channel, token_expires_at, data_access_expires_at');
+  assert.equal(errCanais, null, `leitura de comms_channel_config falhou: ${errCanais?.message}`);
+  const semPrazo = new Set(
+    (canais ?? [])
+      .filter((c) => !c.token_expires_at && !c.data_access_expires_at)
+      .map((c) => c.channel),
+  );
+
   for (const a of autos ?? []) {
-    assert.equal(
-      a.alert_type,
-      'unknown',
-      `alerta ${a.id} foi resolvido pela máquina mas é do tipo ${a.alert_type}; só 'unknown' se resolve ` +
-        'sozinho (quando a sonda descobre o prazo). Os demais exigem ato humano.',
+    if (a.alert_type === 'unknown') continue;
+    assert.ok(
+      a.alert_type === 'warning' || a.alert_type === 'urgent',
+      `alerta ${a.id} foi resolvido pela máquina e é do tipo ${a.alert_type}, que não se resolve sozinho.`,
+    );
+    assert.ok(
+      semPrazo.has(a.channel),
+      `alerta ${a.id} (${a.alert_type}, canal ${a.channel}) foi resolvido pela máquina, mas o canal AINDA ` +
+        'tem prazo registrado. A premissa do alerta não desapareceu, logo dispensá-lo exige ato humano ' +
+        'e `acknowledged_by` não podia estar NULL.',
     );
   }
 });
