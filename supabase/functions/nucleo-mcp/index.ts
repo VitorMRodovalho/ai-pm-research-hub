@@ -3087,6 +3087,30 @@ function registerTools(mcp: McpServer, sb: Sb) {
 
   // ===== OFFBOARDING (issue #91 quick wins) =====
 
+// #1571: a data efetiva do offboard, validada ANTES de virar argumento.
+//
+// O defeito que esta issue corrige era exatamente "aceito e descartado em silencio": a RPC
+// declarava o parametro e nao o repassava, e o operador via `success: true` acreditando ter
+// registrado data retroativa. Repetir isso na camada MCP, aceitando string invalida e deixando
+// virar NULL (= carimba hoje), seria reintroduzir o mesmo defeito uma camada acima.
+//
+// Por isso: ou a data e valida e vai adiante, ou a chamada FALHA dizendo por que. Data futura e
+// recusada porque o destino mais grave e o TEXTO do certificado alumni, documento entregue ao
+// voluntario: "saida em <data no futuro>" nao e um registro, e um erro impresso.
+function parseEffectiveDate(v: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (v === undefined || v === null || v === "") return { ok: true, value: null };
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return { ok: false, error: "effective_date must be an ISO date (YYYY-MM-DD)." };
+  }
+  const d = new Date(`${v}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) {
+    return { ok: false, error: `effective_date '${v}' is not a real calendar date.` };
+  }
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (v > hoje) return { ok: false, error: `effective_date '${v}' is in the future; an offboarding cannot take effect after today (${hoje}).` };
+  return { ok: true, value: v };
+}
+
   // TOOL: offboard_member (ADR-0018 W1: confirm=true required to execute)
   mcp.tool("offboard_member", "Transitions a member to alumni / observer / inactive with structured reason. Admin only. Use 'alumni' for 'open door' departures (member can return via new selection), 'observer' for temporary pause, 'inactive' for terminal. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {
     member_id: z.string().describe("UUID of member"),
@@ -3094,6 +3118,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     reason_category: z.enum(["personal_workload","personal_agenda","academic_conflict","health","relocation","end_of_cycle","external_priority","lack_of_fit","policy_violation","other"]).describe("Reason taxonomy — see offboard_reason_categories table"),
     reason_detail: z.string().describe("Free-text context (1-3 sentences)"),
     reassign_cards_to: z.string().optional().describe("Optional UUID to reassign open cards to"),
+    effective_date: z.string().optional().describe("#1571 - ISO date (YYYY-MM-DD) when the departure actually took effect. Omit to use today. Reaches engagements.end_date, members.offboarded_at and the TEXT of the alumni certificate; a departure communicated earlier and registered later needs this or the certificate carries the wrong date."),
     confirm: z.boolean().optional().describe("Pass confirm=true to execute. When omitted/false, returns a preview payload with the target member's current status + active engagements/cards counts (ADR-0018 W1 cross-MCP injection mitigation).")
   }, async (params: any) => {
     const start = Date.now();
@@ -3101,6 +3126,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (!member) { await logUsage(sb, null, "offboard_member", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.member_id)) { await logUsage(sb, member.id, "offboard_member", false, "Invalid member_id", start); return err("member_id must be a UUID"); }
     if (!(await canV4(sb, member.id, 'manage_member'))) { await logUsage(sb, member.id, "offboard_member", false, "Unauthorized", start); return err("Unauthorized: admin only."); }
+    const efd = parseEffectiveDate(params.effective_date);
+    if (!efd.ok) { await logUsage(sb, member.id, "offboard_member", false, efd.error, start); return err(efd.error); }
     if (params.confirm !== true) {
       const memberRes = await sb.from("members").select("id, name, member_status, operational_role, person_id").eq("id", params.member_id).maybeSingle();
       const personId = memberRes.data?.person_id || null;
@@ -3120,7 +3147,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
           open_cards_assigned: cardsRes.count ?? null,
           cards_will_be_reassigned_to: params.reassign_cards_to || null,
         },
-        proposed_change: { new_status: params.new_status, reason_category: params.reason_category, reason_detail: params.reason_detail },
+        proposed_change: { new_status: params.new_status, reason_category: params.reason_category, reason_detail: params.reason_detail, effective_date: efd.value, backdated: efd.value !== null },
         warning: "Destructive action — will change member_status and cascade-close engagements. Pass confirm=true in a follow-up call to execute.",
         next_call: { member_id: params.member_id, new_status: params.new_status, reason_category: params.reason_category, reason_detail: params.reason_detail, reassign_cards_to: params.reassign_cards_to || null, confirm: true }
       });
@@ -3130,7 +3157,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
       p_new_status: params.new_status,
       p_reason_category: params.reason_category,
       p_reason_detail: params.reason_detail,
-      p_reassign_to: params.reassign_cards_to || null
+      p_reassign_to: params.reassign_cards_to || null,
+      p_effective_date: efd.value
     });
     if (error) { await logUsage(sb, member.id, "offboard_member", false, error.message, start); return err(error.message); }
     if (data?.error) { await logUsage(sb, member.id, "offboard_member", false, data.error, start); return err(data.error); }
@@ -9400,6 +9428,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       reason_category: z.string().optional().describe("offboard/list_offboarding filter — reason taxonomy code."),
       reason_detail: z.string().optional().describe("offboard — free-text context."),
       reassign_cards_to: z.string().optional().describe("offboard — member UUID to reassign open cards to."),
+      effective_date: z.string().optional().describe("offboard - #1571: ISO date (YYYY-MM-DD) when the departure took effect. Omit to use today. Reaches engagements.end_date, members.offboarded_at and the TEXT of the alumni certificate."),
       reason: z.string().optional().describe("reissue_agreement / cancel_re_engagement — audit reason."),
       confirm: z.boolean().optional().describe("offboard/reissue_agreement — pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
       cycle_code: z.string().optional().describe("stage_alumni (target cycle) / list_re_engagement filter."),
@@ -9439,13 +9468,24 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         permission = "promote";
       }
 
+      // #1571: valida a data efetiva ANTES do gate de confirm, para que o preview nunca mostre
+      // uma data que o confirm vai recusar. Preview que promete o que a execucao nega e pior que
+      // nao ter preview.
+      const efd = parseEffectiveDate(params.effective_date);
+      if (params.action === "offboard" && !efd.ok) {
+        await logUsage(sb, member.id, "member_lifecycle", false, efd.error, start);
+        return invalid(efd.error, "Pass effective_date as YYYY-MM-DD, not in the future.");
+      }
+
       // ADR-0018 confirm-gate for destructive verbs (offboard/reissue).
       if ((params.action === "offboard" || params.action === "reissue_agreement") && params.confirm !== true) {
         if (!isUUID(params.member_id)) return invalid(`action='${params.action}' requires member_id (UUID).`, "Pass member_id.");
         const { data: tgt } = await sb.from("members").select("id, name, member_status").eq("id", params.member_id).maybeSingle();
         await logUsage(sb, member.id, "member_lifecycle", true, undefined, start, "preview");
         return semanticOk({
-          data: { action: params.action, preview: true, target: tgt || { id: params.member_id, note: "not found" }, next_call: { action: params.action, member_id: params.member_id, confirm: true } },
+          data: { action: params.action, preview: true, target: tgt || { id: params.member_id, note: "not found" },
+                  ...(params.action === "offboard" ? { effective_date: efd.ok ? efd.value : null, backdated: efd.ok && efd.value !== null } : {}),
+                  next_call: { action: params.action, member_id: params.member_id, confirm: true, ...(params.action === "offboard" && efd.ok && efd.value ? { effective_date: efd.value } : {}) } },
           summary: params.action === "offboard" ? `PREVIEW: offboard ${tgt?.name ?? params.member_id} → ${params.new_status ?? "?"}. Reenvie com confirm=true.` : `PREVIEW: reissue agreement de ${tgt?.name ?? params.member_id}. ⚠️ Re-aceite de termo = Camada-5, NÃO reissue (reissue REBAIXA autoridade). Reenvie com confirm=true se realmente for reissue.`,
           warnings: [params.action === "reissue_agreement" ? "reissue supersedes the current agreement link → is_authoritative=false → demotes operational_role. For a member re-accepting, use Camada-5 (#976), not reissue." : "Offboarding revokes engagements + may reassign cards."],
           next_actions: [`member_lifecycle action='${params.action}' confirm=true`],
@@ -9458,7 +9498,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       switch (params.action) {
         case "offboard":
           if (!isUUID(params.member_id) || !params.new_status || !params.reason_category || !params.reason_detail) return invalid("offboard requires member_id + new_status + reason_category + reason_detail.");
-          rpc = "admin_offboard_member"; rpcArgs = { p_member_id: params.member_id, p_new_status: params.new_status, p_reason_category: params.reason_category, p_reason_detail: params.reason_detail, p_reassign_to: params.reassign_cards_to || null }; break;
+          rpc = "admin_offboard_member"; rpcArgs = { p_member_id: params.member_id, p_new_status: params.new_status, p_reason_category: params.reason_category, p_reason_detail: params.reason_detail, p_reassign_to: params.reassign_cards_to || null, p_effective_date: efd.ok ? efd.value : null }; break;
         case "reissue_agreement":
           if (!isUUID(params.member_id) || !params.reason) return invalid("reissue_agreement requires member_id + reason.");
           warnings.push("reissue supersedes the current agreement → demotes authority. Use Camada-5 for a re-accept.");
