@@ -298,6 +298,30 @@ async function canV4(sb: Sb, memberId: string, action: string, resourceType?: st
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
+// #1571: a data efetiva do offboard, validada ANTES de virar argumento.
+//
+// O defeito que esta issue corrige era exatamente "aceito e descartado em silencio": a RPC
+// declarava o parametro e nao o repassava, e o operador via `success: true` acreditando ter
+// registrado data retroativa. Repetir isso na camada MCP, aceitando string invalida e deixando
+// virar NULL (= carimba hoje), seria reintroduzir o mesmo defeito uma camada acima.
+//
+// Por isso: ou a data e valida e vai adiante, ou a chamada FALHA dizendo por que. Data futura e
+// recusada porque o destino mais grave e o TEXTO do certificado alumni, documento entregue ao
+// voluntario: "saida em <data no futuro>" nao e um registro, e um erro impresso.
+function parseEffectiveDate(v: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
+  if (v === undefined || v === null || v === "") return { ok: true, value: null };
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return { ok: false, error: "effective_date must be an ISO date (YYYY-MM-DD)." };
+  }
+  const d = new Date(`${v}T00:00:00Z`);
+  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) {
+    return { ok: false, error: `effective_date '${v}' is not a real calendar date.` };
+  }
+  const hoje = new Date().toISOString().slice(0, 10);
+  if (v > hoje) return { ok: false, error: `effective_date '${v}' is in the future; an offboarding cannot take effect after today (${hoje}).` };
+  return { ok: true, value: v };
+}
+
 const NO_TRIBE_HINT = "No tribe assigned. Pass tribe_id parameter (1-8) to specify which tribe. Use list_boards or get_portfolio_overview for board IDs.";
 
 // V4: resolve legacy tribe_id → initiative UUID for _by_initiative RPCs
@@ -3087,29 +3111,6 @@ function registerTools(mcp: McpServer, sb: Sb) {
 
   // ===== OFFBOARDING (issue #91 quick wins) =====
 
-// #1571: a data efetiva do offboard, validada ANTES de virar argumento.
-//
-// O defeito que esta issue corrige era exatamente "aceito e descartado em silencio": a RPC
-// declarava o parametro e nao o repassava, e o operador via `success: true` acreditando ter
-// registrado data retroativa. Repetir isso na camada MCP, aceitando string invalida e deixando
-// virar NULL (= carimba hoje), seria reintroduzir o mesmo defeito uma camada acima.
-//
-// Por isso: ou a data e valida e vai adiante, ou a chamada FALHA dizendo por que. Data futura e
-// recusada porque o destino mais grave e o TEXTO do certificado alumni, documento entregue ao
-// voluntario: "saida em <data no futuro>" nao e um registro, e um erro impresso.
-function parseEffectiveDate(v: unknown): { ok: true; value: string | null } | { ok: false; error: string } {
-  if (v === undefined || v === null || v === "") return { ok: true, value: null };
-  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-    return { ok: false, error: "effective_date must be an ISO date (YYYY-MM-DD)." };
-  }
-  const d = new Date(`${v}T00:00:00Z`);
-  if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) {
-    return { ok: false, error: `effective_date '${v}' is not a real calendar date.` };
-  }
-  const hoje = new Date().toISOString().slice(0, 10);
-  if (v > hoje) return { ok: false, error: `effective_date '${v}' is in the future; an offboarding cannot take effect after today (${hoje}).` };
-  return { ok: true, value: v };
-}
 
   // TOOL: offboard_member (ADR-0018 W1: confirm=true required to execute)
   mcp.tool("offboard_member", "Transitions a member to alumni / observer / inactive with structured reason. Admin only. Use 'alumni' for 'open door' departures (member can return via new selection), 'observer' for temporary pause, 'inactive' for terminal. Destructive — returns a preview payload unless confirm=true is passed (ADR-0018 W1).", {

@@ -33861,6 +33861,7 @@ export type Database = {
       offboard_member_with_handoffs: {
         Args: {
           p_default_due_date?: string
+          p_effective_date?: string
           p_member_id: string
           p_new_status: string
           p_reason_category: string
