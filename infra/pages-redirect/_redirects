@@ -1,0 +1,15 @@
+# Redirect host -> host canonico, servido pelo projeto Cloudflare Pages
+# "ai-pm-research-hub", que detem os hostnames:
+#   - ai-pm-research-hub.pages.dev
+#   - nucleoia.pmigo.org.br   (CNAME, zona na HostGator)
+#
+# POR QUE ISTO EXISTE: nucleoia.pmigo.org.br e o CERT_VERIFY_HOST impresso em
+# certificados PDF ja emitidos (src/lib/canonical.ts). O link precisa continuar
+# abrindo a pagina de verificacao no host canonico, com o caminho preservado.
+#
+# Ate 2026-09-19 este redirect vivia num artefato SUBIDO A MAO em 2026-06-11
+# (deployment ad_hoc, commit_hash vazio, sem clone nem build), fora do controle
+# de versao. Ver ADR-0130.
+#
+# :splat preserva o caminho; a query string e repassada por padrao.
+/*  https://nucleoia.vitormr.dev/:splat  301
