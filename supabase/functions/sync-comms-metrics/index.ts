@@ -930,6 +930,49 @@ async function maybeProbeMetaToken(
 // refresh token too) and persist. Requires LINKEDIN_CLIENT_ID + _SECRET as EF
 // secrets. No-op for non-LinkedIn channels. Returns the (possibly updated) cfg;
 // on any failure leaves the stored token untouched (downstream flags expiry).
+/**
+ * #2382: transforma "nao consigo renovar porque falta credencial" de linha de log em alerta visivel.
+ *
+ * Deduplicado por DIA e pelo prefixo da mensagem, e nao so por (canal, tipo): se fosse so pelo tipo, um
+ * 'urgent' de token expirado suprimiria o de credencial ausente, e as duas causas pedem acoes diferentes
+ * (uma se resolve renovando, a outra so se resolve configurando o segredo).
+ *
+ * Falha de escrita do alerta NAO derruba o sync: o objetivo e nao perder a metrica dos outros canais por
+ * causa da vigilancia de um. O erro vai para o log, que aqui e o fallback e nao a defesa.
+ */
+const PREFIXO_ALERTA_CREDENCIAL = 'Refresh automatico do'
+
+async function alertarCredencialAusente(
+  sb: SupabaseClient<any, "public", any>,
+  channel: string,
+  faltando: string,
+): Promise<void> {
+  try {
+    const desde = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    const { data: jaTem } = await sb
+      .from('comms_token_alerts')
+      .select('id')
+      .eq('channel', channel)
+      .eq('alert_type', 'urgent')
+      .like('message', `${PREFIXO_ALERTA_CREDENCIAL}%`)
+      .gt('created_at', desde)
+      .limit(1)
+    if (jaTem && jaTem.length > 0) return
+
+    const { error } = await sb.from('comms_token_alerts').insert({
+      channel,
+      alert_type: 'urgent',
+      message:
+        `${PREFIXO_ALERTA_CREDENCIAL} ${channel} NAO RODA: falta ${faltando} nos secrets da Edge Function. ` +
+        'O token vai expirar sem renovacao automatica.',
+      days_until_expiry: null,
+    })
+    if (error) console.warn('alertarCredencialAusente: insert falhou:', error.message)
+  } catch (e) {
+    console.warn('alertarCredencialAusente:', e instanceof Error ? e.message : String(e))
+  }
+}
+
 async function maybeRefreshLinkedInToken(
   sb: SupabaseClient<any, "public", any>,
   cfg: ChannelConfig,
@@ -944,7 +987,22 @@ async function maybeRefreshLinkedInToken(
   const clientId = Deno.env.get('LINKEDIN_CLIENT_ID')
   const clientSecret = Deno.env.get('LINKEDIN_CLIENT_SECRET')
   if (!clientId || !clientSecret) {
-    console.warn('LinkedIn token needs refresh but LINKEDIN_CLIENT_ID/LINKEDIN_CLIENT_SECRET not configured')
+    // #2382: este ramo custou 4 dias de metrica parada em agosto/2026, e custou em SILENCIO.
+    //
+    // Medido: `LINKEDIN_CLIENT_SECRET` so passou a existir em 28/08 19:27. Nos seis dias da janela de
+    // refresh (17 a 23/08) o cron rodou, a EF executou, este `if` disparou, o `console.warn` foi para o
+    // log da EF e mais nada aconteceu. O token venceu em 24/08. O primeiro sinal que alguem podia VER
+    // chegou pelo scan de prazo, ja em cima da hora, e a recuperacao foi manual.
+    //
+    // Log de EF nao e canal de alerta: ninguem o le, e nada o vigia. A falta de credencial agora grava
+    // linha em `comms_token_alerts`, que e a superficie que a tela ja mostra. A mensagem nomeia QUAL
+    // variavel falta, porque "nao configurado" manda a proxima pessoa procurar as duas.
+    const faltando = [
+      !clientId ? 'LINKEDIN_CLIENT_ID' : null,
+      !clientSecret ? 'LINKEDIN_CLIENT_SECRET' : null,
+    ].filter(Boolean).join(' e ')
+    console.warn(`LinkedIn token needs refresh but ${faltando} not configured`)
+    await alertarCredencialAusente(sb, cfg.channel, faltando)
     return cfg
   }
 
