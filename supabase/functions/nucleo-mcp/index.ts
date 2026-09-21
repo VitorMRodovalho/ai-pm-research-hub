@@ -1091,7 +1091,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
       if (!tribeId) { await logUsage(sb, member.id, "get_my_board_status", false, "No tribe", start); return err(NO_TRIBE_HINT); }
       const initiativeId = await resolveInitiativeId(sb, tribeId);
       if (!initiativeId) { await logUsage(sb, member.id, "get_my_board_status", false, "Initiative not found", start); return err("Initiative not found for tribe " + tribeId); }
-      const { data: b, error: bErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).limit(1).maybeSingle();
+      const { data: b, error: bErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (bErr) { await logUsage(sb, member.id, "get_my_board_status", false, bErr.message, start); return err(bErr.message); }
       boardId = b?.id;
     }
@@ -1352,7 +1352,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
       if (!member.tribe_id) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No tribe assigned. Pass board_id explicitly. Use list_boards to find board UUIDs."); }
       const initiativeId = await resolveInitiativeId(sb, member.tribe_id);
       if (!initiativeId) { await logUsage(sb, member.id, "create_board_card", false, "Initiative not found", start); return err("Initiative not found for your tribe."); }
-      const { data: board, error: boardErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).limit(1).maybeSingle();
+      const { data: board, error: boardErr } = await sb.from("project_boards").select("id").eq("initiative_id", initiativeId).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle();
       if (boardErr) { await logUsage(sb, member.id, "create_board_card", false, boardErr.message, start); return err(boardErr.message); }
       if (!board) { await logUsage(sb, member.id, "create_board_card", false, "No board", start); return err("No board found for your tribe."); }
       boardId = board.id;
@@ -8454,7 +8454,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
       const [initRes, boardRes] = await Promise.all([
         sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initiativeId).maybeSingle(),
-        sb.from("project_boards").select("id, board_name").eq("initiative_id", initiativeId).limit(1).maybeSingle(),
+        sb.from("project_boards").select("id, board_name").eq("initiative_id", initiativeId).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       if (initRes.error) {
@@ -9166,7 +9166,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (!(await canSee(sb, "initiative", initId))) { await logUsage(sb, member.id, "board_overview", false, "Confidential/no access", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: "Initiative not found or not visible to you.", action: "This initiative may be confidential and you are not engaged." })); }
       const [initRes, boardRes] = await Promise.all([
         sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initId).maybeSingle(),
-        sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).limit(1).maybeSingle(),
+        sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
       if (initRes.error) { await logUsage(sb, member.id, "board_overview", false, initRes.error.message, start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "internal_error", message: initRes.error.message })); }
       if (!initRes.data) { await logUsage(sb, member.id, "board_overview", false, "Initiative not found", start); return ok(buildSemanticError({ tool: "board_overview", semantic_domain: dom, code: "not_found", message: `Initiative ${initId} not found or you lack access.` })); }
@@ -9832,7 +9832,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         if (!tribeId) { data.board = { board_id: null, items: [], note: "no tribe assigned" }; }
         else {
           const initId = await resolveInitiativeId(sb, tribeId);
-          const boardRow: any = initId ? await sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).limit(1).maybeSingle() : { data: null };
+          const boardRow: any = initId ? await sb.from("project_boards").select("id, board_name").eq("initiative_id", initId).eq("is_active", true).order("created_at", { ascending: false }).limit(1).maybeSingle() : { data: null };
           const boardId = boardRow?.data?.id ?? null;
           if (!boardId) { data.board = { board_id: null, items: [] }; }
           else {
