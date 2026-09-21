@@ -4,8 +4,7 @@
  */
 import { useState, useEffect } from 'react';
 import BoardEngine from '../islands/BoardEngine';
-
-function getSb() { return (window as any).navGetSb?.(); }
+import { waitForSb } from '../../hooks/useBoard';
 
 export default function InitiativeBoardWrapper({ initiativeId }: { initiativeId: string }) {
   const [boardId, setBoardId] = useState<string | null>(null);
@@ -14,9 +13,15 @@ export default function InitiativeBoardWrapper({ initiativeId }: { initiativeId:
 
   useEffect(() => {
     async function resolve() {
-      const sb = getSb();
+      // #2395b: `navGetSb` e definido pela nav (Nav.astro), e as ilhas hidratam por conta
+      // propria. Ler uma vez e desistir transforma "ainda nao carregou" em "nao existe", e a
+      // aba imprimia `Supabase not available` sobre um board com 14 cards. `waitForSb` e o
+      // esperador canonico do projeto (15 tentativas de 250ms) e vive no mesmo hook que o
+      // BoardEngine ja usa uma camada abaixo: a espera existia e este componente morria antes
+      // de chegar nela.
+      const sb = await waitForSb();
       if (!sb) {
-        setError('Supabase not available');
+        setError('Nao foi possivel conectar apos 15 tentativas. Recarregue a pagina.');
         setLoading(false);
         return;
       }
