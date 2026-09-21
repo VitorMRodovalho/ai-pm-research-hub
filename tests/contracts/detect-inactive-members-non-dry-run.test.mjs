@@ -187,6 +187,14 @@ async function deleteArm9Since(sinceIso) {
   }
 }
 
+/**
+ * #2405 — a janela de dedup que a #1170 colocou DENTRO de `detect_inactive_members`:
+ * um gestor que já recebeu alerta arm9 nos últimos 6 dias não recebe outro. O número 6 é o
+ * mesmo literal do corpo da função; se ele mudar lá, este teste passa a medir a janela errada,
+ * e é por isso que o nome da constante diz de onde ela veio.
+ */
+const DEDUP_WINDOW_DAYS_FROM_FUNCTION_BODY = 6;
+
 async function countArm9Since(sinceIso) {
   const url = `${SUPABASE_URL}/rest/v1/notifications`
     + `?type=eq.arm9_inactivity_alert&created_at=gte.${encodeURIComponent(sinceIso)}&select=id`;
@@ -233,6 +241,10 @@ test(
     // At prod threshold (180d) this call typically commits 0 rows, but guard anyway so
     // a future genuinely-inactive member cannot start leaking here.
     const since = await serverNowMinusMinutesIso(5);
+    // #2405 — medir a janela ANTES da chamada, porque a própria chamada pode inserir linhas
+    // e então a contagem passaria a incluir o que ela acabou de criar.
+    const janelaIso = await serverNowMinusMinutesIso(DEDUP_WINDOW_DAYS_FROM_FUNCTION_BODY * 24 * 60);
+    const suprimidosNaJanela = await countArm9Since(janelaIso);
     try {
       const result = await callDetectInactive(false, { rollback: true });
       assert.equal(result.success, true, 'success flag should be true (no INSERT errors)');
@@ -241,14 +253,36 @@ test(
       assert.equal(typeof result.managers_notified, 'number', 'managers_notified should be number');
       assert.ok(result.managers_notified >= 0, 'managers_notified should be non-negative');
 
-      // If there ARE inactive candidates, the function should notify at least one
-      // manager (assuming the install has at least one member with manage_platform
-      // capability — which is required for the platform to be operational at all).
+      // #2405 — TRÊS estados, não dois. `managers_notified = 0` é ambíguo entre "ninguém tem
+      // manage_platform / o filtro quebrou" e "a janela de dedup de 6 dias da #1170 suprimiu,
+      // que é o comportamento DESENHADO". A versão anterior tratava os dois como defeito e
+      // nomeava a hipótese errada na mensagem.
+      //
+      // Medido em 21/09/2026: o cron `detect-inactive-members-weekly` (`0 12 * * 1`) rodou às
+      // 12:00 UTC e notificou os 2 gestores; o CI rodou às 13:15 e recebeu 0, corretamente.
+      // Reprovava de forma determinística de toda segunda 12:00 até 6 dias depois, ou seja a
+      // semana inteira, em qualquer PR. Só não aparecia antes porque `candidates_count` era 0
+      // e a asserção era condicional a uma condição que nunca ocorria: não podia falhar.
       if (result.candidates_count > 0) {
-        assert.ok(
-          result.managers_notified > 0,
-          `candidates_count=${result.candidates_count} but managers_notified=0 — manage_platform capability may be missing or filter logic broken`
-        );
+        if (suprimidosNaJanela === 0) {
+          // A pré-condição agora é MEDIDA, não suposta: sem alerta na janela, quem tem a
+          // capability tinha de receber.
+          assert.ok(
+            result.managers_notified > 0,
+            `candidates_count=${result.candidates_count}, nenhum alerta arm9 na janela de `
+            + `${DEDUP_WINDOW_DAYS_FROM_FUNCTION_BODY} dias, e ainda assim managers_notified=0: `
+            + 'aí sim é manage_platform ausente ou filtro quebrado'
+          );
+        } else {
+          // Janela ocupada: zero é o desfecho CORRETO. O teste afirma isso em vez de reprovar,
+          // e continua reprovando se a supressão deixar passar alguém.
+          assert.equal(
+            result.managers_notified, 0,
+            `havia ${suprimidosNaJanela} alerta(s) arm9 dentro da janela de `
+            + `${DEDUP_WINDOW_DAYS_FROM_FUNCTION_BODY} dias, então a dedup da #1170 devia ter `
+            + `suprimido TODOS, e ainda saíram ${result.managers_notified}`
+          );
+        }
       }
     } finally {
       await deleteArm9Since(since);
