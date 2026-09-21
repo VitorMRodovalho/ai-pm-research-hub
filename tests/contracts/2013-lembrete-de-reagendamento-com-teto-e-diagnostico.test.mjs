@@ -30,7 +30,7 @@ import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
@@ -43,6 +43,34 @@ const sb = () => createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSessi
 
 const capCron = () => latestFunctionCapture(ROOT, 'process_pending_reschedule_nudges');
 const capTrg = () => latestFunctionCapture(ROOT, '_trg_sync_interview_to_app_status');
+
+/**
+ * #2402 — colunas do CONTRATO DE RETORNO de `_selection_cycle_recipients`, lidas da captura em
+ * repo. Derivado do catálogo em vez de fixar 'member_id' à mão: se a função mudar de forma, o
+ * guard acompanha em vez de continuar afirmando sobre uma coluna que não existe mais. Se o
+ * `RETURNS TABLE` não parsear, ISTO FALHA — um conjunto vazio aprovaria qualquer coluna, que é o
+ * modo de falha que originou a issue.
+ */
+function colunasDoContratoDeRecipients() {
+  const { block, file } = latestFunctionCapture(ROOT, '_selection_cycle_recipients');
+  const m = maskLineComments(block).match(/RETURNS\s+TABLE\s*\(([^)]*)\)/i);
+  assert.ok(m, `não consegui ler o RETURNS TABLE de _selection_cycle_recipients em ${file}`);
+  const cols = m[1].split(',').map((c) => c.trim().split(/\s+/)[0]).filter(Boolean);
+  assert.ok(cols.length > 0, `RETURNS TABLE vazio em ${file}`);
+  return cols;
+}
+
+/**
+ * #2402 — o recorte do bloco que DECIDE a escalação. Afirmar sobre o corpo inteiro deixaria a
+ * asserção casar o comentário que explica o conserto (o comentário cita `r.id` de propósito), que
+ * é o defeito #2286 se repetindo.
+ */
+function blocoDaEscalacao(corpoMascarado) {
+  const i = corpoMascarado.indexOf('IF v_ep.despachos >= v_max_dispatches THEN');
+  if (i < 0) return null;
+  const j = corpoMascarado.indexOf('CONTINUE;', i);
+  return j > i ? corpoMascarado.slice(i, j) : corpoMascarado.slice(i);
+}
 
 /** Violações do desenho do cron. Lista vazia = saudável (serve ao corpo real e ao adulterado). */
 function violacoesCron(corpo) {
@@ -74,6 +102,49 @@ function violacoesCron(corpo) {
   }
   if (!/_selection_cycle_recipients/.test(corpo)) {
     v.push('a escalação não usa a escada de destinatários do comitê (#1978)');
+  }
+  // #2402 — a CONDIÇÃO (ser destinatário do ciclo) amarrada ao RESULTADO (receber a notificação).
+  // A versão anterior deste guard afirmava só que `_selection_cycle_recipients` aparecia no corpo,
+  // e por isso ficou VERDE de 26/08 a 21/09 com `create_notification(r.id, ...)` levantando 42703
+  // em toda execução: `_selection_cycle_recipients` devolve TABLE(member_id uuid, via text) e não
+  // tem coluna `id`. Presença de string não é prova.
+  {
+    const mascarado = maskLineComments(corpo);
+    const bloco = blocoDaEscalacao(mascarado);
+    if (!bloco) {
+      v.push('não achei o bloco de escalação para conferir o destinatário');
+    } else {
+      const alias = bloco.match(/_selection_cycle_recipients\s*\([^)]*\)\s+(?:AS\s+)?([a-z_][a-z0-9_]*)/i);
+      if (!alias) {
+        v.push('a escalação não dá alias ao retorno de _selection_cycle_recipients');
+      } else {
+        const cols = colunasDoContratoDeRecipients();
+        const usadas = [...bloco.matchAll(new RegExp(`\\b${alias[1]}\\.([a-z_][a-z0-9_]*)`, 'gi'))]
+          .map((x) => x[1]);
+        if (usadas.length === 0) {
+          v.push(`a escalação nunca lê nenhuma coluna de ${alias[1]}`);
+        }
+        for (const c of usadas) {
+          if (!cols.includes(c)) {
+            v.push(
+              `a escalação lê ${alias[1]}.${c}, que NÃO está no contrato de retorno de ` +
+              `_selection_cycle_recipients (${cols.join(', ')}) — levanta 42703 em tempo de execução`,
+            );
+          }
+        }
+      }
+    }
+  }
+  // #2402 — o cron tem de deixar rastro numa superfície que o projeto LÊ. `cron.job_run_details`
+  // guarda "1 row": quem escreve relatório dentro do valor de retorno escreve para ninguém.
+  if (!/admin_audit_log/.test(corpo)) {
+    v.push('o cron não grava admin_audit_log — o resultado do run morre no pg_cron (#2402)');
+  }
+  if (!/'examined'/.test(corpo)) {
+    v.push('o run não grava o DENOMINADOR (examined): "nenhum cutucão" não distingue fila vazia de fila errada (#2402)');
+  }
+  if (!/data_anomaly_log/.test(corpo)) {
+    v.push('o cron não publica erro em data_anomaly_log, ao contrário dos dois irmãos (#1599 correção 3)');
   }
   // (3) diagnóstico por open_count, SEMPRE sobre o que foi medido
   if (!/FILTER \(WHERE d\.instrumented\)/.test(corpo)) {
@@ -133,6 +204,35 @@ test('#2013 static: reprova o cron que volta a despachar depois do teto', () => 
   const v = violacoesCron(adulterado);
   assert.ok(v.some((m) => m.includes('teto não é aplicado')),
     `esperava a violação do teto, e veio: ${JSON.stringify(v)}`);
+});
+
+test('#2402 static: reprova a escalação que lê uma coluna fora do contrato de retorno', () => {
+  const { body } = capCron();
+  // A mutação é a do defeito REAL: volta a coluna para `id`, que é o que estava em produção.
+  const adulterado = body.replace('r.member_id,', 'r.id,');
+  assert.notEqual(adulterado, body, 'a injeção precisa mesmo alterar o corpo');
+  const v = violacoesCron(adulterado);
+  assert.ok(v.some((m) => m.includes('NÃO está no contrato de retorno')),
+    `esperava a violação do contrato de retorno, e veio: ${JSON.stringify(v)}`);
+});
+
+test('#2402 static: a asserção do destinatário não se satisfaz com o COMENTÁRIO', () => {
+  // Controle do próprio guard: o comentário do conserto cita `r.id` de propósito. Se a asserção
+  // lesse o corpo sem mascarar comentário, este teste passaria por acidente e o guard voltaria a
+  // ser decorativo. Aqui a prova é que o corpo REAL (que tem o comentário) está limpo.
+  const { body } = capCron();
+  assert.ok(/r\.id/.test(body), 'o comentário do conserto deveria citar r.id, e não cita mais');
+  assert.deepEqual(violacoesCron(body), [],
+    'o corpo real tem `r.id` no comentário e mesmo assim deve passar: a asserção olha o bloco que decide');
+});
+
+test('#2402 static: reprova o cron que deixa de gravar audit', () => {
+  const { body } = capCron();
+  const adulterado = body.replace(/INSERT INTO public\.admin_audit_log[\s\S]*?\);\n/, '');
+  assert.notEqual(adulterado, body, 'a injeção precisa mesmo alterar o corpo');
+  const v = violacoesCron(adulterado);
+  assert.ok(v.some((m) => m.includes('admin_audit_log')),
+    `esperava a violação do audit, e veio: ${JSON.stringify(v)}`);
 });
 
 test('#2013 static: reprova o agregado que larga o filtro de instrumented', () => {
@@ -235,6 +335,36 @@ test('#2013 db: o tipo novo está no CATÁLOGO de entrega, não caindo no ELSE',
     const corpo = (data ?? []).map((r) => r.prosrc).join('\n');
     assert.match(corpo, /WHEN 'selection_reschedule_escalated'\s+THEN 'transactional_immediate'/,
       'o tipo novo cairia no ELSE (digest_weekly), e o digest só entrega a quem tem OUTRO conteúdo (#2010)');
+  });
+
+// ── #2402: o contrato de retorno, exercido contra a função VIVA ─────────────────────
+test('#2402 db: a coluna que a escalação lê existe no retorno VIVO de _selection_cycle_recipients',
+  { skip: dbGated ? false : skipMsg }, async () => {
+    // Exercer a função em vez de ler a declaração: o contrato de retorno é o que ELA devolve.
+    const { data: ciclos, error: e1 } = await sb()
+      .from('selection_cycles').select('id').eq('status', 'open').limit(1);
+    assert.ifError(e1);
+    assert.equal(ciclos?.length, 1, 'esperava um ciclo aberto para exercer a escada de destinatários');
+
+    const { data, error } = await sb().rpc('_selection_cycle_recipients', { p_cycle_id: ciclos[0].id });
+    assert.ifError(error);
+    // CONTROLE POSITIVO: sem linha nenhuma não dá para ler as chaves, e "0 linhas" leria como
+    // aprovação. Nesse caso o teste falha em vez de passar por vacuidade.
+    assert.ok(Array.isArray(data) && data.length > 0,
+      'a escada de destinatários devolveu 0 linhas: não dá para afirmar nada sobre as chaves');
+    const chavesVivas = Object.keys(data[0]);
+
+    const corpo = maskLineComments(capCron().body);
+    const bloco = blocoDaEscalacao(corpo);
+    assert.ok(bloco, 'não achei o bloco de escalação');
+    const alias = bloco.match(/_selection_cycle_recipients\s*\([^)]*\)\s+(?:AS\s+)?([a-z_][a-z0-9_]*)/i);
+    assert.ok(alias, 'a escalação não dá alias ao retorno');
+    const usadas = [...bloco.matchAll(new RegExp(`\\b${alias[1]}\\.([a-z_][a-z0-9_]*)`, 'gi'))].map((x) => x[1]);
+    assert.ok(usadas.length > 0, 'a escalação não lê coluna nenhuma do alias');
+    for (const c of usadas) {
+      assert.ok(chavesVivas.includes(c),
+        `a escalação lê ${alias[1]}.${c}, e a função viva devolve ${JSON.stringify(chavesVivas)}`);
+    }
   });
 
 // ── corpo vivo == captura ────────────────────────────────────────────────────────────
