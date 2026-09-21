@@ -31,8 +31,12 @@ const SEM_HORARIO = 'no available times';
 /** Dia da semana em ingles: o controle de que a pagina veio no idioma que o parser espera. */
 const DIA_EN = /(sunday|monday|tuesday|wednesday|thursday|friday|saturday)/i;
 
-/** Botao de horario na faixa de dias visivel ("17:00", "9:30"). */
-const HORARIO = /^\d{1,2}:\d{2}$/;
+/**
+ * Botao de horario. #2404 — o padrao anterior era `/^\d{1,2}:\d{2}$/`, e a pagina servida em
+ * ingles escreve `5:30pm`: ele nao casava NENHUM horario. Medido em 21/09/2026: `slots_visible`
+ * saiu 0 em 212 de 212 sondagens desde 08/09, sendo que 212 delas tinham `days_open > 0`.
+ */
+const HORARIO = /^\d{1,2}:\d{2}\s*([ap]\.?m\.?)?$/i;
 
 const MESES_EN = [
   'january', 'february', 'march', 'april', 'may', 'june',
@@ -42,7 +46,6 @@ const MESES_EN = [
 interface LeituraDaPagina {
   monthLabel: string | null;
   cells: string[];
-  slots: number;
   semDisponibilidade: boolean;
 }
 
@@ -136,10 +139,6 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
         .map((b) => (b.getAttribute('aria-label') ?? '').trim())
         .filter((s) => s.length > 0);
 
-      const slots = Array.from(document.querySelectorAll('button'))
-        .map((b) => (b.textContent ?? '').trim())
-        .filter((t) => /^\d{1,2}:\d{2}$/.test(t)).length;
-
       // O mês exibido vem do aria-label da própria `<table role="grid">` ("September 2026").
       const monthLabel = grid?.getAttribute('aria-label')?.trim() ?? null;
 
@@ -147,7 +146,7 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
         .toLowerCase()
         .includes('no availability during these days');
 
-      return { monthLabel, cells, slots, semDisponibilidade };
+      return { monthLabel, cells, semDisponibilidade };
     });
 
     if (leitura.cells.length === 0) {
@@ -168,6 +167,50 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
     const diasAbertos = leitura.cells.filter((c) => !c.toLowerCase().includes(SEM_HORARIO)).length;
     const { inicio, fim } = janelaDaGrade(leitura.monthLabel, leitura.cells);
 
+    // #2404 — CONTAR HORARIO EXIGE INTERAGIR. A pagina so renderiza a lista de horarios depois que
+    // um dia e selecionado: na chegada existem apenas os botoes da grade do mes. Medido em
+    // 21/09/2026 nas duas agendas do ciclo, ja com o padrao corrigido, contando na chegada: 0 e 0.
+    // Ou seja, consertar o regex sozinho teria deixado a coluna em zero do mesmo jeito.
+    //
+    // O que passamos a medir e "quantos horarios existem no PRIMEIRO dia disponivel", que e a
+    // pergunta do candidato e o sinal que teria pego o caso que originou a #2188: havia dias
+    // abertos, mas todos na semana seguinte, e `days_open > 0` nao distinguia isso.
+    let slotsNoPrimeiroDia: number | null = null;
+    let primeiroDiaAberto: string | null = null;
+    if (diasAbertos > 0) {
+      primeiroDiaAberto =
+        leitura.cells.find((c) => !c.toLowerCase().includes(SEM_HORARIO)) ?? null;
+      if (primeiroDiaAberto) {
+        // O clique vai por `evaluate` e nao por seletor CSS: o `aria-label` do dia carrega virgula
+        // e espaco ("October 1, Thursday"), e montar seletor com ele e convite a erro de escape.
+        await page.evaluate((label: string) => {
+          const grid = document.querySelector('[role="grid"]');
+          if (!grid) return;
+          const alvo = Array.from(grid.querySelectorAll('button[data-grid-cell]')).find(
+            (b) => (b.getAttribute('aria-label') ?? '').trim() === label,
+          );
+          if (alvo) (alvo as HTMLElement).click();
+        }, primeiroDiaAberto);
+
+        // Sem `waitForTimeout`: ele saiu do puppeteer moderno. A lista de horarios chega por
+        // fetch, entao esperar por tempo e o que resta, e 4s cobriu as medicoes de 21/09.
+        await new Promise((r) => setTimeout(r, 4000));
+
+        // UM regex so. `page.evaluate` roda no contexto da pagina e nao enxerga o escopo do
+        // modulo, entao o padrao viaja como STRING e e remontado la dentro. A versao anterior
+        // mantinha uma copia inline ao lado da constante `HORARIO`, e nada obrigava as duas a
+        // concordarem: a constante nomeada documentava a intencao enquanto a copia decidia. Era
+        // codigo morto que parecia fonte da verdade.
+        slotsNoPrimeiroDia = await page.evaluate(
+          (padrao: string) =>
+            Array.from(document.querySelectorAll('button'))
+              .map((b) => (b.textContent ?? '').trim())
+              .filter((t) => new RegExp(padrao, 'i').test(t)).length,
+          HORARIO.source,
+        );
+      }
+    }
+
     // Coerencia entre os dois sinais: a faixa de dias diz "sem disponibilidade" mas a grade
     // aponta dia aberto, ou o contrario. Nao invalida a leitura (a faixa cobre so 6 dias e a
     // grade cobre 6 semanas), mas fica registrado.
@@ -175,14 +218,24 @@ async function sondar(browser: any, url: string): Promise<Sondagem> {
       ? `faixa_diz_vazio_mas_grade_tem_${diasAbertos}_dias`
       : null;
 
+    // #2404 — `slots_visible` passa a ser o do primeiro dia aberto. Quando nao ha dia aberto, a
+    // pergunta nao se aplica e o valor honesto e ZERO (a grade inteira diz "no available times").
+    // Quando ha dia aberto e mesmo assim nao veio horario, o valor honesto e NULO, porque ai nao
+    // sabemos se a agenda esvaziou entre a leitura e o clique ou se a pagina mudou de forma.
+    const slotsFinal = diasAbertos === 0 ? 0 : slotsNoPrimeiroDia;
+    const contadorCego =
+      diasAbertos > 0 && (slotsNoPrimeiroDia === null || slotsNoPrimeiroDia === 0)
+        ? `contador_cego: ${diasAbertos} dia(s) aberto(s) e nenhum horario em "${primeiroDiaAberto}"`
+        : null;
+
     return {
       booking_url: url,
       ok: true,
       days_open: diasAbertos,
-      slots_visible: leitura.slots,
+      slots_visible: slotsFinal,
       window_start: inicio,
       window_end: fim,
-      error: divergencia,
+      error: divergencia ?? contadorCego,
     };
   } catch (e: any) {
     // O texto da exceção vai para o LOG do Worker e para a tabela (RLS deny-all, só service_role

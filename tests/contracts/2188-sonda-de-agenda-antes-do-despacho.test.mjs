@@ -85,6 +85,86 @@ function sqlDoCron() {
   return readFileSync(join(MIGRATIONS, comCron[comCron.length - 1]), 'utf8');
 }
 
+const PROBE = join(ROOT, 'src/pages/api/internal/agenda-availability-probe.ts');
+
+/**
+ * #2404 — violações do CONTADOR DE HORÁRIOS da sonda. Lista vazia = saudável.
+ *
+ * Duas coisas estavam erradas ao mesmo tempo, e só a segunda era visível:
+ *   (1) o padrão era `/^\d{1,2}:\d{2}$/` e a página servida em inglês escreve `5:30pm`, então ele
+ *       não casava NENHUM horário;
+ *   (2) e a página só renderiza horário DEPOIS que um dia é selecionado. Medido em 21/09/2026 com
+ *       o padrão já corrigido, contando na chegada: 0 e 0 nas duas agendas. Consertar só o regex
+ *       teria deixado a coluna em zero do mesmo jeito, e o conserto pareceria feito.
+ *
+ * Resultado: `slots_visible` foi 0 em 212 de 212 sondagens desde 08/09, com `days_open > 0` em 212.
+ */
+function violacoesContadorDeHorarios(src) {
+  const v = [];
+  const semComentario = src
+    .split('\n')
+    .filter((l) => !l.trimStart().startsWith('*') && !l.trimStart().startsWith('//') && !l.trimStart().startsWith('/*'))
+    .join('\n');
+
+  const m = semComentario.match(/const HORARIO = (\/.+\/[a-z]*);/);
+  if (!m) {
+    v.push('não achei a constante HORARIO na sonda');
+    return v;
+  }
+
+  // A CONDIÇÃO (o formato que a página serve) amarrada ao RESULTADO (o padrão casa aquilo).
+  // Presença do literal não prova nada: o padrão antigo também estava presente e casava zero.
+  let re;
+  try { re = eval(m[1]); } catch { v.push('a constante HORARIO não é um regex avaliável'); return v; }
+  for (const real of ['5:30pm', '6:00pm', '8:30pm', '10:00 AM', '17:00']) {
+    if (!re.test(real)) v.push(`o padrão de horário não casa "${real}", que é forma servida pela página`);
+  }
+  for (const nao of ['21', 'Monday', 'Show more', 'October 1, Thursday', '2026']) {
+    if (re.test(nao)) v.push(`o padrão de horário casa "${nao}", que não é horário`);
+  }
+
+  // UM padrão só: uma cópia inline ao lado da constante foi o estado anterior, e nada obrigava as
+  // duas a concordarem.
+  const copias = (semComentario.match(/\\d\{1,2\}:\\d\{2\}/g) || []).length;
+  if (copias > 1) {
+    v.push(`o padrão de horário aparece ${copias} vezes fora de comentário: a cópia inline volta a poder divergir da constante`);
+  }
+
+  // O contador só significa alguma coisa DEPOIS do clique: a ordem é a asserção.
+  const iClique = semComentario.indexOf('.click()');
+  const iContagem = semComentario.indexOf('HORARIO.source');
+  if (iClique < 0) {
+    v.push('a sonda não clica em dia nenhum, e sem clicar a página não mostra horário');
+  } else if (!(iContagem > iClique)) {
+    v.push('a contagem de horários não vem DEPOIS do clique no dia');
+  }
+
+  return v;
+}
+
+test('#2404 static: o contador de horários casa o formato da página e só conta depois do clique', () => {
+  assert.ok(existsSync(PROBE), 'a sonda mudou de caminho');
+  assert.deepEqual(violacoesContadorDeHorarios(readFileSync(PROBE, 'utf8')), []);
+});
+
+test('#2404 static: reprova o padrão que não casa o formato de 12 horas', () => {
+  const src = readFileSync(PROBE, 'utf8');
+  const adulterado = src.replace(/const HORARIO = \/.+\/[a-z]*;/, 'const HORARIO = /^\\d{1,2}:\\d{2}$/;');
+  assert.notEqual(adulterado, src, 'a injeção precisa mesmo alterar o arquivo');
+  const v = violacoesContadorDeHorarios(adulterado);
+  assert.ok(v.some((m) => m.includes('5:30pm')),
+    `esperava a violação do formato de 12h, e veio: ${JSON.stringify(v)}`);
+});
+
+test('#2404 static: reprova a sonda que conta sem clicar no dia', () => {
+  const src = readFileSync(PROBE, 'utf8');
+  const adulterado = src.replace('(alvo as HTMLElement).click();', '/* removido */');
+  assert.notEqual(adulterado, src, 'a injeção precisa mesmo alterar o arquivo');
+  const v = violacoesContadorDeHorarios(adulterado);
+  assert.ok(v.some((m) => m.includes('não clica')),
+    `esperava a violação do clique, e veio: ${JSON.stringify(v)}`);
+});
+
 /**
  * Violações do desenho do despacho. Lista vazia = saudável.
  * Serve ao corpo real E ao adulterado, que é o que torna a injeção de defeito significativa.
