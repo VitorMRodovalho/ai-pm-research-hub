@@ -29,6 +29,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -39,10 +40,22 @@ const RPC = (() => {
   const m = MIG.match(/CREATE OR REPLACE FUNCTION public\.selection_rescue_unbooked_invite[\s\S]*?AS \$\$([\s\S]*?)\$\$;/);
   return m ? m[1] : '';
 })();
-const CRON = (() => {
-  const m = MIG.match(/CREATE OR REPLACE FUNCTION public\._selection_unbooked_rescue_cron[\s\S]*?\$func\$([\s\S]*?)\$func\$;/);
-  return m ? m[1] : '';
-})();
+/**
+ * #2402 — o corpo VIGENTE, não o da migration que criou a função.
+ *
+ * ⚠️ Este guard lia `MIG`, que é o arquivo `20260805000219` fixado acima. A função foi
+ * substituída em `20260805000511` (correções da #1599) e este arquivo continuou afirmando sobre a
+ * versão antiga: md5 `31656212…` no arquivo fixado contra `0a5fc39d…` no corpo vivo, medido em
+ * 21/09/2026. **Estava verde afirmando texto morto** — a classe do #1932, e a razão de
+ * `latestFunctionCapture` existir.
+ *
+ * As asserções sobre GRANT/REVOKE e sobre a ausência de `cron.schedule` continuam lendo `MIG`, e
+ * isso está certo: elas são fatos sobre AQUELA migration, não sobre o corpo corrente.
+ */
+const CRON = latestFunctionCapture(ROOT, '_selection_unbooked_rescue_cron').body;
+
+/** O mesmo corpo sem comentário: asserção sobre predicado não pode casar comentário (#2286). */
+const CRON_CODIGO = maskLineComments(CRON);
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -116,11 +129,29 @@ test('block 3 — cron is SECDEF service-role-only, predicate anchors on cutoff 
   assert.match(CRON, /a\.cutoff_approved_email_sent_at IS NOT NULL/);     // data-architect blocker 2
   assert.match(CRON, /a\.cutoff_approved_email_sent_at < now\(\) - v_grace/);
   assert.match(CRON, /a\.interview_auto_rescue_count < 1/);               // cap
-  assert.match(CRON, /a\.interview_reschedule_requested_at IS NULL/);
+  // #2402 — a cláusula `interview_reschedule_requested_at IS NULL` SAIU do predicado. Ela delegava
+  // para o job33 (`process_pending_reschedule_nudges`), que NÃO cuidava do caso: ele só cutuca e
+  // escala, e o predicado dele exige `interview_status = 'needs_reschedule'`. Uma candidatura
+  // `interview_pending` com a flag ligada e zero entrevistas ficava sem dono nenhum.
+  //
+  // ⚠️ A asserção roda sobre o corpo SEM COMENTÁRIO de propósito: a migration do #2402 cita a
+  // cláusula removida entre crases para explicar o que saiu, e uma asserção sobre o corpo cru
+  // casaria esse comentário e ficaria verde com o predicado de volta ao estado antigo (#2286).
+  assert.doesNotMatch(CRON_CODIGO, /a\.interview_reschedule_requested_at IS NULL/,
+    'o predicado voltou a excluir quem pediu reagendamento, delegando para um cron que não alcança o caso (#2402)');
   assert.match(CRON, /si\.status IN \('scheduled', 'rescheduled'\)/);
   assert.match(CRON, /si\.scheduled_at > now\(\)/);
   assert.match(CRON, /LIMIT 20/);
-  assert.match(CRON, /PERFORM public\.selection_rescue_unbooked_invite\(v_app\.app_id\)/);
+  // #2402 — esta asserção exigia `PERFORM public.selection_rescue_unbooked_invite(...)`, que é
+  // EXATAMENTE o anti-padrão que a #1599 correção 2 removeu: "um `PERFORM` cego contaria RECUSA
+  // como resgate". O guard estava fixado na migration que criou a função e, por isso, vinha
+  // exigindo o defeito. Só apareceu quando o arquivo passou a ler a captura vigente.
+  //
+  // A invariante correta: o retorno é CAPTURADO e o sucesso é CHECADO, senão recusa vira resgate.
+  assert.match(CRON_CODIGO, /v_result := public\.selection_rescue_unbooked_invite\(v_app\.app_id\)/,
+    'o cron precisa CAPTURAR o retorno do resgate (#1599 correção 2)');
+  assert.match(CRON_CODIGO, /COALESCE\(\(v_result->>'success'\)::boolean, false\) IS TRUE/,
+    'o cron precisa CHECAR o sucesso: sem isso uma recusa de gate é contada como resgate (#1594/#1599)');
   // service-role-only grant + anon explicitly revoked (Supabase: REVOKE FROM PUBLIC does NOT drop anon).
   assert.match(MIG, /REVOKE ALL ON FUNCTION public\._selection_unbooked_rescue_cron\(\) FROM PUBLIC, anon, authenticated;/);
   assert.match(MIG, /GRANT EXECUTE ON FUNCTION public\._selection_unbooked_rescue_cron\(\) TO service_role;/);
