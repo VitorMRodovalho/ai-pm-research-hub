@@ -80,7 +80,6 @@ tests/contracts/cutoff-approved-modal-button.test.mjs|get_selection_dashboard
 tests/contracts/cycle4-public-verticals.test.mjs|get_public_platform_stats
 tests/contracts/D-stuck-funnel.test.mjs|_delivery_mode_for
 tests/contracts/D-stuck-funnel.test.mjs|detect_stuck_selection_funnel
-tests/contracts/D3-auto-rescue.test.mjs|_selection_unbooked_rescue_cron
 tests/contracts/D3-auto-rescue.test.mjs|check_schema_invariants
 tests/contracts/D3-auto-rescue.test.mjs|detect_stuck_selection_funnel
 tests/contracts/D3-auto-rescue.test.mjs|selection_rescue_unbooked_invite
