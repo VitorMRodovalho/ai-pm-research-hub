@@ -8454,7 +8454,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
       const [initRes, boardRes] = await Promise.all([
         sb.from("initiatives").select("id, title, kind, legacy_tribe_id, status").eq("id", initiativeId).maybeSingle(),
-        sb.from("project_boards").select("id, title").eq("initiative_id", initiativeId).limit(1).maybeSingle(),
+        sb.from("project_boards").select("id, board_name").eq("initiative_id", initiativeId).limit(1).maybeSingle(),
       ]);
 
       if (initRes.error) {
@@ -8466,6 +8466,18 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "not_found", message: `Initiative ${initiativeId} not found or you lack access.`, action: "Confirm the UUID, or use list_initiatives to discover initiatives you can view." }));
       }
 
+      // #2395: `boardRes.error` nao tinha leitor. Com `select("id, title")` sobre uma tabela cuja
+      // coluna e `board_name`, o PostgREST devolvia erro, `data` vinha null, e `?? null` publicava
+      // isso como "sem board" com `ok:true` e zero warnings — para TODAS as 33 iniciativas que tem
+      // board. Pior que o rotulo: `board?.id` governa a busca de cards (abaixo), entao o
+      // `detail_level:'standard'` devolvia 0 card sempre. Todas as outras consultas deste handler
+      // ja viram warning; esta era a unica sem ninguem lendo. RLS nega devolvendo VAZIO, nao erro,
+      // entao erro aqui e falha real e nao pode sair como ausencia.
+      if (boardRes.error) {
+        await logUsage(sb, member.id, "get_board_or_initiative_context", false, boardRes.error.message, start);
+        return ok(buildSemanticError({ tool: "get_board_or_initiative_context", semantic_domain: "operations", code: "internal_error", message: `project_boards: ${boardRes.error.message}` }));
+      }
+
       const initiative = initRes.data;
       const board = boardRes.data ?? null;
 
@@ -8475,9 +8487,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           ok: true,
           data: {
             initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
-            board: board ? { id: board.id, title: board.title } : null,
+            board: board ? { id: board.id, board_name: board.board_name } : null,
           },
-          summary: `Iniciativa "${initiative.title}" (${initiative.kind})${board ? `, board "${board.title}"` : " (sem board)"}.`,
+          summary: `Iniciativa "${initiative.title}" (${initiative.kind})${board ? `, board "${board.board_name}"` : " (sem board)"}.`,
           warnings: [],
           next_actions: [
             "detail_level='standard' for cards/events/notes/count",
@@ -8527,7 +8539,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         ok: true,
         data: {
           initiative: { id: initiative.id, title: initiative.title, kind: initiative.kind, legacy_tribe_id: initiative.legacy_tribe_id, status: initiative.status },
-          board: board ? { id: board.id, title: board.title, sample_card_count: cards.length, sample_status_breakdown: statusCounts } : null,
+          board: board ? { id: board.id, board_name: board.board_name, sample_card_count: cards.length, sample_status_breakdown: statusCounts } : null,
           recent_cards: cards,
           upcoming_events: events,
           recent_meeting_notes: notes.map((n: any) => ({ event_id: n.id, title: n.title, date: n.date, preview: typeof n.minutes_text === "string" ? n.minutes_text.substring(0, 300) : null })),
@@ -8535,7 +8547,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         },
         summary: [
           `Iniciativa "${initiative.title}" (${initiative.kind})`,
-          board ? `board "${board.title}" — ${cards.length} card(s) mostrados` : "sem board",
+          board ? `board "${board.board_name}" - ${cards.length} card(s) mostrados` : "sem board",
           events.length > 0 ? `${events.length} evento(s) próximos` : "sem eventos próximos",
           notes.length > 0 ? `${notes.length} ata(s) recentes` : "sem atas recentes",
           memberCount !== null ? `${memberCount} engagement(s) ativo(s)` : null,
