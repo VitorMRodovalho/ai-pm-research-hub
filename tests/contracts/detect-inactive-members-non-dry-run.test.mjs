@@ -195,6 +195,30 @@ async function deleteArm9Since(sinceIso) {
  */
 const DEDUP_WINDOW_DAYS_FROM_FUNCTION_BODY = 6;
 
+/**
+ * #2407 — quantas linhas de audit o HELPER já despejou (`threshold_days = 0` é a assinatura dele;
+ * o cron semanal usa 180). Serve de asserção FALSIFICÁVEL depois que a subtransação passou a
+ * desfazer as escritas: se alguém tirar a sentinela, este número cresce e o teste reprova.
+ */
+async function countHelperAuditRows() {
+  const url = `${SUPABASE_URL}/rest/v1/admin_audit_log`
+    + `?action=eq.arm9.inactivity_detection_run&changes-%3E%3Ethreshold_days=eq.0&select=id`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SERVICE_ROLE_KEY,
+      'Authorization': `Bearer ${SERVICE_ROLE_KEY}`,
+      'Prefer': 'count=exact',
+      'Range': '0-0',
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`helper audit count failed: HTTP ${res.status} — ${text}`);
+  }
+  const total = parseInt((res.headers.get('content-range') || '*/0').split('/')[1], 10);
+  return Number.isFinite(total) ? total : 0;
+}
+
 async function countArm9Since(sinceIso) {
   const url = `${SUPABASE_URL}/rest/v1/notifications`
     + `?type=eq.arm9_inactivity_alert&created_at=gte.${encodeURIComponent(sinceIso)}&select=id`;
@@ -313,6 +337,11 @@ test(
     // arm9 rows that tx=rollback does not undo. Anchor the cleanup window to server
     // time BEFORE the call, then delete the committed rows and assert zero residue.
     const since = await serverNowMinusMinutesIso(5);
+    // #2407 — o helper passa a ABORTAR a própria subtransação, então ele não commita mais nada.
+    // Isso torna `residue === 0` abaixo verdadeiro por CONSTRUÇÃO, e um controle que não pode
+    // falhar é decoração. As duas contagens abaixo são o controle que ficou no lugar dele: se a
+    // sentinela sair do corpo, o audit cresce e este teste reprova.
+    const auditAntes = await countHelperAuditRows();
     try {
       const result = await callTestHelperWithThreshold(0);
 
@@ -337,6 +366,16 @@ test(
       `test left ${residue} committed arm9 row(s) in prod (#1170/#231): the threshold=0 ` +
       'helper commits real arm9 notifications and tx=rollback does not undo SECDEF INSERTs — ' +
       'the test must delete every row it commits, else it silently spams the admin inbox.');
+
+    // #2407 — a asserção que PODE falhar. Desde a subtransação, o helper não deixa rastro
+    // nenhum: nem notificação, nem linha de audit. Medido em 21/09/2026 ao aplicar a migration,
+    // com um alerta de produção plantado na janela: ele SOBREVIVEU (2 antes, 2 depois), o audit
+    // ficou em 3684 nas duas pontas, e o retorno continuou trazendo managers_notified = 2.
+    const auditDepois = await countHelperAuditRows();
+    assert.equal(auditDepois, auditAntes,
+      `o helper gravou ${auditDepois - auditAntes} linha(s) de audit em produção (${auditAntes} -> ` +
+      `${auditDepois}). Ele deveria abortar a própria subtransação e não deixar rastro: se a ` +
+      'sentinela ND407 saiu do corpo, o DELETE de alertas alheios voltou junto (#2407).');
   }
 );
 
