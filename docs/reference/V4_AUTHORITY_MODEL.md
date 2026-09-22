@@ -155,9 +155,38 @@ submitter_acceptance, president_go, president_others]` que evita o stub. Nada tr
 
 ---
 
-## Procedimento de audit (CHECKLIST 4 etapas)
+## Procedimento de audit (CHECKLIST 5 etapas)
 
-Antes de declarar gap em `engagement_kind_permissions` ou propor seed expansion, executar **as 4 verificações**:
+Antes de declarar gap em `engagement_kind_permissions` ou propor seed expansion, executar **as 5 verificações**:
+
+### ☐ Etapa 0 — O kind é ADMISSÍVEL nesta espécie de iniciativa? (acrescentada em 2026-09-22, #2417)
+
+São **dois portões em série**, e as etapas 1 a 4 só auditam o segundo:
+
+| portão | tabela | pergunta | quem avalia |
+|---|---|---|---|
+| **0** | `engagement_kinds.initiative_kinds_allowed` | este kind pode ser **ATADO** a esta espécie de iniciativa? | `manage_initiative_engagement`, antes de tudo |
+| 1–4 | `engagement_kind_permissions` | o par (kind, role) **concede** a action? | `can()` / `can_by_member()` |
+
+```sql
+-- as DUAS fontes da verdade, lado a lado, para a espécie de iniciativa do caso
+SELECT 'lado-INICIATIVA (o dropdown do admin mostra)' AS fonte,
+       unnest(allowed_engagement_kinds) AS kind
+  FROM initiative_kinds WHERE slug = '<initiative_kind>'
+UNION ALL
+SELECT 'lado-KIND (a RPC valida)', slug
+  FROM engagement_kinds WHERE '<initiative_kind>' = ANY(initiative_kinds_allowed);
+```
+
+Se o kind não aparecer no **lado-KIND**, o seed que você está prestes a propor **nunca alcançará uma
+linha**: a RPC devolve `Engagement kind "X" not allowed for initiative kind "Y"` antes de olhar
+permissão nenhuma. E se os dois lados divergirem, o dropdown do admin oferece o que a RPC recusa —
+a UI promete e a plataforma nega (#169/p205 em `congress`, #2417 em `workgroup`).
+
+**Por que isto virou etapa:** o par `observer × participant → write_board` (#2400, PR #2416) passou
+nas 4 etapas, foi seedado com o escopo certo e com guard próprio, e ficou **inalcançável** — medido
+em 22/09/2026, `observer` não era admissível em `workgroup`, e nenhum dos 5 kinds externos era.
+O checklist auditou corretamente o que o par concede e nunca perguntou se o vínculo podia existir.
 
 ### ☐ Etapa 1 — Listar combos seedados
 ```sql
@@ -192,10 +221,11 @@ WHERE pronamespace='public'::regnamespace
 ```
 Ex: para `manage_member`, buscar `prosrc ILIKE '%volunteer%'` ou `%agreement%` para encontrar RPCs como `get_volunteer_agreement_status` que escopam por chapter sem precisar de combo extra.
 
-### Se as 4 etapas terminarem sem path alternativo encontrado E o caso de uso real está bloqueado → **aí sim** é gap. Documentar com:
+### Se as 5 etapas terminarem sem path alternativo encontrado E o caso de uso real está bloqueado → **aí sim** é gap. Documentar com:
 1. Caso de uso concreto (membro real bloqueado, RPC real falhando)
 2. Por que paths 2 e 3 não cobrem (citação do código)
 3. Proposta de seed (kind × role × action) com **justificativa de princípio LGPD/governance** para cada combo proposto
+4. **A etapa 0 respondida**: o kind é admissível na espécie de iniciativa do caso, ou o que a proposta faz a respeito. Um seed alcançável é o mínimo para a proposta ser sobre autoridade e não sobre texto.
 
 ---
 
