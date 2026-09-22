@@ -1,3 +1,4 @@
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
@@ -136,7 +137,7 @@ Deno.serve(async (req) => {
       console.log('[campaign] memberMap entries:', Object.keys(memberMap).length)
     }
 
-    const platformUrl = 'https://nucleoia.vitormr.dev'
+    const platformUrl = `${COMMS_ORIGIN}`
     let delivered = 0
     const errors: string[] = []
 

@@ -1,4 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js@2.116.0/src/edge-runtime.d.ts" />
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
@@ -111,7 +112,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
     const memberName = member?.name ?? 'voluntário(a)'
 
-    const link = `https://nucleoia.vitormr.dev/claim?token=${encodeURIComponent(token)}`
+    const link = `${COMMS_ORIGIN}/claim?token=${encodeURIComponent(token)}`
 
     const sandbox = isSandboxMode(from)
     if (sandbox) console.log('[send-account-claim] sandbox mode — restricted recipients')

@@ -1,4 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js@2.116.0/src/edge-runtime.d.ts" />
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
 
@@ -228,10 +229,10 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
         ${otherNotifications.length > 0 ? sectionBlock('🔔 Outras notificações', otherNotifications.length, '#5e35b1', renderNotificationList(otherNotifications)) : ''}
 
         <div style="text-align: center; margin: 24px 0 0 0;">
-          <a href="https://nucleoia.vitormr.dev/profile" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir minha plataforma</a>
+          <a href="${COMMS_ORIGIN}/profile" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir minha plataforma</a>
         </div>
         <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
-          Este resumo consolida ${totalItems} notificação(ões) que você receberia em emails separados ao longo da semana. Quer mudar a cadência? <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
+          Este resumo consolida ${totalItems} notificação(ões) que você receberia em emails separados ao longo da semana. Quer mudar a cadência? <a href="${COMMS_ORIGIN}/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
         </p>
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96; background: white; border-top: 1px solid #e9ecef;">
@@ -340,8 +341,8 @@ function buildLeaderInitiativeBodyHtml(payload: any): string {
     // Deep-link target: /meetings (page lists pending). Includes anchor focus on latest_event_id of first group as best-effort.
     const focusId = topGroups[0]?.latest_event_id || ''
     const ataHref = focusId
-      ? `https://nucleoia.vitormr.dev/meetings?event_id=${encodeURIComponent(focusId)}`
-      : 'https://nucleoia.vitormr.dev/meetings'
+      ? `${COMMS_ORIGIN}/meetings?event_id=${encodeURIComponent(focusId)}`
+      : `${COMMS_ORIGIN}/meetings`
     ataHtml = docSection(
       `📝 Atas pendentes (${ataCount})`,
       '#c62828',
@@ -360,8 +361,8 @@ function buildLeaderInitiativeBodyHtml(payload: any): string {
     const rows = topEvents.map((e: any) => {
       const eid = e.event_id || ''
       const href = eid
-        ? `https://nucleoia.vitormr.dev/attendance?eventId=${encodeURIComponent(eid)}&action=register`
-        : 'https://nucleoia.vitormr.dev/attendance'
+        ? `${COMMS_ORIGIN}/attendance?eventId=${encodeURIComponent(eid)}&action=register`
+        : `${COMMS_ORIGIN}/attendance`
       return `<li style="margin-bottom: 4px;"><a href="${href}" style="color: #1976d2; text-decoration: none;"><strong>${escapeHtml(e.title || 'Sem título')}</strong></a> <span style="color: #868e96;">— ${escapeHtml(fmtDate(e.date))}</span></li>`
     }).join('')
     const moreNote = attCount > topEvents.length
@@ -371,8 +372,8 @@ function buildLeaderInitiativeBodyHtml(payload: any): string {
     const listHtml = `${summary}<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">${rows}</ul>${moreNote}`
     const focusId = topEvents[0]?.event_id || ''
     const href = focusId
-      ? `https://nucleoia.vitormr.dev/attendance?eventId=${encodeURIComponent(focusId)}&action=register`
-      : 'https://nucleoia.vitormr.dev/attendance'
+      ? `${COMMS_ORIGIN}/attendance?eventId=${encodeURIComponent(focusId)}&action=register`
+      : `${COMMS_ORIGIN}/attendance`
     attHtml = docSection(
       `📋 Presenças não registradas (${attCount})`,
       '#f57c00',
@@ -391,8 +392,8 @@ function buildLeaderInitiativeBodyHtml(payload: any): string {
     const rows = topEvents.map((e: any) => {
       const eid = e.event_id || ''
       const href = eid
-        ? `https://nucleoia.vitormr.dev/admin/gamification?award_event_id=${encodeURIComponent(eid)}&surface=tribe`
-        : 'https://nucleoia.vitormr.dev/admin/gamification'
+        ? `${COMMS_ORIGIN}/admin/gamification?award_event_id=${encodeURIComponent(eid)}&surface=tribe`
+        : `${COMMS_ORIGIN}/admin/gamification`
       return `<li style="margin-bottom: 4px;"><a href="${href}" style="color: #7b1fa2; text-decoration: none;"><strong>${escapeHtml(e.title || 'Sem título')}</strong></a> <span style="color: #868e96;">— ${escapeHtml(fmtDate(e.date))}</span></li>`
     }).join('')
     const moreNote = champCount > topEvents.length
@@ -402,8 +403,8 @@ function buildLeaderInitiativeBodyHtml(payload: any): string {
     const listHtml = `${summary}<ul style="margin: 0; padding-left: 18px; color: #495057; font-size: 13px; line-height: 1.6;">${rows}</ul>${moreNote}<p style="color: #868e96; font-size: 11px; margin: 8px 0 0 0; font-style: italic;">Nem toda reunião precisa de Champion — se for o caso, ignore. (Marca de "dispensado" virá em release futuro.)</p>`
     const focusId = topEvents[0]?.event_id || ''
     const href = focusId
-      ? `https://nucleoia.vitormr.dev/admin/gamification?award_event_id=${encodeURIComponent(focusId)}&surface=tribe`
-      : 'https://nucleoia.vitormr.dev/admin/gamification'
+      ? `${COMMS_ORIGIN}/admin/gamification?award_event_id=${encodeURIComponent(focusId)}&surface=tribe`
+      : `${COMMS_ORIGIN}/admin/gamification`
     champHtml = docSection(
       `🏆 Champions ainda não conferidos (${champCount})`,
       '#7b1fa2',
@@ -470,11 +471,11 @@ function leaderDigestFrame(headerHtml: string, sectionsHtml: string, whyHtml: st
         </div>
 
         <div style="text-align: center; margin: 24px 0 0 0;">
-          <a href="https://nucleoia.vitormr.dev/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
+          <a href="${COMMS_ORIGIN}/admin/portfolio" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir portfolio</a>
         </div>
         <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
           ${whyHtml}
-          <a href="https://nucleoia.vitormr.dev/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
+          <a href="${COMMS_ORIGIN}/settings/notifications" style="color: #6c757d;">Preferências de notificação</a>.
         </p>
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96; background: white; border-top: 1px solid #e9ecef;">
@@ -577,7 +578,7 @@ function buildHtml(notification: any, recipientEmail?: string): string {
     : `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${escapeHtml(notification.body)}</p>`
   const optOutBlock = isDigest
     ? `<p style="color: #adb5bd; font-size: 11px; margin: 16px 0 0 0; line-height: 1.4;">
-         Deseja parar de receber este resumo? Ajuste em <a href="https://nucleoia.vitormr.dev/profile" style="color: #6c757d;">preferencias de notificacao</a>.
+         Deseja parar de receber este resumo? Ajuste em <a href="${COMMS_ORIGIN}/profile" style="color: #6c757d;">preferencias de notificacao</a>.
        </p>`
     : ''
 
@@ -586,8 +587,8 @@ function buildHtml(notification: any, recipientEmail?: string): string {
   const prepBlock = isOnboardingPrep
     ? `<div style="background: #e8f4f8; border-left: 4px solid #003B5C; padding: 12px 16px; margin: 0 0 16px 0; border-radius: 4px;">
          <p style="color: #003B5C; font-size: 13px; margin: 0 0 6px 0; font-weight: 600;">Como acessar a plataforma</p>
-         ${recipientEmail ? `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0 0 6px 0;">Entre em <a href="https://nucleoia.vitormr.dev/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.vitormr.dev</a> usando este e-mail: <strong style="color: #003B5C;">${escapeHtml(recipientEmail)}</strong>.</p>
-         <p style="color: #6c757d; font-size: 12px; line-height: 1.5; margin: 0;">Se você normalmente entra com Google, LinkedIn ou Microsoft em outro e-mail, use a opção <strong>"Vincular minha conta"</strong> na plataforma para conectar seu login a este cadastro.</p>` : `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0;">Entre em <a href="https://nucleoia.vitormr.dev/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.vitormr.dev</a> e siga seu checklist de onboarding.</p>`}
+         ${recipientEmail ? `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0 0 6px 0;">Entre em <a href="${COMMS_ORIGIN}/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.pmigo.org.br</a> usando este e-mail: <strong style="color: #003B5C;">${escapeHtml(recipientEmail)}</strong>.</p>
+         <p style="color: #6c757d; font-size: 12px; line-height: 1.5; margin: 0;">Se você normalmente entra com Google, LinkedIn ou Microsoft em outro e-mail, use a opção <strong>"Vincular minha conta"</strong> na plataforma para conectar seu login a este cadastro.</p>` : `<p style="color: #495057; font-size: 13px; line-height: 1.6; margin: 0;">Entre em <a href="${COMMS_ORIGIN}/workspace" style="color: #003B5C; font-weight: 600;">nucleoia.pmigo.org.br</a> e siga seu checklist de onboarding.</p>`}
        </div>`
     : ''
 
@@ -597,8 +598,8 @@ function buildHtml(notification: any, recipientEmail?: string): string {
     ? (notification.link.startsWith('/') ? notification.link : `/${notification.link}`)
     : null
   const ctaHref = safeLink
-    ? `https://nucleoia.vitormr.dev${safeLink}`
-    : isOnboardingPrep ? 'https://nucleoia.vitormr.dev/workspace' : ''
+    ? `${COMMS_ORIGIN}${safeLink}`
+    : isOnboardingPrep ? `${COMMS_ORIGIN}/workspace` : ''
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -615,7 +616,7 @@ function buildHtml(notification: any, recipientEmail?: string): string {
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Nucleo de Estudos e Pesquisa em IA &amp; GP</p>
-        <p>Enviado automaticamente pela plataforma. <a href="https://nucleoia.vitormr.dev/profile" style="color: #003B5C;">Gerir preferencias</a></p>
+        <p>Enviado automaticamente pela plataforma. <a href="${COMMS_ORIGIN}/profile" style="color: #003B5C;">Gerir preferencias</a></p>
       </div>
     </div>`
 }
@@ -636,7 +637,7 @@ function subjectFor(n: any): string {
 function buildCoalescedHtml(items: any[]): string {
   const rows = items.map(n => {
     const safeLink = n.link ? (n.link.startsWith('/') ? n.link : `/${n.link}`) : null
-    const ctaHref = safeLink ? `https://nucleoia.vitormr.dev${safeLink}` : ''
+    const ctaHref = safeLink ? `${COMMS_ORIGIN}${safeLink}` : ''
     const label = TYPE_SUBJECTS[n.type] || n.title
     return `
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 14px 16px; margin: 0 0 12px 0;">
@@ -656,7 +657,7 @@ function buildCoalescedHtml(items: any[]): string {
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Nucleo de Estudos e Pesquisa em IA &amp; GP</p>
-        <p>Enviado automaticamente pela plataforma. <a href="https://nucleoia.vitormr.dev/profile" style="color: #003B5C;">Gerir preferencias</a></p>
+        <p>Enviado automaticamente pela plataforma. <a href="${COMMS_ORIGIN}/profile" style="color: #003B5C;">Gerir preferencias</a></p>
       </div>
     </div>`
 }

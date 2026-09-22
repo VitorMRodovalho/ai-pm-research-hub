@@ -1,4 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js@2.116.0/src/edge-runtime.d.ts" />
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 
@@ -27,7 +28,7 @@ import { isServiceRoleToken } from '../_shared/service-auth.ts'
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 
-const PLATFORM = 'https://nucleoia.vitormr.dev'
+const PLATFORM = `${COMMS_ORIGIN}`
 // A sessão abre no cockpit, que é para onde `/onboarding` redireciona (302) e onde o Nav roda
 // `get_member_by_auth` — o first_link que liga a conta ao membro. É o passo que fecha a jornada.
 const REDIRECT_TO = `${PLATFORM}/workspace`

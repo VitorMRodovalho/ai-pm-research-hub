@@ -1,3 +1,4 @@
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
@@ -93,7 +94,7 @@ Deno.serve(async (req) => {
 
     const from = Deno.env.get('RESEND_FROM_ADDRESS') || 'onboarding@resend.dev'
     const sandbox = from.includes('onboarding@resend.dev')
-    const portalUrl = 'https://nucleoia.vitormr.dev'
+    const portalUrl = `${COMMS_ORIGIN}`
     let totalSent = 0
     const errors: string[] = []
 
