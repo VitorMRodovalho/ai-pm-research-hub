@@ -37,6 +37,12 @@ const DOC_TYPES = [
   'project_charter',
   'executive_summary',
   'framework_reference',
+  // #2435: os 5 tipos que o CHECK ganhou depois do wizard. A lista viva e derivada no guard 2435.
+  'accession_term',
+  'assignment_term',
+  'data_processing_agreement',
+  'declaration_template',
+  'business_case',
 ];
 const VIS_CLASSES = ['public', 'active_members', 'legal_scoped', 'admin_only', 'audit_restricted'];
 const ACK_MODES = ['informational', 'binding', 'legal_signature'];
@@ -94,7 +100,7 @@ describe('p258 #310 — Wave 2 admin intake wizard contract', () => {
   });
 
   describe('select dropdowns — full CHECK constraint enumeration', () => {
-    it('11 doc_type options match governance_documents_doc_type_check', () => {
+    it('16 doc_type options match governance_documents_doc_type_check', () => {
       const docTypeArrayMatch = COMPONENT_SRC.match(/const DOC_TYPES:[^=]*=\s*\[([\s\S]*?)\];/);
       assert.ok(docTypeArrayMatch, 'DOC_TYPES array must be declared');
       for (const dt of DOC_TYPES) {
@@ -120,7 +126,7 @@ describe('p258 #310 — Wave 2 admin intake wizard contract', () => {
   });
 
   describe('A1 acknowledgement_mode preview mirrors RPC default', () => {
-    it('declares ACK_DEFAULTS mapping covering all 11 doc_types', () => {
+    it('declares ACK_DEFAULTS mapping covering all 16 doc_types', () => {
       const ackMatch = COMPONENT_SRC.match(/const ACK_DEFAULTS:[^=]*=\s*\{([\s\S]*?)\};/);
       assert.ok(ackMatch, 'ACK_DEFAULTS must be declared');
       for (const dt of DOC_TYPES) {
@@ -131,7 +137,7 @@ describe('p258 #310 — Wave 2 admin intake wizard contract', () => {
     it('uses the 3 canonical acknowledgement_mode values only', () => {
       const ackMatch = COMPONENT_SRC.match(/const ACK_DEFAULTS:[^=]*=\s*\{([\s\S]*?)\};/)[1];
       const usedModes = [...ackMatch.matchAll(/'(informational|binding|legal_signature)'/g)].map((m) => m[1]);
-      assert.ok(usedModes.length === DOC_TYPES.length, 'all 11 doc_types map to a mode');
+      assert.ok(usedModes.length === DOC_TYPES.length, 'all 16 doc_types map to a mode');
       for (const m of usedModes) {
         assert.ok(ACK_MODES.includes(m), `unexpected acknowledgement_mode '${m}'`);
       }
