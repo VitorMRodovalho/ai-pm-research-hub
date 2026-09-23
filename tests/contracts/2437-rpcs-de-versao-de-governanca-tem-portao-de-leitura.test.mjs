@@ -22,7 +22,8 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY;
+// O CI exporta SUPABASE_ANON_KEY (#1518); o .env local usa o nome PUBLIC_.
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
 const dbGated = !!(SUPABASE_URL && SERVICE_ROLE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 const sb = () => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -63,6 +64,19 @@ export function helperNegaCertoNaOrdemCerta(body) {
   return semMembro && audit >= 0 && admin >= 0 && audit < admin;
 }
 
+/**
+ * O ramo "quem assina le o que assina" amarra a VERSAO, nao so o documento. Sem a amarra, poder
+ * assinar QUALQUER portao de uma cadeia aberta abria o rascunho do documento inteiro (medido: um
+ * portao aberto a voluntarios alcancava quase todo membro ativo). Recorta o EXISTS que decide e
+ * afirma dentro dele.
+ */
+export function ramoDeQuemAssinaAmarraVersao(body) {
+  const code = semComentarioSql(body).replace(/\s+/g, ' ');
+  const bloco = code.match(/IF EXISTS \( SELECT 1 FROM public\.approval_chains ac WHERE ([\s\S]*?) \) THEN RETURN true;/);
+  if (!bloco) return false;
+  return /ac\.closed_at IS NULL AND \(ac\.version_id = v_ver\.id OR v_ver\.locked_at IS NOT NULL\)/.test(bloco[1]);
+}
+
 async function corpo(proname) {
   const { data, error } = await sb().rpc('_audit_function_source', { p_proname: proname });
   assert.equal(error, null, `_audit_function_source(${proname}) falhou: ${error?.message ?? ''}`);
@@ -83,6 +97,12 @@ test(dbGated ? '#2437: o helper nega conta sem membro e respeita audit_restricte
   { skip: !dbGated }, async () => {
     assert.ok(helperNegaCertoNaOrdemCerta(await corpo('_can_read_governance_version')),
       '_can_read_governance_version perdeu a negacao de conta sem membro ou deixou manage_member passar audit_restricted (#2437)');
+  });
+
+test(dbGated ? '#2437: quem pode assinar a cadeia nao le rascunho acima dela' : `SKIP: ${skipMsg}`,
+  { skip: !dbGated }, async () => {
+    assert.ok(ramoDeQuemAssinaAmarraVersao(await corpo('_can_read_governance_version')),
+      'o ramo de quem assina voltou a amarrar so o documento: poder assinar qualquer portao abre o rascunho (#2437)');
   });
 
 test(dbGated && ANON_KEY ? '#2437: exercido como anon, o rascunho e recusado' : 'SKIP: anon key ausente',
@@ -136,4 +156,25 @@ test('#2437 mutacao: os detectores reprovam cada forma do defeito, pela MESMA fu
       RETURN public.can_by_member(v_member, 'manage_platform');
     END IF;`;
   assert.equal(helperNegaCertoNaOrdemCerta(invertido), false);
+
+  const RAMO = `
+    IF EXISTS (
+      SELECT 1 FROM public.approval_chains ac
+      WHERE ac.document_id = v_doc.id AND ac.closed_at IS NULL
+        AND (ac.version_id = v_ver.id OR v_ver.locked_at IS NOT NULL)
+        AND (ac.opened_by = v_member)
+    ) THEN
+      RETURN true;
+    END IF;`;
+  assert.equal(ramoDeQuemAssinaAmarraVersao(RAMO), true);
+  // mutacao 7: a amarra de versao removida (o furo real, medido em 23/09)
+  const semAmarra = RAMO.replace('AND (ac.version_id = v_ver.id OR v_ver.locked_at IS NOT NULL)', '');
+  assert.notEqual(semAmarra, RAMO, 'a mutacao 7 nao alterou o texto');
+  assert.equal(ramoDeQuemAssinaAmarraVersao(semAmarra), false);
+  // mutacao 8: amarra so em comentario nao conta
+  const comentada = RAMO.replace('AND (ac.version_id', '-- AND (ac.version_id');
+  assert.equal(ramoDeQuemAssinaAmarraVersao(comentada), false);
+  // mutacao 9: amarra afrouxada para "qualquer versao" (OR true)
+  const frouxa = RAMO.replace('OR v_ver.locked_at IS NOT NULL', 'OR true');
+  assert.equal(ramoDeQuemAssinaAmarraVersao(frouxa), false);
 });
