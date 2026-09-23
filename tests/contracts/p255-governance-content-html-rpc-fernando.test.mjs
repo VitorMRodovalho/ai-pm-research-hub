@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+const GUARD_ROOT = process.cwd();
 
 // p255 HF2 — Governance viewer content_html via get_chain_workflow_detail.
 // Fernando Maquiaveli (external reviewer / pending signer) sees "conteúdo
@@ -15,6 +17,9 @@ import { createClient } from '@supabase/supabase-js';
 const MIGRATION_PATH = 'supabase/migrations/20260805000034_p255_governance_chain_workflow_detail_content_html.sql';
 const ISLAND_PATH    = 'src/components/governance/ReviewChainIsland.tsx';
 const MIGRATION_SQL  = readFileSync(MIGRATION_PATH, 'utf8');
+// #1932/#2437: o CORPO vigente de get_chain_workflow_detail vive na captura mais nova (o portao de
+// leitura do GHSA-gh3r-fhjr-cr8w). O arquivo acima segue valendo para o cabecalho HISTORICO do HF2.
+const FN_SQL = latestFunctionCapture(GUARD_ROOT, 'get_chain_workflow_detail').block;
 const ISLAND_SRC     = readFileSync(ISLAND_PATH, 'utf8');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -48,26 +53,26 @@ describe('p255 HF2 — governance viewer content_html via RPC (Fernando hotfix)'
   describe('signature preservation (SEDIMENT-238.C — CREATE OR REPLACE same-sig)', () => {
     it('keeps 1-arg signature (p_chain_id uuid)', () => {
       assert.match(
-        MIGRATION_SQL,
+        FN_SQL,
         /CREATE OR REPLACE FUNCTION public\.get_chain_workflow_detail\s*\(\s*p_chain_id\s+uuid\s*\)/
       );
       assert.doesNotMatch(
-        MIGRATION_SQL,
+        FN_SQL,
         /DROP\s+FUNCTION\s+(?:IF EXISTS\s+)?public\.get_chain_workflow_detail/i
       );
     });
 
     it('preserves RETURNS jsonb + SECURITY DEFINER + search_path TO public', () => {
-      assert.match(MIGRATION_SQL, /RETURNS jsonb/);
-      assert.match(MIGRATION_SQL, /SECURITY DEFINER/);
-      assert.match(MIGRATION_SQL, /SET search_path TO 'public'/);
+      assert.match(FN_SQL, /RETURNS jsonb/);
+      assert.match(FN_SQL, /SECURITY DEFINER/);
+      assert.match(FN_SQL, /SET search_path TO 'public'/);
     });
   });
 
   describe('RPC body extension — content_html surfaces in payload', () => {
     it('v_chain SELECT INTO adds dv.content_html', () => {
       assert.match(
-        MIGRATION_SQL,
+        FN_SQL,
         /dv\.version_label,\s*dv\.locked_at,\s*dv\.content_html/,
         'SELECT INTO list must pull content_html from document_versions join'
       );
@@ -75,7 +80,7 @@ describe('p255 HF2 — governance viewer content_html via RPC (Fernando hotfix)'
 
     it('RETURN jsonb_build_object exposes content_html', () => {
       assert.match(
-        MIGRATION_SQL,
+        FN_SQL,
         /'content_html'\s*,\s*v_chain\.content_html/,
         'jsonb payload returned to clients must include content_html'
       );
@@ -85,14 +90,14 @@ describe('p255 HF2 — governance viewer content_html via RPC (Fernando hotfix)'
       // Spot-check the canonical field set is intact
       for (const field of ['chain_id', 'chain_status', 'document_id', 'document_title', 'doc_type', 'version_id', 'version_label', 'locked_at', 'opened_at', 'submitter', 'gates', 'days_open']) {
         assert.ok(
-          MIGRATION_SQL.includes(`'${field}'`),
+          FN_SQL.includes(`'${field}'`),
           `field '${field}' must be preserved in RETURN jsonb_build_object`
         );
       }
     });
 
     it('preserves error envelope for chain_not_found', () => {
-      assert.match(MIGRATION_SQL, /jsonb_build_object\('error','chain_not_found'\)/);
+      assert.match(FN_SQL, /jsonb_build_object\('error','chain_not_found'\)/);
     });
   });
 

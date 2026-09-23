@@ -1,6 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+const GUARD_ROOT = process.cwd();
 
 // #842 — governance comment inheritance must reach UNLOCKED predecessors.
 //
@@ -40,7 +42,8 @@ describe('#842 — comment inheritance reaches unlocked predecessors', () => {
   });
 
   it('get_previous_locked_version no longer gates the predecessor on locked_at IS NOT NULL', () => {
-    const body = fnBody('get_previous_locked_version');
+    // #1932/#2437: o corpo vigente vive na captura mais nova (portao de leitura do GHSA-gh3r-fhjr-cr8w).
+    const body = latestFunctionCapture(GUARD_ROOT, 'get_previous_locked_version').block.replace(/--.*$/gm, '');
     assert.ok(!/locked_at\s+IS\s+NOT\s+NULL/i.test(body),
       'locked_at IS NOT NULL gate must be removed from the predecessor query');
     assert.match(body, /status\s*=\s*'withdrawn'/i,
