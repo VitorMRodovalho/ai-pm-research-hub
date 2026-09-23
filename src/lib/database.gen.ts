@@ -29593,6 +29593,10 @@ export type Database = {
         Args: { p_initiative_id: string; p_member_id: string }
         Returns: boolean
       }
+      _can_read_governance_version: {
+        Args: { p_version_id: string }
+        Returns: boolean
+      }
       _can_sign_gate: {
         Args: {
           p_chain_id: string
