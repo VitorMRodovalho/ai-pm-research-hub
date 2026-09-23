@@ -1164,6 +1164,11 @@ const ptBR: Record<string, string> = {
   'governance.docs.intake.docType.project_charter': 'Project Charter / TAP',
   'governance.docs.intake.docType.executive_summary': 'Sumário Executivo',
   'governance.docs.intake.docType.framework_reference': 'Referência de Framework',
+  'governance.docs.intake.docType.accession_term': 'Termo de Adesão Simplificado (acordo bilateral)',
+  'governance.docs.intake.docType.assignment_term': 'Termo de Cessão de Direitos Patrimoniais',
+  'governance.docs.intake.docType.data_processing_agreement': 'Acordo de Operador de Dados (art. 39 LGPD)',
+  'governance.docs.intake.docType.declaration_template': 'Declaração (template)',
+  'governance.docs.intake.docType.business_case': 'Business Case',
   // visibility_class localized (5 CHECK values)
   'governance.docs.intake.visibility.public': 'Público',
   'governance.docs.intake.visibility.publicHint': 'Qualquer visitante (ex.: Política de Privacidade).',

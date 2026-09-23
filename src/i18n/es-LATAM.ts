@@ -1111,6 +1111,11 @@ const esLATAM: Record<string, string> = {
   'governance.docs.intake.docType.project_charter': 'Project Charter / TAP',
   'governance.docs.intake.docType.executive_summary': 'Resumen Ejecutivo',
   'governance.docs.intake.docType.framework_reference': 'Referencia de Framework',
+  'governance.docs.intake.docType.accession_term': 'Término de Adhesión Simplificado (acuerdo bilateral)',
+  'governance.docs.intake.docType.assignment_term': 'Término de Cesión de Derechos Patrimoniales',
+  'governance.docs.intake.docType.data_processing_agreement': 'Acuerdo de Encargado de Datos (art. 39 LGPD)',
+  'governance.docs.intake.docType.declaration_template': 'Declaración (plantilla)',
+  'governance.docs.intake.docType.business_case': 'Business Case',
   // visibility_class localized (5 CHECK values)
   'governance.docs.intake.visibility.public': 'Público',
   'governance.docs.intake.visibility.publicHint': 'Cualquier visitante (ej.: Política de Privacidad).',

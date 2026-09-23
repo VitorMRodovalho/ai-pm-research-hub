@@ -1111,6 +1111,11 @@ const enUS: Record<string, string> = {
   'governance.docs.intake.docType.project_charter': 'Project Charter / TAP',
   'governance.docs.intake.docType.executive_summary': 'Executive Summary',
   'governance.docs.intake.docType.framework_reference': 'Framework Reference',
+  'governance.docs.intake.docType.accession_term': 'Simplified Accession Term (bilateral agreement)',
+  'governance.docs.intake.docType.assignment_term': 'Assignment of Economic Rights Term',
+  'governance.docs.intake.docType.data_processing_agreement': 'Data Processing Agreement (LGPD art. 39)',
+  'governance.docs.intake.docType.declaration_template': 'Declaration (template)',
+  'governance.docs.intake.docType.business_case': 'Business Case',
   // visibility_class localized (5 CHECK values)
   'governance.docs.intake.visibility.public': 'Public',
   'governance.docs.intake.visibility.publicHint': 'Any visitor (e.g. Privacy Policy).',

@@ -27,7 +27,13 @@ type DocType =
   | 'executive_summary'
   | 'project_charter'
   | 'editorial_guide'
-  | 'governance_guideline';
+  | 'governance_guideline'
+  // #2435: tipos que o CHECK ganhou depois do wizard
+  | 'accession_term'
+  | 'assignment_term'
+  | 'data_processing_agreement'
+  | 'declaration_template'
+  | 'business_case';
 
 type VisibilityClass =
   | 'public'
@@ -50,6 +56,12 @@ const DOC_TYPES: DocType[] = [
   'project_charter',
   'executive_summary',
   'framework_reference',
+  // #2435: sem estes, nao havia como criar pela tela nenhum dos 5 tipos novos do CHECK
+  'accession_term',
+  'assignment_term',
+  'data_processing_agreement',
+  'declaration_template',
+  'business_case',
 ];
 
 const VISIBILITY_CLASSES: VisibilityClass[] = [
@@ -74,6 +86,12 @@ const ACK_DEFAULTS: Record<DocType, AcknowledgementMode> = {
   volunteer_term_template: 'binding',
   volunteer_addendum: 'binding',
   policy: 'binding',
+  // #2435: espelho dos bracos novos do intake
+  accession_term: 'legal_signature',
+  assignment_term: 'legal_signature',
+  data_processing_agreement: 'legal_signature',
+  declaration_template: 'legal_signature',
+  business_case: 'informational',
 };
 
 type Strings = {
