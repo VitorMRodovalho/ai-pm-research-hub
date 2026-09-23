@@ -55,7 +55,8 @@ const sb = () => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistS
  * "2 travados" e um numero sem dono, e ninguem sabe qual resolver primeiro.
  */
 const BASELINE = [
-  { opaco: 'b7418d4d', motivo: 'volunteer × researcher', desde: '2026-09-10' },
+  // b7418d4d (volunteer × researcher, desde 2026-09-10) saiu em 23/09: ganhou login as 17:05 UTC.
+  // A catraca reprovou a main pedindo exatamente isto, que e o comportamento desenhado.
   { opaco: '76a38ad4', motivo: 'workgroup_coordinator × leader (com iniciativa)', desde: '2026-09-19' },
 ];
 const CONHECIDOS = new Set(BASELINE.map((b) => b.opaco));
