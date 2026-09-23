@@ -253,10 +253,11 @@ const SEL_I18N = {
     pmiProfileError: t('admin.selection.modal.pmiProfileError', lang),
     pmiProfileIdentity: t('admin.selection.modal.pmiProfileIdentity', lang),
     pmiProfileServiceCount: t('admin.selection.modal.pmiProfileServiceCount', lang),
-    pmiProfileMemberSince: t('admin.selection.modal.pmiProfileMemberSince', lang),
-    pmiProfileMemberUntil: t('admin.selection.modal.pmiProfileMemberUntil', lang),
+    pmiProfileServiceSince: t('admin.selection.modal.pmiProfileServiceSince', lang),
+    pmiProfileServiceUntil: t('admin.selection.modal.pmiProfileServiceUntil', lang),
     pmiProfilePrivate: t('admin.selection.modal.pmiProfilePrivate', lang),
     pmiProfileFetched: t('admin.selection.modal.pmiProfileFetched', lang),
+    pmiProfileMembershipUntil: t('admin.selection.modal.pmiProfileMembershipUntil', lang),
     pmiProfileChapters: t('admin.selection.modal.pmiProfileChapters', lang),
     pmiProfileFormChapter: t('admin.selection.modal.pmiProfileFormChapter', lang),
     pmiProfileChapterAffiliation: t('admin.selection.modal.pmiProfileChapterAffiliation', lang),
@@ -290,8 +291,8 @@ const SEL_I18N = {
     chapterNonBrLabel: t('admin.selection.modal.chapterNonBrLabel', lang),
     chapterFormDeclaredLabel: t('admin.selection.modal.chapterFormDeclaredLabel', lang),
     phaseBHistoryCount: t('admin.selection.modal.phaseBHistoryCount', lang),
-    phaseBMemberSince: t('admin.selection.modal.phaseBMemberSince', lang),
-    phaseBMemberUntil: t('admin.selection.modal.phaseBMemberUntil', lang),
+    phaseBServiceSince: t('admin.selection.modal.phaseBServiceSince', lang),
+    phaseBServiceUntil: t('admin.selection.modal.phaseBServiceUntil', lang),
     phaseBFetchedAt: t('admin.selection.modal.phaseBFetchedAt', lang),
     // p160 T5: dual_track i18n
     dualTrackBadge: t('admin.selection.modal.dualTrackBadge', lang),
@@ -997,10 +998,11 @@ const SEL_I18N = {
       pmiProfileError: 'Erro ao carregar perfil PMI',
       pmiProfileIdentity: 'Identidade PMI',
       pmiProfileServiceCount: 'Voluntariados PMI',
-      pmiProfileMemberSince: 'Membro desde',
-      pmiProfileMemberUntil: 'Até',
+      pmiProfileServiceSince: 'Serviço PMI desde',
+      pmiProfileServiceUntil: 'Serviço PMI até',
       pmiProfilePrivate: 'Perfil community marcado privado pelo candidato — Phase B limitada',
       pmiProfileFetched: 'Última sync',
+      pmiProfileMembershipUntil: 'filiação até',
       pmiProfileChapters: 'Capítulos PMI',
       pmiProfileFormChapter: 'Form (declarado)',
       pmiProfileChapterAffiliation: 'Filiação capítulo (form)',
@@ -1033,8 +1035,8 @@ const SEL_I18N = {
       chapterNonBrLabel: 'Fora do Brasil (não elegível para entrada)',
       chapterFormDeclaredLabel: 'Declarado no form (não verificado)',
       phaseBHistoryCount: 'Service history',
-      phaseBMemberSince: 'Membro desde',
-      phaseBMemberUntil: 'Até',
+      phaseBServiceSince: 'Serviço PMI desde',
+      phaseBServiceUntil: 'Serviço PMI até',
       phaseBFetchedAt: 'Última sync Phase B',
       dualTrackBadge: '🔗 Dual Track',
       dualTrackDescription: 'Candidato submeteu 2 candidaturas (Pesquisador + Líder). Decisão pode ser independente para cada papel.',
@@ -2213,10 +2215,10 @@ const SEL_I18N = {
       const memberStatus = pmiCanonical.member_status || 'unknown';
       const memberBadge = pmiCanonical.is_pmi_member
         ? memberStatus === 'active'
-          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700" title="Membro PMI ativo (service_latest_end_date >= hoje)">✓PMI</span>'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700" title="PROVISORIO (#2423): este selo sai de service_latest_end_date, que e data de VOLUNTARIADO, nao de filiacao. A filiacao real esta em pmi_memberships, na aba PMI.">✓PMI</span>'
           : memberStatus === 'past'
-          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600" title="Membro PMI passado (cadastro existe, expirado)">⚪PMI</span>'
-          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Cadastro PMI existe mas sem service history (Phase B pendente)">?PMI</span>'
+          ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600" title="PROVISORIO (#2423): NAO significa filiacao expirada. Sai de service_latest_end_date (voluntariado). Confira a filiacao real na aba PMI.">⚪PMI</span>'
+          : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem historico de SERVICO (Phase B pendente). Nada afirma sobre filiacao — veja a aba PMI.">?PMI</span>'
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
       return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
@@ -2307,8 +2309,8 @@ const SEL_I18N = {
              ${modalBrAffiliations.length ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.chapterAffiliationsTitle}</span><br><strong>${esc(modalAffiliationsStr)}</strong></div>` : ''}
              ${modalNonBrAffiliations.length ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.chapterNonBrLabel}</span><br><strong>${esc(modalNonBrAffiliations.join(' · '))}</strong></div>` : ''}
              ${pmiC.service_history_count != null ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBHistoryCount}</span><br><strong>${pmiC.service_history_count}</strong></div>` : ''}
-             ${pmiC.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberSince}</span><br><strong>${esc(pmiC.member_since)}</strong></div>` : ''}
-             ${pmiC.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBMemberUntil}</span><br><strong>${esc(pmiC.member_until)}</strong></div>` : ''}
+             ${pmiC.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBServiceSince}</span><br><strong>${esc(pmiC.member_since)}</strong></div>` : ''}
+             ${pmiC.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${T.modal.phaseBServiceUntil}</span><br><strong>${esc(pmiC.member_until)}</strong></div>` : ''}
            </div>
            ${pmiC.phase_b_fetched_at ? `<div class="mt-1.5 text-[10px] text-[var(--text-muted)]">${T.modal.phaseBFetchedAt}: ${esc(pmiC.phase_b_fetched_at)}</div>` : ''}
          </div>`
@@ -2974,8 +2976,8 @@ const SEL_I18N = {
           <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[12px]">
             ${identity.pmi_id ? `<div><span class="text-[var(--text-muted)] text-[10px]">PMI ID</span><br><strong>${esc(identity.pmi_id)}</strong></div>` : ''}
             <div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileServiceCount)}</span><br><strong>${identity.service_history_count || 0}</strong></div>
-            ${identity.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileMemberSince)}</span><br><strong>${esc(identity.member_since)}</strong></div>` : ''}
-            ${identity.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileMemberUntil)}</span><br><strong>${esc(identity.member_until)}</strong></div>` : ''}
+            ${identity.member_since ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileServiceSince)}</span><br><strong>${esc(identity.member_since)}</strong></div>` : ''}
+            ${identity.member_until ? `<div><span class="text-[var(--text-muted)] text-[10px]">${esc(T.modal.pmiProfileServiceUntil)}</span><br><strong>${esc(identity.member_until)}</strong></div>` : ''}
           </div>
           ${identity.community_profile_private ? `<div class="mt-2 text-[10px] text-amber-700 italic">⚠ ${esc(T.modal.pmiProfilePrivate)}</div>` : ''}
           ${identity.phase_b_fetched_at ? `<div class="mt-1.5 text-[10px] text-[var(--text-muted)]">${esc(T.modal.pmiProfileFetched)}: ${esc(identity.phase_b_fetched_at)}</div>` : ''}
@@ -2986,7 +2988,7 @@ const SEL_I18N = {
       const chaptersSection = (memberships.length || chapters.form_chapter || chapters.chapter_affiliation) ? `
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
           <h4 class="text-[12px] font-bold text-navy mb-2">${esc(T.modal.pmiProfileChapters)}</h4>
-          ${memberships.length ? `<div class="flex flex-wrap gap-1.5 mb-2">${memberships.map((m: any) => `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${esc(typeof m === 'string' ? m : (m.chapterName || JSON.stringify(m)))}</span>`).join('')}</div>` : ''}
+          ${memberships.length ? `<div class="flex flex-wrap gap-1.5 mb-2">${memberships.map((m: any) => `<span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">${esc(typeof m === 'string' ? m : (m.chapterName || JSON.stringify(m)))}${typeof m !== 'string' && m.expiryDate ? ` <span class="font-normal opacity-80">· ${esc(T.modal.pmiProfileMembershipUntil)} ${esc(m.expiryDate)}</span>` : ''}</span>`).join('')}</div>` : ''}
           ${chapters.form_chapter ? `<div class="text-[11px] mb-0.5"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileFormChapter)}:</strong> ${esc(chapters.form_chapter)}</div>` : ''}
           ${chapters.chapter_affiliation ? `<div class="text-[11px] mb-0.5"><strong class="text-[var(--text-secondary)]">${esc(T.modal.pmiProfileChapterAffiliation)}:</strong> ${esc(chapters.chapter_affiliation)}</div>` : ''}
         </div>` : '';
