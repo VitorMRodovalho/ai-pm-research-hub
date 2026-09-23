@@ -1,3 +1,4 @@
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Retry with exponential backoff for external API calls
@@ -32,8 +33,8 @@ function buildSignatureHtml(sender: Record<string, any>, cycleName: string): str
   return sig
 }
 
-const HELP_URL = 'https://nucleoia.vitormr.dev/admin/help'
-const HUB_URL = 'https://nucleoia.vitormr.dev'
+const HELP_URL = `${COMMS_ORIGIN}/admin/help`
+const HUB_URL = `${COMMS_ORIGIN}`
 
 function buildOnboardingHtml(tribeName: string, memberNames: string[], signatureHtml: string): string {
   const greeting = memberNames.length > 3

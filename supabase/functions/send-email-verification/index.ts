@@ -1,4 +1,5 @@
 /// <reference types="https://esm.sh/@supabase/functions-js@2.116.0/src/edge-runtime.d.ts" />
+import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
@@ -52,7 +53,7 @@ function buildHtml(targetEmail: string, requestingName: string, link: string, ex
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Núcleo de Estudos e Pesquisa em IA &amp; GP</p>
-        <p>Email enviado automaticamente. <a href="https://nucleoia.vitormr.dev/profile" style="color: #003B5C;">Acessar perfil</a></p>
+        <p>Email enviado automaticamente. <a href="${COMMS_ORIGIN}/profile" style="color: #003B5C;">Acessar perfil</a></p>
       </div>
     </div>`
 }
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
     const requestingName = member?.name ?? 'Um membro da plataforma'
 
-    const link = `https://nucleoia.vitormr.dev/profile/verify-secondary?token=${encodeURIComponent(token)}`
+    const link = `${COMMS_ORIGIN}/profile/verify-secondary?token=${encodeURIComponent(token)}`
 
     const sandbox = isSandboxMode(from)
     if (sandbox) console.log('[send-email-verification] sandbox mode — restricted recipients')
