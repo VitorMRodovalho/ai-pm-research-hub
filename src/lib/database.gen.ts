@@ -8497,6 +8497,196 @@ export type Database = {
           },
         ]
       }
+      curation_reviewer_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          board_item_id: string
+          due_at: string
+          id: string
+          overdue_at: string | null
+          released_at: string | null
+          reminded_at: string | null
+          review_round: number
+          reviewer_id: string
+          source: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          board_item_id: string
+          due_at: string
+          id?: string
+          overdue_at?: string | null
+          released_at?: string | null
+          reminded_at?: string | null
+          review_round: number
+          reviewer_id: string
+          source: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          board_item_id?: string
+          due_at?: string
+          id?: string
+          overdue_at?: string | null
+          released_at?: string | null
+          reminded_at?: string | null
+          review_round?: number
+          reviewer_id?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_board_item_id_fkey"
+            columns: ["board_item_id"]
+            isOneToOne: false
+            referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curation_reviewer_assignments_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       cycles: {
         Row: {
           created_at: string
@@ -29643,6 +29833,25 @@ export type Database = {
           occurrences: number
         }[]
       }
+      _curation_assign_one: {
+        Args: {
+          p_assigned_by: string
+          p_item_id: string
+          p_reviewer_id: string
+          p_round: number
+          p_source: string
+        }
+        Returns: boolean
+      }
+      _curation_auto_assign: { Args: { p_item_id: string }; Returns: number }
+      _curation_eligible_reviewers: {
+        Args: { p_item_id: string; p_round: number }
+        Returns: {
+          last_assigned_at: string
+          member_id: string
+          open_load: number
+        }[]
+      }
       _current_affiliation_terms_version: { Args: never; Returns: string }
       _data_retention_sweep: { Args: { p_dry_run?: boolean }; Returns: Json }
       _data_retention_sweep_cron: { Args: never; Returns: Json }
@@ -31203,6 +31412,7 @@ export type Database = {
         }
         Returns: Json
       }
+      curation_reviewer_sla_sweep: { Args: never; Returns: Json }
       current_caller_role: { Args: never; Returns: string }
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       delete_board_item: {
