@@ -22,6 +22,8 @@ type ArtifactClassification = {
   subtype: string | null;
   suggested: string | null;
   can_edit: boolean;
+  /** #2455: a mesma regra de complete_leader_review (líder da iniciativa ou revisor de governança). */
+  can_leader_review?: boolean;
   types: ArtifactTag[] | null;
   subtypes: ArtifactTag[] | null;
 };
@@ -241,6 +243,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   // Removida em vez de corrigida, para que ninguém a reutilize por engano.
   const canEditForecast = isGP || isLeader || isCardAssignee;
   const canEditPortfolioFlag = isGP || isLeader;
+  // #2455: quem pode avaliar como líder é quem a RPC aceita. `isLeader` (manage_board_admin) deixava de
+  // fora o revisor de governança, que o banco autoriza; a resposta vem do servidor, não de uma cópia
+  // da regra no navegador.
+  const canLeaderReview = isLeader || !!classif?.can_leader_review;
   const [showBaselineModal, setShowBaselineModal] = useState(false);
   const [newBaselineDate, setNewBaselineDate] = useState('');
   const [baselineReason, setBaselineReason] = useState('');
@@ -1093,13 +1099,13 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <div className="text-[11px] text-[var(--text-secondary)] space-y-1">
                       {rv.leader_review_notes && <p><b>{i18n.leaderReviewNotes || 'Notas'}:</b> {rv.leader_review_notes}</p>}
                     </div>
-                  ) : rv.peer_review_completed_at && isLeader && !showLeaderReviewForm ? (
+                  ) : rv.peer_review_completed_at && canLeaderReview && !showLeaderReviewForm ? (
                     <button
                       onClick={() => { setLeaderDecision(leaderOptions[0]); setShowLeaderReviewForm(true); }}
                       className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline">
                       ▶ {i18n.leaderReviewAction || 'Avaliar como Líder'}
                     </button>
-                  ) : rv.peer_review_completed_at && isLeader && showLeaderReviewForm ? (
+                  ) : rv.peer_review_completed_at && canLeaderReview && showLeaderReviewForm ? (
                     <div className="space-y-2 mt-2">
                       <div className="flex gap-2 flex-wrap text-[11px]">
                         {leaderOptions.map((d) => (
