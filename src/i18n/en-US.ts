@@ -6347,6 +6347,15 @@ const enUS: Record<string, string> = {
   'admin.memberEdit.toast.inactivated': 'Member deactivated 🔴',
   'admin.memberEdit.toast.reactivated': 'Member reactivated 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Reason to deactivate {name} (optional):',
+  'admin.memberEdit.action.sendInvite': '✉️ Send access invite',
+  'admin.memberEdit.hint.noLogin': 'This member has not signed in to the platform yet.',
+  'admin.memberEdit.prompt.sendInviteAfterCreate': 'Member created. Send the access invite to {email} now?',
+  'admin.memberEdit.toast.inviteSent': 'Access invite sent to {email} ✉️',
+  'admin.memberEdit.inviteError.already_linked': 'This member already has access to the platform.',
+  'admin.memberEdit.inviteError.inactive': 'Inactive member: reactivate before inviting.',
+  'admin.memberEdit.inviteError.no_email': 'Member has no email on file.',
+  'admin.memberEdit.inviteError.rate_limited': 'Limit of 3 invites per hour for this member. Try again later.',
+  'admin.memberEdit.inviteError.generic': 'Could not send the invite.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'Interview booking URL',

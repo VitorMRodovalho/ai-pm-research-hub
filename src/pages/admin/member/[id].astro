@@ -40,6 +40,17 @@ const MEMBER_EDIT_I18N = {
     inactivate: t('admin.memberEdit.action.inactivate', lang),
     reactivate: t('admin.memberEdit.action.reactivate', lang),
     save: t('admin.memberEdit.action.save', lang),
+    sendInvite: t('admin.memberEdit.action.sendInvite', lang),
+  },
+  hint: {
+    noLogin: t('admin.memberEdit.hint.noLogin', lang),
+  },
+  inviteError: {
+    already_linked: t('admin.memberEdit.inviteError.already_linked', lang),
+    inactive: t('admin.memberEdit.inviteError.inactive', lang),
+    no_email: t('admin.memberEdit.inviteError.no_email', lang),
+    rate_limited: t('admin.memberEdit.inviteError.rate_limited', lang),
+    generic: t('admin.memberEdit.inviteError.generic', lang),
   },
   error: {
     requiredNameEmail: t('admin.memberEdit.error.requiredNameEmail', lang),
@@ -48,9 +59,11 @@ const MEMBER_EDIT_I18N = {
     saved: t('admin.memberEdit.toast.saved', lang),
     inactivated: t('admin.memberEdit.toast.inactivated', lang),
     reactivated: t('admin.memberEdit.toast.reactivated', lang),
+    inviteSent: t('admin.memberEdit.toast.inviteSent', lang),
   },
   prompt: {
     inactivateReason: t('admin.memberEdit.prompt.inactivateReason', lang),
+    sendInviteAfterCreate: t('admin.memberEdit.prompt.sendInviteAfterCreate', lang),
   },
 };
 ---
@@ -82,10 +95,12 @@ const MEMBER_EDIT_I18N = {
     placeholder: { fullName: 'Nome completo' },
     option: { selectChapter: '— Selecionar —', noTribe: '— Nenhuma —' },
     tribePrefix: 'Tribo',
-    action: { inactivate: '🔴 Inativar membro', reactivate: '🟢 Reativar membro', save: '💾 Salvar' },
+    action: { inactivate: '🔴 Inativar membro', reactivate: '🟢 Reativar membro', save: '💾 Salvar', sendInvite: '✉️ Enviar convite de acesso' },
+    hint: { noLogin: 'Este membro ainda não entrou na plataforma.' },
+    inviteError: { already_linked: 'Este membro já tem acesso à plataforma.', inactive: 'Membro inativo: reative antes de convidar.', no_email: 'Membro sem e-mail cadastrado.', rate_limited: 'Limite de 3 convites por hora para este membro. Tente mais tarde.', generic: 'Não foi possível enviar o convite.' },
     error: { requiredNameEmail: 'Nome e email obrigatórios' },
-    toast: { saved: 'Salvo ✅', inactivated: 'Membro inativado 🔴', reactivated: 'Membro reativado 🟢' },
-    prompt: { inactivateReason: 'Motivo da inativação de {name} (opcional):' },
+    toast: { saved: 'Salvo ✅', inactivated: 'Membro inativado 🔴', reactivated: 'Membro reativado 🟢', inviteSent: 'Convite de acesso enviado para {email} ✉️' },
+    prompt: { inactivateReason: 'Motivo da inativação de {name} (opcional):', sendInviteAfterCreate: 'Membro criado. Enviar agora o convite de acesso para {email}?' },
   };
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
   import { canAccessAdminRoute } from '../../../lib/admin/constants';
@@ -236,6 +251,7 @@ const MEMBER_EDIT_I18N = {
       <div class="flex justify-between items-center mt-6 pt-4 border-t border-[var(--border-subtle)]">
         <div>
           ${!isNew && m?.current_cycle_active ? `<button type="button" class="btn-inactivate-member text-xs text-crimson font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}" data-member-name="${escapeAttr(m.name||'')}">${T.action.inactivate}</button>` : ''}
+          ${!isNew && m?.is_active && !m?.auth_id ? `<button type="button" class="btn-send-access-invite text-xs text-navy font-semibold hover:underline cursor-pointer border-0 bg-transparent" title="${escapeAttr(T.hint.noLogin)}" data-member-id="${escapeAttr(m.id)}">${T.action.sendInvite}</button>` : ''}
           ${!isNew && !m?.current_cycle_active ? `<button type="button" class="btn-reactivate-member text-xs text-emerald-600 font-semibold hover:underline cursor-pointer border-0 bg-transparent" data-member-id="${escapeAttr(m.id)}">${T.action.reactivate}</button>` : ''}
         </div>
         <button type="button" data-action="save-member" class="px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer border-0">${T.action.save}</button>
@@ -300,22 +316,42 @@ const MEMBER_EDIT_I18N = {
     let result;
     if (isNew) {
       const split = splitRoleSelection(opRole, roles);
-      const { error } = await sb.from('members').insert({
+      const { data: created, error } = await sb.from('members').insert({
         name: params.p_name,
         email: params.p_email,
         operational_role: split.operationalRole,
         designations: split.designations,
         chapter:params.p_chapter, tribe_id:params.p_tribe_id, pmi_id:params.p_pmi_id,
         phone:params.p_phone, linkedin_url:params.p_linkedin_url, current_cycle_active:true,
-      });
-      result = error ? { error: error.message } : { success: true };
+      }).select('id').single();
+      result = error ? { error: error.message } : { success: true, id: created?.id };
     } else {
       const compat = await adminUpdateMemberCompat(sb, params, opRole, roles);
       result = compat.data;
     }
     if (result?.error) { (window as any).toast?.(result.error, 'error'); return; }
     (window as any).toast?.(T.toast.saved,'success');
+    // #2427: quem nasce aqui nasce FORA do funil, sem token de portal. Sem este convite a pessoa
+    // tem autoridade (vínculo) e nenhuma porta de entrada. O endereço mostrado é o digitado, só
+    // para o GP confirmar; o destinatário real é resolvido no servidor.
+    if (isNew && result?.id && confirm(T.prompt.sendInviteAfterCreate.replace('{email}', email))) {
+      await sendAccessInvite(result.id);
+    }
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
+  };
+
+  // #2427 — convite de acesso para membro sem login. A RPC decide tudo (manage_member, inativo,
+  // já tem login, teto por hora) e devolve só o endereço mascarado.
+  const sendAccessInvite = async (id) => {
+    const sb = (window as any).navGetSb?.();
+    const { data, error } = await sb.rpc('admin_send_member_access', { p_member_id: id });
+    if (error) { (window as any).toast?.(error.message || T.inviteError.generic, 'error'); return false; }
+    if (data?.success) {
+      (window as any).toast?.(T.toast.inviteSent.replace('{email}', data.masked_email || ''), 'success');
+      return true;
+    }
+    (window as any).toast?.(T.inviteError[data?.state] || T.inviteError.generic, 'error');
+    return false;
   };
 
   const inactivateMember = async (id, name) => {
@@ -353,6 +389,11 @@ const MEMBER_EDIT_I18N = {
       const inactBtn = target.closest('.btn-inactivate-member');
       if (inactBtn) {
         inactivateMember(inactBtn.getAttribute('data-member-id') || '', inactBtn.getAttribute('data-member-name') || '');
+        return;
+      }
+      const inviteBtn = target.closest('.btn-send-access-invite');
+      if (inviteBtn) {
+        sendAccessInvite(inviteBtn.getAttribute('data-member-id') || '');
         return;
       }
       const reactBtn = target.closest('.btn-reactivate-member');
