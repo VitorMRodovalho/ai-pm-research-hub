@@ -30,6 +30,20 @@ const pageLang = (): 'pt' | 'en' | 'es' => {
   const p = window.location.pathname;
   return p.startsWith('/en/') ? 'en' : p.startsWith('/es/') ? 'es' : 'pt';
 };
+// #2449: anexo enviado pelo card vive no bucket PRIVADO `board-attachments`. A URL gravada vinha de
+// getPublicUrl, que não serve arquivo de bucket privado (400 medido em 24/09/2026), então nenhum
+// anexo enviado abria. O caminho sai do próprio anexo (campo `path`, ou a URL antiga) e o link
+// assinado é gerado para quem a policy do bucket deixa ler: quem vê o card.
+const ATTACH_BUCKET = 'board-attachments';
+const storagePathOf = (att: { url?: string; path?: string }): string | null => {
+  if (att.path) return att.path;
+  const url = att.url || '';
+  const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/board-attachments\/([^?#]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  // getPublicUrl sem retorno gravava o próprio caminho
+  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\//i.test(url) ? url : null;
+};
+
 // O guia de boas práticas (#2447), no prefixo da língua da página.
 const guideHref = () => `${pageLang() === 'pt' ? '' : '/' + pageLang()}/guia-artefatos`;
 const tagLabel = (t: ArtifactTag | undefined) => (t ? ((t as any)[`label_${pageLang()}`] || t.label_pt || t.name) : '');
@@ -109,6 +123,27 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const inReviewFlow = item.curation_status === 'peer_review' || item.curation_status === 'leader_review';
   const showPreCuration = inReviewFlow || ((item.curation_status || 'draft') === 'draft' && needsCuration);
   const leaderOptions: Array<'approved' | 'returned' | 'waived'> = needsCuration ? ['approved', 'returned', 'waived'] : ['returned'];
+
+  const [signedAttachments, setSignedAttachments] = useState<Record<string, string>>({});
+  // #2449: links assinados para os anexos do bucket privado (1h), refeitos quando a lista muda.
+  useEffect(() => {
+    const paths = Array.from(new Set((attachments as any[]).map((a) => storagePathOf(a)).filter(Boolean))) as string[];
+    if (paths.length === 0) return;
+    const sb = getSb();
+    if (!sb) return;
+    let alive = true;
+    sb.storage.from(ATTACH_BUCKET).createSignedUrls(paths, 3600).then(({ data }: any) => {
+      if (!alive || !Array.isArray(data)) return;
+      const map: Record<string, string> = {};
+      for (const r of data) if (r?.path && r?.signedUrl) map[r.path] = r.signedUrl;
+      setSignedAttachments(map);
+    });
+    return () => { alive = false; };
+  }, [attachments]);
+  const attachmentHref = (att: any): string | null => {
+    const path = storagePathOf(att);
+    return path ? (signedAttachments[path] || null) : att.url;
+  };
 
   const saveArtifactType = async (type: string | null, subtype: string | null) => {
     const sb = getSb();
@@ -281,7 +316,8 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
         .from('board-attachments')
         .getPublicUrl(storagePath);
 
-      const newAttachment = { name: file.name, url: urlData?.publicUrl || storagePath };
+      // #2449: o caminho é o que abre o arquivo (link assinado); a URL fica por compatibilidade.
+      const newAttachment = { name: file.name, url: urlData?.publicUrl || storagePath, path: storagePath };
       const updated = [...attachments, newAttachment];
       setAttachments(updated);
       await onUpdate({ attachments: updated });
@@ -846,15 +882,17 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     const embed = (att as any).embed as string | undefined;
                     const embedIcon = embed === 'youtube' ? '▶️' : embed === 'vimeo' ? '🎬' : embed === 'drive' ? '📁' : embed === 'loom' ? '🎥' : '🔗';
                     const embedLabel = embed === 'youtube' ? 'YouTube' : embed === 'vimeo' ? 'Vimeo' : embed === 'drive' ? 'Drive' : embed === 'loom' ? 'Loom' : null;
+                    const href = attachmentHref(att);
                     return (
                       <div key={idx} className="flex items-center gap-2 group">
-                        <a href={att.url} target="_blank" rel="noopener noreferrer"
+                        <a href={href || undefined} target="_blank" rel="noopener noreferrer"
+                          aria-disabled={!href}
                           className="flex-1 flex items-center gap-2 px-3 py-2 bg-[var(--surface-base)] rounded-lg hover:bg-[var(--surface-hover)]
                             no-underline transition-colors min-w-0">
                           {isLink ? (
                             <span className="text-[14px] flex-shrink-0" title={embedLabel || 'Link externo'}>{embedIcon}</span>
                           ) : isImage ? (
-                            <img src={att.url} alt={att.name} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+                            href ? <img src={href} alt={att.name} className="w-8 h-8 rounded object-cover flex-shrink-0" /> : <span className="text-[12px] flex-shrink-0">🖼️</span>
                           ) : (
                             <span className="text-[12px] flex-shrink-0">📄</span>
                           )}

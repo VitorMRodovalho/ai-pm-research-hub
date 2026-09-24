@@ -91,6 +91,8 @@ export interface Attachment {
    * 'file' = uploaded to storage bucket; 'link' = external URL (YouTube, Drive, Vimeo, etc.) — no storage footprint.
    */
   kind?: 'file' | 'link';
+  /** #2449: caminho no bucket privado `board-attachments` (kind='file'); abre por link assinado. */
+  path?: string;
   /** For kind='link': embed provider detected from URL (for rich preview). */
   embed?: 'youtube' | 'vimeo' | 'drive' | 'loom' | 'generic';
 }
