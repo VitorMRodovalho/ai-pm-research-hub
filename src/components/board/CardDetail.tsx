@@ -8,6 +8,10 @@ import MemberPickerMulti from './MemberPickerMulti';
 import CardDriveFiles from './CardDriveFiles';
 import CardComments from './CardComments';
 
+// Etapas da revisão pré-curadoria (Manual §4.2) e os campos que ela lê. Ver o efeito de carga.
+const PRE_CURATION = ['draft', 'peer_review', 'leader_review'] as const;
+const REVIEW_FIELDS = 'peer_review_completed_at, peer_review_summary, peer_review_waived, peer_review_waived_reason, leader_review_completed_at, leader_review_decision, leader_review_notes, leader_reviewer_id';
+
 interface Props {
   item: BoardItem;
   board: Board;
@@ -65,6 +69,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [linkName, setLinkName] = useState('');
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [curationHistory, setCurationHistory] = useState<CurationHistory | null>(null);
+  const [reviewFields, setReviewFields] = useState<Partial<BoardItem> | null>(null);
+  // O card com os campos da revisão pré-curadoria lidos da tabela (os carregadores não os trazem).
+  const rv: BoardItem = reviewFields ? { ...item, ...reviewFields } : item;
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewScores, setReviewScores] = useState<Record<string, number>>({ clarity: 3, originality: 3, adherence: 3, relevance: 3, ethics: 3 });
   const [reviewVerdict, setReviewVerdict] = useState<string>('approved');
@@ -284,6 +291,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
   // Fetch timeline + members on mount
   useEffect(() => {
+    setReviewFields(null);
     (async () => {
       const sb = getSb();
       if (!sb) return;
@@ -353,6 +361,15 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
         setItemAssignments(asn.data as ItemAssignment[]);
       } else if (item.assignments && item.assignments.length > 0) {
         setItemAssignments(item.assignments);
+      }
+
+      // #2444: a revisão pré-curadoria decide pelos campos peer_review_* / leader_review_*, e nenhum
+      // carregador do quadro os devolve (get_board, list_board_items, get_card_detail). Sem esta
+      // leitura o peer review aparecia "Pendente" depois de concluído e "Avaliar como Líder"
+      // nunca surgia: 16 cards parados em leader_review, 0 revisões de líder desde 27/05.
+      if (item.curation_status && (PRE_CURATION as readonly string[]).includes(item.curation_status)) {
+        const rf = await safe(sb.from('board_items').select(REVIEW_FIELDS).eq('id', item.id).maybeSingle());
+        if (rf.data && typeof rf.data === 'object') setReviewFields(rf.data as Partial<BoardItem>);
       }
 
       // Fetch curation history if item has curation_status
@@ -881,21 +898,21 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <span className="text-[12px] font-bold text-[var(--text-primary)]">
                       5️⃣ {i18n.peerReviewTitle || 'Peer Review'} <span className="font-normal text-[10px] text-[var(--text-muted)]">({i18n.peerReviewColegiado || 'Colegiado da tribo'})</span>
                     </span>
-                    {item.peer_review_completed_at ? (
+                    {rv.peer_review_completed_at ? (
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">
-                        {item.peer_review_waived ? (i18n.peerReviewWaived || 'Dispensado') : (i18n.peerReviewDone || 'Concluído')}
-                        {' '}{new Date(item.peer_review_completed_at).toLocaleDateString('pt-BR')}
+                        {rv.peer_review_waived ? (i18n.peerReviewWaived || 'Dispensado') : (i18n.peerReviewDone || 'Concluído')}
+                        {' '}{new Date(rv.peer_review_completed_at).toLocaleDateString('pt-BR')}
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">{i18n.pending || 'Pendente'}</span>
                     )}
                   </div>
 
-                  {item.peer_review_completed_at ? (
+                  {rv.peer_review_completed_at ? (
                     <div className="text-[11px] text-[var(--text-secondary)] space-y-1">
-                      {item.peer_review_summary && <p><b>{i18n.peerReviewSummary || 'Resumo'}:</b> {item.peer_review_summary}</p>}
-                      {item.peer_review_waived && item.peer_review_waived_reason && (
-                        <p className="italic"><b>{i18n.peerReviewWaiverReason || 'Motivo da dispensa'}:</b> {item.peer_review_waived_reason}</p>
+                      {rv.peer_review_summary && <p><b>{i18n.peerReviewSummary || 'Resumo'}:</b> {rv.peer_review_summary}</p>}
+                      {rv.peer_review_waived && rv.peer_review_waived_reason && (
+                        <p className="italic"><b>{i18n.peerReviewWaiverReason || 'Motivo da dispensa'}:</b> {rv.peer_review_waived_reason}</p>
                       )}
                     </div>
                   ) : canEdit && !showPeerReviewForm ? (
@@ -957,33 +974,33 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     <span className="text-[12px] font-bold text-[var(--text-primary)]">
                       6️⃣ {i18n.leaderReviewTitle || 'Revisão do Líder'} <span className="font-normal text-[10px] text-[var(--text-muted)]">({i18n.leaderReviewNominal || 'Gate nominal'})</span>
                     </span>
-                    {item.leader_review_completed_at ? (
+                    {rv.leader_review_completed_at ? (
                       <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
-                        item.leader_review_decision === 'returned' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                        rv.leader_review_decision === 'returned' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
                       }`}>
-                        {item.leader_review_decision === 'returned' ? (i18n.leaderReviewReturnedBadge || 'Devolvido')
-                          : item.leader_review_decision === 'waived' ? (i18n.leaderReviewWaivedBadge || 'Dispensado')
+                        {rv.leader_review_decision === 'returned' ? (i18n.leaderReviewReturnedBadge || 'Devolvido')
+                          : rv.leader_review_decision === 'waived' ? (i18n.leaderReviewWaivedBadge || 'Dispensado')
                           : (i18n.leaderReviewApprovedBadge || 'Aprovado')}
-                        {' '}{new Date(item.leader_review_completed_at).toLocaleDateString('pt-BR')}
+                        {' '}{new Date(rv.leader_review_completed_at).toLocaleDateString('pt-BR')}
                       </span>
-                    ) : item.peer_review_completed_at ? (
+                    ) : rv.peer_review_completed_at ? (
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-amber-100 text-amber-700">{i18n.pending || 'Pendente'}</span>
                     ) : (
                       <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-[var(--surface-hover)] text-[var(--text-muted)]">{i18n.leaderReviewAwaitPeer || 'Aguarda Peer'}</span>
                     )}
                   </div>
 
-                  {item.leader_review_completed_at ? (
+                  {rv.leader_review_completed_at ? (
                     <div className="text-[11px] text-[var(--text-secondary)] space-y-1">
-                      {item.leader_review_notes && <p><b>{i18n.leaderReviewNotes || 'Notas'}:</b> {item.leader_review_notes}</p>}
+                      {rv.leader_review_notes && <p><b>{i18n.leaderReviewNotes || 'Notas'}:</b> {rv.leader_review_notes}</p>}
                     </div>
-                  ) : item.peer_review_completed_at && isLeader && !showLeaderReviewForm ? (
+                  ) : rv.peer_review_completed_at && isLeader && !showLeaderReviewForm ? (
                     <button
                       onClick={() => setShowLeaderReviewForm(true)}
                       className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline">
                       ▶ {i18n.leaderReviewAction || 'Avaliar como Líder'}
                     </button>
-                  ) : item.peer_review_completed_at && isLeader && showLeaderReviewForm ? (
+                  ) : rv.peer_review_completed_at && isLeader && showLeaderReviewForm ? (
                     <div className="space-y-2 mt-2">
                       <div className="flex gap-2 flex-wrap text-[11px]">
                         {(['approved', 'returned', 'waived'] as const).map((d) => (
@@ -1025,7 +1042,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                         </button>
                       </div>
                     </div>
-                  ) : !item.peer_review_completed_at ? (
+                  ) : !rv.peer_review_completed_at ? (
                     <p className="text-[11px] text-[var(--text-muted)]">{i18n.leaderReviewWaitsPeer || 'Conclua o peer review primeiro.'}</p>
                   ) : (
                     <p className="text-[11px] text-[var(--text-muted)]">{i18n.leaderReviewWaitsLeader || 'Aguardando revisão do líder da tribo.'}</p>
