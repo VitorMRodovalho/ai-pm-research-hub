@@ -386,6 +386,13 @@ export interface BoardI18n {
   artifactTypeSaved?: string;
   preCurationNotArtifact?: string;
   artifactHowItWorks?: string;
+  reviewErrSession?: string;
+  reviewErrNotFound?: string;
+  reviewErrStale?: string;
+  reviewErrPermission?: string;
+  reviewErrNotArtifact?: string;
+  reviewErrWaiverReason?: string;
+  reviewErrInvalid?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -511,6 +518,14 @@ export const DEFAULT_I18N: BoardI18n = {
   artifactTypeSaved: 'Tipo de artefato salvo',
   preCurationNotArtifact: 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.',
   artifactHowItWorks: 'ⓘ Como funciona',
+  // #2456: erros das RPCs do fluxo de revisão, traduzidos em mensagem de ação
+  reviewErrSession: 'Sua sessão expirou. Entre de novo e repita a ação.',
+  reviewErrNotFound: 'Card não encontrado: ele pode ter sido removido, ou você não tem acesso a ele.',
+  reviewErrStale: 'Este card já mudou de etapa. Atualize a página para ver a situação atual.',
+  reviewErrPermission: 'Você não tem permissão para esta etapa do card.',
+  reviewErrNotArtifact: 'Revisão e curadoria valem só para artefato publicável: marque o card como entregável de portfólio e escolha um tipo de publicação, ou use Devolver.',
+  reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
+  reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

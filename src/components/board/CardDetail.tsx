@@ -46,6 +46,25 @@ const storagePathOf = (att: { url?: string; path?: string }): string | null => {
   return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\//i.test(url) ? url : null;
 };
 
+// #2456: as RPCs do fluxo de revisão levantam mensagens técnicas, várias em inglês ("Peer review can
+// only be completed from draft or peer_review status (current: leader_review)"), e a tela mostrava o
+// texto cru. Cada padrão abaixo leva a uma mensagem de ação traduzida. O guard 2456 extrai do banco
+// TODA mensagem que essas RPCs levantam e exige que cada uma caia num padrão daqui.
+const REVIEW_ERRORS: Array<[RegExp, string]> = [
+  [/^Not authenticated/i, 'reviewErrSession'],
+  [/^Item not found/i, 'reviewErrNotFound'],
+  [/can only be completed from|must be in leader_review or draft/i, 'reviewErrStale'],
+  [/^Requires |requires tribe leadership/i, 'reviewErrPermission'],
+  [/artefato publicável/i, 'reviewErrNotArtifact'],
+  [/Waiver requires a reason/i, 'reviewErrWaiverReason'],
+  [/^Decision must be|desconhecido|Subtipo so existe/i, 'reviewErrInvalid'],
+];
+const reviewErrorKey = (message: string | undefined): string | null => {
+  const m = message || '';
+  const hit = REVIEW_ERRORS.find(([re]) => re.test(m));
+  return hit ? hit[1] : null;
+};
+
 // O guia de boas práticas (#2447), no prefixo da língua da página.
 const guideHref = () => `${pageLang() === 'pt' ? '' : '/' + pageLang()}/guia-artefatos`;
 const tagLabel = (t: ArtifactTag | undefined) => (t ? ((t as any)[`label_${pageLang()}`] || t.label_pt || t.name) : '');
@@ -111,6 +130,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   // O card com os campos da revisão pré-curadoria lidos da tabela (os carregadores não os trazem).
   const rv: BoardItem = reviewFields ? { ...item, ...reviewFields } : item;
   const [classif, setClassif] = useState<ArtifactClassification | null>(null);
+  // #2456: erro de RPC do fluxo vira mensagem de ação na língua da página; o desconhecido segue cru.
+  const friendlyReviewError = (message: string | undefined, fallback: string): string => {
+    const key = reviewErrorKey(message);
+    return (key && (i18n as any)[key]) || message || fallback;
+  };
   const [savingArtifactType, setSavingArtifactType] = useState(false);
   const loadClassif = useCallback(async () => {
     const sb = getSb();
@@ -157,7 +181,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       (window as any).toast?.(i18n.artifactTypeSaved || 'Tipo de artefato salvo', 'success');
       await loadClassif();
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao salvar o tipo', 'error');
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o tipo'), 'error');
     } finally {
       setSavingArtifactType(false);
     }
@@ -565,7 +589,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       (window as any).toast?.(i18n.curationSubmitSuccess || 'Submetido ao Comitê de Curadoria', 'success');
       setTimeout(() => window.location.reload(), 600);
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao submeter', 'error');
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao submeter'), 'error');
     } finally {
       setSubmittingToCuration(false);
     }
@@ -592,7 +616,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setShowPeerReviewForm(false);
       setTimeout(() => window.location.reload(), 600);
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro no peer review', 'error');
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro no peer review'), 'error');
     } finally {
       setSubmittingPeerReview(false);
     }
@@ -621,7 +645,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setShowLeaderReviewForm(false);
       setTimeout(() => window.location.reload(), 600);
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro no leader review', 'error');
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro no leader review'), 'error');
     } finally {
       setSubmittingLeaderReview(false);
     }
