@@ -1,0 +1,114 @@
+---
+/**
+ * /guia-artefatos — Artefatos, revisão e curadoria: como funciona (#2447)
+ *
+ * O que é artefato, como classificar no card, o caminho de uma publicação até sair, quem é
+ * avisado de quê, e as boas práticas. Linkado pelas jornadas da Ajuda, pelo botão flutuante de
+ * ajuda e pela seção de revisão do card.
+ *
+ * Conteúdo em pt-BR por design (mesma regra de /guia-pre-onboarding); apenas o chrome é
+ * localizado via i18n `guiaArt.*`.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLangFromURL, t, type Lang } from '../i18n/utils';
+import { whatIsArtifact, artifactTypes, howToClassify, publicationFlow, goodPractices, whoIsNotified, faq } from '../data/artifact-curation-guide';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const showLangNote = lang !== 'pt-BR';
+---
+
+<BaseLayout title={t('guiaArt.metaTitle', lang)} activePage="help" lang={lang}>
+  <div class="max-w-[900px] mx-auto px-4 py-10 space-y-10">
+    <header class="text-center space-y-2">
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy">{t('guiaArt.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-muted)] max-w-2xl mx-auto">{t('guiaArt.subtitle', lang)}</p>
+      {showLangNote && <p class="text-[11px] text-amber-800 italic">{t('guiaArt.langNote', lang)}</p>}
+    </header>
+
+    <section id="o-que-e" aria-labelledby="what-heading" class="space-y-3">
+      <h2 id="what-heading" class="text-xl font-extrabold text-navy">{t('guiaArt.whatTitle', lang)}</h2>
+      {whatIsArtifact.map((p) => <p class="text-[14px] text-[var(--text-secondary)]" set:html={p} />)}
+    </section>
+
+    <section id="tipos" aria-labelledby="types-heading" class="space-y-3">
+      <h2 id="types-heading" class="text-xl font-extrabold text-navy">{t('guiaArt.typesTitle', lang)}</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px] border border-[var(--border-default)] rounded-lg">
+          <thead class="bg-[var(--surface-hover)] text-left">
+            <tr><th class="p-2">{t('guiaArt.colType', lang)}</th><th class="p-2">{t('guiaArt.colExamples', lang)}</th><th class="p-2">{t('guiaArt.colFlow', lang)}</th></tr>
+          </thead>
+          <tbody>
+            {artifactTypes.map((r) => (
+              <tr class="border-t border-[var(--border-default)]"><td class="p-2 font-semibold">{r.type}</td><td class="p-2">{r.examples}</td><td class="p-2">{r.flow}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    {[
+      { id: 'classificar', heading: t('guiaArt.classifyTitle', lang), steps: howToClassify },
+      { id: 'fluxo', heading: t('guiaArt.flowTitle', lang), steps: publicationFlow },
+    ].map((block) => (
+      <section id={block.id} class="space-y-3">
+        <h2 class="text-xl font-extrabold text-navy">{block.heading}</h2>
+        <ol class="space-y-3">
+          {block.steps.map((step, i) => (
+            <li class="flex gap-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5">
+              <span class="flex-none h-9 w-9 rounded-full bg-navy text-white font-extrabold text-[15px] flex items-center justify-center" aria-hidden="true">{i + 1}</span>
+              <div class="min-w-0 space-y-1.5">
+                <div class="flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
+                  <h3 class="text-[15.5px] font-bold text-[var(--text-primary)]">{step.title}</h3>
+                  <span class="text-[12px] font-semibold text-[var(--text-muted)]">{step.who}</span>
+                </div>
+                <p class="text-[14px] text-[var(--text-secondary)]" set:html={step.detail} />
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+
+    <section id="boas-praticas" class="space-y-3">
+      <h2 class="text-xl font-extrabold text-navy">{t('guiaArt.practicesTitle', lang)}</h2>
+      <ul class="list-disc pl-5 space-y-2">
+        {goodPractices.map((p) => <li class="text-[14px] text-[var(--text-secondary)]" set:html={p} />)}
+      </ul>
+    </section>
+
+    <section id="avisos" class="space-y-3">
+      <h2 class="text-xl font-extrabold text-navy">{t('guiaArt.notifyTitle', lang)}</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px] border border-[var(--border-default)] rounded-lg">
+          <thead class="bg-[var(--surface-hover)] text-left">
+            <tr><th class="p-2">{t('guiaArt.colWhen', lang)}</th><th class="p-2">{t('guiaArt.colWho', lang)}</th><th class="p-2">{t('guiaArt.colHow', lang)}</th></tr>
+          </thead>
+          <tbody>
+            {whoIsNotified.map((r) => (
+              <tr class="border-t border-[var(--border-default)]"><td class="p-2 font-semibold">{r.type}</td><td class="p-2">{r.examples}</td><td class="p-2">{r.flow}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="faq" class="space-y-3">
+      <h2 class="text-xl font-extrabold text-navy pt-4 border-t border-[var(--border-default)]">{t('guiaArt.faqTitle', lang)}</h2>
+      <div class="space-y-2">
+        {faq.map((item) => (
+          <details class="ga-faq rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)]">
+            <summary class="cursor-pointer select-none px-4 py-3 font-semibold text-[15px] text-[var(--text-primary)]">{item.q}</summary>
+            <div class="px-4 pb-4 text-[14px] text-[var(--text-secondary)]"><span set:html={item.a} /></div>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <footer class="text-center pt-6 border-t border-[var(--border-default)] space-y-2">
+      <p class="text-[12px] text-[var(--text-muted)]">
+        {t('guiaArt.moreHelp', lang)}{' '}
+        <a href={`${langPrefix}/help`} class="underline hover:text-navy">{t('guiaArt.linkHelp', lang)}</a>
+      </p>
+    </footer>
+  </div>
+</BaseLayout>
