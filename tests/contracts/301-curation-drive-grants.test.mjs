@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const MIG_DIR = resolve(process.cwd(), 'supabase/migrations');
 const FN_DIR = resolve(process.cwd(), 'supabase/functions');
@@ -78,12 +79,16 @@ test('#301: enqueue grants the curate_content committee (V4 Path 1, no seed expa
 });
 
 test('#301: assign_curation_reviewer re-create carries the full body + reviewer enqueue', () => {
+  // #1932: le a captura VIGENTE da funcao, nao o arquivo do #301. A #2444 recriou a funcao
+  // (designacao manual passa a gravar no registro do rodizio) e o arquivo antigo virou texto morto.
+  const ROOT = process.cwd();
+  const assignBody = latestFunctionCapture(ROOT, 'assign_curation_reviewer').block;
   // full-body re-create (body-hash drift gate) keeps the prior guards
-  assert.match(wireMig, /CREATE OR REPLACE FUNCTION public\.assign_curation_reviewer/);
-  assert.match(wireMig, /participate_in_governance_review/);
-  assert.match(wireMig, /rls_can_see_board/);
+  assert.match(assignBody, /CREATE OR REPLACE FUNCTION public\.assign_curation_reviewer/);
+  assert.match(assignBody, /participate_in_governance_review/);
+  assert.match(assignBody, /rls_can_see_board/);
   // the #301 addition
-  assert.match(wireMig, /enqueue_curation_drive_grant_for_member\(p_item_id, p_reviewer_id, 'reviewer_assignment'\)/);
+  assert.match(assignBody, /enqueue_curation_drive_grant_for_member\(p_item_id, p_reviewer_id, 'reviewer_assignment'\)/);
 });
 
 // ───────────────────────── Static: RPCs ─────────────────────────

@@ -174,6 +174,14 @@
       "delivery_mode": "transactional_immediate",
       "rationale": "#186 (2026-06-05) — committee broadcast when a board_item enters curation_status='curation_pending'. Emitted by trigger `notify_on_curation_status_change` to every active member with V4 `curate_content` authority on the curation_pending TRANSITION (idempotent). Covers both `submit_for_curation()` and the p196 auto-submit path. Immediate so the 7-day curation SLA does not depend on curators polling /admin/curatorship. In-app row + email via the send-transactional-emails cron; respects notification_preferences mute/in_app."
     },
+    "curation_review_assigned": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2444 (2026-09-24) — rodizio de pareceristas: o curador designado para um card em curation_pending (automatico na entrada, substituicao no vencimento ou designacao manual via assign_curation_reviewer) e o lembrete 2 dias antes do prazo. Emitido por _curation_assign_one e curation_reviewer_sla_sweep. Imediato porque o prazo de parecer e de 7 dias e o digest semanal chegaria depois dele."
+    },
+    "curation_review_overdue": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2444 (2026-09-24) — o parecer de um curador designado venceu. Vai para quem tem manage_platform, uma vez por designacao, dizendo se houve substituicao ou se falta curador livre. Emitido pelo job diario curation_reviewer_sla_sweep."
+    },
     "selection_candidate_unbooked": {
       "delivery_mode": "digest_weekly",
       "rationale": "ÉPICO D (2026-06-18): admin/GP-facing alert that an invited candidate (interview_pending, cutoff_approved_email_sent_at set) has not booked an interview after interview_booking_grace days and has no selection_interviews row — invisible to _selection_interview_overdue_cron. Emitted by detect_stuck_selection_funnel cron. digest_weekly: in-app immediate, email batched (no GP spam per daily run)."
