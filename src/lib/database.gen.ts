@@ -29822,6 +29822,13 @@ export type Database = {
         Args: { p_item_id: string; p_member_id: string }
         Returns: boolean
       }
+      _card_drive_files: {
+        Args: { p_item_id: string }
+        Returns: {
+          drive_file_id: string
+          drive_file_url: string
+        }[]
+      }
       _comms_token_expiry_scan: { Args: never; Returns: Json }
       _compute_pert_cutoff_core: {
         Args: {

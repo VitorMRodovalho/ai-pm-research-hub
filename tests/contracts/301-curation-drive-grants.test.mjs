@@ -73,9 +73,14 @@ test('#301: FSM trigger on board_items.curation_status enqueues grant on entry, 
 });
 
 test('#301: enqueue grants the curate_content committee (V4 Path 1, no seed expansion)', () => {
-  assert.match(wireMig, /can_by_member\(m\.id, 'curate_content'\)/);
-  assert.match(wireMig, /'committee_handoff'/);
-  assert.match(wireMig, /'reviewer_assignment'/);
+  // #1932: le a captura VIGENTE das funcoes de enfileirar. A #2449 as recriou para lerem tambem os
+  // links do Drive colados no card (_card_drive_files), e o arquivo do #301 virou texto morto.
+  const ROOT = process.cwd();
+  const committee = latestFunctionCapture(ROOT, 'enqueue_curation_drive_grants').block;
+  const member = latestFunctionCapture(ROOT, 'enqueue_curation_drive_grant_for_member').block;
+  assert.match(committee, /can_by_member\(m\.id, 'curate_content'\)/);
+  assert.match(committee, /'committee_handoff'/);
+  assert.match(member, /'reviewer_assignment'/);
 });
 
 test('#301: assign_curation_reviewer re-create carries the full body + reviewer enqueue', () => {
