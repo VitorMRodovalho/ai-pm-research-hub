@@ -6651,6 +6651,7 @@ const ptBR: Record<string, string> = {
   'comp.board.artifactPortfolioOnly': 'Este tipo vai para o portfólio, sem revisão nem curadoria.',
   'comp.board.artifactTypeSaved': 'Tipo de artefato salvo',
   'comp.board.preCurationNotArtifact': 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.',
+  'comp.board.artifactHowItWorks': 'ⓘ Como funciona',
   'comp.board.approve': 'Aprovar',
   'comp.board.description': 'Descrição',
   'comp.board.assignee': 'Responsável',

@@ -35,7 +35,7 @@ export const whatIsArtifact: string[] = [
 
 /** Os tipos e para onde cada um vai. */
 export const artifactTypes: GuideRow[] = [
-  { type: 'Publicação', examples: 'Artigo acadêmico, artigo no LinkedIn, e-book, estudo de caso, infográfico, report', flow: 'Peer review, revisão do líder e curadoria' },
+  { type: 'Publicação', examples: 'Artigo acadêmico, artigo no LinkedIn, e-book, estudo de caso, infográfico, relatório', flow: 'Peer review, revisão do líder e curadoria' },
   { type: 'Framework', examples: 'Modelo, arquitetura de referência, método', flow: 'Só portfólio' },
   { type: 'Webinar', examples: 'Evento aberto, série de webinars', flow: 'Só portfólio' },
   { type: 'Ferramenta / POC', examples: 'Protótipo, ferramenta, prova de conceito', flow: 'Só portfólio' },
@@ -52,7 +52,7 @@ export const howToClassify: GuideStep[] = [
   {
     title: 'Escolha o tipo de artefato',
     who: 'Líder da iniciativa ou GP',
-    detail: 'Logo abaixo aparece <strong>Tipo de artefato</strong>. A plataforma sugere um tipo pelo título; confira e clique em <strong>usar</strong>, ou escolha outro. Para publicação, escolha também o <strong>formato</strong> (artigo, e-book, estudo de caso...).',
+    detail: 'Logo abaixo aparece <strong>Tipo de artefato</strong>. A plataforma sugere um tipo pelo título; confira e clique em <strong>usar</strong>, ou escolha outro. Para publicação, escolha também o <strong>formato</strong> (artigo, e-book, estudo de caso, relatório...).',
   },
   {
     title: 'Confira para onde o card vai',

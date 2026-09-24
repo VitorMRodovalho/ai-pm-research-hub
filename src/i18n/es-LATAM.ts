@@ -6643,6 +6643,7 @@ const esLATAM: Record<string, string> = {
   'comp.board.artifactPortfolioOnly': 'Este tipo va al portafolio, sin revisión ni curaduría.',
   'comp.board.artifactTypeSaved': 'Tipo de artefacto guardado',
   'comp.board.preCurationNotArtifact': 'Esta tarjeta no es un artefacto publicable: la revisión y la curaduría no aplican. Use Devolver para sacarla del flujo.',
+  'comp.board.artifactHowItWorks': 'ⓘ Cómo funciona',
   'comp.board.approve': 'Aprobar',
   'comp.board.description': 'Descripción',
   'comp.board.assignee': 'Responsable',

@@ -30,6 +30,8 @@ const pageLang = (): 'pt' | 'en' | 'es' => {
   const p = window.location.pathname;
   return p.startsWith('/en/') ? 'en' : p.startsWith('/es/') ? 'es' : 'pt';
 };
+// O guia de boas práticas (#2447), no prefixo da língua da página.
+const guideHref = () => `${pageLang() === 'pt' ? '' : '/' + pageLang()}/guia-artefatos`;
 const tagLabel = (t: ArtifactTag | undefined) => (t ? ((t as any)[`label_${pageLang()}`] || t.label_pt || t.name) : '');
 
 interface Props {
@@ -939,8 +941,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
             {showPreCuration && (['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
               <div className="mb-3 border-l-4 border-purple-400 pl-3 py-2 bg-purple-50/40 rounded-r-lg">
-                <label className="text-[11px] font-semibold text-purple-900 mb-2 block">
-                  {i18n.preCurationReview || 'Revisão Pré-Curadoria (Manual §4.2)'}
+                <label className="text-[11px] font-semibold text-purple-900 mb-2 flex items-center justify-between gap-2">
+                  <span>{i18n.preCurationReview || 'Revisão Pré-Curadoria (Manual §4.2)'}</span>
+                  <a href={guideHref()} target="_blank" rel="noopener" className="font-normal text-[10px] text-purple-700 underline">
+                    {i18n.artifactHowItWorks || 'ⓘ Como funciona'}
+                  </a>
                 </label>
                 {classif && !needsCuration && (
                   <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2">
@@ -1464,8 +1469,11 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* #2447: o tipo do artefato, na taxonomia que o painel de portfólio lê */}
             {item.is_portfolio_item && classif && (
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-[var(--text-secondary)] block uppercase tracking-wide">
-                  {i18n.artifactTypeLabel || 'Tipo de artefato'}
+                <label className="text-[10px] font-semibold text-[var(--text-secondary)] flex items-center justify-between uppercase tracking-wide">
+                  <span>{i18n.artifactTypeLabel || 'Tipo de artefato'}</span>
+                  <a href={guideHref()} target="_blank" rel="noopener" className="normal-case font-normal text-teal underline">
+                    {i18n.artifactHowItWorks || 'ⓘ Como funciona'}
+                  </a>
                 </label>
                 <select
                   value={classif.type || ''}

@@ -383,6 +383,7 @@ export interface BoardI18n {
   artifactPortfolioOnly?: string;
   artifactTypeSaved?: string;
   preCurationNotArtifact?: string;
+  artifactHowItWorks?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -507,6 +508,7 @@ export const DEFAULT_I18N: BoardI18n = {
   artifactPortfolioOnly: 'Este tipo vai para o portfólio, sem revisão nem curadoria.',
   artifactTypeSaved: 'Tipo de artefato salvo',
   preCurationNotArtifact: 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.',
+  artifactHowItWorks: 'ⓘ Como funciona',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

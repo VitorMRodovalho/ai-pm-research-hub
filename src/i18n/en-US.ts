@@ -6643,6 +6643,7 @@ const enUS: Record<string, string> = {
   'comp.board.artifactPortfolioOnly': 'This type goes to the portfolio, without review or curation.',
   'comp.board.artifactTypeSaved': 'Artifact type saved',
   'comp.board.preCurationNotArtifact': 'This card is not a publishable artifact: review and curation do not apply. Use Return to take it out of the flow.',
+  'comp.board.artifactHowItWorks': 'ⓘ How it works',
   'comp.board.approve': 'Approve',
   'comp.board.description': 'Description',
   'comp.board.assignee': 'Assignee',

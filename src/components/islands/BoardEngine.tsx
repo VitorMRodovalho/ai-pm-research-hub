@@ -58,6 +58,7 @@ function useTranslatedBoardI18n(overrides?: BoardI18n): BoardI18n {
     artifactPortfolioOnly: t('comp.board.artifactPortfolioOnly', DEFAULT_I18N.artifactPortfolioOnly),
     artifactTypeSaved: t('comp.board.artifactTypeSaved', DEFAULT_I18N.artifactTypeSaved),
     preCurationNotArtifact: t('comp.board.preCurationNotArtifact', DEFAULT_I18N.preCurationNotArtifact),
+    artifactHowItWorks: t('comp.board.artifactHowItWorks', DEFAULT_I18N.artifactHowItWorks),
     save: t('common.save', DEFAULT_I18N.save),
     cancel: t('common.cancel', DEFAULT_I18N.cancel),
     delete: t('common.delete', DEFAULT_I18N.delete),
