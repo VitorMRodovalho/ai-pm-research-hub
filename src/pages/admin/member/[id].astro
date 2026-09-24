@@ -103,7 +103,7 @@ const MEMBER_EDIT_I18N = {
     prompt: { inactivateReason: 'Motivo da inativação de {name} (opcional):', sendInviteAfterCreate: 'Membro criado. Enviar agora o convite de acesso para {email}?' },
   };
   import { ROLE_LABELS, ROLE_COLORS } from '../../../lib/supabase';
-  import { canAccessAdminRoute } from '../../../lib/admin/constants';
+  import { canAccessAdminRoute, OPROLE_LABELS, DESIG_LABELS } from '../../../lib/admin/constants';
   import { loadChapters, type Chapter } from '../../../lib/chapters';
   let _member = null;
   let _aclReady = false;
@@ -170,6 +170,10 @@ const MEMBER_EDIT_I18N = {
     if (!el) return;
     const CHAPTERS = _chapters.map(c => c.display_code);
     const ROLES_ALL = Object.keys(ROLE_COLORS);
+    // #2442: papel fora da lista (chapter_liaison, deputy_manager, guest...) não pode cair na
+    // primeira opção do select, senão o formulário mostra "Gerente" e o Salvar grava `manager`.
+    const roleOutsideList = !!m?.operational_role
+      && !Object.keys(ROLE_LABELS).some((k) => k !== 'guest' && k === m.operational_role);
     const selectedRoles = [
       ...(m?.operational_role && m.operational_role !== 'none' && m.operational_role !== 'guest' ? [m.operational_role] : []),
       ...((m?.designations || []) as string[]),
@@ -198,6 +202,7 @@ const MEMBER_EDIT_I18N = {
         <div>
           <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.primaryRole}</label>
           <select id="f-role" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
+            ${roleOutsideList ? `<option value="${escapeAttr(m.operational_role)}" selected>${escapeAttr(OPROLE_LABELS[m.operational_role] || DESIG_LABELS[m.operational_role] || m.operational_role)}</option>` : ''}
             ${Object.entries(ROLE_LABELS).filter(([k])=>k!=='guest').map(([k,v])=>
               `<option value="${k}" ${m?.operational_role===k?'selected':''}>${v}</option>`
             ).join('')}
@@ -280,12 +285,25 @@ const MEMBER_EDIT_I18N = {
 
   async function adminUpdateMemberCompat(sb, params, opRole, selectedRoles) {
     const split = splitRoleSelection(opRole, selectedRoles);
+    // #2442: `operational_role` é cache mantido por trigger (ADR-0007) e a RPC faz COALESCE:
+    // só enviamos papel e designações quando o GP de fato os mudou. Sem mexer, vai NULL e o
+    // valor atual fica, em vez de o formulário reescrever o cache com o que conseguiu exibir.
+    // A grade só mostra parte das designações (comms_team, co_gp... não aparecem): as que ela não
+    // mostra são preservadas, e só a parte visível pode mudar.
+    const orig = _member || {};
+    // Só conta como designação visível o que `splitRoleSelection` pode devolver como designação:
+    // tribe_leader, por exemplo, está na grade mas é lido como papel operacional.
+    const grid = new Set(splitRoleSelection('guest', Object.keys(ROLE_COLORS)).designations);
+    const origDesig = (orig.designations || []) as string[];
+    const sameDesignations = (a, b) => [...(a || [])].sort().join('|') === [...(b || [])].sort().join('|');
+    const visibleChanged = !sameDesignations(split.designations, origDesig.filter((d) => grid.has(d)));
+    const nextDesig = [...origDesig.filter((d) => !grid.has(d)), ...split.designations];
     const res = await sb.rpc('admin_update_member', {
       p_member_id: params.p_member_id,
       p_name: params.p_name,
       p_email: params.p_email,
-      p_operational_role: split.operationalRole,
-      p_designations: split.designations,
+      p_operational_role: split.operationalRole === orig.operational_role ? null : split.operationalRole,
+      p_designations: visibleChanged ? nextDesig : null,
       p_chapter: params.p_chapter,
       p_tribe_id: params.p_tribe_id,
       p_pmi_id: params.p_pmi_id,
@@ -342,7 +360,22 @@ const MEMBER_EDIT_I18N = {
 
   // #2427 — convite de acesso para membro sem login. A RPC decide tudo (manage_member, inativo,
   // já tem login, teto por hora) e devolve só o endereço mascarado.
+  // #2442: um pedido por vez. Sem a trava, dois cliques em sequência mandaram dois e-mails.
+  let _inviteInFlight = false;
   const sendAccessInvite = async (id) => {
+    if (_inviteInFlight) return false;
+    _inviteInFlight = true;
+    const btn = document.querySelector('.btn-send-access-invite') as HTMLButtonElement | null;
+    if (btn) btn.disabled = true;
+    try {
+      return await sendAccessInviteOnce(id);
+    } finally {
+      _inviteInFlight = false;
+      if (btn) btn.disabled = false;
+    }
+  };
+
+  const sendAccessInviteOnce = async (id) => {
     const sb = (window as any).navGetSb?.();
     const { data, error } = await sb.rpc('admin_send_member_access', { p_member_id: id });
     if (error) { (window as any).toast?.(error.message || T.inviteError.generic, 'error'); return false; }
