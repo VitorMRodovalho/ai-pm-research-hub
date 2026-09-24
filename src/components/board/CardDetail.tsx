@@ -12,6 +12,26 @@ import CardComments from './CardComments';
 const PRE_CURATION = ['draft', 'peer_review', 'leader_review'] as const;
 const REVIEW_FIELDS = 'peer_review_completed_at, peer_review_summary, peer_review_waived, peer_review_waived_reason, leader_review_completed_at, leader_review_decision, leader_review_notes, leader_reviewer_id';
 
+// #2447: a classificação do artefato vem de `get_artifact_classification`, que lê a MESMA taxonomia
+// do painel de portfólio (as tags livres do card não são lidas por ele).
+type ArtifactTag = { name: string; label_pt?: string; label_en?: string; label_es?: string; requires_curation?: boolean };
+type ArtifactClassification = {
+  is_portfolio_item: boolean;
+  needs_curation: boolean;
+  type: string | null;
+  subtype: string | null;
+  suggested: string | null;
+  can_edit: boolean;
+  types: ArtifactTag[] | null;
+  subtypes: ArtifactTag[] | null;
+};
+const pageLang = (): 'pt' | 'en' | 'es' => {
+  if (typeof window === 'undefined') return 'pt';
+  const p = window.location.pathname;
+  return p.startsWith('/en/') ? 'en' : p.startsWith('/es/') ? 'es' : 'pt';
+};
+const tagLabel = (t: ArtifactTag | undefined) => (t ? ((t as any)[`label_${pageLang()}`] || t.label_pt || t.name) : '');
+
 interface Props {
   item: BoardItem;
   board: Board;
@@ -72,6 +92,37 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [reviewFields, setReviewFields] = useState<Partial<BoardItem> | null>(null);
   // O card com os campos da revisão pré-curadoria lidos da tabela (os carregadores não os trazem).
   const rv: BoardItem = reviewFields ? { ...item, ...reviewFields } : item;
+  const [classif, setClassif] = useState<ArtifactClassification | null>(null);
+  const [savingArtifactType, setSavingArtifactType] = useState(false);
+  const loadClassif = useCallback(async () => {
+    const sb = getSb();
+    if (!sb) return;
+    const { data, error } = await sb.rpc('get_artifact_classification', { p_item_id: item.id });
+    if (!error && data && typeof data === 'object') setClassif(data as ArtifactClassification);
+  }, [item.id]);
+  useEffect(() => { setClassif(null); loadClassif(); }, [loadClassif, item.is_portfolio_item]);
+  // Revisão e curadoria só para artefato publicável; card já no fluxo continua visível, para que o
+  // líder possa devolver o que entrou sem ser artefato (#2447).
+  const needsCuration = !!classif?.needs_curation;
+  const inReviewFlow = item.curation_status === 'peer_review' || item.curation_status === 'leader_review';
+  const showPreCuration = inReviewFlow || ((item.curation_status || 'draft') === 'draft' && needsCuration);
+  const leaderOptions: Array<'approved' | 'returned' | 'waived'> = needsCuration ? ['approved', 'returned', 'waived'] : ['returned'];
+
+  const saveArtifactType = async (type: string | null, subtype: string | null) => {
+    const sb = getSb();
+    if (!sb) return;
+    setSavingArtifactType(true);
+    try {
+      const { error } = await sb.rpc('set_board_item_artifact_type', { p_item_id: item.id, p_type: type, p_subtype: subtype });
+      if (error) throw error;
+      (window as any).toast?.(i18n.artifactTypeSaved || 'Tipo de artefato salvo', 'success');
+      await loadClassif();
+    } catch (err: any) {
+      (window as any).toast?.(err.message || 'Erro ao salvar o tipo', 'error');
+    } finally {
+      setSavingArtifactType(false);
+    }
+  };
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewScores, setReviewScores] = useState<Record<string, number>>({ clarity: 3, originality: 3, adherence: 3, relevance: 3, ethics: 3 });
   const [reviewVerdict, setReviewVerdict] = useState<string>('approved');
@@ -886,11 +937,16 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             />
 
             {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
-            {(['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
+            {showPreCuration && (['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
               <div className="mb-3 border-l-4 border-purple-400 pl-3 py-2 bg-purple-50/40 rounded-r-lg">
                 <label className="text-[11px] font-semibold text-purple-900 mb-2 block">
                   {i18n.preCurationReview || 'Revisão Pré-Curadoria (Manual §4.2)'}
                 </label>
+                {classif && !needsCuration && (
+                  <p className="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mb-2">
+                    {i18n.preCurationNotArtifact || 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.'}
+                  </p>
+                )}
 
                 {/* Peer Review — etapa 5 colegiado */}
                 <div className="mb-2 bg-white rounded-lg p-2.5 border border-purple-200">
@@ -996,14 +1052,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     </div>
                   ) : rv.peer_review_completed_at && isLeader && !showLeaderReviewForm ? (
                     <button
-                      onClick={() => setShowLeaderReviewForm(true)}
+                      onClick={() => { setLeaderDecision(leaderOptions[0]); setShowLeaderReviewForm(true); }}
                       className="text-[11px] font-semibold text-purple-700 hover:text-purple-900 underline">
                       ▶ {i18n.leaderReviewAction || 'Avaliar como Líder'}
                     </button>
                   ) : rv.peer_review_completed_at && isLeader && showLeaderReviewForm ? (
                     <div className="space-y-2 mt-2">
                       <div className="flex gap-2 flex-wrap text-[11px]">
-                        {(['approved', 'returned', 'waived'] as const).map((d) => (
+                        {leaderOptions.map((d) => (
                           <label key={d} className="flex items-center gap-1 cursor-pointer">
                             <input
                               type="radio"
@@ -1050,7 +1106,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 </div>
 
                 {/* Fase A — Direct Submit (canonical shortcut for tribe leaders) */}
-                {item.curation_status === 'draft' && (isLeader || isCardAssignee) && (
+                {item.curation_status === 'draft' && needsCuration && (isLeader || isCardAssignee) && (
                   <div className="mt-2 flex justify-between items-center gap-2">
                     <span className="text-[10px] text-purple-700 italic">
                       {i18n.curationSubmitShortcutHint || 'Atalho: pula peer/leader review e vai direto ao Comitê'}
@@ -1400,10 +1456,60 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 }}
                 disabled={!canEditPortfolioFlag}
                 className="w-3.5 h-3.5 rounded accent-amber-600 cursor-pointer" />
-              <span className="text-[10px] font-semibold text-[var(--text-secondary)]">
-                📊 Entregável reportável (Portfólio)
+              <span className="text-[10px] font-semibold text-[var(--text-secondary)]" title={i18n.portfolioFlagHint || ''}>
+                {i18n.portfolioFlagLabel || '📊 Entregável reportável (Portfólio)'}
               </span>
             </div>
+
+            {/* #2447: o tipo do artefato, na taxonomia que o painel de portfólio lê */}
+            {item.is_portfolio_item && classif && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-semibold text-[var(--text-secondary)] block uppercase tracking-wide">
+                  {i18n.artifactTypeLabel || 'Tipo de artefato'}
+                </label>
+                <select
+                  value={classif.type || ''}
+                  disabled={!classif.can_edit || savingArtifactType}
+                  onChange={(e) => saveArtifactType(e.target.value || null, null)}
+                  className="w-full px-2 py-1 border border-[var(--border-default)] rounded-lg text-[11px] bg-[var(--surface-input)] text-[var(--text-primary)]">
+                  <option value="">{i18n.artifactTypeNone || '— Escolha o tipo —'}</option>
+                  {(classif.types || []).map((t) => (
+                    <option key={t.name} value={t.name}>{tagLabel(t)}</option>
+                  ))}
+                </select>
+                {!classif.type && classif.suggested && classif.can_edit && (
+                  <div className="text-[10px] text-[var(--text-muted)]">
+                    {i18n.artifactSuggested || 'Sugestão:'}{' '}
+                    <b>{tagLabel((classif.types || []).find((t) => t.name === classif.suggested))}</b>{' '}
+                    <button type="button" disabled={savingArtifactType}
+                      onClick={() => saveArtifactType(classif.suggested, null)}
+                      className="underline text-teal cursor-pointer border-0 bg-transparent p-0">
+                      {i18n.artifactUseSuggestion || 'usar'}
+                    </button>
+                  </div>
+                )}
+                {classif.type === 'publicacao' && (
+                  <select
+                    value={classif.subtype || ''}
+                    disabled={!classif.can_edit || savingArtifactType}
+                    onChange={(e) => saveArtifactType('publicacao', e.target.value || null)}
+                    className="w-full px-2 py-1 border border-[var(--border-default)] rounded-lg text-[11px] bg-[var(--surface-input)] text-[var(--text-primary)]"
+                    aria-label={i18n.artifactSubtypeLabel || 'Formato da publicação'}>
+                    <option value="">{i18n.artifactSubtypeNone || '— Sem formato específico —'}</option>
+                    {(classif.subtypes || []).map((t) => (
+                      <option key={t.name} value={t.name}>{tagLabel(t)}</option>
+                    ))}
+                  </select>
+                )}
+                {classif.type && (
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    {needsCuration
+                      ? (i18n.artifactGoesToCuration || 'Este tipo passa por peer review, revisão do líder e curadoria.')
+                      : (i18n.artifactPortfolioOnly || 'Este tipo vai para o portfólio, sem revisão nem curadoria.')}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* PMBOK Dates */}
             <div>

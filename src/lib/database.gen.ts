@@ -26042,6 +26042,7 @@ export type Database = {
           label_es: string | null
           label_pt: string
           name: string
+          requires_curation: boolean
           tier: Database["public"]["Enums"]["tag_tier"]
         }
         Insert: {
@@ -26057,6 +26058,7 @@ export type Database = {
           label_es?: string | null
           label_pt: string
           name: string
+          requires_curation?: boolean
           tier?: Database["public"]["Enums"]["tag_tier"]
         }
         Update: {
@@ -26072,6 +26074,7 @@ export type Database = {
           label_es?: string | null
           label_pt?: string
           name?: string
+          requires_curation?: boolean
           tier?: Database["public"]["Enums"]["tag_tier"]
         }
         Relationships: [
@@ -29769,6 +29772,10 @@ export type Database = {
           view_name: string
         }[]
       }
+      _board_item_needs_curation: {
+        Args: { p_item_id: string }
+        Returns: boolean
+      }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
       _can_anywhere: {
         Args: { p_action: string; p_person_id: string }
@@ -31736,6 +31743,10 @@ export type Database = {
       }
       get_application_video_screenings: {
         Args: { p_application_id: string }
+        Returns: Json
+      }
+      get_artifact_classification: {
+        Args: { p_item_id: string }
         Returns: Json
       }
       get_attendance_engagement_rate: {
@@ -34840,6 +34851,10 @@ export type Database = {
       send_attendance_reminders_cron: { Args: never; Returns: Json }
       send_notification_to_tribe: {
         Args: { p_body: string; p_link?: string; p_title: string }
+        Returns: Json
+      }
+      set_board_item_artifact_type: {
+        Args: { p_item_id: string; p_subtype?: string; p_type: string }
         Returns: Json
       }
       set_event_audience: {

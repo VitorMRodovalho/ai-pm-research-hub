@@ -371,6 +371,18 @@ export interface BoardI18n {
   leaderReviewSubmitAction?: string;
   leaderReviewWaitsPeer?: string;
   leaderReviewWaitsLeader?: string;
+  portfolioFlagLabel?: string;
+  portfolioFlagHint?: string;
+  artifactTypeLabel?: string;
+  artifactTypeNone?: string;
+  artifactSubtypeLabel?: string;
+  artifactSubtypeNone?: string;
+  artifactSuggested?: string;
+  artifactUseSuggestion?: string;
+  artifactGoesToCuration?: string;
+  artifactPortfolioOnly?: string;
+  artifactTypeSaved?: string;
+  preCurationNotArtifact?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -482,6 +494,19 @@ export const DEFAULT_I18N: BoardI18n = {
   leaderReviewSubmitAction: 'Registrar Avaliação',
   leaderReviewWaitsPeer: 'Conclua o peer review primeiro.',
   leaderReviewWaitsLeader: 'Aguardando revisão do líder da tribo.',
+  // #2447: classificação de artefato e trava da revisão pré-curadoria
+  portfolioFlagLabel: '📊 Entregável reportável (Portfólio)',
+  portfolioFlagHint: 'Marque quando o card for um artefato que a tribo entrega e reporta ao portfólio. Tarefas, reuniões e registros internos não são artefato.',
+  artifactTypeLabel: 'Tipo de artefato',
+  artifactTypeNone: '— Escolha o tipo —',
+  artifactSubtypeLabel: 'Formato da publicação',
+  artifactSubtypeNone: '— Sem formato específico —',
+  artifactSuggested: 'Sugestão:',
+  artifactUseSuggestion: 'usar',
+  artifactGoesToCuration: 'Este tipo passa por peer review, revisão do líder e curadoria.',
+  artifactPortfolioOnly: 'Este tipo vai para o portfólio, sem revisão nem curadoria.',
+  artifactTypeSaved: 'Tipo de artefato salvo',
+  preCurationNotArtifact: 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',
