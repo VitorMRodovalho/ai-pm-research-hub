@@ -29892,6 +29892,10 @@ export type Database = {
         }
         Returns: Json
       }
+      _drive_grant_failure_class: {
+        Args: { p_api_error: Json }
+        Returns: string
+      }
       _enqueue_engagement_welcome: {
         Args: { p_engagement_id: string }
         Returns: undefined
@@ -29999,6 +30003,18 @@ export type Database = {
       _mask_email: { Args: { p_email: string }; Returns: string }
       _member_operational_since: {
         Args: { p_member_id: string }
+        Returns: string
+      }
+      _notify_drive_grant_failure: {
+        Args: {
+          p_api_error: Json
+          p_context: string
+          p_folder_id: string
+          p_folder_url: string
+          p_grant_id: string
+          p_member_id: string
+          p_table: string
+        }
         Returns: string
       }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
