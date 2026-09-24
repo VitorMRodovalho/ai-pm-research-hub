@@ -29549,6 +29549,15 @@ export type Database = {
           total_attendance_points: number
         }[]
       }
+      _audit_board_attachment_policies: {
+        Args: never
+        Returns: {
+          cmd: string
+          policyname: unknown
+          qual: string
+          with_check: string
+        }[]
+      }
       _audit_can_authuid_function_bodies: {
         Args: never
         Returns: {
@@ -29772,6 +29781,7 @@ export type Database = {
           view_name: string
         }[]
       }
+      _board_attachment_visible: { Args: { p_name: string }; Returns: boolean }
       _board_item_needs_curation: {
         Args: { p_item_id: string }
         Returns: boolean
