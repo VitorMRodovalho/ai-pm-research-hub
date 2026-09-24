@@ -30356,6 +30356,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_send_member_access: { Args: { p_member_id: string }; Returns: Json }
       admin_set_ingestion_source_policy: {
         Args: {
           p_allow_apply: boolean

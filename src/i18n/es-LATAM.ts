@@ -6348,6 +6348,15 @@ const esLATAM: Record<string, string> = {
   'admin.memberEdit.toast.inactivated': 'Miembro desactivado 🔴',
   'admin.memberEdit.toast.reactivated': 'Miembro reactivado 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Motivo para desactivar a {name} (opcional):',
+  'admin.memberEdit.action.sendInvite': '✉️ Enviar invitación de acceso',
+  'admin.memberEdit.hint.noLogin': 'Este miembro aún no ingresó a la plataforma.',
+  'admin.memberEdit.prompt.sendInviteAfterCreate': 'Miembro creado. ¿Enviar ahora la invitación de acceso a {email}?',
+  'admin.memberEdit.toast.inviteSent': 'Invitación de acceso enviada a {email} ✉️',
+  'admin.memberEdit.inviteError.already_linked': 'Este miembro ya tiene acceso a la plataforma.',
+  'admin.memberEdit.inviteError.inactive': 'Miembro inactivo: reactívelo antes de invitar.',
+  'admin.memberEdit.inviteError.no_email': 'Miembro sin correo registrado.',
+  'admin.memberEdit.inviteError.rate_limited': 'Límite de 3 invitaciones por hora para este miembro. Intente más tarde.',
+  'admin.memberEdit.inviteError.generic': 'No fue posible enviar la invitación.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'URL de agenda de entrevista',

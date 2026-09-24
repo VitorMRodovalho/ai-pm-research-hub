@@ -21,6 +21,13 @@ import { isServiceRoleToken } from '../_shared/service-auth.ts'
 // PRIMÁRIO DO MEMBRO, e um acesso criado em outro endereço nasce ghost. Por isso a resolução é
 // refeita aqui, e o endereço nunca atravessa a fronteira em nenhum sentido.
 //
+// #2427 — SEGUNDA ENTRADA: `{ member_id }`, despachada por `admin_send_member_access` para quem
+// nasceu FORA do funil (criado pelo GP na tela ou por SQL), e que por isso não tem token de
+// portal. Mesma regra: o payload traz só o id, e tudo é re-resolvido aqui. A diferença é a
+// AUTORIZAÇÃO: o token do portal é a prova de que o pedido veio da pessoa; aqui a prova é uma
+// linha `member.access_invite_requested` recente no audit, que só a RPC (com `manage_member`)
+// escreve. Sem ela a EF recusa, então uma chamada service_role solta não dispara convite.
+//
 // ⚠️ E o e-mail NÃO volta no retorno, nem em log. `pg_net` guarda a resposta em
 // `net._http_response`, e um endereço ecoado ali seria PII num lugar que ninguém audita —
 // a mesma razão pela qual `send-account-claim` devolve só `{ ok: true }`.
@@ -34,6 +41,122 @@ const PLATFORM = `${COMMS_ORIGIN}`
 const REDIRECT_TO = `${PLATFORM}/workspace`
 // O link do Supabase Auth vale 1h por padrão; o texto do e-mail precisa dizer o mesmo número.
 const EXPIRES_IN_MINUTES = 60
+// #2427: o pedido do GP autoriza UM envio, e só por pouco tempo. O pg_net despacha em segundos;
+// uma janela larga deixaria um pedido antigo servir de autorização para um envio tardio.
+const REQUEST_WINDOW_MINUTES = 10
+
+type Sb = ReturnType<typeof createClient<any, 'public', any>>
+
+/** O endereço: o PRIMÁRIO do membro, com `members.email` como fallback. */
+async function primaryEmailOf(sb: Sb, member: { id: string; email: string | null }) {
+  const { data: primaryRow } = await sb
+    .from('member_emails')
+    .select('email')
+    .eq('member_id', member.id)
+    .eq('is_primary', true)
+    .maybeSingle()
+  return (primaryRow?.email ?? member.email ?? '').toString().trim()
+}
+
+/**
+ * O link. MEDIDO ponta a ponta em 14/09 contra uma fixture em domínio reservado: `generateLink`
+ * com `type: 'magiclink'` para um endereço que NÃO existia em auth.users devolveu link e CRIOU a
+ * identidade (`link_kind: magiclink`, `auth.users` +1). O fallback para `invite` fica como rede,
+ * não como caminho esperado: ele salva se uma versão futura do GoTrue voltar a recusar magiclink
+ * para endereço desconhecido. Enumerar auth.users para decidir o tipo não é opção — o PostgREST
+ * não expõe o schema `auth`.
+ */
+async function actionLinkFor(sb: Sb, email: string): Promise<{ link: string | null; kind: string; error?: string }> {
+  const magic = await sb.auth.admin.generateLink({
+    type: 'magiclink',
+    email,
+    options: { redirectTo: REDIRECT_TO },
+  })
+  if (magic.data?.properties?.action_link) return { link: magic.data.properties.action_link, kind: 'magiclink' }
+  const invite = await sb.auth.admin.generateLink({
+    type: 'invite',
+    email,
+    options: { redirectTo: REDIRECT_TO },
+  })
+  if (invite.error) return { link: null, kind: 'invite', error: invite.error.message }
+  return { link: invite.data?.properties?.action_link ?? null, kind: 'invite' }
+}
+
+/** #2427 — convite para membro criado fora do funil. Autorizado pelo pedido recente no audit. */
+async function handleMemberInvite(sb: Sb, memberId: string) {
+  const { data: member, error: mmErr } = await sb
+    .from('members')
+    .select('id, name, email, auth_id, is_active, member_status')
+    .eq('id', memberId)
+    .maybeSingle()
+  if (mmErr) return json({ error: 'Member lookup failed', detail: mmErr.message }, 500)
+  if (!member) return json({ error: 'Member row missing', skipped: true }, 200)
+  if (member.is_active !== true || member.member_status !== 'active') {
+    return json({ error: 'Member inactive', skipped: true }, 200)
+  }
+  if (member.auth_id) return json({ ok: true, skipped: 'already_linked' }, 200)
+
+  // A autorização: um pedido da RPC nos últimos minutos, e nenhum envio depois dele. O segundo
+  // termo faz o pedido valer UMA vez: um reenvio do mesmo payload não gera um segundo e-mail.
+  const since = new Date(Date.now() - REQUEST_WINDOW_MINUTES * 60_000).toISOString()
+  const { data: reqRow, error: rErr } = await sb
+    .from('admin_audit_log')
+    .select('id, created_at')
+    .eq('action', 'member.access_invite_requested')
+    .eq('target_id', member.id)
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (rErr) return json({ error: 'Request lookup failed', detail: rErr.message }, 500)
+  if (!reqRow) return json({ error: 'No recent request', skipped: true }, 200)
+
+  const { count: sentAfter, error: sErr } = await sb
+    .from('admin_audit_log')
+    .select('id', { count: 'exact', head: true })
+    .eq('action', 'member.access_invite_sent')
+    .eq('target_id', member.id)
+    .gt('created_at', reqRow.created_at)
+  if (sErr) return json({ error: 'Sent lookup failed', detail: sErr.message }, 500)
+  if ((sentAfter ?? 0) > 0) return json({ ok: true, skipped: 'already_sent_for_request' }, 200)
+
+  const email = await primaryEmailOf(sb, member)
+  if (!email) return json({ error: 'No email to send to', skipped: true }, 200)
+
+  const { link, kind, error: linkErr } = await actionLinkFor(sb, email)
+  if (linkErr) return json({ error: 'generateLink failed', detail: linkErr }, 502)
+  if (!link) return json({ error: 'No action link produced' }, 502)
+
+  const firstName = (member.name ?? '').toString().split(/\s+/)[0] || 'voluntário(a)'
+  const { error: sendErr } = await sb.rpc('campaign_send_one_off', {
+    p_template_slug: 'member_access_invite',
+    p_to_email: email,
+    p_variables: {
+      first_name: firstName,
+      access_url: link,
+      platform_url: PLATFORM,
+      expires_in_minutes: EXPIRES_IN_MINUTES,
+    },
+    p_metadata: {
+      source: 'send-portal-account-setup',
+      member_id: member.id,
+      link_kind: kind,
+      issue: 2427,
+    },
+  })
+  if (sendErr) return json({ error: 'Dispatch failed', detail: sendErr.message }, 502)
+
+  await sb.from('admin_audit_log').insert({
+    actor_id: member.id,
+    action: 'member.access_invite_sent',
+    target_type: 'member',
+    target_id: member.id,
+    changes: { link_kind: kind, request_audit_id: reqRow.id },
+    metadata: { source: 'send-portal-account-setup', issue: 2427 },
+  })
+
+  return json({ ok: true, link_kind: kind })
+}
 
 Deno.serve(async (req) => {
   try {
@@ -51,14 +174,20 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}))
+    const sb = createClient<any, 'public', any>(url, srk, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+
+    const memberIdParam = (body?.member_id ?? '').toString()
+    if (memberIdParam) {
+      if (!/^[0-9a-f-]{36}$/i.test(memberIdParam)) return json({ error: 'Bad member_id' }, 400)
+      return await handleMemberInvite(sb, memberIdParam)
+    }
+
     const portalToken = (body?.portal_token ?? '').toString()
     if (!portalToken || portalToken.length < 16) {
       return json({ error: 'Missing or short portal_token' }, 400)
     }
-
-    const sb = createClient<any, 'public', any>(url, srk, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    })
 
     // ── 1. Revalida o token do portal. Sem consumir: `access_count` mede o clique no e-mail,
     //       e um pedido de acesso não é um clique. Somar os dois apagaria esse sinal.
@@ -107,51 +236,13 @@ Deno.serve(async (req) => {
 
     // ── 4. O endereço: o PRIMÁRIO do membro, com `members.email` como fallback. Nunca
     //       `selection_applications.email`, que é o que envelhece sozinho.
-    const { data: primaryRow } = await sb
-      .from('member_emails')
-      .select('email')
-      .eq('member_id', member.id)
-      .eq('is_primary', true)
-      .maybeSingle()
-
-    const email = (primaryRow?.email ?? member.email ?? '').toString().trim()
+    const email = await primaryEmailOf(sb, member)
     if (!email) return json({ error: 'No email to send to', skipped: true }, 200)
 
-    // ── 5. O link.
-    //
-    // MEDIDO ponta a ponta em 14/09 contra uma fixture em domínio reservado: `generateLink` com
-    // `type: 'magiclink'` para um endereço que NÃO existia em auth.users devolveu link e CRIOU a
-    // identidade (`link_kind: magiclink`, `auth.users` +1). Ou seja, o caminho magiclink já cobre
-    // os dois casos, e a suposição de que ele exigiria conta prévia estava errada.
-    //
-    // O fallback para `invite` fica como rede, não como caminho esperado: ele é o que salva se uma
-    // versão futura do GoTrue voltar a recusar magiclink para endereço desconhecido. Enumerar
-    // auth.users para decidir o tipo não é opção — o PostgREST não expõe o schema `auth`.
+    // ── 5. O link (ver `actionLinkFor`).
     const firstName = (member.name ?? app.applicant_name ?? '').toString().split(/\s+/)[0] || 'voluntário(a)'
-    let actionLink: string | null = null
-    let linkKind = 'magiclink'
-
-    const magic = await sb.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo: REDIRECT_TO },
-    })
-
-    if (magic.data?.properties?.action_link) {
-      actionLink = magic.data.properties.action_link
-    } else {
-      linkKind = 'invite'
-      const invite = await sb.auth.admin.generateLink({
-        type: 'invite',
-        email,
-        options: { redirectTo: REDIRECT_TO },
-      })
-      if (invite.error) {
-        return json({ error: 'generateLink failed', detail: invite.error.message }, 502)
-      }
-      actionLink = invite.data?.properties?.action_link ?? null
-    }
-
+    const { link: actionLink, kind: linkKind, error: linkErr } = await actionLinkFor(sb, email)
+    if (linkErr) return json({ error: 'generateLink failed', detail: linkErr }, 502)
     if (!actionLink) return json({ error: 'No action link produced' }, 502)
 
     // ── 6. A entrega sai pelo caminho central (`campaign_send_one_off`), e não por um fetch

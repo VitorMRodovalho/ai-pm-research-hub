@@ -6355,6 +6355,15 @@ const ptBR: Record<string, string> = {
   'admin.memberEdit.toast.inactivated': 'Membro inativado 🔴',
   'admin.memberEdit.toast.reactivated': 'Membro reativado 🟢',
   'admin.memberEdit.prompt.inactivateReason': 'Motivo da inativação de {name} (opcional):',
+  'admin.memberEdit.action.sendInvite': '✉️ Enviar convite de acesso',
+  'admin.memberEdit.hint.noLogin': 'Este membro ainda não entrou na plataforma.',
+  'admin.memberEdit.prompt.sendInviteAfterCreate': 'Membro criado. Enviar agora o convite de acesso para {email}?',
+  'admin.memberEdit.toast.inviteSent': 'Convite de acesso enviado para {email} ✉️',
+  'admin.memberEdit.inviteError.already_linked': 'Este membro já tem acesso à plataforma.',
+  'admin.memberEdit.inviteError.inactive': 'Membro inativo: reative antes de convidar.',
+  'admin.memberEdit.inviteError.no_email': 'Membro sem e-mail cadastrado.',
+  'admin.memberEdit.inviteError.rate_limited': 'Limite de 3 convites por hora para este membro. Tente mais tarde.',
+  'admin.memberEdit.inviteError.generic': 'Não foi possível enviar o convite.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'URL de agendamento de entrevista',
