@@ -122,6 +122,34 @@ const FAQ_ITEMS: FaqItem[] = [
   // ══════════════════════════════════════════
   // PARA LÍDERES DE TRIBO
   // ══════════════════════════════════════════
+  // #2447: artefato, revisão e curadoria. Guia completo em /guia-artefatos.
+  {
+    id: 'what_is_artifact', section: 'leaders',
+    question: { 'pt-BR': 'O que é artefato e como classificar?', 'en-US': 'What is an artifact and how do I classify it?', 'es-LATAM': '¿Qué es un artefacto y cómo lo clasifico?' },
+    answer: {
+      'pt-BR': 'Artefato é o que a iniciativa entrega e reporta ao portfólio (artigo, e-book, framework, webinar, ferramenta). Tarefa, reunião e registro interno não são artefato. No card, o líder marca "Entregável reportável (Portfólio)" e escolhe o Tipo de artefato logo abaixo; a plataforma sugere o tipo pelo título. Guia completo: Recursos → Artefatos, revisão e curadoria.',
+      'en-US': 'An artifact is what the initiative delivers and reports to the portfolio (article, e-book, framework, webinar, tool). Tasks, meetings and internal records are not artifacts. On the card, the leader checks "Reportable deliverable (Portfolio)" and picks the Artifact type right below; the platform suggests the type from the title. Full guide: Resources → Artifacts, review and curation.',
+      'es-LATAM': 'Un artefacto es lo que la iniciativa entrega y reporta al portafolio (artículo, e-book, framework, webinar, herramienta). Tareas, reuniones y registros internos no son artefactos. En la tarjeta, el líder marca "Entregable reportable (Portafolio)" y elige el Tipo de artefacto justo abajo; la plataforma sugiere el tipo por el título. Guía completa: Recursos → Artefactos, revisión y curaduría.',
+    },
+  },
+  {
+    id: 'review_flow', section: 'leaders',
+    question: { 'pt-BR': 'Como uma publicação chega à curadoria?', 'en-US': 'How does a publication reach curation?', 'es-LATAM': '¿Cómo llega una publicación a la curaduría?' },
+    answer: {
+      'pt-BR': 'Só publicações (artigo, e-book, estudo de caso, infográfico, relatório) passam por revisão. 1) Peer review: a tribo registra o feedback, ou dispensa com motivo se o artigo for colaborativo. 2) Revisão do líder: Aprovar, Dispensar ou Devolver com nota. 3) Curadoria: a plataforma designa 2 pareceristas, com prazo de 7 dias e lembrete 2 dias antes. Framework, webinar, ferramenta e POC vão só para o portfólio.',
+      'en-US': 'Only publications (article, e-book, case study, infographic, report) go through review. 1) Peer review: the team records feedback, or waives it with a reason if the article is collaborative. 2) Leader review: Approve, Waive or Return with a note. 3) Curation: the platform assigns 2 reviewers, with a 7-day deadline and a reminder 2 days before. Framework, webinar, tool and POC go to the portfolio only.',
+      'es-LATAM': 'Solo las publicaciones (artículo, e-book, estudio de caso, infografía, informe) pasan por revisión. 1) Revisión de pares: la tribu registra el feedback, o la dispensa con motivo si el artículo es colaborativo. 2) Revisión del líder: Aprobar, Dispensar o Devolver con nota. 3) Curaduría: la plataforma designa 2 revisores, con plazo de 7 días y recordatorio 2 días antes. Framework, webinar, herramienta y POC van solo al portafolio.',
+    },
+  },
+  {
+    id: 'not_artifact_in_flow', section: 'leaders',
+    question: { 'pt-BR': 'Um card que não é artefato entrou na revisão. E agora?', 'en-US': 'A card that is not an artifact entered review. What now?', 'es-LATAM': 'Una tarjeta que no es artefacto entró en revisión. ¿Y ahora?' },
+    answer: {
+      'pt-BR': 'Abra o card e, na seção Revisão Pré-Curadoria, use Devolver com uma nota curta ("não é artefato"). O card volta a ser tarefa comum e sai do fluxo. Para cards que não são artefato, Devolver é a única opção disponível.',
+      'en-US': 'Open the card and, in the Pre-Curation Review section, use Return with a short note ("not an artifact"). The card goes back to being a regular task and leaves the flow. For cards that are not artifacts, Return is the only option available.',
+      'es-LATAM': 'Abra la tarjeta y, en la sección Revisión Pre-Curaduría, use Devolver con una nota corta ("no es artefacto"). La tarjeta vuelve a ser una tarea común y sale del flujo. Para tarjetas que no son artefacto, Devolver es la única opción disponible.',
+    },
+  },
   {
     id: 'create_cards', section: 'leaders',
     question: { 'pt-BR': 'Como criar cards no board?', 'en-US': 'How do I create cards on the board?', 'es-LATAM': '¿Cómo creo tarjetas en el tablero?' },
@@ -295,6 +323,7 @@ const LABELS: Record<string, Record<string, string>> = {
   version: { 'pt-BR': 'Versão', 'en-US': 'Version', 'es-LATAM': 'Versión' },
   resources: { 'pt-BR': 'Recursos', 'en-US': 'Resources', 'es-LATAM': 'Recursos' },
   guiaPre: { 'pt-BR': 'Guia do pré-onboarding', 'en-US': 'Pre-onboarding guide', 'es-LATAM': 'Guía del pre-onboarding' },
+  guiaArt: { 'pt-BR': 'Artefatos, revisão e curadoria', 'en-US': 'Artifacts, review and curation', 'es-LATAM': 'Artefactos, revisión y curaduría' },
   glossario: { 'pt-BR': 'Glossário e guia do voluntário', 'en-US': 'Glossary & volunteer guide', 'es-LATAM': 'Glosario y guía del voluntario' },
   agenda: { 'pt-BR': 'Agenda de reuniões', 'en-US': 'Meetings agenda', 'es-LATAM': 'Agenda de reuniones' },
   mcp: { 'pt-BR': 'Endpoint MCP (assistentes de IA)', 'en-US': 'MCP endpoint (AI assistants)', 'es-LATAM': 'Endpoint MCP (asistentes de IA)' },
@@ -457,6 +486,9 @@ export default function HelpFloatingButton({ locale = 'pt-BR' }: Props) {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1 px-1">
                   {LABELS.resources[lang]}
                 </div>
+                <a href={`${lp}/guia-artefatos`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
+                  📚 {LABELS.guiaArt[lang]}
+                </a>
                 <a href={`${lp}/guia-pre-onboarding`} className="flex items-center gap-2 px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-hover)] rounded-lg no-underline transition-colors">
                   🧭 {LABELS.guiaPre[lang]}
                 </a>
