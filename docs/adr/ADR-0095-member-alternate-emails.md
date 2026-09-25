@@ -58,6 +58,7 @@ Access control is locked down using Row Level Security (RLS) policies and revoke
 
 Three Security Definer functions are defined to manage email queries and additions securely:
 - `member_resolve_email(p_email text) RETURNS uuid` (STABLE): Resolves any registered email (primary or alternate) to the corresponding member ID. Gates access to authenticated users.
+  - **Amendment (2026-09-25):** the gate is now **members only** for PostgREST callers (`rls_is_member()`); service_role and cron are unchanged. Sign-up is open, so "any authenticated user" meant anyone on the internet could map an email to a member ID. The only in-app consumer, the MCP tool, already required a member before calling.
 - `member_list_emails(p_member_id uuid) RETURNS TABLE`: Lists all emails associated with a member. Restricted to the member themselves, or users with `manage_member` / `view_pii` permissions.
 - `member_add_alternate_email(p_member_id uuid, p_email text, p_kind text) RETURNS uuid` (VOLATILE): Adds an alternate email to a member. Restricted to self or users with `manage_member` permissions.
 

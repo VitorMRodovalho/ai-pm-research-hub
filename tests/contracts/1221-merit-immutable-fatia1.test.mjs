@@ -20,6 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG_A = resolve(ROOT, 'supabase/migrations/20260805000402_1221_merit_transfer_audit_rpc.sql');
@@ -33,19 +34,23 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
 // ── Part A static ────────────────────────────────────────────────────────────
+// A funcao foi redefinida depois (gate de papel pelo GUC de role): o que e da FUNCAO le a captura
+// vigente; o que e deste arquivo (o REVOKE, fora do corpo) continua lendo o arquivo.
+const fnA = latestFunctionCapture(ROOT, '_audit_merit_transfer_on_completed_cards').block;
+
 test('#1221 A: advisory audit RPC defined, SECDEF, gated, anon-revoked', () => {
   assert.ok(existsSync(MIG_A), 'Part A migration present');
-  assert.match(a, /CREATE OR REPLACE FUNCTION public\._audit_merit_transfer_on_completed_cards\(\)/);
-  assert.match(a, /SECURITY DEFINER/);
-  assert.match(a, /public\.can\([\s\S]*?'manage_platform'\)/, 'gated on manage_platform');
+  assert.match(fnA, /CREATE OR REPLACE FUNCTION public\._audit_merit_transfer_on_completed_cards\(\)/);
+  assert.match(fnA, /SECURITY DEFINER/);
+  assert.match(fnA, /public\.can\([\s\S]*?'manage_platform'\)/, 'gated on manage_platform');
   assert.match(a, /REVOKE EXECUTE ON FUNCTION public\._audit_merit_transfer_on_completed_cards\(\) FROM PUBLIC, anon;/);
 });
 
 test('#1221 A: two divergence flags + self-reassignment noise filter', () => {
-  assert.match(a, /'reassigned_after_completion'/);
-  assert.match(a, /'completed_credit_from_non_leader_creator'/);
+  assert.match(fnA, /'reassigned_after_completion'/);
+  assert.match(fnA, /'completed_credit_from_non_leader_creator'/);
   // self-touch filter: reassignment actor must differ from the current assignee
-  assert.match(a, /e\.actor_member_id IS DISTINCT FROM bi\.assignee_id/);
+  assert.match(fnA, /e\.actor_member_id IS DISTINCT FROM bi\.assignee_id/);
   // advisory, not a hard gate: it is NOT wired into check_schema_invariants
   assert.ok(!/check_schema_invariants/.test(a), 'Part A must not touch the invariant gate');
 });

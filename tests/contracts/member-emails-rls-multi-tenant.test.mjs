@@ -164,8 +164,8 @@ test('GAP-205.A: member_resolve_email SECDEF requires authentication (auth.uid()
     'No CREATE [OR REPLACE] FUNCTION member_resolve_email found in migrations.');
 
   // The function must raise on unauthenticated callers (excluding service_role/postgres).
-  // ADR-0095 §4 documents this as intentional: any authenticated user can resolve any email.
-  // The membership-enumeration concern is acknowledged; what we MUST guard against is anon.
+  // ADR-0095 §4 (amended 2026-09-25): with open sign-up, "any authenticated user" is anyone, so the
+  // resolver requires a MEMBER for PostgREST callers. Anon is refused first ('Not authenticated').
   assert.match(latestBlock.body, /auth\.uid\(\)\s+IS\s+NULL/i,
     `member_resolve_email (in ${latestBlock.migration}) must check auth.uid() IS NULL. ` +
     `Without this, anon clients could resolve emails to member_ids — a clear ` +
@@ -174,6 +174,11 @@ test('GAP-205.A: member_resolve_email SECDEF requires authentication (auth.uid()
   assert.match(latestBlock.body, /RAISE\s+EXCEPTION\s+'Not authenticated'/i,
     `member_resolve_email (in ${latestBlock.migration}) must RAISE EXCEPTION 'Not authenticated' ` +
     `when auth.uid() IS NULL (and caller is not service_role/postgres).`);
+
+  // Amended §4: a logged-in NON-member is refused too, and the condition is bound to the raise.
+  assert.match(latestBlock.body,
+    /IF\s+public\._request_is_rest_caller\(\)\s+AND\s+NOT\s+public\.rls_is_member\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized/i,
+    `member_resolve_email (in ${latestBlock.migration}) must refuse a logged-in non-member (ADR-0095 §4 amendment).`);
 });
 
 // ─── 7. SECDEF RPC member_list_emails must require self / manage_member / view_pii ───

@@ -70,10 +70,12 @@ test('#1021 static: get_cycle_renewal_radar exists and resolves service-end by m
 test('#1021 static: LGPD dual-consumer gate (manage_member OR service_role/postgres); anon revoked', () => {
   const body = latestFunctionBody('get_cycle_renewal_radar');
   assert.match(body, /can_by_member\(v_caller_id, 'manage_member'\)/, 'in-app path must require manage_member');
+  // O ramo sem auth.uid() nega so o usuario REST (GUC de role authenticated/anon); service_role e
+  // cron passam. current_user nao serve aqui: dentro de SECURITY DEFINER e sempre o dono.
   assert.match(
     body,
-    /current_setting\('role', true\) NOT IN \('service_role', 'postgres'\)/,
-    'operator/cron path must allow service_role/postgres',
+    /ELSIF\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE EXCEPTION 'Unauthorized/,
+    'operator/cron path must allow service_role/postgres (role GUC, #684)',
   );
   // REVOKE from anon lives in the migration (outside the function body).
   const mig = allSQL;
