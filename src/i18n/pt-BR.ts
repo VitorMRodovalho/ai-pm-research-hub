@@ -6364,6 +6364,12 @@ const ptBR: Record<string, string> = {
   'admin.memberEdit.inviteError.no_email': 'Membro sem e-mail cadastrado.',
   'admin.memberEdit.inviteError.rate_limited': 'Limite de 3 convites por hora para este membro. Tente mais tarde.',
   'admin.memberEdit.inviteError.generic': 'Não foi possível enviar o convite.',
+  'admin.memberEdit.createError.email_exists': 'Já existe um cadastro com este e-mail. Abra o membro existente em vez de criar outro.',
+  'admin.memberEdit.createError.invalid_email': 'E-mail inválido.',
+  'admin.memberEdit.createError.invalid_chapter': 'Capítulo não reconhecido.',
+  'admin.memberEdit.createError.missing_fields': 'Nome e e-mail são obrigatórios.',
+  'admin.memberEdit.createError.generic': 'Não foi possível criar o membro.',
+  'admin.memberEdit.createError.partial': 'Membro criado, mas papel e dados extras não foram salvos. Abra a ficha e salve de novo.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'URL de agendamento de entrevista',

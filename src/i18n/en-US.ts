@@ -6356,6 +6356,12 @@ const enUS: Record<string, string> = {
   'admin.memberEdit.inviteError.no_email': 'Member has no email on file.',
   'admin.memberEdit.inviteError.rate_limited': 'Limit of 3 invites per hour for this member. Try again later.',
   'admin.memberEdit.inviteError.generic': 'Could not send the invite.',
+  'admin.memberEdit.createError.email_exists': 'A record with this email already exists. Open the existing member instead of creating another.',
+  'admin.memberEdit.createError.invalid_email': 'Invalid email.',
+  'admin.memberEdit.createError.invalid_chapter': 'Chapter not recognized.',
+  'admin.memberEdit.createError.missing_fields': 'Name and email are required.',
+  'admin.memberEdit.createError.generic': 'Could not create the member.',
+  'admin.memberEdit.createError.partial': 'Member created, but role and extra details were not saved. Open the record and save again.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'Interview booking URL',
