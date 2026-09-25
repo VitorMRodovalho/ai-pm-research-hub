@@ -29639,6 +29639,15 @@ export type Database = {
         Args: never
         Returns: boolean
       }
+      _audit_ghost_read_catalog: {
+        Args: never
+        Returns: {
+          est_rows: number
+          relkind: string
+          relname: string
+        }[]
+      }
+      _audit_ghost_read_probe: { Args: { p_relname: string }; Returns: Json }
       _audit_list_public_function_bodies: {
         Args: never
         Returns: {

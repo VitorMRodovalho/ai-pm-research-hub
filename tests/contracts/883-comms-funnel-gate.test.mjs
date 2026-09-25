@@ -97,11 +97,14 @@ test(dbGated ? '#2149: anon NAO executa as duas RPCs, e authenticated continua e
   const sb = createClient(URL_, KEY, { auth: { persistSession: false } });
 
   const ALVOS = ['get_comms_to_adoption_funnel', 'resolve_default_gates'];
-  // O terceiro nome e o CONTROLE: funcao de auditoria sabidamente ABERTA a anon, fora do escopo
-  // da #2149. Sem ele, uma sonda que devolvesse `false` para tudo (nome errado, RPC quebrada,
-  // array vazio) deixaria as duas afirmacoes de baixo passarem por vacuidade — que e a forma
-  // exata como o defeito de origem sobreviveu um mes.
-  const CONTROLE = '_audit_list_public_function_bodies';
+  // O terceiro nome e o CONTROLE: funcao sabidamente ABERTA a anon, fora do escopo da #2149.
+  // Sem ele, uma sonda que devolvesse `false` para tudo (nome errado, RPC quebrada, array vazio)
+  // deixaria as duas afirmacoes de baixo passarem por vacuidade — que e a forma exata como o
+  // defeito de origem sobreviveu um mes.
+  // Era `_audit_list_public_function_bodies`, que a mig 20260925183649 fechou para service_role.
+  // `get_public_platform_stats` e publica POR DESIGN (CLAUDE.md, LGPD: "public data via SECURITY
+  // DEFINER RPCs only"), entao nao deve sair do anon por acidente.
+  const CONTROLE = 'get_public_platform_stats';
 
   const { data, error } = await sb.rpc('_audit_function_execute_acl', {
     p_names: [...ALVOS, CONTROLE],
