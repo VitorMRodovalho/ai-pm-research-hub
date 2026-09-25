@@ -1,0 +1,5 @@
+---
+// #2485: o site do hackathon e externo e tem um endereco so, entao o locale vai para o mesmo destino.
+import { HACKATHON_URL, HACKATHON_REDIRECT_STATUS } from '../../lib/hackathon.js';
+return Astro.redirect(HACKATHON_URL, HACKATHON_REDIRECT_STATUS);
+---

@@ -1,0 +1,5 @@
+---
+// #2485: rota de entrada do hackathon. O destino e o status moram em src/lib/hackathon.js.
+import { HACKATHON_URL, HACKATHON_REDIRECT_STATUS } from '../lib/hackathon.js';
+return Astro.redirect(HACKATHON_URL, HACKATHON_REDIRECT_STATUS);
+---

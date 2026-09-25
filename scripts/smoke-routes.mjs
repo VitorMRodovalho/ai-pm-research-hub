@@ -20,6 +20,7 @@
 
 import { spawn } from 'node:child_process';
 import { createInterface } from 'node:readline';
+import { HACKATHON_URL } from '../src/lib/hackathon.js';
 import {
   createDevServerWatch,
   assertContentWithResamples,
@@ -216,6 +217,10 @@ async function assercoes() {
   await assertContains('/tribe/1', 'id="tribe-denied"');
   await assertRedirect('/rank', '/gamification');
   await assertRedirect('/ranks', '/gamification');
+  // #2485: a entrada do hackathon leva ao site externo, nos tres locales.
+  await assertRedirect('/hackathon', HACKATHON_URL);
+  await assertRedirect('/en/hackathon', HACKATHON_URL);
+  await assertRedirect('/es/hackathon', HACKATHON_URL);
 }
 
 async function run() {
