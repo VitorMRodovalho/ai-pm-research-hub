@@ -51,7 +51,6 @@ const VISIBILITY_BLOCK = VISIBILITY_BLOCK_MATCH ? VISIBILITY_BLOCK_MATCH[1] : ''
 // reference; tests only need member.id which is the public domain anchor.)
 const ROBERTO_MEMBER_ID = '49836a70-a41e-4a0b-85b0-aa05b13d3f25';
 const SARAH_MEMBER_ID   = '19b7ff75-bcb1-4a15-a8e1-006fc6822069';
-const TAP_CPMAI_DOC_ID = 'd7447a94-ca3c-4cf6-8b6e-5e604136522c'; // draft, project_charter, unlocked, OPEN chain
 const UNKNOWN_DOC_ID   = '00000000-0000-0000-0000-000000000000';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -407,27 +406,40 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
       assert.equal(canAdmin,  false, 'Sarah must NOT have manage_member (regression provenance)');
     });
 
-    it('TAP CPMAI exists with status=draft + visibility_class=active_members (regression target)', { skip: !sb }, async () => {
-      const { data, error } = await sb
-        .from('governance_documents')
-        .select('id, status, doc_type, visibility_class, current_version_id')
-        .eq('id', TAP_CPMAI_DOC_ID)
-        .maybeSingle();
-      assert.ifError(error);
-      assert.ok(data, 'TAP CPMAI doc must exist');
-      assert.equal(data.status, 'draft', 'TAP CPMAI must be in draft (status default-exclusion target)');
-      assert.equal(data.doc_type, 'project_charter');
-      assert.equal(data.visibility_class, 'active_members');
-    });
-
-    it('Open approval_chain exists for TAP CPMAI (assignment predicate prerequisite)', { skip: !sb }, async () => {
-      const { data, error } = await sb
+    // Regression target DERIVED from the live catalog. It used to pin the TAP CPMAI id,
+    // but approving the TAP takes it out of draft (every document whose chain completed
+    // is `active`, measured 2026-09-25), which would turn this red with no code change.
+    // Any active_members document in draft with an OPEN chain is a valid target: the
+    // status default-exclusion is the only barrier the assigned-curator bypass lifts.
+    // No such document is a business state, not a regression, so it SKIPS with the
+    // reason. A renamed or dropped predicate column still fails, through the query error.
+    it('a draft document with an OPEN approval_chain exists (regression target, derived)', { skip: !sb }, async (t) => {
+      const { data: chains, error: chainErr } = await sb
         .from('approval_chains')
-        .select('id, closed_at')
-        .eq('document_id', TAP_CPMAI_DOC_ID)
+        .select('document_id, closed_at')
         .is('closed_at', null);
-      assert.ifError(error);
-      assert.ok(data && data.length > 0, 'OPEN approval_chain must exist on TAP CPMAI');
+      assert.ifError(chainErr);
+      const openDocIds = [...new Set((chains || []).map((c) => c.document_id))];
+      if (openDocIds.length === 0) {
+        t.skip('no OPEN approval_chain in the live catalog: assigned-curator bypass has no live target');
+        return;
+      }
+
+      const { data: docs, error: docErr } = await sb
+        .from('governance_documents')
+        .select('id, status, visibility_class')
+        .in('id', openDocIds)
+        .eq('status', 'draft')
+        .eq('visibility_class', 'active_members');
+      assert.ifError(docErr);
+      if (!docs || docs.length === 0) {
+        t.skip('no active_members draft document with an OPEN chain: bypass target absent (business state, not a regression)');
+        return;
+      }
+      for (const d of docs) {
+        assert.ok(openDocIds.includes(d.id), `target ${d.id} must carry an OPEN chain`);
+        assert.equal(d.status, 'draft');
+      }
     });
 
     it('get_governance_document_reader is registered + service-role gate fires (existence + gate proof)', { skip: !sb }, async () => {
