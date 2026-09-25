@@ -9433,9 +9433,15 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W2 · member_lifecycle (W) — GP-only (manage_member); lifecycle = GP invariant (LGPD Art.18) ─
   mcp.tool(
     "member_lifecycle",
-    "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive'. Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
+    "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive', 'create' (#2460: name + email [+ chapter_code, initiative_id + kind (+ role)]; creates person + member + chapter affiliation + optional initiative engagement atomically; WRITE→confirm). Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
     {
-      action: z.enum(["offboard", "reissue_agreement", "record_offboarding", "get_offboarding_record", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "respond_re_engagement", "cancel_re_engagement", "list_re_engagement", "promote_to_leader", "detect_inactive"]).describe("Lifecycle operation."),
+      action: z.enum(["offboard", "reissue_agreement", "record_offboarding", "get_offboarding_record", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "respond_re_engagement", "cancel_re_engagement", "list_re_engagement", "promote_to_leader", "detect_inactive", "create"]).describe("Lifecycle operation."),
+      name: z.string().optional().describe("create — full name."),
+      email: z.string().optional().describe("create — primary email (must not exist in any member/person identity)."),
+      chapter_code: z.string().optional().describe("create — registry chapter code (DF or PMI-DF). Omit for 'Outro'."),
+      initiative_id: z.string().optional().describe("create — optional initiative UUID to link the new person to."),
+      kind: z.string().optional().describe("create — engagement kind when initiative_id is given (e.g. observer for external, workgroup_member)."),
+      role: z.string().optional().describe("create — engagement role (default participant)."),
       member_id: z.string().optional().describe("members.id — offboard/reissue/record_offboarding/get_offboarding_record/stage_alumni; optional filter for explain_authority."),
       new_status: z.enum(["alumni", "observer", "inactive"]).optional().describe("offboard — target status."),
       reason_category: z.string().optional().describe("offboard/list_offboarding filter — reason taxonomy code."),
@@ -9471,7 +9477,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
 
       // Authority: admin verbs require manage_member; promote_to_leader requires 'promote';
       // respond_re_engagement (self) + get_offboarding_record (RPC self-OR-manage) pass through.
-      const ADMIN = new Set(["offboard", "reissue_agreement", "record_offboarding", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "cancel_re_engagement", "list_re_engagement", "detect_inactive"]);
+      const ADMIN = new Set(["offboard", "reissue_agreement", "record_offboarding", "list_offboarding", "offboarding_dashboard", "onboarding_dashboard", "pending_agreements", "explain_authority", "stage_alumni", "invite_alumni", "cancel_re_engagement", "list_re_engagement", "detect_inactive", "create"]);
       let permission = "RPC self-gated";
       if (ADMIN.has(params.action)) {
         if (!(await canV4(sb, member.id, "manage_member"))) { await logUsage(sb, member.id, "member_lifecycle", false, "Unauthorized", start); return denied("Requires manage_member (GP-only lifecycle — LGPD Art.18).", "Ask a GP."); }
@@ -9504,6 +9510,23 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           next_actions: [`member_lifecycle action='${params.action}' confirm=true`],
           audit: { tool: "member_lifecycle", semantic_domain: dom, pii_level: "self", permission, source_tools: [], caller_member_id: member.id, gate_checked: `${permission} (preview, not executed)`, resource_id: params.member_id, extra: { action: params.action, preview: true } },
         });
+      }
+
+      // #2460: criar membro escreve em 3-4 tabelas; preview primeiro (ADR-0018), como offboard.
+      if (params.action === "create") {
+        if (!params.name || !params.email) return invalid("create requires name + email.");
+        if (params.initiative_id && (!isUUID(params.initiative_id) || !params.kind)) return invalid("create with initiative_id requires a UUID initiative_id + kind.");
+        if (params.confirm !== true) {
+          await logUsage(sb, member.id, "member_lifecycle", true, undefined, start, "preview");
+          const next = { action: "create", name: params.name, email: params.email, ...(params.chapter_code ? { chapter_code: params.chapter_code } : {}), ...(params.initiative_id ? { initiative_id: params.initiative_id, kind: params.kind, role: params.role ?? "participant" } : {}), confirm: true };
+          return semanticOk({
+            data: { action: "create", preview: true, next_call: next },
+            summary: `PREVIEW: criar membro ${params.name}${params.initiative_id ? ` e vincular (${params.kind} × ${params.role ?? "participant"})` : ""}. Reenvie com confirm=true.`,
+            warnings: ["Creates person + member + chapter affiliation (+ engagement). Send the access invite afterwards from the member page."],
+            next_actions: ["member_lifecycle action='create' confirm=true"],
+            audit: { tool: "member_lifecycle", semantic_domain: dom, pii_level: "high", permission, source_tools: [], caller_member_id: member.id, gate_checked: `${permission} (preview, not executed)`, resource_id: params.initiative_id ?? null, extra: { action: "create", preview: true } },
+          });
+        }
       }
 
       let rpc: string; let rpcArgs: Record<string, unknown>;
@@ -9545,12 +9568,17 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           if (!isUUID(params.application_id)) return invalid("promote_to_leader requires application_id.");
           rpc = "promote_to_leader_track"; rpcArgs = { p_application_id: params.application_id, p_create_leader_app: params.create_leader_app ?? true }; break;
         case "detect_inactive": rpc = "detect_inactive_members"; rpcArgs = {}; break;
+        case "create":
+          rpc = "admin_create_member"; rpcArgs = { p_name: params.name, p_email: params.email, p_chapter_code: params.chapter_code ?? null, p_initiative_id: params.initiative_id ?? null, p_kind: params.kind ?? null, p_role: params.role ?? "participant", p_reason: params.reason ?? null }; break;
         default: return invalid(`Unknown action '${params.action}'.`);
       }
 
       const { data, error } = await sb.rpc(rpc, rpcArgs);
       if (error) { await logUsage(sb, member.id, "member_lifecycle", false, error.message, start); return ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: "internal_error", message: error.message })); }
       if ((data as any)?.error) { const em = (data as any).error; await logUsage(sb, member.id, "member_lifecycle", false, em, start); return ok(buildSemanticError({ tool: "member_lifecycle", semantic_domain: dom, code: String(em).startsWith("Unauthorized") ? "unauthorized" : String(em).includes("not found") ? "not_found" : "internal_error", message: em })); }
+      // #2460: admin_create_member recusa por ESTADO (success=false), nao por `error`: sem isto a
+      // recusa (e-mail ja existe, capitulo invalido) sairia como sucesso no envelope.
+      if (params.action === "create" && (data as any)?.success !== true) { const st = String((data as any)?.state ?? "unknown"); await logUsage(sb, member.id, "member_lifecycle", false, st, start); return invalid(`create refused: ${st}`, st === "email_exists" ? "The email already belongs to a member/person: open that record (member_emails action='resolve') instead of creating another." : "Fix the input and retry."); }
       await logUsage(sb, member.id, "member_lifecycle", true, undefined, start);
       return semanticOk({
         data: { action: params.action, result: data ?? null },

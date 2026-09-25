@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T01:58:35.601Z",
+  "generated_at": "2026-09-25T02:00:45.863Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 392,
   "by_domain": {
@@ -704,7 +704,7 @@
     },
     {
       "name": "member_lifecycle",
-      "description": "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive'. Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
+      "description": "Member lifecycle (GP-only) — onboard/offboard dashboards, offboarding, re-engagement, agreements, leader-track. Set `action`: 'offboard' (member_id + new_status + reason_category + reason_detail; DESTRUCTIVE→confirm), 'reissue_agreement' (member_id + reason; DESTRUCTIVE→confirm — WARNING: a member RE-ACCEPTING a term uses Camada-5, NEVER batch-reissue, which DEMOTES authority), 'record_offboarding' (member_id + exit-interview fields), 'get_offboarding_record' (member_id), 'list_offboarding' (filters), 'offboarding_dashboard', 'onboarding_dashboard', 'pending_agreements', 'explain_authority' (optional member_id), 'stage_alumni' (member_id + cycle_code), 'invite_alumni' (pipeline_id + message), 'respond_re_engagement' (pipeline_id + response; SELF), 'cancel_re_engagement' (pipeline_id + reason), 'list_re_engagement' (filters), 'promote_to_leader' (application_id), 'detect_inactive', 'create' (#2460: name + email [+ chapter_code, initiative_id + kind (+ role)]; creates person + member + chapter affiliation + optional initiative engagement atomically; WRITE→confirm). Authority: manage_member for admin verbs (promote→promote; respond_re_engagement/get_offboarding_record are RPC self-gated). member lifecycle = GP-only invariant (LGPD Art.18). Stable envelope.",
       "domain": "tribe",
       "permission": "read",
       "is_sensitive": false

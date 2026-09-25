@@ -290,7 +290,7 @@ test('semantic block declares pii_level audit field (none|low|self|high) on each
   // (pii_level reflects the actual view_pii disclosure) so they contribute 0 literal matches.
   // One per tool minimum, capped generously to still catch runaway leakage.
   assert.ok(matches.length >= 19, `expected >=19 literal pii_level declarations; got ${matches.length}`);
-  assert.ok(matches.length <= 72, `expected <=72 pii_level declarations (multi-branch cap; W6b adds 5 literal — champion_award 'low', lgpd_admin 'high' x2, knowledge page/latest 'none' x2 — while gamification_report/admin_dashboard/audit_log use dynamic ternaries = 0 literal matches; live count 65); got ${matches.length}`);
+  assert.ok(matches.length <= 73, `expected <=73 pii_level declarations (multi-branch cap; W6b adds 5 literal — champion_award 'low', lgpd_admin 'high' x2, knowledge page/latest 'none' x2 — while gamification_report/admin_dashboard/audit_log use dynamic ternaries = 0 literal matches; live count 65; #2460 +1: member_lifecycle create preview 'high'); got ${matches.length}`);
   // Each of the three values must appear at least once across the 3 tools.
   for (const expected of ['"none"', '"low"', '"self"']) {
     assert.ok(block.includes(`pii_level: ${expected}`), `expected at least one pii_level: ${expected} in semantic block`);

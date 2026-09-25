@@ -88,7 +88,8 @@ export function efExigePedido(src) {
 export function telaOferece(src) {
   const code = maskJsComments(src);
   return {
-    criaComId: /\.from\('members'\)\.insert\(\{[\s\S]*?\}\)\.select\('id'\)\.single\(\)/.test(code),
+    // #2460: criar passou para a RPC admin_create_member; o id vem de created.member_id.
+    criaComId: /sb\.rpc\('admin_create_member', \{[\s\S]*?result = \{ success: true, id: created\.member_id \}/.test(code),
     ofereceAoCriar: /if \(isNew && result\?\.id && confirm\([^)]*\)\)\) \{\s*await sendAccessInvite\(result\.id\)/.test(code),
     chamaRpc: /sb\.rpc\('admin_send_member_access', \{ p_member_id: id \}\)/.test(code),
     botao: /!isNew && m\?\.is_active && !m\?\.auth_id \? `<button type="button" class="btn-send-access-invite/.test(code),
@@ -205,7 +206,7 @@ test('#2427 mutacao: cada detector reprova a forma do defeito, pela MESMA funcao
   // Tela
   const telaMut = (a, b) => { const m = PAGE.replace(a, b); assert.notEqual(m, PAGE, `mutacao tela nao aplicou: ${a}`); return telaOferece(m); };
   // 13: criacao sem devolver o id
-  assert.equal(telaMut(".select('id').single();", ';').criaComId, false);
+  assert.equal(telaMut('result = { success: true, id: created.member_id };', 'result = { success: true };').criaComId, false);
   // 14: convite nao oferecido ao criar
   assert.equal(telaMut('await sendAccessInvite(result.id)', 'void 0').ofereceAoCriar, false);
   // 15: botao sem a condicao de "sem login"

@@ -6357,6 +6357,12 @@ const esLATAM: Record<string, string> = {
   'admin.memberEdit.inviteError.no_email': 'Miembro sin correo registrado.',
   'admin.memberEdit.inviteError.rate_limited': 'Límite de 3 invitaciones por hora para este miembro. Intente más tarde.',
   'admin.memberEdit.inviteError.generic': 'No fue posible enviar la invitación.',
+  'admin.memberEdit.createError.email_exists': 'Ya existe un registro con este correo. Abra el miembro existente en lugar de crear otro.',
+  'admin.memberEdit.createError.invalid_email': 'Correo inválido.',
+  'admin.memberEdit.createError.invalid_chapter': 'Capítulo no reconocido.',
+  'admin.memberEdit.createError.missing_fields': 'Nombre y correo son obligatorios.',
+  'admin.memberEdit.createError.generic': 'No fue posible crear el miembro.',
+  'admin.memberEdit.createError.partial': 'Miembro creado, pero el rol y los datos adicionales no se guardaron. Abra la ficha y guarde de nuevo.',
 
   // SPEC #348 Child #3 (#356) — admin form field for members.interview_booking_url
   'admin.member.bookingUrl.label': 'URL de agenda de entrevista',
