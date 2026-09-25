@@ -80,12 +80,29 @@ test('roster participants-only DB: tribe-8 = 5, natives LATAM = 3 / Grupo = 3 / 
   }
 });
 
-test('roster participants-only DB: no observer rows (role OR kind) survive in any roster', { skip: svcGated ? false : skipMsg }, async () => {
+// #2461 (dono, 25/09/2026): kind='observer' passou a significar vinculo EXTERNO (ADR-0131, #2400), e o
+// externo que participa conta. Ficam fora role='observer' e observer x curator/reviewer.
+export const EXTERNAL_PARTICIPANT_ROLES = ['participant', 'coordinator'];
+export function rosterViolations(rows) {
+  return rows.filter((r) => r.role === 'observer'
+    || (r.kind === 'observer' && !EXTERNAL_PARTICIPANT_ROLES.includes(r.role)));
+}
+
+test('roster participants-only DB: no observer role, and observer kind only as external participant', { skip: svcGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   const { data: rows } = await sb.from('v_initiative_roster').select('role, kind');
   assert.ok(Array.isArray(rows) && rows.length > 0, 'roster has rows');
-  assert.equal(rows.filter((r) => r.role === 'observer' || r.kind === 'observer').length, 0,
-    'no row has role=observer OR kind=observer');
+  assert.deepEqual(rosterViolations(rows), [],
+    'no row has role=observer, and kind=observer only with role participant/coordinator');
+});
+
+test('#2461 mutacao: rosterViolations reprova visitante, curador e revisor externos', () => {
+  const ok = [{ role: 'participant', kind: 'observer' }, { role: 'coordinator', kind: 'observer' }, { role: 'researcher', kind: 'volunteer' }];
+  assert.deepEqual(rosterViolations(ok), []);
+  for (const bad of [{ role: 'observer', kind: 'observer' }, { role: 'observer', kind: 'workgroup_member' },
+    { role: 'curator', kind: 'observer' }, { role: 'reviewer', kind: 'observer' }, { role: 'leader', kind: 'observer' }]) {
+    assert.equal(rosterViolations([...ok, bad]).length, 1, `deveria reprovar ${bad.kind} x ${bad.role}`);
+  }
 });
 
 test('roster participants-only DB: single-source propagation — get_tribe_stats(8) == digest == canonical view', { skip: svcGated ? false : skipMsg }, async () => {

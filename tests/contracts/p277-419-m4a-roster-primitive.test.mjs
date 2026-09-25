@@ -75,7 +75,10 @@ test('M4-A behavioural: tribe 8 roster = 5, EXCLUDES the observer-kind curator R
   assert.equal(Number(count), await rosterViewCount(sb, initId), 'helper count == distinct person over the canonical view (single source)');
   assert.ok(!rows.some((r) => r.name === 'Roberto Macêdo'),
     'the observer-kind curator Roberto (role=curator/kind=observer) is EXCLUDED — observers are not participating members');
-  assert.equal(rows.filter((r) => r.role === 'observer' || r.kind === 'observer').length, 0, 'no observer rows (role OR kind)');
+  // #2461: kind=observer (externo, ADR-0131) entra so como participant/coordinator.
+  assert.equal(rows.filter((r) => r.role === 'observer'
+    || (r.kind === 'observer' && !['participant', 'coordinator'].includes(r.role))).length, 0,
+    'no observer role, and observer kind only as external participant');
 });
 
 test('M4-A behavioural: helper count == COUNT(DISTINCT person) over the view, per initiative', { skip: dbGated ? false : skipMsg }, async () => {
