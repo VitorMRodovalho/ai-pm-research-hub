@@ -1,0 +1,56 @@
+name: Sentinela banco x main (#2477)
+
+# #2477: em 25/09/2026 uma lane aplicou 2 migrations direto no banco compartilhado, e o drift
+# (banco a frente da main) so foi achado ~1h depois, por acaso. O `check-invariants` ja tinha a
+# checagem, mas roda uma vez por dia (07:00 UTC) e junto com outras que estavam vermelhas por
+# outro motivo, o que esconde o sinal.
+#
+# Esta sentinela roda de hora em hora e faz UMA coisa: compara as versoes em
+# supabase_migrations.schema_migrations com os arquivos de supabase/migrations/ da main. Falha
+# quando o banco esta a frente. A saida traz so VERSOES (nunca nome de funcao ou de migration),
+# porque o log de CI de repositorio publico e publico, e uma correcao de seguranca pode estar
+# aplicada no banco antes de o advisory ser publicado.
+#
+# Somente leitura: nao entra na faixa do banco (wait-for-db-lane), que serializa quem ESCREVE.
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: db-drift-sentinel
+  cancel-in-progress: false
+
+jobs:
+  sentinela:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Banco a frente da main?
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DATA_INVARIANT_GATE: '1'
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY ausente: a sentinela nao mede nada sem ela."
+            exit 1
+          fi
+          node --test --test-name-pattern "missing-file drift vs p224 baseline" \
+            tests/contracts/rpc-migration-coverage.test.mjs
