@@ -57,7 +57,9 @@ const sb = () => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistS
 const BASELINE = [
   // b7418d4d (volunteer × researcher, desde 2026-09-10) saiu em 23/09: ganhou login as 17:05 UTC.
   // A catraca reprovou a main pedindo exatamente isto, que e o comportamento desenhado.
-  { opaco: '76a38ad4', motivo: 'workgroup_coordinator × leader (com iniciativa)', desde: '2026-09-19' },
+  // 76a38ad4 (workgroup_coordinator × leader, desde 2026-09-19) saiu em 25/09: recebeu o convite
+  // de acesso do botao da ficha (member.access_invite_sent), que so passou a contar como porta
+  // quando o detector aprendeu a le-lo (#2461).
 ];
 const CONHECIDOS = new Set(BASELINE.map((b) => b.opaco));
 
@@ -93,6 +95,11 @@ async function lerMembros() {
   const { data: claims, error: e3 } = await c
     .from('email_verification_pending').select('target_member_id, purpose').eq('purpose', 'account_claim');
   assert.ifError(e3);
+  // #2461: o convite do GP (admin_send_member_access, #2427) registra o ENVIO no audit log, nao em
+  // email_verification_pending. Sem ler isto, todo convidado pelo botao da ficha aparecia travado.
+  const { data: convites, error: e4 } = await c
+    .from('admin_audit_log').select('target_id').eq('action', 'member.access_invite_sent');
+  assert.ifError(e4);
 
   const comIniciativa = new Map();
   const voluntario = new Map();
@@ -100,7 +107,7 @@ async function lerMembros() {
     if (e.initiative_id) comIniciativa.set(e.person_id, (comIniciativa.get(e.person_id) ?? 0) + 1);
     if (e.kind === 'volunteer') voluntario.set(e.person_id, (voluntario.get(e.person_id) ?? 0) + 1);
   }
-  const comClaim = new Set(claims.map((c2) => c2.target_member_id));
+  const comClaim = new Set([...claims.map((c2) => c2.target_member_id), ...convites.map((v) => v.target_id)]);
 
   return membros.map((m) => ({
     id: m.id,
@@ -128,6 +135,8 @@ test('#2427 catraca — nenhum vinculo ativo NOVO sem porta de entrada',
       'controle positivo: ninguem com vinculo ligado a iniciativa — a juncao por person_id nao casa');
     assert.ok(membros.some((m) => m.vinculos_voluntario > 0),
       'controle positivo: ninguem com vinculo de voluntario — o campo kind nao esta sendo lido');
+    assert.ok(membros.some((m) => m.auth_id === null && m.tem_claim),
+      'controle positivo: ninguem sem login com convite — o eixo do convite nao esta sendo lido');
 
     const achados = travados(membros);
     const novos = achados.filter((t) => !CONHECIDOS.has(t.opaco));
@@ -173,19 +182,22 @@ test('#2427 mutacao — o detector reprova cada forma do defeito, pela MESMA fun
   // REAL e confirma que ela e sinalizada como NOVA. Sem isto, o `deepEqual(novos, [])` do teste
   // vivo estaria verde e nunca teria sido exercido: provar que `travados()` classifica nao prova
   // que a catraca acusa.
+  // Baseline FICTICIO: o real pode estar vazio, e a catraca precisa ser exercida mesmo assim.
+  const BASE_F = [{ opaco: '8e8e8e8e', desde: '2026-09-01' }];
+  const CONHECIDOS_F = new Set(BASE_F.map((b) => b.opaco));
   const achadosFicticios = [
-    ...BASELINE,                                        // os ja conhecidos
+    ...BASE_F,                                          // os ja conhecidos
     { opaco: '9f9f9f9f', desde: '2026-09-23' }, // uma pessoa NOVA travada
   ];
-  const novosDetectados = achadosFicticios.filter((t) => !CONHECIDOS.has(t.opaco));
+  const novosDetectados = achadosFicticios.filter((t) => !CONHECIDOS_F.has(t.opaco));
   assert.deepEqual(novosDetectados, [{ opaco: '9f9f9f9f', desde: '2026-09-23' }],
     'catraca: pessoa nova travada tem de aparecer como NOVA, nao se diluir no baseline');
 
   // E o outro sentido: se alguem do baseline sair da lista, a catraca tem de PEDIR o encolhimento.
-  const semUmDoBaseline = BASELINE.slice(1);
+  const semUmDoBaseline = BASE_F.slice(1);
   const vivosFicticios = new Set(semUmDoBaseline.map((t) => t.opaco));
-  const resolvidos = [...CONHECIDOS].filter((o) => !vivosFicticios.has(o));
-  assert.deepEqual(resolvidos, [BASELINE[0].opaco],
+  const resolvidos = [...CONHECIDOS_F].filter((o) => !vivosFicticios.has(o));
+  assert.deepEqual(resolvidos, [BASE_F[0].opaco],
     'catraca: quem foi resolvido tem de ser cobrado para sair do baseline');
 
   // Mutacao 4 — o detector nao pode passar por vacuidade com lista vazia.
