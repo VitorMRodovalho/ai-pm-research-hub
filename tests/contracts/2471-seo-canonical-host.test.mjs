@@ -25,7 +25,15 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 const LAYOUT = 'src/layouts/BaseLayout.astro';
 
 // Drop `//` line comments and `<!-- -->` so a comment that NAMES the pattern cannot satisfy it.
-const stripComments = (s) => s.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
+// Repeat until stable: one pass over `<!<!---->--` would leave a new `<!--` behind.
+const stripComments = (s) => {
+  let prev;
+  do {
+    prev = s;
+    s = s.replace(/<!--[\s\S]*?-->/g, '');
+  } while (s !== prev);
+  return s.replace(/^\s*\/\/.*$/gm, '');
+};
 
 test('BaseLayout: one SEO url, derived from SEO_CANONICAL_ORIGIN + request path, feeds BOTH canonical and og:url', () => {
   const src = stripComments(read(LAYOUT));
