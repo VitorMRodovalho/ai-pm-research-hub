@@ -6,8 +6,9 @@
  *
  * O CASO (#2460): nao havia caminho oficial para o GP criar alguem que nao passou pela selecao.
  *  - A tela /admin/member/new fazia INSERT direto em members: sem persons, sem filiacao de
- *    capitulo. Medido em 25/09/2026: 2 membros de 27/08 sem person_id (sem person, ninguem pode
- *    ser vinculado a iniciativa).
+ *    capitulo (sem person, ninguem pode ser vinculado a iniciativa). Os 2 membros sem person_id
+ *    que existem hoje NAO vieram da tela: sao fixtures sinteticas do #1636 (27/08) que
+ *    sobreviveram a limpeza. O comentario da migration atribui os 2 a tela, e esta errado.
  *  - Os convidados do Hackathon (24/09) entraram por DML manual; faltou a filiacao primaria e a
  *    invariante U (severidade high) derrubou o check-invariants da #2462.
  *
