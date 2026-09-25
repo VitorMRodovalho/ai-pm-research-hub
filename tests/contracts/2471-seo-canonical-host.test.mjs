@@ -9,7 +9,7 @@
  *     `<link rel="canonical">` and `og:url` use it (condition bound to result);
  *   - no page emits its own og:url or canonical (5 pages used to add a SECOND og:url
  *     pointing at the OAuth host);
- *   - robots.txt points crawlers at the sitemap on the SEO host.
+ *   - the app does NOT serve its own robots.txt (see the last test for why).
  * astro.config `site` (sitemap + feeds) is guarded in canonical-host-centralization.
  *
  * Offline-only (static source assertions); no DB gating.
@@ -17,7 +17,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 const ROOT = process.cwd();
@@ -63,10 +63,14 @@ test('no page under src/ emits its own og:url or rel=canonical (BaseLayout is th
   assert.deepEqual(offenders, [], `og:url/canonical must come only from ${LAYOUT}. Offenders:\n  ${offenders.join('\n  ')}`);
 });
 
-test('robots.txt: served by the app, Sitemap line built from SEO_CANONICAL_ORIGIN', () => {
-  const src = stripComments(read('src/pages/robots.txt.ts'));
-  assert.match(src, /import \{ SEO_CANONICAL_ORIGIN \} from ['"]\.\.\/lib\/canonical['"]/, 'imports the SEO origin');
-  assert.match(src, /`Sitemap: \$\{SEO_CANONICAL_ORIGIN\}\/sitemap-index\.xml`/,
-    'Sitemap line = SEO origin + /sitemap-index.xml');
-  assert.doesNotMatch(src, /\bCANONICAL_ORIGIN\b(?<!SEO_CANONICAL_ORIGIN)/, 'never the OAuth/MCP origin');
+// #2471 (regression measured live on 2026-09-25): an app-served robots.txt REPLACED the
+// Cloudflare-managed one that the hosts served while the app had none (it carried the
+// "content signals" about AI use). Cloudflare only prepends its settings when the zone's
+// "Bot Preference Sync" is on, and it was off. GP decision: keep the managed file and give
+// the sitemap to Search Console. Re-adding a robots route is a policy change: decide it
+// first (turn Bot Preference Sync on, or declare the signals), then drop this guard.
+test('robots.txt: the app does NOT serve one, so the Cloudflare-managed file stays in effect', () => {
+  const offenders = readdirSync(resolve(ROOT, 'src/pages')).filter((n) => /^robots\.txt(\.|$)/.test(n));
+  assert.deepEqual(offenders, [], `src/pages must not define robots.txt: ${offenders.join(', ')}`);
+  assert.ok(!existsSync(resolve(ROOT, 'public/robots.txt')), 'public/robots.txt must not exist either');
 });
