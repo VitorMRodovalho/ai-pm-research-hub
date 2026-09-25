@@ -83,6 +83,13 @@ export const SEO_CANONICAL_ORIGIN = `https://${SEO_CANONICAL_HOST}`;
 /** Host printed on certificate PDFs for the verification link (chapter-institutional). */
 export const CERT_VERIFY_HOST = "nucleoia.pmigo.org.br";
 
+/**
+ * #2485: the hackathon site is external (its own Worker). The /hackathon entry route redirects here;
+ * the redirect status lives in src/lib/hackathon.js. Measured before pointing: 2 DNS records, HTTP 200.
+ */
+export const HACKATHON_HOST = "hackathon.nucleoia.org";
+export const HACKATHON_URL = `https://${HACKATHON_HOST}/`;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HOW `nucleoia.pmigo.org.br` IS SERVED (since 2026-09-25, #2471)
 // (measured on the live hosts unless a line says otherwise)
