@@ -10,6 +10,7 @@ import MilestoneCelebration from '../components/milestones/MilestoneCelebration'
 import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
 import { ACTIVE_TRIBE_COUNT } from '../data/tribes';
 import { getPlaylistUrl } from '../data/youtube-playlists';
+import { SEO_CANONICAL_ORIGIN } from '../lib/canonical';
 
 interface Props {
   title?: string;
@@ -36,6 +37,11 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
 // relativo); Astro.url carrega o host canônico em runtime.
 const ogImage = new URL('/assets/og-image.png', Astro.url).href;
 
+// #2471: the same page answers on several hosts; search engines and link previews
+// must see ONE address. canonical and og:url point at the SEO host (+ this path,
+// without the query string), whatever host served the request.
+const seoCanonicalUrl = new URL(Astro.url.pathname, SEO_CANONICAL_ORIGIN).href;
+
 // Global i18n bundle for React islands in Nav/Layout (GlobalSearch, etc.)
 import { buildPageI18n } from '../i18n/pageI18n';
 const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lang);
@@ -53,7 +59,8 @@ const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lan
   <meta property="og:type" content="website" />
   <meta property="og:title" content={title} />
   <meta property="og:description" content={description} />
-  <meta property="og:url" content={Astro.url.href} />
+  <link rel="canonical" href={seoCanonicalUrl} />
+  <meta property="og:url" content={seoCanonicalUrl} />
   <meta property="og:site_name" content="Núcleo IA & GP" />
   <meta property="og:locale" content={lang === 'en-US' ? 'en_US' : lang === 'es-LATAM' ? 'es_419' : 'pt_BR'} />
   <meta property="og:image" content={ogImage} />

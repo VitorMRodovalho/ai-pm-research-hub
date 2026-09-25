@@ -27,7 +27,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { isNoStorePath, isNoIndexPath } from '../../src/lib/securityHeaders.ts';
+import {
+  isNoStorePath,
+  isNoIndexPath,
+  applySecurityHeaders,
+  HSTS_MAX_AGE_SECONDS,
+} from '../../src/lib/securityHeaders.ts';
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -109,6 +114,28 @@ test('parity: the other global headers match between _headers /* and the SSOT', 
     assert.equal(headers['/*'][name], value, `_headers /* ${name}`);
     assert.match(SSOT, new RegExp(`["']${esc(name)}["']\\s*:\\s*["']${esc(value)}["']`),
       `securityHeaders.ts declares ${name}: ${value}`);
+  }
+});
+
+// #2471: HSTS ramp. The value must be a bare `max-age=N` (no includeSubDomains, no
+// preload: the header is sent by every host the app answers on, and preload is a
+// one-way door), N must be one of the ramp steps, and BOTH sides must agree. The
+// SSR side is proven by EXERCISING applySecurityHeaders, not by reading its text.
+const HSTS_RAMP = [300, 604800, 31536000];
+test('HSTS: SSR response carries the ramp value, _headers agrees, never includeSubDomains/preload', () => {
+  assert.ok(HSTS_RAMP.includes(HSTS_MAX_AGE_SECONDS),
+    `HSTS_MAX_AGE_SECONDS=${HSTS_MAX_AGE_SECONDS} must be a ramp step (${HSTS_RAMP.join(' → ')})`);
+
+  const out = applySecurityHeaders(new Response('ok'), '/');
+  const ssr = out.headers.get('Strict-Transport-Security');
+  assert.equal(ssr, `max-age=${HSTS_MAX_AGE_SECONDS}`, 'SSR response carries exactly max-age=<ramp step>');
+
+  const file = headers['/*']['Strict-Transport-Security'];
+  assert.equal(file, ssr, '_headers /* Strict-Transport-Security must byte-equal the SSR value');
+
+  for (const v of [ssr, file]) {
+    assert.doesNotMatch(v, /includeSubDomains/i, 'no includeSubDomains in this phase');
+    assert.doesNotMatch(v, /preload/i, 'never preload');
   }
 });
 

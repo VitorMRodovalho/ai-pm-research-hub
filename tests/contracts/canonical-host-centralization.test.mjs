@@ -86,12 +86,40 @@ for (const [file, importRe] of CRITICAL) {
 }
 
 // ── astro.config.mjs (root, outside src/) also sources site from the SSOT ─────────
-test('astro.config.mjs: site comes from CANONICAL_ORIGIN, not a literal', () => {
+// #2471: `site` feeds the sitemap and RSS (SEO surfaces), so it follows the SEO
+// canonical host, not the OAuth/MCP CANONICAL_HOST. Still from the SSOT, never a literal.
+test('astro.config.mjs: site comes from SEO_CANONICAL_ORIGIN, not a literal', () => {
   const src = read('astro.config.mjs');
   assert.ok(src, 'astro.config.mjs exists');
   assert.ok(!src.includes(HOST), 'no host literal in astro.config.mjs');
+  assert.ok(!SEO_HOST_RE.test(src), 'no SEO host literal in astro.config.mjs');
   assert.match(src, /from ['"]\.\/src\/lib\/canonical['"]/, 'imports canonical module');
-  assert.match(src, /site:\s*CANONICAL_ORIGIN/, 'site uses CANONICAL_ORIGIN');
+  assert.match(src, /site:\s*SEO_CANONICAL_ORIGIN\b/, 'site uses SEO_CANONICAL_ORIGIN');
+});
+
+// ── #2471: the SEO host literal is centralized the same way ───────────────────────
+// `nucleoia.org` (but not `nucleoia.org.br`-style suffixes) may appear only in the SSOT.
+const SEO_HOST_RE = /nucleoia\.org(?![.\w-])/;
+test('canonical.ts: exports SEO_CANONICAL_HOST + SEO_CANONICAL_ORIGIN derived from it', () => {
+  const src = read(MODULE_PATH);
+  assert.match(src, /export const SEO_CANONICAL_HOST\s*=\s*"[^"]+"/, 'exports SEO_CANONICAL_HOST');
+  assert.match(src, /SEO_CANONICAL_ORIGIN\s*=\s*`https:\/\/\$\{SEO_CANONICAL_HOST\}`/, 'SEO ORIGIN derives from SEO HOST');
+});
+test('seo-host: no other file under src/ hardcodes the SEO host literal', () => {
+  const offenders = [];
+  const walk = (dir) => {
+    for (const name of readdirSync(dir)) {
+      if (name === 'node_modules' || name === 'dist') continue;
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) { walk(full); continue; }
+      if (!/\.(ts|tsx|astro|mjs|js|jsx)$/.test(name)) continue;
+      const rel = full.slice(ROOT.length + 1);
+      if (rel === MODULE_PATH) continue;
+      if (SEO_HOST_RE.test(readFileSync(full, 'utf8'))) offenders.push(rel);
+    }
+  };
+  walk(resolve(ROOT, 'src'));
+  assert.deepEqual(offenders, [], `SEO host literal must come from ${MODULE_PATH}. Offenders:\n  ${offenders.join('\n  ')}`);
 });
 
 // ── The OAuth issuer/resource identifiers stay absolute (origin, not bare host) ───

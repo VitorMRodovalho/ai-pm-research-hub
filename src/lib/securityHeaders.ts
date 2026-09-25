@@ -50,19 +50,31 @@ export const CSP =
   "base-uri 'self'";
 
 /**
+ * HSTS, phase 1 of a ramp (GP decision, 2026-09-25, #2471): 300 s now, then 1 week
+ * (604800) once observed, then 1 year (31536000). Change ONLY the number, and
+ * change `public/_headers` in the same PR (parity test).
+ *
+ * WHY no `includeSubDomains`: HSTS is sent by every host the app answers on, and
+ * from a host at a zone apex it would pin every sibling subdomain of that zone. Each
+ * host is forced to https on its own (Cloudflare "Always Use HTTPS" on the Núcleo
+ * zones; a Redirect Rule scoped to the OAuth/MCP host on the personal zone, so the
+ * other sites of that zone are untouched).
+ * WHY no `preload`: preload is a one-way door (removal takes months), and the
+ * OAuth/MCP host (CANONICAL_HOST) stays co-hosted FOREVER for already-issued
+ * certificate verification URLs and live MCP clients.
+ */
+export const HSTS_MAX_AGE_SECONDS = 300;
+export const HSTS_VALUE = `max-age=${HSTS_MAX_AGE_SECONDS}`;
+
+/**
  * Global security headers applied to EVERY SSR response (mirrors `_headers /*`).
- * HSTS is intentionally NOT here — Cloudflare already terminates TLS +
- * http→https-redirects, and app-level HSTS with includeSubDomains would pin
- * EVERY *.vitormr.dev subdomain; vitormr.dev must stay co-hosted FOREVER for
- * already-issued cert-PDF verification URLs + live MCP clients. Add it
- * deliberately, with a short max-age first and NO `preload`, if/when we decide
- * to (separate PR, not #855).
  */
 export const GLOBAL_SECURITY_HEADERS: Readonly<Record<string, string>> = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Strict-Transport-Security": HSTS_VALUE,
   "Content-Security-Policy": CSP,
 };
 
