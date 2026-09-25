@@ -44,7 +44,7 @@ test('#2146 estatico: nada alem da ordenacao muda', () => {
 });
 
 test(dbGated ? '#2146 vivo: a RPC devolve o rascunho de MAIOR version_number' : `SKIP: ${skipMsg}`,
-  { skip: dbGated ? false : skipMsg }, async () => {
+  { skip: dbGated ? false : skipMsg }, async (t) => {
   const sb = createClient(URL_, KEY, { auth: { persistSession: false } });
 
   // Escolhe, por DADO, um documento que exerca o caso: corrente + DOIS ou mais rascunhos acima.
@@ -66,8 +66,14 @@ test(dbGated ? '#2146 vivo: a RPC devolve o rascunho de MAIOR version_number' : 
   }
 
   // CONTROLE: sem um documento com DOIS rascunhos acima, este teste nao distingue ASC de DESC.
-  assert.ok(alvo, 'nenhum documento com 2+ rascunhos abertos acima da corrente: o caso que ' +
-    'separa ASC de DESC nao existe na base, e o guard passaria por vacuidade');
+  // #2479: o caso vivia so no TAP, e a recirculacao de 25/09 removeu as minutas. Sem o caso na base,
+  // o teste e PULADO com o motivo (visivel no resumo), nunca aprovado por vacuidade; a ordenacao
+  // continua travada pelos testes estaticos acima, sobre a captura mais recente.
+  if (!alvo) {
+    t.skip('nenhum documento com 2+ rascunhos abertos acima da corrente: o caso que separa ASC de ' +
+      'DESC nao existe na base hoje (estado de negocio, nao regressao)');
+    return;
+  }
 
   const { data: rpc, error: e2 } = await sb.rpc('get_next_draft_version',
     { p_version_id: alvo.doc.current_version_id });

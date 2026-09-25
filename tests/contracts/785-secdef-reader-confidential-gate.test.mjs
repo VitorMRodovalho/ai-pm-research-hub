@@ -125,7 +125,8 @@ const ALLOWLIST = {
   _work_initiative_id: 'helper (resolves an initiative uuid; no content returned)',
   rls_can_write_event: 'authority helper (boolean write-gate; no content returned)',
   // -- gp-only / analytics-gated (entry gate = manage_platform/superadmin/view_internal_analytics; GP sees confidential anyway)
-  _audit_merit_transfer_on_completed_cards: 'gp-only (RAISE unless manage_platform/service_role) — audit helper (board-flagged, pre-existing)',
+  // _audit_merit_transfer_on_completed_cards saiu daqui: desde a mig 20260925183649 so service_role
+  // executa, e a varredura deixou de sinaliza-la.
   admin_get_anomaly_report: 'gp-only (manage_platform entry gate)',
   admin_list_members: 'analytics-gated (view_internal_analytics entry gate; perm ordinary members lack)',
   broadcast_history: 'comms-analytics gate (can_view_comms_analytics) — empty for ordinary members; 0 confidential broadcasts',

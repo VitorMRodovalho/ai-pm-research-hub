@@ -49,8 +49,10 @@ const CORRIGIDAS = [
  * ZERO linhas ligadas ao board confidencial em 15/08/2026 — contencao por dado, nao por
  * estrutura. A lista so pode ENCOLHER: o teste falha se aparecer uma tabela nova sem gate.
  */
+// meeting_action_items saiu da base na mig 20260925183649 (RESTRICTIVE com
+// rls_can_see_artifact_link pelo evento e rls_can_see_item pelo card).
 const SEM_GATE_BASELINE = new Set([
-  'board_sla_config', 'content_products', 'event_showcases', 'meeting_action_items',
+  'board_sla_config', 'content_products', 'event_showcases',
   'partner_cards', 'pilots', 'public_publications', 'publication_submission_events',
   'publication_submissions', 'webinars',
 ]);

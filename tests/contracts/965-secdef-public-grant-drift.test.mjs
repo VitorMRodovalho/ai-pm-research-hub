@@ -103,7 +103,9 @@ const ALLOWLIST = new Set([
   //    Ou seja, a correcao que a propria nota de #1551 pedia ("the fix is a body derivation, not
   //    an ACL change") foi feita, e o spoofing de p_auth_user_id deixou de existir: o valor da
   //    sessao vence o que o chamador manda. `anon` MANTEM EXECUTE de proposito. ──
-  '_audit_secdef_initiative_reader_gates',
+  // ── Ratcheted DOWN (mig 20260925183649): _audit_secdef_initiative_reader_gates perdeu
+  //    PUBLIC/anon/authenticated. O unico chamador fora do banco e o guard da #785, que usa a
+  //    service_role key; a funcao continua executavel por service_role. ──
   'register_video_screening',
 ]);
 
