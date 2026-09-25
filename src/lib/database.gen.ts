@@ -30296,6 +30296,18 @@ export type Database = {
         Args: { p_source: string; p_started_at: string }
         Returns: Json
       }
+      admin_create_member: {
+        Args: {
+          p_chapter_code?: string
+          p_email: string
+          p_initiative_id?: string
+          p_kind?: string
+          p_name: string
+          p_reason?: string
+          p_role?: string
+        }
+        Returns: Json
+      }
       admin_deactivate_member: {
         Args: { p_member_id: string; p_reason: string }
         Returns: Json
