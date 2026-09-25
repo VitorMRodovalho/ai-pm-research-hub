@@ -38,6 +38,9 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 
 const ROOT = process.cwd();
+// #2461: kind='observer' com papel de participacao e participante EXTERNO (ADR-0131), conta e nao e
+// visitante. Visitante e o observer com qualquer outro papel.
+const VISITOR_EXCLUDED_ROLES = '(participant,coordinator)';
 const MIGRATIONS = join(ROOT, 'supabase/migrations');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
@@ -67,7 +70,8 @@ test('A · a view v_initiative_roster continua EXCLUINDO observer', { skip: !dbG
   // apareceria nela. Isso sobrevive a uma reescrita que mude a forma e preserve o comportamento.
   const { data: vis, error: e2 } = await sb()
     .from('engagements').select('person_id, initiative_id')
-    .eq('status', 'active').eq('kind', 'observer').not('initiative_id', 'is', null).limit(1);
+    .eq('status', 'active').eq('kind', 'observer').not('role', 'in', VISITOR_EXCLUDED_ROLES)
+    .not('initiative_id', 'is', null).limit(1);
   assert.equal(e2, null);
   if (!vis?.length) return; // sem observer ativo, esta camada não tem o que medir
 
@@ -104,7 +108,7 @@ test('C · o visitante APARECE no roster, marcado', { skip: !dbGated && skipMsg 
   const c = sb();
   const { data: vis, error } = await c.from('engagements')
     .select('person_id, initiative_id').eq('status','active').eq('kind','observer')
-    .not('initiative_id','is',null).limit(1);
+    .not('role','in',VISITOR_EXCLUDED_ROLES).not('initiative_id','is',null).limit(1);
   assert.equal(error, null);
   if (!vis?.length) return; // nenhuma visita ativa: nada a medir
 
@@ -121,7 +125,7 @@ test('D · e NÃO entra na contagem nem ocupa vaga', { skip: !dbGated && skipMsg
   const c = sb();
   const { data: vis } = await c.from('engagements')
     .select('person_id, initiative_id').eq('status','active').eq('kind','observer')
-    .not('initiative_id','is',null).limit(1);
+    .not('role','in',VISITOR_EXCLUDED_ROLES).not('initiative_id','is',null).limit(1);
   if (!vis?.length) return;
   const iniciativa = vis[0].initiative_id;
 
