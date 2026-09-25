@@ -202,6 +202,21 @@ const sb = SUPABASE_URL && SRK ? createClient(SUPABASE_URL, SRK, { auth: { persi
 const CUTOFF = '2026-08-09T00:00:00Z';
 
 /**
+ * #2463: as ações que os crons de seleção gravam em `admin_audit_log`, DERIVADAS das migrations, no
+ * mesmo formato do antigo `LIKE 'selection.%cron_run%'`. A consulta por IGUALDADE usa
+ * `idx_audit_log_action`; o LIKE não usava índice nenhum para `action` e varria por data, filtrando
+ * linha a linha desde o CUTOFF. Medido em 25/09: 10,6 s contra 0,12 s, para as MESMAS 149 linhas, e
+ * o LIKE só piorava, porque a janela cresce a cada dia. A sentinela no fim do bloco reprova se o log
+ * mostrar uma ação de cron que não está aqui, então a lista não fica cega sozinha.
+ */
+const CRON_RUN_ACTIONS = [...new Set(
+  readdirSync('supabase/migrations')
+    .filter((f) => f.endsWith('.sql'))
+    .flatMap((f) => [...readFileSync(join('supabase/migrations', f), 'utf8')
+      .matchAll(/'(selection\.[a-z_]*cron_run[a-z_]*)'/g)].map((m) => m[1])),
+)].sort();
+
+/**
  * Operações MANUAIS de GP, conhecidas e autorizadas, que produzem a mesma digital que este guard
  * caça. Não são regressão da suíte: são despachos reais decididos por uma pessoa.
  *
@@ -382,10 +397,11 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
     const novas = (tentativas ?? []).filter((t) => !OPERACOES_MANUAIS_CONHECIDAS.has(t.id));
     if (!novas.length) return;   // nenhuma linha nova: é o estado esperado depois da correção
 
+    assert.ok(CRON_RUN_ACTIONS.length > 0, 'nenhuma ação de cron derivada das migrations: a correlação ficaria vazia');
     const { data: crons, error: e1 } = await sb
       .from('admin_audit_log')
       .select('created_at')
-      .like('action', 'selection.%cron_run%')
+      .in('action', CRON_RUN_ACTIONS)
       .gte('created_at', new Date(Date.parse(CUTOFF) - 120_000).toISOString());
     assert.ifError(e1);
     const carimbos = (crons ?? []).map((c) => Date.parse(c.created_at));
@@ -415,6 +431,25 @@ describe('#1636 B — nenhuma escrita nova de teste cai em candidatura real', {
       'candidatura REAL recebeu tentativa de gate sem ator e sem cron que a explique — ' +
         'algum teste voltou a escolher alvo por predicado sobre produção',
     );
+  });
+
+  // #2463: a correlação acima consulta por IGUALDADE sobre CRON_RUN_ACTIONS. Esta sentinela é o que
+  // impede a lista de envelhecer calada: se um cron passar a gravar uma ação que as migrations não
+  // declaram como literal (nome montado em runtime, por exemplo), ela aparece aqui e reprova. A janela
+  // é móvel, de 7 dias, então o custo não cresce com o tempo (medido em 25/09: 0,38 s).
+  it('toda ação de cron de seleção vista no log na última semana está no conjunto derivado das migrations', async () => {
+    const desde = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const { data, error } = await sb
+      .from('admin_audit_log')
+      .select('action')
+      .like('action', 'selection.%cron_run%')
+      .gte('created_at', desde);
+    assert.ifError(error);
+    const vistas = [...new Set((data ?? []).map((r) => r.action))].sort();
+    const fora = vistas.filter((a) => !CRON_RUN_ACTIONS.includes(a));
+    assert.deepEqual(fora, [],
+      `ação de cron no log que as migrations não declaram como literal: ${fora.join(', ')} — ` +
+        'a correlação por igualdade não a veria; declare o literal ou ajuste a derivação');
   });
 
   it('o allowlist de operações manuais fica em sincronia (sem entradas extintas)', async () => {
