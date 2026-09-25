@@ -63,7 +63,17 @@ CORRETO. A `main` **não é exceção**.
   3. DDL aplicada com a `main` ainda sem o arquivo ⇒ **3 alertas do CI Monitor** e ~1h de produção
      desalinhada;
   4. a quarta foi **evitada** aplicando com a fila vazia — custo zero.
-- **Um hook `PreToolUse` pergunta** (`.claude/settings.json`, matcher `mcp__*__apply_migration`):
+- **Só a sessão ORQUESTRADORA escreve no banco (#2477, decisão do GP em 25/09/2026).** O hook
+  `.claude/hooks/db-write-gate.py` **nega** `apply_migration` e `execute_sql` com escrita neste
+  projeto a toda sessão cujo `session_id` não é o designado em
+  `~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador`, esteja ela numa lane ou no clone
+  principal; sem designação, nega a todas. Leitura passa. Uma cópia roda também como hook de
+  **usuário** (`~/.claude/settings.json`), para cobrir lanes em branch antiga. Lane prepara o pacote
+  (o `.sql` e a verificação) e manda para a orquestradora. Trocar a orquestradora é decisão do GP:
+  `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`. Origem: em 25/09 duas migrations
+  foram aplicadas por uma sessão que não era a orquestradora e rodava no **clone principal**, e por
+  isso um gate por diretório não a teria barrado.
+- **Para a orquestradora, o mesmo hook pergunta** quando o banco está ocupado (matcher `mcp__*__apply_migration`):
   ele devolve `permissionDecision: ask` e **nomeia qual das duas condições disparou**, contando PRs
   abertas E jobs de banco em voo. ⚠️ A primeira versão do hook (17/09) consultava **só** a fila de
   PRs, e por isso teria liberado uma DDL em 18/09 com dois jobs de banco rodando na `main`: **o

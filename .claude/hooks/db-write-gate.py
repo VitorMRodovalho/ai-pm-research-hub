@@ -1,24 +1,36 @@
 #!/usr/bin/env python3
-"""PreToolUse gate for writes to the SHARED database (apply_migration, execute_sql).
+"""PreToolUse gate: only the designated ORCHESTRATOR session writes to the shared database.
 
-WHY (2026-09-25): a lane session, running in its own git worktree, applied two RLS migrations
-straight to production. The previous hook only ASKED, and only when PRs were open or DB jobs were
-running; with an empty queue it let the DDL through in silence, and nothing checked WHO was asking.
-The rule was already written ("a lane prepara, a main aplica"); it was not mechanical.
+WHY (2026-09-25, #2477): two migrations went to production from a session that was NOT the
+orchestrator. It ran in the primary clone (not in a lane worktree), had opened its own lane, and
+followed a prompt written by a third session that told it to apply DDL "when the queue is empty".
+The old hook only ASKED, and only with a busy queue. A first version of this gate decided by
+directory (lane worktree = deny) and would NOT have caught it: that session's cwd was the primary
+clone. The discriminator that works is the SESSION, so this gate asks "is this the designated
+orchestrator?", wherever the session runs.
 
-Decisions:
-  * lane (the session's cwd is a LINKED worktree: git-dir != git-common-dir):
-      - apply_migration                        -> deny
-      - execute_sql with a write/DDL statement -> deny
-      - execute_sql read-only                  -> allow (no output)
-  * main clone:
-      - apply_migration -> ask when PRs are open or DB jobs are in flight (the old check), else allow
-      - execute_sql     -> allow (the database rules in .claude/rules/ still apply)
+Scope: writes to THIS project's database only.
+  * mcp__supabase__*            -> the project-level server in .mcp.json; barred unless the nearest
+                                   .mcp.json above cwd names ANOTHER project_ref (the user-level copy of
+                                   this gate runs in every project of the portfolio)
+  * mcp__claude_ai_Supabase__*  -> only when tool_input.project_id is this project
+Decisions for apply_migration, and for execute_sql carrying a write/DDL statement:
+  * designated orchestrator -> apply_migration asks when PRs are open or DB jobs are in flight
+                               (the old queue check), else allow; execute_sql allow
+  * any other session       -> deny, naming the orchestrator and how the GP re-designates
+  * no orchestrator on file -> deny (fail-closed)
+Read-only execute_sql always passes.
 
-Known limit: a SELECT that calls a writing function (`select some_rpc()`) is not detected as a
-write. The gate catches the explicit forms; the rule in CLAUDE.md still covers the rest.
+The designation lives OUTSIDE the repo (public): ORCH_FILE below, first token = session_id. The GP
+designates; `scripts/lane-registry.sh orquestrador <session_id> "<nota>"` writes it.
 
-Env (tests only): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check.
+Known limits: a SELECT that calls a writing function (`select some_rpc()`) is not detected as a
+write, and a quoted identifier spelled like a keyword (`select 1 as "update"`) is taken as one. The
+first is a gap the rule in CLAUDE.md still covers; the second is a conservative false positive, and
+it is the probe used to exercise this gate live without writing anything. This is a
+guardrail against ACCIDENTS between sessions of the same user, not a security boundary.
+
+Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; LANE_ORCH_FILE overrides ORCH_FILE.
 """
 import json
 import os
@@ -26,11 +38,10 @@ import re
 import subprocess
 import sys
 
-LANE_REASON = (
-    "LANE NAO ESCREVE NO BANCO COMPARTILHADO. Esta sessao roda num worktree de lane ({cwd}). "
-    "A regra do projeto e: a lane PREPARA (o .sql, o pacote de verificacao) e AVISA a sessao "
-    "principal, que aplica e commita no mesmo passo. Em 25/09/2026 uma lane aplicou 2 migrations "
-    "de RLS direto em producao e a main ficou inconsistente com o banco. Mande o pacote para a main."
+PROJECT_REF = "ldrfrvwhxsmgaabwmaik"
+ORCH_FILE = os.environ.get(
+    "LANE_ORCH_FILE",
+    os.path.expanduser("~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador"),
 )
 
 WRITE_RE = re.compile(
@@ -53,6 +64,44 @@ def is_write(sql: str) -> bool:
     return bool(WRITE_RE.search(strip_sql_comments(sql or "")))
 
 
+def mcp_json_ref(cwd: str) -> str:
+    """project_ref named by the nearest .mcp.json at or above cwd; "" when none names one."""
+    d = os.path.abspath(cwd or os.getcwd())
+    while True:
+        f = os.path.join(d, ".mcp.json")
+        if os.path.isfile(f):
+            try:
+                m = re.search(r"project_ref=([a-z0-9]+)", open(f, encoding="utf-8").read())
+                return m.group(1) if m else ""
+            except OSError:
+                return ""
+        parent = os.path.dirname(d)
+        if parent == d:
+            return ""
+        d = parent
+
+
+def targets_this_db(tool: str, tool_input: dict, cwd: str) -> bool:
+    if tool.startswith("mcp__supabase__"):
+        ref = mcp_json_ref(cwd)
+        return not ref or ref == PROJECT_REF
+    if tool.startswith("mcp__claude_ai_Supabase__"):
+        return tool_input.get("project_id") == PROJECT_REF
+    return False
+
+
+def orchestrator_id() -> str:
+    try:
+        with open(ORCH_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    return line.split()[0]
+    except OSError:
+        pass
+    return ""
+
+
 def git_path(cwd: str, flag: str) -> str:
     out = subprocess.run(
         ["git", "-C", cwd, "rev-parse", "--path-format=absolute", flag],
@@ -69,7 +118,7 @@ def is_lane(cwd: str) -> bool:
     return bool(git_dir and common and os.path.realpath(git_dir) != os.path.realpath(common))
 
 
-def queue_busy() -> tuple[int, int]:
+def queue_busy() -> tuple:
     if os.environ.get("DB_GATE_SKIP_QUEUE") == "1":
         return 0, 0
 
@@ -88,15 +137,42 @@ def queue_busy() -> tuple[int, int]:
     return prs, jobs
 
 
+def where(cwd: str) -> str:
+    if is_lane(cwd):
+        return "num worktree de LANE"
+    if cwd and os.path.isdir(cwd) and git_path(cwd, "--git-dir"):
+        return "no clone principal"
+    return "fora de um repositorio git"
+
+
+def deny_reason(session_id: str, orch: str, cwd: str) -> str:
+    who = f"a sessao orquestradora designada e {orch[:8]}" if orch else "NENHUMA sessao orquestradora esta designada"
+    return (
+        f"SO A ORQUESTRADORA ESCREVE NO BANCO COMPARTILHADO. Esta sessao ({session_id[:8] or '?'}) NAO e a "
+        f"orquestradora e roda {where(cwd)} ({cwd}); {who}. Prepare o pacote (o .sql, a verificacao) e mande para ela, que aplica "
+        "e commita no mesmo passo. Em 25/09/2026 uma sessao que nao era a orquestradora aplicou 2 "
+        "migrations em producao. Trocar a orquestradora e decisao do GP: "
+        "scripts/lane-registry.sh orquestrador <session_id> \"<nota>\"."
+    )
+
+
 def decide(event: dict):
     tool = event.get("tool_name", "")
-    cwd = event.get("cwd") or os.getcwd()
     tool_input = event.get("tool_input") or {}
-    lane = is_lane(cwd)
+    is_apply = tool.endswith("__apply_migration")
+    is_sql = tool.endswith("__execute_sql")
+    cwd = event.get("cwd") or os.getcwd()
+    if not (is_apply or is_sql) or not targets_this_db(tool, tool_input, cwd):
+        return None, None
+    if is_sql and not is_write(tool_input.get("query", "")):
+        return None, None
 
-    if tool.endswith("__apply_migration"):
-        if lane:
-            return "deny", LANE_REASON.format(cwd=cwd)
+    session_id = event.get("session_id") or ""
+    orch = orchestrator_id()
+    if not orch or session_id != orch:
+        return "deny", deny_reason(session_id, orch, cwd)
+
+    if is_apply:
         prs, jobs = queue_busy()
         if prs > 0 or jobs > 0:
             return "ask", (
@@ -106,13 +182,6 @@ def decide(event: dict):
                 "mergear zera a fila e dispara CI Validate/Schema Invariants na main. Espere os dois "
                 "numeros zerarem, ou confirme que a ordem ja foi combinada (#2340)."
             )
-        return None, None
-
-    if tool.endswith("__execute_sql"):
-        if lane and is_write(tool_input.get("query", "")):
-            return "deny", LANE_REASON.format(cwd=cwd) + " (execute_sql com escrita ou DDL)"
-        return None, None
-
     return None, None
 
 

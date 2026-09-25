@@ -11,10 +11,16 @@
 #
 # Uso:
 #   scripts/lane-registry.sh register <caminho-da-worktree> "<proposito>"
-#   scripts/lane-registry.sh check [<cwd>]     # imprime alerta se houver worktree fora do registro
+#   scripts/lane-registry.sh orquestrador <session_id> "<nota>"   # designacao do GP (#2477)
+#   scripts/lane-registry.sh check [<cwd>]     # SessionStart: status da orquestradora e alertas
+#
+# A sessao ORQUESTRADORA e a unica que escreve no banco compartilhado (.claude/hooks/db-write-gate.py).
+# A designacao fica em ${LANE_ORCH_FILE:-$HOME/projects/_pmo/lanes/ai-pm-research-hub.orquestrador}.
 set -uo pipefail
 
 REG="${LANE_REGISTRY:-$HOME/projects/_pmo/lanes/ai-pm-research-hub.tsv}"
+ORQ="${LANE_ORCH_FILE:-$HOME/projects/_pmo/lanes/ai-pm-research-hub.orquestrador}"
+GATE_COPY="${LANE_GATE_COPY:-$HOME/projects/_pmo/lanes/db-write-gate.py}"
 MODE="${1:-}"
 
 abspath() { (cd "$1" 2>/dev/null && pwd -P) || echo "$1"; }
@@ -34,6 +40,13 @@ case "$MODE" in
       printf '%s\t%s\t%s\t%s\n' "$ALVO" "${BR:-?}" "$(date -u +%Y-%m-%dT%H:%MZ)" "$PROP" >> "$REG"
       echo "  ✓ lane registrada em $REG"
     fi
+    ;;
+  orquestrador)
+    SID="${2:-}"; NOTA="${3:-}"
+    [ -n "$SID" ] && [ -n "$NOTA" ] || { echo "uso: $0 orquestrador <session_id> \"<nota: quem designou e quando>\"" >&2; exit 2; }
+    mkdir -p "$(dirname "$ORQ")"
+    printf '%s\t%s\t%s\n' "$SID" "$(date -u +%Y-%m-%dT%H:%MZ)" "$NOTA" > "$ORQ"
+    echo "  ✓ orquestradora designada: ${SID:0:8} ($ORQ)"
     ;;
   check)
     CWD="${2:-$PWD}"
@@ -56,9 +69,37 @@ case "$MODE" in
       echo "   Descubra quem a abriu e para que ANTES de qualquer merge ou escrita no banco; registre com"
       echo "   scripts/lane-registry.sh register <caminho> \"<proposito>\" (registro: $REG)."
     fi
+    # Status da orquestradora: o SessionStart recebe o session_id no JSON do stdin.
+    SID=""
+    if [ ! -t 0 ]; then SID="$(python3 -c 'import json,sys
+try: print(json.load(sys.stdin).get("session_id",""))
+except Exception: print("")' 2>/dev/null)"; fi
+    ORQ_ID="$( [ -f "$ORQ" ] && grep -v '^#' "$ORQ" | head -1 | cut -f1 )"
+    if [ -z "$ORQ_ID" ]; then
+      echo "⚠️ NENHUMA SESSAO ORQUESTRADORA designada: o gate nega DDL e escrita via SQL a todos ate o GP designar."
+    elif [ -n "$SID" ] && [ "$SID" = "$ORQ_ID" ]; then
+      echo "Esta sessao (${SID:0:8}) e a ORQUESTRADORA designada: unica que escreve no banco compartilhado."
+    elif [ -n "$SID" ]; then
+      echo "Esta sessao (${SID:0:8}) NAO e a orquestradora (${ORQ_ID:0:8}): DDL e escrita via SQL serao negadas."
+    fi
+    # Mais de uma sessao do Claude no clone principal e o arranjo que produziu o incidente de 25/09.
+    # Chave no EXECUTAVEL (exe), nao no nome do processo (comm), que o processo escolhe. Um find so,
+    # sem um fork por processo: a varredura cabe no SessionStart (~0,1 s medido).
+    N=0
+    while read -r EXE; do
+      [ "$(readlink "${EXE%/exe}/cwd" 2>/dev/null)" = "$PRINCIPAL" ] && N=$((N+1))
+    done < <(find /proc -maxdepth 2 -name exe -lname '*/claude/versions/*' 2>/dev/null)
+    if [ "$N" -gt 1 ]; then
+      echo "⚠️ $N SESSOES DO CLAUDE NO CLONE PRINCIPAL. So uma e a orquestradora; as outras nao abrem lane nem escrevem no banco."
+    fi
+    # A copia do gate usada pelo hook de usuario tem de ser igual a versao do repo.
+    REPO_GATE="$PRINCIPAL/.claude/hooks/db-write-gate.py"
+    if [ -f "$REPO_GATE" ] && [ -f "$GATE_COPY" ] && ! cmp -s "$REPO_GATE" "$GATE_COPY"; then
+      echo "⚠️ A copia do gate em $GATE_COPY difere de .claude/hooks/db-write-gate.py: atualize a copia (cp)."
+    fi
     ;;
   *)
-    echo "uso: $0 register <caminho> \"<proposito>\" | check [<cwd>]" >&2
+    echo "uso: $0 register <caminho> \"<proposito>\" | orquestrador <session_id> \"<nota>\" | check [<cwd>]" >&2
     exit 2
     ;;
 esac
