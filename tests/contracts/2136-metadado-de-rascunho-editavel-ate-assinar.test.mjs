@@ -199,25 +199,25 @@ describe('#2136 — o rotulo de minuta e corrigivel enquanto o documento nao foi
     it(sb ? 'o TAP teve os rotulos de minuta corrigidos, e o espaco R** ficou livre' : `SKIP: ${skip}`,
       async (t) => {
       if (!sb) return t.skip(skip);
-      const { data: ancora, error: e1 } = await sb
-        .from('document_versions').select('document_id')
-        .eq('id', '43f3bb5c-7e39-45a1-b548-800b6ad22ff5').maybeSingle();
-      assert.equal(e1, null, e1?.message);
-      assert.ok(ancora?.document_id, 'a versao ancora sumiu: o documento alvo mudou');
-
+      // #2479: a ancora era a VERSAO M03 (43f3bb5c), e a recirculacao de 25/09 removeu as minutas
+      // M03/M04. O caso e do DOCUMENTO (o TAP), entao a ancora e ele.
+      const TAP = 'd7447a94-ca3c-4cf6-8b6e-5e604136522c';
       const { data: vs, error: e2 } = await sb
         .from('document_versions').select('version_number, version_label, locked_at')
-        .eq('document_id', ancora.document_id).order('version_number');
+        .eq('document_id', TAP).order('version_number');
       assert.equal(e2, null, e2?.message);
+      assert.ok(vs?.length, 'o TAP nao tem versao nenhuma: o documento alvo mudou');
 
       const porNumero = new Map(vs.map((v) => [v.version_number, v.version_label]));
       assert.equal(porNumero.get(1), 'M01', 'v1 deveria ter virado M01');
       assert.equal(porNumero.get(2), 'M02', 'v2 deveria ter virado M02');
 
-      // CONTROLE DE QUE O RENAME ERA NECESSARIO: com R00 ocupado por uma minuta, publicar a versao
-      // aprovada como R00 violaria UNIQUE (document_id, version_label) no dia da aprovacao.
-      const aindaR = vs.filter((v) => /^R[0-9]/.test(v.version_label ?? ''));
-      assert.deepEqual(aindaR.map((v) => v.version_label), [],
+      // CONTROLE DE QUE O RENAME ERA NECESSARIO: com R00 ocupado por uma MINUTA, publicar a versao
+      // aprovada como R00 violaria UNIQUE (document_id, version_label) no dia da aprovacao. A
+      // invariante e sobre RASCUNHO (#2479): depois da aprovacao, R00 existe legitimamente na versao
+      // lacrada, e o que nao pode e uma versao aberta ocupar o espaco R*.
+      const minutaComR = vs.filter((v) => !v.locked_at && /^R[0-9]/.test(v.version_label ?? ''));
+      assert.deepEqual(minutaComR.map((v) => v.version_label), [],
         'o espaco de rotulo aprovado continua ocupado por minuta');
 
       // v2 esta LACRADA e mesmo assim foi renomeada: e essa a folga que a migration abriu.
