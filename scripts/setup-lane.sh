@@ -14,7 +14,7 @@
 # fica verde por ausencia.
 #
 # Uso:
-#   scripts/setup-lane.sh <caminho-da-worktree> [nome-da-branch]
+#   scripts/setup-lane.sh <caminho-da-worktree> [nome-da-branch] ["proposito da lane"]
 #   scripts/setup-lane.sh ../.wt-campanha lane/webinar-t11
 #   scripts/setup-lane.sh ../.wt-campanha            # so verifica, nao troca de branch
 #
@@ -24,10 +24,11 @@ set -uo pipefail
 
 ALVO="${1:-}"
 BRANCH="${2:-}"
+PROPOSITO="${3:-}"
 PRINCIPAL="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ -z "$ALVO" ]; then
-  echo "uso: scripts/setup-lane.sh <caminho-da-worktree> [nome-da-branch]" >&2
+  echo "uso: scripts/setup-lane.sh <caminho-da-worktree> [nome-da-branch] [\"proposito\"]" >&2
   exit 2
 fi
 if [ ! -d "$ALVO" ]; then
@@ -47,7 +48,7 @@ ok()    { echo "  ✓ $*"; }
 
 # ── 1. git ────────────────────────────────────────────────────────────────────
 echo
-echo "[1/4] git"
+echo "[1/5] git"
 git -C "$ALVO" fetch -q --all --prune 2>/dev/null
 
 if [ -n "$BRANCH" ]; then
@@ -69,7 +70,7 @@ echo "  branch: ${ATUAL:-<detached>}"
 
 # ── 2. .env ───────────────────────────────────────────────────────────────────
 echo
-echo "[2/4] .env (worktree NAO herda arquivo ignorado)"
+echo "[2/5] .env (worktree NAO herda arquivo ignorado)"
 if [ -f "$PRINCIPAL/.env" ]; then
   if [ -f "$ALVO/.env" ] && cmp -s "$PRINCIPAL/.env" "$ALVO/.env"; then
     ok ".env presente e identico ao da principal"
@@ -85,7 +86,7 @@ fi
 
 # ── 3. dependencias ───────────────────────────────────────────────────────────
 echo
-echo "[3/4] node_modules"
+echo "[3/5] node_modules"
 if [ -x "$ALVO/node_modules/.bin/astro" ]; then
   ok "node_modules presente (astro executavel)"
 else
@@ -102,7 +103,7 @@ fi
 # O namespace de memoria do Claude vem do CAMINHO, entao uma worktree nasce com namespace
 # proprio e VAZIO. As lanes deste repo resolvem com symlink para o namespace da principal.
 echo
-echo "[4/4] memoria do Claude"
+echo "[4/5] memoria do Claude"
 ns() { echo "$1" | sed 's|/|-|g; s|\.|-|g'; }
 NS_ALVO="$HOME/.claude/projects/$(ns "$ALVO")/memory"
 NS_PRIN="$HOME/.claude/projects/$(ns "$PRINCIPAL")/memory"
@@ -115,6 +116,21 @@ elif [ -d "$NS_ALVO" ]; then
 else
   mkdir -p "$(dirname "$NS_ALVO")"
   ln -s "$NS_PRIN" "$NS_ALVO" && ok "symlink criado"
+fi
+
+# ── 5. registro de lanes (#2477) ──────────────────────────────────────────────
+# A sessao principal e quem abre lanes. Toda worktree fica registrada FORA do repo, e no inicio de
+# cada sessao a principal compara o registro com `git worktree list`: worktree desconhecida vira
+# alerta. Em 25/09/2026 uma worktree aberta por fora aplicou DDL em producao sem ninguem saber dela.
+echo
+echo "[5/5] registro de lanes"
+if [ -n "$PROPOSITO" ]; then
+  "$PRINCIPAL/scripts/lane-registry.sh" register "$ALVO" "$PROPOSITO" || aviso "falha ao registrar a lane"
+elif [ -f "${LANE_REGISTRY:-$HOME/projects/_pmo/lanes/ai-pm-research-hub.tsv}" ] && \
+     cut -f1 "${LANE_REGISTRY:-$HOME/projects/_pmo/lanes/ai-pm-research-hub.tsv}" | grep -qxF "$ALVO"; then
+  ok "lane ja registrada"
+else
+  aviso "lane NAO registrada: rode de novo com o 3o argumento (proposito), ou scripts/lane-registry.sh register"
 fi
 
 # ── resumo ────────────────────────────────────────────────────────────────────

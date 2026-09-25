@@ -122,13 +122,13 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__claude_ai_Supabase__apply_migration|mcp__supabase__apply_migration",
+        "matcher": "mcp__claude_ai_Supabase__apply_migration|mcp__supabase__apply_migration|mcp__claude_ai_Supabase__execute_sql|mcp__supabase__execute_sql",
         "hooks": [
           {
             "type": "command",
-            "command": "n=$(gh pr list --state open --json number --jq \"length\" 2>/dev/null); n=${n:-0}; r=$(gh run list --limit 30 --json name,status --jq '[.[]|select(.status!=\"completed\")|select(.name|test(\"Validate|Invariants|DB Types\"))]|length' 2>/dev/null); r=${r:-0}; if [ \"$n\" -gt 0 ] || [ \"$r\" -gt 0 ]; then printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"BANCO OCUPADO: %s PR(s) aberta(s) e %s job(s) de banco em voo na main. apply_migration atinge o banco COMPARTILHADO na hora, e toda branch sem o .sql passa a acusar drift (PROD-AHEAD) — inclusive a main. ATENCAO: fila de PRs vazia NAO e banco livre — mergear ZERA a fila e DISPARA CI Validate/Schema Invariants na main no mesmo segundo, que e o instante em que mais da vontade de escrever. Espere os DOIS numeros zerarem, ou confirme que a ordem ja foi combinada. Mordeu 4x em 17/09 e o ponto cego do job pos-merge apareceu em 18/09; ver #2340.\"}}' \"$n\" \"$r\"; fi",
-            "timeout": 20,
-            "statusMessage": "Conferindo a fila de PRs antes da DDL..."
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/db-write-gate.py\"",
+            "timeout": 25,
+            "statusMessage": "Conferindo quem escreve no banco compartilhado (lane x main) e a fila..."
           }
         ]
       }
@@ -140,6 +140,17 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/ground-numbers.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/lane-registry.sh\" check \"$CLAUDE_PROJECT_DIR\"",
             "timeout": 15
           }
         ]
