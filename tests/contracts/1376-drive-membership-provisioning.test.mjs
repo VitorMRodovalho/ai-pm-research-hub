@@ -6,6 +6,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { latestFunctionCapture } from "../helpers/guard-pin-staleness.mjs";
 
 const MIG = "supabase/migrations/";
 const table = readFileSync(MIG + "20260805000440_1376_drive_membership_grants_table.sql", "utf8");
@@ -42,10 +43,12 @@ test("#1376: EF-facing RPCs are service-role only + granted to service_role, rev
 test("#1376: cron-invoked RPCs use the cron-context bypass, not auth.role() (ADR-0028 p89)", () => {
   // notify_missing_drive_workspaces + list_initiatives_missing_drive_workspace run under pg_cron with
   // NO PostgREST JWT context, so a current_caller_role()/auth.role() gate would raise on every run.
+  // Le a captura VIGENTE, nao este arquivo: o discriminador trocou depois (current_user e sempre o
+  // dono dentro de SECURITY DEFINER; o GUC de role distingue cron/service_role de usuario REST).
   for (const fn of ["notify_missing_drive_workspaces", "list_initiatives_missing_drive_workspace"]) {
-    const body = rpcs.slice(rpcs.indexOf(`FUNCTION public.${fn}`), rpcs.indexOf(`FUNCTION public.${fn}`) + 1400);
-    assert.match(body, /current_setting\('role', true\) IN \('service_role','postgres'\)/, `${fn} uses cron-context bypass`);
-    assert.match(body, /current_user IN \('postgres','supabase_admin'\)/, `${fn} accepts pg_cron user`);
+    const body = latestFunctionCapture(process.cwd(), fn).body;
+    assert.match(body, /public\._request_is_rest_caller\(\)/, `${fn} decides cron/service context by the role GUC`);
+    assert.doesNotMatch(body, /\bcurrent_user\s+(?:NOT\s+)?IN\s*\(/i, `${fn} must not decide by current_user`);
     assert.doesNotMatch(body, /current_caller_role\(\) IS DISTINCT FROM 'service_role'/, `${fn} must NOT gate on auth.role()`);
   }
 });
