@@ -97,7 +97,9 @@ test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence',
   // any in-flight test fixtures to stay deterministic.
   const real = (rules ?? []).filter((r) => !String(r.title || '').startsWith('TEST'));
   const tribeRules = real.filter((r) => r.scope_type === 'tribe');
-  const commsRules = real.filter((r) => r.scope_type === 'initiative');
+  // The backfill created exactly 2 rules for the Hub de Comunicação. Other initiatives get their own
+  // rules through the product (e.g. "Sync Gestão", 2026-09-25, #2470), so count only the backfill's.
+  const commsRules = real.filter((r) => r.scope_type === 'initiative' && r.initiative_id === HUB_COMMS);
   assert.equal(tribeRules.length, 7, 'seven tribe rules');
   assert.equal(commsRules.length, 2, 'two comms/initiative rules');
 
