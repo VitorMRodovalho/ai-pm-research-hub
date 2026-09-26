@@ -30,7 +30,7 @@ const REGISTRY = resolve(ROOT, 'scripts/lane-registry.sh');
 const THIS_PROJECT = 'ldrfrvwhxsmgaabwmaik';
 const ORQ_SID = '11111111-aaaa-4bbb-8ccc-000000000001';
 const OUTRA_SID = '22222222-aaaa-4bbb-8ccc-000000000002';
-let base; let main; let lane; let orqFile; let semOrq;
+let base; let main; let lane; let outro; let orqFile; let semOrq;
 
 before(() => {
   base = mkdtempSync(join(tmpdir(), 'db-gate-'));
@@ -46,6 +46,11 @@ before(() => {
   git(main, 'add', 'f');
   git(main, 'commit', '-q', '-m', 'init');
   git(main, 'worktree', 'add', '-q', lane, '-b', 'lane');
+  // O Bash e decidido pelo REMOTO do repositorio (vale igual para clone e worktree) ou pela citacao do ref.
+  git(main, 'remote', 'add', 'origin', 'https://github.com/exemplo/ai-pm-research-hub.git');
+  outro = join(base, 'outro-repo');
+  execFileSync('git', ['init', '-q', outro]);
+  git(outro, 'remote', 'add', 'origin', 'https://github.com/exemplo/meridianiq.git');
   writeFileSync(orqFile, `${ORQ_SID}\t2026-09-25T00:00Z\tteste\n`);
 });
 after(() => { if (base) rmSync(base, { recursive: true, force: true }); });
@@ -123,6 +128,48 @@ test('servidor claude_ai: só barra quando o project_id é ESTE projeto', () => 
   assert.equal(runHook('mcp__supabase__execute_sql', esteRepo, OUTRA_SID, upd)?.permissionDecision, 'deny', '.mcp.json deste projeto');
 });
 
+// ── Bash (pacote A, 25/09): token de gestao, CLI do Supabase e psql ──────────────────────────────
+const bash = (cwd, sid, command, orch) => runHook('Bash', cwd, sid, { command }, orch);
+const ARRISCADOS = [
+  'curl -s -X POST https://api.supabase.com/v1/projects/x/database/query -d @q.json',
+  'supabase db push --linked',
+  'npx supabase migration list',
+  'supabase functions deploy nucleo-mcp --no-verify-jwt',
+  'psql "$DATABASE_URL" -c "select 1"',
+  'npm run db:types',
+  'with-supabase-token supabase gen types typescript',
+  'cat ~/.config/supabase-mgmt/token',
+  'echo $SUPABASE_ACCESS_TOKEN | wc -c',
+];
+
+test('Bash: nao-orquestradora neste repositorio e negada nos caminhos com token, CLI ou psql', () => {
+  for (const cwd of [main, lane]) {
+    for (const cmd of ARRISCADOS) {
+      const d = bash(cwd, OUTRA_SID, cmd);
+      assert.equal(d?.permissionDecision, 'deny', `negado: ${cmd} (${cwd === lane ? 'lane' : 'principal'})`);
+    }
+  }
+  assert.match(bash(lane, OUTRA_SID, 'supabase db push').permissionDecisionReason, /NAO e a orquestradora/);
+});
+
+test('Bash: comando comum passa, e a orquestradora passa em tudo', () => {
+  for (const cmd of ['git status --short', 'ls supabase/migrations | tail -3', 'npm test', 'node --test tests/contracts/x.test.mjs']) {
+    assert.equal(bash(lane, OUTRA_SID, cmd), null, `livre: ${cmd}`);
+  }
+  for (const cmd of ARRISCADOS) assert.equal(bash(main, ORQ_SID, cmd), null, `orquestradora: ${cmd}`);
+});
+
+test('Bash: outro repositorio do portfolio mantem a propria CLI, salvo se citar ESTE projeto', () => {
+  assert.equal(bash(outro, OUTRA_SID, 'supabase db push --linked'), null, 'CLI do outro projeto');
+  assert.equal(bash(outro, OUTRA_SID, 'with-supabase-token supabase functions deploy f'), null, 'wrapper no outro projeto');
+  const d = bash(outro, OUTRA_SID, `curl https://api.supabase.com/v1/projects/${THIS_PROJECT}/database/query`);
+  assert.equal(d?.permissionDecision, 'deny', 'citar o ref deste projeto de outro lugar continua negado');
+});
+
+test('Bash: sem orquestradora designada, os caminhos arriscados sao negados a todos', () => {
+  assert.equal(bash(main, ORQ_SID, 'supabase db push', semOrq)?.permissionDecision, 'deny');
+});
+
 test('settings.json liga o gate às ferramentas dos dois servidores MCP', () => {
   const s = JSON.parse(readFileSync(resolve(ROOT, '.claude/settings.json'), 'utf8'));
   const entry = (s.hooks?.PreToolUse ?? []).find((h) => /db-write-gate\.py/.test(JSON.stringify(h.hooks)));
@@ -133,6 +180,8 @@ test('settings.json liga o gate às ferramentas dos dois servidores MCP', () => 
   ]) {
     assert.ok(new RegExp(`^(?:${entry.matcher})$`).test(tool), `matcher cobre ${tool}`);
   }
+  const bashEntry = (s.hooks?.PreToolUse ?? []).find((h) => h.matcher === 'Bash' && /db-write-gate\.py/.test(JSON.stringify(h.hooks)));
+  assert.ok(bashEntry, 'existe um PreToolUse de Bash que chama db-write-gate.py');
 });
 
 // ── Registro de lanes e designação da orquestradora (scripts/lane-registry.sh) ─────────────────

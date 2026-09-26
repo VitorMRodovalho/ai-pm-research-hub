@@ -73,6 +73,15 @@ CORRETO. A `main` **não é exceção**.
   `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`. Origem: em 25/09 duas migrations
   foram aplicadas por uma sessão que não era a orquestradora e rodava no **clone principal**, e por
   isso um gate por diretório não a teria barrado.
+- **O mesmo hook cobre o Bash (pacote A, GP 25/09/2026).** O MCP não é o único caminho: o token de
+  gestão da conta roda SQL de qualquer tipo, DDL incluído, pela `api.supabase.com` ou pela CLI ligada,
+  e em todos os projetos da conta. Para quem não é a orquestradora, neste repositório (clone ou lane)
+  ou em comando que cite o ref deste projeto, o hook nega `api.supabase.com`, `supabase
+  db|migration|functions|gen|…`, `psql`, `npm run db:types`, `check_advisors` e a leitura do token.
+  O token mora em `~/.config/supabase-mgmt/token` (600, fora de todo repo), e
+  `with-supabase-token <comando>` o carrega para um comando só. Deploy de EF, `db:types` e advisors
+  ficam com a orquestradora. A chave service_role do `.env` das lanes **não** é coberta: alcança só
+  DML, e os testes com banco precisam dela.
 - **Para a orquestradora, o mesmo hook pergunta** quando o banco está ocupado (matcher `mcp__*__apply_migration`):
   ele devolve `permissionDecision: ask` e **nomeia qual das duas condições disparou**, contando PRs
   abertas E jobs de banco em voo. ⚠️ A primeira versão do hook (17/09) consultava **só** a fila de
