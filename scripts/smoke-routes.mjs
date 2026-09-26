@@ -19,12 +19,20 @@
 // processo: ai nenhum dos tres tetos chega a falar, e a ultima linha impressa e a unica pista.
 
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import {
   createDevServerWatch,
   assertContentWithResamples,
   SINGLETON_BLOCKED,
 } from '../tests/helpers/dev-server-watch.mjs';
+
+// #2485: o destino do /hackathon mora em src/lib/canonical.ts, que e TypeScript; este script roda em
+// Node puro, entao le a constante do TEXTO e reprova se ela sumir, em vez de afirmar contra vazio.
+const HACKATHON_HOST = readFileSync(new URL('../src/lib/canonical.ts', import.meta.url), 'utf8')
+  .match(/export const HACKATHON_HOST\s*=\s*"([^"]+)"/)?.[1];
+if (!HACKATHON_HOST) throw new Error('[smoke] HACKATHON_HOST nao encontrado em src/lib/canonical.ts');
+const HACKATHON_URL = `https://${HACKATHON_HOST}/`;
 
 const PORT = Number(process.env.SMOKE_PORT || (4300 + Math.floor(Math.random() * 400)));
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -216,6 +224,10 @@ async function assercoes() {
   await assertContains('/tribe/1', 'id="tribe-denied"');
   await assertRedirect('/rank', '/gamification');
   await assertRedirect('/ranks', '/gamification');
+  // #2485: a entrada do hackathon leva ao site externo, nos tres locales.
+  await assertRedirect('/hackathon', HACKATHON_URL);
+  await assertRedirect('/en/hackathon', HACKATHON_URL);
+  await assertRedirect('/es/hackathon', HACKATHON_URL);
 }
 
 async function run() {
