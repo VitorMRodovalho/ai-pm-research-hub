@@ -1,6 +1,6 @@
 # ADR-0129: The knowledge layer is authored in the platform, classified by Diátaxis, and fed before it is extended
 
-**Status:** Accepted on 2026-09-27, with the amendment below
+**Status:** Accepted on 2026-09-27, with the two amendments below
 **Date:** 2026-09-13 (proposed) · 2026-09-27 (accepted)
 **Source:** Discussion in the Núcleo general WhatsApp group on 2026-09-13 (glossary raised by a researcher; tool-vs-process split proposed by a tribe leader), the `Nucleo_Wiki_Fluxo_Conhecimento_V1` deck of the same date, and a live survey of the knowledge tables run while analysing it.
 **Related:** ADR-0010 (wiki content is narrative and non-personal), ADR-0105 (confidential initiative visibility), [#2208](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2208) (YouTube archive without captions), [#2495](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2495) (living wiki: architecture and gap assessment).
@@ -181,9 +181,8 @@ Accepted together with these decisions. Where the text above and this section di
 2. **Media is a cited source, never a copy.** Video, PDF, podcast and webinar stay where they live (Drive,
    YouTube) and enter the wiki as a link in the note's sources. Nothing is duplicated into the repository
    or into `wiki_pages`.
-3. **Proposals in the pilot use the existing curation machinery for board items** (one card per proposal in
-   a "Wiki · <domain>" board, reviewed through `submit_curation_review`). The approved text is written by the
-   platform authoring path of decision 2. It is never committed back to the repository.
+3. ~~Proposals in the pilot use the existing curation machinery for board items.~~ **Superseded by
+   Amendment 2** (publish first, audit after).
 4. **The pilot domain is `tribes`.**
 5. **The 66 `migrated-from-public-816` pages and the 20 `strategy` pages were working documents, not
    narrative knowledge.** On 2026-09-27 they moved to a private management archive, and the push webhook
@@ -193,6 +192,29 @@ Accepted together with these decisions. Where the text above and this section di
    member row for the login, active or not) to `rls_is_authoritative_member()`, the canonical gate of the
    RLS phase 2 read policies. The other policies that still use `rls_is_member()` are unchanged by this
    decision.
+
+## Amendment 2 (GP decision, 2026-09-27): publish first, audit after
+
+Replaces item 3 of the first amendment for the wiki. Publications meant for outside the Núcleo (articles,
+congress submissions) keep the existing pre-publication curation: two reviews, rubric, 7-day SLA. The
+wiki is internal and reversible, and the measured bottleneck is people, not control: four members hold
+curation authority, and the wiki had one author in three months.
+
+1. **The leader of a tribe is the first curator of that tribe's pages.** A page the leader approves is
+   published at once.
+2. **Four eyes.** When the author is the leader, the Curation Committee approves before publication. Today
+   each active tribe has exactly one leader and no deputy.
+3. **Automatic gate before publishing.** A page that the health check flags for personal data does not
+   publish directly; it goes to the committee.
+4. **Governance pages keep approval before publication** by the committee and the GP (normative content:
+   volunteer term, IP policy, LGPD).
+5. **The committee audits every published page within 14 days** and keeps, alters or unpublishes it, always
+   with a written reason. Until then the page shows "published by the tribe, audit pending", to readers and
+   to the assistant.
+6. **Every publication, alteration and unpublishing is an append-only page version.** A committee change is a
+   new version, never an overwrite, and author and leader are notified at once.
+7. **Consequence for the design:** the unit of review is the page version, not a board card. A light version
+   table (option 3a in #2495) replaces the card-based proposals.
 
 ## References
 
