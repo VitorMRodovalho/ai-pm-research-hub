@@ -30633,6 +30633,10 @@ export type Database = {
         Args: { p_initiative: string }
         Returns: string[]
       }
+      _wiki_initiative_path_prefix: {
+        Args: { p_initiative: string }
+        Returns: string
+      }
       _wiki_is_initiative_leader: {
         Args: { p_initiative: string; p_member: string }
         Returns: boolean
@@ -36109,6 +36113,7 @@ export type Database = {
         Returns: string
       }
       wiki_audit_sla_sweep: { Args: never; Returns: number }
+      wiki_authoring_context: { Args: never; Returns: Json }
       wiki_decide: {
         Args: { p_decision: string; p_reason?: string; p_version_id: string }
         Returns: string
@@ -36124,6 +36129,7 @@ export type Database = {
           title: string
         }[]
       }
+      wiki_page_history: { Args: { p_page_path: string }; Returns: Json }
       wiki_review_queue: { Args: never; Returns: Json }
       wiki_save_draft: {
         Args: {

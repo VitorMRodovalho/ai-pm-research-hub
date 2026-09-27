@@ -1,0 +1,717 @@
+---
+/**
+ * /wiki — o wiki vivo do Núcleo (#2495, ADR-0129 com as emendas 1 e 2).
+ *
+ * Uma tela só; a visão vem da URL, para que o aviso e o e-mail levem direto ao ponto:
+ *   (padrão) | ?q=        lista e busca das páginas
+ *   ?page=<caminho>       leitura: fonte, tribo dona, estado de auditoria, fontes e histórico
+ *   ?version=<id>         uma versão e as ações de quem pode agir sobre ela (os avisos apontam aqui)
+ *   ?edit=<id> | ?new=<tribo>[&path=] | ?alter=<id>   editor (rascunho do autor, versão nova, alteração do comitê)
+ *   ?tab=mine|decide|audit                            minhas versões, fila da liderança, fila do comitê
+ *
+ * Sem portão SSR por desenho (ADR-0106): o limite é a RLS de wiki_pages (membro ativo) e as RPCs
+ * SECURITY DEFINER do piloto, que decidem quem escreve, publica e audita. A tela só oferece a ação
+ * que o servidor aceitaria para aquela pessoa, e o servidor recusa se a tela errar.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Toast from '../components/ui/Toast.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { buildPageI18n } from '../i18n/pageI18n';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18nBundle = buildPageI18n(['wiki'], lang);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+---
+
+<BaseLayout title={t('wiki.title', lang)} activePage="wiki" lang={lang}>
+  <div id="wiki-root" data-lang={lang} class="max-w-[960px] mx-auto px-4 py-8">
+    <div id="wiki-loading" class="text-center py-16 text-[var(--text-muted)]">{t('wiki.loading', lang)}</div>
+
+    <div id="wiki-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
+      <p id="wiki-denied-msg" class="font-semibold text-amber-800"></p>
+      <a href={`${langPrefix}/`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('wiki.goHome', lang)}</a>
+    </div>
+
+    <div id="wiki-app" class="hidden space-y-5">
+      <header class="space-y-3">
+        <div>
+          <h1 class="text-2xl font-extrabold text-navy"><a id="wiki-home" href={`${langPrefix}/wiki`} class="no-underline text-navy">{t('wiki.title', lang)}</a></h1>
+          <p class="text-sm text-[var(--text-muted)]">{t('wiki.subtitle', lang)}</p>
+        </div>
+        <nav id="wiki-tabs" class="flex flex-wrap gap-2" aria-label={t('wiki.tabsLabel', lang)}></nav>
+      </header>
+      <section id="wiki-view" aria-live="polite"></section>
+    </div>
+  </div>
+  <Toast />
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+</BaseLayout>
+
+<script>
+  import { escapeHtml as E, safeNavigationUrl } from '../lib/escape-html';
+  import { sanitizeUserHtml } from '../lib/sanitize-html';
+  import { renderWikiMarkdown } from '../lib/wiki-render';
+
+  // ── base ───────────────────────────────────────────────────────────────────────────────────────
+  const root = document.getElementById('wiki-root') as HTMLElement;
+  const LANG = root.dataset.lang || 'pt-BR';
+  const LOCALE = LANG === 'es-LATAM' ? 'es-419' : LANG;
+  const I18N: Record<string, string> = (() => {
+    try { return JSON.parse(document.getElementById('page-i18n')?.textContent || '{}'); } catch { return {}; }
+  })();
+  function T(key: string, vars?: Record<string, string | number>): string {
+    let s = Object.prototype.hasOwnProperty.call(I18N, key) ? I18N[key] : key;
+    if (vars) for (const [k, v] of Object.entries(vars)) s = s.split(`{${k}}`).join(String(v));
+    return s;
+  }
+
+  const params = new URLSearchParams(location.search);
+  const LANG_PARAM = params.get('lang');
+  function href(p: Record<string, string | null | undefined> = {}): string {
+    const u = new URLSearchParams();
+    for (const [k, v] of Object.entries(p)) if (v) u.set(k, v);
+    if (LANG_PARAM) u.set('lang', LANG_PARAM);
+    const s = u.toString();
+    return '/wiki' + (s ? `?${s}` : '');
+  }
+  const LINKS = { page: (p: string) => href({ page: p }), search: (q: string) => href({ q }) };
+
+  let sb: any = null;
+  let ctx: { is_committee: boolean; tribes: any[] } = { is_committee: false, tribes: [] };
+  let queue: { awaiting_my_decision: any[]; audit_pending: any[]; my_versions: any[] } =
+    { awaiting_my_decision: [], audit_pending: [], my_versions: [] };
+  let pages: any[] = [];
+
+  const view = () => document.getElementById('wiki-view') as HTMLElement;
+  const fmtDate = (s?: string | null) =>
+    s ? new Date(s).toLocaleDateString(LOCALE, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+  const errMsg = (e: any) => String(e?.message || e || '').replace(/^wiki:\s*/, '');
+  const toast = (msg: string, kind: 'success' | 'error' | 'info' = 'success') => (window as any).toast?.(msg, kind);
+
+  async function rpc(name: string, args?: Record<string, unknown>): Promise<any> {
+    const { data, error } = await sb.rpc(name, args);
+    if (error) throw error;
+    return data;
+  }
+
+  // ── pedaços de interface ───────────────────────────────────────────────────────────────────────
+  const BTN = 'inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer no-underline disabled:opacity-50 disabled:cursor-not-allowed';
+  const BTN_PRIMARY = `${BTN} bg-navy text-white border-0 hover:opacity-90`;
+  const BTN_SECONDARY = `${BTN} border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] hover:bg-[var(--surface-hover)]`;
+  const BTN_DANGER = `${BTN} bg-red-600 text-white border-0 hover:opacity-90`;
+  const INPUT = 'w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] text-sm';
+  const CARD = 'rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5';
+
+  const STATUS_CLASS: Record<string, string> = {
+    draft: 'bg-slate-100 text-slate-700',
+    pending_leader: 'bg-amber-100 text-amber-800',
+    pending_committee: 'bg-amber-100 text-amber-800',
+    returned: 'bg-orange-100 text-orange-800',
+    published: 'bg-emerald-100 text-emerald-800',
+    superseded: 'bg-slate-100 text-slate-500',
+    unpublished: 'bg-red-100 text-red-700',
+  };
+  const own = (o: Record<string, string>, k: unknown) =>
+    Object.prototype.hasOwnProperty.call(o, String(k)) ? o[String(k)] : '';
+  const chip = (text: string, cls: string) =>
+    `<span class="inline-block px-2 py-0.5 rounded-full text-[.68rem] font-semibold ${cls}">${E(text)}</span>`;
+  const statusChip = (s: string) => chip(T(`wiki.status.${s}`), own(STATUS_CLASS, s) || 'bg-slate-100 text-slate-700');
+  const sourceChip = (repo: string) => repo === 'plataforma'
+    ? chip(T('wiki.source.platform'), 'bg-blue-100 text-blue-800')
+    : chip(T('wiki.source.repo'), 'bg-slate-100 text-slate-600');
+  const auditChip = (s?: string | null) => s === 'pending'
+    ? chip(T('wiki.audit.pendingShort'), 'bg-amber-100 text-amber-800')
+    : s === 'audited' ? chip(T('wiki.audit.auditedShort'), 'bg-emerald-100 text-emerald-800') : '';
+  const emptyBox = (msg: string) => `<p class="text-sm text-[var(--text-muted)] py-6 text-center">${E(msg)}</p>`;
+  const errorBox = (msg: string) =>
+    `<div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">${E(msg)}</div>`;
+  const backLink = (url: string, label: string) =>
+    `<a href="${E(url)}" class="text-sm text-[var(--text-secondary)] no-underline hover:underline">&larr; ${E(label)}</a>`;
+
+  function renderMd(md: string, path: string): string {
+    return renderWikiMarkdown(md, path, LINKS);
+  }
+
+  function sourcesList(sources: any): string {
+    const list = Array.isArray(sources) ? sources : [];
+    if (!list.length) return '';
+    const items = list.map((s: any) => {
+      const label = String(s?.label || s?.url || '').trim();
+      const url = safeNavigationUrl(s?.url);
+      return `<li>${url ? `<a href="${E(url)}" target="_blank" rel="noopener noreferrer">${E(label)}</a>` : E(label)}</li>`;
+    }).join('');
+    return `<div class="mt-6"><h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${E(T('wiki.sources'))}</h3>
+      <ul class="list-disc pl-5 text-sm text-[var(--text-secondary)] space-y-0.5">${items}</ul></div>`;
+  }
+
+  // ── abas ───────────────────────────────────────────────────────────────────────────────────────
+  function currentTab(): string {
+    const tab = params.get('tab');
+    if (tab === 'mine' || tab === 'decide' || tab === 'audit') return tab;
+    return ['page', 'version', 'edit', 'alter', 'new'].some((k) => params.has(k)) ? '' : 'pages';
+  }
+
+  function renderTabs() {
+    const items: { key: string; label: string; url: string; count?: number }[] =
+      [{ key: 'pages', label: T('wiki.tab.pages'), url: href() }];
+    if (ctx.tribes.length || queue.my_versions.length)
+      items.push({ key: 'mine', label: T('wiki.tab.mine'), url: href({ tab: 'mine' }), count: queue.my_versions.length });
+    if (ctx.is_committee || ctx.tribes.some((t) => t.is_leader) || queue.awaiting_my_decision.length)
+      items.push({ key: 'decide', label: T('wiki.tab.decide'), url: href({ tab: 'decide' }), count: queue.awaiting_my_decision.length });
+    if (ctx.is_committee)
+      items.push({ key: 'audit', label: T('wiki.tab.audit'), url: href({ tab: 'audit' }), count: queue.audit_pending.length });
+
+    const nav = document.getElementById('wiki-tabs') as HTMLElement;
+    if (items.length === 1) { nav.classList.add('hidden'); return; }
+    const active = currentTab();
+    nav.innerHTML = items.map((it) => {
+      const on = it.key === active;
+      const count = it.count ? ` <span class="ml-1 px-1.5 rounded-full text-[.65rem] ${on ? 'bg-white/25' : 'bg-amber-100 text-amber-800'}">${it.count}</span>` : '';
+      return `<a href="${E(it.url)}" ${on ? 'aria-current="page"' : ''} class="px-3 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline border border-[var(--border-default)] ${on ? 'bg-navy text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'}">${E(it.label)}${count}</a>`;
+    }).join('');
+  }
+
+  // ── lista e busca ──────────────────────────────────────────────────────────────────────────────
+  const DOMAIN_ORDER = ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
+
+  function pageItem(p: any, headline?: string): string {
+    const lead = headline
+      ? `<p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5">${sanitizeUserHtml(headline)}</p>`
+      : p.summary ? `<p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${E(p.summary)}</p>` : '';
+    return `<li class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+      <a href="${E(href({ page: p.path }))}" class="font-semibold text-[var(--text-primary)] no-underline hover:underline">${E(p.title)}</a>
+      <span class="ml-2 inline-flex gap-1 align-middle">${p.source_repo ? sourceChip(p.source_repo) : ''}${auditChip(p.audit_status)}</span>
+      ${lead}</li>`;
+  }
+
+  function myTribesCallout(): string {
+    const mine = ctx.tribes.filter((t) => t.is_engaged && t.status === 'active');
+    if (!mine.length) return '';
+    const rows = mine.map((t) => {
+      const exists = pages.some((p) => p.path === t.path_prefix);
+      const action = exists
+        ? `<a href="${E(href({ page: t.path_prefix }))}" class="${BTN_SECONDARY} !py-1 !px-3 !text-xs">${E(T('wiki.viewPage'))}</a>`
+        : `<a href="${E(href({ new: t.id, path: t.path_prefix }))}" class="${BTN_PRIMARY} !py-1 !px-3 !text-xs">${E(T('wiki.createTribePage'))}</a>`;
+      return `<li class="flex items-center justify-between gap-3 py-1.5"><span class="text-sm text-[var(--text-primary)]">${E(t.title)}</span>${action}</li>`;
+    }).join('');
+    return `<div class="${CARD} !p-4"><h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myTribePages'))}</h2>
+      <p class="text-[.75rem] text-[var(--text-muted)] mb-1">${E(T('wiki.myTribePagesHint'))}</p><ul>${rows}</ul></div>`;
+  }
+
+  async function viewList(q: string) {
+    const langField = LANG_PARAM ? `<input type="hidden" name="lang" value="${E(LANG_PARAM)}">` : '';
+    let body = '';
+    if (q) {
+      const results: any[] = (await rpc('search_wiki_pages', { p_query: q, p_limit: 30 })) || [];
+      const byPath = new Map(pages.map((p) => [p.path, p]));
+      body = results.length
+        ? `<p class="text-xs text-[var(--text-muted)]">${E(T('wiki.resultsFor', { n: results.length, q }))}</p>
+           <ul class="${CARD} !py-1">${results.map((r) => pageItem({ ...r, ...(byPath.get(r.path) || {}) }, r.headline)).join('')}</ul>`
+        : emptyBox(T('wiki.noResults'));
+    } else {
+      const groups = new Map<string, any[]>();
+      for (const p of pages) { if (!groups.has(p.domain)) groups.set(p.domain, []); groups.get(p.domain)!.push(p); }
+      const order = [...DOMAIN_ORDER.filter((d) => groups.has(d)), ...[...groups.keys()].filter((d) => !DOMAIN_ORDER.includes(d)).sort()];
+      body = myTribesCallout() + (order.length ? order.map((d) => `
+        <div class="${CARD} !py-3">
+          <h2 class="text-sm font-bold text-navy uppercase tracking-wide">${E(I18N[`wiki.domain.${d}`] ?? d)}
+            <span class="text-[var(--text-muted)] font-normal normal-case">(${groups.get(d)!.length})</span></h2>
+          <ul>${groups.get(d)!.map((p) => pageItem(p)).join('')}</ul>
+        </div>`).join('') : emptyBox(T('wiki.noPages')));
+    }
+    view().innerHTML = `
+      <form method="get" action="/wiki" class="flex gap-2 mb-4" role="search">
+        <input name="q" type="search" value="${E(q)}" placeholder="${E(T('wiki.searchPlaceholder'))}" aria-label="${E(T('wiki.search'))}" class="${INPUT}">
+        ${langField}<button class="${BTN_PRIMARY}">${E(T('wiki.search'))}</button>
+      </form>
+      <div class="space-y-4">${body}</div>`;
+  }
+
+  // ── leitura de uma página ──────────────────────────────────────────────────────────────────────
+  function historyList(hist: any, currentId?: string | null): string {
+    const versions: any[] = hist?.versions || [];
+    if (!versions.length) return '';
+    const rows = versions.map((v) => `
+      <li class="flex flex-wrap items-center gap-2 py-1.5 border-b border-[var(--border-subtle)] last:border-0">
+        <a href="${E(href({ version: v.id }))}" class="text-sm font-semibold text-[var(--text-primary)] no-underline hover:underline">${E(T('wiki.versionN', { n: v.version_no }))}</a>
+        ${statusChip(v.status)}${v.id === currentId ? chip(T('wiki.current'), 'bg-blue-100 text-blue-800') : ''}
+        <span class="text-[.72rem] text-[var(--text-muted)]">${E(v.author || '')}${v.published_at ? ' · ' + E(fmtDate(v.published_at)) : v.updated_at ? ' · ' + E(fmtDate(v.updated_at)) : ''}</span>
+      </li>`).join('');
+    return `<div class="${CARD}"><h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${E(T('wiki.history'))}</h3><ul>${rows}</ul></div>`;
+  }
+
+  function auditBanner(status: string | null | undefined, due?: string | null): string {
+    if (status === 'pending') {
+      const msg = due ? T('wiki.audit.pending', { date: fmtDate(due) }) : T('wiki.audit.pendingNoDate');
+      return `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-[.8rem] text-amber-900">${E(msg)}</div>`;
+    }
+    if (status === 'audited')
+      return `<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-[.8rem] text-emerald-900">${E(T('wiki.audit.audited'))}</div>`;
+    return '';
+  }
+
+  async function viewPage(path: string) {
+    const { data: rows, error } = await sb.from('wiki_pages').select('*').eq('path', path).limit(1);
+    if (error) throw error;
+    const row = rows?.[0] || null;
+    const isPlatform = path.startsWith('nucleo/');
+    const hist = isPlatform ? await rpc('wiki_page_history', { p_page_path: path }) : null;
+    const cur = row?.platform_version_id ? await rpc('wiki_get_version', { p_version_id: row.platform_version_id }) : null;
+
+    if (!row && !hist?.versions?.length) {
+      view().innerHTML = `${backLink(href(), T('wiki.tab.pages'))}<div class="mt-4">${emptyBox(T('wiki.notFound'))}</div>`;
+      return;
+    }
+
+    const edit = isPlatform && hist?.can_author && hist?.initiative
+      ? `<a href="${E(href({ new: hist.initiative.id, path }))}" class="${BTN_PRIMARY}">${E(T(row ? 'wiki.edit' : 'wiki.writeFirstVersion'))}</a>` : '';
+
+    const meta = row ? [
+      row.source_repo ? sourceChip(row.source_repo) : '',
+      hist?.initiative ? E(hist.initiative.title) : '',
+      row.authors?.length ? E(T('wiki.byAuthors', { names: row.authors.join(', ') })) : '',
+      row.updated_at ? E(T('wiki.updatedAt', { date: fmtDate(row.updated_at) })) : '',
+      cur?.doc_type ? E(T(`wiki.docType.${cur.doc_type}`)) : '',
+      row.license ? E(row.license) : '',
+    ].filter(Boolean).join(' <span class="text-[var(--text-muted)]">·</span> ') : '';
+
+    const article = row ? `
+      <article class="${CARD} space-y-3">
+        <h2 class="text-xl font-extrabold text-[var(--text-primary)]">${E(row.title)}</h2>
+        <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[.75rem] text-[var(--text-secondary)]">${meta}</div>
+        ${isPlatform ? auditBanner(row.audit_status, cur?.audit_due_at) : ''}
+        ${row.summary ? `<p class="text-sm italic text-[var(--text-secondary)]">${E(row.summary)}</p>` : ''}
+        <div class="prose prose-sm max-w-none text-[var(--text-primary)]">${renderMd(row.content, path)}</div>
+        ${sourcesList(cur?.sources)}
+      </article>`
+      : `<div class="${CARD}">${emptyBox(T('wiki.notPublished'))}</div>`;
+
+    view().innerHTML = `
+      <div class="flex items-center justify-between gap-3 mb-3">${backLink(href(), T('wiki.tab.pages'))}${edit}</div>
+      <div class="space-y-4">${article}${historyList(hist, row?.platform_version_id)}</div>`;
+  }
+
+  // ── uma versão e suas ações ────────────────────────────────────────────────────────────────────
+  function timeline(events: any[]): string {
+    if (!events?.length) return '';
+    const rows = events.map((e) => `
+      <li class="py-1.5 border-b border-[var(--border-subtle)] last:border-0 text-[.78rem]">
+        <span class="font-semibold text-[var(--text-primary)]">${E(T(`wiki.event.${e.action}`))}</span>
+        <span class="text-[var(--text-muted)]"> · ${E(e.actor || T('wiki.system'))} · ${E(fmtDate(e.at))}</span>
+        ${e.reason ? `<p class="text-[var(--text-secondary)] mt-0.5">${E(e.reason)}</p>` : ''}
+      </li>`).join('');
+    return `<div class="${CARD}"><h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${E(T('wiki.timeline'))}</h3><ul>${rows}</ul></div>`;
+  }
+
+  async function viewVersion(id: string) {
+    const v = await rpc('wiki_get_version', { p_version_id: id });
+    const hist = await rpc('wiki_page_history', { p_page_path: v.page_path });
+    const meta = (hist?.versions || []).find((x: any) => x.id === id) || {};
+    const mine = queue.my_versions.find((x) => x.id === id);
+    const mineOpen = !!mine && (mine.status === 'draft' || mine.status === 'returned');
+    const minePending = !!mine && (mine.status === 'pending_leader' || mine.status === 'pending_committee');
+    const toDecide = queue.awaiting_my_decision.some((x) => x.id === id);
+    const toAudit = queue.audit_pending.some((x) => x.id === id);
+    const lastReturn = [...(v.events || [])].reverse().find((e: any) => e.action === 'returned');
+
+    let panel = '';
+    if (mineOpen) {
+      panel = `
+        <div class="${CARD} space-y-3">
+          ${v.status === 'returned' && lastReturn ? `<div class="rounded-lg border border-orange-200 bg-orange-50 px-4 py-2 text-[.8rem] text-orange-900">${E(T('wiki.returnedBecause', { reason: lastReturn.reason || '' }))}</div>` : ''}
+          <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.flowHint'))}</p>
+          <div class="flex flex-wrap gap-2">
+            <a href="${E(href({ edit: id }))}" class="${BTN_SECONDARY}">${E(T('wiki.edit'))}</a>
+            <button type="button" id="w-submit" class="${BTN_PRIMARY}">${E(T('wiki.submit'))}</button>
+          </div>
+        </div>`;
+    } else if (minePending) {
+      panel = `<div class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[.8rem] text-amber-900">${E(T(mine?.status === 'pending_committee' ? 'wiki.waitingCommittee' : 'wiki.waitingLeader'))}</div>`;
+    } else if (toDecide) {
+      panel = `
+        <div class="${CARD} space-y-3">
+          <h3 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.decideTitle'))}</h3>
+          <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T(ctx.is_committee ? 'wiki.decideHintCommittee' : 'wiki.decideHintLeader'))}</p>
+          <label class="block text-[.78rem] font-semibold text-[var(--text-secondary)]" for="w-reason">${E(T('wiki.reasonReturn'))}</label>
+          <textarea id="w-reason" rows="2" class="${INPUT}"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="w-publish" class="${BTN_PRIMARY}">${E(T('wiki.publish'))}</button>
+            <button type="button" id="w-return" class="${BTN_SECONDARY}">${E(T('wiki.return'))}</button>
+          </div>
+        </div>`;
+    } else if (toAudit) {
+      const overdue = v.audit_due_at && new Date(v.audit_due_at) < new Date();
+      panel = `
+        <div class="${CARD} space-y-3">
+          <h3 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.auditTitle'))}</h3>
+          <p class="text-[.8rem] ${overdue ? 'text-red-700 font-semibold' : 'text-[var(--text-secondary)]'}">${E(T(overdue ? 'wiki.auditOverdue' : 'wiki.auditDue', { date: fmtDate(v.audit_due_at) }))}</p>
+          <label class="block text-[.78rem] font-semibold text-[var(--text-secondary)]" for="w-reason">${E(T('wiki.reasonAudit'))}</label>
+          <textarea id="w-reason" rows="2" class="${INPUT}"></textarea>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="w-keep" class="${BTN_PRIMARY}">${E(T('wiki.auditKeep'))}</button>
+            <a href="${E(href({ alter: id }))}" class="${BTN_SECONDARY}">${E(T('wiki.auditAlter'))}</a>
+            <button type="button" id="w-unpublish" class="${BTN_DANGER}">${E(T('wiki.auditUnpublish'))}</button>
+          </div>
+        </div>`;
+    }
+
+    const pageLink = v.status === 'published' || v.status === 'superseded'
+      ? `<a href="${E(href({ page: v.page_path }))}" class="${BTN_SECONDARY}">${E(T('wiki.openPage'))}</a>` : '';
+
+    view().innerHTML = `
+      <div class="flex items-center justify-between gap-3 mb-3">${backLink(href({ page: v.page_path }), T('wiki.backToPage'))}${pageLink}</div>
+      <div class="space-y-4">
+        ${panel}
+        <article class="${CARD} space-y-3">
+          <div class="flex flex-wrap items-center gap-2">${statusChip(v.status)}
+            <span class="text-[.75rem] text-[var(--text-muted)]">${E(T('wiki.versionOf', { n: v.version_no, path: v.page_path }))}</span></div>
+          <h2 class="text-xl font-extrabold text-[var(--text-primary)]">${E(v.title)}</h2>
+          <div class="text-[.75rem] text-[var(--text-secondary)]">${[
+            hist?.initiative ? E(hist.initiative.title) : '',
+            meta.author ? E(T('wiki.byAuthors', { names: meta.author })) : '',
+            v.doc_type ? E(T(`wiki.docType.${v.doc_type}`)) : '',
+          ].filter(Boolean).join(' · ')}</div>
+          ${v.pii_detail ? `<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-[.8rem] text-red-800">${E(T('wiki.piiWarning', { what: v.pii_detail }))}</div>` : ''}
+          ${v.status === 'published' ? auditBanner(v.audited_at ? 'audited' : 'pending', v.audit_due_at) : ''}
+          ${v.summary ? `<p class="text-sm italic text-[var(--text-secondary)]">${E(v.summary)}</p>` : ''}
+          <div class="prose prose-sm max-w-none text-[var(--text-primary)]">${renderMd(v.content, v.page_path)}</div>
+          ${sourcesList(v.sources)}
+        </article>
+        ${timeline(v.events)}
+        ${historyList(hist, id)}
+      </div>`;
+
+    const reasonOf = () => ((document.getElementById('w-reason') as HTMLTextAreaElement | null)?.value || '').trim();
+    const act = (btnId: string, fn: () => Promise<void>) => {
+      const b = document.getElementById(btnId) as HTMLButtonElement | null;
+      b?.addEventListener('click', async () => {
+        b.disabled = true;
+        try { await fn(); } catch (e) { toast(errMsg(e), 'error'); b.disabled = false; }
+      });
+    };
+    act('w-submit', async () => {
+      const r = await rpc('wiki_submit', { p_version_id: id });
+      toast(T(r?.route === 'committee' ? 'wiki.submittedCommittee' : 'wiki.submittedLeader'));
+      location.href = href({ version: id });
+    });
+    act('w-publish', async () => {
+      await rpc('wiki_decide', { p_version_id: id, p_decision: 'publish' });
+      toast(T('wiki.publishedToast'));
+      location.href = href({ page: v.page_path });
+    });
+    act('w-return', async () => {
+      if (!reasonOf()) throw new Error(T('wiki.reasonRequired'));
+      await rpc('wiki_decide', { p_version_id: id, p_decision: 'return', p_reason: reasonOf() });
+      toast(T('wiki.returnedToast'));
+      location.href = href({ tab: 'decide' });
+    });
+    act('w-keep', async () => {
+      await rpc('wiki_audit', { p_version_id: id, p_outcome: 'kept', p_reason: reasonOf() || null });
+      toast(T('wiki.keptToast'));
+      location.href = href({ tab: 'audit' });
+    });
+    // Despublicar pede um segundo clique no mesmo botão (sem diálogo do navegador).
+    const un = document.getElementById('w-unpublish') as HTMLButtonElement | null;
+    un?.addEventListener('click', async () => {
+      if (un.dataset.armed !== '1') { un.dataset.armed = '1'; un.textContent = T('wiki.confirmUnpublish'); return; }
+      un.disabled = true;
+      try {
+        if (!reasonOf()) throw new Error(T('wiki.reasonRequired'));
+        await rpc('wiki_audit', { p_version_id: id, p_outcome: 'unpublished', p_reason: reasonOf() });
+        toast(T('wiki.unpublishedToast'));
+        location.href = href({ tab: 'audit' });
+      } catch (e) { toast(errMsg(e), 'error'); un.disabled = false; }
+    });
+  }
+
+  // ── editor ─────────────────────────────────────────────────────────────────────────────────────
+  const DOC_TYPES = ['tutorial', 'how_to', 'reference', 'explanation'];
+
+  function slugify(s: string): string {
+    return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+  }
+
+  function sourceRow(s: { label?: string; url?: string } = {}, disabled = false): string {
+    const dis = disabled ? 'disabled' : '';
+    return `<div class="w-source flex gap-2">
+      <input class="${INPUT} w-src-label" placeholder="${E(T('wiki.sourceLabel'))}" value="${E(s.label || '')}" ${dis}>
+      <input class="${INPUT} w-src-url" placeholder="https://…" value="${E(s.url || '')}" ${dis}>
+      ${disabled ? '' : `<button type="button" class="w-src-del ${BTN_SECONDARY} !px-3" aria-label="${E(T('wiki.removeSource'))}">&times;</button>`}
+    </div>`;
+  }
+
+  type EditorOpts = { mode: 'edit' | 'alter' | 'new'; id?: string; initiative?: string; path?: string | null };
+
+  async function viewEditor(o: EditorOpts) {
+    let tribe: { id: string; title: string; path_prefix?: string } | null = null;
+    let path: string | null = o.path || null;
+    let base: any = null; // versão que preenche o formulário
+
+    if (o.mode === 'edit' || o.mode === 'alter') {
+      base = await rpc('wiki_get_version', { p_version_id: o.id });
+      const hist = await rpc('wiki_page_history', { p_page_path: base.page_path });
+      tribe = hist?.initiative || null;
+      path = base.page_path;
+      const allowed = o.mode === 'edit'
+        ? queue.my_versions.some((x) => x.id === o.id && (x.status === 'draft' || x.status === 'returned'))
+        : queue.audit_pending.some((x) => x.id === o.id);
+      if (!allowed) {
+        view().innerHTML = `${backLink(href({ version: o.id }), T('wiki.backToVersion'))}<div class="mt-4">${errorBox(T(o.mode === 'edit' ? 'wiki.cannotEdit' : 'wiki.cannotAlter'))}</div>`;
+        return;
+      }
+    } else {
+      const t = ctx.tribes.find((x) => x.id === o.initiative);
+      if (!t) { view().innerHTML = errorBox(T('wiki.notYourTribe')); return; }
+      tribe = t;
+      if (path) {
+        const open = queue.my_versions.find((x) => x.page_path === path);
+        if (open && (open.status === 'draft' || open.status === 'returned')) { location.replace(href({ edit: open.id })); return; }
+        if (open) {
+          view().innerHTML = `<div class="${CARD}">${E(T('wiki.alreadyPending'))} <a href="${E(href({ version: open.id }))}">${E(T('wiki.openVersion'))}</a></div>`;
+          return;
+        }
+        const row = pages.find((p) => p.path === path);
+        if (row?.platform_version_id) base = await rpc('wiki_get_version', { p_version_id: row.platform_version_id });
+      }
+    }
+
+    const alter = o.mode === 'alter';
+    const prefix = (tribe as any)?.path_prefix || '';
+    const pathField = path
+      ? `<code class="text-[.78rem]">${E(path)}</code>`
+      : `<span class="inline-flex items-center gap-1 flex-wrap"><code class="text-[.78rem]">${E(prefix)}/</code>
+           <input id="w-slug" class="${INPUT} !w-56 !py-1" placeholder="${E(T('wiki.slugPlaceholder'))}"></span>
+         <p class="text-[.72rem] text-[var(--text-muted)] mt-1">${E(T('wiki.slugHint'))}</p>`;
+    const sources: any[] = Array.isArray(base?.sources) && base.sources.length ? base.sources : [{}];
+
+    const cancelUrl = o.mode === 'new'
+      ? (path && pages.some((p) => p.path === path) ? href({ page: path }) : href({ tab: 'mine' }))
+      : href({ version: o.id });
+    view().innerHTML = `
+      ${backLink(cancelUrl, T('wiki.cancel'))}
+      <form id="w-form" class="${CARD} space-y-4 mt-3" novalidate>
+        <h2 class="text-lg font-extrabold text-[var(--text-primary)]">${E(T(alter ? 'wiki.alterTitle' : o.mode === 'edit' ? 'wiki.editDraftTitle' : base ? 'wiki.newVersionTitle' : 'wiki.newPageTitle'))}</h2>
+        <div class="text-[.8rem] text-[var(--text-secondary)] space-y-1">
+          <div><strong>${E(T('wiki.tribe'))}:</strong> ${E(tribe?.title || '')}</div>
+          <div><strong>${E(T('wiki.path'))}:</strong> ${pathField}</div>
+        </div>
+        <label class="block"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.fieldTitle'))}</span>
+          <input id="w-title" class="${INPUT} mt-1" maxlength="200" value="${E(base?.title || '')}"></label>
+        <label class="block"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.fieldSummary'))}</span>
+          <span class="block text-[.72rem] text-[var(--text-muted)]">${E(T('wiki.fieldSummaryHint'))}</span>
+          <textarea id="w-summary" rows="2" class="${INPUT} mt-1">${E(base?.summary || '')}</textarea></label>
+        <label class="block"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.fieldDocType'))}</span>
+          <select id="w-doctype" class="${INPUT} mt-1" ${alter ? 'disabled' : ''}>
+            <option value="">${E(T('wiki.chooseType'))}</option>
+            ${DOC_TYPES.map((d) => `<option value="${d}" ${base?.doc_type === d ? 'selected' : ''}>${E(T(`wiki.docType.${d}`))}: ${E(T(`wiki.docTypeHint.${d}`))}</option>`).join('')}
+          </select></label>
+        <fieldset class="space-y-2"><legend class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.sources'))}</legend>
+          <p class="text-[.72rem] text-[var(--text-muted)]">${E(T(alter ? 'wiki.alterKeepsMeta' : 'wiki.sourcesHint'))}</p>
+          <div id="w-sources" class="space-y-2">${sources.map((s) => sourceRow(s, alter)).join('')}</div>
+          ${alter ? '' : `<button type="button" id="w-src-add" class="${BTN_SECONDARY} !py-1 !text-xs">+ ${E(T('wiki.addSource'))}</button>`}
+        </fieldset>
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.fieldContent'))}</span>
+            <button type="button" id="w-preview-toggle" class="${BTN_SECONDARY} !py-1 !text-xs">${E(T('wiki.preview'))}</button>
+          </div>
+          <textarea id="w-content" rows="18" class="${INPUT} mt-1 font-mono !text-[.8rem]">${E(base?.content || '')}</textarea>
+          <div id="w-preview" class="hidden mt-1 rounded-lg border border-[var(--border-default)] p-4 prose prose-sm max-w-none text-[var(--text-primary)]"></div>
+        </div>
+        ${alter ? `<label class="block"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.reasonAlter'))}</span>
+          <textarea id="w-alter-reason" rows="2" class="${INPUT} mt-1"></textarea></label>` : ''}
+        <div class="flex flex-wrap gap-2">
+          ${alter
+            ? `<button type="button" id="w-save-alter" class="${BTN_PRIMARY}">${E(T('wiki.publishAlteration'))}</button>`
+            : `<button type="button" id="w-save" class="${BTN_SECONDARY}">${E(T('wiki.saveDraft'))}</button>
+               <button type="button" id="w-save-submit" class="${BTN_PRIMARY}">${E(T('wiki.saveAndSubmit'))}</button>`}
+        </div>
+        <p class="text-[.72rem] text-[var(--text-muted)]">${E(T(alter ? 'wiki.alterHint' : 'wiki.flowHint'))}</p>
+      </form>`;
+
+    const $ = <El extends HTMLElement>(id: string) => document.getElementById(id) as El;
+    const srcBox = $('w-sources');
+    srcBox.addEventListener('click', (ev) => {
+      const del = (ev.target as HTMLElement).closest('.w-src-del');
+      if (del) del.closest('.w-source')?.remove();
+    });
+    $('w-src-add')?.addEventListener('click', () => srcBox.insertAdjacentHTML('beforeend', sourceRow()));
+    $('w-preview-toggle').addEventListener('click', () => {
+      const pv = $('w-preview'); const ta = $<HTMLTextAreaElement>('w-content');
+      const showing = !pv.classList.contains('hidden');
+      if (!showing) pv.innerHTML = renderMd(ta.value, path || prefix) || `<p class="text-[var(--text-muted)]">${E(T('wiki.previewEmpty'))}</p>`;
+      pv.classList.toggle('hidden', showing); ta.classList.toggle('hidden', !showing);
+      $('w-preview-toggle').textContent = T(showing ? 'wiki.preview' : 'wiki.write');
+    });
+
+    function collect() {
+      const title = $<HTMLInputElement>('w-title').value.trim();
+      if (!title) throw new Error(T('wiki.titleRequired'));
+      let finalPath = path;
+      if (!finalPath) {
+        const slug = slugify($<HTMLInputElement>('w-slug').value);
+        finalPath = slug ? `${prefix}/${slug}` : prefix;
+        if (pages.some((p) => p.path === finalPath)) throw new Error(T('wiki.pathTaken'));
+      }
+      const srcs = [...srcBox.querySelectorAll('.w-source')].map((row) => ({
+        label: (row.querySelector('.w-src-label') as HTMLInputElement).value.trim(),
+        url: (row.querySelector('.w-src-url') as HTMLInputElement).value.trim(),
+      })).filter((s) => s.label || s.url);
+      for (const s of srcs) if (s.url && !safeNavigationUrl(s.url)) throw new Error(T('wiki.badSourceUrl', { url: s.url }));
+      return {
+        path: finalPath as string, title,
+        summary: $<HTMLTextAreaElement>('w-summary').value.trim(),
+        docType: $<HTMLSelectElement>('w-doctype').value || null,
+        sources: srcs.map((s) => (s.url ? s : { label: s.label })),
+        content: $<HTMLTextAreaElement>('w-content').value,
+      };
+    }
+
+    async function save(andSubmit: boolean) {
+      const f = collect();
+      const vid = await rpc('wiki_save_draft', {
+        p_page_path: f.path, p_initiative_id: tribe!.id, p_title: f.title, p_summary: f.summary,
+        p_content: f.content, p_doc_type: f.docType, p_sources: f.sources, p_domain: 'tribes',
+        p_version_id: o.mode === 'edit' ? o.id : null,
+      });
+      if (andSubmit) {
+        const r = await rpc('wiki_submit', { p_version_id: vid });
+        toast(T(r?.route === 'committee' ? 'wiki.submittedCommittee' : 'wiki.submittedLeader'));
+      } else {
+        toast(T('wiki.draftSaved'));
+      }
+      location.href = href({ version: vid });
+    }
+
+    const bind = (btnId: string, fn: () => Promise<void>) => {
+      const b = document.getElementById(btnId) as HTMLButtonElement | null;
+      b?.addEventListener('click', async () => {
+        b.disabled = true;
+        try { await fn(); } catch (e) { toast(errMsg(e), 'error'); b.disabled = false; }
+      });
+    };
+    bind('w-save', () => save(false));
+    bind('w-save-submit', () => save(true));
+    bind('w-save-alter', async () => {
+      const f = collect();
+      const reason = $<HTMLTextAreaElement>('w-alter-reason').value.trim();
+      if (!reason) throw new Error(T('wiki.reasonRequired'));
+      const nid = await rpc('wiki_audit', {
+        p_version_id: o.id, p_outcome: 'altered', p_reason: reason,
+        p_title: f.title, p_summary: f.summary, p_content: f.content,
+      });
+      toast(T('wiki.alteredToast'));
+      location.href = href({ version: nid });
+    });
+  }
+
+  // ── abas de trabalho ───────────────────────────────────────────────────────────────────────────
+  function workList(items: any[], line: (x: any) => string, empty: string): string {
+    if (!items.length) return `<div class="${CARD}">${emptyBox(empty)}</div>`;
+    return `<ul class="${CARD} !py-1">${items.map((x) => `
+      <li class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
+        <a href="${E(href({ version: x.id }))}" class="font-semibold text-[var(--text-primary)] no-underline hover:underline">${E(x.title)}</a>
+        <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5 flex flex-wrap items-center gap-1.5">${line(x)}</div>
+      </li>`).join('')}</ul>`;
+  }
+
+  function viewMine() {
+    const tribeOptions = ctx.tribes.map((t) => `<option value="${E(t.id)}">${E(t.title)}${t.status === 'active' ? '' : ` (${E(T('wiki.archived'))})`}</option>`).join('');
+    const newForm = ctx.tribes.length ? `
+      <div class="${CARD} !p-4 flex flex-wrap items-end gap-2">
+        <label class="flex-1 min-w-[220px]"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.newPageIn'))}</span>
+          <select id="w-new-tribe" class="${INPUT} mt-1">${tribeOptions}</select></label>
+        <button type="button" id="w-new-go" class="${BTN_PRIMARY}">${E(T('wiki.newPage'))}</button>
+      </div>` : `<div class="${CARD}">${emptyBox(T('wiki.noTribes'))}</div>`;
+    view().innerHTML = `<div class="space-y-4">
+      ${myTribesCallout()}
+      ${newForm}
+      <h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myOpenVersions'))}</h2>
+      ${workList(queue.my_versions, (x) => `${statusChip(x.status)}<code>${E(x.page_path)}</code><span>${E(fmtDate(x.updated_at))}</span>`, T('wiki.noOpenVersions'))}
+    </div>`;
+    document.getElementById('w-new-go')?.addEventListener('click', () => {
+      const id = (document.getElementById('w-new-tribe') as HTMLSelectElement).value;
+      location.href = href({ new: id });
+    });
+  }
+
+  function viewDecide() {
+    view().innerHTML = `<div class="space-y-3">
+      <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.decideIntro'))}</p>
+      ${workList(queue.awaiting_my_decision, (x) => `${statusChip(x.status)}<span>${E(x.initiative)}</span><span>${E(T('wiki.submittedOn', { date: fmtDate(x.submitted_at) }))}</span>${x.pii ? chip(T('wiki.piiShort'), 'bg-red-100 text-red-700') : ''}`, T('wiki.nothingToDecide'))}
+    </div>`;
+  }
+
+  function viewAudit() {
+    view().innerHTML = `<div class="space-y-3">
+      <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.auditIntro'))}</p>
+      ${workList(queue.audit_pending, (x) => `<span>${E(x.initiative)}</span><span>${E(T('wiki.publishedOn', { date: fmtDate(x.published_at) }))}</span>${x.overdue ? chip(T('wiki.overdue'), 'bg-red-100 text-red-700') : `<span>${E(T('wiki.dueOn', { date: fmtDate(x.audit_due_at) }))}</span>`}`, T('wiki.nothingToAudit'))}
+    </div>`;
+  }
+
+  // ── rota e arranque ────────────────────────────────────────────────────────────────────────────
+  async function route() {
+    view().innerHTML = `<p class="text-sm text-[var(--text-muted)] py-6 text-center">${E(T('wiki.loading'))}</p>`;
+    try {
+      const tab = params.get('tab');
+      if (params.get('version')) return await viewVersion(params.get('version')!);
+      if (params.get('page')) return await viewPage(params.get('page')!);
+      if (params.get('edit')) return await viewEditor({ mode: 'edit', id: params.get('edit')! });
+      if (params.get('alter')) return await viewEditor({ mode: 'alter', id: params.get('alter')! });
+      if (params.get('new')) return await viewEditor({ mode: 'new', initiative: params.get('new')!, path: params.get('path') });
+      if (tab === 'mine') return viewMine();
+      if (tab === 'decide') return viewDecide();
+      if (tab === 'audit' && ctx.is_committee) return viewAudit();
+      return await viewList(params.get('q') || '');
+    } catch (e) {
+      view().innerHTML = errorBox(errMsg(e) || T('wiki.loadError'));
+    }
+  }
+
+  function deny(msg: string) {
+    document.getElementById('wiki-loading')?.classList.add('hidden');
+    (document.getElementById('wiki-denied-msg') as HTMLElement).textContent = msg;
+    document.getElementById('wiki-denied')?.classList.remove('hidden');
+  }
+
+  let started = false;
+  async function start() {
+    if (started) return;
+    started = true;
+    const [c, q, p] = await Promise.all([
+      sb.rpc('wiki_authoring_context'),
+      sb.rpc('wiki_review_queue'),
+      sb.from('wiki_pages').select('path,title,summary,domain,source_repo,audit_status,updated_at,authors,platform_version_id').order('title'),
+    ]);
+    const err = c.error || q.error || p.error;
+    if (err) { deny(/requer membro ativo/.test(err.message || '') ? T('wiki.activeOnly') : T('wiki.loadError')); return; }
+    ctx = { is_committee: !!c.data?.is_committee, tribes: c.data?.tribes || [] };
+    queue = {
+      awaiting_my_decision: q.data?.awaiting_my_decision || [],
+      audit_pending: q.data?.audit_pending || [],
+      my_versions: q.data?.my_versions || [],
+    };
+    pages = p.data || [];
+    document.getElementById('wiki-loading')?.classList.add('hidden');
+    document.getElementById('wiki-denied')?.classList.add('hidden');
+    document.getElementById('wiki-app')?.classList.remove('hidden');
+    (document.getElementById('wiki-home') as HTMLAnchorElement).href = href();
+    renderTabs();
+    await route();
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    if ((window as any).navGetMember?.()) { start(); return; }
+    window.addEventListener('nav:member', ((e: CustomEvent) => { if (e.detail) start(); }) as EventListener);
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) { start(); return; }
+    } catch { /* sem sessão */ }
+    deny(T('wiki.loginRequired'));
+  }
+
+  boot();
+</script>
