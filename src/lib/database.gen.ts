@@ -28503,8 +28503,420 @@ export type Database = {
           },
         ]
       }
+      wiki_page_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          page_path: string
+          reason: string | null
+          version_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          page_path: string
+          reason?: string | null
+          version_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          page_path?: string
+          reason?: string | null
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_events_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "wiki_page_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wiki_page_versions: {
+        Row: {
+          audit_due_at: string | null
+          audit_outcome: string | null
+          audited_at: string | null
+          audited_by: string | null
+          author_id: string | null
+          content: string
+          created_at: string
+          doc_type: string | null
+          domain: string
+          id: string
+          initiative_id: string
+          page_path: string
+          pii_detail: string | null
+          published_at: string | null
+          published_by: string | null
+          review_route: string | null
+          sources: Json
+          status: string
+          submitted_at: string | null
+          summary: string | null
+          title: string
+          updated_at: string
+          version_no: number
+        }
+        Insert: {
+          audit_due_at?: string | null
+          audit_outcome?: string | null
+          audited_at?: string | null
+          audited_by?: string | null
+          author_id?: string | null
+          content?: string
+          created_at?: string
+          doc_type?: string | null
+          domain: string
+          id?: string
+          initiative_id: string
+          page_path: string
+          pii_detail?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          review_route?: string | null
+          sources?: Json
+          status?: string
+          submitted_at?: string | null
+          summary?: string | null
+          title: string
+          updated_at?: string
+          version_no: number
+        }
+        Update: {
+          audit_due_at?: string | null
+          audit_outcome?: string | null
+          audited_at?: string | null
+          audited_by?: string | null
+          author_id?: string | null
+          content?: string
+          created_at?: string
+          doc_type?: string | null
+          domain?: string
+          id?: string
+          initiative_id?: string
+          page_path?: string
+          pii_detail?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          review_route?: string | null
+          sources?: Json
+          status?: string
+          submitted_at?: string | null
+          summary?: string | null
+          title?: string
+          updated_at?: string
+          version_no?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_audited_by_fkey"
+            columns: ["audited_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["initiative_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wiki_page_versions_published_by_fkey"
+            columns: ["published_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       wiki_pages: {
         Row: {
+          audit_status: string | null
           authors: string[] | null
           content: string
           created_at: string | null
@@ -28514,6 +28926,7 @@ export type Database = {
           ip_track: string | null
           license: string | null
           path: string
+          platform_version_id: string | null
           source_repo: string
           source_sha: string | null
           summary: string | null
@@ -28523,6 +28936,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          audit_status?: string | null
           authors?: string[] | null
           content?: string
           created_at?: string | null
@@ -28532,6 +28946,7 @@ export type Database = {
           ip_track?: string | null
           license?: string | null
           path: string
+          platform_version_id?: string | null
           source_repo?: string
           source_sha?: string | null
           summary?: string | null
@@ -28541,6 +28956,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          audit_status?: string | null
           authors?: string[] | null
           content?: string
           created_at?: string | null
@@ -28550,6 +28966,7 @@ export type Database = {
           ip_track?: string | null
           license?: string | null
           path?: string
+          platform_version_id?: string | null
           source_repo?: string
           source_sha?: string | null
           summary?: string | null
@@ -30207,6 +30624,30 @@ export type Database = {
       }
       _validate_gates_shape: { Args: { p_gates: Json }; Returns: boolean }
       _volunteer_term_signed_digest_cron: { Args: never; Returns: Json }
+      _wiki_can_author: {
+        Args: { p_initiative: string; p_member: string }
+        Returns: boolean
+      }
+      _wiki_committee_ids: { Args: never; Returns: string[] }
+      _wiki_initiative_leader_ids: {
+        Args: { p_initiative: string }
+        Returns: string[]
+      }
+      _wiki_is_initiative_leader: {
+        Args: { p_initiative: string; p_member: string }
+        Returns: boolean
+      }
+      _wiki_notify: {
+        Args: {
+          p_body: string
+          p_recipients: string[]
+          p_title: string
+          p_type: string
+          p_version: string
+        }
+        Returns: number
+      }
+      _wiki_pii_detail: { Args: { p_text: string }; Returns: string }
       _work_initiative_id: {
         Args: { p_work_id: string; p_work_type: string }
         Returns: string
@@ -35656,6 +36097,23 @@ export type Database = {
         }
         Returns: Json
       }
+      wiki_audit: {
+        Args: {
+          p_content?: string
+          p_outcome: string
+          p_reason?: string
+          p_summary?: string
+          p_title?: string
+          p_version_id: string
+        }
+        Returns: string
+      }
+      wiki_audit_sla_sweep: { Args: never; Returns: number }
+      wiki_decide: {
+        Args: { p_decision: string; p_reason?: string; p_version_id: string }
+        Returns: string
+      }
+      wiki_get_version: { Args: { p_version_id: string }; Returns: Json }
       wiki_health_report: {
         Args: never
         Returns: {
@@ -35666,6 +36124,22 @@ export type Database = {
           title: string
         }[]
       }
+      wiki_review_queue: { Args: never; Returns: Json }
+      wiki_save_draft: {
+        Args: {
+          p_content: string
+          p_doc_type: string
+          p_domain?: string
+          p_initiative_id: string
+          p_page_path: string
+          p_sources?: Json
+          p_summary: string
+          p_title: string
+          p_version_id?: string
+        }
+        Returns: string
+      }
+      wiki_submit: { Args: { p_version_id: string }; Returns: Json }
       withdraw_from_initiative: {
         Args: { p_initiative_id: string; p_reason: string }
         Returns: Json

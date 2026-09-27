@@ -178,6 +178,22 @@
       "delivery_mode": "transactional_immediate",
       "rationale": "#2496 (2026-09-27) — aviso a tribo quando um board_item entra em curation_status='curation_pending'. Emitido por `notify_on_curation_status_change` na TRANSICAO, uma vez por pessoa ativa entre os participantes do card (board_item_assignments) e a lideranca ativa da iniciativa do board (engagements role=leader), com link para o board da tribo (/tribe/<id>?tab=board) ou para a pagina da iniciativa, e o prazo do parecer quando ja existe. Imediato de proposito: antes a tribo so recebia card_moved (digest_weekly), com o codigo cru do status e link generico, e nenhuma das 3 pessoas do primeiro item medido recebeu e-mail."
     },
+    "wiki_review_requested": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 (2026-09-27) — piloto do wiki vivo (ADR-0129, emenda 2). Uma versao de pagina foi enviada e aguarda decisao: vai a lideranca ativa da tribo (rota leader) ou ao comite de curadoria, os membros ativos com curate_content (rota committee: aviso de dado pessoal, autor da lideranca ou do comite, ou tribo sem lideranca ativa). Emitido por wiki_submit. Imediato: a lideranca publica na hora e o fluxo depende de ela saber que ha o que decidir."
+    },
+    "wiki_page_decision": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 (2026-09-27) — piloto do wiki vivo (ADR-0129, emenda 2). Resultado para o autor e a lideranca da tribo: publicada, devolvida (com motivo), auditada e mantida, alterada ou despublicada pelo comite (com motivo). Emitido por wiki_decide e wiki_audit. Imediato: e o retorno que falta hoje na curadoria de cards (#2496 item 7)."
+    },
+    "wiki_audit_requested": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 (2026-09-27) — piloto do wiki vivo (ADR-0129, emenda 2). Uma pagina foi publicada pela lideranca e entra na fila de auditoria do comite, com prazo de 14 dias. Vai aos membros ativos com curate_content, exceto quem publicou. Emitido por wiki_decide. Imediato: o digest semanal comeria metade do prazo."
+    },
+    "wiki_audit_overdue": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 (2026-09-27) — piloto do wiki vivo (ADR-0129, emenda 2). A auditoria de uma pagina publicada passou dos 14 dias sem parecer. Vai uma vez, a quem gere a plataforma (manage_platform), pela varredura diaria wiki_audit_sla_sweep (cron wiki-audit-sla-daily). Imediato: e decisao, nao fila."
+    },
     "drive_access_action_needed": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2454 (2026-09-24) — a concessao de acesso a pasta do Drive da iniciativa falhou do lado do destinatario (e-mail sem conta Google, ou dominio que bloqueia receber de fora). Vai a propria pessoa, uma vez, pedindo um e-mail Google no perfil (a reconciliacao diaria ja concede aos e-mails secundarios). Emitido por _notify_drive_grant_failure a partir do gatilho de drive_membership_grants; nao sai se a pessoa ja tem acesso a mesma pasta por outro e-mail."
