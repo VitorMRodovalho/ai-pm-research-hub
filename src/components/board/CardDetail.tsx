@@ -238,7 +238,6 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       && !!ci.assigned_to
       && ci.assigned_to === permissions.member.id
     );
-  const isCurator = permissions.canCurate;
   const isCurationItem = item.curation_status === 'curation_pending';
 
   // ── Governance role checks (D1-D20) ──
@@ -252,6 +251,13 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const cardInitiativeId = item.initiative_id ?? board.initiative_id ?? null;
   const isLeader = (cardInitiativeId && canFor('manage_board_admin', { type: 'initiative', id: cardInitiativeId }))
     || (cardTribeId !== null && canFor('manage_board_admin', { type: 'tribe', id: cardTribeId }));
+  // #2496: parecer de curadoria nunca para quem é da própria tribo do card (participante ou
+  // membro da tribo/iniciativa dele). `isLeader` não serve aqui: canFor('manage_board_admin')
+  // aceita autoridade de toda a organização, e esconderia o botão do GP e do co-GP.
+  const isOwnTribeOfCard =
+    (!!cardInitiativeId && permissions.member?.initiative_id === cardInitiativeId)
+    || (cardTribeId !== null && permissions.member?.tribe_id === cardTribeId);
+  const isCurator = permissions.canCurate && !isCardAssignee && !isOwnTribeOfCard;
   const canEditBaseline = (isGP || isLeader) && !item.baseline_locked_at;
   const canUnlockBaseline = isGP;
   // #1903 — o gate da data de forecast lia `item.assignee_id`, a coluna LEGADA e SINGULAR, enquanto
