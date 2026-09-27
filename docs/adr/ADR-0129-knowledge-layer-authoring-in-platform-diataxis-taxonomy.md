@@ -1,9 +1,9 @@
 # ADR-0129: The knowledge layer is authored in the platform, classified by Diátaxis, and fed before it is extended
 
-**Status:** Proposed
-**Date:** 2026-09-13
+**Status:** Accepted on 2026-09-27, with the amendment below
+**Date:** 2026-09-13 (proposed) · 2026-09-27 (accepted)
 **Source:** Discussion in the Núcleo general WhatsApp group on 2026-09-13 (glossary raised by a researcher; tool-vs-process split proposed by a tribe leader), the `Nucleo_Wiki_Fluxo_Conhecimento_V1` deck of the same date, and a live survey of the knowledge tables run while analysing it.
-**Related:** ADR-0010 (wiki content is narrative and non-personal), ADR-0105 (confidential initiative visibility), [#2208](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2208) (YouTube archive without captions).
+**Related:** ADR-0010 (wiki content is narrative and non-personal), ADR-0105 (confidential initiative visibility), [#2208](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2208) (YouTube archive without captions), [#2495](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2495) (living wiki: architecture and gap assessment).
 **SSOT reused:** `wiki_pages`, `knowledge_assets`, `knowledge_chunks`, `knowledge_ingestion_runs`, `search_nucleo_knowledge` (MCP).
 
 ---
@@ -170,6 +170,29 @@ not a shortage of places.
   `request_to_join_initiative` treats `'open'` identically to `request_to_join`.
 - Whether an active dissemination layer (workshop, learning trail) belongs here or to the tribe
   already running the culture research.
+
+## Amendment (GP decisions, 2026-09-26 and 2026-09-27)
+
+Accepted together with these decisions. Where the text above and this section differ, this section wins.
+
+1. **Curation belongs to the existing Curation Committee, organised by domain.** This closes the first
+   open point of "What this ADR does NOT decide". Each domain has a curator and a substitute, named as
+   roles, never as a single person.
+2. **Media is a cited source, never a copy.** Video, PDF, podcast and webinar stay where they live (Drive,
+   YouTube) and enter the wiki as a link in the note's sources. Nothing is duplicated into the repository
+   or into `wiki_pages`.
+3. **Proposals in the pilot use the existing curation machinery for board items** (one card per proposal in
+   a "Wiki · <domain>" board, reviewed through `submit_curation_review`). The approved text is written by the
+   platform authoring path of decision 2. It is never committed back to the repository.
+4. **The pilot domain is `tribes`.**
+5. **The 66 `migrated-from-public-816` pages and the 20 `strategy` pages were working documents, not
+   narrative knowledge.** On 2026-09-27 they moved to a private management archive, and the push webhook
+   removed them from `wiki_pages`, leaving 65 pages. This resolves the corresponding item under
+   Consequences.
+6. **Reading the wiki requires an active member.** `wiki_pages_read` moves from `rls_is_member()` (any
+   member row for the login, active or not) to `rls_is_authoritative_member()`, the canonical gate of the
+   RLS phase 2 read policies. The other policies that still use `rls_is_member()` are unchanged by this
+   decision.
 
 ## References
 
