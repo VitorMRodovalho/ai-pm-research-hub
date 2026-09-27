@@ -128,7 +128,11 @@ export function useBoardPermissions(board: Board | null): Permissions {
   );
   const isGlobal = board.board_scope === 'global';
   const isComms = effectiveDesig.some((d: string) => ['comms_leader', 'comms_member'].includes(d));
-  const isCurator = effectiveDesig.includes('curator') || effectiveDesig.includes('co_gp');
+  // #2496: o parecer de curadoria segue a MESMA regra de submit_curation_review
+  // (participate_in_governance_review). A regra anterior (designação curator/co_gp OU gestão
+  // do board) escondia o botão dos revisores designados e o oferecia à liderança e aos
+  // autores do próprio item. Suprimido sob simulação, como o write_board com escopo (W144).
+  const canReviewCuration = !sim.active && canFor('participate_in_governance_review');
 
   // V4 (ADR-0007): honor engagement-derived write_board for the board's
   // initiative/tribe scope. The tier-only logic above ignores the canonical
@@ -158,7 +162,7 @@ export function useBoardPermissions(board: Board | null): Permissions {
     canEditAny: canManageBoard || isCommsOnGlobal,
     canMove: canManageBoard || isCommsOnGlobal || (isOwnTribe && tier <= 4),
     canAssign: canManageBoard || isCommsOnGlobal,
-    canCurate: canManageBoard || isCurator,
+    canCurate: canReviewCuration,
     canDelete: canManageBoard,
     canManageBoard,
     isLoading,
