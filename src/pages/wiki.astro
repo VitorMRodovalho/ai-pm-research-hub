@@ -3,8 +3,9 @@
  * /wiki — o wiki vivo do Núcleo (#2495, ADR-0129 com as emendas 1 e 2).
  *
  * Uma tela só; a visão vem da URL, para que o aviso e o e-mail levem direto ao ponto:
- *   (padrão) | ?q=        lista e busca das páginas
- *   ?page=<caminho>       leitura: fonte, tribo dona, estado de auditoria, fontes e histórico
+ *   (padrão)              início: busca com sugestão, atalhos por objetivo, "Comece aqui", tribos, recentes
+ *   ?q= | ?type=          resultados da busca, filtráveis pelo tipo Diátaxis (tag diataxis-<tipo>)
+ *   ?page=<caminho>       leitura em 3 colunas: páginas, artigo (fonte, tribo dona, auditoria), "Nesta página"
  *   ?version=<id>         uma versão e as ações de quem pode agir sobre ela (os avisos apontam aqui)
  *   ?edit=<id> | ?new=<tribo>[&path=] | ?alter=<id>   editor (rascunho do autor, versão nova, alteração do comitê)
  *   ?tab=mine|decide|audit                            minhas versões, fila da liderança, fila do comitê
@@ -12,6 +13,8 @@
  * Sem portão SSR por desenho (ADR-0106): o limite é a RLS de wiki_pages (membro ativo) e as RPCs
  * SECURITY DEFINER do piloto, que decidem quem escreve, publica e audita. A tela só oferece a ação
  * que o servidor aceitaria para aquela pessoa, e o servidor recusa se a tela errar.
+ *
+ * Fase A da descoberta (27/09, GP aprovou o protótipo): a jornada principal é ENCONTRAR, não cadastrar.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Toast from '../components/ui/Toast.astro';
@@ -24,28 +27,154 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <BaseLayout title={t('wiki.title', lang)} activePage="wiki" lang={lang}>
-  <div id="wiki-root" data-lang={lang} class="max-w-[960px] mx-auto px-4 py-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" />
+  <div id="wiki-root" data-lang={lang} class="wk-shell">
     <div id="wiki-loading" class="text-center py-16 text-[var(--text-muted)]">{t('wiki.loading', lang)}</div>
 
-    <div id="wiki-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
-      <p id="wiki-denied-msg" class="font-semibold text-amber-800"></p>
-      <a href={`${langPrefix}/`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('wiki.goHome', lang)}</a>
-    </div>
+    <section id="wiki-gate" class="hidden wk-gate">
+      <picture>
+        <source srcset="/assets/nia/nia-acenando.webp" type="image/webp" />
+        <img src="/assets/nia/nia-acenando.png" alt={t('wiki.niaAlt', lang)} width="110" height="181" />
+      </picture>
+      <h1 class="wk-serif">{t('wiki.gateTitle', lang)}</h1>
+      <p>{t('wiki.gateBody', lang)}</p>
+      <p id="wiki-gate-msg" class="font-semibold"></p>
+      <div class="wk-row">
+        <button type="button" id="wiki-gate-login" class="wk-btn wk-btn-primary hidden">{t('wiki.gateLogin', lang)}</button>
+        <a href={`${langPrefix}/#join`} class="wk-btn wk-btn-ghost">{t('wiki.gateJoin', lang)}</a>
+      </div>
+    </section>
 
-    <div id="wiki-app" class="hidden space-y-5">
-      <header class="space-y-3">
-        <div>
-          <h1 class="text-2xl font-extrabold text-navy"><a id="wiki-home" href={`${langPrefix}/wiki`} class="no-underline text-navy">{t('wiki.title', lang)}</a></h1>
-          <p class="text-sm text-[var(--text-muted)]">{t('wiki.subtitle', lang)}</p>
-        </div>
-        <nav id="wiki-tabs" class="flex flex-wrap gap-2" aria-label={t('wiki.tabsLabel', lang)}></nav>
-      </header>
+    <div id="wiki-app" class="hidden">
+      <div id="wiki-bar" class="wk-bar hidden">
+        <a id="wiki-home" href={`${langPrefix}/wiki`} class="wk-wordmark wk-serif">{t('wiki.title', lang)}</a>
+        <div class="wk-mini" data-search="mini"></div>
+        <nav id="wiki-tabs" class="wk-work" aria-label={t('wiki.workNav', lang)}></nav>
+      </div>
       <section id="wiki-view" aria-live="polite"></section>
     </div>
   </div>
   <Toast />
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
 </BaseLayout>
+
+<style is:global>
+  .wk-shell { max-width: 1180px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  .wk-serif { font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif; }
+  .wk-btn { display: inline-flex; align-items: center; gap: .4rem; border-radius: .6rem; padding: .5rem .9rem; font-weight: 700; font-size: .85rem; cursor: pointer; border: 1px solid transparent; text-decoration: none; }
+  .wk-btn:hover { text-decoration: none; opacity: .92; }
+  .wk-btn-primary { background: var(--color-navy); color: #fff; }
+  .wk-btn-ghost { background: var(--surface-card); border-color: var(--border-strong); color: var(--text-primary); }
+  .wk-row { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; margin-top: 1rem; }
+  .wk-chip { display: inline-flex; align-items: center; gap: .25rem; font-size: .7rem; font-weight: 700; border-radius: 999px; padding: .1rem .55rem; white-space: nowrap; }
+  .wk-chip-type { background: var(--color-teal-light); color: var(--color-teal-deep); }
+  .wk-chip-old { background: #FFF4E0; color: #8A4B06; }
+  .wk-chip-ok { background: #E7F6EF; color: #0F6B47; }
+  .wk-chip-muted { background: var(--surface-section-cool); color: var(--text-secondary); }
+  .wk-gate { max-width: 640px; margin: 2rem auto; text-align: center; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: 1.1rem; padding: 2rem 1.4rem; }
+  .wk-gate picture img { margin: 0 auto; height: auto; }
+  .wk-gate h1 { font-size: 1.9rem; font-weight: 700; margin: .6rem 0 .5rem; color: var(--text-primary); }
+  .wk-gate p { color: var(--text-secondary); margin: .3rem 0; }
+  /* barra das telas internas */
+  .wk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1rem; padding-bottom: 1rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-default); }
+  .wk-wordmark { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); text-decoration: none; white-space: nowrap; }
+  .wk-wordmark:hover { text-decoration: none; }
+  .wk-mini { flex: 1; min-width: 220px; max-width: 460px; }
+  .wk-work { display: flex; flex-wrap: wrap; gap: .4rem; margin-left: auto; }
+  .wk-work a { font-size: .78rem; font-weight: 700; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: .5rem; padding: .3rem .65rem; background: var(--surface-card); text-decoration: none; }
+  .wk-work a[aria-current="page"] { background: var(--color-navy); color: #fff; border-color: var(--color-navy); }
+  .wk-count { display: inline-block; min-width: 1.1rem; padding: 0 .3rem; margin-left: .3rem; border-radius: 999px; background: var(--color-orange); color: #fff; font-size: .68rem; text-align: center; }
+  /* busca com sugestão */
+  .wk-search { position: relative; }
+  .wk-search input { width: 100%; border: 1px solid var(--border-strong); background: var(--surface-card); color: var(--text-primary); border-radius: .85rem; padding: .85rem 2.6rem .85rem 2.6rem; font-size: 1rem; box-shadow: 0 1px 2px rgba(10,22,40,.05), 0 8px 24px rgba(10,22,40,.05); }
+  .wk-search input:focus { outline: none; border-color: var(--color-orange); box-shadow: 0 0 0 4px rgba(255,97,15,.16); }
+  .wk-mini .wk-search input { padding: .5rem .8rem .5rem 2.2rem; font-size: .88rem; border-radius: .6rem; box-shadow: none; }
+  .wk-search .wk-ico { position: absolute; left: .9rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  .wk-mini .wk-search .wk-ico { left: .7rem; }
+  .wk-search kbd { position: absolute; right: .8rem; top: 50%; transform: translateY(-50%); font-size: .7rem; color: var(--text-muted); border: 1px solid var(--border-strong); border-radius: .3rem; padding: 0 .35rem; }
+  .wk-mini .wk-search kbd { display: none; }
+  .wk-sugg { position: absolute; left: 0; right: 0; top: calc(100% + .4rem); z-index: 40; background: var(--surface-elevated); border: 1px solid var(--border-strong); border-radius: .75rem; box-shadow: 0 12px 32px rgba(10,22,40,.14); padding: .35rem; max-height: 22rem; overflow: auto; text-align: left; }
+  .wk-sugg a { display: block; border-radius: .5rem; padding: .5rem .65rem; color: var(--text-primary); text-decoration: none; }
+  .wk-sugg a[aria-selected="true"], .wk-sugg a:hover { background: var(--surface-section-cool); text-decoration: none; }
+  .wk-sugg .t { font-weight: 600; font-size: .9rem; }
+  .wk-sugg .t mark { background: transparent; color: var(--color-orange-deep); font-weight: 800; }
+  .wk-sugg .s { font-size: .74rem; color: var(--text-muted); }
+  .wk-sugg .all { text-align: center; color: var(--color-teal-deep); font-weight: 700; font-size: .8rem; }
+  /* início */
+  .wk-hero { text-align: center; padding: 2.5rem 0 1.5rem; }
+  .wk-hero h1 { font-size: clamp(2.1rem, 5vw, 3.1rem); font-weight: 700; color: var(--text-primary); letter-spacing: -.01em; text-wrap: balance; }
+  .wk-hero .sub { color: var(--text-secondary); margin: .5rem auto 1.6rem; max-width: 36rem; font-size: 1rem; }
+  .wk-hero .wk-search { max-width: 40rem; margin: 0 auto; }
+  .wk-stats { margin-top: .9rem; font-size: .8rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .wk-callout { max-width: 48rem; margin: 0 auto 1.4rem; display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; background: var(--color-orange-light); border: 1px solid rgba(255,97,15,.3); border-radius: .85rem; padding: .8rem 1rem; color: var(--text-primary); font-size: .88rem; }
+  .wk-callout p { margin: 0; flex: 1; min-width: 14rem; }
+  .wk-h2 { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-secondary); font-weight: 800; margin: 0 0 .7rem; }
+  .wk-goals { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 2rem; }
+  .wk-goal { display: flex; flex-direction: column; gap: .3rem; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: .85rem; padding: 1rem; color: var(--text-primary); text-decoration: none; }
+  .wk-goal:hover { border-color: var(--border-strong); text-decoration: none; box-shadow: 0 8px 24px rgba(10,22,40,.06); }
+  .wk-goal .verb { font-size: 1.1rem; font-weight: 800; }
+  .wk-goal .what { font-size: .8rem; color: var(--text-secondary); }
+  .wk-goal .n { margin-top: auto; font-size: .74rem; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .wk-grid2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1rem; margin-bottom: 2rem; }
+  .wk-panel { background: var(--surface-card); border: 1px solid var(--border-default); border-radius: 1rem; padding: 1.1rem; }
+  .wk-start { display: grid; grid-template-columns: auto 1fr; gap: 1rem; align-items: center; }
+  .wk-start img { width: 100px; height: auto; }
+  .wk-start h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 .3rem; color: var(--text-primary); }
+  .wk-start ol { margin: .4rem 0 .8rem; padding-left: 1.1rem; color: var(--text-secondary); font-size: .84rem; list-style: decimal; }
+  .wk-video { display: flex; gap: .6rem; align-items: center; border: 1px dashed var(--border-strong); border-radius: .6rem; padding: .6rem .7rem; font-size: .8rem; color: var(--text-secondary); }
+  .wk-video .play { width: 1.8rem; height: 1.8rem; flex: none; border-radius: 50%; background: var(--color-navy); color: #fff; display: grid; place-items: center; font-size: .7rem; }
+  .wk-list { list-style: none; margin: 0; padding: 0; }
+  .wk-list li { display: flex; justify-content: space-between; align-items: baseline; gap: .7rem; padding: .55rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .wk-list li:last-child { border-bottom: 0; }
+  .wk-list a { color: var(--text-primary); font-weight: 600; font-size: .88rem; text-decoration: none; }
+  .wk-list a:hover { color: var(--color-teal-deep); text-decoration: underline; }
+  .wk-list .sm { font-size: .74rem; color: var(--text-muted); }
+  .wk-list .when { font-size: .74rem; color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  /* resultados */
+  .wk-results { max-width: 50rem; margin: 0 auto; }
+  .wk-results h1 { font-size: 1.7rem; font-weight: 700; color: var(--text-primary); }
+  .wk-filters { display: flex; flex-wrap: wrap; gap: .35rem; margin: .7rem 0 1rem; }
+  .wk-filters a { border: 1px solid var(--border-strong); background: var(--surface-card); border-radius: 999px; padding: .2rem .7rem; font-size: .78rem; color: var(--text-secondary); text-decoration: none; }
+  .wk-filters a[aria-current="true"] { background: var(--color-navy); color: #fff; border-color: var(--color-navy); }
+  .wk-hit { padding: .9rem 0; border-bottom: 1px solid var(--border-subtle); }
+  .wk-hit .crumb { font-size: .72rem; color: var(--text-muted); }
+  .wk-hit a.h { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); text-decoration: none; }
+  .wk-hit a.h:hover { text-decoration: underline; }
+  .wk-hit p { margin: .2rem 0 .4rem; color: var(--text-secondary); font-size: .88rem; }
+  .wk-hit mark { background: rgba(255,97,15,.2); color: inherit; border-radius: .2rem; padding: 0 .1rem; }
+  /* artigo em 3 colunas */
+  .wk-doc { display: grid; grid-template-columns: 14rem minmax(0, 1fr) 13rem; gap: 2rem; }
+  .wk-side, .wk-toc { position: sticky; top: 5rem; align-self: start; max-height: calc(100vh - 6rem); overflow: auto; font-size: .84rem; }
+  .wk-side h4, .wk-toc h4 { font-size: .68rem; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); font-weight: 800; margin: 1rem 0 .35rem; }
+  .wk-side h4:first-child, .wk-toc h4:first-child { margin-top: 0; }
+  .wk-side a { display: flex; justify-content: space-between; gap: .4rem; padding: .25rem .5rem; border-radius: .4rem; color: var(--text-secondary); text-decoration: none; }
+  .wk-side a:hover { background: var(--surface-card); color: var(--text-primary); }
+  .wk-side a[aria-current="page"] { background: var(--surface-card); color: var(--text-primary); font-weight: 700; box-shadow: inset 2px 0 0 var(--color-orange); }
+  .wk-toc a { display: block; padding: .2rem 0 .2rem .6rem; border-left: 2px solid var(--border-default); color: var(--text-muted); text-decoration: none; }
+  .wk-toc a.sub { padding-left: 1.2rem; }
+  .wk-toc a.on { color: var(--text-primary); font-weight: 700; border-left-color: var(--color-orange); }
+  .wk-toc button { display: block; margin-top: 1rem; border: 0; background: transparent; padding: 0; color: var(--text-secondary); font-size: .82rem; cursor: pointer; text-align: left; }
+  .wk-toc button:hover { color: var(--text-primary); }
+  .wk-crumbs { font-size: .78rem; color: var(--text-muted); }
+  .wk-crumbs a { color: var(--text-muted); }
+  .wk-article h1 { font-size: clamp(1.8rem, 4vw, 2.4rem); line-height: 1.15; font-weight: 700; color: var(--text-primary); margin: .4rem 0 .6rem; text-wrap: balance; }
+  .wk-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .6rem; font-size: .76rem; color: var(--text-secondary); margin-bottom: .8rem; }
+  .wk-seal { display: flex; gap: .6rem; align-items: flex-start; border: 1px solid var(--border-default); background: var(--surface-card); border-radius: .7rem; padding: .6rem .8rem; font-size: .8rem; color: var(--text-secondary); margin-bottom: .9rem; }
+  .wk-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.1rem; }
+  .wk-lead { font-size: 1.15rem; line-height: 1.55; color: var(--text-primary); margin: 0 0 .5rem; }
+  .wk-prose { font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif; font-size: 1.06rem; line-height: 1.7; max-width: 70ch; }
+  .wk-prose h1, .wk-prose h2, .wk-prose h3 { font-family: inherit; scroll-margin-top: 5.5rem; }
+  .wk-prose h2 { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-size: 1.25rem; font-weight: 800; margin-top: 1.8rem; padding-top: .8rem; border-top: 1px solid var(--border-subtle); }
+  .wk-prose table { display: block; overflow-x: auto; }
+  @media (max-width: 1024px) { .wk-doc { grid-template-columns: 12rem minmax(0, 1fr); } .wk-toc { display: none; } }
+  @media (max-width: 820px) { .wk-goals { grid-template-columns: repeat(2, 1fr); } .wk-grid2 { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .wk-doc { grid-template-columns: 1fr; }
+    .wk-side { position: static; max-height: none; border-bottom: 1px solid var(--border-default); padding-bottom: .6rem; }
+    .wk-start { grid-template-columns: 1fr; text-align: center; } .wk-start img { margin: 0 auto; }
+    .wk-work { margin-left: 0; }
+  }
+</style>
 
 <script>
   import { escapeHtml as E, safeNavigationUrl } from '../lib/escape-html';
@@ -144,46 +273,116 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <ul class="list-disc pl-5 text-sm text-[var(--text-secondary)] space-y-0.5">${items}</ul></div>`;
   }
 
-  // ── abas ───────────────────────────────────────────────────────────────────────────────────────
+  // ── tipo por objetivo (Diátaxis) e organização ─────────────────────────────────────────────────
+  const DOC_TYPES = ['tutorial', 'how_to', 'reference', 'explanation'];
+  const DOMAIN_ORDER = ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
+  // O tipo vem da tag diataxis-<tipo> que o repositório do wiki grava no cabeçalho da página.
+  function typeOf(p: any): string | null {
+    const tag = (Array.isArray(p?.tags) ? p.tags : []).find((x: string) => /^diataxis-/.test(String(x)));
+    const typ = tag ? String(tag).slice('diataxis-'.length) : '';
+    return DOC_TYPES.includes(typ) ? typ : null;
+  }
+  const byTitle = (a: any, b: any) => String(a.title).localeCompare(String(b.title), LOCALE, { numeric: true });
+  const domainLabel = (d: string) => I18N[`wiki.domain.${d}`] ?? d;
+  // Página de tribo vinda do repositório: a versão da plataforma, quando existir, substitui.
+  const isOldTribePage = (p: any) => p?.domain === 'tribes' && p?.source_repo !== 'plataforma';
+  const typeChip = (typ: string | null) => typ ? `<span class="wk-chip wk-chip-type">${E(T(`wiki.docType.${typ}`))}</span>` : '';
+  const oldChip = (p: any) => isOldTribePage(p) ? `<span class="wk-chip wk-chip-old">${E(T('wiki.oldVersion'))}</span>` : '';
+  const pagesLabel = (n: number) => (n === 1 ? T('wiki.pagesOne') : T('wiki.pagesMany', { n }));
+  const NIA_IMG = `<picture><source srcset="/assets/nia/nia-acenando.webp" type="image/webp"><img src="/assets/nia/nia-acenando.png" alt="${E(T('wiki.niaAlt'))}" width="100" height="164"></picture>`;
+
+  // ── busca com sugestão enquanto digita ─────────────────────────────────────────────────────────
+  const fold = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  // Destaque do trecho digitado: as três partes passam pelo escape; só a <mark> é nossa.
+  function highlight(text: string, q: string): string {
+    const k = fold(q.trim());
+    const i = k ? fold(text).indexOf(k) : -1;
+    if (i < 0) return E(text);
+    return `${E(text.slice(0, i))}<mark>${E(text.slice(i, i + k.length))}</mark>${E(text.slice(i + k.length))}`;
+  }
+  function suggest(q: string): any[] {
+    const k = fold(q.trim());
+    if (!k) return [];
+    const score = (p: any) => {
+      const t = fold(p.title);
+      if (t.startsWith(k)) return 3;
+      if (t.includes(k)) return 2;
+      return fold(p.summary || '').includes(k) ? 1 : 0;
+    };
+    return pages.map((p) => [p, score(p)] as const).filter(([, s]) => s > 0)
+      .sort((a, b) => b[1] - a[1] || byTitle(a[0], b[0])).slice(0, 6).map(([p]) => p);
+  }
+
+  function mountSearch(host: HTMLElement | null, big: boolean, initial = '') {
+    if (!host) return;
+    const id = big ? 'wk-q-big' : 'wk-q-mini';
+    host.innerHTML = `<form method="get" action="/wiki" class="wk-search" role="search">
+      <svg class="wk-ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="${id}" name="q" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="${id}-list"
+        aria-label="${E(T('wiki.search'))}" placeholder="${E(T('wiki.searchPlaceholder'))}" value="${E(initial)}">
+      ${LANG_PARAM ? `<input type="hidden" name="lang" value="${E(LANG_PARAM)}">` : ''}
+      <kbd aria-hidden="true">/</kbd>
+      <div class="wk-sugg" id="${id}-list" role="listbox" hidden></div>
+    </form>`;
+    const input = host.querySelector('input') as HTMLInputElement;
+    const box = host.querySelector('.wk-sugg') as HTMLElement;
+    let sel = -1; let list: any[] = [];
+    const close = () => { box.hidden = true; input.setAttribute('aria-expanded', 'false'); sel = -1; };
+    const paint = () => {
+      const q = input.value;
+      list = suggest(q);
+      if (!q.trim()) { close(); return; }
+      box.innerHTML = (list.length
+        ? list.map((p, i) => `<a href="${E(href({ page: p.path }))}" role="option" aria-selected="${i === sel}">
+            <div class="t">${highlight(p.title, q)}</div>
+            <div class="s">${E([typeOf(p) ? T(`wiki.docType.${typeOf(p)}`) : '', domainLabel(p.domain)].filter(Boolean).join(' · '))}</div></a>`).join('')
+          + `<a href="${E(href({ q }))}" class="all">${E(T('wiki.seeAllResults', { q }))}</a>`
+        : `<p class="text-sm text-[var(--text-muted)] p-3">${E(T('wiki.noSuggestion', { q }))}</p>`);
+      box.hidden = false; input.setAttribute('aria-expanded', 'true');
+    };
+    input.addEventListener('input', () => { sel = -1; paint(); });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(sel + 1, list.length - 1); paint(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(sel - 1, -1); paint(); }
+      else if (e.key === 'Enter' && sel >= 0 && list[sel]) { e.preventDefault(); location.href = href({ page: list[sel].path }); }
+      else if (e.key === 'Escape') { close(); }
+    });
+    input.addEventListener('blur', () => setTimeout(close, 150));
+  }
+  // "/" leva à busca do wiki; Ctrl/Cmd+K continua com a busca global do site.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+    const el = e.target as HTMLElement | null;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    const input = (document.getElementById('wk-q-big') || document.getElementById('wk-q-mini')) as HTMLInputElement | null;
+    if (input) { e.preventDefault(); input.focus(); }
+  });
+
+  // ── barra de trabalho (minhas versões, fila da liderança, fila do comitê) ──────────────────────
   function currentTab(): string {
     const tab = params.get('tab');
     if (tab === 'mine' || tab === 'decide' || tab === 'audit') return tab;
-    return ['page', 'version', 'edit', 'alter', 'new'].some((k) => params.has(k)) ? '' : 'pages';
+    return '';
   }
 
-  function renderTabs() {
-    const items: { key: string; label: string; url: string; count?: number }[] =
-      [{ key: 'pages', label: T('wiki.tab.pages'), url: href() }];
+  function workItems() {
+    const items: { key: string; label: string; url: string; count: number }[] = [];
     if (ctx.tribes.length || queue.my_versions.length)
       items.push({ key: 'mine', label: T('wiki.tab.mine'), url: href({ tab: 'mine' }), count: queue.my_versions.length });
     if (ctx.is_committee || ctx.tribes.some((t) => t.is_leader) || queue.awaiting_my_decision.length)
       items.push({ key: 'decide', label: T('wiki.tab.decide'), url: href({ tab: 'decide' }), count: queue.awaiting_my_decision.length });
     if (ctx.is_committee)
       items.push({ key: 'audit', label: T('wiki.tab.audit'), url: href({ tab: 'audit' }), count: queue.audit_pending.length });
+    return items;
+  }
 
-    const nav = document.getElementById('wiki-tabs') as HTMLElement;
-    if (items.length === 1) { nav.classList.add('hidden'); return; }
+  function renderTabs() {
     const active = currentTab();
-    nav.innerHTML = items.map((it) => {
-      const on = it.key === active;
-      const count = it.count ? ` <span class="ml-1 px-1.5 rounded-full text-[.65rem] ${on ? 'bg-white/25' : 'bg-amber-100 text-amber-800'}">${it.count}</span>` : '';
-      return `<a href="${E(it.url)}" ${on ? 'aria-current="page"' : ''} class="px-3 py-1.5 rounded-lg text-[.78rem] font-semibold no-underline border border-[var(--border-default)] ${on ? 'bg-navy text-white' : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-hover)]'}">${E(it.label)}${count}</a>`;
-    }).join('');
+    (document.getElementById('wiki-tabs') as HTMLElement).innerHTML = workItems().map((it) =>
+      `<a href="${E(it.url)}" ${it.key === active ? 'aria-current="page"' : ''}>${E(it.label)}${it.count ? `<span class="wk-count">${it.count}</span>` : ''}</a>`).join('');
   }
 
-  // ── lista e busca ──────────────────────────────────────────────────────────────────────────────
-  const DOMAIN_ORDER = ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
-
-  function pageItem(p: any, headline?: string): string {
-    const lead = headline
-      ? `<p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5">${sanitizeUserHtml(headline)}</p>`
-      : p.summary ? `<p class="text-[.78rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${E(p.summary)}</p>` : '';
-    return `<li class="py-2.5 border-b border-[var(--border-subtle)] last:border-0">
-      <a href="${E(href({ page: p.path }))}" class="font-semibold text-[var(--text-primary)] no-underline hover:underline">${E(p.title)}</a>
-      <span class="ml-2 inline-flex gap-1 align-middle">${p.source_repo ? sourceChip(p.source_repo) : ''}${auditChip(p.audit_status)}</span>
-      ${lead}</li>`;
-  }
-
+  // ── início ─────────────────────────────────────────────────────────────────────────────────────
   function myTribesCallout(): string {
     const mine = ctx.tribes.filter((t) => t.is_engaged && t.status === 'active');
     if (!mine.length) return '';
@@ -194,40 +393,94 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         : `<a href="${E(href({ new: t.id, path: t.path_prefix }))}" class="${BTN_PRIMARY} !py-1 !px-3 !text-xs">${E(T('wiki.createTribePage'))}</a>`;
       return `<li class="flex items-center justify-between gap-3 py-1.5"><span class="text-sm text-[var(--text-primary)]">${E(t.title)}</span>${action}</li>`;
     }).join('');
-    return `<div class="${CARD} !p-4"><h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myTribePages'))}</h2>
+    return `<div class="${CARD} !p-4 max-w-3xl mx-auto mb-5"><h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myTribePages'))}</h2>
       <p class="text-[.75rem] text-[var(--text-muted)] mb-1">${E(T('wiki.myTribePagesHint'))}</p><ul>${rows}</ul></div>`;
   }
 
-  async function viewList(q: string) {
-    const langField = LANG_PARAM ? `<input type="hidden" name="lang" value="${E(LANG_PARAM)}">` : '';
-    let body = '';
-    if (q) {
-      const results: any[] = (await rpc('search_wiki_pages', { p_query: q, p_limit: 30 })) || [];
-      const byPath = new Map(pages.map((p) => [p.path, p]));
-      body = results.length
-        ? `<p class="text-xs text-[var(--text-muted)]">${E(T('wiki.resultsFor', { n: results.length, q }))}</p>
-           <ul class="${CARD} !py-1">${results.map((r) => pageItem({ ...r, ...(byPath.get(r.path) || {}) }, r.headline)).join('')}</ul>`
-        : emptyBox(T('wiki.noResults'));
-    } else {
-      const groups = new Map<string, any[]>();
-      for (const p of pages) { if (!groups.has(p.domain)) groups.set(p.domain, []); groups.get(p.domain)!.push(p); }
-      const order = [...DOMAIN_ORDER.filter((d) => groups.has(d)), ...[...groups.keys()].filter((d) => !DOMAIN_ORDER.includes(d)).sort()];
-      body = myTribesCallout() + (order.length ? order.map((d) => `
-        <div class="${CARD} !py-3">
-          <h2 class="text-sm font-bold text-navy uppercase tracking-wide">${E(I18N[`wiki.domain.${d}`] ?? d)}
-            <span class="text-[var(--text-muted)] font-normal normal-case">(${groups.get(d)!.length})</span></h2>
-          <ul>${groups.get(d)!.map((p) => pageItem(p)).join('')}</ul>
-        </div>`).join('') : emptyBox(T('wiki.noPages')));
-    }
-    view().innerHTML = `
-      <form method="get" action="/wiki" class="flex gap-2 mb-4" role="search">
-        <input name="q" type="search" value="${E(q)}" placeholder="${E(T('wiki.searchPlaceholder'))}" aria-label="${E(T('wiki.search'))}" class="${INPUT}">
-        ${langField}<button class="${BTN_PRIMARY}">${E(T('wiki.search'))}</button>
-      </form>
-      <div class="space-y-4">${body}</div>`;
+  // O aviso mais urgente de quem tem trabalho no wiki; a fila completa fica na barra de trabalho.
+  function callout(): string {
+    const box = (msg: string, url: string) =>
+      `<div class="wk-callout"><p>${E(msg)}</p><a class="wk-btn wk-btn-primary" href="${E(url)}">${E(T('wiki.calloutOpen'))}</a></div>`;
+    if (queue.awaiting_my_decision.length) return box(T('wiki.calloutDecide', { n: queue.awaiting_my_decision.length }), href({ tab: 'decide' }));
+    if (ctx.is_committee && queue.audit_pending.length) return box(T('wiki.calloutAudit', { n: queue.audit_pending.length }), href({ tab: 'audit' }));
+    const open = queue.my_versions.length;
+    if (open) return box(T('wiki.calloutMine', { n: open }), href({ tab: 'mine' }));
+    return '';
   }
 
-  // ── leitura de uma página ──────────────────────────────────────────────────────────────────────
+  function viewHome() {
+    const tribes = pages.filter((p) => p.domain === 'tribes').sort(byTitle);
+    const latest = pages.reduce((m, p) => (p.updated_at && p.updated_at > m ? p.updated_at : m), '');
+    const recent = [...pages].sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || ''))).slice(0, 5);
+    const goals = DOC_TYPES.map((typ) => {
+      const n = pages.filter((p) => typeOf(p) === typ).length;
+      return `<a class="wk-goal" href="${E(href({ type: typ }))}"><span class="verb">${E(T(`wiki.goal.${typ}`))}</span>
+        <span class="what">${E(T(`wiki.docTypeHint.${typ}`))}</span><span class="n">${E(pagesLabel(n))} · ${E(T(`wiki.docType.${typ}`))}</span></a>`;
+    }).join('');
+    const work = workItems();
+    view().innerHTML = `
+      <section class="wk-hero">
+        <h1 class="wk-serif">${E(T('wiki.title'))}</h1>
+        <p class="sub">${E(T('wiki.heroSubtitle'))}</p>
+        <div data-search="big"></div>
+        <div class="wk-stats">${E(T('wiki.stats', { pages: pages.length, tribes: tribes.length, date: fmtDate(latest) }))}</div>
+        ${work.length ? `<nav class="wk-work justify-center mt-3" aria-label="${E(T('wiki.workNav'))}" style="margin-left:0">${work.map((it) =>
+          `<a href="${E(it.url)}">${E(it.label)}${it.count ? `<span class="wk-count">${it.count}</span>` : ''}</a>`).join('')}</nav>` : ''}
+      </section>
+      ${callout()}${myTribesCallout()}
+      <h2 class="wk-h2">${E(T('wiki.goalsTitle'))}</h2>
+      <div class="wk-goals">${goals}</div>
+      <div class="wk-grid2">
+        <div class="wk-panel wk-start">${NIA_IMG}
+          <div><h3>${E(T('wiki.startTitle'))}</h3>
+            <ol><li>${E(T('wiki.startStep1'))}</li><li>${E(T('wiki.startStep2'))}</li><li>${E(T('wiki.startStep3'))}</li></ol>
+            <div class="wk-video"><span class="play" aria-hidden="true">&#9654;</span><span><strong>${E(T('wiki.videoTitle'))}</strong><br>${E(T('wiki.videoSoon'))}</span></div>
+          </div></div>
+        <div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.tribesTitle'))}</h2>
+          ${tribes.length ? `<ul class="wk-list">${tribes.map((p) => `<li><a href="${E(href({ page: p.path }))}">${E(p.title)}</a>
+            ${isOldTribePage(p) ? oldChip(p) : `<span class="wk-chip wk-chip-ok">${E(T('wiki.onPlatform'))}</span>`}</li>`).join('')}</ul>` : emptyBox(T('wiki.noPages'))}
+        </div>
+      </div>
+      <div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.recentTitle'))}</h2>
+        ${recent.length ? `<ul class="wk-list">${recent.map((p) => `<li><div><a href="${E(href({ page: p.path }))}">${E(p.title)}</a>
+          <div class="sm">${E([typeOf(p) ? T(`wiki.docType.${typeOf(p)}`) : '', domainLabel(p.domain)].filter(Boolean).join(' · '))}</div></div>
+          <span class="when">${E(fmtDate(p.updated_at))}</span></li>`).join('')}</ul>` : emptyBox(T('wiki.noPages'))}
+      </div>`;
+    mountSearch(view().querySelector('[data-search="big"]') as HTMLElement, true);
+  }
+
+  // ── resultados ─────────────────────────────────────────────────────────────────────────────────
+  function pageItem(p: any, q: string, headline?: string): string {
+    const lead = headline
+      ? `<p>${sanitizeUserHtml(headline)}</p>`
+      : p.summary ? `<p>${highlight(p.summary, q)}</p>` : '';
+    return `<div class="wk-hit"><div class="crumb">${E(domainLabel(p.domain))}</div>
+      <a class="h" href="${E(href({ page: p.path }))}">${highlight(p.title, q)}</a>${lead}
+      <span class="inline-flex gap-1 flex-wrap">${typeChip(typeOf(p))}${oldChip(p)}${auditChip(p.audit_status)}</span></div>`;
+  }
+
+  async function viewResults(q: string, typ: string) {
+    const byPath = new Map(pages.map((p) => [p.path, p]));
+    let items: { p: any; headline?: string }[];
+    if (q) {
+      const results: any[] = (await rpc('search_wiki_pages', { p_query: q, p_limit: 30 })) || [];
+      items = results.map((r) => ({ p: { ...r, ...(byPath.get(r.path) || {}) }, headline: r.headline }));
+    } else {
+      items = [...pages].sort(byTitle).map((p) => ({ p }));
+    }
+    if (typ) items = items.filter((it) => typeOf(it.p) === typ);
+    const title = q ? T('wiki.resultsFor', { n: items.length, q })
+      : typ ? T('wiki.typeResults', { goal: T(`wiki.goal.${typ}`), label: T(`wiki.docType.${typ}`) }) : T('wiki.tab.pages');
+    const filters = [['', T('wiki.filterAll')], ...DOC_TYPES.map((d) => [d, T(`wiki.goal.${d}`)])]
+      .map(([d, label]) => `<a href="${E(href({ q, type: d }))}" aria-current="${(typ || '') === d}">${E(label)}</a>`).join('');
+    view().innerHTML = `<section class="wk-results">
+      <h1 class="wk-serif">${E(title)}</h1>
+      <nav class="wk-filters" aria-label="${E(T('wiki.fieldDocType'))}">${filters}</nav>
+      ${items.length ? items.map((it) => pageItem(it.p, q, it.headline)).join('') : emptyBox(T('wiki.noResults'))}
+    </section>`;
+  }
+
+  // ── leitura de uma página (3 colunas) ──────────────────────────────────────────────────────────
   function historyList(hist: any, currentId?: string | null): string {
     const versions: any[] = hist?.versions || [];
     if (!versions.length) return '';
@@ -237,7 +490,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         ${statusChip(v.status)}${v.id === currentId ? chip(T('wiki.current'), 'bg-blue-100 text-blue-800') : ''}
         <span class="text-[.72rem] text-[var(--text-muted)]">${E(v.author || '')}${v.published_at ? ' · ' + E(fmtDate(v.published_at)) : v.updated_at ? ' · ' + E(fmtDate(v.updated_at)) : ''}</span>
       </li>`).join('');
-    return `<div class="${CARD}"><h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${E(T('wiki.history'))}</h3><ul>${rows}</ul></div>`;
+    return `<div class="${CARD} mt-6"><h3 class="text-sm font-bold text-[var(--text-primary)] mb-1">${E(T('wiki.history'))}</h3><ul>${rows}</ul></div>`;
   }
 
   function auditBanner(status: string | null | undefined, due?: string | null): string {
@@ -248,6 +501,44 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (status === 'audited')
       return `<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-[.8rem] text-emerald-900">${E(T('wiki.audit.audited'))}</div>`;
     return '';
+  }
+
+  function sideNav(activePath: string): string {
+    const groups = new Map<string, any[]>();
+    for (const p of pages) { if (!groups.has(p.domain)) groups.set(p.domain, []); groups.get(p.domain)!.push(p); }
+    const order = [...DOMAIN_ORDER.filter((d) => groups.has(d)), ...[...groups.keys()].filter((d) => !DOMAIN_ORDER.includes(d)).sort()];
+    return `<nav class="wk-side" aria-label="${E(T('wiki.pagesNav'))}">${order.map((d) => `<h4>${E(domainLabel(d))}</h4>
+      ${groups.get(d)!.sort(byTitle).map((p) => `<a href="${E(href({ page: p.path }))}" ${p.path === activePath ? 'aria-current="page"' : ''}>
+        <span>${E(p.title)}</span></a>`).join('')}`).join('')}</nav>`;
+  }
+
+  // Texto para colar no assistente do Núcleo. Vai para a área de transferência, nunca para o HTML.
+  function assistantMarkdown(md: string, title: string, summary: string, url: string): string {
+    return `# ${title}\n\n${summary ? `> ${summary}\n\n` : ''}${md || ''}\n\n---\n${T('wiki.title')}: ${url}`;
+  }
+
+  function buildToc() {
+    const prose = document.getElementById('wk-prose');
+    const toc = document.getElementById('wk-toc-list');
+    if (!prose || !toc) return;
+    const heads = [...prose.querySelectorAll('h2, h3')] as HTMLElement[];
+    const used = new Set<string>();
+    const links = heads.map((h, i) => {
+      let id = fold(h.textContent || '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || `secao-${i + 1}`;
+      while (used.has(id)) id += '-' + (i + 1);
+      used.add(id); h.id = id;
+      return `<a href="#${E(id)}" class="${h.tagName === 'H3' ? 'sub' : ''}" data-toc="${E(id)}">${E(h.textContent || '')}</a>`;
+    });
+    if (!links.length) { toc.parentElement?.querySelector('h4')?.remove(); return; }
+    toc.innerHTML = links.join('');
+    const anchors = [...toc.querySelectorAll('a')] as HTMLElement[];
+    const spy = () => {
+      let cur = 0;
+      heads.forEach((h, i) => { if (h.getBoundingClientRect().top < 120) cur = i; });
+      anchors.forEach((a, i) => a.classList.toggle('on', i === cur));
+    };
+    window.addEventListener('scroll', spy, { passive: true });
+    spy();
   }
 
   async function viewPage(path: string) {
@@ -263,32 +554,46 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       return;
     }
 
+    const typ = cur?.doc_type && DOC_TYPES.includes(cur.doc_type) ? cur.doc_type : typeOf(row);
     const edit = isPlatform && hist?.can_author && hist?.initiative
-      ? `<a href="${E(href({ new: hist.initiative.id, path }))}" class="${BTN_PRIMARY}">${E(T(row ? 'wiki.edit' : 'wiki.writeFirstVersion'))}</a>` : '';
+      ? `<a href="${E(href({ new: hist.initiative.id, path }))}" class="wk-btn wk-btn-primary">${E(T(row ? 'wiki.edit' : 'wiki.writeFirstVersion'))}</a>` : '';
+    const copyBtn = row ? `<button type="button" class="wk-btn wk-btn-ghost" data-copy>${E(T('wiki.copyForAssistant'))}</button>` : '';
 
     const meta = row ? [
+      typeChip(typ),
       row.source_repo ? sourceChip(row.source_repo) : '',
       hist?.initiative ? E(hist.initiative.title) : '',
       row.authors?.length ? E(T('wiki.byAuthors', { names: row.authors.join(', ') })) : '',
       row.updated_at ? E(T('wiki.updatedAt', { date: fmtDate(row.updated_at) })) : '',
-      cur?.doc_type ? E(T(`wiki.docType.${cur.doc_type}`)) : '',
       row.license ? E(row.license) : '',
     ].filter(Boolean).join(' <span class="text-[var(--text-muted)]">·</span> ') : '';
 
-    const article = row ? `
-      <article class="${CARD} space-y-3">
-        <h2 class="text-xl font-extrabold text-[var(--text-primary)]">${E(row.title)}</h2>
-        <div class="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[.75rem] text-[var(--text-secondary)]">${meta}</div>
-        ${isPlatform ? auditBanner(row.audit_status, cur?.audit_due_at) : ''}
-        ${row.summary ? `<p class="text-sm italic text-[var(--text-secondary)]">${E(row.summary)}</p>` : ''}
-        <div class="prose prose-sm max-w-none text-[var(--text-primary)]">${renderMd(row.content, path)}</div>
-        ${sourcesList(cur?.sources)}
-      </article>`
-      : `<div class="${CARD}">${emptyBox(T('wiki.notPublished'))}</div>`;
+    const seal = isPlatform ? auditBanner(row?.audit_status, cur?.audit_due_at)
+      : isOldTribePage(row) ? `<div class="wk-seal">${E(T('wiki.oldSeal'))}</div>` : '';
 
-    view().innerHTML = `
-      <div class="flex items-center justify-between gap-3 mb-3">${backLink(href(), T('wiki.tab.pages'))}${edit}</div>
-      <div class="space-y-4">${article}${historyList(hist, row?.platform_version_id)}</div>`;
+    const article = row ? `
+      <div class="wk-crumbs"><a href="${E(href())}">${E(T('wiki.title'))}</a> › <span>${E(domainLabel(row.domain))}</span></div>
+      <h1 class="wk-serif">${E(row.title)}</h1>
+      <div class="wk-meta">${meta}</div>
+      ${seal}
+      <div class="wk-actions">${edit}${copyBtn}</div>
+      ${row.summary ? `<p class="wk-lead wk-serif">${E(row.summary)}</p>` : ''}
+      <div id="wk-prose" class="wk-prose prose prose-sm max-w-none text-[var(--text-primary)]">${renderMd(row.content, path)}</div>
+      ${sourcesList(cur?.sources)}`
+      : `<div class="wk-actions">${edit}</div><div class="${CARD}">${emptyBox(T('wiki.notPublished'))}</div>`;
+
+    view().innerHTML = `<div class="wk-doc">${sideNav(path)}
+      <article class="wk-article">${article}${historyList(hist, row?.platform_version_id)}</article>
+      <aside class="wk-toc" aria-label="${E(T('wiki.onThisPage'))}"><h4>${E(T('wiki.onThisPage'))}</h4><div id="wk-toc-list"></div>
+        ${row ? `<button type="button" data-copy>${E(T('wiki.copyForAssistant'))}</button>` : ''}</aside></div>`;
+    buildToc();
+
+    view().querySelectorAll('[data-copy]').forEach((b) => b.addEventListener('click', () => {
+      const url = location.origin + href({ page: path });
+      navigator.clipboard.writeText(assistantMarkdown(row.content, row.title, row.summary || '', url))
+        .then(() => toast(T('wiki.copied')))
+        .catch(() => toast(T('wiki.copyFailed'), 'error'));
+    }));
   }
 
   // ── uma versão e suas ações ────────────────────────────────────────────────────────────────────
@@ -360,7 +665,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
     view().innerHTML = `
       <div class="flex items-center justify-between gap-3 mb-3">${backLink(href({ page: v.page_path }), T('wiki.backToPage'))}${pageLink}</div>
-      <div class="space-y-4">
+      <div class="space-y-4 max-w-4xl">
         ${panel}
         <article class="${CARD} space-y-3">
           <div class="flex flex-wrap items-center gap-2">${statusChip(v.status)}
@@ -425,8 +730,6 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   }
 
   // ── editor ─────────────────────────────────────────────────────────────────────────────────────
-  const DOC_TYPES = ['tutorial', 'how_to', 'reference', 'explanation'];
-
   function slugify(s: string): string {
     return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
       .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
@@ -490,7 +793,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       : href({ version: o.id });
     view().innerHTML = `
       ${backLink(cancelUrl, T('wiki.cancel'))}
-      <form id="w-form" class="${CARD} space-y-4 mt-3" novalidate>
+      <form id="w-form" class="${CARD} space-y-4 mt-3 max-w-4xl" novalidate>
         <h2 class="text-lg font-extrabold text-[var(--text-primary)]">${E(T(alter ? 'wiki.alterTitle' : o.mode === 'edit' ? 'wiki.editDraftTitle' : base ? 'wiki.newVersionTitle' : 'wiki.newPageTitle'))}</h2>
         <div class="text-[.8rem] text-[var(--text-secondary)] space-y-1">
           <div><strong>${E(T('wiki.tribe'))}:</strong> ${E(tribe?.title || '')}</div>
@@ -624,7 +927,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <select id="w-new-tribe" class="${INPUT} mt-1">${tribeOptions}</select></label>
         <button type="button" id="w-new-go" class="${BTN_PRIMARY}">${E(T('wiki.newPage'))}</button>
       </div>` : `<div class="${CARD}">${emptyBox(T('wiki.noTribes'))}</div>`;
-    view().innerHTML = `<div class="space-y-4">
+    view().innerHTML = `<div class="space-y-4 max-w-4xl">
       ${myTribesCallout()}
       ${newForm}
       <h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myOpenVersions'))}</h2>
@@ -637,14 +940,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   }
 
   function viewDecide() {
-    view().innerHTML = `<div class="space-y-3">
+    view().innerHTML = `<div class="space-y-3 max-w-4xl">
       <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.decideIntro'))}</p>
       ${workList(queue.awaiting_my_decision, (x) => `${statusChip(x.status)}<span>${E(x.initiative)}</span><span>${E(T('wiki.submittedOn', { date: fmtDate(x.submitted_at) }))}</span>${x.pii ? chip(T('wiki.piiShort'), 'bg-red-100 text-red-700') : ''}`, T('wiki.nothingToDecide'))}
     </div>`;
   }
 
   function viewAudit() {
-    view().innerHTML = `<div class="space-y-3">
+    view().innerHTML = `<div class="space-y-3 max-w-4xl">
       <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.auditIntro'))}</p>
       ${workList(queue.audit_pending, (x) => `<span>${E(x.initiative)}</span><span>${E(T('wiki.publishedOn', { date: fmtDate(x.published_at) }))}</span>${x.overdue ? chip(T('wiki.overdue'), 'bg-red-100 text-red-700') : `<span>${E(T('wiki.dueOn', { date: fmtDate(x.audit_due_at) }))}</span>`}`, T('wiki.nothingToAudit'))}
     </div>`;
@@ -652,6 +955,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── rota e arranque ────────────────────────────────────────────────────────────────────────────
   async function route() {
+    const isHome = !['version', 'page', 'edit', 'alter', 'new', 'q', 'type', 'tab'].some((k) => params.get(k));
+    document.getElementById('wiki-bar')?.classList.toggle('hidden', isHome);
+    if (!isHome) { renderTabs(); mountSearch(document.querySelector('[data-search="mini"]') as HTMLElement, false, params.get('q') || ''); }
     view().innerHTML = `<p class="text-sm text-[var(--text-muted)] py-6 text-center">${E(T('wiki.loading'))}</p>`;
     try {
       const tab = params.get('tab');
@@ -663,16 +969,25 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (tab === 'mine') return viewMine();
       if (tab === 'decide') return viewDecide();
       if (tab === 'audit' && ctx.is_committee) return viewAudit();
-      return await viewList(params.get('q') || '');
+      const q = (params.get('q') || '').trim();
+      const typ = DOC_TYPES.includes(params.get('type') || '') ? params.get('type')! : '';
+      if (q || typ) return await viewResults(q, typ);
+      return viewHome();
     } catch (e) {
       view().innerHTML = errorBox(errMsg(e) || T('wiki.loadError'));
     }
   }
 
-  function deny(msg: string) {
+  // Quem não entrou vê o que é o wiki e o botão de entrar; membro inativo vê só a explicação.
+  function deny(msg: string, canLogin: boolean) {
     document.getElementById('wiki-loading')?.classList.add('hidden');
-    (document.getElementById('wiki-denied-msg') as HTMLElement).textContent = msg;
-    document.getElementById('wiki-denied')?.classList.remove('hidden');
+    (document.getElementById('wiki-gate-msg') as HTMLElement).textContent = msg;
+    const login = document.getElementById('wiki-gate-login') as HTMLButtonElement | null;
+    if (login) {
+      login.classList.toggle('hidden', !canLogin);
+      login.onclick = () => (document.getElementById('nav-login-btn') as HTMLElement | null)?.click();
+    }
+    document.getElementById('wiki-gate')?.classList.remove('hidden');
   }
 
   let started = false;
@@ -682,10 +997,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const [c, q, p] = await Promise.all([
       sb.rpc('wiki_authoring_context'),
       sb.rpc('wiki_review_queue'),
-      sb.from('wiki_pages').select('path,title,summary,domain,source_repo,audit_status,updated_at,authors,platform_version_id').order('title'),
+      sb.from('wiki_pages').select('path,title,summary,domain,tags,source_repo,audit_status,updated_at,authors,platform_version_id').order('title'),
     ]);
     const err = c.error || q.error || p.error;
-    if (err) { deny(/requer membro ativo/.test(err.message || '') ? T('wiki.activeOnly') : T('wiki.loadError')); return; }
+    if (err) { deny(/requer membro ativo/.test(err.message || '') ? T('wiki.activeOnly') : T('wiki.loadError'), false); return; }
     ctx = { is_committee: !!c.data?.is_committee, tribes: c.data?.tribes || [] };
     queue = {
       awaiting_my_decision: q.data?.awaiting_my_decision || [],
@@ -694,10 +1009,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     };
     pages = p.data || [];
     document.getElementById('wiki-loading')?.classList.add('hidden');
-    document.getElementById('wiki-denied')?.classList.add('hidden');
+    document.getElementById('wiki-gate')?.classList.add('hidden');
     document.getElementById('wiki-app')?.classList.remove('hidden');
     (document.getElementById('wiki-home') as HTMLAnchorElement).href = href();
-    renderTabs();
     await route();
   }
 
@@ -710,7 +1024,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const { data: { session } } = await sb.auth.getSession();
       if (session) { start(); return; }
     } catch { /* sem sessão */ }
-    deny(T('wiki.loginRequired'));
+    deny(T('wiki.loginRequired'), true);
   }
 
   boot();

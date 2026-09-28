@@ -102,9 +102,15 @@ test('#2495 tela: link relativo do vault vira rota da tela; wikilink vira busca;
 
 test('#2495 tela: todo conteúdo de página passa pelo renderizador ou pelo escape', () => {
   assert.doesNotMatch(SCRIPT, /from 'marked'/, 'a tela não chama o marked direto');
-  const uses = [...SCRIPT.matchAll(/\b(row|v|base\?)\.content\b/g)].map((m) => SCRIPT.slice(Math.max(0, m.index - 12), m.index));
-  assert.ok(uses.length >= 3, `esperava ao menos 3 usos de .content, achou ${uses.length}`);
-  for (const before of uses) assert.match(before, /(renderMd\(|E\()$/, `uso de .content sem renderMd/E: "${before}"`);
+  const uses = [...SCRIPT.matchAll(/\b(row|v|base\?)\.content\b/g)].map((m) => SCRIPT.slice(Math.max(0, m.index - 20), m.index));
+  assert.ok(uses.length >= 4, `esperava ao menos 4 usos de .content, achou ${uses.length}`);
+  // assistantMarkdown monta o texto CRU para colar no assistente: é aceito só porque vai para a área de
+  // transferência, nunca para o HTML (afirmado logo abaixo).
+  for (const before of uses) assert.match(before, /(renderMd\(|E\(|assistantMarkdown\()$/, `uso de .content sem renderMd/E: "${before}"`);
+  const calls = [...SCRIPT.matchAll(/assistantMarkdown\(/g)].map((m) => SCRIPT.slice(Math.max(0, m.index - 30), m.index));
+  assert.equal(calls.length, 2, 'assistantMarkdown: a definição e uma chamada');
+  assert.match(calls[0], /function $/, 'a primeira ocorrência é a definição');
+  assert.match(calls[1], /navigator\.clipboard\.writeText\($/, 'o texto cru só vai para a área de transferência');
   assert.match(SCRIPT, /\$\{sanitizeUserHtml\(headline\)\}/, 'o trecho da busca vem de ts_headline sobre o conteúdo');
   assert.match(SCRIPT, /return renderWikiMarkdown\(md, path, LINKS\);/);
 });
@@ -127,6 +133,7 @@ test('#2495 tela: toda chave de i18n que a tela usa existe nos 3 dicionários', 
   const dynamic = {
     docType: ['tutorial', 'how_to', 'reference', 'explanation'],
     docTypeHint: ['tutorial', 'how_to', 'reference', 'explanation'],
+    goal: ['tutorial', 'how_to', 'reference', 'explanation'],
     domain: ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'],
     event: ['submitted', 'returned', 'published', 'audited_kept', 'altered', 'unpublished', 'audit_overdue'],
     status: ['draft', 'pending_leader', 'pending_committee', 'returned', 'published', 'superseded', 'unpublished'],
@@ -146,6 +153,48 @@ test('#2495 tela: toda chave de i18n que a tela usa existe nos 3 dicionários', 
     const missing = [...used].filter((k) => !dict.includes(`'${k}':`));
     assert.deepEqual(missing, [], `${f} sem: ${missing.join(', ')}`);
   }
+});
+
+// ── fase A da descoberta (27/09): encontrar vem antes de cadastrar ────────────────────────────────
+const fnBody = (name) => {
+  const i = SCRIPT.indexOf(`function ${name}(`);
+  assert.ok(i >= 0, `função ${name} existe`);
+  return SCRIPT.slice(i, SCRIPT.indexOf('\n  }\n', i));
+};
+
+test('#2495 descoberta: o tipo por objetivo vem da tag diataxis-<tipo> e só vale se for um dos 4', () => {
+  const b = fnBody('typeOf');
+  assert.match(b, /\/\^diataxis-\//, 'lê a tag com o prefixo diataxis-');
+  assert.match(b, /return DOC_TYPES\.includes\(typ\) \? typ : null;/, 'tipo fora dos 4 não vira atalho');
+  assert.match(SCRIPT, /\.select\('path,title,summary,domain,tags,/, 'a lista de páginas traz as tags');
+});
+
+test('#2495 descoberta: o destaque da sugestão escapa as três partes do texto', () => {
+  const b = fnBody('highlight');
+  assert.match(b, /if \(i < 0\) return E\(text\);/);
+  assert.match(b, /`\$\{E\(text\.slice\(0, i\)\)\}<mark>\$\{E\(text\.slice\(i, i \+ k\.length\)\)\}<\/mark>\$\{E\(text\.slice\(i \+ k\.length\)\)\}`/);
+});
+
+test('#2495 descoberta: o atalho "/" não rouba digitação nem o Ctrl+K da busca global', () => {
+  const i = SCRIPT.indexOf("if (e.key !== '/'");
+  assert.ok(i > 0, 'atalho de busca pela barra');
+  const b = SCRIPT.slice(i, SCRIPT.indexOf('});', i));
+  assert.match(b, /e\.ctrlKey \|\| e\.metaKey \|\| e\.altKey\) return;/, 'combinação com modificador segue para o site');
+  assert.match(b, /isContentEditable \|\| \/\^\(INPUT\|TEXTAREA\|SELECT\)\$\/\.test\(el\.tagName\)\)\) return;/, 'quem está digitando não perde o "/"');
+});
+
+test('#2495 descoberta: "versão antiga" só marca página de tribo vinda do repositório', () => {
+  assert.match(SCRIPT, /const isOldTribePage = \(p: any\) => p\?\.domain === 'tribes' && p\?\.source_repo !== 'plataforma';/);
+  assert.match(SCRIPT, /: isOldTribePage\(row\) \? `<div class="wk-seal">\$\{E\(T\('wiki\.oldSeal'\)\)\}<\/div>` : '';/,
+    'o selo de versão antiga aparece na leitura da página de tribo do repositório');
+});
+
+test('#2495 descoberta: quem não entrou vê o botão de entrar; membro inativo vê só a explicação', () => {
+  assert.match(SCRIPT, /login\.classList\.toggle\('hidden', !canLogin\);/);
+  assert.match(SCRIPT, /document\.getElementById\('nav-login-btn'\)/, 'o botão aciona o login do próprio site');
+  assert.match(SCRIPT, /deny\(\/requer membro ativo\/\.test\(err\.message \|\| ''\) \? T\('wiki\.activeOnly'\) : T\('wiki\.loadError'\), false\)/,
+    'membro inativo não recebe o botão de entrar');
+  assert.match(SCRIPT, /deny\(T\('wiki\.loginRequired'\), true\);/, 'sem sessão, o botão aparece');
 });
 
 // ── banco vivo ──────────────────────────────────────────────────────────────────────────────────
