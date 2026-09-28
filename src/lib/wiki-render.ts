@@ -49,6 +49,40 @@ function expandWikilinks(md: string, links: WikiLinkTargets): string {
     .join('');
 }
 
+/**
+ * Tira o H1 de abertura. A tela mostra o título da página por cima do texto, e as 17 páginas medidas
+ * em 28/09/2026 abriam com um H1 próprio que repetia o título com outra grafia ("Tribo 2 — Agentes
+ * Autonomos" sob "Tribo 2: Agentes Autônomos"). Só o primeiro bloco, e só H1: um H1 no meio do texto
+ * é conteúdo e fica.
+ */
+export function dropLeadingTitle(md: string | null | undefined): string {
+  if (!md) return '';
+  return md.replace(/^(?:[ \t]*\r?\n)*[ \t]{0,3}#[ \t]+[^\r\n]*(?:\r?\n|$)/, '');
+}
+
+/**
+ * Trecho da busca em texto puro. O `ts_headline` devolve um pedaço do markdown da página, com as
+ * quebras de linha, e usa `**` para marcar o termo achado, e o autor também usa `**` para negrito: as duas coisas não se
+ * distinguem. A tela tira toda a marcação e refaz o destaque do lado dela, como já faz no título.
+ * A saída é TEXTO, e quem a põe no HTML tem de escapar.
+ */
+export function plainSnippet(headline: string | null | undefined): string {
+  if (!headline) return '';
+  return headline
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, alvo: string, rotulo?: string) => rotulo || alvo)
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*|__|~~|`/g, '')
+    .replace(/(^|[\s(])[*_]([^*_\s](?:[^*_]*[^*_\s])?)[*_](?=[\s).,;:!?]|$)/g, '$1$2')
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+    .replace(/^[ \t]*>[ \t]?/gm, '')
+    .replace(/^[ \t]*[-*+][ \t]+/gm, '')
+    .replace(/\|/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Markdown da página → HTML sanitizado, com os links internos apontando para a tela. */
 export function renderWikiMarkdown(md: string | null | undefined, currentPath: string, links: WikiLinkTargets): string {
   if (!md) return '';

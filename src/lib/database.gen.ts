@@ -30652,6 +30652,7 @@ export type Database = {
         Returns: number
       }
       _wiki_pii_detail: { Args: { p_text: string }; Returns: string }
+      _wiki_type_tags: { Args: { p_doc_type: string }; Returns: string[] }
       _work_initiative_id: {
         Args: { p_work_id: string; p_work_type: string }
         Returns: string
@@ -33557,6 +33558,7 @@ export type Database = {
       get_wiki_page: {
         Args: { p_path: string }
         Returns: {
+          audit_status: string
           authors: string[]
           content: string
           domain: string
@@ -35296,6 +35298,7 @@ export type Database = {
           p_tag?: string
         }
         Returns: {
+          audit_status: string
           domain: string
           headline: string
           id: string
