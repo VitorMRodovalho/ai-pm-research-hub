@@ -93,8 +93,11 @@ except Exception: print("")' 2>/dev/null)"; fi
       echo "⚠️ $N SESSOES DO CLAUDE NO CLONE PRINCIPAL. So uma e a orquestradora; as outras nao abrem lane nem escrevem no banco."
     fi
     # A copia do gate usada pelo hook de usuario tem de ser igual a versao do repo.
+    # Ausente tambem alerta (#2504): so comparar quando as duas existem deixava a falta em silencio.
     REPO_GATE="$PRINCIPAL/.claude/hooks/db-write-gate.py"
-    if [ -f "$REPO_GATE" ] && [ -f "$GATE_COPY" ] && ! cmp -s "$REPO_GATE" "$GATE_COPY"; then
+    if [ -f "$REPO_GATE" ] && [ ! -f "$GATE_COPY" ]; then
+      echo "⚠️ A copia do gate em $GATE_COPY NAO existe: o hook de usuario fica sem gate. Restaure: cp .claude/hooks/db-write-gate.py $GATE_COPY"
+    elif [ -f "$REPO_GATE" ] && ! cmp -s "$REPO_GATE" "$GATE_COPY"; then
       echo "⚠️ A copia do gate em $GATE_COPY difere de .claude/hooks/db-write-gate.py: atualize a copia (cp)."
     fi
     ;;
