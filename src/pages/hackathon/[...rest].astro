@@ -1,0 +1,6 @@
+---
+// #2485 e #2511: entrada do hackathon, repassando o subcaminho e a query. Destino e status (302 fixo)
+// moram em src/lib/hackathon.js.
+import { hackathonTarget, HACKATHON_REDIRECT_STATUS } from '../../lib/hackathon.js';
+return Astro.redirect(hackathonTarget(Astro.params.rest, Astro.url.search), HACKATHON_REDIRECT_STATUS);
+---
