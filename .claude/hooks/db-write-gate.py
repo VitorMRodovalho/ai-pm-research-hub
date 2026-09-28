@@ -14,12 +14,20 @@ Scope: writes to THIS project's database only.
                                    .mcp.json above cwd names ANOTHER project_ref (the user-level copy of
                                    this gate runs in every project of the portfolio)
   * mcp__claude_ai_Supabase__*  -> only when tool_input.project_id is this project
-Decisions for apply_migration, and for execute_sql carrying a write/DDL statement:
-  * designated orchestrator -> apply_migration asks when PRs are open or DB jobs are in flight
-                               (the old queue check), else allow; execute_sql allow
+Decisions for apply_migration, for execute_sql carrying a write/DDL statement, and for the
+MUTATING_TOOLS below (#2504):
+  * designated orchestrator -> apply_migration and merge_branch ask when PRs are open or DB jobs are
+                               in flight (the old queue check), else allow; the rest allow
   * any other session       -> deny, naming the orchestrator and how the GP re-designates
   * no orchestrator on file -> deny (fail-closed)
-Read-only execute_sql always passes.
+Read-only execute_sql always passes, and so do the MCP tools that only read (list_*, get_*).
+
+MUTATING_TOOLS (#2504, 27/09/2026): tools that change THIS project with no SQL to classify, so every
+call counts as a write. Until then the matcher and decide() knew only apply_migration and execute_sql,
+and an Edge Function deploy (orchestrator-only by the project rules) passed from any session.
+merge_branch applies the branch's migrations to production, so it gets the apply_migration queue check.
+The branch tools that take branch_id carry no project_id: the gate cannot tell the project and treats
+the call as this one (fail-closed).
 
 The designation lives OUTSIDE the repo (public): ORCH_FILE below, first token = session_id. The GP
 designates; `scripts/lane-registry.sh orquestrador <session_id> "<nota>"` writes it.
@@ -39,7 +47,8 @@ first is a gap the rule in CLAUDE.md still covers; the second is a conservative 
 it is the probe used to exercise this gate live without writing anything. This is a
 guardrail against ACCIDENTS between sessions of the same user, not a security boundary.
 
-Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; LANE_ORCH_FILE overrides ORCH_FILE.
+Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; DB_GATE_QUEUE="<prs>,<jobs>" replaces
+it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE.
 """
 import json
 import os
@@ -59,6 +68,14 @@ WRITE_RE = re.compile(
     r"COPY|LOCK|NOTIFY)\b",
     re.IGNORECASE,
 )
+
+# The .claude/settings.json matcher lists each of these under both server prefixes.
+MUTATING_TOOLS = (
+    "deploy_edge_function",
+    "create_branch", "delete_branch", "merge_branch", "reset_branch", "rebase_branch",
+    "pause_project", "restore_project",
+)
+QUEUED_TOOLS = ("apply_migration", "merge_branch")
 
 
 BASH_RISK_RE = re.compile(
@@ -127,8 +144,14 @@ def targets_this_db(tool: str, tool_input: dict, cwd: str) -> bool:
         ref = mcp_json_ref(cwd)
         return not ref or ref == PROJECT_REF
     if tool.startswith("mcp__claude_ai_Supabase__"):
+        if "project_id" not in tool_input and tool_action(tool) in MUTATING_TOOLS:
+            return True  # branch_id tools: project unknown, fail-closed
         return tool_input.get("project_id") == PROJECT_REF
     return False
+
+
+def tool_action(tool: str) -> str:
+    return tool.rsplit("__", 1)[-1]
 
 
 def orchestrator_id() -> str:
@@ -162,6 +185,10 @@ def is_lane(cwd: str) -> bool:
 def queue_busy() -> tuple:
     if os.environ.get("DB_GATE_SKIP_QUEUE") == "1":
         return 0, 0
+    fixed = os.environ.get("DB_GATE_QUEUE")
+    if fixed:
+        prs, _, jobs = fixed.partition(",")
+        return int(prs or 0), int(jobs or 0)
 
     def count(args):
         try:
@@ -186,10 +213,12 @@ def where(cwd: str) -> str:
     return "fora de um repositorio git"
 
 
-def deny_reason(session_id: str, orch: str, cwd: str) -> str:
+def deny_reason(session_id: str, orch: str, cwd: str, action: str = "") -> str:
     who = f"a sessao orquestradora designada e {orch[:8]}" if orch else "NENHUMA sessao orquestradora esta designada"
+    head = (f"SO A ORQUESTRADORA ALTERA ESTE PROJETO PELO MCP ({action})" if action
+            else "SO A ORQUESTRADORA ESCREVE NO BANCO COMPARTILHADO")
     return (
-        f"SO A ORQUESTRADORA ESCREVE NO BANCO COMPARTILHADO. Esta sessao ({session_id[:8] or '?'}) NAO e a "
+        f"{head}. Esta sessao ({session_id[:8] or '?'}) NAO e a "
         f"orquestradora e roda {where(cwd)} ({cwd}); {who}. Prepare o pacote (o .sql, a verificacao) e mande para ela, que aplica "
         "e commita no mesmo passo. Em 25/09/2026 uma sessao que nao era a orquestradora aplicou 2 "
         "migrations em producao. Trocar a orquestradora e decisao do GP: "
@@ -212,10 +241,11 @@ def decide(event: dict):
         if not orch or session_id != orch:
             return "deny", bash_deny_reason(session_id, orch, cwd)
         return None, None
-    is_apply = tool.endswith("__apply_migration")
-    is_sql = tool.endswith("__execute_sql")
+    action = tool_action(tool)
+    is_sql = action == "execute_sql"
+    is_mutating = action in MUTATING_TOOLS
     cwd = event.get("cwd") or os.getcwd()
-    if not (is_apply or is_sql) or not targets_this_db(tool, tool_input, cwd):
+    if not (action == "apply_migration" or is_sql or is_mutating) or not targets_this_db(tool, tool_input, cwd):
         return None, None
     if is_sql and not is_write(tool_input.get("query", "")):
         return None, None
@@ -223,14 +253,14 @@ def decide(event: dict):
     session_id = event.get("session_id") or ""
     orch = orchestrator_id()
     if not orch or session_id != orch:
-        return "deny", deny_reason(session_id, orch, cwd)
+        return "deny", deny_reason(session_id, orch, cwd, action if is_mutating else "")
 
-    if is_apply:
+    if action in QUEUED_TOOLS:
         prs, jobs = queue_busy()
         if prs > 0 or jobs > 0:
             return "ask", (
                 f"BANCO OCUPADO: {prs} PR(s) aberta(s) e {jobs} job(s) de banco em voo. "
-                "apply_migration atinge o banco COMPARTILHADO na hora, e toda branch sem o .sql passa "
+                f"{action} atinge o banco COMPARTILHADO na hora, e toda branch sem o .sql passa "
                 "a acusar drift (PROD-AHEAD), inclusive a main. Fila de PRs vazia NAO e banco livre: "
                 "mergear zera a fila e dispara CI Validate/Schema Invariants na main. Espere os dois "
                 "numeros zerarem, ou confirme que a ordem ja foi combinada (#2340)."

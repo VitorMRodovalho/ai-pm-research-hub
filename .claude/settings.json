@@ -122,7 +122,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__claude_ai_Supabase__apply_migration|mcp__supabase__apply_migration|mcp__claude_ai_Supabase__execute_sql|mcp__supabase__execute_sql",
+        "matcher": "mcp__claude_ai_Supabase__apply_migration|mcp__supabase__apply_migration|mcp__claude_ai_Supabase__execute_sql|mcp__supabase__execute_sql|mcp__claude_ai_Supabase__deploy_edge_function|mcp__supabase__deploy_edge_function|mcp__claude_ai_Supabase__create_branch|mcp__supabase__create_branch|mcp__claude_ai_Supabase__delete_branch|mcp__supabase__delete_branch|mcp__claude_ai_Supabase__merge_branch|mcp__supabase__merge_branch|mcp__claude_ai_Supabase__reset_branch|mcp__supabase__reset_branch|mcp__claude_ai_Supabase__rebase_branch|mcp__supabase__rebase_branch|mcp__claude_ai_Supabase__pause_project|mcp__supabase__pause_project|mcp__claude_ai_Supabase__restore_project|mcp__supabase__restore_project",
         "hooks": [
           {
             "type": "command",
