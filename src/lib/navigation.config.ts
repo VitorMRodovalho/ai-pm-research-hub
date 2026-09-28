@@ -105,8 +105,9 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'meetings',   labelKey: 'nav.meetings',   href: '/meetings',   minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'minha-tribo', navSlot: 'none' },
   { key: 'my-initiatives', labelKey: 'nav.myInitiatives', href: '/initiatives', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'meu-espaco', navSlot: 'none' },
   // #2495 wiki vivo (ADR-0129): a leitura é de membro ativo pela RLS de wiki_pages; escrever,
-  // publicar e auditar são decididos pelas RPCs do piloto, não por esta entrada.
-  { key: 'wiki',       labelKey: 'nav.wiki',       href: '/wiki',       minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'explorar', navSlot: 'none' },
+  // publicar e auditar são decididos pelas RPCs do piloto, não por esta entrada. Na barra principal
+  // (27/09, GP): só na gaveta, como último item de Explorar, ninguém o achava.
+  { key: 'wiki',       labelKey: 'nav.wiki',       href: '/wiki',       minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'explorar', navSlot: 'primary' },
   { key: 'my-tribe',   labelKey: 'nav.myTribe',    href: '/tribe/',     minTier: 'member', requiresAuth: true, section: 'both', group: 'member', badge: 'teal', drawerSection: 'minha-tribo', navSlot: 'primary', dynamic: true, resolver: 'resolveMyTribeHref' },
   { key: 'webinars',   labelKey: 'nav.adminWebinars', href: '/webinars', minTier: 'leader', requiresAuth: true, section: 'main', group: 'subprojects', navSlot: 'none', allowedDesignations: ['comms_leader', 'comms_member', 'curator', 'co_gp'], allowedOperationalRoles: ['facilitator'] },
   { key: 'publications', labelKey: 'nav.publications', href: '/publications', minTier: 'leader', requiresAuth: true, section: 'both', group: 'subprojects', drawerSection: 'producao', navSlot: 'none', allowedDesignations: ['curator', 'co_gp', 'comms_leader', 'comms_member'], allowedOperationalRoles: ['communicator'] },
