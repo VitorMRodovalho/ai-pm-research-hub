@@ -27,6 +27,8 @@ const migFile = (name) => maskLineComments(readFileSync(resolve(ROOT, 'supabase/
 const PAGE_RAW = readFileSync(resolve(ROOT, 'src/pages/wiki.astro'), 'utf8');
 const SCRIPT = maskJsComments(PAGE_RAW.slice(PAGE_RAW.indexOf('<script>')));
 const MCP = maskJsComments(readFileSync(resolve(ROOT, 'supabase/functions/nucleo-mcp/index.ts'), 'utf8'));
+// Escapa todo metacaractere de regex (inclusive a barra invertida) antes de montar a asserção.
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // Divide uma lista SQL pelas vírgulas do nível de fora (parênteses e aspas não quebram).
 function splitTop(list) {
@@ -103,9 +105,9 @@ for (const [fn, sig] of [['get_wiki_page', 'text'], ['search_wiki_pages', 'text,
     assert.match(header, /RETURNS TABLE\([^)]*, audit_status text\)\s/, 'audit_status é a última coluna');
     assert.doesNotMatch(header, /SECURITY DEFINER/, 'a RLS de wiki_pages é o portão: nada de DEFINER');
     assert.match(body(fn), /,\s*w\.audit_status\s+FROM wiki_pages w/, 'o SELECT devolve a coluna na última posição');
-    assert.match(sql, new RegExp(`DROP FUNCTION public\\.${fn}\\(${sig.replace(/[()]/g, '\\$&')}\\);\\s+CREATE FUNCTION public\\.${fn}\\(`));
-    assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\(${sig}\\) FROM PUBLIC, anon;`));
-    assert.match(sql, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}\\(${sig}\\) TO authenticated, service_role;`));
+    assert.match(sql, new RegExp(`DROP FUNCTION public\\.${fn}\\(${reEsc(sig)}\\);\\s+CREATE FUNCTION public\\.${fn}\\(`));
+    assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\(${reEsc(sig)}\\) FROM PUBLIC, anon;`));
+    assert.match(sql, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}\\(${reEsc(sig)}\\) TO authenticated, service_role;`));
     assert.ok(file, fn);
   });
 }
