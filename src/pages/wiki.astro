@@ -178,8 +178,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 <script>
   import { escapeHtml as E, safeNavigationUrl } from '../lib/escape-html';
-  import { sanitizeUserHtml } from '../lib/sanitize-html';
-  import { renderWikiMarkdown } from '../lib/wiki-render';
+  import { renderWikiMarkdown, dropLeadingTitle, plainSnippet } from '../lib/wiki-render';
 
   // ── base ───────────────────────────────────────────────────────────────────────────────────────
   const root = document.getElementById('wiki-root') as HTMLElement;
@@ -258,7 +257,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     `<a href="${E(url)}" class="text-sm text-[var(--text-secondary)] no-underline hover:underline">&larr; ${E(label)}</a>`;
 
   function renderMd(md: string, path: string): string {
-    return renderWikiMarkdown(md, path, LINKS);
+    return renderWikiMarkdown(dropLeadingTitle(md), path, LINKS);
   }
 
   function sourcesList(sources: any): string {
@@ -451,8 +450,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── resultados ─────────────────────────────────────────────────────────────────────────────────
   function pageItem(p: any, q: string, headline?: string): string {
-    const lead = headline
-      ? `<p>${sanitizeUserHtml(headline)}</p>`
+    // O trecho vem do ts_headline sobre o markdown: vira texto puro e ganha o destaque da tela.
+    const snippet = plainSnippet(headline);
+    const lead = snippet
+      ? `<p>${highlight(snippet, q)}</p>`
       : p.summary ? `<p>${highlight(p.summary, q)}</p>` : '';
     return `<div class="wk-hit"><div class="crumb">${E(domainLabel(p.domain))}</div>
       <a class="h" href="${E(href({ page: p.path }))}">${highlight(p.title, q)}</a>${lead}
@@ -514,7 +515,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // Texto para colar no assistente do Núcleo. Vai para a área de transferência, nunca para o HTML.
   function assistantMarkdown(md: string, title: string, summary: string, url: string): string {
-    return `# ${title}\n\n${summary ? `> ${summary}\n\n` : ''}${md || ''}\n\n---\n${T('wiki.title')}: ${url}`;
+    return `# ${title}\n\n${summary ? `> ${summary}\n\n` : ''}${dropLeadingTitle(md)}\n\n---\n${T('wiki.title')}: ${url}`;
   }
 
   function buildToc() {

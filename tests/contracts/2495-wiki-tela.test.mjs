@@ -111,8 +111,9 @@ test('#2495 tela: todo conteúdo de página passa pelo renderizador ou pelo esca
   assert.equal(calls.length, 2, 'assistantMarkdown: a definição e uma chamada');
   assert.match(calls[0], /function $/, 'a primeira ocorrência é a definição');
   assert.match(calls[1], /navigator\.clipboard\.writeText\($/, 'o texto cru só vai para a área de transferência');
-  assert.match(SCRIPT, /\$\{sanitizeUserHtml\(headline\)\}/, 'o trecho da busca vem de ts_headline sobre o conteúdo');
-  assert.match(SCRIPT, /return renderWikiMarkdown\(md, path, LINKS\);/);
+  // o trecho da busca vem de ts_headline sobre o conteúdo: vira texto puro e passa pelo escape (B1)
+  assert.match(SCRIPT, /\$\{highlight\(snippet, q\)\}/, 'o trecho da busca passa pelo escape');
+  assert.match(SCRIPT, /return renderWikiMarkdown\(dropLeadingTitle\(md\), path, LINKS\);/);
 });
 
 test('#2495 tela: a tela não escreve em wiki_pages direto', () => {
