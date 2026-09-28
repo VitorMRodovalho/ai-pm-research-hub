@@ -12,7 +12,9 @@
  *   - sem orquestradora designada: todos negados (falha fechada);
  *   - a orquestradora: passa (a checagem de fila fica desligada no teste);
  *   - leitura passa; literal e comentário não contam como escrita;
- *   - o servidor claude_ai só é barrado quando aponta para ESTE projeto.
+ *   - o servidor claude_ai só é barrado quando aponta para ESTE projeto;
+ *   - #2504: as ferramentas do MCP que alteram o projeto sem SQL (deploy de EF, branch, pausar e
+ *     restaurar) seguem a mesma regra, e merge_branch espera a fila como apply_migration.
  * E exercita o registro de lanes e a designação da orquestradora (scripts/lane-registry.sh).
  *
  * Offline: git local, bash e python3; nenhuma chamada ao banco nem ao GitHub.
@@ -55,10 +57,10 @@ before(() => {
 });
 after(() => { if (base) rmSync(base, { recursive: true, force: true }); });
 
-function runHook(tool, cwd, sessionId, toolInput = {}, orch = orqFile) {
+function runHook(tool, cwd, sessionId, toolInput = {}, orch = orqFile, env = {}) {
   const r = spawnSync('python3', [HOOK], {
     input: JSON.stringify({ tool_name: tool, cwd, session_id: sessionId, tool_input: toolInput }),
-    env: { ...process.env, DB_GATE_SKIP_QUEUE: '1', LANE_ORCH_FILE: orch },
+    env: { ...process.env, DB_GATE_SKIP_QUEUE: '1', LANE_ORCH_FILE: orch, ...env },
     encoding: 'utf8',
   });
   assert.equal(r.status, 0, `hook exits 0 (stderr: ${r.stderr})`);
@@ -70,6 +72,14 @@ const APPLY = 'mcp__supabase__apply_migration';
 const SQL = 'mcp__claude_ai_Supabase__execute_sql';
 const CREATE = { name: 'x', query: 'create table t(i int)', project_id: THIS_PROJECT };
 const UPDATE = { query: 'update members set name = name where false', project_id: THIS_PROJECT };
+// #2504: alteram o projeto sem SQL para classificar. A lista é a especificação; o teste do
+// settings.json confere que ela é a mesma do hook e que o matcher cobre cada uma nos dois servidores.
+const MUTANTES = ['deploy_edge_function', 'create_branch', 'delete_branch', 'merge_branch', 'reset_branch',
+  'rebase_branch', 'pause_project', 'restore_project'];
+const SERVIDORES = ['mcp__claude_ai_Supabase', 'mcp__supabase'];
+const POR_BRANCH_ID = ['delete_branch', 'merge_branch', 'reset_branch', 'rebase_branch'];
+const entrada = (acao) => (POR_BRANCH_ID.includes(acao)
+  ? { branch_id: 'bbbbbbbb-0000-4000-8000-000000000000' } : { project_id: THIS_PROJECT, name: 'x' });
 
 test('não-orquestradora NO CLONE PRINCIPAL é negada (o caso de 25/09 que a v1 deixava passar)', () => {
   const d = runHook(APPLY, main, OUTRA_SID, CREATE);
@@ -128,6 +138,42 @@ test('servidor claude_ai: só barra quando o project_id é ESTE projeto', () => 
   assert.equal(runHook('mcp__supabase__execute_sql', esteRepo, OUTRA_SID, upd)?.permissionDecision, 'deny', '.mcp.json deste projeto');
 });
 
+// ── Ferramentas do MCP que alteram o projeto sem SQL (#2504) ────────────────────────────────────
+test('#2504: não-orquestradora é negada em toda ferramenta que altera o projeto, nos dois servidores', () => {
+  for (const srv of SERVIDORES) for (const acao of MUTANTES) {
+    const d = runHook(`${srv}__${acao}`, main, OUTRA_SID, entrada(acao));
+    assert.equal(d?.permissionDecision, 'deny', `${srv}__${acao}`);
+    assert.match(d.permissionDecisionReason, new RegExp(`SO A ORQUESTRADORA ALTERA ESTE PROJETO PELO MCP \\(${acao}\\)`));
+  }
+  const semDesignacao = runHook('mcp__supabase__deploy_edge_function', main, ORQ_SID, { name: 'f' }, semOrq);
+  assert.equal(semDesignacao?.permissionDecision, 'deny', 'sem orquestradora designada, falha fechada');
+});
+
+test('#2504: a orquestradora passa; ferramenta de leitura e outro projeto não são deste gate', () => {
+  for (const srv of SERVIDORES) for (const acao of MUTANTES) {
+    assert.equal(runHook(`${srv}__${acao}`, main, ORQ_SID, entrada(acao)), null, `orquestradora: ${srv}__${acao}`);
+  }
+  for (const leitura of ['list_edge_functions', 'get_edge_function', 'list_branches', 'list_migrations']) {
+    assert.equal(runHook(`mcp__claude_ai_Supabase__${leitura}`, main, OUTRA_SID, { project_id: THIS_PROJECT }), null, leitura);
+  }
+  const outroProjeto = { project_id: 'aaaaaaaaaaaaaaaaaaaa', name: 'f' };
+  assert.equal(runHook('mcp__claude_ai_Supabase__deploy_edge_function', main, OUTRA_SID, outroProjeto), null,
+    'deploy em outro projeto da conta não é deste gate');
+});
+
+test('#2504: banco ocupado faz a orquestradora ser consultada em apply_migration e merge_branch, e só neles', () => {
+  const ocupado = { DB_GATE_SKIP_QUEUE: '', DB_GATE_QUEUE: '0,1' };
+  for (const [tool, input] of [[APPLY, CREATE], ['mcp__claude_ai_Supabase__merge_branch', entrada('merge_branch')]]) {
+    const d = runHook(tool, main, ORQ_SID, input, orqFile, ocupado);
+    assert.equal(d?.permissionDecision, 'ask', tool);
+    assert.match(d.permissionDecisionReason, /BANCO OCUPADO: 0 PR\(s\) aberta\(s\) e 1 job\(s\)/, tool);
+  }
+  assert.equal(runHook('mcp__supabase__deploy_edge_function', main, ORQ_SID, { name: 'f' }, orqFile, ocupado), null,
+    'deploy de EF não espera a fila de banco');
+  assert.equal(runHook(APPLY, main, ORQ_SID, CREATE, orqFile, { DB_GATE_SKIP_QUEUE: '', DB_GATE_QUEUE: '0,0' }), null,
+    'fila livre, passa');
+});
+
 // ── Bash (pacote A, 25/09): token de gestao, CLI do Supabase e psql ──────────────────────────────
 const bash = (cwd, sid, command, orch) => runHook('Bash', cwd, sid, { command }, orch);
 const ARRISCADOS = [
@@ -174,10 +220,11 @@ test('settings.json liga o gate às ferramentas dos dois servidores MCP', () => 
   const s = JSON.parse(readFileSync(resolve(ROOT, '.claude/settings.json'), 'utf8'));
   const entry = (s.hooks?.PreToolUse ?? []).find((h) => /db-write-gate\.py/.test(JSON.stringify(h.hooks)));
   assert.ok(entry, 'existe um PreToolUse que chama db-write-gate.py');
-  for (const tool of [
-    'mcp__claude_ai_Supabase__apply_migration', 'mcp__supabase__apply_migration',
-    'mcp__claude_ai_Supabase__execute_sql', 'mcp__supabase__execute_sql',
-  ]) {
+  // A lista do teste é a do hook: acrescentar ferramenta num lado só reprova aqui.
+  const doHook = [...readFileSync(HOOK, 'utf8').match(/^MUTATING_TOOLS = \(([\s\S]*?)^\)/m)[1].matchAll(/"(\w+)"/g)].map((m) => m[1]);
+  assert.deepEqual([...doHook].sort(), [...MUTANTES].sort(), 'MUTATING_TOOLS do hook = lista do teste');
+  for (const acao of ['apply_migration', 'execute_sql', ...MUTANTES]) for (const srv of SERVIDORES) {
+    const tool = `${srv}__${acao}`;
     assert.ok(new RegExp(`^(?:${entry.matcher})$`).test(tool), `matcher cobre ${tool}`);
   }
   const bashEntry = (s.hooks?.PreToolUse ?? []).find((h) => h.matcher === 'Bash' && /db-write-gate\.py/.test(JSON.stringify(h.hooks)));
@@ -232,7 +279,7 @@ test('orquestradora: designar exige nota; o SessionStart diz a cada sessão se e
   assert.equal(runHook(APPLY, main, OUTRA_SID, CREATE, orq)?.permissionDecision, 'deny');
 });
 
-test('cópia do gate usada pelo hook de usuário: divergir do repo vira alerta', () => {
+test('cópia do gate usada pelo hook de usuário: divergir do repo ou faltar vira alerta', () => {
   mkdirSync(join(main, '.claude/hooks'), { recursive: true });
   writeFileSync(join(main, '.claude/hooks/db-write-gate.py'), 'versao-do-repo\n');
   const copia = join(base, 'copia.py');
@@ -241,4 +288,8 @@ test('cópia do gate usada pelo hook de usuário: divergir do repo vira alerta',
   assert.match(registry(['check', main], main, env).stdout, /copia do gate .* difere/);
   writeFileSync(copia, 'versao-do-repo\n');
   assert.equal(registry(['check', main], main, env).stdout.trim(), '', 'iguais, silêncio');
+  rmSync(copia);
+  const ausente = registry(['check', main], main, env).stdout;
+  assert.match(ausente, /copia do gate em .* NAO existe: o hook de usuario fica sem gate/, 'ausente também alerta (#2504)');
+  assert.doesNotMatch(ausente, /difere/, 'ausente não é o mesmo alerta de divergência');
 });
