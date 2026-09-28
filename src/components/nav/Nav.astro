@@ -105,6 +105,10 @@ const jsI18n = JSON.stringify({
   library: t('nav.library', lang),
   gamification: t('nav.gamification', lang),
   reunioesGerais: t('nav.reunioesGerais', lang),
+  // #2495: sem estas duas entradas a gaveta mostrava "nav.wiki" e "nav.myPoints". O guard
+  // 2495-menu-rotulo-do-catalogo lê o catálogo inteiro e reprova qualquer item da gaveta sem entrada.
+  wiki: t('nav.wiki', lang),
+  myPoints: t('nav.myPoints', lang),
   volunteerAgreement: t('nav.volunteer', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
