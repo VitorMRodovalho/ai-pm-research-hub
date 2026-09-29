@@ -30629,6 +30629,7 @@ export type Database = {
         Returns: boolean
       }
       _wiki_committee_ids: { Args: never; Returns: string[] }
+      _wiki_domain_for_kind: { Args: { p_kind: string }; Returns: string }
       _wiki_initiative_leader_ids: {
         Args: { p_initiative: string }
         Returns: string[]
@@ -30641,6 +30642,7 @@ export type Database = {
         Args: { p_initiative: string; p_member: string }
         Returns: boolean
       }
+      _wiki_leadership_roles: { Args: never; Returns: string[] }
       _wiki_notify: {
         Args: {
           p_body: string
@@ -30653,6 +30655,7 @@ export type Database = {
       }
       _wiki_pii_detail: { Args: { p_text: string }; Returns: string }
       _wiki_type_tags: { Args: { p_doc_type: string }; Returns: string[] }
+      _wiki_writer_roles: { Args: never; Returns: string[] }
       _work_initiative_id: {
         Args: { p_work_id: string; p_work_type: string }
         Returns: string
@@ -36132,6 +36135,7 @@ export type Database = {
           title: string
         }[]
       }
+      wiki_initiatives_overview: { Args: never; Returns: Json }
       wiki_page_history: { Args: { p_page_path: string }; Returns: Json }
       wiki_review_queue: { Args: never; Returns: Json }
       wiki_save_draft: {
