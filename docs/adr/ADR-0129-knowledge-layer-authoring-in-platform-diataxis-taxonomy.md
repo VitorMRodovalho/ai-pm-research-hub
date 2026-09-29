@@ -1,6 +1,6 @@
 # ADR-0129: The knowledge layer is authored in the platform, classified by Diátaxis, and fed before it is extended
 
-**Status:** Accepted on 2026-09-27, with the two amendments below
+**Status:** Accepted on 2026-09-27, with the three amendments below (the third of 2026-09-28)
 **Date:** 2026-09-13 (proposed) · 2026-09-27 (accepted)
 **Source:** Discussion in the Núcleo general WhatsApp group on 2026-09-13 (glossary raised by a researcher; tool-vs-process split proposed by a tribe leader), the `Nucleo_Wiki_Fluxo_Conhecimento_V1` deck of the same date, and a live survey of the knowledge tables run while analysing it.
 **Related:** ADR-0010 (wiki content is narrative and non-personal), ADR-0105 (confidential initiative visibility), [#2208](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2208) (YouTube archive without captions), [#2495](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2495) (living wiki: architecture and gap assessment).
@@ -215,6 +215,26 @@ curation authority, and the wiki had one author in three months.
    new version, never an overwrite, and author and leader are notified at once.
 7. **Consequence for the design:** the unit of review is the page version, not a board card. A light version
    table (option 3a in #2495) replaces the card-based proposals.
+
+## Amendment 3 (GP decision, 2026-09-28): the wiki covers every initiative, not only tribes
+
+Replaces item 4 of the first amendment ("the pilot domain is `tribes`") for authoring. Measured the same day:
+the database has 14 research tribes (12 active; tribes 2 and 3 archived), 10 working groups, 5 verticals and
+1 study group, while the wiki's home listed only the 7 tribes that already had a page, and only tribes could
+write.
+
+1. **Working groups, verticals and the study group write their own page**, like the tribes. Congresses and
+   committees do not get a page.
+2. **Leadership is `leader` or `coordinator`; writers are also `participant`, `researcher` and `reviewer`;
+   `observer` only reads.** Measured before deciding: tribes have neither coordinators nor participants nor
+   reviewers, so nothing changes for them. The four-eyes rule of Amendment 2 is unchanged: when the author is
+   part of the leadership, the Curation Committee approves before publication.
+3. **Pages of non-tribe initiatives live in the `initiatives` domain, under `nucleo/iniciativas/<id>`.**
+4. **The home lists every tribe (archived ones marked as frozen) and every other initiative from the
+   initiatives catalogue, not from the pages that exist**, with the page state of each: on the platform, old
+   version from the repository, or no page yet. An initiative with no engaged team (measured: the 5 verticals
+   and one working group) shows that, and only the Curation Committee can write for it until someone is
+   engaged.
 
 ## References
 

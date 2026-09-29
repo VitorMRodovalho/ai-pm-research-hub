@@ -79,12 +79,12 @@ test('#2495: wiki_audit é do comitê, nunca de quem escreveu, e exige motivo pa
 });
 
 // ── escrita e leitura ───────────────────────────────────────────────────────────────────────────
-test('#2495: wiki_save_draft restringe o piloto a tribos e a quem participa da tribo ou cura', () => {
+test('#2495: wiki_save_draft restringe a escrita aos tipos com página e a quem participa ou cura (emenda 3)', () => {
   const b = body('wiki_save_draft');
-  assert.match(b, /IF p_domain IS DISTINCT FROM 'tribes' THEN\s+RAISE EXCEPTION/);
+  assert.match(b, /IF v_domain IS NULL THEN\s+RAISE EXCEPTION[^;]*;\s+END IF;\s+IF p_domain IS DISTINCT FROM v_domain THEN\s+RAISE EXCEPTION/);
   assert.match(b, /IF NOT public\.rls_can_see_initiative\(p_initiative_id\) THEN\s+RAISE EXCEPTION/);
   assert.match(b, /IF NOT public\._wiki_can_author\(v_caller, p_initiative_id\) THEN\s+RAISE EXCEPTION/);
-  assert.match(body('_wiki_can_author'), /e\.status = 'active' AND e\.role IN \('leader', 'researcher'\)\)\s+OR public\.can_by_member\(p_member, 'curate_content'\)/);
+  assert.match(body('_wiki_can_author'), /e\.status = 'active' AND e\.role = ANY \(public\._wiki_writer_roles\(\)\)\)\s+OR public\.can_by_member\(p_member, 'curate_content'\)/);
 });
 
 test('#2495: as leituras aplicam o portão de iniciativa confidencial', () => {
