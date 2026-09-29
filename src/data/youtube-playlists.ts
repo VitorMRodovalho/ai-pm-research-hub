@@ -83,3 +83,23 @@ export function getPlaylistId(key: PlaylistKey): string {
 export function getPlaylistUrl(key: PlaylistKey): string {
   return `https://www.youtube.com/playlist?list=${getPlaylistId(key)}`;
 }
+
+/**
+ * Vídeos que a plataforma mostra (#2495). O id fica aqui, e não no componente, pelo mesmo motivo das
+ * playlists: um id copiado à mão para o lugar errado não é pego por nada.
+ */
+export const YOUTUBE_VIDEOS = {
+  // "Boas-vindas com a NIA": como usar o wiki. Publicado em 29/09/2026, 1min25s, legendas pt, es e en.
+  wikiWelcome: 'en9GGZqm3W8',
+} as const;
+
+export type VideoKey = keyof typeof YOUTUBE_VIDEOS;
+
+export function youtubeWatchUrl(key: VideoKey): string {
+  return `https://www.youtube.com/watch?v=${YOUTUBE_VIDEOS[key]}`;
+}
+
+/** Miniatura servida por i.ytimg.com, já liberado no img-src da CSP. mqdefault é 16:9 (320x180). */
+export function youtubeThumbUrl(key: VideoKey, size: 'mqdefault' | 'maxresdefault' = 'mqdefault'): string {
+  return `https://i.ytimg.com/vi/${YOUTUBE_VIDEOS[key]}/${size}.jpg`;
+}

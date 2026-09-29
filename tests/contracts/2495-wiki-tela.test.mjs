@@ -231,3 +231,17 @@ test('#2495 tela: a tabela usa a largura do artigo, o texto fica em 70 caractere
   assert.match(css, /\.wk-prose table \{ display: block; overflow-x: auto; [^}]*font-size: \.82rem;[^}]*\}/, 'rolagem só como último recurso');
   assert.match(css, /\.wk-prose table code \{ white-space: nowrap; \}/, 'identificador não quebra no meio');
 });
+
+// #2495 (29/09): o vídeo da NIA entra no "Comece aqui" como link para o YouTube, com o id no SSOT do canal.
+// Embutir o player exigiria abrir frame-src na CSP, que a securityHeaders.ts manda manter mínima.
+test('#2495 tela: o Comece aqui abre o vídeo da NIA pelo SSOT, sem id solto e sem abrir a CSP', () => {
+  const inicio = SCRIPT.slice(SCRIPT.indexOf('wk-panel wk-start'), SCRIPT.indexOf("T('wiki.tribesTitle')"));
+  assert.match(inicio, /<a class="wk-video" href="\$\{E\(youtubeWatchUrl\('wikiWelcome'\)\)\}" target="_blank" rel="noopener noreferrer">/);
+  assert.match(inicio, /<img src="\$\{E\(youtubeThumbUrl\('wikiWelcome'\)\)\}"[^>]*alt="\$\{E\(T\('wiki\.videoAlt'\)\)\}"/);
+  assert.doesNotMatch(SCRIPT, /youtube\.com\/(watch|embed)|youtu\.be\/|i\.ytimg\.com/, 'id e endereço do vídeo moram no SSOT');
+  assert.doesNotMatch(PAGE_RAW, /<iframe/i);
+  const ssot = readFileSync(resolve(ROOT, 'src/data/youtube-playlists.ts'), 'utf8');
+  assert.match(ssot, /wikiWelcome: '[A-Za-z0-9_-]{11}',/);
+  const sec = readFileSync(resolve(ROOT, 'src/lib/securityHeaders.ts'), 'utf8');
+  assert.match(sec, /"frame-src https:\/\/calendar\.google\.com; "/, 'frame-src continua só com o Google Calendar');
+});
