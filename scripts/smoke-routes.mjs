@@ -136,10 +136,13 @@ async function assertOk(path) {
   }
 }
 
-async function assertRedirect(path, expectedLocation) {
+async function assertRedirect(path, expectedLocation, expectedStatus) {
   const { res } = await req(path, { redirect: 'manual' });
   if (!(res.status >= 300 && res.status < 400)) {
     throw new Error(`Expected ${path} to redirect, got ${res.status}`);
+  }
+  if (expectedStatus && res.status !== expectedStatus) {
+    throw new Error(`Expected ${path} to redirect with ${expectedStatus}, got ${res.status}`);
   }
   const location = res.headers.get('location');
   if (location !== expectedLocation) {
@@ -228,6 +231,12 @@ async function assercoes() {
   await assertRedirect('/hackathon', HACKATHON_URL);
   await assertRedirect('/en/hackathon', HACKATHON_URL);
   await assertRedirect('/es/hackathon', HACKATHON_URL);
+  // #2511: o subcaminho e a query vão junto, em 302 (decisão do GP em 28/09: o apelido muda de edição),
+  // e nenhum subcaminho troca o host de destino.
+  await assertRedirect('/hackathon/edital?utm_source=impresso', `${HACKATHON_URL}edital?utm_source=impresso`, 302);
+  await assertRedirect('/en/hackathon/edital', `${HACKATHON_URL}edital`, 302);
+  await assertRedirect('/es/hackathon/a/b', `${HACKATHON_URL}a/b`, 302);
+  await assertRedirect('/hackathon//evil.example/x', `${HACKATHON_URL}evil.example/x`, 302);
 }
 
 async function run() {

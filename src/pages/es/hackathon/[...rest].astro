@@ -1,0 +1,6 @@
+---
+// #2485 e #2511: o site do hackathon é externo e tem um endereço só, então o locale vai para o mesmo
+// destino, com o subcaminho e a query.
+import { hackathonTarget, HACKATHON_REDIRECT_STATUS } from '../../../lib/hackathon.js';
+return Astro.redirect(hackathonTarget(Astro.params.rest, Astro.url.search), HACKATHON_REDIRECT_STATUS);
+---
