@@ -121,8 +121,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   .wk-start img { width: 100px; height: auto; }
   .wk-start h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 .3rem; color: var(--text-primary); }
   .wk-start ol { margin: .4rem 0 .8rem; padding-left: 1.1rem; color: var(--text-secondary); font-size: .84rem; list-style: decimal; }
-  .wk-video { display: flex; gap: .6rem; align-items: center; border: 1px dashed var(--border-strong); border-radius: .6rem; padding: .6rem .7rem; font-size: .8rem; color: var(--text-secondary); }
-  .wk-video .play { width: 1.8rem; height: 1.8rem; flex: none; border-radius: 50%; background: var(--color-navy); color: #fff; display: grid; place-items: center; font-size: .7rem; }
+  /* O vídeo abre no YouTube: embutir o player exigiria abrir frame-src na CSP, que é item de revisão de segurança. */
+  .wk-video { display: flex; flex-direction: column; gap: .5rem; border: 1px solid var(--border-default); border-radius: .6rem; padding: .6rem; font-size: .8rem; color: var(--text-secondary); text-decoration: none; }
+  .wk-video:hover { border-color: var(--border-strong); }
+  .wk-video .thumb { position: relative; display: block; }
+  .wk-video .thumb img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: .45rem; }
+  .wk-video .play { position: absolute; inset: 0; margin: auto; width: 2.6rem; height: 2.6rem; border-radius: 50%; background: var(--color-navy); color: #fff; display: grid; place-items: center; font-size: .9rem; }
   .wk-list { list-style: none; margin: 0; padding: 0; }
   .wk-list li { display: flex; justify-content: space-between; align-items: baseline; gap: .7rem; padding: .55rem 0; border-bottom: 1px solid var(--border-subtle); }
   .wk-list li:last-child { border-bottom: 0; }
@@ -185,6 +189,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 <script>
   import { escapeHtml as E, safeNavigationUrl } from '../lib/escape-html';
   import { renderWikiMarkdown, dropLeadingTitle, plainSnippet } from '../lib/wiki-render';
+  import { youtubeWatchUrl, youtubeThumbUrl } from '../data/youtube-playlists';
 
   // ── base ───────────────────────────────────────────────────────────────────────────────────────
   const root = document.getElementById('wiki-root') as HTMLElement;
@@ -464,7 +469,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <div class="wk-panel wk-start">${NIA_IMG}
           <div><h3>${E(T('wiki.startTitle'))}</h3>
             <ol><li>${E(T('wiki.startStep1'))}</li><li>${E(T('wiki.startStep2'))}</li><li>${E(T('wiki.startStep3'))}</li></ol>
-            <div class="wk-video"><span class="play" aria-hidden="true">&#9654;</span><span><strong>${E(T('wiki.videoTitle'))}</strong><br>${E(T('wiki.videoSoon'))}</span></div>
+            <a class="wk-video" href="${E(youtubeWatchUrl('wikiWelcome'))}" target="_blank" rel="noopener noreferrer">
+              <span class="thumb"><img src="${E(youtubeThumbUrl('wikiWelcome'))}" srcset="${E(youtubeThumbUrl('wikiWelcome'))} 320w, ${E(youtubeThumbUrl('wikiWelcome', 'maxresdefault'))} 1280w" sizes="(max-width: 760px) 90vw, 320px" alt="${E(T('wiki.videoAlt'))}" width="320" height="180" loading="lazy"><span class="play" aria-hidden="true">&#9654;</span></span>
+              <span><strong>${E(T('wiki.videoTitle'))}</strong><br>${E(T('wiki.videoDesc'))}</span>
+            </a>
           </div></div>
         <div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.tribesTitle'))}</h2>
           ${tribes.length ? `<ul class="wk-list">${tribes.map(initiativeRow).join('')}</ul>` : emptyBox(T('wiki.noPages'))}
