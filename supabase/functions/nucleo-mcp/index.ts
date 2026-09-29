@@ -206,6 +206,8 @@ import {
 // enquanto as regras viviam só dentro do CLI, elas valiam apenas para quem lembrasse de
 // rodá-lo, e quem agendava por aqui passava direto.
 import { avisosDeCopy } from "../_shared/social-copy-rules.mjs";
+// #2495 — pagina publicada pela tribo e ainda nao auditada avisa o assistente (ADR-0129, emenda 2).
+import { withWikiAuditNotice } from "./wiki-audit.mjs";
 
 const app = new Hono().basePath("/nucleo-mcp");
 
@@ -2995,18 +2997,18 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // ===== WIKI & KNOWLEDGE TOOLS (71-73) =====
 
   // TOOL 71: search_wiki — full-text search across wiki pages
-  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets. Covers governance documents, architectural decisions (ADRs), research, and narrative knowledge.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10"), domain: z.string().optional().describe("Filter by domain: research, governance, tribes, partnerships, platform, onboarding"), tag: z.string().optional().describe("Filter by tag (exact match)") }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
+  mcp.tool("search_wiki", "Search the Núcleo wiki knowledge base. Returns ranked results with highlighted snippets and audit_status; a page published by a tribe and not yet audited carries audit_notice, which you must mention when citing it. Covers governance documents, architectural decisions (ADRs), research, and narrative knowledge.", { query: z.string().describe("Search query (supports Portuguese natural language)"), limit: z.number().optional().describe("Max results. Default: 10"), domain: z.string().optional().describe("Filter by domain: research, governance, tribes, partnerships, platform, onboarding"), tag: z.string().optional().describe("Filter by tag (exact match)") }, async (params: { query: string; limit?: number; domain?: string; tag?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "search_wiki", false, "Not authenticated", start); return err("Not authenticated"); }
     const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit || 10, p_domain: params.domain || null, p_tag: params.tag || null });
     if (error) { await logUsage(sb, member.id, "search_wiki", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_wiki", true, undefined, start);
-    return ok(data);
+    return ok(withWikiAuditNotice(data));
   });
 
   // TOOL 72: get_wiki_page — retrieve full wiki page by path
-  mcp.tool("get_wiki_page", "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags.", { path: z.string().describe("Wiki page path, e.g. 'governance/manual.md' or 'governance/adr/ADR-0007.md'") }, async (params: { path: string }) => {
+  mcp.tool("get_wiki_page", "Returns the full content of a wiki page by its path (e.g. 'governance/adr/ADR-0007.md'). Includes metadata: authors, license, IP track, tags, audit_status. A page published by a tribe and not yet audited carries audit_notice: mention it when citing the page.", { path: z.string().describe("Wiki page path, e.g. 'governance/manual.md' or 'governance/adr/ADR-0007.md'") }, async (params: { path: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_wiki_page", false, "Not authenticated", start); return err("Not authenticated"); }
@@ -3014,7 +3016,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (error) { await logUsage(sb, member.id, "get_wiki_page", false, error.message, start); return err(error.message); }
     if (!data || (Array.isArray(data) && data.length === 0)) { await logUsage(sb, member.id, "get_wiki_page", false, "Page not found", start); return err(`Page not found: ${params.path}. Use search_wiki to find available pages.`); }
     await logUsage(sb, member.id, "get_wiki_page", true, undefined, start);
-    return ok(data);
+    return ok(withWikiAuditNotice(data));
   });
 
   // TOOL 73: get_decision_log — list architectural decision records (ADRs)
@@ -4286,7 +4288,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: search_wiki_pages — wiki FTS with tag/domain filters
-  mcp.tool("search_wiki_pages", "Full-text search of wiki_pages with optional domain (e.g. 'frameworks') and tag filters. Returns id, path, title, summary, tags, license, ip_track, headline (highlighted snippet) and rank. Use to discover narrative knowledge before answering 'what does the wiki say about X?'.", {
+  mcp.tool("search_wiki_pages", "Full-text search of wiki_pages with optional domain (e.g. 'frameworks') and tag filters. Returns id, path, title, summary, tags, license, ip_track, headline (highlighted snippet), rank and audit_status; a page published by a tribe and not yet audited carries audit_notice, which you must mention when citing it. Use to discover narrative knowledge before answering 'what does the wiki say about X?'.", {
     query: z.string().describe("Search text"),
     limit: z.number().optional().describe("Max results. Default: 10."),
     domain: z.string().optional().describe("Optional domain filter (e.g. 'frameworks', 'governance')."),
@@ -4299,7 +4301,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const { data, error } = await sb.rpc("search_wiki_pages", { p_query: params.query, p_limit: params.limit ?? 10, p_domain: params.domain ?? null, p_tag: params.tag ?? null });
     if (error) { await logUsage(sb, member.id, "search_wiki_pages", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "search_wiki_pages", true, undefined, start);
-    return ok(data);
+    return ok(withWikiAuditNotice(data));
   });
 
   // TOOL: knowledge_assets_latest — recent knowledge_assets
@@ -8313,7 +8315,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         }
         const { data: pageData, error: pageErr } = await sb.rpc("get_wiki_page", { p_path: path });
         if (pageErr) { await logUsage(sb, member.id, "search_nucleo_knowledge", false, pageErr.message, start); return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "internal_error", message: pageErr.message })); }
-        const page = Array.isArray(pageData) ? pageData[0] : pageData;
+        const page = withWikiAuditNotice(Array.isArray(pageData) ? pageData[0] : pageData);
         if (!page) { await logUsage(sb, member.id, "search_nucleo_knowledge", false, "Page not found", start); return ok(buildSemanticError({ tool: "search_nucleo_knowledge", semantic_domain: "knowledge", code: "not_found", message: `Wiki page not found: ${path}.`, action: "Check the path with mode='search'." })); }
         await logUsage(sb, member.id, "search_nucleo_knowledge", true, undefined, start);
         return semanticOk({
@@ -8358,7 +8360,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (sources.includes("wiki")) {
         tasks.push(
           sb.rpc("search_wiki_pages", { p_query: query, p_limit: limit, p_domain: null, p_tag: null })
-            .then(({ data, error }: any) => ({ source: "wiki", data: Array.isArray(data) ? data : [], error: error?.message ?? null })),
+            .then(({ data, error }: any) => ({ source: "wiki", data: Array.isArray(data) ? withWikiAuditNotice(data) : [], error: error?.message ?? null })),
         );
       }
       if (sources.includes("knowledge_assets")) {
