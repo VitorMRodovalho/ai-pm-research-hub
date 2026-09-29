@@ -205,7 +205,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const LINKS = { page: (p: string) => href({ page: p }), search: (q: string) => href({ q }) };
 
   let sb: any = null;
-  let ctx: { is_committee: boolean; tribes: any[] } = { is_committee: false, tribes: [] };
+  let ctx: { is_committee: boolean; initiatives: any[] } = { is_committee: false, initiatives: [] };
+  // Tribos e demais iniciativas do cadastro, com o estado da página de cada uma (emenda 3 da ADR-0129).
+  let overview: any[] = [];
   let queue: { awaiting_my_decision: any[]; audit_pending: any[]; my_versions: any[] } =
     { awaiting_my_decision: [], audit_pending: [], my_versions: [] };
   let pages: any[] = [];
@@ -274,7 +276,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── tipo por objetivo (Diátaxis) e organização ─────────────────────────────────────────────────
   const DOC_TYPES = ['tutorial', 'how_to', 'reference', 'explanation'];
-  const DOMAIN_ORDER = ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
+  const DOMAIN_ORDER = ['tribes', 'initiatives', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
   // O tipo vem da tag diataxis-<tipo> que o repositório do wiki grava no cabeçalho da página.
   function typeOf(p: any): string | null {
     const tag = (Array.isArray(p?.tags) ? p.tags : []).find((x: string) => /^diataxis-/.test(String(x)));
@@ -366,9 +368,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   function workItems() {
     const items: { key: string; label: string; url: string; count: number }[] = [];
-    if (ctx.tribes.length || queue.my_versions.length)
+    if (ctx.initiatives.length || queue.my_versions.length)
       items.push({ key: 'mine', label: T('wiki.tab.mine'), url: href({ tab: 'mine' }), count: queue.my_versions.length });
-    if (ctx.is_committee || ctx.tribes.some((t) => t.is_leader) || queue.awaiting_my_decision.length)
+    if (ctx.is_committee || ctx.initiatives.some((t) => t.is_leader) || queue.awaiting_my_decision.length)
       items.push({ key: 'decide', label: T('wiki.tab.decide'), url: href({ tab: 'decide' }), count: queue.awaiting_my_decision.length });
     if (ctx.is_committee)
       items.push({ key: 'audit', label: T('wiki.tab.audit'), url: href({ tab: 'audit' }), count: queue.audit_pending.length });
@@ -383,7 +385,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── início ─────────────────────────────────────────────────────────────────────────────────────
   function myTribesCallout(): string {
-    const mine = ctx.tribes.filter((t) => t.is_engaged && t.status === 'active');
+    const mine = ctx.initiatives.filter((t) => t.is_engaged && t.status === 'active');
     if (!mine.length) return '';
     const rows = mine.map((t) => {
       const exists = pages.some((p) => p.path === t.path_prefix);
@@ -407,8 +409,27 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     return '';
   }
 
+  // Uma linha da lista de tribos e iniciativas: o estado da página vem do cadastro (wiki_initiatives_overview),
+  // e não das páginas que já existem, senão quem ainda não escreveu some da lista.
+  function initiativeRow(x: any): string {
+    const page = x.platform_page || x.repo_page;
+    const name = page ? `<a href="${E(href({ page }))}">${E(x.title)}</a>` : `<span class="font-semibold text-sm">${E(x.title)}</span>`;
+    const sub = x.kind === 'research_tribe' ? '' : `<div class="sm">${E(T(`wiki.kind.${x.kind}`))}</div>`;
+    const muted = (key: string) => `<span class="wk-chip wk-chip-muted">${E(T(key))}</span>`;
+    const chips = [
+      x.status !== 'active' ? muted('wiki.frozen') : '',
+      x.platform_page ? `<span class="wk-chip wk-chip-ok">${E(T('wiki.onPlatform'))}</span>`
+        : x.repo_page ? `<span class="wk-chip wk-chip-old">${E(T('wiki.oldVersion'))}</span>` : muted('wiki.noPageYet'),
+      x.status === 'active' && !x.has_team ? muted('wiki.noTeam') : '',
+      x.status === 'active' && x.can_author && !x.platform_page
+        ? `<a class="wk-chip wk-chip-type" href="${E(href({ new: x.id, path: x.path_prefix }))}">${E(T('wiki.writeFirstVersion'))}</a>` : '',
+    ].filter(Boolean).join('');
+    return `<li><div>${name}${sub}</div><span class="inline-flex gap-1 flex-wrap justify-end">${chips}</span></li>`;
+  }
+
   function viewHome() {
-    const tribes = pages.filter((p) => p.domain === 'tribes').sort(byTitle);
+    const tribes = overview.filter((x) => x.kind === 'research_tribe');
+    const others = overview.filter((x) => x.kind !== 'research_tribe');
     const latest = pages.reduce((m, p) => (p.updated_at && p.updated_at > m ? p.updated_at : m), '');
     const recent = [...pages].sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || ''))).slice(0, 5);
     const goals = DOC_TYPES.map((typ) => {
@@ -422,7 +443,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         <h1 class="wk-serif">${E(T('wiki.title'))}</h1>
         <p class="sub">${E(T('wiki.heroSubtitle'))}</p>
         <div data-search="big"></div>
-        <div class="wk-stats">${E(T('wiki.stats', { pages: pages.length, tribes: tribes.length, date: fmtDate(latest) }))}</div>
+        <div class="wk-stats">${E(T('wiki.stats', { pages: pages.length, tribes: tribes.filter((x) => x.platform_page || x.repo_page).length, date: fmtDate(latest) }))}</div>
         ${work.length ? `<nav class="wk-work justify-center mt-3" aria-label="${E(T('wiki.workNav'))}" style="margin-left:0">${work.map((it) =>
           `<a href="${E(it.url)}">${E(it.label)}${it.count ? `<span class="wk-count">${it.count}</span>` : ''}</a>`).join('')}</nav>` : ''}
       </section>
@@ -436,10 +457,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             <div class="wk-video"><span class="play" aria-hidden="true">&#9654;</span><span><strong>${E(T('wiki.videoTitle'))}</strong><br>${E(T('wiki.videoSoon'))}</span></div>
           </div></div>
         <div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.tribesTitle'))}</h2>
-          ${tribes.length ? `<ul class="wk-list">${tribes.map((p) => `<li><a href="${E(href({ page: p.path }))}">${E(p.title)}</a>
-            ${isOldTribePage(p) ? oldChip(p) : `<span class="wk-chip wk-chip-ok">${E(T('wiki.onPlatform'))}</span>`}</li>`).join('')}</ul>` : emptyBox(T('wiki.noPages'))}
+          ${tribes.length ? `<ul class="wk-list">${tribes.map(initiativeRow).join('')}</ul>` : emptyBox(T('wiki.noPages'))}
         </div>
       </div>
+      ${others.length ? `<div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.initiativesTitle'))}</h2>
+        <ul class="wk-list">${others.map(initiativeRow).join('')}</ul></div>` : ''}
       <div class="wk-panel"><h2 class="wk-h2">${E(T('wiki.recentTitle'))}</h2>
         ${recent.length ? `<ul class="wk-list">${recent.map((p) => `<li><div><a href="${E(href({ page: p.path }))}">${E(p.title)}</a>
           <div class="sm">${E([typeOf(p) ? T(`wiki.docType.${typeOf(p)}`) : '', domainLabel(p.domain)].filter(Boolean).join(' · '))}</div></div>
@@ -748,7 +770,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   type EditorOpts = { mode: 'edit' | 'alter' | 'new'; id?: string; initiative?: string; path?: string | null };
 
   async function viewEditor(o: EditorOpts) {
-    let tribe: { id: string; title: string; path_prefix?: string } | null = null;
+    // domain só existe na página nova (vem de wiki_authoring_context); editar sai antes da checagem de domínio.
+    let tribe: { id: string; title: string; path_prefix?: string; domain?: string } | null = null;
     let path: string | null = o.path || null;
     let base: any = null; // versão que preenche o formulário
 
@@ -765,7 +788,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         return;
       }
     } else {
-      const t = ctx.tribes.find((x) => x.id === o.initiative);
+      const t = ctx.initiatives.find((x) => x.id === o.initiative);
       if (!t) { view().innerHTML = errorBox(T('wiki.notYourTribe')); return; }
       tribe = t;
       if (path) {
@@ -876,7 +899,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const f = collect();
       const vid = await rpc('wiki_save_draft', {
         p_page_path: f.path, p_initiative_id: tribe!.id, p_title: f.title, p_summary: f.summary,
-        p_content: f.content, p_doc_type: f.docType, p_sources: f.sources, p_domain: 'tribes',
+        p_content: f.content, p_doc_type: f.docType, p_sources: f.sources, p_domain: tribe!.domain,
         p_version_id: o.mode === 'edit' ? o.id : null,
       });
       if (andSubmit) {
@@ -921,8 +944,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   }
 
   function viewMine() {
-    const tribeOptions = ctx.tribes.map((t) => `<option value="${E(t.id)}">${E(t.title)}${t.status === 'active' ? '' : ` (${E(T('wiki.archived'))})`}</option>`).join('');
-    const newForm = ctx.tribes.length ? `
+    const tribeOptions = ctx.initiatives.map((t) => `<option value="${E(t.id)}">${E(t.title)}${t.status === 'active' ? '' : ` (${E(T('wiki.archived'))})`}</option>`).join('');
+    const newForm = ctx.initiatives.length ? `
       <div class="${CARD} !p-4 flex flex-wrap items-end gap-2">
         <label class="flex-1 min-w-[220px]"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.newPageIn'))}</span>
           <select id="w-new-tribe" class="${INPUT} mt-1">${tribeOptions}</select></label>
@@ -995,20 +1018,22 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   async function start() {
     if (started) return;
     started = true;
-    const [c, q, p] = await Promise.all([
+    const [c, q, p, o] = await Promise.all([
       sb.rpc('wiki_authoring_context'),
       sb.rpc('wiki_review_queue'),
       sb.from('wiki_pages').select('path,title,summary,domain,tags,source_repo,audit_status,updated_at,authors,platform_version_id').order('title'),
+      sb.rpc('wiki_initiatives_overview'),
     ]);
-    const err = c.error || q.error || p.error;
+    const err = c.error || q.error || p.error || o.error;
     if (err) { deny(/requer membro ativo/.test(err.message || '') ? T('wiki.activeOnly') : T('wiki.loadError'), false); return; }
-    ctx = { is_committee: !!c.data?.is_committee, tribes: c.data?.tribes || [] };
+    ctx = { is_committee: !!c.data?.is_committee, initiatives: c.data?.initiatives || [] };
     queue = {
       awaiting_my_decision: q.data?.awaiting_my_decision || [],
       audit_pending: q.data?.audit_pending || [],
       my_versions: q.data?.my_versions || [],
     };
     pages = p.data || [];
+    overview = o.data || [];
     document.getElementById('wiki-loading')?.classList.add('hidden');
     document.getElementById('wiki-gate')?.classList.add('hidden');
     document.getElementById('wiki-app')?.classList.remove('hidden');

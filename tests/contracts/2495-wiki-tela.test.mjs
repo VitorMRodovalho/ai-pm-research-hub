@@ -34,7 +34,7 @@ test('#2495 tela: a página nova só nasce no espaço da própria tribo, com fro
   // a trava vem ANTES da gravação: depois do INSERT ela não protegeria nada
   assert.ok(b.indexOf('_wiki_initiative_path_prefix(p_initiative_id)') < b.indexOf('INSERT INTO public.wiki_page_versions'));
   assert.match(body('_wiki_initiative_path_prefix'),
-    /CASE WHEN i\.legacy_tribe_id IS NOT NULL\s+THEN 'nucleo\/tribes\/tribo-' \|\| i\.legacy_tribe_id\s+ELSE 'nucleo\/tribes\/' \|\| i\.id::text END/);
+    /CASE WHEN i\.kind = 'research_tribe' AND i\.legacy_tribe_id IS NOT NULL\s+THEN 'nucleo\/tribes\/tribo-' \|\| i\.legacy_tribe_id\s+WHEN i\.kind = 'research_tribe' THEN 'nucleo\/tribes\/' \|\| i\.id::text\s+ELSE 'nucleo\/iniciativas\/' \|\| i\.id::text END/);
 });
 
 test('#2495 tela: o aviso leva à versão, não à raiz do wiki', () => {
@@ -50,9 +50,9 @@ test('#2495 tela: as duas leituras novas exigem membro ativo', () => {
   }
 });
 
-test('#2495 tela: o contexto de autoria lista só tribo visível em que a pessoa escreve', () => {
+test('#2495 tela: o contexto de autoria lista só iniciativa com página, visível, em que a pessoa escreve', () => {
   assert.match(body('wiki_authoring_context'),
-    /WHERE i\.kind = 'research_tribe'\s+AND public\.rls_can_see_initiative\(i\.id\)\s+AND public\._wiki_can_author\(v_caller, i\.id\)\)/);
+    /WHERE public\._wiki_domain_for_kind\(i\.kind\) IS NOT NULL\s+AND public\.rls_can_see_initiative\(i\.id\)\s+AND public\._wiki_can_author\(v_caller, i\.id\)\)/);
 });
 
 test('#2495 tela: o histórico aplica o portão confidencial e a regra de leitura de versão', () => {
@@ -135,7 +135,8 @@ test('#2495 tela: toda chave de i18n que a tela usa existe nos 3 dicionários', 
     docType: ['tutorial', 'how_to', 'reference', 'explanation'],
     docTypeHint: ['tutorial', 'how_to', 'reference', 'explanation'],
     goal: ['tutorial', 'how_to', 'reference', 'explanation'],
-    domain: ['tribes', 'research', 'governance', 'platform', 'partnerships', 'onboarding'],
+    domain: ['tribes', 'initiatives', 'research', 'governance', 'platform', 'partnerships', 'onboarding'],
+    kind: ['workgroup', 'study_group', 'community_vertical'],
     event: ['submitted', 'returned', 'published', 'audited_kept', 'altered', 'unpublished', 'audit_overdue'],
     status: ['draft', 'pending_leader', 'pending_committee', 'returned', 'published', 'superseded', 'unpublished'],
   };
