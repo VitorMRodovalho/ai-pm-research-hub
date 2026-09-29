@@ -220,3 +220,14 @@ test('#2495 tela db: as leituras recusam quem não é membro; o prefixo da tribo
     assert.ifError(p.error);
     assert.equal(p.data, 'nucleo/tribes/tribo-1');
   });
+
+// #2495 (29/09): no guia de onboarding a tabela de 6 colunas rolava de lado dentro dos 70 caracteres do texto, e
+// todo código aparecia entre crases (o plugin de tipografia as desenha em ::before e ::after).
+test('#2495 tela: a tabela usa a largura do artigo, o texto fica em 70 caracteres, e o código sai sem crases', () => {
+  const css = PAGE_RAW.slice(PAGE_RAW.indexOf('<style is:global>'), PAGE_RAW.indexOf('</style>')).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.match(css, /\.wk-prose \{[^}]*max-width: none;[^}]*\}/, 'o contêiner da leitura não limita a tabela');
+  assert.match(css, /\.wk-prose > :not\(table\) \{ max-width: 70ch; \}/, 'o limite de 70 caracteres vale para o texto, não para a tabela');
+  assert.match(css, /\.wk-prose code::before, \.wk-prose code::after \{ content: none; \}/);
+  assert.match(css, /\.wk-prose table \{ display: block; overflow-x: auto; [^}]*font-size: \.82rem;[^}]*\}/, 'rolagem só como último recurso');
+  assert.match(css, /\.wk-prose table code \{ white-space: nowrap; \}/, 'identificador não quebra no meio');
+});
