@@ -113,7 +113,8 @@ test('#2495 iniciativas: a lista sai do cadastro, com os portões de membro ativ
 });
 
 test('#2495 iniciativas: a tela monta a lista pelo cadastro, e não pelas páginas que existem', () => {
-  assert.match(SCRIPT, /sb\.rpc\('wiki_initiatives_overview'\),\s+\]\);\s+const err = c\.error \|\| q\.error \|\| p\.error \|\| o\.error;/);
+  // Chamadas depois da lista (a fila de sugestões, na fase B2) podem entrar; o erro da lista continua contando.
+  assert.match(SCRIPT, /sb\.rpc\('wiki_initiatives_overview'\),\s+(?:sb\.rpc\('[a-z_]+'\),\s+)*\]\);\s+const err = c\.error \|\| q\.error \|\| p\.error \|\| o\.error(?: \|\| [a-z]\.error)*;/);
   assert.match(SCRIPT, /const tribes = overview\.filter\(\(x\) => x\.kind === 'research_tribe'\);\s+const others = overview\.filter\(\(x\) => x\.kind !== 'research_tribe'\);/);
   assert.doesNotMatch(SCRIPT, /pages\.filter\(\(p\) => p\.domain === 'tribes'\)/, 'a lista de tribos não sai mais das páginas');
   const row = SCRIPT.slice(SCRIPT.indexOf('function initiativeRow('), SCRIPT.indexOf('function viewHome('));

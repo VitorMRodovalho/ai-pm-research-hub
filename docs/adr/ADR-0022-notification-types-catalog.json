@@ -194,6 +194,14 @@
       "delivery_mode": "transactional_immediate",
       "rationale": "#2495 (2026-09-27) — piloto do wiki vivo (ADR-0129, emenda 2). A auditoria de uma pagina publicada passou dos 14 dias sem parecer. Vai uma vez, a quem gere a plataforma (manage_platform), pela varredura diaria wiki_audit_sla_sweep (cron wiki-audit-sla-daily). Imediato: e decisao, nao fila."
     },
+    "wiki_suggestion_received": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 fase B2 (2026-09-29): \"Sugerir melhoria\" no wiki (ADR-0129). Um membro ativo sugeriu melhoria numa pagina; vai a quem decide sobre ela: a lideranca ativa da iniciativa dona (leader, coordinator) ou o comite de curadoria (pagina sem iniciativa, de governanca, iniciativa sem lideranca, ou sugestao da propria lideranca). O aviso nao leva o texto da sugestao, que pode carregar dado pessoal. Emitido por wiki_suggest. Imediato: e resposta que alguem espera."
+    },
+    "wiki_suggestion_decision": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2495 fase B2 (2026-09-29): \"Sugerir melhoria\" no wiki (ADR-0129). Resposta a quem sugeriu: aceita ou recusada, com o motivo (obrigatorio para recusar). Emitido por wiki_suggestion_decide. Imediato: nenhuma sugestao se resolve em silencio, e o digest semanal chegaria depois de a pessoa ter esquecido o que sugeriu."
+    },
     "drive_access_action_needed": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2454 (2026-09-24) — a concessao de acesso a pasta do Drive da iniciativa falhou do lado do destinatario (e-mail sem conta Google, ou dominio que bloqueia receber de fora). Vai a propria pessoa, uma vez, pedindo um e-mail Google no perfil (a reconciliacao diaria ja concede aos e-mails secundarios). Emitido por _notify_drive_grant_failure a partir do gatilho de drive_membership_grants; nao sai se a pessoa ja tem acesso a mesma pasta por outro e-mail."
