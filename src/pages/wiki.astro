@@ -211,6 +211,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   let queue: { awaiting_my_decision: any[]; audit_pending: any[]; my_versions: any[] } =
     { awaiting_my_decision: [], audit_pending: [], my_versions: [] };
   let pages: any[] = [];
+  // Sugestões de melhoria (fase B2): as que a pessoa responde e as que ela enviou (wiki_suggestion_queue).
+  let sugg: { to_decide: any[]; mine: any[] } = { to_decide: [], mine: [] };
 
   const view = () => document.getElementById('wiki-view') as HTMLElement;
   const fmtDate = (s?: string | null) =>
@@ -368,10 +370,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   function workItems() {
     const items: { key: string; label: string; url: string; count: number }[] = [];
-    if (ctx.initiatives.length || queue.my_versions.length)
+    if (ctx.initiatives.length || queue.my_versions.length || sugg.mine.length)
       items.push({ key: 'mine', label: T('wiki.tab.mine'), url: href({ tab: 'mine' }), count: queue.my_versions.length });
-    if (ctx.is_committee || ctx.initiatives.some((t) => t.is_leader) || queue.awaiting_my_decision.length)
-      items.push({ key: 'decide', label: T('wiki.tab.decide'), url: href({ tab: 'decide' }), count: queue.awaiting_my_decision.length });
+    if (ctx.is_committee || ctx.initiatives.some((t) => t.is_leader) || queue.awaiting_my_decision.length || sugg.to_decide.length)
+      items.push({ key: 'decide', label: T('wiki.tab.decide'), url: href({ tab: 'decide' }),
+        count: queue.awaiting_my_decision.length + sugg.to_decide.length });
     if (ctx.is_committee)
       items.push({ key: 'audit', label: T('wiki.tab.audit'), url: href({ tab: 'audit' }), count: queue.audit_pending.length });
     return items;
@@ -403,6 +406,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const box = (msg: string, url: string) =>
       `<div class="wk-callout"><p>${E(msg)}</p><a class="wk-btn wk-btn-primary" href="${E(url)}">${E(T('wiki.calloutOpen'))}</a></div>`;
     if (queue.awaiting_my_decision.length) return box(T('wiki.calloutDecide', { n: queue.awaiting_my_decision.length }), href({ tab: 'decide' }));
+    if (sugg.to_decide.length) return box(T('wiki.calloutSuggestions', { n: sugg.to_decide.length }), href({ tab: 'decide' }));
     if (ctx.is_committee && queue.audit_pending.length) return box(T('wiki.calloutAudit', { n: queue.audit_pending.length }), href({ tab: 'audit' }));
     const open = queue.my_versions.length;
     if (open) return box(T('wiki.calloutMine', { n: open }), href({ tab: 'mine' }));
@@ -581,6 +585,18 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const edit = isPlatform && hist?.can_author && hist?.initiative
       ? `<a href="${E(href({ new: hist.initiative.id, path }))}" class="wk-btn wk-btn-primary">${E(T(row ? 'wiki.edit' : 'wiki.writeFirstVersion'))}</a>` : '';
     const copyBtn = row ? `<button type="button" class="wk-btn wk-btn-ghost" data-copy>${E(T('wiki.copyForAssistant'))}</button>` : '';
+    const suggestBtn = row ? `<button type="button" class="wk-btn wk-btn-ghost" data-suggest-open>${E(T('wiki.suggest'))}</button>` : '';
+    // A sugestão não entra na página: só quem sugeriu e quem decide sobre ela a enxergam.
+    const suggestForm = row ? `
+      <div id="wk-suggest" class="${CARD} !p-4 mb-4 hidden">
+        <label for="wk-suggest-body" class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.suggestTitle'))}</label>
+        <p class="text-[.75rem] text-[var(--text-muted)] mb-2">${E(T('wiki.suggestHint'))}</p>
+        <textarea id="wk-suggest-body" rows="4" maxlength="2000" class="${INPUT}" placeholder="${E(T('wiki.suggestPlaceholder'))}"></textarea>
+        <div class="flex gap-2 mt-2">
+          <button type="button" class="${BTN_PRIMARY}" data-suggest-send>${E(T('wiki.suggestSend'))}</button>
+          <button type="button" class="${BTN_SECONDARY}" data-suggest-cancel>${E(T('wiki.cancel'))}</button>
+        </div>
+      </div>` : '';
 
     const meta = row ? [
       typeChip(typ),
@@ -599,7 +615,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <h1 class="wk-serif">${E(row.title)}</h1>
       <div class="wk-meta">${meta}</div>
       ${seal}
-      <div class="wk-actions">${edit}${copyBtn}</div>
+      <div class="wk-actions">${edit}${copyBtn}${suggestBtn}</div>
+      ${suggestForm}
       ${row.summary ? `<p class="wk-lead wk-serif">${E(row.summary)}</p>` : ''}
       <div id="wk-prose" class="wk-prose prose prose-sm max-w-none text-[var(--text-primary)]">${renderMd(row.content, path)}</div>
       ${sourcesList(cur?.sources)}`
@@ -617,6 +634,28 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         .then(() => toast(T('wiki.copied')))
         .catch(() => toast(T('wiki.copyFailed'), 'error'));
     }));
+
+    const form = document.getElementById('wk-suggest');
+    const text = document.getElementById('wk-suggest-body') as HTMLTextAreaElement | null;
+    view().querySelector('[data-suggest-open]')?.addEventListener('click', () => { form?.classList.remove('hidden'); text?.focus(); });
+    form?.querySelector('[data-suggest-cancel]')?.addEventListener('click', () => form.classList.add('hidden'));
+    form?.querySelector('[data-suggest-send]')?.addEventListener('click', async (ev) => {
+      const btn = ev.currentTarget as HTMLButtonElement;
+      const body = (text?.value || '').trim();
+      if (body.length < 10) { toast(T('wiki.suggestTooShort'), 'error'); return; }
+      btn.disabled = true;
+      try {
+        const r = await rpc('wiki_suggest', { p_page_path: path, p_body: body });
+        toast(T(r?.route === 'committee' ? 'wiki.suggestSentCommittee' : 'wiki.suggestSentLeader'));
+        if (text) text.value = '';
+        form.classList.add('hidden');
+        await refreshSuggestions();
+      } catch (e) {
+        toast(errMsg(e) || T('wiki.loadError'), 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
   }
 
   // ── uma versão e suas ações ────────────────────────────────────────────────────────────────────
@@ -933,6 +972,31 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     });
   }
 
+  // ── sugestões de melhoria ──────────────────────────────────────────────────────────────────────
+  const SUGG_CLASS: Record<string, string> = {
+    open: 'bg-amber-100 text-amber-800',
+    accepted: 'bg-emerald-100 text-emerald-800',
+    declined: 'bg-slate-100 text-slate-600',
+  };
+  const suggChip = (s: string) => chip(T(`wiki.suggestStatus.${s}`), own(SUGG_CLASS, s) || 'bg-slate-100 text-slate-700');
+
+  async function refreshSuggestions() {
+    const d = await rpc('wiki_suggestion_queue');
+    sugg = { to_decide: d?.to_decide || [], mine: d?.mine || [] };
+    renderTabs();
+  }
+
+  function suggestionList(items: any[], meta: (x: any) => string[], extra: (x: any) => string, empty: string): string {
+    if (!items.length) return `<div class="${CARD}">${emptyBox(empty)}</div>`;
+    return `<ul class="${CARD} !py-1">${items.map((x) => `
+      <li class="py-3 border-b border-[var(--border-subtle)] last:border-0" data-sugg="${E(x.id)}">
+        <a href="${E(href({ page: x.page_path }))}" class="font-semibold text-[var(--text-primary)] no-underline hover:underline">${E(x.page_title)}</a>
+        <div class="text-[.72rem] text-[var(--text-muted)] mt-0.5 flex flex-wrap items-center gap-1.5">${meta(x).filter(Boolean).join('')}</div>
+        <p class="text-sm text-[var(--text-primary)] mt-1.5 whitespace-pre-wrap">${E(x.body)}</p>
+        ${extra(x)}
+      </li>`).join('')}</ul>`;
+  }
+
   // ── abas de trabalho ───────────────────────────────────────────────────────────────────────────
   function workList(items: any[], line: (x: any) => string, empty: string): string {
     if (!items.length) return `<div class="${CARD}">${emptyBox(empty)}</div>`;
@@ -956,6 +1020,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       ${newForm}
       <h2 class="text-sm font-bold text-[var(--text-primary)]">${E(T('wiki.myOpenVersions'))}</h2>
       ${workList(queue.my_versions, (x) => `${statusChip(x.status)}<code>${E(x.page_path)}</code><span>${E(fmtDate(x.updated_at))}</span>`, T('wiki.noOpenVersions'))}
+      <h2 class="text-sm font-bold text-[var(--text-primary)] pt-2">${E(T('wiki.mySuggestions'))}</h2>
+      ${suggestionList(sugg.mine,
+        (x) => [suggChip(x.status), `<span>${E(fmtDate(x.created_at))}</span>`,
+          x.decided_at ? `<span>${E(T('wiki.suggestAnsweredOn', { date: fmtDate(x.decided_at) }))}</span>` : ''],
+        (x) => x.decision_reason
+          ? `<p class="text-[.78rem] text-[var(--text-secondary)] mt-1"><strong>${E(T('wiki.suggestReasonLabel'))}</strong> ${E(x.decision_reason)}</p>` : '',
+        T('wiki.noMySuggestions'))}
     </div>`;
     document.getElementById('w-new-go')?.addEventListener('click', () => {
       const id = (document.getElementById('w-new-tribe') as HTMLSelectElement).value;
@@ -967,7 +1038,38 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     view().innerHTML = `<div class="space-y-3 max-w-4xl">
       <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.decideIntro'))}</p>
       ${workList(queue.awaiting_my_decision, (x) => `${statusChip(x.status)}<span>${E(x.initiative)}</span><span>${E(T('wiki.submittedOn', { date: fmtDate(x.submitted_at) }))}</span>${x.pii ? chip(T('wiki.piiShort'), 'bg-red-100 text-red-700') : ''}`, T('wiki.nothingToDecide'))}
+      <h2 class="text-sm font-bold text-[var(--text-primary)] pt-2">${E(T('wiki.suggestionsToDecide'))}</h2>
+      <p class="text-[.8rem] text-[var(--text-secondary)]">${E(T('wiki.suggestionsIntro'))}</p>
+      ${suggestionList(sugg.to_decide,
+        (x) => [`<span>${E(x.initiative || T('wiki.suggestRouteCommittee'))}</span>`,
+          x.author ? `<span>${E(T('wiki.suggestedBy', { name: x.author }))}</span>` : '',
+          `<span>${E(fmtDate(x.created_at))}</span>`, x.pii ? chip(T('wiki.piiShort'), 'bg-red-100 text-red-700') : ''],
+        () => `<div class="mt-2 space-y-2">
+          <textarea rows="2" maxlength="1000" class="${INPUT}" data-reason placeholder="${E(T('wiki.suggestReason'))}"></textarea>
+          <div class="flex gap-2">
+            <button type="button" class="${BTN_PRIMARY} !py-1 !px-3 !text-xs" data-decide="accepted">${E(T('wiki.suggestAccept'))}</button>
+            <button type="button" class="${BTN_SECONDARY} !py-1 !px-3 !text-xs" data-decide="declined">${E(T('wiki.suggestDecline'))}</button>
+          </div></div>`,
+        T('wiki.noSuggestionsToDecide'))}
     </div>`;
+    view().querySelectorAll('[data-decide]').forEach((b) => b.addEventListener('click', async () => {
+      const li = (b as HTMLElement).closest('[data-sugg]') as HTMLElement;
+      const decision = (b as HTMLElement).dataset.decide!;
+      const reason = (li.querySelector('[data-reason]') as HTMLTextAreaElement).value.trim();
+      // Recusar exige motivo: quem sugeriu recebe a resposta, e nenhuma sugestão se resolve em silêncio.
+      if (decision === 'declined' && !reason) { toast(T('wiki.suggestReasonRequired'), 'error'); return; }
+      const buttons = li.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+      buttons.forEach((x) => (x.disabled = true));
+      try {
+        await rpc('wiki_suggestion_decide', { p_suggestion_id: li.dataset.sugg, p_decision: decision, p_reason: reason || null });
+        toast(T(decision === 'accepted' ? 'wiki.suggestAcceptedToast' : 'wiki.suggestDeclinedToast'));
+        await refreshSuggestions();
+        viewDecide();
+      } catch (e) {
+        toast(errMsg(e) || T('wiki.loadError'), 'error');
+        buttons.forEach((x) => (x.disabled = false));
+      }
+    }));
   }
 
   function viewAudit() {
@@ -1018,13 +1120,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   async function start() {
     if (started) return;
     started = true;
-    const [c, q, p, o] = await Promise.all([
+    const [c, q, p, o, s] = await Promise.all([
       sb.rpc('wiki_authoring_context'),
       sb.rpc('wiki_review_queue'),
       sb.from('wiki_pages').select('path,title,summary,domain,tags,source_repo,audit_status,updated_at,authors,platform_version_id').order('title'),
       sb.rpc('wiki_initiatives_overview'),
+      sb.rpc('wiki_suggestion_queue'),
     ]);
-    const err = c.error || q.error || p.error || o.error;
+    const err = c.error || q.error || p.error || o.error || s.error;
     if (err) { deny(/requer membro ativo/.test(err.message || '') ? T('wiki.activeOnly') : T('wiki.loadError'), false); return; }
     ctx = { is_committee: !!c.data?.is_committee, initiatives: c.data?.initiatives || [] };
     queue = {
@@ -1034,6 +1137,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     };
     pages = p.data || [];
     overview = o.data || [];
+    sugg = { to_decide: s.data?.to_decide || [], mine: s.data?.mine || [] };
     document.getElementById('wiki-loading')?.classList.add('hidden');
     document.getElementById('wiki-gate')?.classList.add('hidden');
     document.getElementById('wiki-app')?.classList.remove('hidden');
