@@ -116,9 +116,42 @@ test('a orquestradora passa, no clone principal ou numa lane (fila desligada no 
 
 test('leitura passa para qualquer sessão; literal e comentário não contam; DDL em comentário de bloco conta', () => {
   const leitura = { query: "select 'DROP TABLE x' as txt -- delete everything\nfrom pg_class limit 1", project_id: THIS_PROJECT };
-  assert.equal(runHook(SQL, lane, OUTRA_SID, leitura), null, 'SELECT com DROP/DELETE só em literal e comentário');
+  const d = runHook(SQL, lane, OUTRA_SID, leitura);
+  assert.equal(d?.permissionDecision, 'allow', 'SELECT com DROP/DELETE só em literal e comentário continua leitura');
+  assert.equal(runHook(SQL, lane, ORQ_SID, leitura), null, 'a leitura da orquestradora segue sem mudança');
   const ddl = { query: '/* só olhando */ ALTER TABLE t ADD COLUMN c int', project_id: THIS_PROJECT };
   assert.equal(runHook(SQL, lane, OUTRA_SID, ddl)?.permissionDecision, 'deny', 'ALTER depois do comentário');
+});
+
+// O texto do SQL não diz o que a execução faz: `SELECT f()` grava se f grava. A leitura de quem não é a
+// orquestradora volta reescrita para rodar numa transação somente leitura, e quem recusa é o Postgres.
+const PREFIXO = 'SET TRANSACTION READ ONLY;\n';
+test('leitura de quem não é a orquestradora volta reescrita, somente leitura, com todos os campos', () => {
+  const chamada = { query: 'select public.alguma_funcao()', project_id: THIS_PROJECT };
+  for (const [cwd, sid, orch, onde] of [[lane, OUTRA_SID, orqFile, 'lane'], [main, OUTRA_SID, orqFile, 'clone principal'],
+    [main, ORQ_SID, semOrq, 'sem orquestradora designada']]) {
+    const d = runHook(SQL, cwd, sid, chamada, orch);
+    assert.equal(d?.permissionDecision, 'allow', onde);
+    assert.deepEqual(d.updatedInput, { ...chamada, query: PREFIXO + chamada.query }, `${onde}: a entrada inteira, com o prefixo`);
+  }
+  assert.equal(runHook(SQL, main, ORQ_SID, chamada), null, 'a orquestradora pode chamar função que grava');
+  const ja = { query: PREFIXO + PREFIXO + 'select 1', project_id: THIS_PROJECT };
+  assert.equal(runHook(SQL, lane, OUTRA_SID, ja).updatedInput.query, PREFIXO + 'select 1', 'a outra cópia do gate não acumula prefixo');
+});
+
+test('controle de transação tira a chamada da leitura somente leitura, e é negado a quem não é a orquestradora', () => {
+  for (const q of ['select 1; commit; select 2', 'start transaction read write; select 1', 'select 1;\nrollback', 'begin; select 1',
+    'set transaction read write; select 1', 'set session characteristics as transaction read write', 'select 1; end',
+    'set transaction_read_only = off']) {
+    const d = runHook(SQL, lane, OUTRA_SID, { query: q, project_id: THIS_PROJECT });
+    assert.equal(d?.permissionDecision, 'deny', q);
+    assert.match(d.permissionDecisionReason, /RODA SOMENTE LEITURA/, q);
+  }
+  for (const q of ["select 'commit; begin' as t", "select case when true then 1\nend as x", 'select 1 -- commit',
+    "select set_config('request.jwt.claims', '{}', true); set local role authenticated; select 1"]) {
+    assert.equal(runHook(SQL, lane, OUTRA_SID, { query: q, project_id: THIS_PROJECT })?.permissionDecision, 'allow', q);
+  }
+  assert.equal(runHook(SQL, main, ORQ_SID, { query: 'select 1; commit; select 2', project_id: THIS_PROJECT }), null, 'a orquestradora não é limitada');
 });
 
 test('servidor claude_ai: só barra quando o project_id é ESTE projeto', () => {

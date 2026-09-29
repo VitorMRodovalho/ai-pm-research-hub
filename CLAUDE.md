@@ -67,7 +67,9 @@ CORRETO. A `main` **não é exceção**.
   `.claude/hooks/db-write-gate.py` **nega** `apply_migration` e `execute_sql` com escrita neste
   projeto a toda sessão cujo `session_id` não é o designado em
   `~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador`, esteja ela numa lane ou no clone
-  principal; sem designação, nega a todas. Leitura passa. Uma cópia roda também como hook de
+  principal; sem designação, nega a todas. Leitura passa, mas a de quem não é a orquestradora volta
+  reescrita para rodar numa transação somente leitura: o texto do SQL não diz o que uma função chamada faz,
+  e quem recusa a escrita é o Postgres. Controle de transação (`COMMIT`, `BEGIN`…) nessa leitura é negado. Uma cópia roda também como hook de
   **usuário** (`~/.claude/settings.json`), para cobrir lanes em branch antiga. Lane prepara o pacote
   (o `.sql` e a verificação) e manda para a orquestradora. Trocar a orquestradora é decisão do GP:
   `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`. Origem: em 25/09 duas migrations
