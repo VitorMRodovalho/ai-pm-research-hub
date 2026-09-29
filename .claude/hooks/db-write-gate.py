@@ -122,6 +122,36 @@ def is_write(sql: str) -> bool:
     return bool(WRITE_RE.search(strip_sql_comments(sql or "")))
 
 
+# Leitura de quem NAO e a orquestradora roda numa transacao somente leitura. O texto do SQL nao diz o
+# que a execucao faz: um SELECT que chama uma funcao que grava nao tem nenhuma palavra de escrita, e so o
+# Postgres sabe que a funcao grava. Com o prefixo, quem recusa e o banco (25006), inclusive dentro de
+# funcao SECURITY DEFINER, pg_net e pg_cron. Medido em 29/09/2026 pelo execute_sql do MCP: o prefixo vale
+# para os comandos seguintes da mesma chamada, e o mesmo UPDATE sem ele roda (controle).
+READ_ONLY_PREFIX = "SET TRANSACTION READ ONLY;\n"
+# O que tira a chamada da transacao somente leitura, e por isso e negado a quem nao e a orquestradora.
+# Medido em 29/09/2026: COMMIT e START TRANSACTION READ WRITE no meio da chamada escapam. Ligar o modo
+# escrita por set_config('transaction_read_only', ...) passa por aqui (o nome esta entre aspas, e o texto
+# entre aspas e ignorado), e quem recusa e o Postgres (25001, medido); a mencao sem aspas (SET ...) e negada.
+# Leitura nao precisa de nenhum deles.
+TXN_ESCAPE_RE = re.compile(
+    r"(?:^|;)\s*(?:COMMIT|ROLLBACK|ABORT|END|BEGIN|START|PREPARE"
+    r"|SET\s+(?:LOCAL\s+|SESSION\s+)?TRANSACTION|SET\s+SESSION\s+CHARACTERISTICS)\b"
+    r"|\b(?:default_)?transaction_read_only\b",
+    re.IGNORECASE,
+)
+
+
+def strip_read_only_prefix(sql: str) -> str:
+    """A outra copia do gate (hook de usuario) pode ter prefixado antes: o prefixo nao se acumula."""
+    while sql.startswith(READ_ONLY_PREFIX):
+        sql = sql[len(READ_ONLY_PREFIX):]
+    return sql
+
+
+def escapes_read_only(sql: str) -> bool:
+    return bool(TXN_ESCAPE_RE.search(strip_sql_comments(sql or "").strip()))
+
+
 def mcp_json_ref(cwd: str) -> str:
     """project_ref named by the nearest .mcp.json at or above cwd; "" when none names one."""
     d = os.path.abspath(cwd or os.getcwd())
@@ -226,6 +256,17 @@ def deny_reason(session_id: str, orch: str, cwd: str, action: str = "") -> str:
     )
 
 
+def read_only_escape_reason(session_id: str, orch: str, cwd: str) -> str:
+    who = f"a sessao orquestradora designada e {orch[:8]}" if orch else "NENHUMA sessao orquestradora esta designada"
+    return (
+        f"LEITURA DE QUEM NAO E A ORQUESTRADORA RODA SOMENTE LEITURA. Esta sessao ({session_id[:8] or '?'}) "
+        f"roda {where(cwd)} ({cwd}); {who}. A consulta tem controle de transacao (COMMIT, ROLLBACK, BEGIN, "
+        "START, END, SET TRANSACTION) ou mexe em transaction_read_only, o que tiraria a chamada da transacao "
+        "somente leitura. Leitura nao precisa disso: tire o controle de transacao, ou mande o pacote para a "
+        "orquestradora."
+    )
+
+
 def decide(event: dict):
     tool = event.get("tool_name", "")
     tool_input = event.get("tool_input") or {}
@@ -247,11 +288,17 @@ def decide(event: dict):
     cwd = event.get("cwd") or os.getcwd()
     if not (action == "apply_migration" or is_sql or is_mutating) or not targets_this_db(tool, tool_input, cwd):
         return None, None
-    if is_sql and not is_write(tool_input.get("query", "")):
-        return None, None
-
     session_id = event.get("session_id") or ""
     orch = orchestrator_id()
+    if is_sql and not is_write(tool_input.get("query", "")):
+        if orch and session_id == orch:
+            return None, None
+        body = strip_read_only_prefix(tool_input.get("query") or "")
+        if escapes_read_only(body):
+            return "deny", read_only_escape_reason(session_id, orch, cwd)
+        return "allow", ("leitura de quem nao e a orquestradora: roda numa transacao somente leitura",
+                         {**tool_input, "query": READ_ONLY_PREFIX + body})
+
     if not orch or session_id != orch:
         return "deny", deny_reason(session_id, orch, cwd, action if is_mutating else "")
 
@@ -275,13 +322,13 @@ def main():
         return 0
     decision, reason = decide(event)
     if decision:
-        print(json.dumps({
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": decision,
-                "permissionDecisionReason": reason,
-            }
-        }))
+        out = {"hookEventName": "PreToolUse", "permissionDecision": decision}
+        # Quem devolve (motivo, entrada nova) reescreve a chamada: updatedInput SUBSTITUI a entrada inteira,
+        # por isso leva todos os campos originais.
+        if isinstance(reason, tuple):
+            reason, out["updatedInput"] = reason
+        out["permissionDecisionReason"] = reason
+        print(json.dumps({"hookSpecificOutput": out}))
     return 0
 
 
