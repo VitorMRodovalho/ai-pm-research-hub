@@ -40,13 +40,20 @@ Esta ADR foi escrita sem ler a arquitetura da banca, e contradizia uma decisão 
 
 Depois dela, um fato mudou: o edital (5.1-A) passou a pedir tudo por link, sem arquivo. O R2 e a URL assinada perderam o objeto; a separação do dado pessoal, não.
 
-**Decisão do GP em 30/09/2026, perguntada diretamente nesta sessão com as duas saídas à vista: "Supera a de 25/09".** A inscrição mora no Supabase do hub, como o resto desta ADR descreve. Consequências:
+**Decisão do GP em 30/09/2026, perguntada diretamente nesta sessão com as duas saídas à vista: "Supera a de 25/09".** A razão, nas palavras dele: "banco de dados consegue ter as camadas devidamente separadas, não tem por que não aproveitar a conta do Supabase que já temos em plano pago para otimizar a arquitetura". A inscrição mora no Supabase do hub, **numa camada própria** (item 0 abaixo). Consequências:
 
 - A seção 8 da banca precisa registrar a mesma supersessão, **pelo fluxo daquele repositório**; esta ADR não o edita.
 - A ponte com a banca deixa de ser service binding entre Workers: a banca recebe as entradas **exportadas pelo hub**, no formato do entry-contract (a v2, do formato de um dia), por arquivo ou por endpoint autenticado, a combinar com a lane da banca. A banca continua sem receber o contato das pessoas além do que o conflito de interesse exige.
 - O que a separação protegia passa a ser protegido dentro do hub, por construção: tabelas próprias, RLS em todas, **nenhuma leitura por `anon`**, acesso só por funções com autoridade escopada ao programa, registro de todo acesso a dado pessoal nas exportações, e retenção e anonimização por edição (item 10).
 
 ## Decisão
+
+### 0. Camada própria: o schema `competition`, fora da API
+
+- As tabelas de competição ficam no schema **`competition`**, e não em `public`. Medido em 30/09/2026: a API de dados do Supabase expõe só `public` e `graphql_public`, então **nenhuma tabela desse schema é consultável pela API**, por ninguém, com ou sem login.
+- O único caminho de entrada e de saída são funções `SECURITY DEFINER` em `public`, cada uma com a sua autoridade: a inscrição pública (`anon`, com limite por IP), a conferência e a exportação (autoridade escopada ao programa), a submissão (token da equipe), a importação do resultado e a emissão de certificado.
+- RLS fica ligada nas tabelas mesmo assim (defesa em profundidade), e toda leitura de dado pessoal por essas funções é registrada.
+- Nos itens abaixo, `competition_editions` quer dizer `competition.editions`, e assim por diante: o prefixo some dentro do schema.
 
 ### 1. O programa é uma iniciativa; a edição é tabela própria
 
@@ -152,7 +159,7 @@ Benchmark da lane `nucleo-hackathon` (17 plataformas de hackathon e awards, 10 d
 
 ## Consequências
 
-- Tabelas novas, todas com RLS e acesso só por funções com autoridade: `competition_editions`, `competition_registrations`, `competition_registration_events`, `competition_registration_declarations`, `competition_registration_reviews`, `competition_teams`, `competition_team_members`, `competition_draws`, `competition_submissions` e `competition_results`, mais o registro do envio do resultado por equipe.
+- Schema novo `competition`, fora da API. Tabelas novas nele, todas com RLS e acesso só por funções com autoridade: `competition_editions`, `competition_registrations`, `competition_registration_events`, `competition_registration_declarations`, `competition_registration_reviews`, `competition_teams`, `competition_team_members`, `competition_draws`, `competition_submissions` e `competition_results`, mais o registro do envio do resultado por equipe.
 - `event_guest_certificates`: o CHECK de `type` cresce e entra `workload_hours`.
 - Configuração: o tipo de iniciativa `competition`, a iniciativa do programa, e os tipos de vínculo `competition_participant` e `competition_reviewer`. Quem organiza continua no `workgroup` atual.
 - Telas: a página pública de inscrição e uma tela de conferência com a exportação.
