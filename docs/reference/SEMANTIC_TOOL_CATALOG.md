@@ -230,7 +230,7 @@ byte-for-byte unchanged (same initiative, same 3 expected attendees).
 ### `meeting_minutes` (R/W)
 - **Intent:** the minutes lifecycle. **`action`:** `read` (recent minutes) · `prepare` (briefing) · `write` · `close` (posts minutes + returns action/decision counts + drift signal).
 - **Absorbs:** `create_meeting_notes` (38) · `meeting_close` · `get_meeting_notes` · `get_meeting_preparation`. Replaces the dropped `get_agenda_smart`.
-- **Gate:** `eventWriteGate()` on `write`/`close`; #785 on reads. `write` warns when `action_items` are appended as Markdown checkboxes instead of structured rows.
+- **Gate:** `close` → `eventWriteGate()`, the same `manage_event` scope `meeting_close` requires. `write` → `eventSeeGate()` (#785 only), and authority stays with `upsert_event_minutes` → `_can_manage_event`, the platform's minutes rule that the screen uses: `manage_event` on the initiative, the leader of the event's tribe, researchers of the event's tribe within 72h of the meeting, or the event creator (#2520; the full gate here refused researchers the screen accepts). The RPC's `Unauthorized` and `Edit window expired` come back as `unauthorized` with the rule in `action`, never as `internal_error`. #785 on reads. `write` warns when `action_items` are appended as Markdown checkboxes instead of structured rows.
 
 ### `meeting_actions` (R/W)
 - **Intent:** what the meeting decided and who does what. **`action`:** `create` · `resolve` (incl. `carry_to_event_id`) · `list` · `convert_to_card` · `decision` · `decision_log`.

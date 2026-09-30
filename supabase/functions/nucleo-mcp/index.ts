@@ -8035,14 +8035,27 @@ async function eventScope(sb: Sb, eventId: string): Promise<{ found: boolean; in
 async function eventWriteGate(
   sb: Sb, memberId: string, initiativeId: string | null,
 ): Promise<{ code: string; message: string; action?: string } | null> {
-  if (initiativeId && !(await canSee(sb, "initiative", initiativeId))) {
-    return { code: "unauthorized", message: "You cannot see this event's initiative (confidential or no access).", action: "This event belongs to a confidential initiative you are not engaged in (ADR-0105)." };
-  }
+  const seeErr = await eventSeeGate(sb, initiativeId);
+  if (seeErr) return seeErr;
   const okAuth = initiativeId
     ? await canV4(sb, memberId, "manage_event", "initiative", initiativeId)
     : await canV4(sb, memberId, "manage_event");
   if (!okAuth) {
     return { code: "unauthorized", message: initiativeId ? "Requires manage_event on this event's initiative." : "Requires manage_event.", action: "Ask the initiative leader / GP. Initiative-scoped leaders can only manage their own initiative's events." };
+  }
+  return null;
+}
+
+// #2520: only the #785 visibility half of eventWriteGate, for a write whose authority lives in
+// the RPC it calls. meeting_minutes action='write' uses it: upsert_event_minutes decides through
+// _can_manage_event, which is the platform's minutes rule and is wider than manage_event (the
+// event's tribe leader, researchers of the event's tribe within 72h, the event creator). The
+// full eventWriteGate there refused people the screen accepts through the same function.
+async function eventSeeGate(
+  sb: Sb, initiativeId: string | null,
+): Promise<{ code: string; message: string; action?: string } | null> {
+  if (initiativeId && !(await canSee(sb, "initiative", initiativeId))) {
+    return { code: "unauthorized", message: "You cannot see this event's initiative (confidential or no access).", action: "This event belongs to a confidential initiative you are not engaged in (ADR-0105)." };
   }
   return null;
 }
@@ -10377,7 +10390,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W3 · meeting_minutes (R/W) — 43 calls/180d; carries the #1384 fix as contract ──
   mcp.tool(
     "meeting_minutes",
-    "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
+    "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: 'write' follows the platform's minutes rule, the same as the screen (manage_event on the event's initiative, the leader of the event's tribe, researchers of the event's tribe within 72h of the meeting, or the event creator); 'close' needs manage_event scoped to the event's initiative (the raw meeting_close/create_meeting_notes path was resourceless before migration 444); #785 on every action. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
     {
       action: z.enum(["read", "prepare", "write", "close"]).describe("Minutes operation."),
       event_id: z.string().optional().describe("Event UUID — REQUIRED for prepare/write/close."),
@@ -10449,10 +10462,11 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         });
       }
 
-      const gateErr = await eventWriteGate(sb, member.id, ev.initiative_id);
-      if (gateErr) { await logUsage(sb, member.id, "meeting_minutes", false, gateErr.code, start); return denied(gateErr); }
-
       if (params.action === "write") {
+        // #2520: visibility here, authority in upsert_event_minutes, the same function and rule
+        // the screen uses. The full eventWriteGate refused researchers the screen accepts.
+        const seeErr = await eventSeeGate(sb, ev.initiative_id);
+        if (seeErr) { await logUsage(sb, member.id, "meeting_minutes", false, seeErr.code, start); return denied(seeErr); }
         if (!params.content || !params.content.trim()) return invalid("action='write' requires content.", "Pass content (Markdown).");
         let text = params.content;
         if (params.decisions && params.decisions.trim()) text += `\n\n## Decisões\n` + String(params.decisions).split(/\r?\n/).map((l: string) => l.trim()).filter(Boolean).map((l: string) => `- ${l}`).join("\n");
@@ -10475,18 +10489,31 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           return invalid(`Refusing to save meeting notes — content contains a corruption marker (${label}).`, "Re-send clean UTF-8 text.");
         }
         const { data, error } = await sb.rpc("upsert_event_minutes", { p_event_id: params.event_id, p_text: text, p_url: params.minutes_url ?? null });
-        if (error) { await logUsage(sb, member.id, "meeting_minutes", false, error.message, start); return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: error.message })); }
+        if (error) {
+          await logUsage(sb, member.id, "meeting_minutes", false, error.message, start);
+          // #2520: the RPC's own refusals are authority answers, not internal errors.
+          if (/^Unauthorized\b/.test(error.message ?? "")) {
+            return denied({ code: "unauthorized", message: "You cannot write the minutes of this event.", action: "Minutes can be written by the initiative's leadership or the GP, the leader of the event's tribe, researchers of the event's tribe within 72h of the meeting, or whoever created the event." });
+          }
+          if (/^Edit window expired\b/.test(error.message ?? "")) {
+            return denied({ code: "unauthorized", message: "The 72h window for researchers to write these minutes has closed.", action: "Send the text to your tribe leader or the GP, who can still publish it." });
+          }
+          return ok(buildSemanticError({ tool: "meeting_minutes", semantic_domain: dom, code: "internal_error", message: error.message }));
+        }
         await logUsage(sb, member.id, "meeting_minutes", true, undefined, start);
         return semanticOk({
           data: { action: "write", event_id: params.event_id, result: data ?? null },
           summary: `Ata salva no evento ${ev.title ?? params.event_id}.`,
           warnings: params.action_items && params.action_items.trim() ? ["action_items were appended as Markdown checkboxes, not structured rows — use meeting_actions action='create' so they can be tracked and resolved."] : [],
           next_actions: ["meeting_actions action='create': registrar ações rastreáveis", "meeting_minutes action='close': fechar a reunião"],
-          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "manage_event (initiative-scoped)", source_tools: ["upsert_event_minutes"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative + can(manage_event, initiative) + RPC _can_manage_event", resource_id: params.event_id, extra: { action: "write" } },
+          audit: { tool: "meeting_minutes", semantic_domain: dom, pii_level: "low", permission: "platform minutes rule (_can_manage_event)", source_tools: ["upsert_event_minutes"], caller_member_id: member.id, gate_checked: "rls_can_see_initiative (fail-fast) + RPC _can_manage_event + 72h researcher window", resource_id: params.event_id, extra: { action: "write" } },
         });
       }
 
       if (params.action === "close") {
+        // meeting_close requires manage_event scoped to the event's initiative: same rule both sides.
+        const gateErr = await eventWriteGate(sb, member.id, ev.initiative_id);
+        if (gateErr) { await logUsage(sb, member.id, "meeting_minutes", false, gateErr.code, start); return denied(gateErr); }
         const champs = params.suggested_champion_ids ? String(params.suggested_champion_ids).split(",").map((s: string) => s.trim()).filter(Boolean) : null;
         if (champs) {
           const bad = champs.filter((c: string) => !isUUID(c));

@@ -85,7 +85,13 @@ test('W3: eventWriteGate() enforces #785 THEN resource-scoped manage_event (mirr
   const helper = SRC.match(/async function eventWriteGate\([\s\S]*?\n\}/);
   assert.ok(helper, 'eventWriteGate() helper not found');
   const h = helper[0];
-  assert.ok(/canSee\(sb,\s*"initiative",\s*initiativeId\)/.test(h), 'eventWriteGate must apply the #785 gate on the initiative');
+  // #2520: the #785 half moved into eventSeeGate(), which meeting_minutes 'write' uses alone.
+  // eventWriteGate must still run it FIRST and return its error before asking manage_event.
+  assert.ok(/const seeErr = await eventSeeGate\(sb,\s*initiativeId\);\s*if \(seeErr\) return seeErr;\s*const okAuth/.test(h),
+    'eventWriteGate must apply the #785 gate (eventSeeGate) on the initiative, and return its error, before manage_event');
+  const see = SRC.match(/async function eventSeeGate\([\s\S]*?\n\}/);
+  assert.ok(see && /if \(initiativeId && !\(await canSee\(sb,\s*"initiative",\s*initiativeId\)\)\)\s*\{\s*return \{ code: "unauthorized"/.test(see[0]),
+    'eventSeeGate must refuse (unauthorized) when the caller cannot see the initiative');
   assert.ok(/canV4\(sb,\s*memberId,\s*"manage_event",\s*"initiative",\s*initiativeId\)/.test(h),
     'eventWriteGate MUST pass the initiative as p_resource_id — a resourceless can(manage_event) is the Wave-0 bypass');
   assert.ok(/canV4\(sb,\s*memberId,\s*"manage_event"\)/.test(h),

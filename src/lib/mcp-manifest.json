@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-28T20:58:22.453Z",
+  "generated_at": "2026-09-30T01:38:30.450Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 392,
   "by_domain": {
@@ -1761,7 +1761,7 @@
     },
     {
       "name": "meeting_minutes",
-      "description": "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: manage_event scoped to the event's initiative for writes (the raw meeting_close/create_meeting_notes path was resourceless before migration 444) + #785 on reads. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
+      "description": "Semantic meeting-minutes tool (absorbs create_meeting_notes 38, meeting_close, get_meeting_notes, get_meeting_preparation — 43 calls/180d). Set `action`: 'read' (recent minutes for a tribe/initiative), 'prepare' (pre-meeting briefing for one event: agenda, expected attendees, pending actions, open cards, recent meetings), 'write' (event_id + content — creates/updates the minutes; decisions/action_items are appended as newline-separated lines), 'close' (event_id — posts the minutes and returns action/decision counts + drift signal; optional summary and suggested_champion_ids). Authority: 'write' follows the platform's minutes rule, the same as the screen (manage_event on the event's initiative, the leader of the event's tribe, researchers of the event's tribe within 72h of the meeting, or the event creator); 'close' needs manage_event scoped to the event's initiative (the raw meeting_close/create_meeting_notes path was resourceless before migration 444); #785 on every action. NOTE: the old get_agenda_smart was dropped (#1383 W3) — action='prepare' is its replacement. Stable envelope.",
       "domain": "events",
       "permission": "read",
       "is_sensitive": false
