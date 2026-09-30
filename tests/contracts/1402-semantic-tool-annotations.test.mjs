@@ -114,8 +114,10 @@ const DESTRUCTIVE = new Set([
 // trás do confirm-gate sem que nenhuma delas tivesse ficado mais perigosa.
 // O número é pinado de propósito: subir sem intenção é o sintoma de tool duplicada ou registrada
 // duas vezes; descer é tool perdida num refactor.
-test('#1402: the semantic surface still has exactly 54 registered tools', () => {
-  assert.equal(REGISTERED.length, 54, `expected 54 semantic tools, got ${REGISTERED.length}`);
+// 54 → 55 em 29/09/2026 (#2495 / ADR-0132): +wiki_write, escrita aditiva (rascunho, envio, sugestão),
+// cada uma atrás de prévia e confirm=true; publicar e remover ficam na tela, então ela não é destrutiva.
+test('#1402: the semantic surface still has exactly 55 registered tools', () => {
+  assert.equal(REGISTERED.length, 55, `expected 55 semantic tools, got ${REGISTERED.length}`);
 });
 
 test('#1402: applySemanticAnnotations is wired into registerSemanticTools', () => {

@@ -70,6 +70,8 @@ const SEMANTIC_ONLY = new Set([
   'attendance_seal',
   'meeting_minutes',
   'meeting_actions',
+  // #2495 / ADR-0132: /semantic only, como toda tool semântica nova.
+  'wiki_write',
   // Wave 4 (#1383) — /semantic only (selection/evaluation)
   'selection_dashboard',
   'application_get',

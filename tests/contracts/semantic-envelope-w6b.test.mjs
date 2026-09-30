@@ -195,7 +195,9 @@ test('W6b: migration grants knowledge_assets_latest to authenticated + revokes a
 // continua valendo, e é por isso que ela é derivada da fonte em vez de literal.
 // #1779 (15/08/2026): 0.15.0 → 0.16.0, de novo SEM tool nova — as tarefas agregadas do board
 // entraram como scope ('tasks') em board_overview. A contagem de 54 segue valendo.
-test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.16.0', () => {
+// #2495 / ADR-0132 (29/09/2026): +wiki_write → 55 tools, versão 0.16.0 → 0.17.0. Tool nova, não
+// scope: escrever no wiki é outro domínio de autoridade que o de ler (search_nucleo_knowledge).
+test('W6b: /semantic surface = 55 tools (derived, not hardcoded) + version 0.17.0', () => {
   // #1392: /health now DERIVES the count (tools: SEMANTIC_TOOL_COUNT), so the literal is gone.
   // Verify (a) /semantic health is wired to the derived constant, and (b) registerSemanticTools
   // actually registers 52 tools — the Wave-6b guarantee, checked at the source instead of a literal.
@@ -206,7 +208,7 @@ test('W6b: /semantic surface = 54 tools (derived, not hardcoded) + version 0.16.
   const next = SRC.indexOf('\nfunction ', start + 1);
   const body = SRC.slice(start, next === -1 ? undefined : next);
   const semanticToolCount = (body.match(/mcp\.tool\(/g) || []).length;
-  assert.equal(semanticToolCount, 54, `registerSemanticTools must register 54 tools after Wave 6b + #1548 + #1710 (found ${semanticToolCount})`);
+  assert.equal(semanticToolCount, 55, `registerSemanticTools must register 55 tools after Wave 6b + #1548 + #1710 + #2495 (found ${semanticToolCount})`);
   assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must read the version from SEMANTIC_SURFACE_VERSION');
-  assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "0\.16\.0";/, 'SEMANTIC_SURFACE_VERSION must be 0.16.0 after #1779');
+  assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "0\.17\.0";/, 'SEMANTIC_SURFACE_VERSION must be 0.17.0 after #2495');
 });

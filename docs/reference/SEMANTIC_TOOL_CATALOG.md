@@ -506,6 +506,16 @@ in place** (kept name — connectors pin it; the additive/never-break principle)
 - **Absorbs:** `lgpd_record_retroactive_notification` · `lgpd_execute_retroactive_deletion`.
 - **Gate:** PROACTIVE `canV4(manage_member)` fail-fast (GP/DPO) + the RPC's own `manage_member` gate. `execute_deletion` returns a preview unless `confirm=true` (ADR-0018) — it clears a video-screening transcription (irreversible, Art.18 §IV); Drive-file removal is a separate operator step. Every call writes a `pii_access_log` row.
 
+
+## #2495 / ADR-0132: writing to the wiki (1 tool, `nucleo-ia-semantic` v0.17.0)
+
+### `wiki_write` (W)
+- **Intent:** the assistant writes to the wiki through the same functions the screen uses. **`action`:** `context` (read-only: `wiki_authoring_context` + `wiki_review_queue` + `wiki_suggestion_queue`: where the person writes, their open versions and suggestions, and only COUNTS of decisions waiting on the screen) · `draft` (`wiki_save_draft`: initiative_id + title + content, or version_id to edit their own draft/returned version) · `submit` (`wiki_submit`) · `suggest` (`wiki_suggest`: page_path + body).
+- **Two calls for every write:** `draft`, `submit` and `suggest` return a PREVIEW (page, label, what is missing to submit, who decides) logged as `preview`, and only write with `confirm=true`. Wiki content is exactly what an injection from another source would plant, so the rule covers every write, not only the destructive ones (ADR-0132 §3, ADR-0018 D2.1). The description is fixed text (D2.3), and every response goes through the untrusted-data marker (#1619).
+- **Epistemic label:** `fonte` · `observacao_membro` · `sintese_ia` · `pesquisa_externa`. Through the assistant the default is `sintese_ia`; another label only when the person states it. The reads (`search_wiki`, `get_wiki_page`, `search_nucleo_knowledge`) return the label, and a page marked `sintese_ia` carries `epistemic_notice` (`wiki-audit.mjs`), as a pending audit carries `audit_notice`.
+- **Not here:** `wiki_decide`, `wiki_audit`, `wiki_suggestion_decide`. Publishing, returning, auditing and answering suggestions stay on the screen (ADR-0132 §2).
+- **Gate:** none of its own. The RPC decides (active member; own initiative, or any for the curation committee; own draft), exactly as on the screen; a 42501 refusal comes back as `unauthorized`, a `wiki:` message as `invalid_input`. A gate stricter than the function is the #2520 defect class.
+
 ---
 
 ## Wave plan (usage-validated order)

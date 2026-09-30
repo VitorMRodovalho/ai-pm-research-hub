@@ -117,20 +117,21 @@ test('#1710 MCP: /semantic conta a tool nova, e o teto de 256 do /mcp nao a cont
   // (#1755) e o quarto so apareceu quando a suite inteira rodou offline. Esta lista existe para que
   // o proximo a somar uma tool encontre os quatro de uma vez, e nao um vermelho por vez.
   const anot = readFileSync(resolve(ROOT, 'tests/contracts/1402-semantic-tool-annotations.test.mjs'), 'utf8');
-  assert.match(anot, /exactly 54 registered tools/,
+  assert.match(anot, /exactly 55 registered tools/,
     'o numero pinado de tools do /semantic (1402) nao acompanhou a tool nova');
 
   const ponte = readFileSync(resolve(ROOT, 'tests/contracts/mcp-semantic-gateway-bridge.test.mjs'), 'utf8');
-  assert.match(ponte, /exactly 54 mcp\.tool\(\) calls/,
+  assert.match(ponte, /exactly 55 mcp\.tool\(\) calls/,
     'o segundo numero pinado do /semantic (mcp-semantic-gateway-bridge) nao acompanhou a tool nova');
 
   // #1590 onda C (13/08/2026): a versao da superficie subiu para 0.14.0 SEM tool nova — a
   // capacidade entrou como scope e acoes em tools existentes. A contagem de 54 fica; o que muda e
   // a versao. Este pin e sobre a VERSAO tambem, entao ele acompanha as duas coisas.
   // #1779 (15/08/2026): 0.15.0 → 0.16.0, de novo sem tool nova (scope='tasks' em board_overview).
+  // #2495 (29/09/2026): +wiki_write → 55 tools e 0.16.0 → 0.17.0; os tres pinos acompanham juntos.
   // Este foi o QUARTO pin a ficar vermelho, e so na suite inteira: a lista acima achou tres.
   const w6b = readFileSync(resolve(ROOT, 'tests/contracts/semantic-envelope-w6b.test.mjs'), 'utf8');
-  assert.match(w6b, /= 54 tools \(derived, not hardcoded\) \+ version 0\.16\.0/,
+  assert.match(w6b, /= 55 tools \(derived, not hardcoded\) \+ version 0\.17\.0/,
     'o terceiro numero pinado do /semantic (semantic-envelope-w6b), que pina TAMBEM a versao da superficie, nao acompanhou');
 
   const manifesto = JSON.parse(readFileSync(resolve(ROOT, 'src/lib/mcp-manifest.json'), 'utf8'));

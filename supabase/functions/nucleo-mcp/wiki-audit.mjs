@@ -7,11 +7,22 @@ export const WIKI_AUDIT_PENDING_NOTICE =
   "Publicada pela liderança da tribo, com auditoria do Comitê de Curadoria pendente (ADR-0129). " +
   "Ao citar esta página, diga que ela ainda não foi auditada.";
 
-/** Acrescenta `audit_notice` a cada página com auditoria pendente. Aceita uma linha ou uma lista. */
+// ADR-0132: a página marcada como síntese de IA diz isso a quem lê pelo assistente, como o selo diz na tela.
+export const WIKI_AI_SYNTHESIS_NOTICE =
+  "Conteúdo marcado como síntese produzida por IA (ADR-0132), não como fonte primária. " +
+  "Ao citar esta página, diga que é uma síntese de IA.";
+
+/**
+ * Acrescenta `audit_notice` a cada página com auditoria pendente e `epistemic_notice` a cada página
+ * marcada como síntese de IA. Aceita uma linha ou uma lista.
+ */
 export function withWikiAuditNotice(data) {
-  const mark = (row) =>
-    row && typeof row === "object" && row.audit_status === "pending"
-      ? { ...row, audit_notice: WIKI_AUDIT_PENDING_NOTICE }
-      : row;
+  const mark = (row) => {
+    if (!row || typeof row !== "object") return row;
+    let out = row;
+    if (row.audit_status === "pending") out = { ...out, audit_notice: WIKI_AUDIT_PENDING_NOTICE };
+    if (row.epistemic_label === "sintese_ia") out = { ...out, epistemic_notice: WIKI_AI_SYNTHESIS_NOTICE };
+    return out;
+  };
   return Array.isArray(data) ? data.map(mark) : mark(data);
 }
