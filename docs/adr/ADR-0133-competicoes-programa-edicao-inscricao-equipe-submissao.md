@@ -2,6 +2,7 @@
 
 **Status:** Proposta (30/09/2026). Nada vai ao banco antes da aprovação do GP.
 **Pedido:** decisão do GP em 30/09/2026, repassada pela lane `nucleo-hackathon` e confirmada diretamente com ele: a plataforma recebe a inscrição do Hackathon de Impacto Social, pensada para a **série** (próximas edições e os awards), com o modelo de dados decidido antes do código.
+**Insumo:** pacote de inscrição da edição piloto da lane `nucleo-hackathon` (campos, declarações, aviso de privacidade, parâmetros e as regras do edital que o modelo sustenta), rascunho de 30/09/2026 ainda não aprovado pelo GP.
 **Relacionadas:** ADR-0005 (`initiatives` é o primitivo de domínio), ADR-0006 (`persons` + `engagements`), ADR-0009 (tipos novos são configuração), ADR-0012 (fonte única por conceito), ADR-0022 (catálogo de notificações), ADR-0105 (visibilidade), ADR-0131 (externo é atributo do vínculo), [#2529](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2529), #1050 (limite por IP).
 
 ---
@@ -50,15 +51,42 @@
 
 ### 3. Inscrição individual; a equipe se forma na conferência
 
-- **`competition_registrations`**: edição, pessoa, estado (`submitted`, `validated`, `rejected`, `selected`, `not_selected`, `withdrawn`), respostas do formulário (validadas contra o esquema da edição), as declarações como colunas próprias (idade, condição de estudante, instituição, perfil técnico), o nome da equipe e o de quem lidera **como declarados**, o registro de consentimento, quem conferiu e quando, e `retention_until`. Uma inscrição por pessoa e edição; reenviar com a inscrição aberta atualiza a mesma linha.
+- **`competition_registrations`**: edição, pessoa, estado (`submitted`, `valid`, `excluded`, `selected`, `waitlisted`, `not_selected`, `withdrawn`), respostas do formulário (validadas contra o esquema da edição), e como colunas próprias o que o processo decide: nome social (usado no certificado e na comunicação quando preenchido), instituição e curso, perfil técnico e área, **se lidera** e o **e-mail de quem lidera**, o nome da equipe declarado, GitHub, origem e canal (opcionais), a comprovação de matrícula (item 3-C), quem conferiu e quando, e `retention_until`. Os parâmetros de campanha (UTM) ficam à parte, porque não são dado pessoal.
+- **Uma pessoa, uma equipe por edição** (proposta do pacote da edição piloto, pendente do GP): uma inscrição por pessoa e edição; o mesmo e-mail na mesma edição não abre outra, e a pessoa corrige a sua pelo link do e-mail (item 9).
 - **`competition_registration_events`**: histórico de estado, com quem mudou e por quê.
-- **`competition_teams`** (edição, nome, nome normalizado, estado, liderança) e **`competition_team_members`** (equipe, inscrição, papel `leader` ou `member`): formadas na conferência, **agrupando os nomes de equipe declarados**, com as checagens à vista: tamanho fora de 3 a 5, nenhum perfil técnico, liderança declarada que não se inscreveu, nomes quase iguais.
-- Por que não formar a equipe na inscrição: o edital pede inscrição individual com o nome da equipe (2.3). Um código de equipe gerado na primeira inscrição evitaria erro de digitação e fica como opção do esquema para edições futuras.
+- **`competition_teams`** (edição, nome, **código público** de equipe, estado, liderança) e **`competition_team_members`** (equipe, inscrição, papel `leader` ou `member`): formadas na conferência **pela chave exata do e-mail de quem lidera**, que todo integrante informa e que é o e-mail da própria inscrição de quem lidera. O nome da equipe continua pedido e a conferência acusa divergência entre nome e chave, além de: tamanho fora de 3 a 5, nenhum perfil técnico, liderança que não se inscreveu, pessoa que lidera informando outra liderança.
+- Por que não formar a equipe na inscrição com código: o padrão das plataformas de hackathon (quem lidera cria a equipe e recebe um código) exige conta ou confirmação por e-mail antes do agrupamento. O e-mail de quem lidera dá a mesma exatidão sem isso. O código continua opção do esquema para edições futuras, a avaliar com o benchmark.
+
+### 3-A. Declarações: caixas separadas, texto versionado, e o que é opcional é consentimento
+
+- A edição declara as suas declarações no esquema: chave, texto versionado, obrigatória ou não. Cada uma é uma caixa separada e desmarcada; o envio só passa com as obrigatórias marcadas.
+- **`competition_registration_declarations`** guarda, por inscrição, a chave, a **versão do texto** aceita e a hora. Na edição piloto: 18 anos ou mais, matrícula em ensino superior, a penalidade coletiva da 2.8 (exigida na tela antes do envio), o aceite do edital e a leitura do aviso de privacidade.
+- O que é opcional e revogável (aviso de próximas edições; uso de imagem, quando existir) vai para **`consent_records`**, que já tem revogação. **Uso de imagem nunca é condição para se inscrever.**
+
+### 3-B. Validação conjunta, com impedimento
+
+- A validação é ato conjunto das partes que a edição declara (na piloto, o PMI Student Club e o Núcleo; edital 3.3). **`competition_registration_reviews`** guarda cada decisão: inscrição, **parte**, quem decidiu, decisão (`valid` ou `exclude`), motivo, declaração de ausência de vínculo com a equipe, e a hora.
+- **Excluir exige acordo de todas as partes; na divergência a inscrição segue válida** (3.3-A). O estado da inscrição é derivado das decisões, não escrito à mão.
+- **Quem tem vínculo com a equipe não decide sobre ela** (3.3-B): a função recusa a decisão de quem é integrante da equipe e exige a declaração de ausência de vínculo.
+
+### 3-C. Comprovação de matrícula das finalistas: o fato, não o documento
+
+- Depois do dia (2.7), a conferência registra **que** a matrícula foi comprovada, **por quem** e **quando**. O documento não é guardado.
 
 ### 4. A validação é um papel escopado, e a exportação é o mínimo que não depende de ninguém
 
-- Ação **`review_competition_registrations`**, escopada à iniciativa do programa, concedida por um vínculo de revisor. O PMI Student Club entra por esse papel **se e quando** o acordo existir.
-- Até lá, a conferência é feita por quem organiza, com **exportação em CSV agrupada por equipe**, por uma função `SECURITY DEFINER` que registra o acesso a dado pessoal. Nada no desenho depende de o Student Club aceitar.
+- Ação **`review_competition_registrations`**, escopada à iniciativa do programa, concedida por um vínculo de revisor que diz **qual parte** a pessoa representa. O PMI Student Club entra por esse papel **se e quando** o acordo existir.
+- Até lá, a conferência é feita por quem organiza, com **exportação em CSV agrupada por equipe**, por uma função `SECURITY DEFINER` que registra o acesso a dado pessoal. Nada no desenho depende de o Student Club aceitar: sem a segunda parte na plataforma, a decisão dela entra registrada por quem organiza, com a indicação de que foi transcrita.
+
+### 4-A. Sorteio público e reproduzível por terceiro
+
+- Antes do sorteio, publica-se a lista das equipes válidas pelo **código público** de equipe, sem nome de pessoa (3.5).
+- **`competition_draws`** guarda: a lista publicada e quando, a **fonte da semente** (o concurso da Loteria Federal, o primeiro depois do encerramento) e o valor, a **versão do algoritmo**, a capacidade apurada (teto D2), a **ordem completa** e quem executou. Cada equipe recebe a posição; a lista de espera segue essa ordem.
+- O algoritmo é determinístico e publicado (por exemplo, ordenar por um hash do código de equipe com a semente), para qualquer pessoa refazer a conta com os mesmos dados públicos.
+
+### 4-B. Resultado por escrito a toda equipe
+
+- Toda equipe recebe o resultado por escrito, selecionada ou não, com a posição na lista de espera (3.6); o mesmo vale para a seleção de finalistas (5-A.14). O envio fica registrado por equipe, com a hora, para provar que ninguém ficou sem resposta.
 
 ### 5. A seleção vira vínculo, não filiação
 
@@ -68,6 +96,7 @@
 
 - **`competition_submissions`**: equipe, edição, URL do repositório, SHA do commit (40 caracteres hexadecimais), URL do vídeo, `submitted_at` pelo relógio do **servidor**, e versão. Vale a última enviada antes do prazo; as anteriores ficam no histórico.
 - Sem conta: cada equipe selecionada recebe, por e-mail da liderança, um **link com token** (só o hash é guardado). A função confere o token e o prazo da edição no servidor e devolve um recibo com a hora registrada. O magic link segue não resolvido (ADR-0131).
+- **O prazo é a hora da submissão registrada pelo servidor, não a data do commit** (5-A.3). Na importação para a banca, a organização confere se o commit informado está no repositório público e **registra a hora da conferência e o resultado** (`commit_checked_at`, `commit_found`); commit não encontrado não é avaliado (5-A.3-A).
 - No prazo, a exportação alimenta a ferramenta da banca.
 
 ### 7. O julgamento fica fora; o contrato é entrada e saída
@@ -82,9 +111,11 @@
 
 ### 9. Formulário público: sem login, consentimento versionado e limite por IP
 
-- Página pública da edição (pt-BR, com as páginas `/en/` e `/es/` que as regras do projeto pedem), chamando uma função `anon` **`competition_register(edição, respostas)`** que: aplica `rl_check_and_bump`; confere a janela da edição; valida as respostas contra o esquema; exige as declarações (idade, estudante, regulamento) e o consentimento; grava o consentimento em `consent_records` com a versão da política da edição; é idempotente por edição e e-mail; e devolve um recibo opaco.
+- Página pública da edição (pt-BR, com as páginas `/en/` e `/es/` que as regras do projeto pedem), chamando uma função `anon` **`competition_register(edição, respostas)`** que: aplica `rl_check_and_bump`; confere a janela da edição no fuso dela; valida as respostas contra o esquema (e-mail digitado duas vezes, liderança coerente); exige as declarações obrigatórias; grava declarações e consentimentos com a versão do texto; e devolve um recibo opaco. **Não há teto de inscrições no formulário**: toda inscrição válida vai ao sorteio, e o teto se aplica na conferência.
+- **Correção pela própria pessoa, até o encerramento, pelo link do e-mail de confirmação**: cada inscrição tem um token próprio (só o hash é guardado). Sem o link, o mesmo e-mail na mesma edição não altera nem duplica a inscrição, e a resposta pública não revela se o e-mail já estava inscrito.
 - Nenhuma tabela nova é legível por `anon`; RLS em todas; leitura e exportação só por função com autoridade.
-- E-mail de confirmação: opcional, pela infraestrutura de e-mail existente, sem dado além do da própria pessoa.
+- **E-mail de confirmação** (recomendado pelo pacote da piloto, decisão do GP): os dados enviados, o nome da equipe e o e-mail de quem lidera, o link de correção, os links do edital e do aviso de privacidade, as datas, e o lembrete da 2.8. Vai pela infraestrutura de e-mail existente (Resend).
+- **Onde o dado fica** (medido em 30/09/2026): o banco está em `sa-east-1` (São Paulo). A documentação de backups do Supabase não declara a região dos backups; o e-mail sai pelo Resend, que oferece envio a partir de `sa-east-1` entre outras regiões, e a região do domínio de envio não foi medida. O aviso de privacidade precisa dessas duas respostas antes do go-live.
 - **Contato só por e-mail** (decisão do GP em 30/09/2026): o formulário não coleta telefone. Menos dado pessoal, e o canal oficial depois do resultado usa o e-mail informado.
 
 ### 10. Base legal, retenção e textos são configuração da edição
@@ -95,7 +126,7 @@
 
 ## Consequências
 
-- Seis tabelas novas (`competition_editions`, `competition_registrations`, `competition_registration_events`, `competition_teams`, `competition_team_members`, `competition_submissions`) mais `competition_results`, todas com RLS e acesso só por funções com autoridade.
+- Tabelas novas, todas com RLS e acesso só por funções com autoridade: `competition_editions`, `competition_registrations`, `competition_registration_events`, `competition_registration_declarations`, `competition_registration_reviews`, `competition_teams`, `competition_team_members`, `competition_draws`, `competition_submissions` e `competition_results`, mais o registro do envio do resultado por equipe.
 - `event_guest_certificates`: o CHECK de `type` cresce e entra `workload_hours`.
 - Configuração: o tipo de iniciativa `competition`, a iniciativa do programa, e os tipos de vínculo `competition_participant` e `competition_reviewer`. Quem organiza continua no `workgroup` atual.
 - Telas: a página pública de inscrição e uma tela de conferência com a exportação.
@@ -115,6 +146,8 @@
 - (b) "Participante" como vínculo sem filiação; se o adendo ao Manual é necessário.
 - (c) Autoridade do PMI Student Club (até 09/11); até lá, a exportação.
 - (d) Emissor e contra-assinatura dos certificados de não membro (até dezembro).
+- Do pacote da edição piloto (lane `nucleo-hackathon`, rascunho ainda não aprovado): controlador do dado e encarregado; uma pessoa, uma equipe por edição; low-code conta como perfil técnico; idiomas da página (recomendação: só pt-BR na piloto); e-mail de confirmação (recomendação: sim); hora de abertura (sugestão 09h00 de 19/10); teto de equipes (D2); uso de imagem (seção 9 do edital).
+- Região dos backups do Supabase e do domínio de envio do Resend, para o aviso de privacidade declarar ou não transferência internacional.
 
 ## Decididas (GP, 30/09/2026)
 
