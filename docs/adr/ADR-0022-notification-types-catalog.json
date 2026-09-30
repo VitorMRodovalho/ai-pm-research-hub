@@ -237,6 +237,10 @@
     "unlinked_accounts_detected": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2285 (2026-09-14) - emitted by the weekly cron wrapper public.detect_unlinked_accounts_cron() to every active member with manage_platform, deduped on a 25-day window (weekly measurement, monthly nudge). Carries the COUNT only; the masked list stays behind detect_unlinked_accounts(). Immediate rather than digest_weekly on purpose: get_weekly_member_digest builds its sections from a per-type allowlist while consumed_notification_ids does not filter by type, so a type in no section is stamped digest_delivered_at without ever being rendered (measured: 76 of 78 rows across two sibling types - see #2286)."
+    },
+    "recurring_meeting_drift": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "#2524 (2026-09-30). Varredura semanal detect_recurring_meeting_drift_cron (segunda 07:00 UTC, depois do reconcile das 06:00): regra de reunião recorrente com reunião futura fora do horário ou do link da regra, ou com ocorrência faltando, e iniciativa ativa que se reuniu ao menos 2 vezes em 90 dias sem nenhuma reunião marcada adiante. Vai a quem gere a plataforma (manage_platform), no máximo uma vez a cada 6 dias; é revisão, não urgência, por isso digest."
     }
   },
   "implementation": {
