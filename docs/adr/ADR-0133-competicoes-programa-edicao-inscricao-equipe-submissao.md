@@ -1,6 +1,6 @@
 # ADR-0133 - Competições (hackathons e awards): programa, edição, inscrição, equipe, submissão e resultado
 
-**Status:** Proposta (30/09/2026). Nada vai ao banco antes da aprovação do GP.
+**Status:** Proposta (30/09/2026), **bloqueada** pelo conflito com a decisão de 25/09 (seção abaixo). Nada vai ao banco antes da aprovação do GP.
 **Pedido:** decisão do GP em 30/09/2026, repassada pela lane `nucleo-hackathon` e confirmada diretamente com ele: a plataforma recebe a inscrição do Hackathon de Impacto Social, pensada para a **série** (próximas edições e os awards), com o modelo de dados decidido antes do código.
 **Insumo:** pacote de inscrição da edição piloto da lane `nucleo-hackathon` (campos, declarações, aviso de privacidade, parâmetros e as regras do edital que o modelo sustenta), rascunho de 30/09/2026 ainda não aprovado pelo GP.
 **Relacionadas:** ADR-0005 (`initiatives` é o primitivo de domínio), ADR-0006 (`persons` + `engagements`), ADR-0009 (tipos novos são configuração), ADR-0012 (fonte única por conceito), ADR-0022 (catálogo de notificações), ADR-0105 (visibilidade), ADR-0131 (externo é atributo do vínculo), [#2529](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2529), #1050 (limite por IP).
@@ -33,6 +33,23 @@
 | Revisor externo | Tipo de vínculo `external_reviewer` existe (base legal: consentimento). |
 
 ---
+
+## ⚠️ Conflito com decisão anterior do GP: bloqueia a aprovação
+
+Esta ADR foi escrita sem ler a arquitetura da banca, e ela contradiz uma decisão já tomada. Em `banca/docs/ARQUITETURA.md`, seção 8 (na `main` da banca, commit `7f989c5`; o merge daquela PR pelo GP é a confirmação, pela regra escrita nela), está a **decisão do GP de 25/09/2026**, repassada pela lane `ai-pm-research-hub-3a`:
+
+- a **inscrição** é um **serviço próprio**, com dado pessoal e arquivos em D1 e R2 próprios, na conta da Cloudflare;
+- **"Nenhum dado de inscrito passa pelo Supabase do hub."** O hub recebe só o resultado final (acervo e certificados);
+- a ponte com a banca é um service binding, com o formato versionado **entry-contract v1**.
+
+Um fato mudou depois: o edital (5.1-A) passou a pedir tudo por link, sem arquivo. O R2 e a URL assinada perderam o objeto; **a separação do dado pessoal, não.**
+
+O GP decide qual prevalece:
+
+- **Manter a de 25/09:** o modelo das seções 1 a 10 abaixo (edição, inscrição, equipe pela liderança, declarações, validação conjunta, sorteio, submissão) vale **para o serviço de inscrição, em D1**, e não para o hub. No hub ficam só o programa como iniciativa, o resultado e os certificados (item 8). A supersessão não acontece, e esta ADR é reescrita nesse recorte.
+- **Superar a de 25/09:** a inscrição mora no Supabase do hub, como está escrito abaixo, e a supersessão é registrada aqui **e** na seção 8 da banca.
+
+Até a decisão, esta ADR **não é aprovada** e nenhum código começa.
 
 ## Decisão
 
@@ -108,6 +125,7 @@
 
 - `event_guest_certificates` passa a aceitar os tipos `competition_participation`, `competition_finalist`, `competition_winner` e `competition_staff` (atuação), ganha **`workload_hours`** e, opcionalmente, a edição e a equipe. O evento é o dia do hackathon.
 - Os níveis e as horas vêm da edição; a emissão é em lote, a partir dos resultados e dos vínculos. Quem emite e quem contra-assina é a decisão (d).
+- ⚠️ **Conflito com o edital (7.2-C, certificado verificável por código):** medido em 30/09/2026, `issue_event_guest_certificate` grava `retention_until = data do evento + 1 ano`, e `delete_expired_event_guest_certificates` apaga o certificado vencido **e a pessoa só-convidada**. Hoje nenhum cron chama essa limpeza, mas o desenho prevê a remoção, e depois dela `verify_certificate` não acha o código. É mudança de ROPA, portanto decisão do GP. A proposta do pacote da piloto: guardar **só o nome e o código** pelo tempo em que o certificado precisar ser verificável.
 
 ### 9. Formulário público: sem login, consentimento versionado e limite por IP
 
@@ -121,6 +139,19 @@
 ### 10. Base legal, retenção e textos são configuração da edição
 
 - Base legal, prazo de retenção, versão da política e os textos do formulário ficam na edição. A decisão (a) entra sem código novo, e **o go-live espera por ela**.
+
+### 11. O que o benchmark acrescenta
+
+Benchmark da lane `nucleo-hackathon` (17 plataformas de hackathon e awards, 10 dimensões, fontes lidas em 30/09/2026; leitura parcial de algumas). Entra no modelo, onde quer que ele more:
+
+- **Versão do formulário imutável depois da primeira resposta**, com cada resposta ligada à versão; cada campo com identificador estável, alvo (pessoa, inscrição, equipe ou entrega), marca de dado pessoal, visibilidade e retenção. Plataformas que reescrevem respostas antigas quando o formulário ao vivo muda são o contraexemplo.
+- **Decidir em silêncio e publicar tudo de uma vez**: estado pendente até a publicação do resultado, o que casa com o 13/11.
+- **Data de trava da equipe**, depois da qual a composição não muda.
+- **Estados que não se confundem**: válida, selecionada, finalista e vencedora são estados distintos.
+- **O limite por IP é freio, não barreira**: `rl_check_and_bump` deixa passar quando o IP não chega. Avaliar captcha no formulário público.
+- **Etapas da série numa tabela própria**, quando houver mais de uma edição (colunas bastam para a piloto).
+- **Contrato com a banca**: o entry-contract v1 ainda usa as rodadas do formato anterior e categoria obrigatória; pela regra do próprio contrato, o formato de um dia pede uma v2. Instituição em texto livre atrapalha o motor de conflito, que lê o domínio.
+- **Botão "Adicionar ao LinkedIn"**: é URL estática, não preenche sozinho e exige uma Página da organização.
 
 ---
 
