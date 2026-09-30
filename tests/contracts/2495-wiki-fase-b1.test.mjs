@@ -97,14 +97,14 @@ test('#2495 B1: alterar pelo comitê regrava a tag no UPDATE que troca a versão
 
 // ── leituras com o estado de auditoria ─────────────────────────────────────────────────────────
 for (const [fn, sig] of [['get_wiki_page', 'text'], ['search_wiki_pages', 'text, integer, text, text']]) {
-  test(`#2495 B1: ${fn} devolve audit_status no fim, segue SECURITY INVOKER e sem anon`, () => {
+  test(`#2495 B1: ${fn} devolve audit_status (e, desde a ADR-0132, o rotulo no fim), segue SECURITY INVOKER e sem anon`, () => {
     const { file } = cap(fn);
     const sql = migFile(fn);
     const create = sql.slice(sql.indexOf(`CREATE FUNCTION public.${fn}(`));
     const header = create.slice(0, create.indexOf('AS $function$'));
-    assert.match(header, /RETURNS TABLE\([^)]*, audit_status text\)\s/, 'audit_status é a última coluna');
+    assert.match(header, /RETURNS TABLE\([^)]*, audit_status text, epistemic_label text\)\s/, 'audit_status seguida do rótulo, no fim');
     assert.doesNotMatch(header, /SECURITY DEFINER/, 'a RLS de wiki_pages é o portão: nada de DEFINER');
-    assert.match(body(fn), /,\s*w\.audit_status\s+FROM wiki_pages w/, 'o SELECT devolve a coluna na última posição');
+    assert.match(body(fn), /,\s*w\.audit_status, w\.epistemic_label\s+FROM wiki_pages w/, 'o SELECT devolve as duas colunas no fim');
     assert.match(sql, new RegExp(`DROP FUNCTION public\\.${fn}\\(${reEsc(sig)}\\);\\s+CREATE FUNCTION public\\.${fn}\\(`));
     assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\(${reEsc(sig)}\\) FROM PUBLIC, anon;`));
     assert.match(sql, new RegExp(`GRANT EXECUTE ON FUNCTION public\\.${fn}\\(${reEsc(sig)}\\) TO authenticated, service_role;`));

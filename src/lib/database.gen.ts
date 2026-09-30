@@ -28825,6 +28825,7 @@ export type Database = {
           created_at: string
           doc_type: string | null
           domain: string
+          epistemic_label: string
           id: string
           initiative_id: string
           page_path: string
@@ -28850,6 +28851,7 @@ export type Database = {
           created_at?: string
           doc_type?: string | null
           domain: string
+          epistemic_label?: string
           id?: string
           initiative_id: string
           page_path: string
@@ -28875,6 +28877,7 @@ export type Database = {
           created_at?: string
           doc_type?: string | null
           domain?: string
+          epistemic_label?: string
           id?: string
           initiative_id?: string
           page_path?: string
@@ -29124,6 +29127,7 @@ export type Database = {
           content: string
           created_at: string | null
           domain: string
+          epistemic_label: string | null
           fts: unknown
           id: string
           ip_track: string | null
@@ -29144,6 +29148,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           domain: string
+          epistemic_label?: string | null
           fts?: unknown
           id?: string
           ip_track?: string | null
@@ -29164,6 +29169,7 @@ export type Database = {
           content?: string
           created_at?: string | null
           domain?: string
+          epistemic_label?: string | null
           fts?: unknown
           id?: string
           ip_track?: string | null
@@ -33769,6 +33775,7 @@ export type Database = {
           authors: string[]
           content: string
           domain: string
+          epistemic_label: string
           id: string
           ip_track: string
           license: string
@@ -35507,6 +35514,7 @@ export type Database = {
         Returns: {
           audit_status: string
           domain: string
+          epistemic_label: string
           headline: string
           id: string
           ip_track: string
@@ -36347,6 +36355,7 @@ export type Database = {
           p_content: string
           p_doc_type: string
           p_domain?: string
+          p_epistemic_label?: string
           p_initiative_id: string
           p_page_path: string
           p_sources?: Json
