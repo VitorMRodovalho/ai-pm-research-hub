@@ -175,11 +175,11 @@ Benchmark da lane `nucleo-hackathon` (17 plataformas de hackathon e awards, 10 d
 
 ## Perguntas abertas (do GP)
 
-- (a) Base legal e prazo de retenção do dado das inscrições.
+- (a) Base legal e prazo de retenção: **decidida em 30/09/2026** (ver "Decisões do GP sobre o pacote da inscrição").
 - (b) "Participante" como vínculo sem filiação; se o adendo ao Manual é necessário.
 - (c) Autoridade do PMI Student Club (até 09/11); até lá, a exportação.
 - (d) Emissor e contra-assinatura dos certificados de não membro (até dezembro).
-- Do pacote da edição piloto (lane `nucleo-hackathon`, rascunho ainda não aprovado): controlador do dado e encarregado; uma pessoa, uma equipe por edição; low-code conta como perfil técnico; idiomas da página (recomendação: só pt-BR na piloto); e-mail de confirmação (recomendação: sim); hora de abertura (sugestão 09h00 de 19/10); teto de equipes (D2); uso de imagem (seção 9 do edital).
+- Do pacote da edição piloto: **aprovado em 30/09/2026**, com a D7 (uso de imagem) e o teto de equipes (D2) ainda abertos. O texto original da pergunta: controlador do dado e encarregado; uma pessoa, uma equipe por edição; low-code conta como perfil técnico; idiomas da página (recomendação: só pt-BR na piloto); e-mail de confirmação (recomendação: sim); hora de abertura (sugestão 09h00 de 19/10); teto de equipes (D2); uso de imagem (seção 9 do edital).
 - Região dos backups do Supabase e do domínio de envio do Resend, para o aviso de privacidade declarar ou não transferência internacional.
 
 ## Decididas (GP, 30/09/2026)
@@ -218,9 +218,43 @@ A fase 1 (#2529) implementou a camada (item 0), o programa e a edição (1), a p
   - toda função tem `search_path` fechado e fica sem EXECUTE para `anon` e `authenticated` no schema.
 - **Aceito e registrado, não corrigido:** o tempo de resposta pode diferir um pouco entre e-mail novo e e-mail já inscrito. Os dois caminhos enfileiram um e-mail e devolvem a mesma resposta.
 - **Nomes físicos:** as tabelas ficam no schema `competition` sem o prefixo (`competition.editions`, `competition.registrations` e assim por diante). A versão do formulário é tabela própria e imutável (`competition.form_versions`), e os links ficam em `competition.registration_tokens`.
-- **Lacuna medida, a fechar junto com a decisão (a):** a pessoa criada pela confirmação e sem outro vínculo ainda não tem quem a anonimize. Medido em 30/09/2026:
-  - o job `v4-anonymize-by-kind-monthly` só alcança pessoa com vínculo encerrado em `engagements`;
-  - os outros dois (`lgpd-anonymize-inactive-monthly` e `lgpd-anonymize-premember-monthly`) alcançam membro e candidatura.
+- **Lacuna medida, fechada na fase 1b:** a pessoa criada pela confirmação e sem outro vínculo não tinha quem a anonimizasse. Medido em 30/09/2026: o job `v4-anonymize-by-kind-monthly` só alcança pessoa com vínculo encerrado em `engagements`. A fase 1b anonimiza essa pessoa junto com a inscrição (abaixo).
+- **Confirmação depois do encerramento:** conta. Decisão do GP em 30/09/2026, registrada no edital (2.1-A): vale a inscrição enviada dentro da janela e confirmada em até 48 horas.
 
-  A limpeza desta fase apaga a inscrição no fim da retenção, mas a linha em `persons` (nome e e-mail) fica. O item 2 promete essa anonimização, e ela entra com a decisão (a), antes de vencer a primeira retenção. Nenhuma edição abre sem retenção definida, então nada vence antes disso.
-- **Pergunta nova ao GP: confirmação depois do encerramento.** Hoje, quem se inscreve dentro da janela e confirma o e-mail em até 48 horas conta, mesmo que confirme com a janela já fechada. A alternativa é exigir a confirmação dentro da janela, o que tira quem se inscreve no último minuto.
+## Decisões do GP sobre o pacote da inscrição (confirmadas por ele diretamente, 30/09/2026)
+
+O pacote da lane do hackathon (repositório `nucleo-hackathon`, commit `d9c6e49`) foi aprovado bloco a bloco:
+
+- **Decisão (a), base legal:** execução de contrato ou procedimentos preliminares (adesão ao Edital) para o que a edição precisa; consentimento só para o opcional (aviso de próximas edições e, quando existir, uso de imagem). A declaração de leitura do aviso é ciência, não consentimento.
+- **Decisão (a), retenção**, contada do dia do hackathon:
+  - inscrição não selecionada: anonimizada 6 meses depois;
+  - participante: anonimizada 3 anos depois, o prazo que a política já dá às candidaturas;
+  - certificado: nome, código, nível e edição ficam **sem prazo**, para a verificação pública não quebrar. Isso muda o ROPA G.1 do certificado de convidado (hoje 1 ano) e entra com a fase dos certificados.
+- **Controlador e encarregado:** os da política de privacidade da plataforma (dpo@pmigo.org.br). O aviso da inscrição vira uma seção "Competições" dessa política, e o formulário mostra um resumo com o link. **A seção passa por revisão jurídica antes de ser publicada, e a edição não abre sem ela.**
+- **Formulário:**
+  - campos do pacote, com low-code valendo como perfil técnico quando a pessoa explica a lógica;
+  - áreas técnicas em lista (`software`, `dados_ia`, `infra`, `low_code`, `outra`);
+  - instituição em texto livre no piloto;
+  - uma pessoa, uma equipe por edição (edital 2.3);
+  - declarações D1 a D6; a D7 (uso de imagem) espera a seção 9 do edital.
+- **Edição piloto:**
+  - slug `hackathon-impacto-social-2026`;
+  - título "Hackathon de Impacto Social: IA & Gestão de Projetos" e título curto "Hackathon de Impacto Social", usado no assunto do e-mail;
+  - só pt-BR;
+  - abertura em 19/10/2026 às 09h00 e encerramento em 09/11/2026 às 23h59, pelo minuto inteiro (edital 4.2-B).
+- **Certificados de finalista e vencedora:** só depois da comprovação de matrícula (edital 7.2-C).
+
+## Adendo de implementação: fase 1b (30/09/2026)
+
+- **Título curto** na edição, usado no assunto do e-mail; **resumo do aviso** na edição, mostrado no formulário acima das declarações, com o link para a seção da política. A declaração pode apontar o edital ou o aviso (`link`).
+- **Retenção por resultado:** a edição guarda os meses de cada resultado (`retention_unselected_months`, `retention_participant_months`), e o prazo de cada inscrição é o dia do hackathon (`events.date` pela `event_id` da edição) mais esses meses. Participante é quem tem estado `selected`; todo o resto conta como não selecionada. Sem o dia do hackathon, nenhum prazo corre, e a limpeza informa a edição encerrada há mais de 30 dias sem ele.
+- **Anonimizar, não apagar:** no fim do prazo, a limpeza horária anonimiza a inscrição confirmada:
+  - saem nome, nome social, e-mail, e-mail de quem lidera, GitHub, instituição, curso, nome da equipe e a ligação com a pessoa;
+  - ficam estado, perfil técnico, área, origem, canal e UTM, que servem ao relatório de alcance sem apontar ninguém. Um CHECK recusa linha anonimizada que ainda guarde qualquer um desses campos;
+  - a inscrição que nunca foi confirmada continua sendo apagada em 48 horas.
+- **A pessoa que a competição criou** é anonimizada junto, no formato que a plataforma já usa, quando não tem outra inscrição identificada nem **nenhum outro vínculo**. O "outro vínculo" é lido do catálogo, a partir de toda chave estrangeira que aponta para `persons`, e não de uma lista escrita à mão. Pessoa que já existia antes da competição não é tocada por este caminho.
+- **Defeito da fase 1 corrigido:** sem UTM na URL, que é o caso comum, a inscrição falhava num CHECK, porque o valor chegava como o `null` do JSON. Os testes da fase 1 sempre mandaram UTM. Nenhuma edição existia, então ninguém foi afetado.
+- **A edição piloto nasce em rascunho**, com a versão 1 do formulário. Para abrir, faltam:
+  - a versão da política com a seção "Competições", revisada;
+  - a região dos backups e a do domínio do Resend, sem as quais o aviso não pode negar transferência internacional;
+  - o dia do hackathon (D1), para a retenção correr.

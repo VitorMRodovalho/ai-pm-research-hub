@@ -26,28 +26,44 @@ const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } })
 
 type Payload = {
-  to: string; name: string; edition_slug: string; edition_title: string;
+  to: string; name: string; edition_slug: string; edition_title: string; edition_short_title: string | null;
   pending: boolean; confirm_by: string | null;
   team_name: string | null; is_leader: boolean | null; leader_email: string | null;
   closes_at: string | null; timezone: string; confirmation_note: string | null;
   rules_url: string | null; privacy_notice_url: string | null;
 }
 
-function fmtClose(iso: string | null, tz: string): string {
+// "09/11, às 23h59", no fuso da edição: é como o edital escreve o prazo.
+function fmtDeadline(iso: string | null, tz: string): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('pt-BR', { timeZone: tz || 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })
+  const parts = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: tz || 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date(iso))
+  const v = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
+  return `${v('day')}/${v('month')}, às ${v('hour')}h${v('minute')}`
 }
+
+const P = (html: string) => `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 14px 0;">${html}</p>`
 
 function buildHtml(p: Payload, kind: string, link: string): string {
   const pending = kind === 'confirm' && p.pending
-  const intro = pending
-    ? `Recebemos a sua inscrição. <strong>Ela só vale depois que você confirmar o seu e-mail</strong>, no botão abaixo, até ${escapeHtml(fmtClose(p.confirm_by, p.timezone))} (horário de Brasília). Sem a confirmação, a inscrição é descartada.`
-    : 'Recebemos um novo envio com o seu e-mail, que já estava inscrito. Nada foi alterado na sua inscrição. Este é um link de acesso a ela; os links anteriores continuam valendo.'
-  const team = p.team_name
-    ? `<li>Equipe: <strong>${escapeHtml(p.team_name)}</strong></li>
-       <li>${p.is_leader ? 'Você lidera a equipe.' : `Quem lidera: ${escapeHtml(p.leader_email)}`}</li>`
-    : ''
-  const closes = p.closes_at ? `até <strong>${escapeHtml(fmtClose(p.closes_at, p.timezone))} (horário de Brasília)</strong>` : 'enquanto as inscrições estiverem abertas'
+  const deadline = p.closes_at ? ` até ${escapeHtml(fmtDeadline(p.closes_at, p.timezone))}` : ''
+  // Texto aprovado pelo GP em 30/09/2026 (pacote da lane do hackathon, seção 5).
+  const body = pending
+    ? [
+        P(`Olá, ${escapeHtml(p.name)}.`),
+        P(p.team_name
+          ? `Recebemos a sua inscrição na equipe <strong>${escapeHtml(p.team_name)}</strong>. Para ela valer, confirme o seu e-mail em até 48 horas:`
+          : 'Recebemos a sua inscrição. Para ela valer, confirme o seu e-mail em até 48 horas:'),
+      ].join('')
+    : [
+        P(`Olá, ${escapeHtml(p.name)}.`),
+        P('Recebemos um novo envio com o seu e-mail, que já estava inscrito. Nada foi alterado na sua inscrição. Este é um link de acesso a ela, e os links anteriores continuam valendo:'),
+      ].join('')
+  const after = pending
+    ? P(`Depois de confirmada, este mesmo link serve para <strong>ver, corrigir ou retirar</strong> a sua inscrição${deadline}.`) +
+      P('Se não foi você que fez esta inscrição, ignore este e-mail: sem a confirmação, ela não vale.')
+    : P(`Pelo link você vê a sua inscrição e pode corrigi-la ou retirá-la${deadline}.`)
   const links = [
     p.rules_url ? `<a href="${escapeHtml(p.rules_url)}" style="color:#003B5C;">Edital</a>` : '',
     p.privacy_notice_url ? `<a href="${escapeHtml(p.privacy_notice_url)}" style="color:#003B5C;">Aviso de privacidade</a>` : '',
@@ -62,18 +78,13 @@ function buildHtml(p: Payload, kind: string, link: string): string {
         <h1 style="color: white; font-size: 18px; margin: 0;">${escapeHtml(p.edition_title)}</h1>
       </div>
       <div style="padding: 24px; background: #f8f9fa; border: 1px solid #e9ecef;">
-        <p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">
-          Olá, <strong>${escapeHtml(p.name)}</strong>. ${intro}
-        </p>
-        <ul style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; padding-left: 18px;">${team}</ul>
-        <p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">
-          ${pending ? 'Depois de confirmar, o mesmo link serve para ver e corrigir a inscrição' : 'Pelo link você vê a inscrição e pode corrigi-la'} ${closes}.
-        </p>
+        ${body}
         <p style="margin: 0 0 16px 0;">
           <a href="${escapeHtml(link)}" style="display: inline-block; background: #003B5C; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">
-            ${pending ? 'Confirmar a inscrição' : 'Ver ou corrigir a inscrição'}
+            ${pending ? 'Confirmar inscrição' : 'Ver ou corrigir a inscrição'}
           </a>
         </p>
+        ${after}
         ${note}
         ${links ? `<p style="color:#495057;font-size:13px;margin:16px 0 0 0;">${links}</p>` : ''}
         <p style="color: #adb5bd; font-size: 11px; margin: 16px 0 0 0; line-height: 1.4; word-break: break-all;">
@@ -82,7 +93,6 @@ function buildHtml(p: Payload, kind: string, link: string): string {
       </div>
       <div style="padding: 16px; text-align: center; font-size: 11px; color: #868e96;">
         <p>Núcleo de Estudos e Pesquisa em IA &amp; GP · e-mail enviado automaticamente.</p>
-        <p>Se você não fez esta inscrição, ignore este e-mail.</p>
       </div>
     </div>`
 }
@@ -130,7 +140,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `Nucleo IA e GP <${from}>`,
         to: [p.to],
-        subject: kind === 'confirm' && p.pending ? `Confirme a sua inscrição: ${p.edition_title}` : `Link da sua inscrição: ${p.edition_title}`,
+        // Assunto com o título curto da edição (decisão do GP em 30/09/2026); sem ele, o título.
+        subject: kind === 'confirm' && p.pending ? `Confirme a sua inscrição: ${p.edition_short_title || p.edition_title}` : `Link da sua inscrição: ${p.edition_short_title || p.edition_title}`,
         html: buildHtml(p, kind, link),
       }),
     })
