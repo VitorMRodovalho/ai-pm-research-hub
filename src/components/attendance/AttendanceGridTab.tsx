@@ -1631,8 +1631,13 @@ function SmartTribeSection({
   const relevantEvents = useMemo(
     // #546: retain cancelled events even when all cells are 'na' — otherwise the
     // (now correctly all-'na') cancelled column vanishes entirely from the smart grid.
-    () => allEvents.filter((evt) => evt.is_cancelled || rows.some((row) => row.original.attendance[evt.id] !== 'na')),
-    [allEvents, rows],
+    // 29/09/2026: only a cancelled event of THIS tribe, or an org-wide one (no tribe). Otherwise every tribe's
+    // section showed every other tribe's cancelled series (Tribe 2 on Mondays, Tribe 6 on Wednesdays), which read
+    // as phantom and duplicated meetings to the Tribe 5 leader.
+    () => allEvents.filter((evt) =>
+      (evt.is_cancelled && (evt.tribe_id == null || String(evt.tribe_id) === String(tribe.tribe_id)))
+      || rows.some((row) => row.original.attendance[evt.id] !== 'na')),
+    [allEvents, rows, tribe.tribe_id],
   );
 
   const sectionWeekGroups = useMemo(() => {

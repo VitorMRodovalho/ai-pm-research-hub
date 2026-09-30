@@ -31,12 +31,15 @@ test('#546: GridEvent interface declares is_cancelled', () => {
   assert.match(SRC, /interface GridEvent\s*\{[\s\S]*?is_cancelled:\s*boolean;[\s\S]*?\}/);
 });
 
-test('#546: relevantEvents retains cancelled events even when all cells are na', () => {
+test('#546: relevantEvents retains cancelled events even when all cells are na, but only of THIS tribe or org-wide', () => {
+  // 29/09/2026: sem o escopo, a secao de cada tribo mostrava as series canceladas de TODAS as outras (Tribo 2 as
+  // segundas, Tribo 6 as quartas), e o lider da Tribo 5 leu como reunioes fantasma e duplicadas.
   assert.match(
     SRC,
-    /relevantEvents\s*=\s*useMemo\([\s\S]*?allEvents\.filter\(\(evt\)\s*=>\s*evt\.is_cancelled\s*\|\|\s*rows\.some/,
-    'relevantEvents filter must keep evt.is_cancelled events',
+    /relevantEvents\s*=\s*useMemo\([\s\S]*?allEvents\.filter\(\(evt\)\s*=>\s*\(evt\.is_cancelled && \(evt\.tribe_id == null \|\| String\(evt\.tribe_id\) === String\(tribe\.tribe_id\)\)\)\s*\|\|\s*rows\.some/,
+    'relevantEvents keeps a cancelled event only when it is org-wide or belongs to the section tribe',
   );
+  assert.match(SRC, /\[allEvents, rows, tribe\.tribe_id\],/, 'the memo recomputes when the section tribe changes');
 });
 
 test('#546: cancelled cells short-circuit to a non-clickable marker (no toggle)', () => {
