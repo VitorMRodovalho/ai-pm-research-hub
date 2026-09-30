@@ -92,6 +92,28 @@ test('#2495: as leituras aplicam o portão de iniciativa confidencial', () => {
   assert.match(body('wiki_get_version'), /IF NOT FOUND OR NOT public\.rls_can_see_initiative\(v_ver\.initiative_id\)/);
 });
 
+// 29/09/2026, no piloto em uso: duas lideranças salvaram um rascunho e, 21 s depois, abriram e enviaram uma
+// segunda versão da mesma página; a primeira ficou órfã. Uma versão aberta por pessoa e por página.
+test('#2495: criar com versão aberta da mesma pessoa na mesma página reaproveita o rascunho, ou recusa se aguarda decisão', () => {
+  const b = body('wiki_save_draft');
+  const trava = b.indexOf("PERFORM pg_advisory_xact_lock(hashtext('wiki_page_versions:' || p_page_path));");
+  const aberta = b.indexOf('SELECT * INTO v_ver FROM public.wiki_page_versions\n   WHERE page_path = p_page_path AND author_id = v_caller');
+  const insere = b.indexOf('INSERT INTO public.wiki_page_versions');
+  assert.ok(trava > 0 && aberta > trava && insere > aberta, 'a checagem vem depois da trava por página e antes do INSERT');
+  const bloco = b.slice(aberta, insere);
+  assert.match(bloco, /AND status IN \('draft', 'returned', 'pending_leader', 'pending_committee'\)/);
+  assert.match(bloco, /IF v_ver\.status IN \('pending_leader', 'pending_committee'\) THEN\s+RAISE EXCEPTION 'wiki: você já tem uma versão desta página aguardando decisão/);
+  assert.match(bloco, /UPDATE public\.wiki_page_versions\s+SET title = p_title,[\s\S]*?status = 'draft', updated_at = now\(\)\s+WHERE id = v_ver\.id;\s+RETURN v_ver\.id;/);
+});
+
+test('#2495: a tela não deixa o Voltar reabrir um editor já preenchido', () => {
+  const page = readFileSync(resolve(ROOT, 'src/pages/wiki.astro'), 'utf8');
+  const salvar = page.slice(page.indexOf('async function save(andSubmit'), page.indexOf("bind('w-save'"));
+  assert.match(salvar, /location\.replace\(href\(\{ version: vid \}\)\);/);
+  assert.doesNotMatch(salvar, /location\.href = href\(\{ version: vid \}\)/);
+  assert.match(page, /window\.addEventListener\('pageshow', \(e\) => \{ if \(\(e as PageTransitionEvent\)\.persisted\) location\.reload\(\); \}\);/);
+});
+
 test('#2495: eventos são só de acréscimo (nenhuma migration os altera ou apaga)', () => {
   assert.doesNotMatch(allMigrations(), /\b(UPDATE|DELETE\s+FROM)\s+(public\.)?wiki_page_events\b/i);
 });

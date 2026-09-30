@@ -961,7 +961,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       } else {
         toast(T('wiki.draftSaved'));
       }
-      location.href = href({ version: vid });
+      // replace, e não href: o Voltar do navegador não pode reabrir este editor já preenchido, senão o próximo
+      // "salvar" abre outra versão da mesma página (29/09/2026, duas lideranças).
+      location.replace(href({ version: vid }));
     }
 
     const bind = (btnId: string, fn: () => Promise<void>) => {
@@ -1170,6 +1172,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     } catch { /* sem sessão */ }
     deny(T('wiki.loginRequired'), true);
   }
+
+  // Página restaurada do cache do navegador (Voltar/Avançar) traz o estado velho, inclusive um editor já preenchido:
+  // recarrega para montar a tela com as filas de agora.
+  window.addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) location.reload(); });
 
   boot();
 </script>
