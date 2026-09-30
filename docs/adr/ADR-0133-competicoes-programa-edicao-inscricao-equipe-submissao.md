@@ -1,6 +1,6 @@
 # ADR-0133 - Competições (hackathons e awards): programa, edição, inscrição, equipe, submissão e resultado
 
-**Status:** Proposta (30/09/2026). O conflito com a decisão de 25/09 foi resolvido pelo GP (supersessão, seção abaixo). Nada vai ao banco antes da aprovação do GP.
+**Status:** Aceita (30/09/2026). Aprovada pelo GP nesta data ("aprovo a ADR, pode começar a construir"), depois de resolvido o conflito com a decisão de 25/09 (supersessão, seção abaixo). As perguntas abertas no fim não bloqueiam a construção; a (a) bloqueia o go-live.
 **Pedido:** decisão do GP em 30/09/2026, repassada pela lane `nucleo-hackathon` e confirmada diretamente com ele: a plataforma recebe a inscrição do Hackathon de Impacto Social, pensada para a **série** (próximas edições e os awards), com o modelo de dados decidido antes do código.
 **Insumo:** pacote de inscrição da edição piloto da lane `nucleo-hackathon` (campos, declarações, aviso de privacidade, parâmetros e as regras do edital que o modelo sustenta), rascunho de 30/09/2026 ainda não aprovado pelo GP.
 **Relacionadas:** ADR-0005 (`initiatives` é o primitivo de domínio), ADR-0006 (`persons` + `engagements`), ADR-0009 (tipos novos são configuração), ADR-0012 (fonte única por conceito), ADR-0022 (catálogo de notificações), ADR-0105 (visibilidade), ADR-0131 (externo é atributo do vínculo), [#2529](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2529), #1050 (limite por IP).
