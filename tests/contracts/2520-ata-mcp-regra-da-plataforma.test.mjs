@@ -1,5 +1,5 @@
 /**
- * #2520 — a ata pelo MCP segue a regra da plataforma.
+ * #2520: a ata pelo MCP segue a regra da plataforma.
  *
  * `meeting_minutes action='write'` passava por `eventWriteGate()`, que exige `manage_event` na
  * iniciativa do evento, ANTES de chamar `upsert_event_minutes`. A funcao do banco decide por
