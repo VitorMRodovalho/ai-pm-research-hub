@@ -32187,6 +32187,7 @@ export type Database = {
         Returns: number
       }
       detect_recurrence_stockout_cron: { Args: never; Returns: Json }
+      detect_recurring_meeting_drift_cron: { Args: never; Returns: Json }
       detect_stale_events_cron: { Args: never; Returns: Json }
       detect_stale_portfolio_items_cron: { Args: never; Returns: Json }
       detect_stuck_selection_funnel: {
@@ -36108,7 +36109,7 @@ export type Database = {
         Returns: undefined
       }
       update_recurring_meeting_rule: {
-        Args: { p_patch: Json; p_rule_id: string }
+        Args: { p_dry_run?: boolean; p_patch: Json; p_rule_id: string }
         Returns: Json
       }
       update_sla_policy: {

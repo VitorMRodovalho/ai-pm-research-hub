@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, CalendarClock, AlertTriangle, ExternalLink, RefreshCw, Pencil, Plus, RotateCw, X } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { impactOf, impactTotal, impactLines, type RuleImpact } from '../../lib/recurring-impact';
 
 interface RuleRow {
   rule_id: string;
@@ -63,6 +64,9 @@ export default function RecurringAgendaIsland() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormState | null>(null);
   const [saving, setSaving] = useState(false);
+  // #2524: the dry-run preview of what the edit does to meetings already generated; any form change drops it.
+  const [impact, setImpact] = useState<RuleImpact | null>(null);
+  useEffect(() => { setImpact(null); }, [form]);
   const [busyRule, setBusyRule] = useState<string | null>(null);
 
   const toast = (msg: string, kind: 'success' | 'error' = 'success') =>
@@ -115,23 +119,33 @@ export default function RecurringAgendaIsland() {
     meeting_link: '', anchor_date: todayISO(),
   });
 
-  const save = async () => {
+  const save = async (confirmed = false) => {
     if (!form) return;
     const sb = getSb();
     if (!sb) return;
     setSaving(true);
     try {
       if (form.rule_id) {
-        const { error } = await sb.rpc('update_recurring_meeting_rule', {
+        const args = {
           p_rule_id: form.rule_id,
           p_patch: {
             title: form.title, status: form.status, day_of_week: form.day_of_week,
             time_start: form.time_start, duration_minutes: Number(form.duration_minutes),
             frequency: form.frequency, meeting_link: form.meeting_link,
           },
-        });
+        };
+        // #2524: preview first; the rule also moves the meetings already generated.
+        if (!confirmed) {
+          const { data: dry, error: dryErr } = await sb.rpc('update_recurring_meeting_rule', { ...args, p_dry_run: true });
+          if (dryErr) throw dryErr;
+          const preview = impactOf(dry);
+          if (impactTotal(preview) > 0) { setImpact(preview); return; }
+        }
+        const { data, error } = await sb.rpc('update_recurring_meeting_rule', args);
         if (error) throw error;
-        toast(t('comp.recurringAgenda.savedEdit', 'Regra atualizada'));
+        const done = impactOf(data);
+        toast(t('comp.recurringAgenda.savedEdit', 'Regra atualizada')
+          + (impactTotal(done) > 0 ? ` · ${t('comp.recurringAgenda.impactApplied', 'reuniões futuras ajustadas')}` : ''));
       } else {
         if (!form.initiative_id) { toast(t('comp.recurringAgenda.pickInitiative', 'Selecione uma iniciativa'), 'error'); setSaving(false); return; }
         const { error } = await sb.rpc('create_recurring_meeting_rule', {
@@ -366,17 +380,36 @@ export default function RecurringAgendaIsland() {
               </label>
             </div>
 
-            <div className="mt-5 flex justify-end gap-2">
+            {impact ? (
+              <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <p className="font-semibold">{t('comp.recurringAgenda.impactHeading', 'Esta mudança altera reuniões já marcadas')}</p>
+                <ul className="mt-1 list-disc pl-5">{impactLines(impact, t).map((l) => <li key={l}>{l}</li>)}</ul>
+                <p className="mt-1 text-xs">{t('comp.recurringAgenda.impactPast', 'Reuniões passadas não mudam, e a reunião ajustada à mão fica como está.')}</p>
+                <div className="mt-3 flex justify-end gap-2">
+                  <button onClick={() => setImpact(null)} disabled={saving}
+                    className="px-3 py-2 rounded-lg text-sm text-amber-900 hover:bg-amber-100">
+                    {t('comp.recurringAgenda.impactBack', 'Voltar')}
+                  </button>
+                  <button onClick={() => save(true)} disabled={saving}
+                    className="px-3 py-2 rounded-lg text-sm bg-[var(--accent)] text-white hover:opacity-90 inline-flex items-center gap-1 disabled:opacity-60">
+                    {saving && <Loader2 size={14} className="animate-spin" />}
+                    {t('comp.recurringAgenda.impactConfirm', 'Confirmar e aplicar')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-5 flex justify-end gap-2">
               <button onClick={() => setForm(null)} disabled={saving}
                 className="px-3 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]">
                 {t('comp.recurringAgenda.cancel', 'Cancelar')}
               </button>
-              <button onClick={save} disabled={saving}
+              <button onClick={() => save(false)} disabled={saving}
                 className="px-3 py-2 rounded-lg text-sm bg-[var(--accent)] text-white hover:opacity-90 inline-flex items-center gap-1 disabled:opacity-60">
                 {saving && <Loader2 size={14} className="animate-spin" />}
                 {t('comp.recurringAgenda.save', 'Salvar')}
               </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       )}
