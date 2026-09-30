@@ -1,6 +1,6 @@
 # ADR-0133 - Competições (hackathons e awards): programa, edição, inscrição, equipe, submissão e resultado
 
-**Status:** Proposta (30/09/2026), **bloqueada** pelo conflito com a decisão de 25/09 (seção abaixo). Nada vai ao banco antes da aprovação do GP.
+**Status:** Proposta (30/09/2026). O conflito com a decisão de 25/09 foi resolvido pelo GP (supersessão, seção abaixo). Nada vai ao banco antes da aprovação do GP.
 **Pedido:** decisão do GP em 30/09/2026, repassada pela lane `nucleo-hackathon` e confirmada diretamente com ele: a plataforma recebe a inscrição do Hackathon de Impacto Social, pensada para a **série** (próximas edições e os awards), com o modelo de dados decidido antes do código.
 **Insumo:** pacote de inscrição da edição piloto da lane `nucleo-hackathon` (campos, declarações, aviso de privacidade, parâmetros e as regras do edital que o modelo sustenta), rascunho de 30/09/2026 ainda não aprovado pelo GP.
 **Relacionadas:** ADR-0005 (`initiatives` é o primitivo de domínio), ADR-0006 (`persons` + `engagements`), ADR-0009 (tipos novos são configuração), ADR-0012 (fonte única por conceito), ADR-0022 (catálogo de notificações), ADR-0105 (visibilidade), ADR-0131 (externo é atributo do vínculo), [#2529](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2529), #1050 (limite por IP).
@@ -34,22 +34,17 @@
 
 ---
 
-## ⚠️ Conflito com decisão anterior do GP: bloqueia a aprovação
+## Supersessão da decisão de 25/09/2026 (decidida pelo GP em 30/09/2026)
 
-Esta ADR foi escrita sem ler a arquitetura da banca, e ela contradiz uma decisão já tomada. Em `banca/docs/ARQUITETURA.md`, seção 8 (na `main` da banca, commit `7f989c5`; o merge daquela PR pelo GP é a confirmação, pela regra escrita nela), está a **decisão do GP de 25/09/2026**, repassada pela lane `ai-pm-research-hub-3a`:
+Esta ADR foi escrita sem ler a arquitetura da banca, e contradizia uma decisão já tomada. Em `banca/docs/ARQUITETURA.md`, seção 8 (na `main` da banca, commit `7f989c5`), está a **decisão do GP de 25/09/2026**, repassada pela lane `ai-pm-research-hub-3a`: a inscrição seria um **serviço próprio**, com dado pessoal e arquivos em D1 e R2 próprios na Cloudflare; **"Nenhum dado de inscrito passa pelo Supabase do hub"**; a ponte com a banca seria um service binding, no formato **entry-contract v1**.
 
-- a **inscrição** é um **serviço próprio**, com dado pessoal e arquivos em D1 e R2 próprios, na conta da Cloudflare;
-- **"Nenhum dado de inscrito passa pelo Supabase do hub."** O hub recebe só o resultado final (acervo e certificados);
-- a ponte com a banca é um service binding, com o formato versionado **entry-contract v1**.
+Depois dela, um fato mudou: o edital (5.1-A) passou a pedir tudo por link, sem arquivo. O R2 e a URL assinada perderam o objeto; a separação do dado pessoal, não.
 
-Um fato mudou depois: o edital (5.1-A) passou a pedir tudo por link, sem arquivo. O R2 e a URL assinada perderam o objeto; **a separação do dado pessoal, não.**
+**Decisão do GP em 30/09/2026, perguntada diretamente nesta sessão com as duas saídas à vista: "Supera a de 25/09".** A inscrição mora no Supabase do hub, como o resto desta ADR descreve. Consequências:
 
-O GP decide qual prevalece:
-
-- **Manter a de 25/09:** o modelo das seções 1 a 10 abaixo (edição, inscrição, equipe pela liderança, declarações, validação conjunta, sorteio, submissão) vale **para o serviço de inscrição, em D1**, e não para o hub. No hub ficam só o programa como iniciativa, o resultado e os certificados (item 8). A supersessão não acontece, e esta ADR é reescrita nesse recorte.
-- **Superar a de 25/09:** a inscrição mora no Supabase do hub, como está escrito abaixo, e a supersessão é registrada aqui **e** na seção 8 da banca.
-
-Até a decisão, esta ADR **não é aprovada** e nenhum código começa.
+- A seção 8 da banca precisa registrar a mesma supersessão, **pelo fluxo daquele repositório**; esta ADR não o edita.
+- A ponte com a banca deixa de ser service binding entre Workers: a banca recebe as entradas **exportadas pelo hub**, no formato do entry-contract (a v2, do formato de um dia), por arquivo ou por endpoint autenticado, a combinar com a lane da banca. A banca continua sem receber o contato das pessoas além do que o conflito de interesse exige.
+- O que a separação protegia passa a ser protegido dentro do hub, por construção: tabelas próprias, RLS em todas, **nenhuma leitura por `anon`**, acesso só por funções com autoridade escopada ao programa, registro de todo acesso a dado pessoal nas exportações, e retenção e anonimização por edição (item 10).
 
 ## Decisão
 
