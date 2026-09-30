@@ -86,7 +86,7 @@ test('#676 static: drift report + reconcile_all + backfill present', () => {
 // ---------------------------------------------------------------------------
 // Live: backfilled rules, derived slots, generator idempotency + parity.
 // ---------------------------------------------------------------------------
-test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence', { skip: sb ? false : 'Supabase env required' }, async () => {
+test('#676 live: one rule per tribe, confirmed cadences, and the 2 backfilled comms rules', { skip: sb ? false : 'Supabase env required' }, async () => {
   const { data: rules, error } = await sb
     .from('recurring_meeting_rules')
     .select('scope_type, tribe_id, day_of_week, frequency, status, initiative_id, title');
@@ -100,18 +100,32 @@ test('#676 live: 7 tribe rules + 2 comms rules backfilled with correct cadence',
   // The backfill created exactly 2 rules for the Hub de Comunicação. Other initiatives get their own
   // rules through the product (e.g. "Sync Gestão", 2026-09-25, #2470), so count only the backfill's.
   const commsRules = real.filter((r) => r.scope_type === 'initiative' && r.initiative_id === HUB_COMMS);
-  assert.equal(tribeRules.length, 7, 'seven tribe rules');
   assert.equal(commsRules.length, 2, 'two comms/initiative rules');
+  // Tribe rules: this used to pin EXACTLY 7 (the backfill). #2524 step 5 creates rules through the product
+  // for the tribes that never had one, from what each leadership confirms (12 and 13 on 30/09/2026), so a
+  // fixed total became a stale pin. What must hold instead: never TWO rules for the same tribe (two series
+  // would schedule every meeting twice), and every tribe whose cadence is confirmed below has exactly one.
+  const perTribe = new Map();
+  for (const r of tribeRules) perTribe.set(r.tribe_id, (perTribe.get(r.tribe_id) || 0) + 1);
+  assert.deepEqual([...perTribe].filter(([, n]) => n > 1), [], 'a tribe with more than one rule schedules its meetings twice');
 
   // ISO weekday per tribe (matches #630 confirmed cadence).
   // Tribe 6 moved 3 -> 2 on 2026-08-27 (#2030): the tribe ran a duplicated Wednesday series on top
   // of its real Tuesday one; the PM cancelled the Wednesdays and the rule was corrected to Tuesday.
   // The map pins the CONFIRMED cadence on purpose - when it disagrees with the DB, check which of
   // the two is stale before touching either.
-  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 2], [7, 2], [8, 4]]);
+  // Tribes 12 and 13 (Tuesday, weekly) confirmed by their leaderships on 30/09/2026 (#2524 step 5).
+  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 2], [7, 2], [8, 4], [12, 2], [13, 2]]);
+  for (const [tribe] of isoByTribe) {
+    assert.equal(perTribe.get(tribe) || 0, 1, `tribe ${tribe} has its confirmed rule`);
+  }
   for (const r of tribeRules) {
-    assert.equal(r.day_of_week, isoByTribe.get(r.tribe_id), `tribe ${r.tribe_id} ISO weekday`);
-    assert.equal(r.frequency, 'weekly', `tribe ${r.tribe_id} is weekly`);
+    if (isoByTribe.has(r.tribe_id)) {
+      assert.equal(r.day_of_week, isoByTribe.get(r.tribe_id), `tribe ${r.tribe_id} ISO weekday`);
+      assert.equal(r.frequency, 'weekly', `tribe ${r.tribe_id} is weekly`);
+    } else {
+      assert.ok(['weekly', 'biweekly'].includes(r.frequency), `tribe ${r.tribe_id} has a known cadence`);
+    }
     assert.ok(r.initiative_id, `tribe ${r.tribe_id} rule anchored to an initiative`);
   }
   // As duas regras de comms passaram a WEEKLY em 11/09/2026, e nenhuma e mais biweekly.
