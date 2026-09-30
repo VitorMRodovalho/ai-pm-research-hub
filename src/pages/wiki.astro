@@ -71,6 +71,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   .wk-chip-old { background: #FFF4E0; color: #8A4B06; }
   .wk-chip-ok { background: #E7F6EF; color: #0F6B47; }
   .wk-chip-muted { background: var(--surface-section-cool); color: var(--text-secondary); }
+  .wk-chip-label { background: #EEF0FB; color: #3B3F8F; }
+  .wk-chip-ai { background: #F3E8FF; color: #6B21A8; }
   .wk-gate { max-width: 640px; margin: 2rem auto; text-align: center; background: var(--surface-card); border: 1px solid var(--border-default); border-radius: 1.1rem; padding: 2rem 1.4rem; }
   .wk-gate picture img { margin: 0 auto; height: auto; }
   .wk-gate h1 { font-size: 1.9rem; font-weight: 700; margin: .6rem 0 .5rem; color: var(--text-primary); }
@@ -289,6 +291,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
   // ── tipo por objetivo (Diátaxis) e organização ─────────────────────────────────────────────────
   const DOC_TYPES = ['tutorial', 'how_to', 'reference', 'explanation'];
+  // ADR-0132: a natureza do conteúdo. A tela propõe observação de membro; o assistente grava síntese de IA.
+  const EPISTEMIC_LABELS = ['fonte', 'observacao_membro', 'sintese_ia', 'pesquisa_externa'];
+  const DEFAULT_LABEL = 'observacao_membro';
   const DOMAIN_ORDER = ['tribes', 'initiatives', 'research', 'governance', 'platform', 'partnerships', 'onboarding'];
   // O tipo vem da tag diataxis-<tipo> que o repositório do wiki grava no cabeçalho da página.
   function typeOf(p: any): string | null {
@@ -302,6 +307,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const isOldTribePage = (p: any) => p?.domain === 'tribes' && p?.source_repo !== 'plataforma';
   const typeChip = (typ: string | null) => typ ? `<span class="wk-chip wk-chip-type">${E(T(`wiki.docType.${typ}`))}</span>` : '';
   const oldChip = (p: any) => isOldTribePage(p) ? `<span class="wk-chip wk-chip-old">${E(T('wiki.oldVersion'))}</span>` : '';
+  const labelChip = (l: string | null | undefined) => l && EPISTEMIC_LABELS.includes(l)
+    ? `<span class="wk-chip wk-chip-label${l === 'sintese_ia' ? ' wk-chip-ai' : ''}" title="${E(T(`wiki.labelHint.${l}`))}">${E(T(`wiki.label.${l}`))}</span>` : '';
   const pagesLabel = (n: number) => (n === 1 ? T('wiki.pagesOne') : T('wiki.pagesMany', { n }));
   const NIA_IMG = `<picture><source srcset="/assets/nia/nia-acenando.webp" type="image/webp"><img src="/assets/nia/nia-acenando.png" alt="${E(T('wiki.niaAlt'))}" width="100" height="164"></picture>`;
 
@@ -614,6 +621,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
     const meta = row ? [
       typeChip(typ),
+      labelChip(row.epistemic_label),
       row.source_repo ? sourceChip(row.source_repo) : '',
       hist?.initiative ? E(hist.initiative.title) : '',
       row.authors?.length ? E(T('wiki.byAuthors', { names: row.authors.join(', ') })) : '',
@@ -744,7 +752,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div class="space-y-4 max-w-4xl">
         ${panel}
         <article class="${CARD} space-y-3">
-          <div class="flex flex-wrap items-center gap-2">${statusChip(v.status)}
+          <div class="flex flex-wrap items-center gap-2">${statusChip(v.status)}${labelChip(v.epistemic_label)}
             <span class="text-[.75rem] text-[var(--text-muted)]">${E(T('wiki.versionOf', { n: v.version_no, path: v.page_path }))}</span></div>
           <h2 class="text-xl font-extrabold text-[var(--text-primary)]">${E(v.title)}</h2>
           <div class="text-[.75rem] text-[var(--text-secondary)]">${[
@@ -886,6 +894,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             <option value="">${E(T('wiki.chooseType'))}</option>
             ${DOC_TYPES.map((d) => `<option value="${d}" ${base?.doc_type === d ? 'selected' : ''}>${E(T(`wiki.docType.${d}`))}: ${E(T(`wiki.docTypeHint.${d}`))}</option>`).join('')}
           </select></label>
+        <label class="block"><span class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.fieldLabel'))}</span>
+          <span class="block text-[.72rem] text-[var(--text-muted)]">${E(T('wiki.fieldLabelHint'))}</span>
+          <select id="w-label" class="${INPUT} mt-1" ${alter ? 'disabled' : ''}>
+            ${EPISTEMIC_LABELS.map((l) => `<option value="${l}" ${(base?.epistemic_label || DEFAULT_LABEL) === l ? 'selected' : ''}>${E(T(`wiki.label.${l}`))}: ${E(T(`wiki.labelHint.${l}`))}</option>`).join('')}
+          </select></label>
         <fieldset class="space-y-2"><legend class="text-[.8rem] font-semibold text-[var(--text-secondary)]">${E(T('wiki.sources'))}</legend>
           <p class="text-[.72rem] text-[var(--text-muted)]">${E(T(alter ? 'wiki.alterKeepsMeta' : 'wiki.sourcesHint'))}</p>
           <div id="w-sources" class="space-y-2">${sources.map((s) => sourceRow(s, alter)).join('')}</div>
@@ -943,6 +956,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         path: finalPath as string, title,
         summary: $<HTMLTextAreaElement>('w-summary').value.trim(),
         docType: $<HTMLSelectElement>('w-doctype').value || null,
+        label: EPISTEMIC_LABELS.includes($<HTMLSelectElement>('w-label').value) ? $<HTMLSelectElement>('w-label').value : DEFAULT_LABEL,
         sources: srcs.map((s) => (s.url ? s : { label: s.label })),
         content: $<HTMLTextAreaElement>('w-content').value,
       };
@@ -953,7 +967,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       const vid = await rpc('wiki_save_draft', {
         p_page_path: f.path, p_initiative_id: tribe!.id, p_title: f.title, p_summary: f.summary,
         p_content: f.content, p_doc_type: f.docType, p_sources: f.sources, p_domain: tribe!.domain,
-        p_version_id: o.mode === 'edit' ? o.id : null,
+        p_version_id: o.mode === 'edit' ? o.id : null, p_epistemic_label: f.label,
       });
       if (andSubmit) {
         const r = await rpc('wiki_submit', { p_version_id: vid });

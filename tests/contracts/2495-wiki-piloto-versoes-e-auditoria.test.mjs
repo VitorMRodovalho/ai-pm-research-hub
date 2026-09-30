@@ -63,7 +63,7 @@ test('#2495: publicar pela liderança abre 14 dias de auditoria; pelo comitê j�
 
 test('#2495: a publicação grava no espaço da plataforma e nunca sobrescreve página do repositório', () => {
   const b = body('wiki_decide');
-  assert.match(b, /'plataforma', p_version_id::text, now\(\), now\(\), v_audit_status, p_version_id\)\s+ON CONFLICT \(path\) DO UPDATE[\s\S]*?WHERE public\.wiki_pages\.source_repo = 'plataforma';/);
+  assert.match(b, /'plataforma', p_version_id::text, now\(\), now\(\), v_audit_status, p_version_id, v_ver\.epistemic_label\)\s+ON CONFLICT \(path\) DO UPDATE[\s\S]*?WHERE public\.wiki_pages\.source_repo = 'plataforma';/);
   assert.match(allMigrations(),
     /ADD CONSTRAINT wiki_pages_platform_namespace_check\s+CHECK \(\(source_repo = 'plataforma'\) = \(path LIKE 'nucleo\/%'\)\);/);
 });
