@@ -102,8 +102,10 @@ test('ADR-0132: as chaves dinamicas do rotulo existem nos 3 dicionarios', () => 
   const keys = ['wiki.fieldLabel', 'wiki.fieldLabelHint',
     ...LABELS.map((l) => `wiki.label.${l}`), ...LABELS.map((l) => `wiki.labelHint.${l}`)];
   for (const f of ['pt-BR', 'en-US', 'es-LATAM']) {
-    const dict = readFileSync(resolve(ROOT, `src/i18n/${f}.ts`), 'utf8');
-    const missing = keys.filter((k) => !new RegExp(`^\\s*'${k.replace(/\./g, '\\.')}': '[^']+',$`, 'm').test(dict));
+    const lines = readFileSync(resolve(ROOT, `src/i18n/${f}.ts`), 'utf8').split('\n').map((l) => l.trim());
+    // Comparação de linha, sem montar regex a partir da chave: a chave com valor não vazio.
+    const has = (k) => lines.some((l) => l.startsWith(`'${k}': '`) && l.endsWith("',") && l.length > `'${k}': '',`.length);
+    const missing = keys.filter((k) => !has(k));
     assert.deepEqual(missing, [], `${f}: faltam chaves`);
   }
 });
