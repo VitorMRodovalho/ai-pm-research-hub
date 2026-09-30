@@ -114,8 +114,9 @@ test('#676 live: one rule per tribe, confirmed cadences, and the 2 backfilled co
   // of its real Tuesday one; the PM cancelled the Wednesdays and the rule was corrected to Tuesday.
   // The map pins the CONFIRMED cadence on purpose - when it disagrees with the DB, check which of
   // the two is stale before touching either.
-  // Tribes 12 and 13 (Tuesday, weekly) confirmed by their leaderships on 30/09/2026 (#2524 step 5).
-  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 2], [7, 2], [8, 4], [12, 2], [13, 2]]);
+  // Tribes 9 (Wednesday), 12 and 13 (Tuesday), weekly, confirmed by their leaderships on 30/09/2026
+  // (#2524 step 5).
+  const isoByTribe = new Map([[1, 1], [2, 1], [4, 3], [5, 1], [6, 2], [7, 2], [8, 4], [9, 3], [12, 2], [13, 2]]);
   for (const [tribe] of isoByTribe) {
     assert.equal(perTribe.get(tribe) || 0, 1, `tribe ${tribe} has its confirmed rule`);
   }
