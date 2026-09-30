@@ -1,0 +1,5 @@
+---
+// #2529: wrapper de idioma da página do link. O fragmento (#t=, o token) não chega ao servidor; o
+// navegador o mantém no redirecionamento, porque o destino não traz fragmento próprio.
+return Astro.redirect(`/competicoes/${encodeURIComponent(String(Astro.params.slug || ''))}/minha-inscricao?lang=es-LATAM`);
+---

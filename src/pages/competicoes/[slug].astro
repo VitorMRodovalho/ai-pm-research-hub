@@ -1,0 +1,132 @@
+---
+// #2529 / ADR-0133 — formulário público de inscrição numa edição de competição (sem login).
+// A edição e a versão do formulário vêm de competition_edition_public; o envio vai para
+// competition_register, que responde igual para e-mail novo e já inscrito. A inscrição só vale depois
+// que o dono do e-mail confirma pelo link (página minha-inscricao).
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const slug = String(Astro.params.slug || '');
+const bundle = buildPageI18n(['competition'], lang);
+---
+<BaseLayout title={t('competition.pageTitle', lang)} lang={lang}>
+  <script id="page-i18n" type="application/json" set:html={bundle}></script>
+  <div class="max-w-2xl mx-auto py-10 px-4" id="cmp" data-slug={slug} data-lang={lang}>
+    <p id="cmp-loading" class="text-sm text-[var(--text-muted)]">{t('competition.loading', lang)}</p>
+    <div id="cmp-msg" class="hidden bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-6 text-sm text-[var(--text-secondary)]"></div>
+    <div id="cmp-root" class="hidden bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-6 sm:p-8 shadow-sm">
+      <h1 id="cmp-title" class="text-xl font-semibold text-[var(--text-primary)] mb-2"></h1>
+      <p id="cmp-window" class="text-sm text-[var(--text-secondary)] mb-1"></p>
+      <p id="cmp-links" class="text-sm mb-6"></p>
+      <form id="cmp-form" class="space-y-4" novalidate>
+        <div id="cmp-fields" class="space-y-4"></div>
+        <div id="cmp-status" role="status" aria-live="polite" class="hidden text-sm"></div>
+        <button id="cmp-submit" type="submit"
+          class="w-full px-4 py-2.5 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50">
+          {t('competition.submit', lang)}
+        </button>
+      </form>
+    </div>
+    <div id="cmp-done" class="hidden bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-6 sm:p-8">
+      <h2 class="text-lg font-semibold text-[var(--text-primary)] mb-2">{t('competition.doneTitle', lang)}</h2>
+      <p id="cmp-done-to" class="text-sm font-semibold text-[var(--text-primary)] mb-2 break-all"></p>
+      <p class="text-sm text-[var(--text-secondary)] leading-relaxed">{t('competition.doneBody', lang)}</p>
+      <p id="cmp-done-note" class="hidden mt-3 text-sm text-[var(--text-secondary)] leading-relaxed"></p>
+    </div>
+  </div>
+
+  <script>
+    import { renderForm, applyConditionals, collect, precheck, problemMessage, utmFrom, fmtWhen, esc,
+             type FormVersion, type Lang } from '../../lib/competition-form';
+
+    const I18N = JSON.parse(document.getElementById('page-i18n')?.textContent || '{}') as Record<string, string>;
+    const tr = (k: string) => I18N[k] ?? k;
+    const root = document.getElementById('cmp')!;
+    const slug = root.dataset.slug || '';
+    const lang = (root.dataset.lang || 'pt-BR') as Lang;
+    const $ = (id: string) => document.getElementById(id)!;
+
+    async function getSb(): Promise<any> {
+      let sb = (window as any).navGetSb?.();
+      if (sb) return sb;
+      return await new Promise((resolve) => {
+        let tries = 0;
+        const id = setInterval(() => {
+          sb = (window as any).navGetSb?.();
+          if (sb || ++tries > 50) { clearInterval(id); resolve(sb); }
+        }, 100);
+      });
+    }
+
+    function message(text: string) {
+      $('cmp-loading').classList.add('hidden');
+      $('cmp-root').classList.add('hidden');
+      const el = $('cmp-msg');
+      el.textContent = text;
+      el.classList.remove('hidden');
+    }
+
+    function status(text: string, kind: 'error' | 'info') {
+      const el = $('cmp-status');
+      el.textContent = text;
+      el.style.color = kind === 'error' ? 'var(--danger-text, #b91c1c)' : 'var(--text-secondary)';
+      el.classList.remove('hidden');
+    }
+
+    (async () => {
+      const sb = await getSb();
+      if (!sb) { message(tr('competition.error.generic')); return; }
+      const { data: ed, error } = await sb.rpc('competition_edition_public', { p_slug: slug });
+      if (error || !ed || ed.error) { message(tr('competition.notFound')); return; }
+      const tz = ed.timezone || 'America/Sao_Paulo';
+      const tzNote = tz === 'America/Sao_Paulo' ? ` ${tr('competition.tzBrasilia')}` : ` (${tz})`;
+      if (!ed.is_open || !ed.form) {
+        const future = ed.registration_opens_at && new Date(ed.registration_opens_at) > new Date();
+        message(future ? tr('competition.opensOn').replace('{date}', fmtWhen(ed.registration_opens_at, tz, lang) + tzNote)
+                       : tr('competition.closedNow'));
+        return;
+      }
+      const form = ed.form as FormVersion;
+      $('cmp-title').textContent = ed.title;
+      $('cmp-window').textContent = tr('competition.windowUntil').replace('{date}', fmtWhen(ed.registration_closes_at, tz, lang) + tzNote);
+      const links = [
+        ed.rules_url ? `<a class="text-[var(--brand-primary)] hover:underline" target="_blank" rel="noopener" href="${esc(ed.rules_url)}">${esc(tr('competition.rules'))}</a>` : '',
+        ed.privacy_notice_url ? `<a class="text-[var(--brand-primary)] hover:underline" target="_blank" rel="noopener" href="${esc(ed.privacy_notice_url)}">${esc(tr('competition.privacy'))}</a>` : '',
+      ].filter(Boolean).join(' · ');
+      $('cmp-links').innerHTML = links;
+      $('cmp-fields').innerHTML = renderForm(form, lang, tr);
+      const formEl = $('cmp-form') as HTMLFormElement;
+      applyConditionals(formEl);
+      formEl.addEventListener('change', () => applyConditionals(formEl));
+      $('cmp-loading').classList.add('hidden');
+      $('cmp-root').classList.remove('hidden');
+
+      const btn = $('cmp-submit') as HTMLButtonElement;
+      formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = collect(formEl, form);
+        const pr = precheck(payload, form, { teams: ed.team_min != null });
+        if (pr) { status(problemMessage(pr, form, lang, tr), 'error'); return; }
+        const utm = utmFrom(location.search);
+        if (utm) payload.utm = utm;
+        btn.disabled = true; btn.textContent = tr('competition.sending');
+        const { data, error: err } = await sb.rpc('competition_register', { p_slug: slug, p_payload: payload });
+        btn.disabled = false; btn.textContent = tr('competition.submit');
+        if (err || !data) { status(tr('competition.error.generic'), 'error'); return; }
+        if (data.ok) {
+          $('cmp-done-to').textContent = tr('competition.doneSentTo').replace('{email}', String(payload.email ?? ''));
+          if (ed.confirmation_note) {
+            $('cmp-done-note').textContent = ed.confirmation_note;
+            $('cmp-done-note').classList.remove('hidden');
+          }
+          $('cmp-root').classList.add('hidden');
+          $('cmp-done').classList.remove('hidden');
+          window.scrollTo({ top: 0 });
+          return;
+        }
+        status(problemMessage({ code: data.code || data.error, field: data.field }, form, lang, tr), 'error');
+      });
+    })();
+  </script>
+</BaseLayout>

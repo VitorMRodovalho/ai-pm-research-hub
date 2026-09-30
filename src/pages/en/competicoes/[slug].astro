@@ -1,0 +1,6 @@
+---
+// #2529: wrapper de idioma do formulário de inscrição. Preserva a query (UTM) e acrescenta o idioma.
+const q = new URLSearchParams(Astro.url.search);
+q.set('lang', 'en-US');
+return Astro.redirect(`/competicoes/${encodeURIComponent(String(Astro.params.slug || ''))}?${q.toString()}`);
+---
