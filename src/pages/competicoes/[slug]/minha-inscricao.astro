@@ -1,0 +1,202 @@
+---
+// #2529 / ADR-0133 — a página que o link do e-mail abre. O token vem no fragmento (#t=), que o navegador
+// não manda ao servidor nem no Referer; a página o tira da barra de endereço e o guarda só nesta aba.
+// Pendente: mostra as respostas e o botão de confirmar (a inscrição só vale depois dele).
+// Confirmada e com a janela aberta: correção. Em qualquer estado: retirar a inscrição.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import { buildPageI18n } from '../../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const slug = String(Astro.params.slug || '');
+const bundle = buildPageI18n(['competition'], lang);
+const langQuery = lang === 'pt-BR' ? '' : `?lang=${lang}`;
+---
+<BaseLayout title={t('competition.my.title', lang)} lang={lang}>
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+  </Fragment>
+  <script id="page-i18n" type="application/json" set:html={bundle}></script>
+  <div class="max-w-2xl mx-auto py-10 px-4" id="cmp" data-slug={slug} data-lang={lang} data-form-href={`/competicoes/${slug}${langQuery}`}>
+    <p id="cmp-loading" class="text-sm text-[var(--text-muted)]">{t('competition.loading', lang)}</p>
+    <div id="cmp-card" class="hidden bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-6 sm:p-8 shadow-sm">
+      <h1 id="cmp-title" class="text-xl font-semibold text-[var(--text-primary)] mb-1"></h1>
+      <p id="cmp-edition" class="text-sm text-[var(--text-muted)] mb-4"></p>
+      <p id="cmp-state" class="text-sm text-[var(--text-secondary)] leading-relaxed mb-4"></p>
+      <div id="cmp-summary" class="mb-6"></div>
+      <form id="cmp-form" class="hidden space-y-4 mb-6" novalidate>
+        <div id="cmp-fields" class="space-y-4"></div>
+        <button id="cmp-save" type="submit"
+          class="w-full px-4 py-2.5 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50">
+          {t('competition.my.save', lang)}
+        </button>
+      </form>
+      <button id="cmp-confirm" type="button"
+        class="hidden w-full px-4 py-2.5 rounded-lg bg-[var(--brand-primary,#003B5C)] text-white text-sm font-semibold hover:opacity-90 cursor-pointer disabled:opacity-50 mb-6">
+        {t('competition.my.confirm', lang)}
+      </button>
+      <div id="cmp-status" role="status" aria-live="polite" class="hidden text-sm mb-4"></div>
+      <div id="cmp-withdraw-box" class="hidden border-t border-[var(--border-default)] pt-4">
+        <button id="cmp-withdraw" type="button" class="text-sm text-red-700 hover:underline cursor-pointer">{t('competition.my.withdraw', lang)}</button>
+        <div id="cmp-withdraw-ask" class="hidden mt-3 text-sm">
+          <p class="text-[var(--text-secondary)] mb-3">{t('competition.my.withdrawConfirm', lang)}</p>
+          <button id="cmp-withdraw-yes" type="button" class="px-3 py-1.5 rounded-lg bg-red-700 text-white text-sm font-semibold cursor-pointer mr-2">{t('competition.my.withdrawYes', lang)}</button>
+          <button id="cmp-withdraw-no" type="button" class="px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-sm cursor-pointer">{t('competition.my.cancel', lang)}</button>
+        </div>
+      </div>
+    </div>
+    <div id="cmp-msg" class="hidden bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-6 text-sm text-[var(--text-secondary)] leading-relaxed">
+      <p id="cmp-msg-text"></p>
+      <a id="cmp-msg-link" class="hidden inline-block mt-3 text-[var(--brand-primary)] hover:underline">{t('competition.my.backToForm', lang)}</a>
+    </div>
+  </div>
+
+  <script>
+    import { renderForm, renderSummary, applyConditionals, collect, precheck, problemMessage,
+             type FormVersion, type Lang } from '../../../lib/competition-form';
+
+    const I18N = JSON.parse(document.getElementById('page-i18n')?.textContent || '{}') as Record<string, string>;
+    const tr = (k: string) => I18N[k] ?? k;
+    const root = document.getElementById('cmp')!;
+    const slug = root.dataset.slug || '';
+    const lang = (root.dataset.lang || 'pt-BR') as Lang;
+    const $ = (id: string) => document.getElementById(id)!;
+
+    // O token sai da barra de endereço (para não ir junto num print ou num link copiado) e fica só nesta aba.
+    const storeKey = `competition-link:${slug}`;
+    const fromHash = new URLSearchParams(location.hash.replace(/^#/, '')).get('t');
+    if (fromHash) {
+      try { sessionStorage.setItem(storeKey, fromHash); } catch { /* sem armazenamento: segue só nesta carga */ }
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    let token = fromHash || '';
+    if (!token) { try { token = sessionStorage.getItem(storeKey) || ''; } catch { token = ''; } }
+
+    async function getSb(): Promise<any> {
+      let sb = (window as any).navGetSb?.();
+      if (sb) return sb;
+      return await new Promise((resolve) => {
+        let tries = 0;
+        const id = setInterval(() => {
+          sb = (window as any).navGetSb?.();
+          if (sb || ++tries > 50) { clearInterval(id); resolve(sb); }
+        }, 100);
+      });
+    }
+
+    function message(text: string, withFormLink: boolean) {
+      $('cmp-loading').classList.add('hidden');
+      $('cmp-card').classList.add('hidden');
+      $('cmp-msg-text').textContent = text;
+      const a = $('cmp-msg-link') as HTMLAnchorElement;
+      a.href = root.dataset.formHref || '#';
+      a.classList.toggle('hidden', !withFormLink);
+      $('cmp-msg').classList.remove('hidden');
+    }
+
+    function status(text: string, kind: 'error' | 'ok') {
+      const el = $('cmp-status');
+      el.textContent = text;
+      el.style.color = kind === 'error' ? 'var(--danger-text, #b91c1c)' : 'var(--success-text, #15803d)';
+      el.classList.remove('hidden');
+    }
+
+    function problem(data: any, form: FormVersion | null) {
+      status(problemMessage({ code: data?.code || data?.error || 'generic', field: data?.field }, form, lang, tr), 'error');
+    }
+
+    let sb: any;
+
+    async function load(note?: string) {
+      const { data, error } = await sb.rpc('competition_registration_get', { p_token: token });
+      if (error || !data) { message(tr('competition.error.generic'), false); return; }
+      if (data.error === 'not_found') { message(tr('competition.my.invalidLink'), true); return; }
+      if (data.error) { message(problemMessage({ code: data.error }, null, lang, tr), false); return; }
+
+      const form = data.form as FormVersion;
+      const reg = data.registration as Record<string, unknown>;
+      const emailShown = String(reg.email_masked || '');
+      $('cmp-edition').textContent = data.edition_title || '';
+      $('cmp-status').classList.add('hidden');
+      $('cmp-form').classList.add('hidden');
+      $('cmp-confirm').classList.add('hidden');
+      $('cmp-summary').innerHTML = '';
+
+      if (data.status === 'pending_confirmation') {
+        $('cmp-title').textContent = tr('competition.my.pendingTitle');
+        const when = data.confirm_by ? new Date(data.confirm_by).toLocaleString(lang, { dateStyle: 'short', timeStyle: 'short' }) : '';
+        $('cmp-state').textContent = tr('competition.my.pendingBody').replace('{date}', when);
+        $('cmp-summary').innerHTML = renderSummary(form, lang, tr, reg, emailShown);
+        $('cmp-confirm').classList.remove('hidden');
+      } else if (data.editable) {
+        $('cmp-title').textContent = tr('competition.my.editTitle');
+        $('cmp-state').textContent = `${tr('competition.my.status')}: ${tr(`competition.status.${data.status}`)}`;
+        $('cmp-fields').innerHTML = renderForm(form, lang, tr, reg, { emailShown });
+        const formEl = $('cmp-form') as HTMLFormElement;
+        applyConditionals(formEl);
+        formEl.classList.remove('hidden');
+      } else {
+        $('cmp-title').textContent = tr('competition.my.title');
+        const closedNote = data.status === 'withdrawn' ? '' : ` ${tr('competition.my.readOnly')}`;
+        $('cmp-state').textContent = `${tr('competition.my.status')}: ${tr(`competition.status.${data.status}`)}.${closedNote}`;
+        $('cmp-summary').innerHTML = renderSummary(form, lang, tr, reg, emailShown);
+      }
+      $('cmp-withdraw-box').classList.toggle('hidden', !data.can_withdraw);
+      $('cmp-withdraw-ask').classList.add('hidden');
+      $('cmp-loading').classList.add('hidden');
+      $('cmp-card').classList.remove('hidden');
+      if (note) status(note, 'ok');
+      (window as any).__cmpForm = form;
+    }
+
+    (async () => {
+      if (!/^[0-9a-f]{64}$/.test(token)) { message(tr('competition.my.noToken'), true); return; }
+      sb = await getSb();
+      if (!sb) { message(tr('competition.error.generic'), false); return; }
+      await load();
+
+      const formEl = $('cmp-form') as HTMLFormElement;
+      formEl.addEventListener('change', () => applyConditionals(formEl));
+      formEl.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = (window as any).__cmpForm as FormVersion;
+        const payload = collect(formEl, form);
+        const pr = precheck(payload, form, { editing: true });
+        if (pr) { status(problemMessage(pr, form, lang, tr), 'error'); return; }
+        const btn = $('cmp-save') as HTMLButtonElement;
+        btn.disabled = true;
+        const { data, error } = await sb.rpc('competition_registration_update', { p_token: token, p_payload: payload });
+        btn.disabled = false;
+        if (error || !data) { status(tr('competition.error.generic'), 'error'); return; }
+        if (data.ok) { await load(tr('competition.my.saved')); return; }
+        problem(data, form);
+      });
+
+      $('cmp-confirm').addEventListener('click', async () => {
+        const btn = $('cmp-confirm') as HTMLButtonElement;
+        btn.disabled = true;
+        const { data, error } = await sb.rpc('competition_registration_confirm', { p_token: token });
+        btn.disabled = false;
+        if (error || !data) { status(tr('competition.error.generic'), 'error'); return; }
+        if (data.ok) { await load(tr('competition.my.confirmed')); return; }
+        problem(data, null);
+      });
+
+      $('cmp-withdraw').addEventListener('click', () => $('cmp-withdraw-ask').classList.remove('hidden'));
+      $('cmp-withdraw-no').addEventListener('click', () => $('cmp-withdraw-ask').classList.add('hidden'));
+      $('cmp-withdraw-yes').addEventListener('click', async () => {
+        const btn = $('cmp-withdraw-yes') as HTMLButtonElement;
+        btn.disabled = true;
+        const { data, error } = await sb.rpc('competition_registration_withdraw', { p_token: token });
+        btn.disabled = false;
+        if (error || !data) { status(tr('competition.error.generic'), 'error'); return; }
+        if (data.ok) {
+          try { sessionStorage.removeItem(storeKey); } catch { /* nada a limpar */ }
+          message(tr('competition.my.withdrawn'), false);
+          return;
+        }
+        problem(data, null);
+      });
+    })();
+  </script>
+</BaseLayout>

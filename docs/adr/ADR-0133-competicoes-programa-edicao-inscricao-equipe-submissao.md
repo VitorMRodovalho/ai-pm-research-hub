@@ -186,3 +186,41 @@ Benchmark da lane `nucleo-hackathon` (17 plataformas de hackathon e awards, 10 d
 
 - (e) O programa tem iniciativa própria do tipo `competition`; o `workgroup` segue como a equipe que organiza.
 - (f) Contato só por e-mail; o formulário não coleta telefone.
+
+## Adendo de implementação: fase 1 (30/09/2026)
+
+A fase 1 (#2529) implementou a camada (item 0), o programa e a edição (1), a pessoa (2), a inscrição individual (3), as declarações (3-A), o formulário público (9) e a configuração por edição (10). Uma revisão de segurança feita **antes de aplicar** mudou quatro pontos do texto acima. No resto, o texto das decisões segue valendo.
+
+- **Itens 2 e 9: a pessoa e os consentimentos só nascem quando o e-mail é confirmado.** O texto dizia que a inscrição encontra ou cria a pessoa e grava os consentimentos. Feito assim, qualquer pessoa poderia inscrever o e-mail de outra e gerar, em nome dela, uma linha em `persons` e um consentimento que ela nunca deu. Agora:
+  - a inscrição nasce `pending_confirmation`, sem pessoa e sem consentimento;
+  - o e-mail leva um link, e só a confirmação por ele liga ou cria a pessoa e grava os consentimentos, com o canal `email_link`;
+  - inscrição não confirmada em 48 horas é apagada.
+- **Item 9: o link não gira, e todo envio tem teto.**
+  - Enviar o formulário de novo com o mesmo e-mail cria um link novo sem invalidar os anteriores. Girar deixaria um terceiro, repetindo o formulário, derrubar o link de quem se inscreveu.
+  - Cada link tem validade: 48 horas enquanto a inscrição não foi confirmada; depois, até 30 dias após o fim da janela, para a pessoa ver e retirar a inscrição.
+  - Tetos de envio: por inscrição, um e-mail a cada 15 minutos e três em 24 horas; por edição, um limite por hora (`email_hourly_cap`, 200 por padrão). Acima do teto da edição, a resposta é "tente mais tarde" para qualquer e-mail, novo ou não, para não revelar quem já se inscreveu.
+  - Chamada anônima sem IP é recusada, porque o limitador por IP deixa passar quando o IP não chega (item 11).
+- **Item 9: confirmar, corrigir e retirar ficam na mesma página, a do link** (`/competicoes/<edição>/minha-inscricao`). O token vai no fragmento da URL, que o navegador não manda ao servidor, e a página o tira da barra de endereço. A desistência pela própria pessoa (LGPD art. 18) funciona assim:
+  - a inscrição pendente é apagada inteira;
+  - a confirmada vira `withdrawn` e perde os campos opcionais, os consentimentos **desta** inscrição são revogados e os links deixam de valer;
+  - nome, e-mail e equipe ficam para a organização até o fim da retenção.
+- **Item 3: a conferência só vê inscrição confirmada.** A lista da organização deixa de fora as pendentes (e-mail não provado) e mostra só quantas são. A conta da equipe inclui só quem continua na disputa.
+- **Outros ajustes da revisão:**
+  - validação:
+    - o e-mail passa por uma expressão regular estrita;
+    - nome e equipe aceitam um conjunto fechado de caracteres;
+    - nenhum campo aceita caractere de controle nem `<` `>`;
+    - o corpo do envio vai até 8 KiB;
+    - os erros voltam como código, e a página os traduz nos três idiomas;
+  - a versão do formulário é validada ao nascer: campo conhecido, declaração bem formada e tipo de consentimento aceito por `consent_records`;
+  - o IP não é guardado, nem em hash: sha256 de IPv4 sem sal se reverte por força bruta;
+  - a limpeza roda de hora em hora (`competition-purge-hourly`) e está no registro de retenção (#1812);
+  - toda função tem `search_path` fechado e fica sem EXECUTE para `anon` e `authenticated` no schema.
+- **Aceito e registrado, não corrigido:** o tempo de resposta pode diferir um pouco entre e-mail novo e e-mail já inscrito. Os dois caminhos enfileiram um e-mail e devolvem a mesma resposta.
+- **Nomes físicos:** as tabelas ficam no schema `competition` sem o prefixo (`competition.editions`, `competition.registrations` e assim por diante). A versão do formulário é tabela própria e imutável (`competition.form_versions`), e os links ficam em `competition.registration_tokens`.
+- **Lacuna medida, a fechar junto com a decisão (a):** a pessoa criada pela confirmação e sem outro vínculo ainda não tem quem a anonimize. Medido em 30/09/2026:
+  - o job `v4-anonymize-by-kind-monthly` só alcança pessoa com vínculo encerrado em `engagements`;
+  - os outros dois (`lgpd-anonymize-inactive-monthly` e `lgpd-anonymize-premember-monthly`) alcançam membro e candidatura.
+
+  A limpeza desta fase apaga a inscrição no fim da retenção, mas a linha em `persons` (nome e e-mail) fica. O item 2 promete essa anonimização, e ela entra com a decisão (a), antes de vencer a primeira retenção. Nenhuma edição abre sem retenção definida, então nada vence antes disso.
+- **Pergunta nova ao GP: confirmação depois do encerramento.** Hoje, quem se inscreve dentro da janela e confirma o e-mail em até 48 horas conta, mesmo que confirme com a janela já fechada. A alternativa é exigir a confirmação dentro da janela, o que tira quem se inscreve no último minuto.

@@ -144,14 +144,15 @@ test('#1812 DB: RATCHET — as politicas descobertas sao exatamente a base decla
   );
 });
 
-test('#1812 DB: as tres politicas de delete estao cobertas de ponta a ponta', { skip: dbGated ? false : skipMsg }, async () => {
+test('#1812 DB: as politicas de delete estao cobertas de ponta a ponta', { skip: dbGated ? false : skipMsg }, async () => {
   const { data, error } = await sb().rpc('_audit_retention_policy_coverage');
   assert.ifError(error);
 
   const cobertas = data.filter(r => r.coberta);
+  // #2529: a limpeza das inscricoes de competicao entra pelo caminho dedicado competition-purge-hourly.
   assert.deepEqual(
     cobertas.map(r => r.politica).sort(),
-    ['data_anomaly_log/delete', 'notifications/delete', 'visitor_leads/delete'],
+    ['competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'visitor_leads/delete'],
   );
   // coberta exige as quatro condicoes, nao so job registrado
   for (const r of cobertas) {

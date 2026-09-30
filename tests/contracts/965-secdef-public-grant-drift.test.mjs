@@ -68,7 +68,19 @@ const ALLOWLIST = new Set([
   'update_pmi_onboarding_step',
   'validate_interview_booking_token',
   'revert_interview_optout',
+  // #2529 / ADR-0133 — inscrição pública em competição. As três pelo link são da classe acima: o
+  // token de 32 bytes, guardado só em hash e com validade, É a credencial, e sem ele a resposta é
+  // `not_found`. O portão de IP e limite fica em competition.gate (fora de public, por isso a
+  // varredura não o enxerga no corpo destas), e o guard 2529 afirma que cada uma passa por ele
+  // antes de ler dado.
+  'competition_registration_confirm',
+  'competition_registration_update',
+  'competition_registration_withdraw',
   // ── Public counter / lead capture (anon by design) ──
+  // #2529 — o formulário de inscrição é anônimo por desenho. Não grava pessoa nem consentimento
+  // (só a confirmação pelo link grava), responde igual para e-mail novo e já inscrito, recusa
+  // anônimo sem IP e tem teto por IP, por inscrição e por edição (guard 2529).
+  'competition_register',
   'capture_visitor_lead',
   'increment_blog_view',
   'increment_publication_view',

@@ -30465,6 +30465,10 @@ export type Database = {
         }[]
       }
       _comms_token_expiry_scan: { Args: never; Returns: Json }
+      _competition_email_payload: {
+        Args: { p_registration_id: string; p_token: string }
+        Returns: Json
+      }
       _compute_pert_cutoff_core: {
         Args: {
           p_actor_id?: string
@@ -31749,6 +31753,28 @@ export type Database = {
       }
       comms_top_media: {
         Args: { p_channel?: string; p_days?: number; p_limit?: number }
+        Returns: Json
+      }
+      competition_edition_public: { Args: { p_slug: string }; Returns: Json }
+      competition_register: {
+        Args: { p_payload: Json; p_slug: string }
+        Returns: Json
+      }
+      competition_registration_confirm: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      competition_registration_get: { Args: { p_token: string }; Returns: Json }
+      competition_registration_update: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: Json
+      }
+      competition_registration_withdraw: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      competition_registrations_list: {
+        Args: { p_edition_slug: string }
         Returns: Json
       }
       complete_checklist_item: {
