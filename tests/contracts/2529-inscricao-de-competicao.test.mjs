@@ -165,7 +165,82 @@ test('#2529: a limpeza tem o MESMO nome no cron e no registro de retenção, e s
   const pol = /INSERT INTO public\.data_retention_policy \(table_name, retention_days, cleanup_type, description, is_active, executor\)\s+VALUES \('competition\.registrations', 2, 'delete',[\s\S]*?true, '([a-z-]+)'\);/.exec(LAYER);
   assert.ok(cron && pol, 'cron ou registro de retenção ausente');
   assert.equal(pol[1], cron[1], 'o executor declarado não é o job agendado');
-  assert.match(inner('purge'), /IF p_dry_run THEN\s+SELECT count\(\*\) INTO v_pending[\s\S]*?ELSE\s+DELETE FROM competition\.registrations\s+WHERE status = 'pending_confirmation' AND submitted_at < now\(\) - interval '48 hours';/);
+  // a limpeza só escreve fora do modo seco, e o único DELETE de inscrição é o da pendente de 48 h
+  const purge = inner('purge');
+  const write = idx(purge, /IF NOT p_dry_run THEN/);
+  assert.ok(write >= 0, 'a limpeza perdeu o modo seco');
+  const dels = purge.match(/DELETE FROM competition\.registrations\b[^;]*;/g) || [];
+  assert.equal(dels.length, 1, 'inscrição confirmada é ANONIMIZADA, não apagada (#2529 fase 1b)');
+  assert.match(dels[0], /WHERE status = 'pending_confirmation' AND submitted_at < now\(\) - interval '48 hours';/);
+  assert.ok(purge.indexOf(dels[0]) > write, 'o DELETE tem de estar dentro do ramo que não é seco');
+});
+
+// ── fase 1b: retenção por resultado, anonimização, edição piloto em rascunho ────────────────────
+const L1B_FILE = readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql')).sort()
+  .find((f) => /ADD COLUMN short_title text/.test(readFileSync(join(MIG_DIR, f), 'utf8')));
+const L1B = L1B_FILE ? maskLineComments(readFileSync(join(MIG_DIR, L1B_FILE), 'utf8')) : '';
+
+test('#2529 1b: o prazo sai do dia do hackathon e do resultado (selecionada = participante)', () => {
+  assert.ok(L1B_FILE, 'migration da fase 1b não encontrada');
+  const rd = inner('retention_date');
+  assert.match(rd, /CASE WHEN p_status = 'selected'\s+THEN p_edition\.retention_participant_months\s+ELSE p_edition\.retention_unselected_months END/);
+  assert.match(rd, /FROM public\.events ev WHERE ev\.id = p_edition\.event_id;/);
+});
+
+test('#2529 1b: a inscrição vencida é anonimizada por inteiro, dentro do ramo que escreve', () => {
+  const purge = inner('purge');
+  const upd = /UPDATE competition\.registrations r SET([\s\S]*?)FROM competition\.editions e\s+WHERE e\.id = r\.edition_id AND r\.anonymized_at IS NULL AND r\.status <> 'pending_confirmation'\s+AND competition\.retention_date\(e, r\.status\) < current_date;/.exec(purge);
+  assert.ok(upd, 'a anonimização perdeu a condição de vencimento');
+  for (const col of ['full_name', 'social_name', 'email', 'leader_email', 'github_username', 'institution', 'course', 'team_name', 'person_id']) {
+    assert.match(upd[1], new RegExp(`\\b${col} = NULL`), `a anonimização deixou ${col}`);
+  }
+  assert.match(upd[1], /anonymized_at = now\(\)/);
+  assert.ok(purge.indexOf(upd[0]) > purge.indexOf('IF NOT p_dry_run THEN'), 'anonimização fora do ramo que escreve');
+  // e o banco recusa linha anonimizada que ainda aponte alguém
+  assert.match(L1B, /ADD CONSTRAINT registrations_anonymized_is_empty\s+CHECK \(anonymized_at IS NULL OR \(full_name IS NULL AND social_name IS NULL AND email IS NULL AND leader_email IS NULL\s+AND github_username IS NULL AND institution IS NULL AND course IS NULL AND team_name IS NULL AND person_id IS NULL\)\);/);
+});
+
+test('#2529 1b: só a pessoa que a competição criou, e sem nenhum outro vínculo, é anonimizada', () => {
+  const purge = inner('purge');
+  assert.match(purge, /IF EXISTS \(SELECT 1 FROM public\.persons p\s+WHERE p\.id = v_pid AND p\.anonymized_at IS NULL AND p\.consent_version LIKE 'competition:%'\)\s+AND NOT EXISTS \(SELECT 1 FROM competition\.registrations r WHERE r\.person_id = v_pid\)\s+AND NOT competition\.person_has_other_links\(v_pid\) THEN\s+UPDATE public\.persons SET/);
+  // o "outro vínculo" vem do catálogo, não de lista escrita à mão
+  const links = inner('person_has_other_links');
+  assert.match(links, /WHERE c\.contype = 'f' AND c\.confrelid = 'public\.persons'::regclass\s+AND c\.conrelid <> 'competition\.registrations'::regclass/);
+  assert.match(links, /IF v_hit THEN RETURN true; END IF;/);
+});
+
+test('#2529 1b: inscrição sem UTM grava NULL, não o null do JSON (o CHECK recusava o caso comum)', () => {
+  const reg = body('competition_register');
+  assert.equal((reg.match(/CASE WHEN jsonb_typeof\(v_ans->'utm'\) = 'object' THEN v_ans->'utm' END/g) || []).length, 2,
+    'os dois pontos que gravam utm (nova e pendente reenviada) precisam filtrar o null do JSON');
+  assert.doesNotMatch(reg, /utm = v_ans->'utm',|v_ans->>'heard_from', v_ans->'utm'\)/);
+  assert.doesNotMatch(reg, /retention_until/, 'o prazo não existe na inscrição: sai do dia do hackathon e do resultado');
+});
+
+test('#2529 1b: a edição piloto nasce em rascunho, e abrir exige aviso e retenção', () => {
+  assert.match(L1B, /INSERT INTO competition\.editions \([\s\S]*?\)\s+SELECT '[0-9a-f-]+', i\.id, 'hackathon-impacto-social-2026',\s+'[^']+', '[^']+', 'hackathon', 'draft',/);
+  assert.match(L1B, /ADD CONSTRAINT editions_open_requires_config\s+CHECK \(status = 'draft' OR \([\s\S]*?privacy_notice_url IS NOT NULL[\s\S]*?retention_unselected_months IS NOT NULL AND retention_participant_months IS NOT NULL\)\);/);
+});
+
+test('#2529 1b: search_path fechado e EXECUTE revogado depois da última função', () => {
+  const heads = L1B.split(/\bCREATE (?:OR REPLACE )?FUNCTION\b/).slice(1).map((s) => s.slice(0, s.indexOf('AS $function$')));
+  assert.ok(heads.length >= 7);
+  assert.deepEqual(heads.filter((h) => !/SET search_path TO 'pg_catalog', 'pg_temp'\s*$/.test(h)).map((h) => h.split('(')[0].trim()), []);
+  assert.ok(L1B.lastIndexOf('REVOKE ALL ON ALL FUNCTIONS IN SCHEMA competition FROM PUBLIC, anon, authenticated;')
+    > L1B.lastIndexOf('FUNCTION competition.'), 'a revogação tem de vir depois da última função do schema');
+});
+
+test('#2529 1b: a política de anonimização aponta o mesmo job agendado', () => {
+  const cron = /SELECT cron\.schedule\('([a-z-]+)', '[^']+', 'SELECT competition\.purge\(p_dry_run := false\);'\);/.exec(LAYER);
+  const pol = /VALUES \('competition\.registrations', 180, 'anonymize',[\s\S]*?true, '([a-z-]+)'\);/.exec(L1B);
+  assert.ok(cron && pol);
+  assert.equal(pol[1], cron[1]);
+});
+
+test('#2529 1b: o assunto do e-mail usa o título curto da edição', () => {
+  const ef = maskJsComments(read('supabase/functions/send-competition-email/index.ts'));
+  assert.match(ef, /subject: kind === 'confirm' && p\.pending \? `Confirme a sua inscrição: \$\{p\.edition_short_title \|\| p\.edition_title\}`/);
+  assert.match(body('_competition_email_payload'), /'edition_short_title', e\.short_title/);
 });
 
 // ── front e e-mail: o token só no fragmento ────────────────────────────────────────────────

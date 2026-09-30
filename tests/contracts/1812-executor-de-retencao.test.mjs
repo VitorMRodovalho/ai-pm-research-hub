@@ -149,10 +149,11 @@ test('#1812 DB: as politicas de delete estao cobertas de ponta a ponta', { skip:
   assert.ifError(error);
 
   const cobertas = data.filter(r => r.coberta);
-  // #2529: a limpeza das inscricoes de competicao entra pelo caminho dedicado competition-purge-hourly.
+  // #2529: a limpeza das inscricoes de competicao (apagar a pendente, anonimizar a vencida) entra pelo
+  // caminho dedicado competition-purge-hourly.
   assert.deepEqual(
     cobertas.map(r => r.politica).sort(),
-    ['competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'visitor_leads/delete'],
+    ['competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'visitor_leads/delete'],
   );
   // coberta exige as quatro condicoes, nao so job registrado
   for (const r of cobertas) {

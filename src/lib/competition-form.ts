@@ -7,7 +7,8 @@
 export type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 type Loc = Partial<Record<Lang, string>>;
 export type FieldDef = { label?: Loc; required?: boolean; help?: Loc; options?: { value: string; label?: Loc }[] };
-export type Declaration = { key: string; version: number; required?: boolean; text?: Loc };
+export type Declaration = { key: string; version: number; required?: boolean; text?: Loc; link?: 'rules' | 'privacy' | null };
+export type FormLinks = { rules?: string | null; privacy?: string | null };
 export type FormVersion = { version: number; fields: Record<string, FieldDef>; declarations: Declaration[] };
 export type Problem = { code: string; field?: string | null };
 
@@ -35,9 +36,12 @@ const LABEL = 'text-sm font-semibold text-[var(--text-secondary)]';
 /**
  * Renders the fields the form version declares, in the validated order, plus the declarations.
  * With `emailShown`, the e-mail is shown as text (it cannot change after registering) and the
- * declarations are left out (they were accepted at registration).
+ * declarations are left out (they were accepted at registration). A declaration that points to the rules
+ * or the privacy notice gets that link, and the privacy summary, when the edition has one, sits right
+ * above the declarations.
  */
-export function renderForm(form: FormVersion, lang: Lang, t: (k: string) => string, values: Record<string, unknown> = {}, opts: { emailShown?: string } = {}): string {
+export function renderForm(form: FormVersion, lang: Lang, t: (k: string) => string, values: Record<string, unknown> = {},
+  opts: { emailShown?: string; links?: FormLinks; privacySummary?: string | null } = {}): string {
   const parts: string[] = [];
   const editing = opts.emailShown !== undefined;
   for (const key of FIELD_ORDER) {
@@ -67,9 +71,22 @@ export function renderForm(form: FormVersion, lang: Lang, t: (k: string) => stri
     }
   }
   if (form.declarations.length && !editing) {
+    if (opts.privacySummary) {
+      const full = opts.links?.privacy
+        ? ` <a class="text-[var(--brand-primary)] hover:underline" target="_blank" rel="noopener" href="${esc(opts.links.privacy)}">${esc(t('competition.privacyFull'))}</a>`
+        : '';
+      parts.push(`<div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-hover,#f1f5f9)] px-4 py-3 text-[.8rem] text-[var(--text-secondary)] leading-relaxed">
+        <p class="font-semibold text-[var(--text-primary)] mb-1">${esc(t('competition.privacyTitle'))}</p>${esc(opts.privacySummary)}${full}</div>`);
+    }
+    const linkFor = (d: Declaration) => {
+      const href = d.link === 'rules' ? opts.links?.rules : d.link === 'privacy' ? opts.links?.privacy : null;
+      if (!href) return '';
+      const label = t(d.link === 'rules' ? 'competition.readRules' : 'competition.readPrivacy');
+      return ` <a class="text-[var(--brand-primary)] hover:underline" target="_blank" rel="noopener" href="${esc(href)}">(${esc(label)})</a>`;
+    };
     const decl = form.declarations.map((d) => `<label class="flex gap-2 items-start text-sm text-[var(--text-primary)]">
         <input type="checkbox" name="decl:${esc(d.key)}" class="mt-1">
-        <span>${esc(pick(d.text, lang, d.key))}${d.required ? ' <span class="text-red-600" aria-hidden="true">*</span>' : ''}</span></label>`).join('');
+        <span>${esc(pick(d.text, lang, d.key))}${linkFor(d)}${d.required ? ' <span class="text-red-600" aria-hidden="true">*</span>' : ''}</span></label>`).join('');
     parts.push(`<fieldset class="space-y-2"><legend class="${LABEL}">${esc(t('competition.declarations'))}</legend>${decl}</fieldset>`);
   }
   return parts.join('\n');
