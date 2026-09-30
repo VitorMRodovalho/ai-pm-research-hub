@@ -96,10 +96,12 @@ function semanticBlock() {
 // 53 → 54 em 13/08/2026 (#1710): +attendance_seal. Também adição própria, não onda do #1383:
 // selar a lista de um evento virou, depois do #1657, a ÚNICA forma de a plataforma afirmar que
 // alguém faltou, e não tinha superfície nenhuma — 0 de 510 eventos passados selados.
-test('semantic block registers exactly 54 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383 + 1 #1548 + 1 #1710)', () => {
+// 54 → 55 em 29/09/2026 (#2495 / ADR-0132): +wiki_write. O assistente passa a escrever no wiki pelas
+// mesmas funções da tela; aprovar e auditar ficam na tela.
+test('semantic block registers exactly 55 mcp.tool() calls (4 bridge + 8 W1 + 9 W2 + 6 W3 + 6 W4 + 7 W5 + 7 W6a + 5 W6b #1383 + 1 #1548 + 1 #1710 + 1 #2495)', () => {
   const block = semanticBlock();
   const matches = block.match(/mcp\.tool\(\s*"[^"]+"/g) || [];
-  assert.equal(matches.length, 54, `expected 54 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(", ")}`);
+  assert.equal(matches.length, 55, `expected 55 mcp.tool() in registerSemanticTools, got ${matches.length}: ${matches.join(", ")}`);
 });
 
 test('semantic block names the bridge + Wave-1 tools exactly', () => {
@@ -290,7 +292,7 @@ test('semantic block declares pii_level audit field (none|low|self|high) on each
   // (pii_level reflects the actual view_pii disclosure) so they contribute 0 literal matches.
   // One per tool minimum, capped generously to still catch runaway leakage.
   assert.ok(matches.length >= 19, `expected >=19 literal pii_level declarations; got ${matches.length}`);
-  assert.ok(matches.length <= 73, `expected <=73 pii_level declarations (multi-branch cap; W6b adds 5 literal — champion_award 'low', lgpd_admin 'high' x2, knowledge page/latest 'none' x2 — while gamification_report/admin_dashboard/audit_log use dynamic ternaries = 0 literal matches; live count 65; #2460 +1: member_lifecycle create preview 'high'); got ${matches.length}`);
+  assert.ok(matches.length <= 80, `expected <=80 pii_level declarations (multi-branch cap; W6b adds 5 literal — champion_award 'low', lgpd_admin 'high' x2, knowledge page/latest 'none' x2 — while gamification_report/admin_dashboard/audit_log use dynamic ternaries = 0 literal matches; live count 65; #2460 +1: member_lifecycle create preview 'high'; #2495 +7: wiki_write 'low' em context e na prévia e execução de draft/submit/suggest); got ${matches.length}`);
   // Each of the three values must appear at least once across the 3 tools.
   for (const expected of ['"none"', '"low"', '"self"']) {
     assert.ok(block.includes(`pii_level: ${expected}`), `expected at least one pii_level: ${expected} in semantic block`);

@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-30T01:38:30.450Z",
+  "generated_at": "2026-09-30T03:19:22.483Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 392,
+  "total": 393,
   "by_domain": {
     "personal": 23,
     "tribe": 130,
@@ -12,12 +12,12 @@
     "partners": 12,
     "gamification": 18,
     "selection": 31,
-    "knowledge": 12,
+    "knowledge": 13,
     "admin": 1,
     "health": 22
   },
   "by_permission": {
-    "read": 274,
+    "read": 275,
     "write": 107,
     "admin": 11
   },
@@ -2616,6 +2616,13 @@
     {
       "name": "wiki_health_report",
       "description": "Returns wiki structural health (broken links, missing summaries, license gaps, etc.) per check_type. Used by curators to prioritize wiki quality work.",
+      "domain": "knowledge",
+      "permission": "read",
+      "is_sensitive": false
+    },
+    {
+      "name": "wiki_write",
+      "description": "Write to the Núcleo wiki through the same functions the platform screen uses (ADR-0132). Set `action`: 'context' (read-only: the initiatives where you can write, your open versions and your suggestions), 'draft' (create or update a draft: initiative_id + title + content [+ page_path, summary, doc_type, sources, epistemic_label]; or version_id to edit your own draft or returned version), 'submit' (version_id: send your draft to whoever decides), 'suggest' (page_path + body: suggest an improvement to a published page). Every write returns a PREVIEW first and only executes with confirm=true; show the preview to the person before confirming. Each version carries an epistemic label (fonte | observacao_membro | sintese_ia | pesquisa_externa); through the assistant the default is 'sintese_ia', and another label is passed only when the person states it. Publishing, returning, auditing and answering suggestions are not available here: they stay on the platform screen. Authority: the platform functions decide (members write in their own initiative; the curation committee in any). Stable envelope.",
       "domain": "knowledge",
       "permission": "read",
       "is_sensitive": false

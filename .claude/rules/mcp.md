@@ -13,8 +13,7 @@ paths:
 Three surfaces:
 - `/mcp` (server: `nucleo-ia-hub`) — the full internal capability registry (~340 tools + 4 prompts + 3 resources).
 - `/semantic` (server: `nucleo-ia-semantic`, v0.13.0) — public semantic gateway (SPEC-280 / EPIC #1383).
-  **54 tools** (o número aqui estava em 52/v0.11.0, dois releases atrás: `agenda_blocks` do #1548 e
-  `attendance_seal` do #1710 não tinham chegado a este arquivo; a fonte é `countRegisteredTools`, não esta linha):
+  **55 tools** (v0.17.0; a fonte é `countRegisteredTools`, não esta linha):
   4 bridge (`get_my_context`, `search_nucleo_knowledge`, `get_board_or_initiative_context`,
   `get_operational_status`) + 8 **Wave 1 boards/cards** (`card_checklist`, `card_write`, `card_comment`,
   `card_search`, `card_get`, `board_overview`, `platform_context`, `portfolio_report`) + 9 **Wave 2
@@ -31,7 +30,8 @@ Three surfaces:
   `drive_access_admin`, `partner_crm`) + 5 **Wave 6b knowledge/gamification/admin/audit/lgpd**
   (`gamification_report`, `champion_award`, `admin_dashboard`, `audit_log`, `lgpd_admin`; the `knowledge_search`
   intent folds into the existing `search_nucleo_knowledge` bridge, expanded in place with a `mode` discriminator —
-  kept name, no break).
+  kept name, no break) + `wiki_write` (#2495 / ADR-0132: rascunho, envio e sugestão no wiki pelas funções da tela,
+  sempre com prévia e `confirm=true`; rótulo padrão `sintese_ia`; decidir e auditar ficam na tela).
   Stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + the #785
   (ADR-0105) fail-fast gate as a CONTRACT (`canSee()` helper → `rls_can_see_item/board/initiative`); the PII
   surface (member_search/member_get/member_emails) masks email/auth_id unless `view_pii` (`canSeePII()`).

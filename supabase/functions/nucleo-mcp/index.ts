@@ -8097,6 +8097,9 @@ const SEMANTIC_TOOL_ANNOTATIONS: Record<string, SemanticAnnotation> = {
   drive_links: SEM_WRITE, partner_crm: SEM_WRITE, attendance_record: SEM_WRITE, document_comment: SEM_WRITE, change_request: SEM_WRITE,
   signature_flow: SEM_WRITE, comms_post: SEM_WRITE, webinar_manage: SEM_WRITE, champion_award: SEM_WRITE, drive_access_admin: SEM_WRITE,
   interview_manage: SEM_WRITE,
+  // #2495 / ADR-0132: only additive writes (draft, submit, suggest), each behind a preview and
+  // confirm=true; publishing and removal stay on the screen, so the tool is not destructive.
+  wiki_write: SEM_WRITE,
   // #1710: `unseal` e verbo de REMOCAO, entao a tool inteira e destrutiva e as duas escritas
   // passam pelo confirm-gate. Mesma leitura do `agenda_blocks` (#1548). Foi por isto que o selo
   // NAO virou acao de `attendance_record`: la ele arrastaria register/excuse/showcase junto.
@@ -12556,6 +12559,211 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       });
     },
   );
+
+  // ── #2495 / ADR-0132 · wiki_write (W) — the assistant writes to the wiki through the screen's functions ──
+  // No new authority: each action calls the RPC the screen uses, and the RPC decides who may write.
+  // Publishing, returning, auditing and answering suggestions are NOT here; they stay on the screen
+  // (ADR-0132 §2). Every write takes two calls, a preview and then confirm=true, because wiki content
+  // is exactly what an injection from another source would try to plant (ADR-0132 §3, ADR-0018 D2.1).
+  mcp.tool(
+    "wiki_write",
+    "Write to the Núcleo wiki through the same functions the platform screen uses (ADR-0132). Set `action`: 'context' (read-only: the initiatives where you can write, your open versions and your suggestions), 'draft' (create or update a draft: initiative_id + title + content [+ page_path, summary, doc_type, sources, epistemic_label]; or version_id to edit your own draft or returned version), 'submit' (version_id: send your draft to whoever decides), 'suggest' (page_path + body: suggest an improvement to a published page). Every write returns a PREVIEW first and only executes with confirm=true; show the preview to the person before confirming. Each version carries an epistemic label (fonte | observacao_membro | sintese_ia | pesquisa_externa); through the assistant the default is 'sintese_ia', and another label is passed only when the person states it. Publishing, returning, auditing and answering suggestions are not available here: they stay on the platform screen. Authority: the platform functions decide (members write in their own initiative; the curation committee in any). Stable envelope.",
+    {
+      action: z.enum(["context", "draft", "submit", "suggest"]).describe("Wiki write operation."),
+      initiative_id: z.string().optional().describe("draft (new page): initiative UUID; action='context' lists the ones you can write in."),
+      page_path: z.string().optional().describe("draft: page path under the initiative's prefix (defaults to the initiative's main page). suggest: the published page path (required)."),
+      version_id: z.string().optional().describe("draft: your draft or returned version to edit. submit: the version to send (required)."),
+      title: z.string().optional().describe("draft: page title (required)."),
+      summary: z.string().optional().describe("draft: one or two sentences; required to submit."),
+      content: z.string().optional().describe("draft: page body in Markdown (required)."),
+      doc_type: z.enum(["tutorial", "how_to", "reference", "explanation"]).optional().describe("draft: tutorial | how_to | reference | explanation; required to submit."),
+      sources: z.array(z.object({ label: z.string(), url: z.string().optional() })).optional().describe("draft: the sources the text relies on; at least one is required to submit."),
+      epistemic_label: z.enum(["fonte", "observacao_membro", "sintese_ia", "pesquisa_externa"]).optional().describe("draft: nature of the content. Default through the assistant: 'sintese_ia'."),
+      body: z.string().optional().describe("suggest: the suggestion text (required)."),
+      confirm: z.boolean().optional().describe("draft / submit / suggest: pass confirm=true to execute; otherwise a preview is returned (ADR-0018, ADR-0132)."),
+    },
+    async (params: any) => {
+      const start = Date.now();
+      const dom = "knowledge";
+      const SCREEN = "https://nucleoia.pmigo.org.br/wiki";
+      const member = await getMember(sb);
+      if (!member) { await logUsage(sb, null, "wiki_write", false, "Not authenticated", start); return ok(buildSemanticError({ tool: "wiki_write", semantic_domain: dom, code: "unauthenticated", message: "Not authenticated.", action: "Reconnect the MCP server in your AI client." })); }
+      const invalid = (m: string, a?: string) => ok(buildSemanticError({ tool: "wiki_write", semantic_domain: dom, code: "invalid_input", message: m, action: a }));
+      // The wiki RPCs raise person-facing messages prefixed 'wiki:', and 42501 when the person may not act.
+      const rpcFail = async (e: any) => {
+        const msg = String(e?.message ?? "");
+        await logUsage(sb, member.id, "wiki_write", false, msg, start);
+        const code = e?.code === "42501" ? "unauthorized" : msg.startsWith("wiki:") ? "invalid_input" : "internal_error";
+        return ok(buildSemanticError({ tool: "wiki_write", semantic_domain: dom, code, message: msg, action: code === "unauthorized" ? `See where you can write with wiki_write action='context', or use the platform screen: ${SCREEN}` : undefined }));
+      };
+      const missingToSubmit = (v: { summary?: string | null; doc_type?: string | null; sources?: unknown[] | null }) => [
+        ...(!v.summary || !String(v.summary).trim() ? ["summary"] : []),
+        ...(!v.doc_type ? ["doc_type"] : []),
+        ...(!Array.isArray(v.sources) || v.sources.length === 0 ? ["sources"] : []),
+      ];
+
+      // ── context: read-only ────────────────────────────────────────────────────
+      if (params.action === "context") {
+        const [c, q, s] = await Promise.all([sb.rpc("wiki_authoring_context"), sb.rpc("wiki_review_queue"), sb.rpc("wiki_suggestion_queue")]);
+        const e = c.error || q.error || s.error;
+        if (e) return rpcFail(e);
+        const ctx: any = c.data ?? {}; const queue: any = q.data ?? {}; const sugg: any = s.data ?? {};
+        const canWriteIn = (ctx.initiatives ?? []).map((i: any) => ({ initiative_id: i.id, title: i.title, path_prefix: i.path_prefix, domain: i.domain, is_leader: i.is_leader, is_engaged: i.is_engaged }));
+        await logUsage(sb, member.id, "wiki_write", true, undefined, start);
+        return semanticOk({
+          data: {
+            action: "context", is_committee: !!ctx.is_committee, can_write_in: canWriteIn,
+            my_versions: queue.my_versions ?? [], my_suggestions: sugg.mine ?? [],
+            decisions_on_screen: { awaiting_my_decision: (queue.awaiting_my_decision ?? []).length, audit_pending: (queue.audit_pending ?? []).length, suggestions_to_answer: (sugg.to_decide ?? []).length, where: SCREEN },
+          },
+          summary: `${canWriteIn.length} iniciativa(s) onde você escreve; ${(queue.my_versions ?? []).length} versão(ões) sua(s) em aberto.`,
+          next_actions: ["wiki_write action='draft': escrever ou editar um rascunho", "wiki_write action='submit': enviar um rascunho", "search_nucleo_knowledge mode='page': ler a página antes de editar"],
+          audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: ["wiki_authoring_context", "wiki_review_queue", "wiki_suggestion_queue"], caller_member_id: member.id, gate_checked: "RPC internal (active member; initiative scope)", resource_id: null, extra: { action: "context" } },
+        });
+      }
+
+      // ── draft: preview, then wiki_save_draft ──────────────────────────────────
+      if (params.action === "draft") {
+        if (!params.title || !String(params.title).trim()) return invalid("action='draft' requires title.", "Pass title.");
+        if (params.content == null || !String(params.content).trim()) return invalid("action='draft' requires content.", "Pass content (Markdown).");
+        const label = params.epistemic_label ?? "sintese_ia";
+        let path: string | null = params.page_path ?? null;
+        let initiativeId: string | null = params.initiative_id ?? null;
+        let domain: string | null = null;
+        let initiativeTitle: string | null = null;
+        let target = "creates a new draft, or updates your open draft of this page if you have one (one open version per person and page)";
+        if (params.version_id) {
+          if (!isUUID(params.version_id)) return invalid("version_id must be a UUID.", "Use wiki_write action='context' to list your versions.");
+          const v = await sb.rpc("wiki_get_version", { p_version_id: params.version_id });
+          if (v.error) return rpcFail(v.error);
+          const base: any = v.data;
+          if (!base) return invalid("Version not found.", "Use wiki_write action='context' to list your versions.");
+          path = base.page_path; initiativeId = base.initiative_id; domain = base.domain;
+          target = `edits version ${base.version_no} (status ${base.status}); only your own draft or returned version can be edited`;
+        } else {
+          if (!isUUID(initiativeId ?? "")) return invalid("A new draft needs initiative_id (UUID).", "Use wiki_write action='context' to see where you can write.");
+          const c = await sb.rpc("wiki_authoring_context");
+          if (c.error) return rpcFail(c.error);
+          const ini = ((c.data as any)?.initiatives ?? []).find((i: any) => i.id === initiativeId);
+          if (!ini) {
+            await logUsage(sb, member.id, "wiki_write", false, "Not an authoring initiative", start);
+            return ok(buildSemanticError({ tool: "wiki_write", semantic_domain: dom, code: "unauthorized", message: "You cannot write in this initiative's wiki.", action: "Use wiki_write action='context' to see where you can write." }));
+          }
+          path = path ?? ini.path_prefix; domain = ini.domain; initiativeTitle = ini.title;
+        }
+        const sources = (params.sources ?? []).map((s: any) => (s.url ? { label: s.label, url: s.url } : { label: s.label }));
+        if (params.confirm !== true) {
+          const missing = missingToSubmit({ summary: params.summary, doc_type: params.doc_type, sources });
+          await logUsage(sb, member.id, "wiki_write", true, undefined, start, "preview");
+          return semanticOk({
+            data: {
+              action: "draft", preview: true, page_path: path, initiative: initiativeTitle, target,
+              title: params.title, summary: params.summary ?? null, doc_type: params.doc_type ?? null, sources_count: sources.length,
+              content_chars: String(params.content).length, content_start: String(params.content).slice(0, 400),
+              epistemic_label: label, missing_to_submit: missing,
+              next_call: { ...params, epistemic_label: label, confirm: true },
+            },
+            summary: `PREVIEW: rascunho em ${path} com o rótulo '${label}'. Mostre à pessoa e reenvie com confirm=true.`,
+            warnings: [
+              label === "sintese_ia" ? "Epistemic label 'sintese_ia' (AI synthesis). If the person wrote the text or it comes from a cited source, ask and pass the label they state." : `Epistemic label '${label}' as stated by the person.`,
+              ...(missing.length ? [`To submit later this draft still needs: ${missing.join(", ")}.`] : []),
+            ],
+            next_actions: ["wiki_write action='draft' confirm=true"],
+            audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: [], caller_member_id: member.id, gate_checked: "preview, not executed", resource_id: params.version_id ?? null, extra: { action: "draft", preview: true } },
+          });
+        }
+        const r = await sb.rpc("wiki_save_draft", {
+          p_page_path: path, p_initiative_id: initiativeId, p_title: params.title, p_summary: params.summary ?? null,
+          p_content: params.content, p_doc_type: params.doc_type ?? null, p_sources: sources, p_domain: domain,
+          p_version_id: params.version_id ?? null, p_epistemic_label: label,
+        });
+        if (r.error) return rpcFail(r.error);
+        const vid = r.data as string;
+        await logUsage(sb, member.id, "wiki_write", true, undefined, start);
+        return semanticOk({
+          data: { action: "draft", version_id: vid, page_path: path, epistemic_label: label, screen: `${SCREEN}?version=${vid}` },
+          summary: `Rascunho salvo em ${path} (rótulo '${label}'). Ainda não foi enviado.`,
+          next_actions: [`wiki_write action='submit' version_id='${vid}': enviar para quem decide`],
+          audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: ["wiki_save_draft"], caller_member_id: member.id, gate_checked: "RPC wiki_save_draft (active member; initiative scope; own draft)", resource_id: vid, extra: { action: "draft" } },
+        });
+      }
+
+      // ── submit: preview, then wiki_submit ─────────────────────────────────────
+      if (params.action === "submit") {
+        if (!isUUID(params.version_id ?? "")) return invalid("action='submit' requires version_id (UUID).", "Use wiki_write action='context' to list your versions.");
+        const v = await sb.rpc("wiki_get_version", { p_version_id: params.version_id });
+        if (v.error) return rpcFail(v.error);
+        const ver: any = v.data;
+        if (!ver) return invalid("Version not found.", "Use wiki_write action='context' to list your versions.");
+        if (params.confirm !== true) {
+          const missing = missingToSubmit(ver);
+          await logUsage(sb, member.id, "wiki_write", true, undefined, start, "preview");
+          return semanticOk({
+            data: {
+              action: "submit", preview: true, version_id: params.version_id, page_path: ver.page_path, version_no: ver.version_no,
+              status: ver.status, title: ver.title, epistemic_label: ver.epistemic_label, missing_to_submit: missing,
+              route_rule: "The platform routes it: to the curation committee when personal data is detected in the text, when the sender leads the initiative or is on the committee, or when the initiative has no leader; otherwise to the initiative's leaders.",
+              next_call: { action: "submit", version_id: params.version_id, confirm: true },
+            },
+            summary: `PREVIEW: enviar a versão ${ver.version_no} de ${ver.page_path} (rótulo '${ver.epistemic_label}'). Mostre à pessoa e reenvie com confirm=true.`,
+            warnings: missing.length ? [`The platform will refuse the submission until these are filled: ${missing.join(", ")}.`] : [],
+            next_actions: ["wiki_write action='submit' confirm=true"],
+            audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: ["wiki_get_version"], caller_member_id: member.id, gate_checked: "preview, not executed", resource_id: params.version_id, extra: { action: "submit", preview: true } },
+          });
+        }
+        const r = await sb.rpc("wiki_submit", { p_version_id: params.version_id });
+        if (r.error) return rpcFail(r.error);
+        const d: any = r.data ?? {};
+        await logUsage(sb, member.id, "wiki_write", true, undefined, start);
+        return semanticOk({
+          data: { action: "submit", version_id: params.version_id, status: d.status ?? null, route: d.route ?? null, pii: d.pii ?? null, screen: `${SCREEN}?version=${params.version_id}` },
+          summary: `Versão enviada para ${d.route === "committee" ? "o comitê de curadoria" : "a liderança da iniciativa"}. A decisão é feita na tela da plataforma.`,
+          warnings: d.pii ? [`Personal data detected (${d.pii}); the curation committee decides.`] : [],
+          next_actions: ["wiki_write action='context': acompanhar suas versões"],
+          audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: ["wiki_submit"], caller_member_id: member.id, gate_checked: "RPC wiki_submit (own version; required fields; routing)", resource_id: params.version_id, extra: { action: "submit" } },
+        });
+      }
+
+      // ── suggest: preview, then wiki_suggest ───────────────────────────────────
+      if (params.action === "suggest") {
+        const path = String(params.page_path ?? "").trim();
+        const body = String(params.body ?? "").trim();
+        if (!path) return invalid("action='suggest' requires page_path.", "Find the page with search_nucleo_knowledge mode='search'.");
+        if (!body) return invalid("action='suggest' requires body.", "Pass the suggestion text.");
+        const pg = await sb.from("wiki_pages").select("path, title").eq("path", path).maybeSingle();
+        if (pg.error) return rpcFail(pg.error);
+        if (!pg.data) {
+          await logUsage(sb, member.id, "wiki_write", false, "Page not found", start);
+          return ok(buildSemanticError({ tool: "wiki_write", semantic_domain: dom, code: "not_found", message: `Wiki page not found: ${path}.`, action: "Check the path with search_nucleo_knowledge mode='search'." }));
+        }
+        if (params.confirm !== true) {
+          await logUsage(sb, member.id, "wiki_write", true, undefined, start, "preview");
+          return semanticOk({
+            data: {
+              action: "suggest", preview: true, page_path: path, page_title: (pg.data as any).title, body_chars: body.length, body_start: body.slice(0, 600),
+              who_answers: "The initiative's leaders, or the curation committee; the suggestion does not enter the page and only the author and whoever decides can see it.",
+              next_call: { action: "suggest", page_path: path, body, confirm: true },
+            },
+            summary: `PREVIEW: sugestão para "${(pg.data as any).title}". Mostre à pessoa e reenvie com confirm=true.`,
+            next_actions: ["wiki_write action='suggest' confirm=true"],
+            audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: [], caller_member_id: member.id, gate_checked: "preview, not executed", resource_id: path, extra: { action: "suggest", preview: true } },
+          });
+        }
+        const r = await sb.rpc("wiki_suggest", { p_page_path: path, p_body: body });
+        if (r.error) return rpcFail(r.error);
+        const d: any = r.data ?? {};
+        await logUsage(sb, member.id, "wiki_write", true, undefined, start);
+        return semanticOk({
+          data: { action: "suggest", suggestion_id: d.id ?? null, route: d.route ?? null, page_path: path },
+          summary: `Sugestão registrada para "${(pg.data as any).title}". Quem decide responde pela plataforma.`,
+          next_actions: ["wiki_write action='context': acompanhar suas sugestões"],
+          audit: { tool: "wiki_write", semantic_domain: dom, pii_level: "low", permission: "authenticated member", source_tools: ["wiki_suggest"], caller_member_id: member.id, gate_checked: "RPC wiki_suggest (active member; page visibility; routing)", resource_id: d.id ?? path, extra: { action: "suggest" } },
+        });
+      }
+
+      return invalid(`Unknown action '${params.action}'.`);
+    },
+  );
 }
 
 // #1377 — /actions overflow surface. The Claude chat connector caps a single connector at
@@ -12690,7 +12898,7 @@ const MCP_TOOL_COUNT = countRegisteredTools(registerKnowledge, registerTools);  
 // #1548: a versao da superficie semantica era um LITERAL em dois lugares — o McpServer e o
 // payload do /health — e eles divergiram (server 0.12.0, health 0.11.0). O #1392 ja tinha
 // derivado o `tools` do health pelo mesmo motivo; o `version` ficou para tras. Uma fonte so.
-const SEMANTIC_SURFACE_VERSION = "0.16.0";
+const SEMANTIC_SURFACE_VERSION = "0.17.0";
 const SEMANTIC_TOOL_COUNT = countRegisteredTools(registerSemanticTools);             // /semantic bridge
 
 // #1497 — GET numa superfície STATELESS deve ser 405, não um SSE pendurado.
