@@ -3195,6 +3195,13 @@ const enUS: Record<string, string> = {
   'data.tribe14.quadrantLabel': 'Q1 — The Augmented Practitioner',
   'data.tribe14.desc': 'A "101" foundation in generative AI literacy that prepares researchers before the thematic tribes. An open learning format with no external deliverable — the conceptual foundation underpinning Radar and Augmented Productivity.',
   'data.tribe14.meetings': 'To be defined',
+  'data.tribe15.name': 'Second Brain & Team Communication',
+  'data.tribe15.quadrantLabel': 'Q1 — The Augmented Practitioner',
+  'data.tribe15.desc': '80 WhatsApp groups. One single head. Every Brazilian manager knows this reality and almost nobody measures it: the project lives in messaging groups, and attention cannot keep up. The tribe studies how AI separates what requires action from the noise, giving the manager\'s attention back to what matters and investigating what slips through. If this pain is yours, I\'ll see you in the tribe.',
+  'data.tribe15.d1': 'Scientific paper 1, "The Machine that Learns to Decide Like You" (RQ1): how does a triage system learn a manager\'s criteria from the way they reply to, postpone or ignore messages?',
+  'data.tribe15.d2': 'Scientific paper 2, "What Goes Unnoticed" (RQ2): what flows through the informal communication channels of projects, and how much of it is decisions and risks?',
+  'data.tribe15.d3': 'Scientific paper 3, "Why the Triage Gets It Right" (RQ3): which context factors most determine whether AI understands the reality of a project?',
+  'data.tribe15.meetings': 'Tuesdays, 7PM to 8:30PM BRT',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sync Points',

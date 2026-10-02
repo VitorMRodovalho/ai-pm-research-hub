@@ -205,6 +205,21 @@ export const TRIBES: Tribe[] = [
     videoUrl: '',
     videoDuration: '',
   },
+  {
+    // Tribo 15, criada em 01/10/2026 com o material da liderança. LinkedIn e vídeo vêm do banco
+    // (get_tribe_picker_cards, #1227); aqui ficam só as chaves de texto.
+    id: 15,
+    nameKey: 'data.tribe15.name',
+    leader: 'Clendson Gonçalves',
+    leaderLinkedIn: '',
+    quadrant: 'q1',
+    quadrantLabelKey: 'data.tribe15.quadrantLabel',
+    descriptionKey: 'data.tribe15.desc',
+    deliverableKeys: ['data.tribe15.d1', 'data.tribe15.d2', 'data.tribe15.d3'],
+    meetingScheduleKey: 'data.tribe15.meetings',
+    videoUrl: '',
+    videoDuration: '',
+  },
 ];
 
 /**
