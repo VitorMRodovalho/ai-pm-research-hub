@@ -230,3 +230,36 @@ owner/coordinator, candidato/membro.
     weekly), #84 Onda 3 (kpi-board), e qualquer feature multi-stakeholder.
 
 Assisted-By: Claude (Anthropic) + council 4-agent Tier 3
+
+---
+
+## Emenda (02/10/2026, #2542): divergência entre avaliadores por candidatura, e não por fase
+
+Decidida pelo GP em 01/10/2026 (ADR-0134, decisão B6). Substitui a regra `high_variance` da seção
+"Anomaly table + trigger" acima.
+
+**Por que a regra original nunca funcionou** (medido em 01/10/2026, `cycle4-2026`):
+1. o gatilho só rodava na passagem `evaluating` → `evaluations_closed`, e um ciclo com entrada
+   contínua não faz essa passagem: 0 linhas em `selection_evaluation_anomalies`;
+2. o limiar `stddev > 1.5` era de outra escala: a nota objetiva vai de 23 a 245;
+3. misturava objetiva e entrevista no mesmo cálculo. Simulada como estava, marcaria 91 de 93.
+
+E o gatilho nunca gravava `payload.evaluator_id`, que é a chave pela qual
+`get_evaluator_calibration_stats` conta anomalias por avaliador: essa contagem era zero por construção.
+
+**Regra nova:**
+- **Quando roda:** o gatilho `trg_evaluation_divergence` roda na própria avaliação (inserção, ou
+  mudança de nota ou de submissão).
+- **O que compara:** só notas do mesmo tipo de avaliação (objetiva, entrevista, extra de líder),
+  quando há 2 ou mais submetidas na candidatura.
+- **Quando marca:** quando a diferença entre a maior e a menor nota passa de 30% da média daquele tipo.
+- **O que grava:** uma linha de `high_variance` por avaliador envolvido, com `evaluator_id`,
+  `evaluator_ids`, média, mínimo, máximo e diferença relativa.
+- **Reavaliação:** recalcula. O alerta aberto do mesmo tipo é refeito, e o resolvido fica.
+- **O que sai:** o gatilho de fase. Mudar a fase do ciclo não produz mais alerta nenhum.
+
+**Medido no preenchimento:** 21 candidaturas marcadas em todos os ciclos (10 objetivas no ciclo 4,
+10 no ciclo 3, 1 extra de líder na segunda turma do ciclo 3), com 42 linhas.
+
+**Fica para a etapa seguinte da ADR-0134:** levar o caso marcado a um terceiro avaliador. Por ora, o
+alerta alimenta a calibragem do comitê.

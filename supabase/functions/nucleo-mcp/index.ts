@@ -714,7 +714,7 @@ Sem confirm=true, retorna preview com **applicant_summary** (resumo do que você
 submit_evaluation(application_id, scores={ ... }, confirm=true)
 \`\`\`
 
-Grava na tabela. Trigger marca conflito de avaliação se sua avaliação divergir muito da média (anomalia detectada via selection_evaluation_anomalies).
+Grava na tabela. Se houver outra nota do mesmo tipo (objetiva, entrevista ou extra de líder) na mesma candidatura e a diferença entre a maior e a menor passar de 30% da média, um alerta é registrado em selection_evaluation_anomalies para a calibragem do comitê. Não bloqueia; só sinaliza.
 
 ## O que você NÃO pode fazer
 
@@ -950,7 +950,7 @@ Durante a fase 'evaluating': sim, re-submit substitui a versão anterior. Após 
 
 ## Q: O que faço se reconheço o candidato e tenho conflito de interesse?
 
-Declare antes de qualquer get_application_detail. PM remove você da designação para essa app específica. **Não tente avaliar mesmo assim** — trigger detecta anomalia (selection_evaluation_anomalies) se sua nota divergir muito da média.
+Declare antes de qualquer get_application_detail. PM remove você da designação para essa app específica. **Não tente avaliar mesmo assim.** Nenhum gatilho detecta conflito de interesse: a declaração é sua, e o alerta de divergência de nota é outra coisa (calibragem).
 
 ## Q: Por que applicant_summary aparece no preview e não na execução?
 
@@ -962,7 +962,7 @@ Cycle B2 (2026): Vitor, Fabricio, Sarah, Roberto. Pedro está inativo. Não há 
 
 ## Q: O que é a anomalia detectada quando minha nota diverge?
 
-Trigger calcula desvio padrão da nota agregada por critério. Se sua nota está >2σ da média dos avaliadores, registra em selection_evaluation_anomalies para PM revisar (não bloqueia, só sinaliza).
+Quando há 2 ou mais notas do mesmo tipo (objetiva, entrevista ou extra de líder) na mesma candidatura, o gatilho compara a maior e a menor. Se a diferença passa de 30% da média daquele tipo, registra um alerta em selection_evaluation_anomalies para cada avaliador envolvido, e a calibragem do comitê conta esses alertas por avaliador. Não bloqueia, só sinaliza. Regra da #2542 (emenda à ADR-0059).
 
 ## Q: Onde achar o cycle ativo?
 
