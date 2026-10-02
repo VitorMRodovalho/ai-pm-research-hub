@@ -6,8 +6,8 @@ user_invocable: true
 
 Padrão de publicação do canal `UCIEiHte8f_AVwCXP2wZ7DjQ` (Núcleo de Estudos e Pesquisa em IA e GP).
 
-Ferramentas em `~/projects/_pmo/youtube/`: `upload.py`, `traduzir_vtt.py`, `blindar_siglas.py`,
-`subir_legendas.py`, `set_thumbnail.py`, `list_uploads.py`, `clean_vtt.py`. Tokens: `token.json`
+Ferramentas em `~/projects/_pmo/youtube/` (versionadas no `pmo-workspace` desde 02/10/2026): `upload.py`,
+`traduzir_vtt.py`, `blindar_siglas.py`, `blindar_nomes.py`, `subir_legendas.py`, `set_thumbnail.py`, `list_uploads.py`, `clean_vtt.py`. Tokens: `token.json`
 (upload) e `token_captions.json` (legendas, escopo `youtube.force-ssl`). Transcrição local:
 `~/.venvs/video/bin/whisperx`; tradução local: `~/.venvs/video` com NLLB-200.
 
@@ -39,6 +39,12 @@ ffprobe -v error -select_streams v:0 -skip_frame nokey -show_entries frame=pts_t
 
 **Guardar o offset** (`tempo_no_corte = tempo_original - <corte>`) num `CORTE.md` ao lado do master.
 Sem ele, ninguém reancora nada depois.
+
+**É aqui também que sai trecho com dado pessoal sem função institucional.** Medido em 01/10/2026,
+na Liderança #13: a conversa social perto do fim trazia a situação de visto e o país de nascimento
+de um membro. O GP decidiu cortar, e como o vídeo já estava no ar (não listado), custou um envio
+novo, as 3 legendas de novo (3 × 400 unidades) e o deslocamento de capítulos e da ata. Leia a
+transcrição procurando esse tipo de trecho ANTES do primeiro envio, e leve a decisão ao GP.
 
 ### 2. Áudio: MEDIR, nunca recitar
 
@@ -112,6 +118,8 @@ erra e o erro é institucionalmente caro diante de capítulo parceiro.
   --out-dir . --base legenda        # gera legenda_es.vtt e legenda_en.vtt, cue a cue
 python ~/projects/_pmo/youtube/blindar_siglas.py --fonte legenda-pt.vtt \
   legenda_en.vtt legenda_es.vtt     # passe de blindagem, condicionado a cada cue da fonte
+python ~/projects/_pmo/youtube/blindar_nomes.py --fonte legenda-pt.vtt \
+  legenda_en.vtt legenda_es.vtt     # nomes próprios; apelido da reunião vai num TSV local (--nomes)
 ```
 
 **O nome próprio traduzido como substantivo comum é uma família à parte, e a regra antiga não a
@@ -127,6 +135,20 @@ office" e "as a Núcleo". O certo é `\bcore\b` → `Núcleo`, deixando o "the" 
 **Pareamento por índice exige contagem igual.** `blindar_siglas.py` recusa rodar se fonte e alvo
 tiverem números diferentes de cue, porque é a igualdade de contagem que torna o pareamento
 legítimo. Conferir isso também serve de porteiro da tradução: 972 na fonte, 972 em cada saída.
+
+**Nome de pessoa também é traduzido, e o `blindar_siglas.py` não o cobre.** Medido em 01/10/2026
+(Liderança #13): "Messias" virou "Messiah" em **11 de 11** ocorrências, "Paulo" virou "Paul"/"Pablo",
+"Vitor" virou "Victor", um apelido virou "the Witch", e o tradutor inventou frase ("hackathon" virou
+"cuchillo"). O `blindar_nomes.py` cobre prenomes comuns em português, com as mesmas garantias do
+irmão. Nome e apelido específicos de uma reunião vão num TSV local por `--nomes`, fora do git,
+porque é dado de pessoa. Testado nas faixas daquela reunião: 36 cues no en e 28 no es das traduções
+brutas, 0 na segunda passada, e 1 acerto que a correção manual tinha perdido ("João" → "John").
+A regra só troca o que conhece: revise os cues que têm nome.
+
+**Termo quebrado entre dois cues escapa da busca exata.** Medido em 01/10/2026: a correção de
+"influência digital" para "fluência digital" não achava a string, porque a fala estava em dois cues
+("a competência e influência" + "digital, ..."). Procure pelo contexto da fala, não só pela string,
+e confira depois as três faixas.
 
 ### 5. DESLOCAR as legendas antes de subir
 
@@ -220,6 +242,10 @@ confirmar por superfície independente.
 
 Para provar que ficou público, **não** usar oembed: ele responde para não listado também. Usar o
 feed RSS do canal (`videos.xml?channel_id=...`), que só lista público.
+
+⚠️ **O feed pode voltar VAZIO, e vazio não prova nada.** Medido em 01/10/2026: 0 entradas em duas
+leituras seguidas; no dia seguinte, 15. O controle positivo é o feed ter entradas. Se vier vazio, a
+leitura não vale, e fica a da API (`videos.list`, `status.privacyStatus`), relida depois de uma pausa.
 
 ## Auditar o acervo: o `playlistItems` de uploads DEVOLVE DUPLICATA
 
