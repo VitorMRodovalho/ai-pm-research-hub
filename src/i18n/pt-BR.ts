@@ -3202,6 +3202,13 @@ const ptBR: Record<string, string> = {
   'data.tribe14.quadrantLabel': 'Q1 — Praticante Aumentado',
   'data.tribe14.desc': 'Base "101" de fluência em IA generativa que prepara os pesquisadores antes das tribos temáticas. Formato aberto de aprendizado, sem entregável externo — o fundamento conceitual que sustenta o Radar e a Produtividade Aumentada.',
   'data.tribe14.meetings': 'A definir',
+  'data.tribe15.name': 'Segundo Cérebro & Comunicação de Times',
+  'data.tribe15.quadrantLabel': 'Q1 — Praticante Aumentado',
+  'data.tribe15.desc': '80 grupos de WhatsApp. Uma única cabeça. Todo gestor brasileiro conhece essa realidade e quase ninguém mede: o projeto vive nos grupos de mensagens, e a atenção não acompanha. A tribo estuda como a IA separa o que exige ação do ruído, devolvendo a atenção do gestor ao que importa e investigando o que escapa. Se a dor é sua, te espero na tribo.',
+  'data.tribe15.d1': 'Artigo científico 1, "A Máquina que Aprende a Decidir como Você" (RQ1): como uma triagem aprende o critério de um gestor pela forma como ele responde, adia ou ignora mensagens?',
+  'data.tribe15.d2': 'Artigo científico 2, "O que Passa Despercebido" (RQ2): o que circula pelos canais informais de comunicação de projetos, e quanto disso são decisões e riscos?',
+  'data.tribe15.d3': 'Artigo científico 3, "Por que a Triagem Acerta" (RQ3): quais fatores de contexto mais determinam se a IA entende a realidade de um projeto?',
+  'data.tribe15.meetings': 'Terças, 19h às 20h30',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sincronizar Pontos',

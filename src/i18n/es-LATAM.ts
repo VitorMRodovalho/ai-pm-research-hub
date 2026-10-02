@@ -3195,6 +3195,13 @@ const esLATAM: Record<string, string> = {
   'data.tribe14.quadrantLabel': 'C1 — Practicante Aumentado',
   'data.tribe14.desc': 'Base "101" de fluidez en IA generativa que prepara a los investigadores antes de las tribus temáticas. Formato abierto de aprendizaje, sin entregable externo — el fundamento conceptual que sustenta el Radar y la Productividad Aumentada.',
   'data.tribe14.meetings': 'Por definir',
+  'data.tribe15.name': 'Segundo Cerebro & Comunicación de Equipos',
+  'data.tribe15.quadrantLabel': 'C1 — Practicante Aumentado',
+  'data.tribe15.desc': '80 grupos de WhatsApp. Una sola cabeza. Todo gestor brasileño conoce esta realidad y casi nadie la mide: el proyecto vive en los grupos de mensajes, y la atención no da abasto. La tribu estudia cómo la IA separa lo que exige acción del ruido, devolviendo la atención del gestor a lo que importa e investigando lo que se escapa. Si el dolor es tuyo, te espero en la tribu.',
+  'data.tribe15.d1': 'Artículo científico 1, "La Máquina que Aprende a Decidir como Tú" (RQ1): ¿cómo aprende un sistema de triaje el criterio de un gestor por la forma en que responde, pospone o ignora mensajes?',
+  'data.tribe15.d2': 'Artículo científico 2, "Lo que Pasa Desapercibido" (RQ2): ¿qué circula por los canales informales de comunicación de proyectos, y cuánto de eso son decisiones y riesgos?',
+  'data.tribe15.d3': 'Artículo científico 3, "Por qué el Triaje Acierta" (RQ3): ¿qué factores de contexto determinan más si la IA entiende la realidad de un proyecto?',
+  'data.tribe15.meetings': 'Martes, 19h a 20h30 BRT',
 
   // ── Gamification v2 (levels, achievements, tribe ranking) ──
   'gamification.sync': '🔄 Sincronizar Puntos',
