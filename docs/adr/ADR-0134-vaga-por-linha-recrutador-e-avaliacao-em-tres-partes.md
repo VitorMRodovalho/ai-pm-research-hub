@@ -1,6 +1,6 @@
 # ADR-0134 - Vaga por linha de pesquisa e por organização: recrutador, avaliação em três partes e mecanismos por candidatura
 
-**Status:** Proposta (01/10/2026). Todas as decisões abaixo foram tomadas pelo GP em 01/10/2026, uma a uma, sobre um caderno com contexto medido, opções e recomendação; falta a aceitação da ADR.
+**Status:** Aceita (02/10/2026). Aprovada pelo GP nesta data ("1 e 2 aprovados para seguir"), depois das decisões de 01/10/2026, tomadas uma a uma sobre um caderno com contexto medido, opções e recomendação.
 **Pedido:** [#2393](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2393) (direção do GP em 20/09/2026: vaga por tema de pesquisa, com o líder da tribo na seleção). Esta ADR responde as quatro perguntas que a #2393 deixou abertas.
 **Insumo:**
 - gap assessment do processo de vagas, com revisão nas três personas (candidatura, GP e líder recrutador, capítulo e parceiro);
