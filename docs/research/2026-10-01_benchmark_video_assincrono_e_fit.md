@@ -52,6 +52,7 @@
 - **Illinois (AI Video Interview Act, desde 2020):** aviso, explicação, consentimento, compartilhamento só com quem avalia e exclusão em 30 dias a pedido [lido].
 - **PL 2338:** classifica a avaliação de candidatos como alto risco, mas não é lei (conferido).
 - **LGPD:** a imagem pode revelar raça ou deficiência, então convém tratar o vídeo como dado sensível, com consentimento específico e destacado (Art. 11). Se a IA só transcreve e um humano decide com rubrica, o Art. 20 não se aplica. É leitura do agente, não parecer jurídico.
+  > **Nota de 03/10/2026:** o parecer jurídico de 21/09/2026 conclui que imagem e voz não atraem o art. 11 sem tratamento biométrico para identificação, e que a base pode ser o art. 7º, V ou o consentimento. A leitura acima sobre o art. 11 foi superada; ver a Emenda de 03/10/2026 na ADR-0134.
 
 **Acessibilidade:**
 - **Celular:** 65% de quem usa internet no Brasil acessa só pelo celular, e 39% de quem tem celular ficou sem dados ao menos uma vez em 3 meses (TIC Domicílios 2025) [lido].
