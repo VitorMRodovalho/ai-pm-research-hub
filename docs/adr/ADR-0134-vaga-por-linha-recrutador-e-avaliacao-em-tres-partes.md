@@ -109,7 +109,7 @@ Geral (Núcleo), organização e linha. A candidatura guarda o par pergunta e re
 - A vaga diz: "declarar uso de IA ou recusar a análise por IA não reduz a nota".
 - **Supersessão registrada:** o "Gate 1" da ADR-0066, IA antes da entrevista, já foi aposentado no código (#1640) sem ADR. Esta ADR registra essa supersessão.
 - **No vídeo, a IA só transcreve e legenda.** Sem nota automática e sem análise de rosto, voz ou emoção. Avaliar candidatos com IA é alto risco no EU AI Act (Anexo III, aplicação em 02/12/2027) e no PL 2338/2023 (não é lei em 01/10/2026). Inferir emoção no trabalho é proibido na UE.
-- O vídeo é tratado como dado sensível, com consentimento específico e destacado (LGPD Art. 11).
+- O vídeo tem consentimento específico e destacado, e a alternativa ao vivo continua sem pedir justificativa. É uma escolha de cautela do Núcleo, não uma exigência do art. 11 da LGPD; a base legal fica para o Encarregado confirmar (emendado em 03/10/2026, ver a Emenda no fim).
 
 ### 6. Leitura por vaga (portão novo, antes do piloto)
 
@@ -232,3 +232,28 @@ O CR tem prazo e regra de reversão, e a R3 incorpora a mudança para o ciclo 5.
 ## Plano
 
 Em `docs/planning/2026-10-01_plano_adr0134_exame_de_otimismo.md`, com etapas, dependências e o exame de otimismo pedido pelo GP em A1. O benchmark está em `docs/research/2026-10-01_benchmark_video_assincrono_e_fit.md`.
+
+## Emenda (03/10/2026, #2393): base legal do vídeo
+
+**O que dizia.** A seção 5 tratava o vídeo como dado sensível, com consentimento específico e destacado, citando o art. 11 da LGPD. A frase veio do benchmark de 01/10, que se declarava leitura do agente e não parecer jurídico.
+
+**Por que mudou.** O parecer jurídico de 21/09/2026, da revisão voluntária dos instrumentos do Núcleo, já respondia a essa pergunta para os usos da plataforma:
+- foto, vídeo e voz são dados pessoais comuns;
+- só viram dado biométrico sensível quando passam por tratamento técnico para identificar ou autenticar alguém de forma inequívoca, o que não acontece aqui: a IA só transcreve e legenda, sem reconhecimento facial, sem identificação de voz e sem template biométrico;
+- a base legal pode ser o art. 7º, V (procedimento pré-contratual) ou o consentimento;
+- o ponto de maior atenção é o art. 20, sobre decisão automatizada e pontuação.
+
+O mesmo parecer recomendou retirar a classificação de imagem e voz como categoria especial do art. 11 nos instrumentos.
+
+**Decisão do GP (03/10/2026, opção A de três):** corrigir agora, com texto neutro.
+- O consentimento específico e destacado do vídeo continua, junto com a alternativa ao vivo, como escolha de cautela.
+- A base legal do vídeo fica para o Encarregado confirmar. O pedido segue junto com a revisão mínima do piloto: texto do consentimento, aviso da vaga e prazo de guarda do vídeo.
+- O art. 20 já está atendido pelo desenho da seção 5: no vídeo a IA não dá nota, e a decisão é sempre humana. A triagem por IA que já existe continua opcional, com consentimento próprio, e não entra na nota.
+
+**Opções descartadas:**
+- esperar a resposta do Encarregado para corrigir uma vez só, deixando até lá a ADR dizer o contrário do parecer;
+- manter o art. 11 por cautela, contra a recomendação expressa do parecer.
+
+**Fora desta emenda:** o Acordo de Operador (Doc 09) na plataforma ainda está na v1, de 11/06/2026, e a cláusula 4.4 dele ainda trata imagem e voz como dado sensível do art. 11. A correção ali é uma versão nova do documento, em trilha própria.
+
+A linha E4 do plano e o benchmark de 01/10 foram ajustados na mesma mudança.
