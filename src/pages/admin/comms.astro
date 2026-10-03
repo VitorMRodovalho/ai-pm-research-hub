@@ -706,6 +706,11 @@ const COMMS_I18N = {
 
   // ── S4: Top Content ──
 
+  // #2153 (decisao do GP, 03/10/2026): a API do LinkedIn nao entrega imagem do post (0 de 50 posts
+  // em 03/09/2026), entao o card de LinkedIn sem imagem usa a imagem padrao do Nucleo, e nao o
+  // placeholder de camera. Instagram e YouTube seguem com o placeholder quando faltar imagem.
+  const NUCLEO_DEFAULT_CARD_IMG = '/assets/og-image.png';
+
   async function loadTopContent(channel: string | null = null) {
     const section = document.getElementById('top-content-section');
     const body = document.getElementById('top-content-body');
@@ -726,8 +731,9 @@ const COMMS_I18N = {
       body.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">${items.map((m: any) => {
         const channelColor: Record<string, string> = { instagram: 'text-pink-600', youtube: 'text-red-600', linkedin: 'text-blue-700' };
         const date = m.published_at ? new Date(m.published_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+        const img = m.cached_image_url || m.thumbnail_url || (m.channel === 'linkedin' ? NUCLEO_DEFAULT_CARD_IMG : '');
         return `<article class="rounded-xl border border-[var(--border-default)] overflow-hidden">
-          ${(m.cached_image_url || m.thumbnail_url) ? `<img src="${escapeHtml(m.cached_image_url || m.thumbnail_url)}" alt="" class="w-full h-32 object-cover" loading="lazy" />` : '<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-[var(--text-muted)] text-2xl">' + (m.channel === 'youtube' ? '\u25B6' : '\uD83D\uDCF7') + '</div>'}
+          ${img ? `<img src="${escapeHtml(img)}" alt="" class="w-full h-32 object-cover" loading="lazy" />` : '<div class="w-full h-32 bg-gray-100 flex items-center justify-center text-[var(--text-muted)] text-2xl">' + (m.channel === 'youtube' ? '\u25B6' : '\uD83D\uDCF7') + '</div>'}
           <div class="p-3">
             <div class="flex items-center gap-1.5 mb-1">
               <span class="${channelColor[m.channel] || ''} text-[.65rem] font-bold uppercase">${escapeHtml(m.channel)}</span>
