@@ -5,6 +5,7 @@ import OnboardingCockpitNudge from '../../components/onboarding/OnboardingCockpi
 import HomepageHero from '../../components/sections/HomepageHero.astro';
 import NucleoSection from '../../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../../lib/schedule';
+import { loadHomeStats } from '../../lib/homeStats';
 import ModelSection from '../../components/sections/ModelSection.astro';
 import PartnersSection from '../../components/sections/PartnersSection.tsx';
 import TribesSection from '../../components/sections/TribesSection.astro';
@@ -24,7 +25,8 @@ import PresentationLayer from '../../components/ui/PresentationLayer.astro';
 import PlatformStatsSection from '../../components/homepage/PlatformStatsSection.astro';
 
 const lang = 'es-LATAM' as const;
-const homeSchedule = await getHomeSchedule();
+// #2553: uma busca só dos números da home, passada aos blocos que os mostram.
+const [homeSchedule, homeStats] = await Promise.all([getHomeSchedule(), loadHomeStats()]);
 const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
 // R8: localizes the public AgendaVivaPublic island in the reframed agenda section.
 const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
@@ -34,11 +36,11 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
   <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
   {/* ── Zona ANON (arriba — el embudo): valor → modelo → prueba → escalera → cobertura → conversión → agenda → equipo ── */}
-  <HomepageHero lang={lang} />
+  <HomepageHero lang={lang} stats={homeStats} />
   <ModelSection lang={lang} />
   <PlatformStatsSection lang={lang} />
   <LadderSection lang={lang} />
-  <ChaptersSection lang={lang} />
+  <ChaptersSection lang={lang} stats={homeStats} />
   <RouterSection lang={lang} />
   <PartnersSection client:load lang={lang} />
   <WeeklyScheduleSection lang={lang} />

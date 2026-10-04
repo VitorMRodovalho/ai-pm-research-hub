@@ -13,6 +13,10 @@
  * Behavioural checks assert RELATIONSHIPS (== signed; summary length == signed) rather than hardcoding
  * live counts, so the contract survives legitimate pipeline growth.
  *
+ * #2553 (03/10/2026): the static checks still describe what migration 094 delivered. The LIVE public
+ * RPCs (get_homepage_stats, get_public_platform_stats) now read 'engaged', by owner decision; the
+ * behavioural check below asserts that, and get_executive_kpis stays on 'signed'.
+ *
  * Cross-ref: #481 (follow-up to #479); ADR-0100.
  */
 
@@ -76,19 +80,22 @@ test('#481 static: Y + Z invariants added to check_schema_invariants', () => {
 });
 
 // ── BEHAVIOURAL (DB-gated) ────────────────────────────────────────────────────────
-test('#481 behavioural: 3 unrendered RPCs == get_chapter_metrics signed', { skip: dbGated ? false : skipMsg }, async () => {
+// #2553 (decisão do GP, 03/10/2026): as duas RPCs PÚBLICAS passaram de 'signed' para 'engaged'
+// (assinados + em negociação, 15 em toda peça externa). get_executive_kpis segue em 'signed'.
+test('#481/#2553 behavioural: public RPCs == engaged, executive KPIs == signed', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = client();
   const { data: m, error } = await sb.rpc('get_chapter_metrics');
   assert.ifError(error);
   const signed = Number(m.signed);
+  const engaged = Number(m.engaged);
 
   const { data: home, error: e1 } = await sb.rpc('get_homepage_stats');
   assert.ifError(e1);
-  assert.equal(Number(home.chapters), signed, 'get_homepage_stats.chapters == signed');
+  assert.equal(Number(home.chapters), engaged, 'get_homepage_stats.chapters == engaged');
 
   const { data: plat, error: e2 } = await sb.rpc('get_public_platform_stats');
   assert.ifError(e2);
-  assert.equal(Number(plat.total_chapters), signed, 'get_public_platform_stats.total_chapters == signed');
+  assert.equal(Number(plat.total_chapters), engaged, 'get_public_platform_stats.total_chapters == engaged');
 
   const { data: exec, error: e3 } = await sb.rpc('get_executive_kpis');
   assert.ifError(e3);
