@@ -1,7 +1,8 @@
 # Spec #2553 (PR 2 em diante): vitrine pública do que o Núcleo produz e sabe
 
 **Status:** PROPOSTA. Não executar antes da contraprova em sessão limpa (seção 9) e das decisões do GP (seção 6).
-**Data:** 04/10/2026. **Issue:** #2553. **Depende de:** PR 1 da #2553 (contadores de fonte única), branch
+**Data:** 04/10/2026. **Issues:** #811 (origem: feed de projeção do Núcleo na landing, aberta em 19/06) e #2553
+(reorganização da home). **Depende de:** PR 1 da #2553 (contadores de fonte única), branch
 `feat/2553-contadores-fonte-unica`, aplicada e mergeada.
 **Origem dos números:** `[re-medido]` = consulta só leitura desta sessão em 04/10/2026; `[inventário]` = sondagem
 externa do inventário de 04/10 (página pública, YouTube, Spotify, Drive), não re-medida aqui. Re-meça tudo antes
@@ -41,7 +42,16 @@ de executar: número em spec é relógio, não fato.
 capítulos 5 (home 15 depois da PR 1) e eventos 620 (home 650).
 
 **Legenda trilíngue:** 13 de 101 vídeos do canal `[inventário]`. Campos de conteúdo trilíngues no banco: só
-`events.title_i18n` e `tribes.name_i18n` `[re-medido]`.
+`events.title_i18n` e `tribes.name_i18n` `[re-medido]`, e 7 das 13 tribos ativas (ids 9 a 15) não têm nome em en
+nem es `[re-medido]`.
+
+**Substrato que já existe** (a #811 manda reusar, não recriar):
+- `get_public_impact_data` já devolve listas: `partners` 11, `timeline` 4, `recognitions` 1, `tribes_summary` 15
+  (contra 13 tribos ativas), `chapters_summary` 5, `recent_publications` 0 `[re-medido]`. Ela tem **consumidor
+  externo**: o projeto pmigo-plataforma a usa como fonte oficial de números públicos (#2365). Mudar o contrato dela
+  muda o que outro site publica.
+- `event_showcases` e a tool MCP `register_showcase`: protagonismo de membro em reunião geral, com XP. É dado
+  identificado por membro: na vitrine pública, só agregado ou com base decidida (D1).
 
 ## 3. Princípios (critérios de aceite de todas as fases)
 
@@ -86,7 +96,11 @@ capítulos 5 (home 15 depois da PR 1) e eventos 620 (home 650).
 - `get_public_wiki_pages(p_lang)` e `get_public_wiki_page(p_slug, p_lang)`: só páginas `visibility = 'public'`.
 - `/about`: repontar `get_public_impact_data` para os mesmos helpers da home (`v_operational_members`,
   `get_impact_hours_canonical`, `get_chapter_metrics().engaged`). Decidir antes se 3427 h é outra métrica legítima
-  (rotular) ou drift (corrigir).
+  (rotular) ou drift (corrigir). Como ela tem consumidor externo (#2365), mudança de semântica de campo é
+  versionada e avisada ao pmigo-plataforma, nunca silenciosa.
+- **Uma fonte pública, não duas.** Antes de criar `get_public_outputs`, decidir com a contraprova se as listas
+  novas entram em `get_public_impact_data` (que já é a superfície pública e já tem listas) ou se ela passa a ler
+  da RPC nova. O que não pode é a home, o `/about` e o pmigo-plataforma lerem números de lugares diferentes.
 
 Todas aplicam o portão de confidencialidade (`visibility <> 'confidential'` / `rls_can_see_initiative`) e excluem
 vídeo não listado. A nova tool MCP correspondente (ex.: `public_outputs`) lê as mesmas RPCs.
@@ -154,6 +168,7 @@ vídeo não listado. A nova tool MCP correspondente (ex.: `public_outputs`) lê 
 - Tradução sem revisão humana pode publicar erro em en/es: o fallback marcado é melhor que tradução ruim.
 - Abrir o wiki expõe conteúdo escrito para membros: a decisão é por página, nunca em massa.
 - "Público" marcado por muitas mãos tende a divergir: a marca vive no dono, com trilha de quem marcou.
+- `get_public_impact_data` alimenta outro site (#2365): mudar campo sem aviso publica número errado fora daqui.
 
 ## 8. Checklist de verificação (formato `/spec`)
 
@@ -183,3 +198,32 @@ Abra uma sessão nova neste repositório, sem histórico, e cole:
 > 5. Verifique a ordem das fases: o banco sai antes do frontend que o lê, e nenhuma fase depende de decisão ainda
 >    aberta sem dizer.
 > 6. Diga o que está superdimensionado e pode sair, e o que falta para ser plataforma e não página.
+> 7. Avalie a seção 10 (referência externa): o que entra no plano, em que fase, e o que não cabe aqui.
+
+## 10. Referência externa: Akita's AI Lair (lido no Chrome em 04/10/2026)
+
+Site pessoal (ailair.akitaonrails.com), percorrido na home, Workflow, Writing, Newsletter, Podcasts, uma página de
+ferramenta, Games, Setup e a versão pt-BR. Não é comunidade, mas resolve bem o mesmo problema: mostrar muita
+produção para quem chega de fora. O que serve aqui, e onde entraria:
+
+| padrão observado | como aparece lá | aplicação aqui | fase |
+|---|---|---|---|
+| Um molde para toda página | selo de categoria, H1 que diz o resultado, um parágrafo, 2 chamadas, um artefato real, blocos de detalhe, "More on my blog", "Keep going" | páginas de tribo, webinars, CPMAI e produção no mesmo molde | F4 |
+| Toda página termina em "próximos passos" | "Keep going" com 3 páginas relacionadas | a jornada do visitante deixa de terminar em beco sem saída | F4, F5 |
+| Mostrar a coisa real, com legenda | print real do monitor: "43 repositórios verificados, 6 com algo esperando" | um retrato real da semana do Núcleo (agenda, entregas), com legenda | F5 |
+| Um diagrama explica o sistema | ciclo diário em um desenho; arquitetura em um isométrico | o ciclo do Núcleo (seleção, tribo, pesquisa, entrega, publicação, certificado) em um desenho | F5 |
+| Número ao lado do que ele prova | "7 modelos, 2 sabotagens, US$ 658" junto do benchmark, não num bloco solto | contagem de webinars junto dos replays; de artigos junto da lista | F3, F5 |
+| Escrita curada por tema | Benchmarks, Como trabalho, Experimentos, Opiniões | conhecimento por tema: MCP, CPMAI, governança, pesquisa por quadrante | F6 |
+| Cada canal diz o que entrega | "cada lugar mostra um lado meu": X cru, LinkedIn formal, Instagram lazer, blog completo | casa com o papel de canal do plano de comunicação: LinkedIn autoridade, Instagram comunidade, YouTube biblioteca, Spotify conversas | F5 |
+| Transparência explícita | "Ninguém me paga para dizer isto" | voluntário, sem fins lucrativos, com os capítulos PMI; como tratamos dado pessoal | F5 |
+| Expectativa antes do contato | "Antes de escrever": o que não responde, sem resposta automática | para capítulo, para voluntário, para imprensa: o que esperar e em quanto tempo | F5 |
+| Vídeo que só carrega no clique | miniatura + play, sem iframe; selos de onde, idioma, data e duração | o player leve da página de produção | F4 |
+| Trilíngue de verdade | 6 idiomas com hreflang e seletor no topo e no rodapé; conteúdo traduzido; legenda automática do YouTube aceita como fallback | hreflang nas 3 versões; legenda automática como fallback declarado enquanto as 88 sem legenda trilíngue não saem | contínuo |
+| Instalação com botão de copiar | trecho de terminal com "Copy" e estrelas/versão ao vivo | o "conectar ao MCP" copiável na seção de conhecimento | F6 |
+| Faixa final com missão | "Tudo aqui é open source" + 2 chamadas | "Tudo aqui é aberto" (frameworks CC-BY-SA, wiki CC-BY-4.0) + Participe / Para capítulos | F5 |
+| Boletim feito por pipeline | "newsroom de agentes": links na semana, montagem no domingo, envio segunda 7h | um resumo semanal do que o Núcleo produziu, gerado da mesma RPC da vitrine | depois de F3 |
+
+O que **não** copiar sem conferir: uma varredura simples das folhas de estilo no DOM não achou regra de
+`prefers-reduced-motion` (a varredura lê só o nível de topo e pode não ver regra aninhada); aqui isso é requisito
+da PR 3. E ele é de uma pessoa: a voz em primeira pessoa não serve para comunidade, o molde sim.
+
