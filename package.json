@@ -36,7 +36,7 @@
     "test:verdict": "node scripts/test-verdict.mjs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "~14.2.6",
+    "@astrojs/cloudflare": "14.2.3",
     "@astrojs/react": "^6.0.2",
     "@astrojs/rss": "^4.0.18",
     "@astrojs/sitemap": "^3.7.3",
