@@ -121,7 +121,10 @@ test('#479 behavioural: get_public_impact_data chapters/engaged/webinars track t
   assert.equal(Number(impact.webinars), Number(realized), 'impact.webinars == realized (completed)');
 });
 
-test('#479 behavioural: exec_portfolio_health chapters_participating == signed', { skip: dbGated ? false : skipMsg }, async () => {
+// #2553 (decisão do GP, 03/10/2026): a meta "Capítulos PMI" conta os capítulos assinados + em
+// negociação, 'engaged', como toda peça externa. Era 'signed' desde o #479. O 'signed' continua
+// canônico para o detalhe do painel admin e para get_executive_kpis (ver p481).
+test('#2553 behavioural: exec_portfolio_health chapters_participating == engaged', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: health, error } = await sb.rpc('exec_portfolio_health');
   assert.ifError(error);
@@ -129,5 +132,5 @@ test('#479 behavioural: exec_portfolio_health chapters_participating == signed',
   assert.ifError(e1);
   const row = (health || []).find((r) => r.metric_key === 'chapters_participating');
   assert.ok(row, 'portfolio health has chapters_participating');
-  assert.equal(Number(row.current), Number(m.signed), 'chapters_participating current == signed');
+  assert.equal(Number(row.current), Number(m.engaged), 'chapters_participating current == engaged');
 });

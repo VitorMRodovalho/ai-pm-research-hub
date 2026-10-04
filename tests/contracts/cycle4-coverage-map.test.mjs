@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+
+const ROOT = process.cwd();
 
 // PD-MAP-WORLD (Ciclo 4, 2026-06-23) lock — the homepage coverage map is now an
 // Atlantic-centered equirectangular WORLD map of member distribution, replacing the
@@ -24,7 +27,6 @@ const SECTION = 'src/components/sections/ChaptersSection.astro';
 const ASSET = 'public/assets/maps/world-equirect.svg';
 const MIG_COL = 'supabase/migrations/20260805000226_pd_map_2_allow_state_column.sql';
 const MIG_V2 = 'supabase/migrations/20260805000241_pd_map_world_state_reach_v2.sql';
-const MIG_CONT_897 = 'supabase/migrations/20260805000253_fix_continent_reach_unmapped_country_vanish_897.sql';
 
 test('PD-MAP-WORLD: the Brazil-only choropleth was retired (no BrazilMap import remains)', () => {
   assert.ok(!existsSync('src/components/sections/BrazilMap.astro'), 'BrazilMap.astro removed');
@@ -121,8 +123,10 @@ test('PD-MAP-WORLD (#897): continent-reach keeps every unmapped-country (XX) mem
   // (country_reach folds XX->ZZ) nor a precise pin (no centroid). That silently dropped (a) a
   // precise-consenter in an unsupported country (#897) and (b) >=3 members spread across unmapped
   // countries (XX bucket >=3). The fix: XX bypasses BOTH filters and always stays in the residual.
-  const rpc = read(MIG_CONT_897);
-  assert.ok(rpc, '#897 continent-reach fix migration present');
+  // #2553: lê a captura VIGENTE da função, não o arquivo do #897. O #2553 redefiniu a função
+  // (população = equipe de pesquisa), e a regra do XX é invariante corrente, não entrega histórica.
+  const rpc = latestFunctionCapture(ROOT, 'get_public_continent_reach').block;
+  assert.ok(rpc, 'continent-reach current capture present');
   assert.match(rpc, /CREATE OR REPLACE FUNCTION public\.get_public_continent_reach\(\)/, 'redefines continent_reach');
   // the XX-bypass branch keeps unmapped-country members in the residual
   assert.match(rpc, /n\.code = 'XX'/, "XX bucket bypasses the recognized-country exclusions (stays in residual)");

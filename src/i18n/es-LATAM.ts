@@ -670,7 +670,7 @@ const esLATAM: Record<string, string> = {
   'hero.stat.tribes': 'tribus',
   'hero.stat.initiatives': 'iniciativas',
   'hero.stat.hours': 'horas de impacto',
-  'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
+  'hero.chaptersAnnounce': '{n} Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'Unión anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conocer el Núcleo ↓',
   'hero.cta.protagonist': 'Sé protagonista',

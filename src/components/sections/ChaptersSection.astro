@@ -4,24 +4,31 @@ import { createClient } from '@supabase/supabase-js';
 import { loadChapters } from '../../lib/chapters';
 import { CONTINENT_NAMES } from '../../lib/worldMap';
 import WorldReachMap from './WorldReachMap.astro';
+import type { HomeStats } from '../../lib/homeStats';
 
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
+interface Props { lang?: Lang; stats?: HomeStats | null; }
+const { lang = 'pt-BR', stats = null } = Astro.props;
 
 const sbAnon = createClient(
   import.meta.env.PUBLIC_SUPABASE_URL,
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
+// A lista de selos (nome e logo) vem do chapter_registry. A CONTAGEM não: ela é a do hero.
 const chapters = await loadChapters(sbAnon);
 
-// Registry completo (CBGPL 2026: 15 capítulos PMI Brasil). O contador é o nº de capítulos
-// carregados ao vivo — nada hardcoded (fallback de chapters.ts cobre RPC indisponível).
-const activeCount = chapters.length;
+// #2553: o título conta pela fonte única da home (get_homepage_stats.chapters, assinados + em
+// negociação, decisão do GP de 03/10/2026), não por chapters.length. Duas contagens de capítulos na
+// mesma página era o defeito; o guard 2553 exige que a lista de selos e esta contagem batam.
+const chapterCount = stats?.chapters ?? null;
+// #2553: o total de pesquisadores da linha do mapa é o do hero (ADR-0126). A soma dos selos de país
+// deixa de fora quem não tem país e quem caiu no residual "Internacional", e virava um segundo número.
+const researchersCount = stats?.members ?? null;
 
 // R6 — Alcance internacional + camadas do opt-in unificado de localização (parecer legal-counsel
 // 2026-06-25). get_public_country_reach() agrega members.country (ISO-2) k>=3; precise_country_reach
 // un-bucketiza quem consentiu exibição precisa (k=1); continent_reach decompõe o residual em
-// continentes (k>=3) + 'ZZ' (Internacional). Tudo zero-PII, MESMA população canônica de active_members.
+// continentes (k>=3) + 'ZZ' (Internacional). Tudo zero-PII. #2553: a população é a equipe de
+// pesquisa (v_operational_members, ADR-0126), a mesma do hero.
 type CountryReach = { country_code: string; member_count: number };
 type StateReach = { country_code: string; region_code: string; member_count: number };
 type ContinentReach = { continent_code: string; member_count: number };
@@ -46,7 +53,6 @@ const namedReach = [
   ...preciseCountryReach.filter((c) => c.country_code !== 'ZZ' && c.country_code !== 'XX'),
 ];
 const reachCountries = namedReach.length;
-const reachMembers = namedReach.reduce((sum, c) => sum + Number(c.member_count || 0), 0);
 
 // PD-MAP-WORLD — pins por ESTADO (BR/US) via get_public_state_reach_v3: dual-população (k=1 preciso
 // + k>=3 agregado legado), nunca somadas abaixo de k (parecer 2026-06-25). Some sozinha enquanto vazia.
@@ -79,7 +85,7 @@ function flagEmoji(code: string): string {
       {t('chapters.label', lang)}
     </div>
     <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
-      {activeCount} {t('chapters.title', lang)}
+      {chapterCount !== null ? `${chapterCount} ` : ''}{t('chapters.title', lang)}
     </h2>
 
     <!-- PD-MAP-WORLD — mapa-mundi: pins por país (k-anon) + estados BR/EUA de quem consentiu (k≥3) -->
@@ -141,7 +147,7 @@ function flagEmoji(code: string): string {
         </div>
         <p class="text-sm text-[var(--text-secondary)] mb-4">
           {t('chapters.reachIntro', lang)} <strong>{reachCountries} {t('chapters.reachCountries', lang)}</strong>
-          {' · '}{reachMembers} {t('chapters.reachMembersSuffix', lang)}
+          {researchersCount !== null && <>{' · '}{researchersCount} {t('chapters.reachMembersSuffix', lang)}</>}
         </p>
         <div class="flex flex-wrap justify-center gap-3">
           {namedReach.map((c) => (
