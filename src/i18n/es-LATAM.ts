@@ -817,6 +817,12 @@ const esLATAM: Record<string, string> = {
   'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por contexto de actuación (para quién). La IA atraviesa los dos.',
   'model.axisWhat': 'El qué · dominios de conocimiento',
   'model.axisWho': 'Para quién · comunidades por contexto de actuación',
+  // Vertical titles: the DB stores them in pt-BR; VerticalsSection maps the DB title to these keys.
+  'model.vertical.agile': 'Ágil',
+  'model.vertical.construction': 'Construcción',
+  'model.vertical.esg': 'ESG',
+  'model.vertical.business': 'Negocio',
+  'model.vertical.pmo': 'PMO',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',

@@ -104,6 +104,8 @@ const ROLE_COLORS: Record<string, string> = {
 <script id="chapter-order-data" type="application/json" set:html={JSON.stringify(chapterOrder)}></script>
 
 <script>
+  import { withScheme } from '../../lib/external-url';
+
   const ROLE_COLORS: Record<string, string> = {
     manager: '#FF610F', deputy_manager: '#FF610F', tribe_leader: '#4F17A8', researcher: '#EC4899',
     facilitator: '#EC4899', communicator: '#EC4899', ambassador: '#10B981',
@@ -211,7 +213,7 @@ const ROLE_COLORS: Record<string, string> = {
         + `<div style="display:none" class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]${photoCls}">${initials}</div>`
       : `<div class="w-16 h-16 rounded-full bg-teal flex items-center justify-center text-white font-bold text-[.8rem]${photoCls}">${initials}</div>`;
     const li = m.linkedin_url
-      ? `<a href="${m.linkedin_url}" target="_blank" class="text-teal text-[.65rem] no-underline">🔗</a>`
+      ? `<a href="${withScheme(m.linkedin_url)}" target="_blank" class="text-teal text-[.65rem] no-underline">🔗</a>`
       : '';
     const dots = getRoleDots(m);
     const sub = subtitle

@@ -23,7 +23,10 @@ const VEP = {
 
 type Vertical = {
   id: string;
+  // Raw DB title (pt-BR). Stays the lookup key for VERTICAL_DESC and analytics.
   title: string;
+  // Localized label for display, resolved from the i18n dictionaries by ModelSection.astro.
+  label?: string;
   vertical_status: 'forming' | 'open' | 'paused' | null;
   // PD-CERT scrub (mig 229): get_public_verticals() no longer returns description /
   // anchor_credential / credential_body / partner_org — the public API stays credential-free
@@ -234,7 +237,7 @@ function Radial({ verticals, l }: { verticals: Vertical[]; l: Record<string, str
             className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] px-3 py-2 text-center shadow-sm"
             style={{ borderTop: '3px solid #FF610F' }}
           >
-            <div className="font-bold text-[.8rem] leading-tight text-[var(--text-primary)]">{nd.v.title}</div>
+            <div className="font-bold text-[.8rem] leading-tight text-[var(--text-primary)]">{nd.v.label || nd.v.title}</div>
             {/* PD-CERT-4: credential (anchor_credential) is implicit — not rendered. */}
             <span
               className={`inline-block mt-1 text-[.55rem] font-bold tracking-wide uppercase px-1.5 py-0.5 rounded-full border ${STATUS_STYLE[nd.v.vertical_status || 'forming'] || STATUS_STYLE.forming}`}
@@ -352,7 +355,7 @@ function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; 
         </span>
         {/* PD-CERT-4: the PMI credential (anchor_credential) stays IMPLICIT — not rendered as a chip. */}
       </div>
-      <h3 className="font-bold text-lg text-[var(--text-primary)] mb-1">{v.title}</h3>
+      <h3 className="font-bold text-lg text-[var(--text-primary)] mb-1">{v.label || v.title}</h3>
       {/* PD-CERT-4 + GAP-B2.C: description by CONTEXT of practice, authored credential-free in all 3
           langs (VERTICAL_DESC). NEVER renders the DB `description` (it embeds the PMI credential). */}
       {verticalDesc(lang, v.title) && <p className="text-sm text-[var(--text-secondary)] mb-2">{verticalDesc(lang, v.title)}</p>}
@@ -381,7 +384,7 @@ function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; 
   );
 }
 
-export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
+export default function VerticalsSection({ lang = 'pt-BR', titles = {} }: { lang?: Lang; titles?: Record<string, string> }) {
   const l = LABELS[lang] || LABELS['pt-BR'];
   const [verticals, setVerticals] = useState<Vertical[] | null>(null);
 
@@ -396,7 +399,9 @@ export default function VerticalsSection({ lang = 'pt-BR' }: { lang?: Lang }) {
       }
       try {
         const { data, error } = await sb.rpc('get_public_verticals');
-        if (!cancelled && !error && Array.isArray(data)) setVerticals(data);
+        if (!cancelled && !error && Array.isArray(data)) {
+          setVerticals(data.map((v: Vertical) => ({ ...v, label: titles[v.title] || v.title })));
+        }
         else if (!cancelled) setVerticals([]);
       } catch {
         if (!cancelled) setVerticals([]);
