@@ -1,7 +1,7 @@
 # Decisões da vitrine (#2553, #811): D1 a D11
 
-**Status:** Proposto, 04/10/2026. Vira **Aceito** com a ratificação do GP registrada na última seção, palavra
-por palavra. Uma spec escrita por sessão não autoriza nada; a ratificação nomeada é que autoriza.
+**Status:** **Aceito**, 04/10/2026, pela ratificação do GP registrada na última seção, palavra por palavra (era
+Proposto no commit `59640901`). Uma spec escrita por sessão não autoriza nada; a ratificação nomeada é que autoriza.
 **Base:** o plano (`2553-vitrine-producao-e-conhecimento.md`) e a contraprova (`2553-vitrine-contraprova.md`, ajustes
 A1 a A18), nesta mesma pasta.
 **Formato:** kit de registro de decisões do AI-PMO-Framework (`kits/decision-records-kit.md`): triagem por balde,
@@ -180,12 +180,12 @@ aceitas ou corrigem defeito medido.
 
 | campo | valor |
 |---|---|
-| Ratificado por | |
-| Data | |
-| Resposta do GP, palavra por palavra | |
-| Ratificadas como recomendado | |
-| Ratificadas com ajuste (qual) | |
-| Pendentes | |
+| Ratificado por | GP (Vitor), na sessão orquestradora de 04/10/2026 |
+| Data | 04/10/2026 |
+| Resposta do GP, palavra por palavra | "ratifico todas" |
+| Ratificadas como recomendado | D1 a D11 |
+| Ratificadas com ajuste (qual) | nenhuma |
+| Pendentes | D1: o parecer do `legal-counsel`, pré-condição de F3, ainda não foi pedido. D9: o GP ainda não nomeou o responsável nem a data. |
 
-Depois da ratificação: este arquivo passa a **Aceito**, e o registro vai para `docs/council/decisions/`. Mudar uma
-decisão aceita pede emenda, não edição silenciosa.
+O registro está em `docs/council/decisions/2026-10-04-2553-vitrine-onze-decisoes.md`. Mudar uma decisão aceita pede
+emenda, não edição silenciosa.
