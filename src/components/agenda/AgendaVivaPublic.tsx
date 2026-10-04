@@ -54,8 +54,16 @@ interface AgendaPayload {
 
 const LOCALE_MAP: Record<Lang, string> = { 'pt-BR': 'pt-BR', 'en-US': 'en-US', 'es-LATAM': 'es' };
 
-export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming' }: { lang?: Lang; range?: Range }) {
-  const t = usePageI18n();
+export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', labels }: { lang?: Lang; range?: Range; labels?: Record<string, string> }) {
+  // `labels` is the comp.agendaViva bundle for the current locale, passed as a prop by the Astro
+  // caller. usePageI18n only fills its dictionary in an effect after hydration, so without the
+  // prop the server-rendered HTML (and the first client render) used the pt-BR fallbacks. Kept
+  // the page bundle as a second source; `t` stays referentially stable (see #1870 in the hook).
+  const pageT = usePageI18n();
+  const t = useCallback(
+    (key: string, fallback?: string) => labels?.[key] || pageT(key, fallback),
+    [labels, pageT],
+  );
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
   const [data, setData] = useState<AgendaPayload | null>(null);
   const [formats, setFormats] = useState<Record<string, Record<string, string>>>({});

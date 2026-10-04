@@ -31,6 +31,6 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
       que é justamente a superfície de protagonismo, era a que não pedia.
     -->
     <AgendaVivaReservationIsland client:load lang={lang} range="both" />
-    <AgendaVivaPublic client:load lang={lang} range="both" />
+    <AgendaVivaPublic client:load lang={lang} range="both" labels={JSON.parse(i18nBundle)} />
   </div>
 </BaseLayout>

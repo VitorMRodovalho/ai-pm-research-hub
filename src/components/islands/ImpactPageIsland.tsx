@@ -205,6 +205,9 @@ const LABELS: Record<string, Record<string, string>> = {
 const TRIBE_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
 
 function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string }) {
+  // Locale prefix for the privacy link. Declared here because `lp` in ImpactPageIsland is out of
+  // scope for this component; referencing it threw ReferenceError and blanked /about.
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [form, setForm] = useState({ name: '', email: '', phone: '', chapter_interest: '', role_interest: '', message: '', lgpd_consent: false });
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [consentError, setConsentError] = useState(false);

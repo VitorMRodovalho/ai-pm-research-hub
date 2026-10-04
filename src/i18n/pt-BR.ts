@@ -670,7 +670,7 @@ const ptBR: Record<string, string> = {
   'hero.stat.tribes': 'tribos',
   'hero.stat.initiatives': 'iniciativas',
   'hero.stat.hours': 'horas de impacto',
-  'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
+  'hero.chaptersAnnounce': '{n} Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'União anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conhecer o Núcleo ↓',
   'hero.cta.protagonist': 'Seja protagonista',
@@ -817,6 +817,12 @@ const ptBR: Record<string, string> = {
   'model.subtitle': 'Dois eixos que se cruzam: quatro quadrantes de conhecimento (o quê) e verticais por contexto de atuação (para quem). A IA atravessa os dois.',
   'model.axisWhat': 'O quê · domínios de conhecimento',
   'model.axisWho': 'Para quem · comunidades por contexto de atuação',
+  // Vertical titles: the DB stores them in pt-BR; VerticalsSection maps the DB title to these keys.
+  'model.vertical.agile': 'Ágil',
+  'model.vertical.construction': 'Construção',
+  'model.vertical.esg': 'ESG',
+  'model.vertical.business': 'Negócio',
+  'model.vertical.pmo': 'PMO',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',

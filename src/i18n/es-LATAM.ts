@@ -670,7 +670,7 @@ const esLATAM: Record<string, string> = {
   'hero.stat.tribes': 'tribus',
   'hero.stat.initiatives': 'iniciativas',
   'hero.stat.hours': 'horas de impacto',
-  'hero.chaptersAnnounce': '15 Capítulos PMI Brasil',
+  'hero.chaptersAnnounce': '{n} Capítulos PMI Brasil',
   'hero.chaptersAnnounceSub': 'Unión anunciada · CBGPL Abr 2026',
   'hero.cta.learn': 'Conocer el Núcleo ↓',
   'hero.cta.protagonist': 'Sé protagonista',
@@ -817,6 +817,12 @@ const esLATAM: Record<string, string> = {
   'model.subtitle': 'Dos ejes que se cruzan: cuatro cuadrantes de conocimiento (el qué) y verticales por contexto de actuación (para quién). La IA atraviesa los dos.',
   'model.axisWhat': 'El qué · dominios de conocimiento',
   'model.axisWho': 'Para quién · comunidades por contexto de actuación',
+  // Vertical titles: the DB stores them in pt-BR; VerticalsSection maps the DB title to these keys.
+  'model.vertical.agile': 'Ágil',
+  'model.vertical.construction': 'Construcción',
+  'model.vertical.esg': 'ESG',
+  'model.vertical.business': 'Negocio',
+  'model.vertical.pmo': 'PMO',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Líderes',

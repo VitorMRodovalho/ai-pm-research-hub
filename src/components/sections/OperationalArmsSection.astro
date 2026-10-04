@@ -13,6 +13,7 @@
  */
 import { t, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
+import { withScheme } from '../../lib/external-url';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
@@ -108,7 +109,7 @@ const ARMS_MSG = {
                       <div class="text-[.88rem] font-semibold truncate">
                         {arm.leader.name}
                         {arm.leader.linkedin_url && (
-                          <a href={arm.leader.linkedin_url} target="_blank" rel="noopener" class="text-teal no-underline text-[.75rem] ml-1">🔗</a>
+                          <a href={withScheme(arm.leader.linkedin_url)} target="_blank" rel="noopener" class="text-teal no-underline text-[.75rem] ml-1">🔗</a>
                         )}
                       </div>
                       {succession && <div class="text-[.72rem] text-amber-700">{succession}</div>}
@@ -132,7 +133,7 @@ const ARMS_MSG = {
                         <span class="text-[.82rem] text-[var(--text-secondary)]">
                           {tm.name}
                           {tm.linkedin_url && (
-                            <a href={tm.linkedin_url} target="_blank" rel="noopener" class="text-teal no-underline text-[.72rem] ml-1">🔗</a>
+                            <a href={withScheme(tm.linkedin_url)} target="_blank" rel="noopener" class="text-teal no-underline text-[.72rem] ml-1">🔗</a>
                           )}
                         </span>
                       </div>

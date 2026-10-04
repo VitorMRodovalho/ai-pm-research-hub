@@ -23,6 +23,20 @@ const COLORS: Record<string, string> = {
 };
 
 const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
+
+// The vertical titles come from the DB in pt-BR. Map each known DB title to its i18n key here
+// (server side) so the island receives localized labels without shipping the dictionaries.
+// An unknown title falls back to the raw DB value in the island.
+const VERTICAL_TITLE_KEYS: Record<string, string> = {
+  'Ágil': 'model.vertical.agile',
+  'Construção': 'model.vertical.construction',
+  'ESG': 'model.vertical.esg',
+  'Negócio': 'model.vertical.business',
+  'PMO': 'model.vertical.pmo',
+};
+const verticalTitles: Record<string, string> = Object.fromEntries(
+  Object.entries(VERTICAL_TITLE_KEYS).map(([title, key]) => [title, t(key, lang)]),
+);
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-base)]" id="verticals">
@@ -77,6 +91,6 @@ const safeQuadrants = Array.isArray(QUADRANTS) ? QUADRANTS : [];
     <div class="text-[.7rem] font-bold tracking-[.12em] uppercase text-orange mb-4">
       {t('model.axisWho', lang)}
     </div>
-    <VerticalsSection client:load lang={lang} />
+    <VerticalsSection client:load lang={lang} titles={verticalTitles} />
   </div>
 </section>

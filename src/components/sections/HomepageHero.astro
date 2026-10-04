@@ -1,9 +1,14 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
+import type { HomeStats } from '../../lib/homeStats';
 
-interface Props { lang?: Lang; }
-const { lang = 'pt-BR' } = Astro.props;
+interface Props { lang?: Lang; stats?: HomeStats | null; }
+const { lang = 'pt-BR', stats = null } = Astro.props;
+
+// #2553: os números do hero e o selo de capítulos vêm da busca única da página (loadHomeStats),
+// a mesma que alimenta a seção de capítulos. O "15" do selo era texto fixo no i18n.
+const chaptersCount = stats?.chapters ?? null;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 // #1239: derive the hero cycle badge + status from the CURRENT cycle (was hardcoded 'CICLO 3 · 2026').
@@ -52,19 +57,19 @@ const heroCycleActive = cycleNum
     <!-- Stats counters -->
     <div class="flex flex-wrap justify-center gap-6 sm:gap-10 mb-8">
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members">--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members" data-target={stats?.members ?? undefined}>--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.members', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes">--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes" data-target={stats?.tribes ?? undefined}>--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives">--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives" data-target={stats?.initiatives ?? undefined}>--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.initiatives', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours">--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours" data-target={stats?.impactHours ?? undefined} data-suffix="h">--</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
     </div>
@@ -85,14 +90,16 @@ const heroCycleActive = cycleNum
       {heroCycleActive}
     </div>
 
-    <div class="flex flex-col items-center gap-1 mt-5">
-      <span class="bg-orange/15 border border-orange/40 text-white px-5 py-1.5 rounded-full text-[.85rem] font-bold tracking-wide">
-        {t('hero.chaptersAnnounce', lang)}
-      </span>
-      <span class="text-[.68rem] text-white/45 mt-0.5 tracking-wide">
-        {t('hero.chaptersAnnounceSub', lang)}
-      </span>
-    </div>
+    {chaptersCount !== null && (
+      <div class="flex flex-col items-center gap-1 mt-5">
+        <span class="bg-orange/15 border border-orange/40 text-white px-5 py-1.5 rounded-full text-[.85rem] font-bold tracking-wide">
+          {t('hero.chaptersAnnounce', lang).replace('{n}', String(chaptersCount))}
+        </span>
+        <span class="text-[.68rem] text-white/45 mt-0.5 tracking-wide">
+          {t('hero.chaptersAnnounceSub', lang)}
+        </span>
+      </div>
+    )}
   </div>
 
   <!-- ═══ MEMBER HERO ═══ -->
@@ -211,18 +218,18 @@ const heroCycleActive = cycleNum
       });
     }
 
-    const sb = await waitSb();
-
-    // ── Load homepage stats (public, no auth) ──
-    try {
-      const { data: stats } = await sb.rpc('get_homepage_stats');
-      if (stats) {
-        animateCounter('stat-members', stats.members);
-        animateCounter('stat-tribes', stats.tribes);
-        animateCounter('stat-initiatives', stats.initiatives || 0);
-        animateCounter('stat-hours', stats.impact_hours, 'h');
+    // ── Homepage stats ──
+    // #2553: os valores chegam no HTML (data-target), da busca única da página. Uma segunda
+    // chamada aqui seria outra fonte para os mesmos números. Sem data-target, fica o "--".
+    for (const id of ['stat-members', 'stat-tribes', 'stat-initiatives', 'stat-hours']) {
+      const el = document.getElementById(id);
+      const target = Number(el?.dataset.target);
+      if (el?.dataset.target !== undefined && Number.isFinite(target)) {
+        animateCounter(id, target, el.dataset.suffix ?? '');
       }
-    } catch (e) { console.warn('homepage stats:', e); }
+    }
+
+    const sb = await waitSb();
 
     // ── Auth detection ──
     function onMember(member: any) {
