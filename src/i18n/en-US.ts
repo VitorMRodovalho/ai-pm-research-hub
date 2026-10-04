@@ -817,6 +817,12 @@ const enUS: Record<string, string> = {
   'model.subtitle': 'Two axes that intersect: four knowledge quadrants (the what) and verticals by field of practice (for whom). AI runs across both.',
   'model.axisWhat': 'The what · knowledge domains',
   'model.axisWho': 'For whom · communities by field of practice',
+  // Vertical titles: the DB stores them in pt-BR; VerticalsSection maps the DB title to these keys.
+  'model.vertical.agile': 'Agile',
+  'model.vertical.construction': 'Construction',
+  'model.vertical.esg': 'ESG',
+  'model.vertical.business': 'Business',
+  'model.vertical.pmo': 'PMO',
 
   // ── Tribes ──
   'tribes.label': 'Dream Team — {n} Leaders',

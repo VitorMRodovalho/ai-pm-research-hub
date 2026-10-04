@@ -10,6 +10,7 @@ import { buildTribesViewModel } from '../../data/tribesViewModel';
 import { t, type Lang } from '../../i18n/utils';
 import { getPlaylistUrl } from '../../data/youtube-playlists';
 import { createClient } from '@supabase/supabase-js';
+import { withScheme } from '../../lib/external-url';
 
 interface Props { lang?: Lang; deadline?: string | null; }
 const { lang = 'pt-BR', deadline: deadlineProp } = Astro.props;
@@ -287,7 +288,7 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                     <div class="text-[.82rem] text-[var(--text-secondary)]">
                       {tr.leader}
                       {tr.leaderLinkedIn && (
-                        <a href={tr.leaderLinkedIn} target="_blank" rel="noopener"
+                        <a href={withScheme(tr.leaderLinkedIn)} target="_blank" rel="noopener"
                            class="text-teal no-underline text-[.75rem] ml-1"
                            data-stop-propagation>🔗</a>
                       )}
