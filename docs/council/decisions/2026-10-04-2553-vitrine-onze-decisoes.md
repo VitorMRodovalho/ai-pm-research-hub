@@ -34,3 +34,16 @@ As onze foram aprovadas **conforme a recomendacao apresentada**.
 
 A ordem das fases (secao 5 da contraprova) e os itens mecanicos (A2, A3, A5, A9, A12, A15, A16 e A18) seguem ADRs ja
 aceitas e entram quando a fase rodar, sem nova ratificacao. Mudar qualquer uma das onze pede emenda a este registro.
+
+### Emenda 1 (2026-10-04)
+
+**Ratificacao, palavra por palavra:** "2. Aceito" (D1) e "3. Concordo." (D9), na mesma mensagem do GP.
+
+- **D1:** o parecer do `legal-counsel` sustenta a opcao (a). Base: legitimo interesse para autor de obra publicada,
+  lider de tribo, patrocinador de capitulo e membro palestrante; consentimento para palestrante externo. Travam nomes
+  na F3 o LIA por finalidade (assinado pelo encarregado) e a `/privacy` atualizada com canal de oposicao. Ao sair do
+  papel, o nome sai da superficie de papel no mesmo dia; autoria de obra publicada permanece. A D1 vale para toda
+  superficie publica com nome de pessoa, inclusive a secao de equipe da home. Detalhe no docket, secao "Emenda 1".
+- **D9:** a lideranca da iniciativa "Publicacoes & Submissoes" confere os itens, com o Comite de Curadoria revisando,
+  ate 2026-10-31. Registro pelo papel, nao pelo nome.
+- Os dois pendentes acima ficam resolvidos por esta emenda.

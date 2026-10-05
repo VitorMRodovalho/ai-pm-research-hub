@@ -2,6 +2,7 @@
 
 **Status:** **Aceito**, 04/10/2026, pela ratificação do GP registrada na última seção, palavra por palavra (era
 Proposto no commit `59640901`). Uma spec escrita por sessão não autoriza nada; a ratificação nomeada é que autoriza.
+**Emenda 1, 04/10/2026:** condições do parecer na D1, e responsável e data na D9 (seção ao final).
 **Base:** o plano (`2553-vitrine-producao-e-conhecimento.md`) e a contraprova (`2553-vitrine-contraprova.md`, ajustes
 A1 a A18), nesta mesma pasta.
 **Formato:** kit de registro de decisões do AI-PMO-Framework (`kits/decision-records-kit.md`): triagem por balde,
@@ -189,3 +190,31 @@ aceitas ou corrigem defeito medido.
 
 O registro está em `docs/council/decisions/2026-10-04-2553-vitrine-onze-decisoes.md`. Mudar uma decisão aceita pede
 emenda, não edição silenciosa.
+
+## Emenda 1, 04/10/2026
+
+O GP ratificou os dois pendentes na mesma mensagem, palavra por palavra: **"2. Aceito"** para as condições do parecer
+da D1 e **"3. Concordo."** para o responsável e a data da D9. O item 1 daquela mensagem trata de outra tarefa.
+
+**D1: condições do parecer do `legal-counsel`** (revisão inicial; o próprio parecer recomenda confirmação com advogado)
+
+| quem aparece | base legal | condição mínima | consentimento? |
+|---|---|---|---|
+| autor de obra publicada | legítimo interesse; o direito autoral reforça | LIA; o autor escolhe a forma do crédito; só obra publicada; só o nome | não |
+| líder de tribo | legítimo interesse | LIA; aviso prévio; só o líder atual; só o nome | não |
+| patrocinador de capítulo | legítimo interesse, cargo institucional | igual ao líder; confirmar com o capítulo | não |
+| palestrante | externo: consentimento; membro: legítimo interesse | autorização no convite; gravação em autorização à parte | externo, sim |
+
+- **Travam nomes na F3:** o LIA por finalidade, assinado pelo encarregado; e a `/privacy` atualizada nos três
+  idiomas, com aviso junto ao nome e canal de oposição.
+- **Não travam:** corrigir o registro de tratamento (RoPA); avisar as pessoas já exibidas, com 15 dias para se opor;
+  tirar o nome da superfície de papel no dia em que a pessoa sai do papel (a autoria de obra publicada permanece);
+  ressalva de nome e papel no termo de voluntariado, com advogado.
+- **Escopo:** a D1 vale para toda superfície pública com nome de pessoa, inclusive a seção de equipe da home.
+- **Limite:** o termo de voluntariado vigente não está no repositório; as cláusulas que o parecer cita precisam ser
+  conferidas nele.
+
+**D9: responsável e data.** A liderança da iniciativa "Publicações & Submissões" confere item a item (se saiu, onde,
+quando e de qual iniciativa, e se cada artefato legado é publicação ou documento interno), com o Comitê de Curadoria
+revisando, **até 31/10/2026**. O responsável fica registrado pelo papel, não pelo nome, porque o repositório é público.
+Gatilho: com URL e data preenchidas, os artigos entram na vitrine; se a data passar sem retorno, o tema volta ao GP.
