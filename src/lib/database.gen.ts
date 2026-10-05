@@ -29733,7 +29733,6 @@ export type Database = {
       public_members: {
         Row: {
           chapter: string | null
-          country: string | null
           cpmai_certified: boolean | null
           cpmai_certified_at: string | null
           created_at: string | null
@@ -29753,12 +29752,10 @@ export type Database = {
           operational_role: string | null
           photo_url: string | null
           share_whatsapp: boolean | null
-          state: string | null
           tribe_id: number | null
         }
         Insert: {
           chapter?: string | null
-          country?: string | null
           cpmai_certified?: boolean | null
           cpmai_certified_at?: string | null
           created_at?: string | null
@@ -29778,12 +29775,10 @@ export type Database = {
           operational_role?: string | null
           photo_url?: string | null
           share_whatsapp?: boolean | null
-          state?: string | null
           tribe_id?: number | null
         }
         Update: {
           chapter?: string | null
-          country?: string | null
           cpmai_certified?: boolean | null
           cpmai_certified_at?: string | null
           created_at?: string | null
@@ -29803,7 +29798,6 @@ export type Database = {
           operational_role?: string | null
           photo_url?: string | null
           share_whatsapp?: boolean | null
-          state?: string | null
           tribe_id?: number | null
         }
         Relationships: [
