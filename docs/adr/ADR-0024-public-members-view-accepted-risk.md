@@ -1,6 +1,6 @@
 # ADR-0024: `public_members` view — accepted advisor risk + future slim path
 
-- Status: Accepted
+- Status: Accepted (emenda 1, 05/10/2026, #2562: a view deixa de carregar localização; seção ao final)
 - Data: 2026-04-26
 - Aprovado por: Vitor (PM) em 2026-04-24 (decisão Issue #82 Onda 2)
 - Autor: Vitor (PM) + Claude (drafting)
@@ -169,3 +169,20 @@ advisor de segurança Supabase, a resposta-padrão é:
    gated com `view_pii` + log_pii_access para uso curatorial)
 
 Recomendação: opção 1 ou 2 — opção 3 é overkill se não houver driver real.
+
+---
+
+## Emenda 1 (05/10/2026, #2562): a view deixa de carregar localização
+
+O critério 3 de revisão acima (opt-out que exija filtrar coluna) disparou em 26/06/2026, quando o mapa ganhou
+opt-in de localização e a `/privacy` passou a prometer estado só agregado e consentido (#898). A view seguia com
+`state` e `country`.
+
+**Mudança** (migration `20261005013822_public_members_sem_localizacao_e_lider_atual`): `state` e `country` saem
+de `public_members`, e a localização pública sai só pelas RPCs do mapa. O resto desta ADR segue valendo: a view
+continua SECURITY DEFINER, como diretório, com o mesmo ACL, e o `COMMENT ON VIEW` volta a apontar para esta ADR (o
+comentário de 13/05 tinha se perdido num DROP + CREATE posterior). A lista de colunas passa a ser fechada no guard
+`tests/contracts/public-members-sem-localizacao-e-lider-atual.test.mjs`: coluna nova só entra acrescentada lá.
+
+**O que esta emenda não decide:** quais das outras colunas continuam públicas. Isso é da D1 da #2553 (LIA por
+finalidade).
