@@ -119,6 +119,7 @@ const ALLOWLIST = {
   _manage_event_scope_ok: 'authority helper (#1383: boolean manage-event scope check; reads only events.initiative_id to pass it to can_by_member, no content returned)',
   _can_write_board: 'authority helper (#1945: boolean write-board scope check; reads only project_boards.initiative_id to pass it to can_by_member, no content returned). Visibilidade e autoridade-de-acao sao eixos ORTOGONAIS (V4_AUTHORITY_MODEL): gatear este helper em rls_can_see_initiative confundiria os dois e poderia NEGAR quem tem a capacidade.',
   _can_write_board_item: 'authority helper (#1953: boolean write-board scope check pelo CARD; le so board_items.board_id para resolver o board e DELEGA para _can_write_board, no content returned). Mesmo eixo ortogonal do irmao: gatear em rls_can_see_initiative confundiria visibilidade com autoridade-de-acao.',
+  _can_manage_publication_submission: 'authority helper (#2565: boolean manage-submission check; reads project_boards.domain_key and engagements only to resolve the P&S leadership, no content returned)',
   _events_inherit_meeting_link: 'trigger function (not a user-callable reader)',
   _v4_initiative_leader_member_ids: 'helper (SETOF member uuid; tribe-scoped via legacy_tribe_id, confidential NULL never matches)',
   _v4_tribe_leader_member_id: 'helper (single member uuid; tribe-scoped via legacy_tribe_id)',

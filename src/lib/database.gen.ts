@@ -30425,6 +30425,10 @@ export type Database = {
         Returns: boolean
       }
       _can_manage_event: { Args: { p_event_id: string }; Returns: boolean }
+      _can_manage_publication_submission: {
+        Args: { p_submission_id: string }
+        Returns: boolean
+      }
       _can_manage_recurring_rule: {
         Args: { p_initiative_id: string; p_member_id: string }
         Returns: boolean
