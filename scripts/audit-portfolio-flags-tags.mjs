@@ -21,7 +21,7 @@
  *
  * Flags:
  *   --all         inclui iniciativas não-tribo (workgroups, comitês, congressos)
- *   --cycle=N     ciclo que o dashboard consulta (default 3)
+ *   --cycle=N     ciclo que o dashboard consulta (default: o ciclo corrente)
  *   --json        imprime o payload cru da RPC
  *   --out=FILE    grava markdown em FILE além de imprimir
  *
@@ -41,7 +41,8 @@ const getOpt = (name, fallback) => {
 };
 
 const includeNonTribe = hasFlag('all');
-const dashboardCycle = Number(getOpt('cycle', '3'));
+const cycleOpt = getOpt('cycle', null);
+const dashboardCycle = cycleOpt === null ? null : Number(cycleOpt);
 const asJson = hasFlag('json');
 const outFile = getOpt('out', null);
 
@@ -49,8 +50,8 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
   console.error('SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios.');
   process.exit(1);
 }
-if (!Number.isInteger(dashboardCycle)) {
-  console.error(`--cycle precisa ser inteiro (recebido: ${getOpt('cycle', '3')})`);
+if (dashboardCycle !== null && !Number.isInteger(dashboardCycle)) {
+  console.error(`--cycle precisa ser inteiro (recebido: ${cycleOpt})`);
   process.exit(1);
 }
 

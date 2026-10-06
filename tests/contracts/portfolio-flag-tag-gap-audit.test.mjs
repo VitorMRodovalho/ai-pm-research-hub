@@ -18,6 +18,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260820215416_portfolio_flag_tag_gap_audit.sql');
@@ -37,8 +38,10 @@ test('static: a migration cria a heurística e a RPC de auditoria', () => {
 });
 
 test('static: a RPC de auditoria é SECURITY DEFINER gated por manage_platform e nega anon', () => {
-  assert.match(migRaw, /SECURITY DEFINER/, 'SECDEF');
-  assert.match(migRaw, /can_by_member\(v_caller_id, 'manage_platform'\)/, 'gate manage_platform');
+  // SECDEF e gate valem para a definição VIGENTE (#1932); o REVOKE é ACL, que sobrevive ao replace.
+  const cur = latestFunctionCapture(ROOT, 'audit_portfolio_flag_tag_gaps').block;
+  assert.match(cur, /SECURITY DEFINER/, 'SECDEF');
+  assert.match(cur, /can_by_member\(v_caller_id, 'manage_platform'\)/, 'gate manage_platform');
   assert.match(migRaw, /REVOKE ALL ON FUNCTION public\.audit_portfolio_flag_tag_gaps[\s\S]{0,80}anon/,
     'anon revogado (LGPD: sem PII/dados operacionais para anon)');
 });
@@ -46,8 +49,7 @@ test('static: a RPC de auditoria é SECURITY DEFINER gated por manage_platform e
 test('static: a auditoria é read-only — nada escreve em board_items', () => {
   // O output é sugestão para decisão do GP/líder. Um UPDATE aqui converteria a
   // heurística em verdade e reescreveria conteúdo dos líderes sem revisão.
-  const gapFnStart = migRaw.indexOf('FUNCTION public.audit_portfolio_flag_tag_gaps(');
-  const gapFnBody = migRaw.slice(gapFnStart, migRaw.indexOf('COMMENT ON FUNCTION public.audit_portfolio_flag_tag_gaps'));
+  const gapFnBody = latestFunctionCapture(ROOT, 'audit_portfolio_flag_tag_gaps').block;
   assert.ok(gapFnBody.length > 0, 'corpo da RPC localizado');
   assert.equal(/\b(UPDATE|INSERT INTO|DELETE FROM)\s+public\.board_item/i.test(gapFnBody), false,
     'a RPC de auditoria não pode escrever em board_items nem em board_item_tag_assignments');
@@ -92,13 +94,18 @@ test('static: os readers SECDEF novos aplicam o gate confidencial (#785 / ADR-01
   // iniciativa precisa de rls_can_see_initiative(), mesmo com manage_platform na
   // entrada. O allowlist de 785-secdef-reader-confidential-gate.test.mjs é para
   // exceções justificadas — não é o caminho quando o gate simplesmente cabe.
+  // audit_portfolio_flag_tag_gaps: a definição vigente (#1932), porque a #2565 a recriou.
+  // tribe_journey_health: a migration do gate, como antes.
   const GATE_MIG = resolve(ROOT, 'supabase/migrations/20260820224453_gate_785_confidential_on_new_secdef_readers.sql');
   assert.ok(existsSync(GATE_MIG), 'migration do gate presente');
   const gateRaw = readFileSync(GATE_MIG, 'utf8');
-  for (const fn of ['audit_portfolio_flag_tag_gaps', 'tribe_journey_health']) {
-    const i = gateRaw.indexOf(`FUNCTION public.${fn}(`);
-    assert.ok(i > 0, `${fn} recriada na migration do gate`);
-    const body = gateRaw.slice(i, gateRaw.indexOf('$fn$;', i));
+  const tjh = gateRaw.indexOf('FUNCTION public.tribe_journey_health(');
+  assert.ok(tjh > 0, 'tribe_journey_health recriada na migration do gate');
+  const bodies = {
+    audit_portfolio_flag_tag_gaps: latestFunctionCapture(ROOT, 'audit_portfolio_flag_tag_gaps').block,
+    tribe_journey_health: gateRaw.slice(tjh, gateRaw.indexOf('$fn$;', tjh)),
+  };
+  for (const [fn, body] of Object.entries(bodies)) {
     assert.match(body, /public\.rls_can_see_initiative\(i\.id\)/,
       `${fn} precisa aplicar rls_can_see_initiative sobre a iniciativa`);
   }

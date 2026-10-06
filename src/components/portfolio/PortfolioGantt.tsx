@@ -4,6 +4,9 @@ import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props {
   artifacts: Artifact[];
+  // Janela do ciclo da visão (#2565 2A); sem ela, a régua parte do card mais antigo.
+  windowStart?: string | null;
+  windowEnd?: string | null;
 }
 
 type Zoom = 'year' | 'quarter' | 'month' | 'week';
@@ -44,7 +47,7 @@ function addMonths(d: Date, n: number) {
   return r;
 }
 
-export default function PortfolioGantt({ artifacts }: Props) {
+export default function PortfolioGantt({ artifacts, windowStart = null, windowEnd = null }: Props) {
   const t = usePageI18n();
   const [zoom, setZoom] = useState<Zoom>('month');
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
@@ -65,8 +68,15 @@ export default function PortfolioGantt({ artifacts }: Props) {
 
   // Calculate timeline range
   const { rangeStart, rangeEnd, totalDays } = useMemo(() => {
-    const cycleStart = new Date('2026-03-01T00:00:00');
-    let end = new Date('2026-12-31T00:00:00');
+    let cycleStart = parseDate(windowStart);
+    if (!cycleStart) {
+      for (const a of artifacts) {
+        const bd = parseDate(a.baseline_date);
+        if (bd && (!cycleStart || bd < cycleStart)) cycleStart = bd;
+      }
+    }
+    if (!cycleStart) cycleStart = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
+    let end = parseDate(windowEnd) ?? addMonths(cycleStart, 6);
 
     for (const a of artifacts) {
       const bd = parseDate(a.baseline_date);
@@ -82,7 +92,7 @@ export default function PortfolioGantt({ artifacts }: Props) {
       rangeEnd: end,
       totalDays: diffDays(cycleStart, end),
     };
-  }, [artifacts]);
+  }, [artifacts, windowStart, windowEnd]);
 
   // Generate columns based on zoom
   const columns = useMemo(() => {
@@ -296,7 +306,7 @@ export default function PortfolioGantt({ artifacts }: Props) {
                   );
                 }
 
-                const cycleStart = new Date('2026-03-01T00:00:00');
+                const cycleStart = rangeStart;
                 const startDate = parseDate(bd)!;
                 // Bar starts 30 days before baseline (or at cycle start)
                 const barStart = startDate > cycleStart

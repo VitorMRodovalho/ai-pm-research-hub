@@ -67,6 +67,8 @@ export interface PortfolioSummary {
 
 export interface PortfolioData {
   cycle: number;
+  window_start?: string | null;
+  window_end?: string | null;
   generated_at: string;
   summary: PortfolioSummary;
   artifacts: Artifact[];
@@ -94,7 +96,8 @@ function getSb() {
   return (window as any).navGetSb?.();
 }
 
-export function usePortfolio(cycle = 3) {
+// Sem ciclo pedido, o servidor usa o ciclo corrente (#2565 2A).
+export function usePortfolio(cycle: number | null = null) {
   const [data, setData] = useState<PortfolioData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
