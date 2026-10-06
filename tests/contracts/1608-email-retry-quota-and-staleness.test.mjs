@@ -29,6 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000513_1608_retry_cobre_cota_diaria_e_para_de_ressuscitar.sql');
@@ -63,7 +64,8 @@ test('1608 static: existe limite de idade, e ele é a metade que impede o dano',
 });
 
 test('1608 static: a fila consulta o predicado nomeado, não um ILIKE inline', () => {
-  const corpo = mig.match(/CREATE OR REPLACE FUNCTION public\.process_pending_email_queue[\s\S]*?\$function\$([\s\S]*?)\$function\$/)[1];
+  // Captura vigente (#1932): a fila foi recriada depois da #1608 (pela #2580), e a regra segue valendo.
+  const corpo = maskLineComments(latestFunctionCapture(ROOT, 'process_pending_email_queue').block);
   assert.match(corpo, /public\.email_send_retry_eligible\(cs\.status, cs\.error_log, cs\.created_at\)/,
     'a fila delega a decisão ao predicado nomeado');
   // forward-defense: o predicado antigo não pode voltar

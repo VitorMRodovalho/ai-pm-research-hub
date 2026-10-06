@@ -67,27 +67,27 @@ Deno.serve(async (req) => {
     const tmpl = send.campaign_templates
     if (!tmpl) return json({ error: 'Template not found' }, 404)
 
-    // p82 CBGPL daily throttle: enforce 100/day limit (Resend free tier).
-    // If today's delivered count >= limit, mark all recipients pending_throttled
-    // and skip Resend dispatch. The cron `dispatch-pending-emails` will pick up
-    // throttled sends in subsequent days as slot opens.
-    const DAILY_LIMIT = parseInt(Deno.env.get('SEND_CAMPAIGN_DAILY_LIMIT') ?? '100', 10)
-    const todayStart = new Date()
-    todayStart.setUTCHours(3, 0, 0, 0) // 00:00 BRT (UTC-3)
-    if (Date.now() < todayStart.getTime()) todayStart.setUTCDate(todayStart.getUTCDate() - 1)
-    const { count: todayCount } = await sb.from('campaign_recipients')
-      .select('id', { count: 'exact', head: true })
-      .eq('delivered', true)
-      .gte('created_at', todayStart.toISOString())
-    console.log('[campaign] daily throttle check: today_delivered=', todayCount, 'limit=', DAILY_LIMIT)
-    if ((todayCount ?? 0) >= DAILY_LIMIT) {
+    // #2580: teto diário do hub, lido do banco (site_config, chave email_daily_cap), contra o que o hub
+    // enviou hoje (notificações e campanhas). Ao bater no teto, os destinatários ficam pending_throttled e
+    // o cron `dispatch-pending-emails` retoma no dia seguinte. Sem conseguir ler o teto ou a contagem,
+    // não envia: um teto que não se lê não protege nada.
+    const { data: capData, error: capErr } = await sb.rpc('email_daily_cap')
+    const { data: todayData, error: todayErr } = await sb.rpc('email_sends_today')
+    if (capErr || todayErr || typeof capData !== 'number' || typeof todayData !== 'number') {
+      return json({ error: 'email_cap_unreadable', detail: capErr?.message ?? todayErr?.message ?? 'no value' }, 503)
+    }
+    const DAILY_LIMIT = capData
+    const todayCount = todayData
+    console.log('[campaign] daily throttle check: hub_sent_today=', todayCount, 'limit=', DAILY_LIMIT)
+    if (todayCount >= DAILY_LIMIT) {
+      await sb.rpc('email_cap_reached', { p_lane: 'campanhas' })
       await sb.from('campaign_recipients').update({
         status: 'pending_throttled',
         error_message: `daily_limit_${DAILY_LIMIT}_reached_retry_tomorrow`,
       }).eq('send_id', sendId)
       await sb.from('campaign_sends').update({
         status: 'throttled',
-        error_log: `Daily Resend limit ${DAILY_LIMIT} reached (today=${todayCount}). Cron will retry tomorrow.`,
+        error_log: `Daily hub email cap ${DAILY_LIMIT} reached (today=${todayCount}). Cron will retry tomorrow.`,
       }).eq('id', sendId)
       return json({
         throttled: true,
