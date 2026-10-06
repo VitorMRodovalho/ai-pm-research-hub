@@ -7301,12 +7301,12 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   mcp.tool("get_portfolio_planned_vs_actual", "Compare baseline_date vs actual completion date for portfolio items in a cycle. Returns variance metrics (early/on_time/late). Used for delivery quality analysis.", {
-    cycle: z.number().optional().describe("Cycle number. Default 3 (current).")
+    cycle: z.number().optional().describe("Cycle number. Default: the current cycle.")
   }, async (params: { cycle?: number }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_portfolio_planned_vs_actual", false, "Not authenticated", start); return err("Not authenticated"); }
-    const { data, error } = await sb.rpc("get_portfolio_planned_vs_actual", { p_cycle: params.cycle ?? 3 });
+    const { data, error } = await sb.rpc("get_portfolio_planned_vs_actual", { p_cycle: params.cycle ?? null });
     if (error) { await logUsage(sb, member.id, "get_portfolio_planned_vs_actual", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_portfolio_planned_vs_actual", true, undefined, start);
     return ok(data);
@@ -9257,7 +9257,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       tribe_id: z.number().optional().describe("report='items' tribe filter (legacy_tribe_id)."),
       status: z.string().optional().describe("report='items' board_item status filter."),
       cycle_code: z.string().optional().describe("report='items'/'health' cycle_code filter (health default 'cycle3-2026')."),
-      cycle: z.number().optional().describe("report='planned_vs_actual' cycle number (default 3)."),
+      cycle: z.number().optional().describe("report='planned_vs_actual' cycle number (default: the current cycle)."),
       include_inactive: z.boolean().optional().describe("report='board_summary' include archived/inactive boards. Default false."),
     },
     async (params: { report?: "overview" | "items" | "health" | "timeline" | "planned_vs_actual" | "board_summary"; tribe_id?: number; status?: string; cycle_code?: string; cycle?: number; include_inactive?: boolean }) => {
@@ -9275,7 +9275,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "items": rpc = "get_portfolio_items"; rpcArgs = { p_tribe_id: params.tribe_id ?? null, p_status: params.status ?? null, p_cycle_code: params.cycle_code ?? null }; break;
         case "health": rpc = "exec_portfolio_health"; rpcArgs = { p_cycle_code: params.cycle_code || "cycle3-2026" }; break;
         case "timeline": rpc = "get_portfolio_timeline"; break;
-        case "planned_vs_actual": rpc = "get_portfolio_planned_vs_actual"; rpcArgs = { p_cycle: params.cycle ?? 3 }; break;
+        case "planned_vs_actual": rpc = "get_portfolio_planned_vs_actual"; rpcArgs = { p_cycle: params.cycle ?? null }; break;
         case "board_summary": rpc = "exec_portfolio_board_summary"; rpcArgs = { p_include_inactive: params.include_inactive ?? false }; break;
         default: rpc = "get_portfolio_dashboard";
       }

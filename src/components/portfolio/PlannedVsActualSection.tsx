@@ -41,7 +41,7 @@ export default function PlannedVsActualSection() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(load, 300); return; }
     setLoading(true);
-    const { data: d } = await sb.rpc('get_portfolio_planned_vs_actual', { p_cycle: 3 });
+    const { data: d } = await sb.rpc('get_portfolio_planned_vs_actual', {});
     if (Array.isArray(d)) setData(d);
     setLoading(false);
   }, []);

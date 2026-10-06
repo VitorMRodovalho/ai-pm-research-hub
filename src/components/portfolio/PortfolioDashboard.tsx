@@ -27,7 +27,7 @@ const TAB_LABELS: Record<string, Record<Tab, string>> = {
 const TABS: Tab[] = ['table', 'gantt', 'heatmap', 'tribes'];
 
 export default function PortfolioDashboard() {
-  const { data, filtered, filters, setFilters, clearFilters, hasActiveFilters, loading, error } = usePortfolio(3);
+  const { data, filtered, filters, setFilters, clearFilters, hasActiveFilters, loading, error } = usePortfolio();
   const [tab, setTab] = useState<Tab>('table');
 
   const filteredSummary = useMemo(() => {
@@ -102,7 +102,7 @@ export default function PortfolioDashboard() {
 
       {/* View content */}
       {tab === 'table' && <PortfolioTable artifacts={filtered} />}
-      {tab === 'gantt' && <PortfolioGantt artifacts={filtered} />}
+      {tab === 'gantt' && <PortfolioGantt artifacts={filtered} windowStart={data.window_start} windowEnd={data.window_end} />}
       {tab === 'heatmap' && (
         <PortfolioHeatmap
           byMonth={data.by_month}

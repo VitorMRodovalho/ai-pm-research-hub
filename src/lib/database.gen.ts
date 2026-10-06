@@ -30514,6 +30514,15 @@ export type Database = {
         }[]
       }
       _current_affiliation_terms_version: { Args: never; Returns: string }
+      _cycle_window: {
+        Args: { p_cycle?: number }
+        Returns: {
+          cycle_number: number
+          is_current: boolean
+          window_end: string
+          window_start: string
+        }[]
+      }
       _data_retention_sweep: { Args: { p_dry_run?: boolean }; Returns: Json }
       _data_retention_sweep_cron: { Args: never; Returns: Json }
       _delivery_mode_for: { Args: { p_type: string }; Returns: string }
@@ -30590,6 +30599,15 @@ export type Database = {
       }
       _has_valid_affiliation_attestation: {
         Args: { p_member_id: string }
+        Returns: boolean
+      }
+      _in_cycle_view: {
+        Args: {
+          p_completed: string
+          p_end: string
+          p_is_current: boolean
+          p_start: string
+        }
         Returns: boolean
       }
       _ip_ratify_cta_link: {
@@ -32158,6 +32176,7 @@ export type Database = {
       }
       curation_reviewer_sla_sweep: { Args: never; Returns: Json }
       current_caller_role: { Args: never; Returns: string }
+      current_cycle_number: { Args: never; Returns: number }
       decrypt_sensitive: { Args: { val: string }; Returns: string }
       delete_board_item: {
         Args: { p_item_id: string; p_reason?: string }
