@@ -682,15 +682,16 @@ function parseDurationSeconds(v: string | null): number | null {
 }
 
 // Decodifica ANTES de tirar as tags: decodificar depois transformaria "&lt;script&gt;" numa tag viva
-// no texto gravado. O que sobrar de < ou > sai no fim, porque o texto é só texto.
+// no texto gravado. O strip se repete até o texto parar de mudar, porque uma passada só deixa
+// "<scr<b>ipt>" virar "<script>". O que sobrar de < ou > sai no fim, porque o texto é só texto.
 function htmlToText(html: string): string {
-  return xmlDecode(html)
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/(p|li|h\d)>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/[<>]/g, '')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
+  let text = xmlDecode(html).replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|li|h\d)>/gi, '\n')
+  let prev: string
+  do {
+    prev = text
+    text = text.replace(/<[^<>]*>/g, '')
+  } while (text !== prev)
+  return text.replace(/[<>]/g, '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 function fetchSpotifyMetrics(_cfg: ChannelConfig): Promise<NormalizedMetric[]> {
