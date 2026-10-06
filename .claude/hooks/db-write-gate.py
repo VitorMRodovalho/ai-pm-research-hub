@@ -41,6 +41,13 @@ CLI. The token lives in ~/.config/supabase-mgmt/token, outside every repo, and `
 <cmd>` loads it for one command; reading it is one of the denied forms. The service_role key in the
 lanes' .env is NOT covered: it reaches DML only, and the lanes' DB-aware tests need it.
 
+Main (2026-10-06, decisao do GP): lanes must not push to main in parallel with the orchestrator's work.
+For a session that is NOT the orchestrator, in a clone or worktree of this repo or in a command naming it,
+the gate also denies what reaches main: merging a PR (gh pr merge, the merge API,
+mcp__github__merge_pull_request), a push that lands on main (a refspec to main, a push with no refspec
+while on main, --all, --mirror), a forced push, --admin, and writing a file straight to main through the
+GitHub MCP. Pushing one's own branch and opening a PR stay free. See main_write().
+
 Known limits: a SELECT that calls a writing function (`select some_rpc()`) is not detected as a
 write, and a quoted identifier spelled like a keyword (`select 1 as "update"`) is taken as one. The
 first is a gap the rule in CLAUDE.md still covers; the second is a conservative false positive, and
@@ -88,6 +95,25 @@ BASH_RISK_RE = re.compile(
 )
 REPO_RE = re.compile(r"[/:]ai-pm-research-hub(?:\.git)?/?$")
 
+# Main so pela orquestradora (06/10/2026, decisao do GP): lane nenhuma sobe nada para a main em paralelo
+# ao trabalho da orquestradora. Para quem NAO e a orquestradora, o gate nega o que chega a main deste
+# repositorio: mergear PR (gh pr merge, a API REST de merge ou a mutation GraphQL), --admin, push forcado e
+# push que chega a main (refspec para main, push sem refspec ou de HEAD estando na main, --all, --mirror).
+# Cada acao e medida no diretorio em que roda: o cwd, depois de cada `cd` anterior a ela e do `git -C`. O
+# gh vale tambem quando o comando cita este repositorio (-R, GH_REPO, caminho da API). Pelo MCP do GitHub:
+# merge de PR e gravar arquivo direto na main. Push da branch propria e abrir PR continuam livres: e assim
+# que a lane entrega.
+REPO_SLUG = "ai-pm-research-hub"
+GH_MERGE_RE = re.compile(r"\bgh\s+pr\s+merge\b|\bgh\s+api\b[^\n;&|]*?/(?:pulls/\d+/merge|merges)\b")
+GH_GRAPHQL_MERGE_RE = re.compile(
+    r"\bgh\s+api\b[^\n;&|]*?\bgraphql\b[\s\S]*\b(?:mergePullRequest|enablePullRequestAutoMerge)\b"
+)
+GH_ADMIN_RE = re.compile(r"\bgh\b[^\n;&|]*?\s--admin\b")
+GIT_PUSH_RE = re.compile(r"\bgit((?:\s+-[cC]\s+\S+)*)\s+push\b([^\n;&|]*)")
+MAIN_REFSPEC_RE = re.compile(r"^(?:[^:]*:)?(?:refs/heads/)?main$")
+PUSH_ALL_FLAGS = ("--all", "--mirror")
+GITHUB_MAIN_TOOLS = ("merge_pull_request", "push_files", "create_or_update_file", "delete_file")
+
 
 def repo_is_this(cwd: str) -> bool:
     if not cwd or not os.path.isdir(cwd):
@@ -97,6 +123,86 @@ def repo_is_this(cwd: str) -> bool:
         capture_output=True, text=True, timeout=10,
     )
     return out.returncode == 0 and bool(REPO_RE.search(out.stdout.strip()))
+
+
+def current_branch(path: str) -> str:
+    out = subprocess.run(
+        ["git", "-C", path, "rev-parse", "--abbrev-ref", "HEAD"],
+        capture_output=True, text=True, timeout=10,
+    )
+    return out.stdout.strip() if out.returncode == 0 else ""
+
+
+def resolve_dir(base: str, d: str) -> str:
+    d = os.path.expandvars(os.path.expanduser(d.strip("'\"")))
+    return d if os.path.isabs(d) else os.path.join(base, d)
+
+
+def dir_at(cmd: str, pos: int, cwd: str) -> str:
+    """Onde roda o trecho que comeca em `pos`: o cwd, depois de cada `cd <dir>` anterior a ele. Um `cd`
+    para diretorio que nao existe falharia no shell, e quase sempre e texto citado: fica de fora."""
+    base = cwd
+    for d in re.findall(r"\bcd\s+([^\s;&|]+)", cmd[:pos]):
+        nxt = resolve_dir(base, d)
+        if os.path.isdir(nxt):
+            base = nxt
+    return base
+
+
+def main_write(cmd: str, cwd: str) -> str:
+    """O que o comando faz com a main deste repositorio; vazio quando nao chega a ela."""
+    for rx, what in ((GH_MERGE_RE, "mergear uma PR"), (GH_GRAPHQL_MERGE_RE, "mergear uma PR"),
+                     (GH_ADMIN_RE, "usar --admin")):
+        m = rx.search(cmd)
+        if m and (REPO_SLUG in cmd or repo_is_this(dir_at(cmd, m.start(), cwd))):
+            return what
+    for m in GIT_PUSH_RE.finditer(cmd):
+        path = dir_at(cmd, m.start(), cwd)
+        dirs = re.findall(r"-C\s+(\S+)", m.group(1))
+        if dirs:
+            path = resolve_dir(path, dirs[-1])
+        if not (repo_is_this(path) or REPO_SLUG in m.group(2)):
+            continue
+        args = m.group(2).split()
+        flags = [a for a in args if a.startswith("-")]
+        refspecs = [a for a in args if not a.startswith("-")][1:]
+        if any(f in ("-f",) or f.startswith("--force") for f in flags):
+            return "fazer push forcado"
+        if any(f in PUSH_ALL_FLAGS for f in flags):
+            return "fazer push de todas as branches, a main inclusive"
+        if any(r.startswith("+") for r in refspecs):
+            return "fazer push forcado"
+        if any(MAIN_REFSPEC_RE.match(r) for r in refspecs):
+            return "fazer push para a main"
+        pushes_head = not refspecs or any(r.split(":")[-1] in ("HEAD", "@") for r in refspecs)
+        if pushes_head and current_branch(path) == "main":
+            return "fazer push estando na main"
+    return ""
+
+
+def github_main_write(tool: str, tool_input: dict) -> str:
+    """Pelo MCP do GitHub: merge de PR, ou arquivo gravado direto na main, neste repositorio."""
+    if not tool.startswith("mcp__github__"):
+        return ""
+    name = tool[len("mcp__github__"):]
+    if name not in GITHUB_MAIN_TOOLS or (tool_input.get("repo") or "") != REPO_SLUG:
+        return ""
+    if name == "merge_pull_request":
+        return "mergear uma PR"
+    if (tool_input.get("branch") or "main") == "main":
+        return "gravar arquivo direto na main"
+    return ""
+
+
+def main_deny_reason(session_id: str, orch: str, cwd: str, what: str) -> str:
+    who = f"a sessao orquestradora designada e {orch[:8]}" if orch else "NENHUMA sessao orquestradora esta designada"
+    return (
+        f"SO A ORQUESTRADORA MERGEIA E SOBE PARA A MAIN NESTE PROJETO (decisao do GP, 06/10/2026). Esta sessao "
+        f"({session_id[:8] or '?'}) NAO e a orquestradora e roda {where(cwd)} ({cwd}); {who}. O comando tenta "
+        f"{what}. Termine o trabalho na PR aberta e avise a orquestradora: merge, migration, deploy de EF e "
+        "escrita no banco sao dela. Push da sua branch e abrir PR continuam livres. Um comando que so cite "
+        "esses comandos (grep, echo, texto de commit) tambem e barrado; reformule."
+    )
 
 
 def bash_deny_reason(session_id: str, orch: str, cwd: str) -> str:
@@ -272,15 +378,28 @@ def decide(event: dict):
     tool_input = event.get("tool_input") or {}
     if tool == "Bash":
         cmd = tool_input.get("command") or ""
+        cwd = event.get("cwd") or os.getcwd()
+        what = main_write(cmd, cwd)
+        if what:
+            session_id = event.get("session_id") or ""
+            orch = orchestrator_id()
+            if not orch or session_id != orch:
+                return "deny", main_deny_reason(session_id, orch, cwd, what)
         if not BASH_RISK_RE.search(cmd):
             return None, None
-        cwd = event.get("cwd") or os.getcwd()
         if PROJECT_REF not in cmd and not repo_is_this(cwd):
             return None, None
         session_id = event.get("session_id") or ""
         orch = orchestrator_id()
         if not orch or session_id != orch:
             return "deny", bash_deny_reason(session_id, orch, cwd)
+        return None, None
+    gh_what = github_main_write(tool, tool_input)
+    if gh_what:
+        session_id = event.get("session_id") or ""
+        orch = orchestrator_id()
+        if not orch or session_id != orch:
+            return "deny", main_deny_reason(session_id, orch, event.get("cwd") or os.getcwd(), gh_what)
         return None, None
     action = tool_action(tool)
     is_sql = action == "execute_sql"
