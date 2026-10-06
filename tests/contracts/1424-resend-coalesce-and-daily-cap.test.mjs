@@ -11,10 +11,14 @@
  *   7.3 emails/pessoa). Rich JSON digests + onboarding-prep + governance types
  *   still render individually (they carry dedicated blocks).
  *
- *   Fase B — shared daily cap: before sending, the run counts the day's real
- *   sends across ALL lanes from email_webhook_events (event_type='email.sent')
- *   and stops at a safe headroom (DAILY_SEND_CAP < 100). Excess rows keep
+ *   Fase B — daily cap: before sending, the run reads the hub's daily cap from the
+ *   database (email_daily_cap, site_config) and what the hub itself sent today
+ *   (email_sends_today), and stops when the budget runs out. Excess rows keep
  *   email_sent_at NULL and drain on the next 5-minute cron run or the next day.
+ *   #2580 replaced the old rule (a hardcoded cap under the free plan's 100/day,
+ *   counted from the account-wide email_webhook_events): the account moved to the
+ *   Pro plan and is shared with other projects, whose sends must not spend the
+ *   hub's budget.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,21 +31,27 @@ const EF = readFileSync(
   'utf8',
 );
 
-test('#1424 Fase B: DAILY_SEND_CAP declared with safe headroom under the Resend 100/day quota', () => {
-  const m = EF.match(/const\s+DAILY_SEND_CAP\s*=\s*(\d+)/);
-  assert.ok(m, 'EF must declare const DAILY_SEND_CAP.');
-  const cap = Number(m[1]);
-  assert.ok(cap > 0 && cap < 100,
-    `DAILY_SEND_CAP must leave headroom under 100 (got ${cap}).`);
+test('#1424 Fase B (#2580): the cap comes from the database, not a literal', () => {
+  assert.match(EF, /sb\.rpc\('email_daily_cap'\)/, 'EF must read the cap through the email_daily_cap RPC.');
+  assert.doesNotMatch(EF, /const\s+DAILY_SEND_CAP\s*=\s*\d+/, 'no hardcoded cap.');
 });
 
-test('#1424 Fase B: cap counts the day\'s real sends from email_webhook_events (shared cross-lane truth)', () => {
-  assert.ok(/email_webhook_events/.test(EF),
-    'EF must read email_webhook_events to count the day\'s sends.');
-  assert.ok(/event_type['"]?\s*,\s*['"]email\.sent['"]/.test(EF),
-    'EF must filter email_webhook_events to event_type = \'email.sent\'.');
-  assert.ok(/DAILY_SEND_CAP\s*-\s*sentToday/.test(EF),
-    'EF must compute the remaining budget as DAILY_SEND_CAP - sentToday.');
+test('#1424 Fase B (#2580): the budget counts what the hub sent today, not the whole account', () => {
+  assert.match(EF, /sb\.rpc\('email_sends_today'\)/, 'EF must count the hub sends through email_sends_today.');
+  assert.doesNotMatch(EF, /from\(['"]email_webhook_events['"]\)/,
+    'account-wide webhook events include other projects and must not drive the budget.');
+  assert.match(EF, /const dailyBudget = Math\.max\(0, dailyCap - sentToday\)/,
+    'EF must compute the remaining budget as dailyCap - sentToday.');
+});
+
+test('#1424 Fase B (#2580): an unreadable cap sends nothing, and hitting the cap raises the alert', () => {
+  assert.match(EF,
+    /if \(capErr \|\| sentErr \|\| typeof capData !== 'number' \|\| typeof sentData !== 'number'\) \{\s+return new Response\([^)]*email_cap_unreadable[^\n]*status: 503/,
+    'with the cap or the count unreadable, the run returns before sending.');
+  assert.match(EF, /if \(dailyBudget <= 0\) \{\s+await sb\.rpc\('email_cap_reached', \{ p_lane: 'notificacoes' \}\)/,
+    'cap already reached at the start of the run: alert.');
+  assert.match(EF, /if \(deferred > 0\) await sb\.rpc\('email_cap_reached', \{ p_lane: 'notificacoes' \}\)/,
+    'budget ran out mid-run: alert.');
 });
 
 test('#1424 Fase B: run defers once the daily budget is exhausted (does not blast past the cap)', () => {

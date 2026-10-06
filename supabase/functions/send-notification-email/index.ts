@@ -85,16 +85,13 @@ const ONBOARDING_PREP_TYPES = new Set([
   'selection_cutoff_approved',
 ])
 
-// ─── #1424 Resend quota control ─────────────────────────────────────────────
-// Resend free tier = 100 emails/day, shared across ALL lanes (campaign lane via
-// send-campaign + this notification/digest lane) on ONE account. The campaign
-// lane already caps at 100 via campaign_recipients; this lane historically had
-// NO cap and blew the quota on Saturday digest bursts (#1424 audit: 108-121
-// sends/Sat). We count the day's real sends from email_webhook_events
-// (event_type='email.sent') — the shared, cross-lane truth — and stop at a safe
-// headroom. Deferred rows keep email_sent_at NULL and drain on the next */5 run
-// (or the next day once the quota resets at 00:00 UTC).
-const DAILY_SEND_CAP = 90
+// ─── #1424 / #2580 daily cap ────────────────────────────────────────────────
+// One daily cap for the whole hub, read from the database (site_config key
+// email_daily_cap, via the email_daily_cap RPC), against what the hub itself sent
+// today in Brasilia time (email_sends_today: notifications and campaigns). The
+// account-wide email_webhook_events also carry the other projects on the same
+// Resend account, so they no longer drive the budget. Deferred rows keep
+// email_sent_at NULL and drain on the next */5 run or the next day.
 
 // ADR-0022 W2 Leaf 6 (p228 #260): candidate-facing operational types bypass
 // suppress_all. Lock-step with SQL helper public._is_operational_candidate_facing(text)
@@ -700,20 +697,20 @@ Deno.serve(async (req) => {
 
     const sb = createClient<any, "public", any>(url, srk, { auth: { autoRefreshToken: false, persistSession: false } })
 
-    // #1424 Fase B: shared daily cap. Count today's real sends across ALL lanes
-    // from email_webhook_events (event_type='email.sent'); the Resend quota resets
-    // at 00:00 UTC, so the day window is UTC-midnight → now.
-    const startOfUtcDay = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z'
-    const { count: sentTodayCount } = await sb
-      .from('email_webhook_events')
-      .select('id', { count: 'exact', head: true })
-      .eq('event_type', 'email.sent')
-      .gte('created_at', startOfUtcDay)
-    const sentToday = sentTodayCount ?? 0
-    const dailyBudget = Math.max(0, DAILY_SEND_CAP - sentToday)
+    // #2580: the hub's daily cap and today's hub sends, both from the database. If either cannot be
+    // read, send nothing this run: a cap that cannot be read protects nothing.
+    const { data: capData, error: capErr } = await sb.rpc('email_daily_cap')
+    const { data: sentData, error: sentErr } = await sb.rpc('email_sends_today')
+    if (capErr || sentErr || typeof capData !== 'number' || typeof sentData !== 'number') {
+      return new Response(JSON.stringify({ sent: 0, error: 'email_cap_unreadable', detail: capErr?.message ?? sentErr?.message ?? 'no value' }), { status: 503 })
+    }
+    const dailyCap = capData
+    const sentToday = sentData
+    const dailyBudget = Math.max(0, dailyCap - sentToday)
 
     if (dailyBudget <= 0) {
-      return new Response(JSON.stringify({ sent: 0, capped: true, sentToday, cap: DAILY_SEND_CAP, message: 'Daily send cap reached — deferring to next run/day' }))
+      await sb.rpc('email_cap_reached', { p_lane: 'notificacoes' })
+      return new Response(JSON.stringify({ sent: 0, capped: true, sentToday, cap: dailyCap, message: 'Daily send cap reached — deferring to next run/day' }))
     }
 
     // ADR-0022 W1: route by delivery_mode = 'transactional_immediate'. Catalog
@@ -896,11 +893,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    // #2580: the run ran out of budget mid-way, so the cap was hit today.
+    if (deferred > 0) await sb.rpc('email_cap_reached', { p_lane: 'notificacoes' })
+
     return new Response(JSON.stringify({
       sent, deferred, deduped,
       recipients: orderedRecipients.length,
       totalRows: notifications.length,
-      sentToday, cap: DAILY_SEND_CAP, dailyBudget,
+      sentToday, cap: dailyCap, dailyBudget,
       errors,
     }), {
       headers: { 'Content-Type': 'application/json' },
