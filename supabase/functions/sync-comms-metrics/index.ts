@@ -635,6 +635,115 @@ async function fetchYouTubeMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
   return items
 }
 
+// ─── Spotify (podcast) via RSS público ───
+//
+// #2553 (D4, decisão do GP em 06/10/2026): episódio de podcast é o canal `spotify` desta tabela,
+// ingerido do RSS PÚBLICO do show (comms_channel_config.config.rss_url). Não há credencial nem
+// métrica diária: o RSS não traz audiência, então o canal só tem MEDIA_FETCHER, e a métrica diária
+// devolve vazio de propósito.
+//
+// O feed é lido INTEIRO a cada rodada, e por isso o synced_at de cada linha diz se o episódio
+// ainda está no feed: a leitura pública (get_public_podcast_episodes) mostra só o que a última
+// rodada viu, e um episódio despublicado no Spotify sai da página sem ninguém apagar linha.
+//
+// O autor do item (`dc:creator`) NÃO é gravado: é nome de pessoa e não serve à vitrine.
+
+function xmlDecode(s: string): string {
+  return s
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(parseInt(d, 10)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+}
+
+function xmlText(block: string, tag: string): string | null {
+  const esc = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = block.match(new RegExp(`<${esc}(?:\\s[^>]*)?>([\\s\\S]*?)</${esc}>`))
+  if (!m) return null
+  const cdata = m[1].match(/^\s*<!\[CDATA\[([\s\S]*?)\]\]>\s*$/)
+  return (cdata ? cdata[1] : xmlDecode(m[1])).trim()
+}
+
+function xmlAttr(block: string, tag: string, attr: string): string | null {
+  const esc = tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = block.match(new RegExp(`<${esc}\\b[^>]*\\b${attr}="([^"]*)"`))
+  return m ? xmlDecode(m[1]) : null
+}
+
+// "HH:MM:SS", "MM:SS" ou segundos.
+function parseDurationSeconds(v: string | null): number | null {
+  if (!v) return null
+  const parts = v.trim().split(':').map((p) => parseInt(p, 10))
+  if (!parts.length || parts.some((n) => !Number.isFinite(n))) return null
+  return parts.reduce((acc, n) => acc * 60 + n, 0)
+}
+
+// Decodifica ANTES de tirar as tags: decodificar depois transformaria "&lt;script&gt;" numa tag viva
+// no texto gravado. O strip se repete até o texto parar de mudar, porque uma passada só deixa
+// "<scr<b>ipt>" virar "<script>". O que sobrar de < ou > sai no fim, porque o texto é só texto.
+function htmlToText(html: string): string {
+  let text = xmlDecode(html).replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|li|h\d)>/gi, '\n')
+  let prev: string
+  do {
+    prev = text
+    text = text.replace(/<[^<>]*>/g, '')
+  } while (text !== prev)
+  return text.replace(/[<>]/g, '').replace(/\n{3,}/g, '\n\n').trim()
+}
+
+function fetchSpotifyMetrics(_cfg: ChannelConfig): Promise<NormalizedMetric[]> {
+  return Promise.resolve([])
+}
+
+async function fetchSpotifyMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
+  const rssUrl = (cfg.config as any)?.rss_url
+  if (typeof rssUrl !== 'string' || !rssUrl) {
+    console.warn('Spotify media: comms_channel_config.config.rss_url ausente; nada a ler')
+    return []
+  }
+  const resp = await fetchWithRetry(rssUrl)
+  if (!resp.ok) throw new Error(`Spotify RSS: ${resp.status}`)
+  const xml = await resp.text()
+
+  const items: MediaItem[] = []
+  for (const block of xml.match(/<item\b[\s\S]*?<\/item>/g) || []) {
+    const guid = xmlText(block, 'guid')
+    const title = xmlText(block, 'title')
+    const audioUrl = xmlAttr(block, 'enclosure', 'url')
+    if (!guid || !title || !audioUrl) continue
+    const pub = xmlText(block, 'pubDate')
+    const pubDate = pub ? new Date(pub) : null
+    const description = xmlText(block, 'description')
+    items.push({
+      channel: 'spotify',
+      external_id: guid,
+      media_type: 'EPISODE',
+      caption: title.slice(0, 500),
+      permalink: xmlText(block, 'link'),
+      thumbnail_url: xmlAttr(block, 'itunes:image', 'href'),
+      published_at: pubDate && Number.isFinite(pubDate.getTime()) ? pubDate.toISOString() : null,
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      saves: 0,
+      reach: null,
+      views: null,
+      payload: {
+        audio_url: audioUrl,
+        audio_type: xmlAttr(block, 'enclosure', 'type'),
+        duration_seconds: parseDurationSeconds(xmlText(block, 'itunes:duration')),
+        episode_type: xmlText(block, 'itunes:episodeType'),
+        description: description ? htmlToText(description).slice(0, 4000) : null,
+      },
+    })
+  }
+  console.info(`Spotify media: ${items.length} episódio(s) no RSS`)
+  return items
+}
+
 function linkedInHeaders(token: string) {
   return {
     'Authorization': `Bearer ${token}`,
@@ -815,13 +924,18 @@ const MEDIA_FETCHERS: Partial<Record<string, (cfg: ChannelConfig, sb: SupabaseCl
   instagram: fetchInstagramMedia,
   youtube: fetchYouTubeMedia,
   linkedin: fetchLinkedInMedia,
+  spotify: fetchSpotifyMedia,
 }
 
 const CHANNEL_FETCHERS: Record<string, (cfg: ChannelConfig) => Promise<NormalizedMetric[]>> = {
   youtube: fetchYouTubeMetrics,
   linkedin: fetchLinkedInMetrics,
   instagram: fetchInstagramMetrics,
+  spotify: fetchSpotifyMetrics,
 }
+
+// Canais que leem fonte pública e não têm token a vigiar (#2553: o RSS do podcast).
+const PUBLIC_FEED_CHANNELS = new Set(['spotify'])
 
 // ─── Token expiry helpers ───
 
@@ -852,6 +966,7 @@ function tokenDeadline(cfg: ChannelConfig): number | null {
 function isTokenWorthTrying(cfg: ChannelConfig): boolean {
   // YouTube uses API key (never expires)
   if (cfg.channel === 'youtube') return !!cfg.api_key
+  if (PUBLIC_FEED_CHANNELS.has(cfg.channel)) return true
   // OAuth channels need a token at all
   if (!cfg.oauth_token) return false
   const prazo = tokenDeadline(cfg)
@@ -860,7 +975,7 @@ function isTokenWorthTrying(cfg: ChannelConfig): boolean {
 }
 
 function isTokenExpiringSoon(cfg: ChannelConfig): boolean {
-  if (cfg.channel === 'youtube') return false
+  if (cfg.channel === 'youtube' || PUBLIC_FEED_CHANNELS.has(cfg.channel)) return false
   const prazo = tokenDeadline(cfg)
   if (prazo === null) return false // desconhecido não é "expirando"; é 'unknown', e quem grita é o scan
   return prazo > Date.now() && prazo < Date.now() + SEVEN_DAYS_MS
@@ -1183,6 +1298,13 @@ async function syncFromChannelConfigs(
                 synced_at: new Date().toISOString(),
               })), { onConflict: 'channel,external_id' })
             if (!mediaError) mediaCount = mediaItems.length
+            // #2553: canal de feed público não tem métrica diária, então o carimbo de sync acima
+            // (que só roda com métrica) nunca o alcançaria. Aqui o sync bem-sucedido é a mídia.
+            if (!mediaError && PUBLIC_FEED_CHANNELS.has(cfg.channel)) {
+              await sb.from('comms_channel_config')
+                .update({ last_sync_at: new Date().toISOString(), sync_status: 'active' })
+                .eq('channel', cfg.channel)
+            }
 
             // #889: cache thumbnails to Storage (cdninstagram URLs expire; image posts have no
             // thumbnail_url at all). Idempotent (skip already-cached) and non-fatal (a download

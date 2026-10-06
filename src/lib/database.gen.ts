@@ -33472,6 +33472,7 @@ export type Database = {
         }[]
       }
       get_public_platform_stats: { Args: never; Returns: Json }
+      get_public_podcast_episodes: { Args: { p_limit?: number }; Returns: Json }
       get_public_precise_country_reach: {
         Args: never
         Returns: {

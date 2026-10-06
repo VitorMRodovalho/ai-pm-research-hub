@@ -36,13 +36,20 @@
  * iframe on /admin/comms (#886). Adding any new frame source is a security review
  * item — keep this allowlist minimal. `img-src` includes `https://i.ytimg.com`
  * for YouTube video thumbnails on /admin/comms (#886).
+ *
+ * #2553: a página pública /podcast toca o áudio do RSS do Spotify for Creators e mostra
+ * a capa de cada episódio. O feed serve as capas por `d3t3ozftmdmh3i.cloudfront.net`
+ * (img-src) e o áudio por `anchor.fm`, que redireciona para `d3ctxlq1ktw2nl.cloudfront.net`
+ * (media-src; a CSP confere cada salto do redirecionamento). Medido no feed em 06/10/2026.
+ * Não há frame-src novo: o player é o <audio> nativo, não o embed do Spotify.
  */
 export const CSP =
   "default-src 'self'; " +
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://us-assets.i.posthog.com https://us.posthog.com https://static.cloudflareinsights.com; " +
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
   "font-src 'self' https://fonts.gstatic.com; " +
-  "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com https://i.ytimg.com; " +
+  "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com https://i.ytimg.com https://d3t3ozftmdmh3i.cloudfront.net; " +
+  "media-src 'self' https://anchor.fm https://d3ctxlq1ktw2nl.cloudfront.net; " +
   "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com https://viacep.com.br; " +
   "frame-src https://calendar.google.com; " +
   "object-src 'none'; " +
