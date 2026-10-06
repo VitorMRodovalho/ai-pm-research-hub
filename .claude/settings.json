@@ -143,6 +143,19 @@
         ]
       }
     ],
+    "Elicitation": [
+      {
+        "matcher": "supabase",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/supabase-confirm-gate.py\"",
+            "timeout": 15,
+            "statusMessage": "Conferindo se a orquestradora pode responder a confirmacao do Supabase..."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
