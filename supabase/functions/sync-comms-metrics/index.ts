@@ -681,17 +681,20 @@ function parseDurationSeconds(v: string | null): number | null {
   return parts.reduce((acc, n) => acc * 60 + n, 0)
 }
 
+// Decodifica ANTES de tirar as tags: decodificar depois transformaria "&lt;script&gt;" numa tag viva
+// no texto gravado. O que sobrar de < ou > sai no fim, porque o texto é só texto.
 function htmlToText(html: string): string {
-  return xmlDecode(
-    html
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/(p|li|h\d)>/gi, '\n')
-      .replace(/<[^>]+>/g, ''),
-  ).replace(/\n{3,}/g, '\n\n').trim()
+  return xmlDecode(html)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|li|h\d)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/[<>]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
-async function fetchSpotifyMetrics(_cfg: ChannelConfig): Promise<NormalizedMetric[]> {
-  return []
+function fetchSpotifyMetrics(_cfg: ChannelConfig): Promise<NormalizedMetric[]> {
+  return Promise.resolve([])
 }
 
 async function fetchSpotifyMedia(cfg: ChannelConfig): Promise<MediaItem[]> {

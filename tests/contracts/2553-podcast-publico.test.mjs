@@ -80,6 +80,20 @@ test('B1: a EF lê o RSS do spotify sem token e sem gravar o autor do item', () 
   assert.doesNotMatch(fn[0], /creator/i, 'o autor do item não é lido');
 });
 
+test('B2: htmlToText decodifica antes de tirar as tags e remove o < ou > que sobrar', () => {
+  const ef = maskJs(read('supabase/functions/sync-comms-metrics/index.ts'));
+  const fn = ef.match(/function htmlToText\(html: string\): string \{([\s\S]*?)\n\}/);
+  assert.ok(fn, 'htmlToText presente');
+  const body = fn[1];
+  const decode = body.indexOf('xmlDecode(html)');
+  const strip = body.indexOf(".replace(/<[^>]+>/g, '')");
+  const sobra = body.indexOf(".replace(/[<>]/g, '')");
+  assert.ok(decode >= 0, 'xmlDecode recebe o html cru');
+  assert.ok(strip > decode, 'o strip de tags vem depois da decodificação');
+  assert.ok(sobra > strip, 'a remoção de < e > vem depois do strip de tags');
+  assert.equal((body.match(/xmlDecode\(/g) || []).length, 1, 'uma decodificação só, no início');
+});
+
 test('C1: a página lê a RPC e não carrega episódio escrito à mão', () => {
   const page = read('src/pages/podcast.astro');
   assert.match(page, /sb\.rpc\('get_public_podcast_episodes'/);
@@ -101,7 +115,7 @@ test('C3: toda chave podcast.* usada na página existe nos 3 dicionários', () =
   assert.ok(used.length > 0);
   for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
     const s = read(`src/i18n/${dict}.ts`);
-    for (const k of used) assert.match(s, new RegExp(`^\\s*'${k.replace(/\./g, '\\.')}':`, 'm'), `${dict}: ${k}`);
+    for (const k of used) assert.match(s, new RegExp(`^\\s*'${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':`, 'm'), `${dict}: ${k}`);
   }
 });
 
