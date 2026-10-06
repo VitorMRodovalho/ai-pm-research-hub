@@ -43,14 +43,13 @@ const { id } = Astro.params;
   let sb: any = null;
   let MEMBER: any = null;
 
-  function canManage(sub: any): boolean {
+  // Quem gerencia a submissão é decidido no servidor (#2565): autor principal, quem a criou, a
+  // gestão e a liderança de Publicações & Submissões. A tela pergunta a mesma regra que as funções
+  // de escrita aplicam, para não mostrar controle que o servidor recusa.
+  async function canManage(subId: string): Promise<boolean> {
     if (!MEMBER) return false;
-    if (MEMBER.is_superadmin) return true;
-    // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
-    if ((window as any).__nucleoCanFor?.('write')) return true;
-    if (['manager', 'deputy_manager'].includes(MEMBER.operational_role)) return true;
-    if ((MEMBER.designations || []).includes('curator')) return true;
-    return sub.primary_author_id === MEMBER.id;
+    const { data, error } = await sb.rpc('_can_manage_publication_submission', { p_submission_id: subId });
+    return !error && data === true;
   }
 
   function row(label: string, value: string): string {
@@ -70,7 +69,7 @@ const { id } = Astro.params;
       if (error) throw error;
       if (!sub) { app.innerHTML = '<p class="text-center text-[var(--text-muted)]">Not found</p>'; return; }
 
-      const manage = canManage(sub);
+      const manage = await canManage(subId);
       const statusCls = STATUS_COLORS[sub.status] || STATUS_COLORS.draft;
       const coauthors: any[] = sub.authors || [];
       const events: any[] = sub.lifecycle_events || [];
