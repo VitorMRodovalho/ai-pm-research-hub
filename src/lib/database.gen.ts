@@ -32271,10 +32271,13 @@ export type Database = {
         Args: { p_item_id: string; p_target_board_id?: string }
         Returns: string
       }
+      email_cap_reached: { Args: { p_lane: string }; Returns: number }
+      email_daily_cap: { Args: never; Returns: number }
       email_send_retry_eligible: {
         Args: { p_created_at: string; p_error_log: string; p_status: string }
         Returns: boolean
       }
+      email_sends_today: { Args: never; Returns: number }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
       enqueue_curation_drive_grant_for_member: {
         Args: { p_item_id: string; p_member_id: string; p_reason?: string }
