@@ -47,3 +47,23 @@ aceitas e entram quando a fase rodar, sem nova ratificacao. Mudar qualquer uma d
 - **D9:** a lideranca da iniciativa "Publicacoes & Submissoes" confere os itens, com o Comite de Curadoria revisando,
   ate 2026-10-31. Registro pelo papel, nao pelo nome.
 - Os dois pendentes acima ficam resolvidos por esta emenda.
+
+### Emenda 2 (2026-10-06)
+
+**Ratificacao, palavra por palavra:** "em acordo com ambas decisoes" (sync de hora em hora e so titulos) e "em acordo
+com a emenda 2, aprovado" (D4), em mensagens do GP no mesmo dia.
+
+- **D4:** o podcast entra pelo RSS publico do Spotify for Creators, de forma automatica, no lugar do cadastro manual
+  como `podcast_episode`. O dono do episodio e `comms_media_items`, canal `spotify`, gravado pela EF
+  `sync-comms-metrics`; o site le pela RPC `get_public_podcast_episodes`, sem tabela nova. O gatilho da redacao
+  original (automatizar se o cadastro ficasse atras) foi antecipado: o canal ja publica e o RSS ja e a fonte.
+- **D8 nao muda.** O episodio de podcast e midia do canal, nao realizacao. A F3 decide se um episodio passa a ser
+  apontado por `content_products`; ate la, nada liga os dois.
+- **Frequencia:** o canal `spotify` sincroniza de hora em hora, so ele, alem da rodada diaria de todos os canais. Le
+  so o feed publico, sem token nem cota de API. O agendamento entra por migration propria.
+- **O que sai publico:** titulo, serie, data, duracao, capa e audio de cada episodio. A descricao do episodio e
+  gravada no `payload` interno, mas fica fora da RPC publica, porque cita pessoas, inclusive convidado externo:
+  entra na pagina so depois que as travas da D1 (LIA assinado e `/privacy` com canal de oposicao) estiverem cumpridas
+  e houver consentimento do convidado externo. O autor do item no feed nao e lido.
+- O guard `tests/contracts/2553-podcast-publico.test.mjs` afirma as chaves publicas exatas do episodio e que o autor
+  do item nao e lido.
