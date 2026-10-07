@@ -33527,6 +33527,7 @@ export type Database = {
         }[]
       }
       get_public_verticals: { Args: never; Returns: Json }
+      get_public_webinars: { Args: never; Returns: Json }
       get_publication_detail: { Args: { p_id: string }; Returns: Json }
       get_publication_pipeline_summary: { Args: never; Returns: Json }
       get_publication_submission_detail: {

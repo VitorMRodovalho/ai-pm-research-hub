@@ -16,7 +16,8 @@ const sb = createClient(
   import.meta.env.PUBLIC_SUPABASE_ANON_KEY
 );
 
-const { data: rawWebinars } = await sb.rpc('list_webinars_v2', {});
+// #2554: RPC publica, executavel por anon; so os campos desta pagina (list_webinars_v2 e do admin)
+const { data: rawWebinars } = await sb.rpc('get_public_webinars');
 const webinars = Array.isArray(rawWebinars) ? rawWebinars : [];
 const now = Date.now();
 
