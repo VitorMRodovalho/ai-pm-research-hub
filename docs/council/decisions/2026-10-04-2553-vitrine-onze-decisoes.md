@@ -60,7 +60,9 @@ com a emenda 2, aprovado" (D4), em mensagens do GP no mesmo dia.
 - **D8 nao muda.** O episodio de podcast e midia do canal, nao realizacao. A F3 decide se um episodio passa a ser
   apontado por `content_products`; ate la, nada liga os dois.
 - **Frequencia:** o canal `spotify` sincroniza de hora em hora, so ele, alem da rodada diaria de todos os canais. Le
-  so o feed publico, sem token nem cota de API. O agendamento entra por migration propria.
+  so o feed publico, sem token nem cota de API. O agendamento e o job `sync-comms-podcast-hourly`, no minuto 17 de
+  cada hora, pela migration `20261007004320_2553_podcast_sync_de_hora_em_hora.sql`; autentica com o header
+  `x-sync-secret` (segredo `sync_comms_secret` do vault), o mesmo caminho do job diario, sem a chave de servico.
 - **O que sai publico:** titulo, serie, data, duracao, capa e audio de cada episodio. A descricao do episodio e
   gravada no `payload` interno, mas fica fora da RPC publica, porque cita pessoas, inclusive convidado externo:
   entra na pagina so depois que as travas da D1 (LIA assinado e `/privacy` com canal de oposicao) estiverem cumpridas
