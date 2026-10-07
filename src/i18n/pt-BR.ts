@@ -4264,6 +4264,8 @@ const ptBR: Record<string, string> = {
   'podcast.subtitle': 'Pílulas e conversas das tribos de pesquisa do Núcleo sobre IA e gerenciamento de projetos. Ouça aqui ou no Spotify.',
   'podcast.followSpotify': 'Seguir no Spotify',
   'podcast.audioLanguage': 'Áudio em {language}',
+  'podcast.watchYoutube': 'Assistir no YouTube',
+  'podcast.watchVideo': 'Assistir ao vídeo',
   'podcast.filterLabel': 'Filtrar por série',
   'podcast.filterAll': 'Todos',
   'podcast.empty': 'Nenhum episódio por aqui ainda.',

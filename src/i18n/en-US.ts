@@ -4257,6 +4257,8 @@ const enUS: Record<string, string> = {
   'podcast.subtitle': 'Short takes and conversations from the Hub research tribes on AI and project management. Listen here or on Spotify.',
   'podcast.followSpotify': 'Follow on Spotify',
   'podcast.audioLanguage': 'Audio in {language}',
+  'podcast.watchYoutube': 'Watch on YouTube',
+  'podcast.watchVideo': 'Watch the video',
   'podcast.filterLabel': 'Filter by series',
   'podcast.filterAll': 'All',
   'podcast.empty': 'No episodes here yet.',
