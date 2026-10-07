@@ -44,9 +44,9 @@ const STEP_META: Record<string, { icon: string; pt: string; en: string; es: stri
   start_pmi_certs:  { icon: '🎓', pt: 'Inicie a trilha PMI',      en: 'Start the PMI trail',     es: 'Inicie la ruta PMI',       hint_pt: 'Complete ao menos 1 mini-certificação PMI gratuita', hint_en: 'Complete at least 1 free PMI mini-cert', hint_es: 'Complete al menos 1 mini-certificación PMI gratuita' },
 };
 
-// F1/J3 #740 — collective pre-onboarding WhatsApp help group (candidates + Núcleo +
-// diretorias de filiação/voluntariado). Single source of truth for the invite link.
-const PRE_ONBOARDING_WHATSAPP_URL = 'https://chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs';
+// F1/J3 #740: the collective pre-onboarding WhatsApp help group. The invite is NOT in the bundle:
+// it lives in site_config and is served by the gated get_community_group_link RPC, because whoever
+// joins a group sees its members' phone numbers (same pattern as get_tribe_group_link).
 
 const L: Record<string, Record<string, string>> = {
   'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', guide: 'Guia & Glossário', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo', helpTitle: 'Dúvidas? Você não está sozinho', helpBody: 'Entre no grupo de WhatsApp do pré-onboarding — candidatos, o Núcleo e as diretorias de filiação e voluntariado tiram dúvidas por lá.', helpCta: 'Entrar no grupo de WhatsApp' },
@@ -162,6 +162,7 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [data, setData] = useState<PreOnboardingData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [groupUrl, setGroupUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
@@ -170,15 +171,19 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
     const sb = getSb();
     if (!sb) return;
     try {
-      const [progRes, lbRes] = await Promise.all([
+      const [progRes, lbRes, groupRes] = await Promise.all([
         sb.rpc('get_candidate_onboarding_progress'),
         sb.rpc('get_pre_onboarding_leaderboard'),
+        sb.rpc('get_community_group_link', { p_group: 'onboarding' }),
       ]);
       if (progRes.data && !progRes.data.error) {
         setData(progRes.data);
       }
       if (lbRes.data?.leaderboard) {
         setLeaderboard(lbRes.data.leaderboard);
+      }
+      if (groupRes.data?.success && groupRes.data.whatsapp_url) {
+        setGroupUrl(groupRes.data.whatsapp_url);
       }
     } catch { /* not a candidate */ }
     setLoading(false);
@@ -348,14 +353,16 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
         </div>
       )}
 
-      {/* F1/J3 #740 — collective WhatsApp help group so a newcomer is never isolated */}
+      {/* F1/J3 #740 — collective WhatsApp help group so a newcomer is never isolated.
+          Shown only when the gated RPC serves an invite. */}
+      {groupUrl && (
       <div className="mt-4 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3.5 bg-emerald-50/50 dark:bg-emerald-900/15">
         <h3 className="text-[12px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
           <span>💬</span> {l.helpTitle}
         </h3>
         <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{l.helpBody}</p>
         <a
-          href={PRE_ONBOARDING_WHATSAPP_URL}
+          href={groupUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block mt-2.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-[11px] font-bold no-underline hover:bg-emerald-700 transition-colors"
@@ -363,6 +370,7 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
           {l.helpCta} →
         </a>
       </div>
+      )}
     </div>
   );
 }

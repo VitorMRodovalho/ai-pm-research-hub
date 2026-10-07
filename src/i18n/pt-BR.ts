@@ -5620,6 +5620,7 @@ const ptBR: Record<string, string> = {
   'volunteer.success.workspaceCta': 'Ir para meu espaço',
   'volunteer.success.workspaceHint': 'Veja seu checklist, sua tribo e suas próximas tarefas.',
   'volunteer.success.whatsappCta': 'Entrar no grupo da tribo no WhatsApp',
+  'volunteer.success.generalGroupCta': 'Entrar no grupo geral do Núcleo no WhatsApp',
   'volunteer.alreadySigned': 'Já assinou o Termo de Voluntariado para este ciclo.',
   'volunteer.alreadySigned.viewCerts': 'Ver meus certificados',
   'volunteer.signing': 'Assinando...',

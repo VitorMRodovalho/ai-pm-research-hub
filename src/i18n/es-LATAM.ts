@@ -5613,6 +5613,7 @@ const esLATAM: Record<string, string> = {
   'volunteer.success.workspaceCta': 'Ir a mi espacio',
   'volunteer.success.workspaceHint': 'Vea su checklist, su tribu y sus próximas tareas.',
   'volunteer.success.whatsappCta': 'Entrar al grupo de la tribu en WhatsApp',
+  'volunteer.success.generalGroupCta': 'Entrar al grupo general del Núcleo en WhatsApp',
   'volunteer.alreadySigned': 'Ya firmó el Acuerdo de Voluntariado para este ciclo.',
   'volunteer.alreadySigned.viewCerts': 'Ver mis certificados',
   'volunteer.signing': 'Firmando...',
