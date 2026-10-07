@@ -13,11 +13,14 @@
  *   D. nenhum convite de grupo do WhatsApp mora em src/ (o bundle);
  *   E. o pré-onboarding pede o grupo de onboarding à RPC e só mostra o bloco quando ela devolve o link;
  *   F. a tela de sucesso do termo e o card do workspace pedem o grupo geral à RPC;
- *   G. ao vivo: anon não recebe link, e sem membro autenticado a função falha fechada.
+ *   G. ao vivo: anon não recebe link, e sem membro autenticado a função falha fechada;
+ *   H. nenhum convite de grupo do WhatsApp em arquivo versionado, em lugar nenhum do repositório. O
+ *      pre-commit (.githooks/pre-commit, item 4b) barra antes; este teste pega o que passar por fora.
  */
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
@@ -90,6 +93,21 @@ test('D: nenhum convite de grupo do WhatsApp em src/', () => {
   };
   walk(resolve(ROOT, 'src'));
   assert.deepEqual(achados, [], 'convite de grupo no bundle');
+});
+
+test('H: nenhum convite de grupo do WhatsApp em arquivo versionado', () => {
+  const versionados = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT }).toString('utf8').split('\0').filter(Boolean);
+  assert.ok(versionados.length > 100, `git ls-files listou ${versionados.length} arquivos: o teste não está olhando o repositório`);
+  const achados = versionados.filter((f) => {
+    let buf;
+    try {
+      if (!statSync(resolve(ROOT, f)).isFile()) return false;
+      buf = readFileSync(resolve(ROOT, f));
+    } catch { return false; }
+    if (buf.includes(0)) return false; // binário
+    return INVITE_RE.test(buf.toString('utf8'));
+  });
+  assert.deepEqual(achados, [], 'convite de grupo versionado: o convite mora no banco');
 });
 
 test('E: o pré-onboarding pede o grupo de onboarding à RPC e só mostra o bloco com link', () => {

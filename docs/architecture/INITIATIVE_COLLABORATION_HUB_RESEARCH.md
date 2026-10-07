@@ -25,7 +25,7 @@ Per PM brief, two agent instances pair on #212. To avoid duplicate cross-referen
 ### Operational data preserved here (do not lose)
 
 - **Vassouras initiative_id**: `6e9af7a8-1696-4169-a1a1-c0e160600002`
-- **Vassouras WhatsApp planning URL**: `https://chat.whatsapp.com/LKgHRGkZWF88TGnSBtZ9pv` (per PM brief — at survey time `initiatives.metadata.whatsapp_url=null`, save deferred)
+- **Vassouras WhatsApp planning URL**: `<convite do grupo: fica no banco, fora do repositório>` (per PM brief — at survey time `initiatives.metadata.whatsapp_url=null`, save deferred)
 - **Vassouras partner_entity_id** (`origin_partner_entity_id`): `6e9af7a8-1696-4169-a1a1-c0e160600001`
 - **Vassouras seed migration**: `20260728000000` — created via direct INSERT, bypassed any Drive auto-creation hook (gap surfaced).
 
@@ -470,11 +470,11 @@ Vassouras event is on 2026-06-02. Today is 2026-05-20. T-11d. PM noted at #212: 
 2. **Students (batch):**
    - One `persons` row each
    - Grant via share-link (existing Drive folder of Vassouras initiative) — no permission management needed
-   - Send share-link via WhatsApp planning group (`https://chat.whatsapp.com/LKgHRGkZWF88TGnSBtZ9pv`)
+   - Send share-link via WhatsApp planning group (`<convite do grupo: fica no banco, fora do repositório>`)
    - No engagement row needed for view-only students; they're guests at the event level, not initiative collaborators
 
 3. **WhatsApp URL save:**
-   - Run SQL: `UPDATE initiatives SET metadata = metadata || jsonb_build_object('whatsapp_url', 'https://chat.whatsapp.com/LKgHRGkZWF88TGnSBtZ9pv') WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600002';`
+   - Run SQL: `UPDATE initiatives SET metadata = metadata || jsonb_build_object('whatsapp_url', '<convite do grupo: fica no banco, fora do repositório>') WHERE id = '6e9af7a8-1696-4169-a1a1-c0e160600002';`
    - PM intended this at p205 but at survey time the field was still null. Either PM hadn't run it yet, or save reverted. **Verify before publishing this doc.**
 
 4. **Drive folder for Vassouras initiative:**

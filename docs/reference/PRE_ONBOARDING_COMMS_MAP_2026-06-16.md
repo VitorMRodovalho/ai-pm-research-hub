@@ -58,7 +58,7 @@ não substitui as fontes de verdade abaixo.
 - **Filiação privada (capítulo oculto):** `community.pmi.org/profile` → Edit Overview →
   **Chapter Membership** → desmarcar "Hide my chapter(s)"; depois avisar a gestão (WhatsApp) p/ re-sync.
 - **Grupo de WhatsApp de pré-onboarding** (dúvidas; candidatos + Núcleo + diretorias):
-  `chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs`.
+  `<convite do grupo: fica no banco, fora do repositório>`.
 
 > **J2 (decisão de canal) + J5 (marcos "jeito Disney")** agora têm doc próprio:
 > [`PRE_ONBOARDING_CHANNEL_AND_CELEBRATION_MATRIX_2026-06-16.md`](./PRE_ONBOARDING_CHANNEL_AND_CELEBRATION_MATRIX_2026-06-16.md)

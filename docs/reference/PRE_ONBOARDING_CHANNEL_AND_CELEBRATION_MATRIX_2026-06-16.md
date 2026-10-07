@@ -21,7 +21,7 @@ Três canais, três propósitos distintos. A regra é **propósito → canal**, 
 |---|---|---|---|
 | **E-mail** | Formal, externo, acionável fora da plataforma | Marcos oficiais (aprovação, termo disponível, promoção), lembretes com prazo, qualquer coisa que o usuário precise ver **mesmo sem entrar na plataforma** | `_delivery_mode_for(type)` → `transactional_immediate` (na hora) ou `digest_weekly` (junta no digest de sábado) |
 | **In-app (sino + painel)** | Operacional, contextual, status | Nudges de progresso, fila de ação da liderança (D1/E1), status que só faz sentido **dentro** da plataforma | tabela `notifications`; `_delivery_mode_for(type)` → `suppress` (só sino, sem e-mail) |
-| **WhatsApp (grupo coletivo)** | Comunidade, dúvidas, calor humano | Acolhimento, dúvidas abertas (candidato ↔ Núcleo ↔ diretorias), avisos coletivos informais. **Nunca** dado individual/PII (é grupo) | grupo `chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs` (link único, ver `PreOnboardingChecklist.tsx`) |
+| **WhatsApp (grupo coletivo)** | Comunidade, dúvidas, calor humano | Acolhimento, dúvidas abertas (candidato ↔ Núcleo ↔ diretorias), avisos coletivos informais. **Nunca** dado individual/PII (é grupo) | grupo `<convite do grupo: fica no banco, fora do repositório>` (link único, ver `PreOnboardingChecklist.tsx`) |
 
 ### Regras de decisão (heurística)
 1. **É individual e tem PII?** → nunca WhatsApp coletivo. E-mail (formal) ou in-app (operacional).
@@ -82,4 +82,4 @@ Tom: caloroso, segunda pessoa, orientado ao próximo passo — **sem números fa
 - [`PRE_ONBOARDING_COMMS_MAP_2026-06-16.md`](./PRE_ONBOARDING_COMMS_MAP_2026-06-16.md) (J1)
 - discovery `docs/project-governance/PRE_ONBOARDING_JOURNEY_DISCOVERY_2026-06-16.md` (Épico J)
 - `_delivery_mode_for` (SSOT de roteamento) · tabela `notifications` · `OnboardingChecklist.tsx` (celebração J5)
-- grupo WhatsApp: `chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs`
+- grupo WhatsApp: `<convite do grupo: fica no banco, fora do repositório>`

@@ -8,13 +8,14 @@ UPDATE initiative_kinds
 SET has_attendance = true, has_certificate = true
 WHERE slug IN ('workgroup', 'committee');
 
--- 2. Store WhatsApp links in initiative metadata
+-- 2. WhatsApp group links in initiative metadata. The invite itself lives only in the database
+--    (set through the initiative admin), never in this public repository.
 UPDATE initiatives
-SET metadata = metadata || '{"whatsapp_url": "https://chat.whatsapp.com/Je41n66sNYD0kv9mWrpZzK"}'::jsonb
+SET metadata = metadata || '{"whatsapp_url": null}'::jsonb
 WHERE id = '9ea82b09-55c6-4cc3-ab7f-178518d0ab47';
 
 UPDATE initiatives
-SET metadata = metadata || '{"whatsapp_url": "https://chat.whatsapp.com/I4rEk1Koz7TIhc77rS3cTr", "whatsapp_note": "Grupo administrativo do preparatório. Estudantes terão board e grupo próprios."}'::jsonb
+SET metadata = metadata || '{"whatsapp_url": null, "whatsapp_note": "Grupo administrativo do preparatório. Estudantes terão board e grupo próprios."}'::jsonb
 WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19';
 
 -- 3. Fix get_initiative_events_timeline: query by initiative_id directly (not tribe bridge)
