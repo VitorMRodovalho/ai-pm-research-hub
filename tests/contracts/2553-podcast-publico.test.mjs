@@ -16,6 +16,9 @@
  *      toda chave i18n que usa existe nos 3 dicionários. A CSP libera o áudio e a capa do feed sem
  *      abrir frame-src.
  *   D. Banco (vivo, DB-aware): o anon chama a RPC e nenhum episódio traz chave fora da lista.
+ *   E. Idioma do áudio (decisão do GP em 06/10/2026): a EF grava o <language> do item, ou o do canal,
+ *      como tag BCP 47; a página mostra o selo só quando o áudio está noutro idioma que o da página, com
+ *      o nome vindo do Intl e nenhum nome de idioma escrito à mão.
  */
 
 import test from 'node:test';
@@ -29,7 +32,7 @@ const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const maskJs = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-const EPISODE_KEYS = ['audio_type', 'audio_url', 'cover_url', 'duration_seconds', 'id', 'published_at', 'series', 'title'];
+const EPISODE_KEYS = ['audio_language', 'audio_type', 'audio_url', 'cover_url', 'duration_seconds', 'id', 'published_at', 'series', 'title'];
 
 function capture() {
   const hit = latestFunctionCapture(ROOT, 'get_public_podcast_episodes');
@@ -125,6 +128,41 @@ test('C4: a CSP libera o áudio e a capa do feed, sem abrir frame-src', () => {
   assert.match(ssot, /"media-src 'self' https:\/\/anchor\.fm https:\/\/d3ctxlq1ktw2nl\.cloudfront\.net; "/);
   assert.match(ssot, /"img-src [^"]*https:\/\/d3t3ozftmdmh3i\.cloudfront\.net; "/);
   assert.match(ssot, /"frame-src https:\/\/calendar\.google\.com; "/);
+});
+
+test('E1: a EF grava o idioma do áudio a partir do <language> do item ou do canal', () => {
+  const ef = maskJs(read('supabase/functions/sync-comms-metrics/index.ts'));
+  const fn = ef.match(/async function fetchSpotifyMedia[\s\S]*?\n\}/);
+  assert.ok(fn, 'fetchSpotifyMedia presente');
+  assert.match(fn[0], /const feedLanguage = normalizeLanguageTag\(xmlText\(xml\.split\(\/<item\\b\/\)\[0\], 'language'\)\)/);
+  assert.match(fn[0], /audio_language: normalizeLanguageTag\(xmlText\(block, 'language'\)\) \?\? feedLanguage,/);
+  const norm = ef.match(/function normalizeLanguageTag\(v: string \| null\): string \| null \{([\s\S]*?)\n\}/);
+  assert.ok(norm, 'normalizeLanguageTag presente');
+  assert.match(norm[1], /if \(!m\) return null/);
+  assert.match(norm[1], /return m\[2\] \? `\$\{m\[1\]\.toLowerCase\(\)\}-\$\{m\[2\]\.toUpperCase\(\)\}` : m\[1\]\.toLowerCase\(\)/);
+});
+
+test('E2: a página mostra o selo só quando o áudio está noutro idioma, com o nome vindo do Intl', () => {
+  const page = maskJs(read('src/pages/podcast.astro'));
+  const fn = page.match(/function audioLanguageLabel\(tag: string \| null\): string \| null \{([\s\S]*?)\n\}/);
+  assert.ok(fn, 'audioLanguageLabel presente');
+  assert.match(fn[1], /if \(!tag \|\| tag\.split\('-'\)\[0\]\.toLowerCase\(\) === pageLanguage\) return null;/);
+  assert.match(fn[1], /name = new Intl\.DisplayNames\(\[locale\], \{ type: 'language' \}\)\.of\(tag\) \?\? tag;/);
+  assert.match(fn[1], /return t\('podcast\.audioLanguage', lang\)\.replace\('\{language\}', name\);/);
+  assert.match(page, /const pageLanguage = locale\.split\('-'\)\[0\];/);
+  assert.match(page, /const audioLabel = audioLanguageLabel\(e\.audio_language\);/);
+  assert.match(page, /\{audioLabel && \(\s+<p class="podcast-audio-lang[^"]*">[\s\S]*?\{audioLabel\}\s+<\/p>/);
+});
+
+test('E3: nenhum nome de idioma escrito à mão na página nem no aviso', () => {
+  const page = read('src/pages/podcast.astro');
+  assert.doesNotMatch(page, /portugu[eêé]s|portuguese|ingl[eê]s|english|espa[nñ]ol|spanish/i, 'o nome do idioma vem do Intl');
+  for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const linha = read(`src/i18n/${dict}.ts`).match(/^\s*'podcast\.audioLanguage': '([^']*)',/m);
+    assert.ok(linha, `${dict}: podcast.audioLanguage`);
+    assert.match(linha[1], /\{language\}/, `${dict}: o texto tem o marcador do idioma`);
+    assert.doesNotMatch(linha[1], /portugu|english|ingl|espa|spanish/i, `${dict}: sem nome de idioma fixo`);
+  }
 });
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;

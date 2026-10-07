@@ -4256,7 +4256,7 @@ const esLATAM: Record<string, string> = {
   'podcast.title': 'Vozes do Núcleo IA',
   'podcast.subtitle': 'Píldoras y conversaciones de las tribus de investigación del Núcleo sobre IA y gestión de proyectos. Escúchalo aquí o en Spotify.',
   'podcast.followSpotify': 'Seguir en Spotify',
-  'podcast.langNotice': 'Episodios en portugués',
+  'podcast.audioLanguage': 'Audio en {language}',
   'podcast.filterLabel': 'Filtrar por serie',
   'podcast.filterAll': 'Todos',
   'podcast.empty': 'Todavía no hay episodios aquí.',
