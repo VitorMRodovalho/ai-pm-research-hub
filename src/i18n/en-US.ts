@@ -5612,6 +5612,7 @@ const enUS: Record<string, string> = {
   'volunteer.success.workspaceCta': 'Go to my workspace',
   'volunteer.success.workspaceHint': 'See your checklist, your tribe, and your next tasks.',
   'volunteer.success.whatsappCta': 'Join the tribe WhatsApp group',
+  'volunteer.success.generalGroupCta': 'Join the Hub general WhatsApp group',
   'volunteer.alreadySigned': 'You have already signed the Volunteer Agreement for this cycle.',
   'volunteer.alreadySigned.viewCerts': 'View my certificates',
   'volunteer.signing': 'Signing...',

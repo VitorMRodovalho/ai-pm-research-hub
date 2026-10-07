@@ -145,8 +145,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       </div>`;
   }
 
-  function renderSuccess(result: any, lang: Lang, extras?: { tribeLink?: string | null }): string {
+  function renderSuccess(result: any, lang: Lang, extras?: { tribeLink?: string | null; generalLink?: string | null }): string {
     const tribeLink = extras?.tribeLink || null;
+    const generalLink = extras?.generalLink || null;
     return `
       <div class="text-center py-8">
         <div class="text-4xl mb-3">\u2705</div>
@@ -168,6 +169,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           ${tribeLink ? `
           <a href="${encodeURI(tribeLink)}" target="_blank" rel="noopener noreferrer" class="block w-full text-center mt-3 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold no-underline hover:bg-emerald-700 transition-colors">
             \uD83D\uDCAC ${t('volunteer.success.whatsappCta', lang)}
+          </a>` : ''}
+          ${generalLink ? `
+          <a href="${encodeURI(generalLink)}" target="_blank" rel="noopener noreferrer" class="block w-full text-center mt-3 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold no-underline hover:bg-emerald-700 transition-colors">
+            \uD83D\uDCAC ${t('volunteer.success.generalGroupCta', lang)}
           </a>` : ''}
         </div>
 
@@ -388,7 +393,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             if (waRes?.success && waRes.whatsapp_url) tribeLink = waRes.whatsapp_url;
           } catch { /* non-blocking */ }
         }
-        app.innerHTML = renderSuccess(data, lang, { tribeLink });
+        // #740: best-effort general-group invite. Same term gate as the tribe link, served by
+        // get_community_group_link; with the term just signed, the member qualifies.
+        let generalLink: string | null = null;
+        try {
+          const { data: gRes } = await sb.rpc('get_community_group_link', { p_group: 'general' });
+          if (gRes?.success && gRes.whatsapp_url) generalLink = gRes.whatsapp_url;
+        } catch { /* non-blocking */ }
+        app.innerHTML = renderSuccess(data, lang, { tribeLink, generalLink });
         (window as any).toast?.(t('volunteer.success.title', lang), 'success');
       } catch (e) {
         console.error('Sign failed:', e);

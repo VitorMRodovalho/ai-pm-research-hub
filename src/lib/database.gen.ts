@@ -32724,6 +32724,7 @@ export type Database = {
         Args: { p_slug: string; p_vars?: Json }
         Returns: Json
       }
+      get_community_group_link: { Args: { p_group: string }; Returns: Json }
       get_content_product_reader: {
         Args: { p_product_id: string }
         Returns: Json

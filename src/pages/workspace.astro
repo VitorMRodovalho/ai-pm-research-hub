@@ -18,6 +18,7 @@ import TribeRequestBlock from '../components/tribe/TribeRequestBlock';
 import BuddyBlock from '../components/buddy/BuddyBlock';
 import EntryChapterNudge from '../components/onboarding/EntryChapterNudge';
 import CredlyNudge from '../components/onboarding/CredlyNudge';
+import GeneralGroupCard from '../components/onboarding/GeneralGroupCard';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -152,6 +153,11 @@ const WK = {
          with no credly_url (the measured 8). FE-only, no new DB state; in-memory eligibility (no RPC).
          Sibling of EntryChapterNudge, also BEFORE BuddyBlock (governance/XP action > social pointer). -->
     <CredlyNudge client:load lang={lang} />
+
+    <!-- #740: the Hub general WhatsApp group. Self-gates on get_community_group_link (active member
+         with the volunteer term signed, the tribe-group rule); the invite never ships in the bundle.
+         A social pointer like BuddyBlock, so it sits after the governance nudges. -->
+    <GeneralGroupCard client:load lang={lang} />
 
     <!-- #766 H5: Buddy/padrinho social pointer (below the journey block; sibling, not wrapped) -->
     <div class="mb-6">
