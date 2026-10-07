@@ -9,6 +9,7 @@
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { getPlaylistUrl } from '../data/youtube-playlists';
 import { createClient } from '@supabase/supabase-js';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -29,6 +30,7 @@ type Episode = {
   audio_url: string | null;
   audio_type: string | null;
   audio_language: string | null;
+  video_url: string | null;
 };
 
 const { data, error } = await sb.rpc('get_public_podcast_episodes', { p_limit: 100 });
@@ -80,6 +82,12 @@ const pageDesc = t('podcast.meta.description', lang);
           {t('podcast.followSpotify', lang)}
         </a>
       )}
+      {/* #2553: the pills also come out as video; the playlist id comes from the playlists SSOT. */}
+      <a href={getPlaylistUrl('pills')} target="_blank" rel="noopener noreferrer"
+         class="podcast-youtube inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#CC0000] text-white text-sm font-semibold no-underline hover:opacity-90">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+        {t('podcast.watchYoutube', lang)}
+      </a>
     </div>
 
     {series.length > 1 && (
@@ -131,6 +139,12 @@ const pageDesc = t('podcast.meta.description', lang);
                     <source src={e.audio_url} type={e.audio_type ?? undefined} />
                     <a href={e.audio_url}>{t('podcast.audioFallback', lang)}</a>
                   </audio>
+                )}
+                {e.video_url && (
+                  <a href={e.video_url} target="_blank" rel="noopener noreferrer"
+                     class="podcast-video inline-flex items-center gap-1.5 mt-2 text-xs font-semibold text-red-700 dark:text-red-400 no-underline hover:underline">
+                    <span aria-hidden="true">▶</span>{t('podcast.watchVideo', lang)}
+                  </a>
                 )}
               </div>
             </li>

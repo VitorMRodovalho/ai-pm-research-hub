@@ -16,7 +16,7 @@ import {
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (rel) => readFileSync(path.join(root, rel), 'utf8');
-const COMPONENTS = ['src/layouts/BaseLayout.astro', 'src/components/sections/TribesSection.astro'];
+const COMPONENTS = ['src/layouts/BaseLayout.astro', 'src/components/sections/TribesSection.astro', 'src/pages/podcast.astro'];
 
 test('components resolve playlist links via getPlaylistUrl(), no hardcoded playlist id', () => {
   for (const f of COMPONENTS) {
@@ -52,4 +52,11 @@ test('cycle-scoped keys pick the highest cycle (auto-advance across cycles)', ()
     const maxCycle = Math.max(...YOUTUBE_PLAYLISTS.filter((p) => re.test(p.title)).map((p) => cyc(p.title)));
     assert.equal(cyc(resolved.title), maxCycle, `${key} must be the highest-cycle match`);
   }
+});
+
+test('pills key is the knowledge-pills playlist that the /podcast button opens (#2553)', () => {
+  const p = PLAYLIST_RESOLVERS.pills();
+  assert.ok(p, 'a "Pílulas de conhecimento" playlist must exist in the SSOT');
+  assert.match(p.title, /P[íi]lulas de conhecimento/i);
+  assert.equal(getPlaylistUrl('pills'), `https://www.youtube.com/playlist?list=${p.id}`);
 });

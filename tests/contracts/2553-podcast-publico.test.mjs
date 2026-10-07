@@ -19,6 +19,9 @@
  *   E. Idioma do áudio (decisão do GP em 06/10/2026): a EF grava o <language> do item, ou o do canal,
  *      como tag BCP 47; a página mostra o selo só quando o áudio está noutro idioma que o da página, com
  *      o nome vindo do Intl e nenhum nome de idioma escrito à mão.
+ *   F. YouTube (decisão do GP em 07/10/2026): a RPC liga o episódio ao vídeo já ingerido do canal cujo título
+ *      contém o título do episódio, publicado até 7 dias antes ou depois, o mais próximo; a página tem o botão
+ *      da playlist das pílulas pela fonte única de playlists e o link do vídeo só quando ele existe.
  */
 
 import test from 'node:test';
@@ -32,7 +35,7 @@ const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const maskJs = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
-const EPISODE_KEYS = ['audio_language', 'audio_type', 'audio_url', 'cover_url', 'duration_seconds', 'id', 'published_at', 'series', 'title'];
+const EPISODE_KEYS = ['audio_language', 'audio_type', 'audio_url', 'cover_url', 'duration_seconds', 'id', 'published_at', 'series', 'title', 'video_url'];
 
 function capture() {
   const hit = latestFunctionCapture(ROOT, 'get_public_podcast_episodes');
@@ -163,6 +166,29 @@ test('E3: nenhum nome de idioma escrito à mão na página nem no aviso', () => 
     assert.match(linha[1], /\{language\}/, `${dict}: o texto tem o marcador do idioma`);
     assert.doesNotMatch(linha[1], /portugu|english|ingl|espa|spanish/i, `${dict}: sem nome de idioma fixo`);
   }
+});
+
+test('F1: a RPC liga o episódio ao vídeo publicado do canal pelo título, na janela de 7 dias, o mais próximo', () => {
+  const body = bodyOf(capture());
+  assert.match(body, /'video_url', CASE WHEN v\.video_id IS NOT NULL THEN 'https:\/\/www\.youtube\.com\/watch\?v=' \|\| v\.video_id END/);
+  const lat = body.match(/LEFT JOIN LATERAL \(([\s\S]*?)\) v ON true/);
+  assert.ok(lat, 'o vínculo é um LEFT JOIN LATERAL v');
+  const b = lat[1];
+  assert.match(b, /WHERE y\.channel = 'youtube'\s+AND y\.media_type = 'VIDEO'/);
+  assert.match(b, /AND y\.external_id ~ '\^\[A-Za-z0-9_-\]\{11\}\$'/, 'só id de vídeo do YouTube vira URL');
+  assert.match(b, /AND y\.published_at IS NOT NULL\s+AND y\.published_at <= now\(\)/, 'vídeo agendado não entra');
+  assert.match(b, /AND y\.published_at BETWEEN e\.published_at - interval '7 days' AND e\.published_at \+ interval '7 days'/);
+  assert.match(b, /AND length\(e\.title\) >= 15/, 'título curto não casa com nada');
+  assert.match(b, /AND strpos\(lower\(y\.caption\), lower\(e\.title\)\) > 0/);
+  assert.match(b, /ORDER BY abs\(extract\(epoch FROM \(y\.published_at - e\.published_at\)\)\)\s+LIMIT 1/);
+});
+
+test('F2: a página tem o botão da playlist pela fonte única e o link do vídeo só quando ele existe', () => {
+  const page = maskJs(read('src/pages/podcast.astro'));
+  assert.match(page, /import \{ getPlaylistUrl \} from '\.\.\/data\/youtube-playlists';/);
+  assert.match(page, /<a href=\{getPlaylistUrl\('pills'\)\}[^>]*class="podcast-youtube[^"]*">[\s\S]*?\{t\('podcast\.watchYoutube', lang\)\}\s+<\/a>/);
+  assert.match(page, /\{e\.video_url && \(\s+<a href=\{e\.video_url\}[^>]*class="podcast-video[^"]*">[\s\S]*?\{t\('podcast\.watchVideo', lang\)\}\s+<\/a>/);
+  assert.doesNotMatch(page, /youtube\.com\/(watch|playlist)|youtu\.be\//, 'nenhum vídeo ou playlist escrito à mão na página');
 });
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;

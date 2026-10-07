@@ -70,6 +70,8 @@ export const PLAYLIST_RESOLVERS = {
   webinars: () => YOUTUBE_PLAYLISTS.find((p) => p.title.trim().toLowerCase() === 'webinars'),
   leadersIntro: () => latestByPattern(/Introdu[çc][ãa]o dos L[íi]deres de Tribo/i),
   generalMeetings: () => latestByPattern(/Reuni[õo]es Gerais/i),
+  // #2553: the knowledge pills, published as video on YouTube and as audio in the podcast.
+  pills: () => YOUTUBE_PLAYLISTS.find((p) => /P[íi]lulas de conhecimento/i.test(p.title)),
 } as const;
 
 export type PlaylistKey = keyof typeof PLAYLIST_RESOLVERS;
