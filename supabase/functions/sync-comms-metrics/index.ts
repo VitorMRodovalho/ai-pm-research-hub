@@ -673,6 +673,13 @@ function xmlAttr(block: string, tag: string, attr: string): string | null {
   return m ? xmlDecode(m[1]) : null
 }
 
+// "pt-br" -> "pt-BR". Anything that is not a plain language[-region] tag reads as null.
+function normalizeLanguageTag(v: string | null): string | null {
+  const m = /^([A-Za-z]{2,3})(?:[-_]([A-Za-z]{2}|\d{3}))?$/.exec((v ?? '').trim())
+  if (!m) return null
+  return m[2] ? `${m[1].toLowerCase()}-${m[2].toUpperCase()}` : m[1].toLowerCase()
+}
+
 // "HH:MM:SS", "MM:SS" ou segundos.
 function parseDurationSeconds(v: string | null): number | null {
   if (!v) return null
@@ -707,6 +714,9 @@ async function fetchSpotifyMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
   const resp = await fetchWithRetry(rssUrl)
   if (!resp.ok) throw new Error(`Spotify RSS: ${resp.status}`)
   const xml = await resp.text()
+  // #2553: the audio's language. The channel declares it once (<language>, RSS 2.0) and an item may
+  // override it. Stored as a BCP 47 tag (pt-BR) so the page names it with Intl, with no hardcode.
+  const feedLanguage = normalizeLanguageTag(xmlText(xml.split(/<item\b/)[0], 'language'))
 
   const items: MediaItem[] = []
   for (const block of xml.match(/<item\b[\s\S]*?<\/item>/g) || []) {
@@ -736,6 +746,7 @@ async function fetchSpotifyMedia(cfg: ChannelConfig): Promise<MediaItem[]> {
         audio_type: xmlAttr(block, 'enclosure', 'type'),
         duration_seconds: parseDurationSeconds(xmlText(block, 'itunes:duration')),
         episode_type: xmlText(block, 'itunes:episodeType'),
+        audio_language: normalizeLanguageTag(xmlText(block, 'language')) ?? feedLanguage,
         description: description ? htmlToText(description).slice(0, 4000) : null,
       },
     })

@@ -4256,7 +4256,7 @@ const enUS: Record<string, string> = {
   'podcast.title': 'Vozes do Núcleo IA',
   'podcast.subtitle': 'Short takes and conversations from the Hub research tribes on AI and project management. Listen here or on Spotify.',
   'podcast.followSpotify': 'Follow on Spotify',
-  'podcast.langNotice': 'Episodes in Portuguese',
+  'podcast.audioLanguage': 'Audio in {language}',
   'podcast.filterLabel': 'Filter by series',
   'podcast.filterAll': 'All',
   'podcast.empty': 'No episodes here yet.',
