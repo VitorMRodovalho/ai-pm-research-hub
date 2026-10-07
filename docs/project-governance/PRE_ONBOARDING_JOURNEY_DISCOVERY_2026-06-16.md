@@ -23,7 +23,7 @@ candidato aprovado na seleção (no VEP/plataforma)
 
 Princípio norteador declarado pelo PM: **onboarding "jeito Disney"** — sem fricção, centralizado, acolhedor, com o grupo de WhatsApp de pré-onboarding como canal coletivo de dúvidas.
 
-Grupo de WhatsApp de pré-onboarding (canal oficial): `https://chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs`
+Grupo de WhatsApp de pré-onboarding (canal oficial): `<convite do grupo: fica no banco, fora do repositório>`
 
 **Escopo deste discovery = a PRIMEIRA PERNADA:** aprovado → aceite da oferta → pré-onboarding → perfil/consentimento/Credly/escolha-de-capítulo → termo assinado → promoção. **FORA de escopo (jornadas próprias, depois):** (a) **seleção de tribo** (mão dupla: candidato escolhe + líder aceita; tribos novas; doubt-clearing — ver Épico H); (b) personas de diretoria que não sejam voluntariado/filiação.
 
@@ -203,4 +203,4 @@ Coorte vivo `[live]` (16 apps em estados de entrevista):
 **Sincronização de filiação privada (gap C5)** — orientação ao membro:
 > Se seu capítulo não aparece, verifique em `https://community.pmi.org/profile/` → Edit Overview → **Chapter Membership**: desmarque "Hide my chapter(s) from my profile". Depois avise o time de gestão do Núcleo (grupo de WhatsApp) para re-sincronizar — então sua jornada destrava.
 
-**Grupo de WhatsApp de pré-onboarding:** `https://chat.whatsapp.com/Gl6eUqK45DJGQxZ8VFE2bs` — canal coletivo de dúvidas (candidatos + Núcleo + diretorias de filiação/voluntariado). Usar como ponto de ajuda referenciado nas telas (gaps F1, F5, C5).
+**Grupo de WhatsApp de pré-onboarding:** `<convite do grupo: fica no banco, fora do repositório>` — canal coletivo de dúvidas (candidatos + Núcleo + diretorias de filiação/voluntariado). Usar como ponto de ajuda referenciado nas telas (gaps F1, F5, C5).

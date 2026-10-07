@@ -298,7 +298,7 @@ W2 pode shippar mesmo durante launch week. W3 espera quiet window. W4 fica para 
 - Board: `632787ee-9e27-43c9-b6a0-566b52815adc`
 - Partner entity: `8bb97295-4e8e-4e19-98a4-37b72d3305b8`
 - Engagements: 5 IDs (Roberto, Ivan, Vitor, Fabricio, Sarah)
-- WhatsApp: `https://chat.whatsapp.com/FWOxzlb80gJ1HUFGUMAgfa`
+- WhatsApp: `<convite do grupo: fica no banco, fora do repositório>`
 
 ## 10. Sediment para futuras submissões
 

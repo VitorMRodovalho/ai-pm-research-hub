@@ -9,6 +9,7 @@
 #   2. Long opaque tokens in diff (JWT, sk_, pat_, ghp_, gho_, hyperdrive_, etc.)
 #   3. Private key headers
 #   4. Real-looking member emails (@pmi- or @nucleo) in non-.env files
+#   4b. WhatsApp group invites (#740): the invite lives in the database, never in this public repo
 #
 # What it warns (non-blocking):
 #   5. Large binary files (>10MB) being added
@@ -68,6 +69,17 @@ if [[ -n "$email_hits" ]]; then
   echo -e "${RED}BLOCK: real-looking member email in non-test file:${NC}"
   echo "$email_hits" | head -5
   echo -e "${YELLOW}  → use synthetic fixture emails like 'test1@example.com' instead${NC}"
+  block=1
+fi
+
+# 4b. WhatsApp group invites (#740). Whoever joins a group sees its members' phone numbers, and this
+# repository is public: a committed invite stays in the history even after the file changes. The
+# invite lives in the database (site_config, or the initiative admin) and is served by gated RPCs.
+invite_hits=$(git diff --cached -U0 --diff-filter=ACMR | grep -E '^\+' | grep -E 'chat\.whatsapp\.com/[A-Za-z0-9]{10,}' || true)
+if [[ -n "$invite_hits" ]]; then
+  echo -e "${RED}BLOCK: WhatsApp group invite in the staged diff (#740):${NC}"
+  echo "$invite_hits" | sed -E 's#(chat\.whatsapp\.com/)[A-Za-z0-9]{10,}#\1<invite>#g' | head -5
+  echo -e "${YELLOW}  → store the invite in the database (site_config or the initiative admin), never in the repository${NC}"
   block=1
 fi
 
