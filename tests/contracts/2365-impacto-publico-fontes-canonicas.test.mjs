@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const DIR = resolve(process.cwd(), 'supabase/migrations');
 const files = readdirSync(DIR).filter((f) => /^\d{14}_2365_impacto_publico_fontes_canonicas\.sql$/.test(f));
@@ -55,6 +55,22 @@ test('D. impact_hours canonico acumulado, impact_hours_since com o mesmo predica
 
 test('E. timeline marcada como narrativa', () => {
   assert.match(FN, /'timeline_is_narrative',\s*true,\s*'timeline',/);
+});
+
+// G. A linha do tempo nomeia os ciclos e a entrada do ciclo corrente nao carrega contagem: contagem em texto fixo
+// envelhece (a entrada '2026' de 14/03/2026 dizia 44+/8/5 ao lado de contadores vivos).
+test('G. linha do tempo por ciclo, sem contagem na entrada corrente', () => {
+  const cap = latestFunctionCapture(process.cwd(), 'get_public_impact_data');
+  const corpo = maskLineComments(cap.body);
+  const entradas = [...corpo.matchAll(/jsonb_build_object\('year', '([^']+)', 'title', '[^']*', 'description', '([^']*)'\)/g)]
+    .map((m) => ({ year: m[1], description: m[2] }));
+  const anos = entradas.map((e) => e.year);
+  assert.deepEqual(anos.filter((a, i) => anos.indexOf(a) !== i), [], `${cap.file}: ano repetido na timeline (a tela usa year como key)`);
+  assert.ok(!anos.includes('2026'), `${cap.file}: entrada '2026' sem ciclo; use 2026.1 / 2026.2`);
+  const atual = entradas.find((e) => e.year === '2026.2');
+  assert.ok(atual, `${cap.file}: falta a entrada 2026.2 (ciclo 4)`);
+  assert.doesNotMatch(atual.description, /\d+\s*\+|\d+\s+(colaboradores|pesquisadores|tribos|capítulos|horas)/i,
+    `${cap.file}: a entrada 2026.2 traz contagem em texto fixo`);
 });
 
 const URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
