@@ -235,6 +235,47 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       </div>`;
   }
 
+  // #2585: portao de filiacao. O Termo so abre para quem tem filiacao verificada num capitulo participante
+  // (affiliation_gate no servidor, que o sign_volunteer_agreement tambem consulta). A tela so explica o motivo
+  // e oferece a saida; quem decide e o servidor.
+  function renderGate(gate: any, lang: Lang): string {
+    const reason = gate?.reason === 'entry_chapter_required' ? 'entry'
+      : gate?.reason === 'not_affiliated' ? 'notAffiliated' : 'unknown';
+    const action = reason === 'entry'
+      ? `<a href="${lp}/profile#entry-chapter-card" class="inline-block px-5 py-2.5 rounded-lg bg-navy text-white text-sm font-bold no-underline hover:opacity-90">${esc(t('volunteer.gate.entryCta', lang))} \u2192</a>`
+      : `<button type="button" id="va-gate-recheck" class="px-5 py-2.5 rounded-lg bg-navy text-white text-sm font-bold border-0 cursor-pointer hover:opacity-90">${esc(t('volunteer.gate.recheckCta', lang))}</button>
+         <p id="va-gate-recheck-msg" class="hidden text-[13px] text-emerald-700 dark:text-emerald-400 mt-3">${esc(t('volunteer.gate.recheckSent', lang))}</p>`;
+    return `
+      <div class="max-w-md mx-auto py-4">
+        <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700 p-6 text-center" data-testid="va-affiliation-gate">
+          <div class="text-4xl mb-3">\ud83e\udeaa</div>
+          <h2 class="text-lg font-bold text-amber-800 dark:text-amber-300 mb-2">${esc(t('volunteer.gate.title', lang))}</h2>
+          <p class="text-sm text-amber-700 dark:text-amber-400 leading-relaxed mb-3">${esc(t('volunteer.gate.benefit', lang))}</p>
+          <p class="text-sm text-amber-800 dark:text-amber-300 leading-relaxed mb-5">${esc(t('volunteer.gate.' + reason, lang))}</p>
+          ${action}
+          <p class="text-[11px] text-[var(--text-muted)] mt-4">
+            <a href="${lp}/#capitulos" class="underline hover:text-[var(--text-secondary)]">${esc(t('volunteer.gate.chaptersLink', lang))}</a>
+          </p>
+        </div>
+      </div>`;
+  }
+
+  function wireGate(sb: any, app: HTMLElement, gate: any, lang: Lang) {
+    app.innerHTML = renderGate(gate, lang);
+    const b = document.getElementById('va-gate-recheck') as HTMLButtonElement | null;
+    b?.addEventListener('click', async () => {
+      b.disabled = true;
+      try {
+        const { data, error } = await sb.rpc('request_affiliation_recheck');
+        if (error || !data?.success) throw new Error(error?.message || 'failed');
+        document.getElementById('va-gate-recheck-msg')?.classList.remove('hidden');
+      } catch {
+        b.disabled = false;
+        (window as any).toast?.(t('volunteer.gate.recheckError', lang), 'error');
+      }
+    });
+  }
+
   (async () => {
     const lang = ((window as any).__vaLang || 'pt-BR') as Lang;
     const app = document.getElementById('va-app');
@@ -311,6 +352,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       return;
     }
 
+    // #2585: pre-flight do portao de filiacao, antes do perfil (mesma ordem do servidor).
+    try {
+      const { data: gate } = await sb.rpc('get_my_affiliation_gate');
+      if (gate && gate.open === false) { wireGate(sb, app, gate, lang); return; }
+    } catch { /* sem leitura do portao: o servidor ainda decide na assinatura */ }
+
     // Pre-flight: check profile completeness before showing form.
     // Labels reuse the shared profile.field.* dictionary so the missing-fields list is localized.
     const requiredFields: Record<string, string> = {
@@ -371,6 +418,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         const { data, error } = await sb.rpc('sign_volunteer_agreement', { p_language: lang, p_signed_user_agent: ua });
         if (error) throw error;
         if (data?.error === 'already_signed') { app.innerHTML = renderAlreadySigned(lang); return; }
+        if (data?.error === 'affiliation_required') { wireGate(sb, app, data.gate, lang); return; }
         if (data?.error === 'profile_incomplete') {
           const missing = Array.isArray(data.missing_fields) ? data.missing_fields : [];
           (window as any).toast?.(`${t('volunteer.missing.toastPrefix', lang)}${missing.join(', ')}`, 'error');
