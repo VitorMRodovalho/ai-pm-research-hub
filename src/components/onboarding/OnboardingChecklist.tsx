@@ -32,9 +32,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones' },
+  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', joinGroup: '💬 Entrar no grupo', joinedGroup: 'Já entrei', groupAfterTerm: 'Disponível depois de assinar o Termo.' },
+  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', joinGroup: '💬 Join the group', joinedGroup: "I'm in", groupAfterTerm: 'Available after you sign the term.' },
+  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', joinGroup: '💬 Entrar al grupo', joinedGroup: 'Ya entré', groupAfterTerm: 'Disponible después de firmar el Término.' },
 };
 
 // Steps that carry a bespoke CTA below. Any other step (e.g. the #1103 role-scoped
@@ -43,7 +43,15 @@ const L: Record<string, Record<string, string>> = {
 const BESPOKE_CTA_STEPS = new Set([
   'code_of_conduct', 'complete_profile', 'meet_tribe', 'start_trail',
   'volunteer_term', 'first_meeting', 'vep_acceptance',
+  'join_onboarding_group', 'join_general_group',
 ]);
+
+// #1877: the two WhatsApp group steps and the group each one opens (get_community_group_link). The invite is never
+// in the bundle: the RPC serves it only to whom may join (the general group only after the volunteer term).
+const GROUP_STEPS: Record<string, 'onboarding' | 'general'> = {
+  join_onboarding_group: 'onboarding',
+  join_general_group: 'general',
+};
 
 // #766 H1 — the static "first days" 3-beat roadmap that used to live here was promoted to a
 // persistent, stateful island: src/components/onboarding/PostPromotionJourney.tsx. It lives
@@ -97,6 +105,8 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   // `sessionHidden` = transient ✕ on the working checklist (not persisted).
   const [celebrationPending, setCelebrationPending] = useState(false);
   const [sessionHidden, setSessionHidden] = useState(false);
+  // #1877: invite per pending group step; 'locked' = the RPC refused (general group before the term).
+  const [groupLinks, setGroupLinks] = useState<Record<string, string | 'locked'>>({});
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -112,6 +122,14 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
     ]);
     const data = onb?.data;
     if (data?.steps) {
+      // #1877: fetch the invite only for a group step still pending, so a finished member never asks for it.
+      const pendingGroups = (data.steps as Step[]).filter((s) => GROUP_STEPS[s.step_id] && s.status !== 'completed' && s.status !== 'skipped');
+      Promise.all(pendingGroups.map(async (s) => {
+        try {
+          const { data: g } = await sb.rpc('get_community_group_link', { p_group: GROUP_STEPS[s.step_id] });
+          return [s.step_id, g?.success && g.whatsapp_url ? g.whatsapp_url : 'locked'] as const;
+        } catch { return [s.step_id, 'locked'] as const; }
+      })).then((pairs) => setGroupLinks(Object.fromEntries(pairs)));
       setSteps(data.steps);
       setTotal(data.total_steps || 0);
       setCompleted(data.completed_steps || 0);
@@ -271,6 +289,24 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                         className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
                         ✓ {l.markDone}
                       </button>
+                    )}
+                    {GROUP_STEPS[s.step_id] && (
+                      groupLinks[s.step_id] === 'locked' ? (
+                        <span className="text-[10px] text-[var(--text-muted)]">{l.groupAfterTerm}</span>
+                      ) : (
+                        <>
+                          {groupLinks[s.step_id] && (
+                            <a href={groupLinks[s.step_id]} target="_blank" rel="noopener noreferrer"
+                              className="px-2.5 py-1 rounded-lg bg-green-100 text-green-700 text-[10px] font-semibold no-underline hover:bg-green-200">
+                              {l.joinGroup}
+                            </a>
+                          )}
+                          <button onClick={() => completeStep(s.step_id)}
+                            className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                            ✓ {l.joinedGroup}
+                          </button>
+                        </>
+                      )
                     )}
                     {/* #1103: generic fallback for role-scoped leader steps (no bespoke CTA) */}
                     {!BESPOKE_CTA_STEPS.has(s.step_id) && (

@@ -84,7 +84,12 @@ export default function GeneralGroupCard({ lang = 'pt-BR' }: Props) {
   const dismiss = useCallback(() => {
     try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
     setHidden(true);
-  }, []);
+    // #1877: "already in" is also the onboarding step, recorded server-side, so the coordination can see who got
+    // to the group (the localStorage flag above only hides the card on this device). Best-effort. The builder is lazy:
+    // without .then() the request is never sent.
+    getSb()?.rpc('complete_onboarding_step', { p_step_id: 'join_general_group', p_metadata: { source: 'general_group_card' } })
+      .then(() => {}, () => {});
+  }, [getSb]);
 
   if (hidden || !url) return null;
 
