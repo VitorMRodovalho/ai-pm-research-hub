@@ -7958,6 +7958,17 @@ const enUS: Record<string, string> = {
   'competition.status.waitlisted': 'waitlisted',
   'competition.status.not_selected': 'not selected',
   'competition.status.withdrawn': 'withdrawn',
+  'unsubscribe.meta.title': 'Unsubscribe from campaigns | Núcleo IA & GP',
+  'unsubscribe.confirm.title': 'Stop receiving campaigns',
+  'unsubscribe.confirm.body': 'This address will stop receiving campaigns and bulk announcements from Núcleo IA & GP. Notices tied to what you do on the platform, such as account access, selection and interviews, will keep arriving.',
+  'unsubscribe.confirm.button': 'Confirm unsubscribe',
+  'unsubscribe.done.title': 'You are unsubscribed',
+  'unsubscribe.done.body': 'This address will no longer receive campaigns from Núcleo IA & GP.',
+  'unsubscribe.already.body': 'This address was already unsubscribed. Nothing changed.',
+  'unsubscribe.invalid.title': 'Link not recognized',
+  'unsubscribe.invalid.body': 'We do not recognize this link. To leave the list, write to',
+  'unsubscribe.error.title': 'We could not record it right now',
+  'unsubscribe.error.body': 'Please try again in a few minutes, or write to',
 };
 
 export default enUS;

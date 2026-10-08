@@ -48,6 +48,9 @@ const REVOKED_NAMES = ['process_pending_email_queue', 'analyze_application_video
 const ALLOWLIST = new Set([
   // ── Token-gated (anon-with-token IS the design; body validates a token + RAISEs on invalid) ──
   'request_application_enrichment',       // onboarding_tokens 'profile_completion' — EnrichmentCard.tsx (#965: NOT drift)
+  // #2130 — descadastro de campanha pelo link do e-mail. O token (uuid v4 por linha de destinatário) é a
+  // credencial; token desconhecido devolve invalid_token sem escrever nada, e a resposta não leva o endereço.
+  'campaign_unsubscribe',
   'opt_out_all_pillars',                  // onboarding_tokens 'video_screening' — interview opt-out flow (review F1)
   'confirm_account_claim',
   'confirm_secondary_email',
