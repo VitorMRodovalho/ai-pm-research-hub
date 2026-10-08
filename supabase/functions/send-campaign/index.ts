@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
 
     // Load recipients
     const { data: recipients, error: recipErr } = await sb.from('campaign_recipients')
-      .select('id, member_id, external_email, external_name, language, unsubscribed, unsubscribe_token')
+      .select('id, member_id, external_email, external_name, language, unsubscribed, unsubscribe_token, delivered, deferred_until')
       .eq('send_id', sendId)
     if (!recipients || recipients.length === 0) {
       await sb.from('campaign_sends').update({ status: 'failed', error_log: `No recipients: ${recipErr?.message || 'empty'}` }).eq('id', sendId)
@@ -137,12 +137,45 @@ Deno.serve(async (req) => {
       console.log('[campaign] memberMap entries:', Object.keys(memberMap).length)
     }
 
+    // #2580 regra 5: no maximo um e-mail por pessoa por dia, campanha incluida. Quem ja recebeu hoje fica
+    // adiado para as 07h de Brasilia do dia seguinte (campaign_defer_recipients) e sai nessa hora mesmo que
+    // tenha recebido outro. Sem conseguir ler a contagem, nenhum membro recebe agora e o cron tenta de novo.
+    // Destinatario externo (sem member_id) segue como antes.
+    const pendingMemberIds = [...new Set(recipients
+      .filter((r) => r.member_id && !r.delivered && !r.unsubscribed && !r.deferred_until)
+      .map((r) => r.member_id as string))]
+    let sentTodayByPerson: Record<string, number> = {}
+    let perPersonReadable = true
+    if (pendingMemberIds.length > 0) {
+      const { data: countData, error: countErr } = await sb.rpc('email_people_sent_today', {
+        p_member_ids: pendingMemberIds,
+      })
+      perPersonReadable = !countErr && !!countData && typeof countData === 'object'
+      if (perPersonReadable) sentTodayByPerson = countData as Record<string, number>
+      else console.error('[campaign] per-person count unreadable:', countErr?.message ?? 'no value')
+    }
+    const sentThisRun = new Set<string>()
+    const toDefer: string[] = []
+    let waiting = 0
+
     const platformUrl = `${COMMS_ORIGIN}`
     let delivered = 0
     const errors: string[] = []
 
     for (const r of recipients) {
-      if (r.unsubscribed) continue
+      if (r.unsubscribed || r.delivered) continue
+
+      if (r.member_id) {
+        if (r.deferred_until) {
+          if (Date.parse(r.deferred_until) > Date.now()) { waiting++; continue }
+        } else if (!perPersonReadable) {
+          waiting++
+          continue
+        } else if ((sentTodayByPerson[r.member_id] ?? 0) >= 1 || sentThisRun.has(r.member_id)) {
+          toDefer.push(r.id)
+          continue
+        }
+      }
 
       // Aceita tag completa (pt-BR/en-US/es-LATAM) E subtag nua legada (pt/en/es):
       // o prefixo casa os dois, entao esta EF pode ser deployada ANTES ou DEPOIS
@@ -237,6 +270,7 @@ Deno.serve(async (req) => {
             ...(resendId ? { resend_id: resendId } : {}),
           }).eq('id', r.id)
           delivered++
+          if (r.member_id) sentThisRun.add(r.member_id)
         } else {
           errors.push(`${toEmail}: ${rt}`)
         }
@@ -249,16 +283,30 @@ Deno.serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 100))
     }
 
-    // Update send status
-    const finalStatus = delivered > 0 ? 'sent' : 'failed'
+    let deferred = 0
+    let releaseAt: string | null = null
+    if (toDefer.length > 0) {
+      const { data: rel, error: deferErr } = await sb.rpc('campaign_defer_recipients', { p_recipient_ids: toDefer })
+      if (deferErr) console.error('[campaign] defer failed:', deferErr.message)
+      else { deferred = toDefer.length; releaseAt = rel as string }
+    }
+
+    // Update send status. Com destinatario adiado ou esperando, o envio fica 'throttled' e o cron o retoma.
+    const pendingLater = waiting + toDefer.length
+    const alreadyDelivered = recipients.some((r) => r.delivered)
+    const finalStatus = pendingLater > 0 ? 'throttled' : (delivered > 0 || alreadyDelivered) ? 'sent' : 'failed'
+    const notes = [
+      ...errors,
+      ...(pendingLater > 0 ? [`${pendingLater} adiado(s) pelo limite de 1 e-mail por pessoa por dia`] : []),
+    ]
     await sb.from('campaign_sends').update({
       status: finalStatus,
-      sent_at: new Date().toISOString(),
-      error_log: errors.length > 0 ? errors.join('\n') : (sandbox ? 'sandbox: sent to account owner only' : null),
+      sent_at: send.sent_at ?? (finalStatus === 'throttled' && delivered === 0 ? null : new Date().toISOString()),
+      error_log: notes.length > 0 ? notes.join('\n') : (sandbox ? 'sandbox: sent to account owner only' : null),
     }).eq('id', sendId)
 
-    console.log('[campaign] done:', { delivered, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
-    return json({ delivered, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
+    console.log('[campaign] done:', { delivered, deferred, waiting, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
+    return json({ delivered, deferred, waiting, release_at: releaseAt, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[campaign] FATAL:', msg)

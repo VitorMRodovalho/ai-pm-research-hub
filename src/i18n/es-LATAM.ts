@@ -4217,6 +4217,7 @@ const esLATAM: Record<string, string> = {
   'campaigns.toastDeliveryUnknown': 'Error desconocido',
   'campaigns.toastDeliveredWithErrors': 'Entregados: {delivered}/{total} · {errors} error(es)',
   'campaigns.toastDeliveredOk': '{n} email(s) entregados con éxito',
+  'campaigns.toastDeferred': '{n} miembro(s) ya recibieron un correo hoy: el suyo sale mañana a las 7 h (Brasilia)',
   'campaigns.toastCampaignCreatedDelivering': 'Campaña creada, la entrega puede estar en curso.',
   'campaigns.toastCampaignCreated': 'Campaña creada: {n} destinatarios',
   'campaigns.toastErrorSending': 'Error al enviar',
