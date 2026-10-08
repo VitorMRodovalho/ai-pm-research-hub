@@ -42,6 +42,8 @@ function formatDeadline(iso: string, lang: string): string {
 interface TribeOption {
   tribe_id: number;
   title: string;
+  // #1877: free slots, same formula and cap as the request gate. Absent (older backend) = unknown, not full.
+  slots_left?: number | null;
 }
 interface PendingRequest {
   invitation_id: string; // #1255: needed to cancel this exact pending request
@@ -82,6 +84,9 @@ interface Copy {
   // #1877: a concrete channel, not just "contact the coordination" (a member had to hunt for a phone number).
   windowClosedContact: string;
   tribeLegend: string;
+  // #1877: per-option slot badge; a full tribe is shown disabled instead of failing at submit.
+  slotsLeft: (n: number) => string;
+  tribeFull: string;
   messageLabel: string;
   messagePlaceholder: string;
   charsLeft: (n: number) => string;
@@ -137,6 +142,8 @@ const COPY: Record<string, Copy> = {
     windowClosedBody: 'O período para pedir entrada em uma tribo terminou. Escreva para a coordenação do Núcleo para entrar ou trocar de tribo.',
     windowClosedContact: 'Escrever para a coordenação',
     tribeLegend: 'Tribos disponíveis',
+    slotsLeft: (n) => `${n} vaga${n === 1 ? '' : 's'}`,
+    tribeFull: 'Lotada',
     messageLabel: 'Por que você quer entrar nesta tribo?',
     messagePlaceholder: 'Conte sua motivação, experiência e o que pode contribuir (mín. 50 caracteres).',
     charsLeft: (n) => (n > 0 ? `Faltam ${n} caractere${n === 1 ? '' : 's'}` : 'Pronto para enviar'),
@@ -190,6 +197,8 @@ const COPY: Record<string, Copy> = {
     windowClosedBody: 'The window to request a tribe has ended. Write to the Núcleo coordination to join or switch tribes.',
     windowClosedContact: 'Write to the coordination',
     tribeLegend: 'Available tribes',
+    slotsLeft: (n) => `${n} spot${n === 1 ? '' : 's'} left`,
+    tribeFull: 'Full',
     messageLabel: 'Why do you want to join this tribe?',
     messagePlaceholder: 'Share your motivation, experience and what you can contribute (min. 50 characters).',
     charsLeft: (n) => (n > 0 ? `${n} character${n === 1 ? '' : 's'} to go` : 'Ready to send'),
@@ -241,6 +250,8 @@ const COPY: Record<string, Copy> = {
     windowClosedBody: 'El período para solicitar entrada a una tribu finalizó. Escribe a la coordinación del Núcleo para entrar o cambiar de tribu.',
     windowClosedContact: 'Escribir a la coordinación',
     tribeLegend: 'Tribus disponibles',
+    slotsLeft: (n) => `${n} cupo${n === 1 ? '' : 's'}`,
+    tribeFull: 'Llena',
     messageLabel: '¿Por qué quieres entrar en esta tribu?',
     messagePlaceholder: 'Cuenta tu motivación, experiencia y lo que puedes aportar (mín. 50 caracteres).',
     charsLeft: (n) => (n > 0 ? `Faltan ${n} carácter${n === 1 ? '' : 'es'}` : 'Listo para enviar'),
@@ -615,13 +626,17 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
         <fieldset className="mt-4">
           <legend className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-2">{copy.tribeLegend}</legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {ctx.tribes.map((tr) => (
+            {ctx.tribes.map((tr) => {
+              const full = typeof tr.slots_left === 'number' && tr.slots_left <= 0;
+              return (
               <label
                 key={tr.tribe_id}
-                className={`flex items-center gap-2 min-h-[44px] px-3 rounded-lg border cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-teal/50 ${
-                  selected === tr.tribe_id
-                    ? 'border-teal bg-teal/10'
-                    : 'border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]'
+                className={`flex items-center gap-2 min-h-[44px] px-3 rounded-lg border transition-colors focus-within:ring-2 focus-within:ring-teal/50 ${
+                  full
+                    ? 'border-[var(--border-subtle)] opacity-60 cursor-not-allowed'
+                    : selected === tr.tribe_id
+                      ? 'border-teal bg-teal/10 cursor-pointer'
+                      : 'border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] cursor-pointer'
                 }`}
               >
                 <input
@@ -629,12 +644,19 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
                   name="tribe-request"
                   value={tr.tribe_id}
                   checked={selected === tr.tribe_id}
+                  disabled={full}
                   onChange={() => setSelected(tr.tribe_id)}
                   className="accent-teal"
                 />
-                <span className="text-sm font-semibold text-[var(--text-primary)]">{tr.title}</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{tr.title}</span>
+                {typeof tr.slots_left === 'number' && (
+                  <span className={`text-xs font-semibold whitespace-nowrap ${full ? 'text-[var(--text-muted)]' : 'text-teal'}`}>
+                    {full ? copy.tribeFull : copy.slotsLeft(tr.slots_left)}
+                  </span>
+                )}
               </label>
-            ))}
+              );
+            })}
           </div>
         </fieldset>
 
