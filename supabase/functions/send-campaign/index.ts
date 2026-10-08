@@ -2,6 +2,7 @@ import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
+import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -158,12 +159,33 @@ Deno.serve(async (req) => {
     const toDefer: string[] = []
     let waiting = 0
 
+    // #2130 E-b: endereco suprimido (reclamacao, supressao do provedor ou bounce permanente sem entrega depois) nao
+    // recebe; em campanha, quem se descadastrou tambem nao. O avulso transacional (campaign_send_one_off) so respeita a
+    // supressao. A linha suprimida ganha suppressed_at e sai da fila do cron. Sem conseguir ler a supressao, o envio
+    // volta para 'throttled' e o cron tenta de novo.
+    const isOneOff = send.audience_filter?.one_off === true
+    const addressOf = (r: { member_id: string | null; external_email: string | null }) =>
+      r.member_id && memberMap[r.member_id] ? memberMap[r.member_id].email : r.external_email
+    const pendingRows = recipients.filter((r) => !r.delivered && !r.unsubscribed)
+    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff)
+    if (suppressedSet === null) {
+      await sb.from('campaign_sends').update({ status: 'throttled', error_log: 'suppression_unreadable' }).eq('id', sendId)
+      return json({ error: 'suppression_unreadable', send_id: sendId }, 503)
+    }
+    const suppressedIds = new Set(pendingRows
+      .filter((r) => { const a = addressOf(r); return !!a && suppressedSet.has(normalizeEmail(a)) })
+      .map((r) => r.id))
+    if (suppressedIds.size > 0) {
+      await sb.from('campaign_recipients').update({ suppressed_at: new Date().toISOString() }).in('id', [...suppressedIds])
+    }
+
     const platformUrl = `${COMMS_ORIGIN}`
     let delivered = 0
     const errors: string[] = []
 
     for (const r of recipients) {
       if (r.unsubscribed || r.delivered) continue
+      if (suppressedIds.has(r.id)) continue
 
       if (r.member_id) {
         if (r.deferred_until) {
@@ -300,6 +322,7 @@ Deno.serve(async (req) => {
     const notes = [
       ...errors,
       ...(pendingLater > 0 ? [`${pendingLater} adiado(s) pelo limite de 1 e-mail por pessoa por dia`] : []),
+      ...(suppressedIds.size > 0 ? [`${suppressedIds.size} suprimido(s): reclamacao, bounce permanente ou descadastro`] : []),
     ]
     await sb.from('campaign_sends').update({
       status: finalStatus,
@@ -308,7 +331,7 @@ Deno.serve(async (req) => {
     }).eq('id', sendId)
 
     console.log('[campaign] done:', { delivered, deferred, waiting, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
-    return json({ delivered, deferred, waiting, release_at: releaseAt, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
+    return json({ delivered, deferred, waiting, suppressed: suppressedIds.size, release_at: releaseAt, errors: errors.length, total: recipients.length, status: finalStatus, sandbox })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
     console.error('[campaign] FATAL:', msg)

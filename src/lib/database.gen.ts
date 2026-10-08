@@ -5014,6 +5014,7 @@ export type Database = {
           resend_id: string | null
           send_id: string
           status: string | null
+          suppressed_at: string | null
           unsubscribe_token: string | null
           unsubscribed: boolean | null
         }
@@ -5042,6 +5043,7 @@ export type Database = {
           resend_id?: string | null
           send_id: string
           status?: string | null
+          suppressed_at?: string | null
           unsubscribe_token?: string | null
           unsubscribed?: boolean | null
         }
@@ -5070,6 +5072,7 @@ export type Database = {
           resend_id?: string | null
           send_id?: string
           status?: string | null
+          suppressed_at?: string | null
           unsubscribe_token?: string | null
           unsubscribed?: boolean | null
         }
@@ -32333,6 +32336,10 @@ export type Database = {
         Returns: boolean
       }
       email_sends_today: { Args: never; Returns: number }
+      email_suppressed_among: {
+        Args: { p_emails: string[]; p_include_unsubscribed?: boolean }
+        Returns: string[]
+      }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
       enqueue_curation_drive_grant_for_member: {
         Args: { p_item_id: string; p_member_id: string; p_reason?: string }

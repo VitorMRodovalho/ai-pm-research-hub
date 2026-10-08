@@ -2,6 +2,7 @@
 import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken, bearerFrom } from '../_shared/service-auth.ts'
+import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 
 // #1513: read once at module scope so the caller gate and the handler share it.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
@@ -870,6 +871,24 @@ Deno.serve(async (req) => {
       groups.get(notif.recipient_id)!.push(notif)
     }
 
+    // #2130 E-b: endereco suprimido (reclamacao, supressao do provedor ou bounce permanente sem entrega depois) nao
+    // recebe e-mail; o aviso continua no sino. A linha fica 'suppressed' com email_sent_at, para nao voltar a fila.
+    // Sem conseguir ler a supressao, esta rodada nao envia nada e o cron tenta de novo na proxima.
+    const suppressed = await suppressedAmong(sb, [...groups.keys()].map((id) => memberById.get(id)?.email), false)
+    if (suppressed === null) {
+      return new Response(JSON.stringify({ sent: 0, error: 'suppression_unreadable', sentToday, dailyBudget }), { status: 503 })
+    }
+    let suppressedRows = 0
+    for (const [recipientId, items] of [...groups.entries()]) {
+      if (!suppressed.has(normalizeEmail(memberById.get(recipientId).email))) continue
+      await sb.from('notifications').update({
+        email_sent_at: new Date().toISOString(),
+        email_delivery_status: 'suppressed',
+      }).in('id', items.map((n: any) => n.id))
+      suppressedRows += items.length
+      groups.delete(recipientId)
+    }
+
     // #1424 Fase B: recipients with at least one urgent (non-low-priority)
     // notification are served first, so a tight daily budget favours
     // transactional/operational mail over digests. Earliest-created breaks ties.
@@ -1021,7 +1040,7 @@ Deno.serve(async (req) => {
     if (deferred > 0) await sb.rpc('email_cap_reached', { p_lane: 'notificacoes' })
 
     return new Response(JSON.stringify({
-      sent, deferred, deduped, held, release_open: releaseOpen,
+      sent, deferred, deduped, held, suppressed: suppressedRows, release_open: releaseOpen,
       recipients: orderedRecipients.length,
       totalRows: notifications.length,
       sentToday, cap: dailyCap, dailyBudget,
