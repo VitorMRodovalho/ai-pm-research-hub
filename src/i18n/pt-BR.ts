@@ -3417,6 +3417,7 @@ const ptBR: Record<string, string> = {
   'gamification.trail.statusInProgress': 'Em andamento',
   'gamification.trail.statusPending': 'Pendente',
   'gamification.trail.viewCourse': 'Acessar curso',
+  'gamification.trail.howTo': 'Faça o curso no PMI.org. O badge sai no Credly. Com o seu Credly no perfil, clique em "Verificar Credly" no perfil para registrar na hora, ou espere a sincronização automática, que roda a cada 5 dias.',
   'profile.timeline.xpInCycle': 'XP neste ciclo',
   'profile.timeline.noHistory': 'Nenhum historico de ciclo encontrado.',
   'gamification.trail.error': 'Erro ao carregar progresso da trilha: ',

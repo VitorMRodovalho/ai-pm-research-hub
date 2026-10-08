@@ -3410,6 +3410,7 @@ const enUS: Record<string, string> = {
   'gamification.trail.statusInProgress': 'In progress',
   'gamification.trail.statusPending': 'Pending',
   'gamification.trail.viewCourse': 'Access course',
+  'gamification.trail.howTo': 'Take the course on PMI.org. The badge is issued on Credly. With your Credly in your profile, click "Verify Credly" on your profile to record it right away, or wait for the automatic sync, which runs every 5 days.',
   'profile.timeline.xpInCycle': 'XP in this cycle',
   'profile.timeline.noHistory': 'No cycle history found.',
   'gamification.trail.error': 'Error loading trail progress: ',
