@@ -1203,25 +1203,45 @@ Deno.serve(async (req) => {
 
     // ── Default mode: KPI sync (existing logic) ──
     const results: Record<string, { current: number; pct: number; synced: boolean }> = {}
+    // #2557: a KPI whose source did not answer is skipped (no DB write, no Artia update) and logged here,
+    // never filled with a literal number.
+    const skipped: Record<string, string> = {}
+    const measured = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
     const now = new Date().toISOString().split('T')[0]
 
     // ── Calculate KPI values from platform ──
 
-    // 1. Chapters
-    const { data: chapData } = await sb.rpc('get_public_platform_stats')
-    const chapters = chapData?.chapters_active ?? 5
-    results.chapters_participating = { current: chapters, pct: Math.round((chapters / 8) * 100), synced: false }
+    // 1. Chapters: the same source as the Metas (exec_portfolio_health) and the home, engaged = signed +
+    // in negotiation (GP decision, 03/10/2026).
+    const { data: chapData, error: chapErr } = await sb.rpc('get_chapter_metrics')
+    const chapters = Number(chapData?.engaged)
+    if (!chapErr && chapData?.engaged != null && measured(chapters)) {
+      results.chapters_participating = { current: chapters, pct: Math.round((chapters / 8) * 100), synced: false }
+    } else {
+      skipped.chapters_participating = chapErr?.message ?? 'get_chapter_metrics returned no engaged'
+    }
 
-    // 2. Entities (manual for now)
-    results.entities_partners = { current: 0, pct: 0, synced: false }
+    // 2. Entities: manual, read from annual_kpi_targets like the other manual KPIs below
+    const { data: entData } = await sb.from('annual_kpi_targets')
+      .select('current_value, target_value')
+      .eq('kpi_key', 'entities_partners').eq('cycle', 3).maybeSingle()
+    if (entData?.current_value != null && Number(entData?.target_value) > 0) {
+      const entCurrent = Number(entData.current_value)
+      results.entities_partners = { current: entCurrent, pct: Math.round((entCurrent / Number(entData.target_value)) * 100), synced: false }
+    } else {
+      skipped.entities_partners = 'annual_kpi_targets row missing'
+    }
 
     // 3. Trail completion (use existing RPC)
-    const { data: trailPct } = await sb.rpc('calc_trail_completion_pct')
-    const trail = trailPct ?? 0
-    results.trail_completion = { current: trail, pct: Math.round((trail / 70) * 100), synced: false }
+    const { data: trailPct, error: trailErr } = await sb.rpc('calc_trail_completion_pct')
+    if (!trailErr && measured(trailPct)) {
+      results.trail_completion = { current: trailPct, pct: Math.round((trailPct / 70) * 100), synced: false }
+    } else {
+      skipped.trail_completion = trailErr?.message ?? 'calc_trail_completion_pct returned no number'
+    }
 
     // 4. CPMAI certified in 2026
-    const { data: cpmaiData } = await sb.from('members')
+    const { data: cpmaiData, error: cpmaiErr } = await sb.from('members')
       .select('credly_badges')
       .eq('cpmai_certified', true)
     let cpmaiThisYear = 0
@@ -1234,54 +1254,80 @@ Deno.serve(async (req) => {
         }
       }
     }
-    results.cpmai_certified = { current: cpmaiThisYear, pct: Math.round((cpmaiThisYear / 2) * 100), synced: false }
+    if (!cpmaiErr && cpmaiData) {
+      results.cpmai_certified = { current: cpmaiThisYear, pct: Math.round((cpmaiThisYear / 2) * 100), synced: false }
+    } else {
+      skipped.cpmai_certified = cpmaiErr?.message ?? 'no rows object'
+    }
 
     // 5. Articles published (done + publicacao tag)
-    const { count: articlesCount } = await sb.from('board_items')
+    const { count: articlesCount, error: articlesErr } = await sb.from('board_items')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'done')
       .contains('tags', ['publicacao'])
-    results.articles_published = { current: articlesCount ?? 0, pct: Math.round(((articlesCount ?? 0) / 10) * 100), synced: false }
+    if (!articlesErr && measured(articlesCount)) {
+      results.articles_published = { current: articlesCount, pct: Math.round((articlesCount / 10) * 100), synced: false }
+    } else {
+      skipped.articles_published = articlesErr?.message ?? 'no count'
+    }
 
     // 6. Webinars realized
-    const { count: webCount } = await sb.from('webinars')
+    const { count: webCount, error: webErr } = await sb.from('webinars')
       .select('id', { count: 'exact', head: true })
       .in('status', ['published', 'completed'])
-    results.webinars_realized = { current: webCount ?? 0, pct: Math.round(((webCount ?? 0) / 6) * 100), synced: false }
+    if (!webErr && measured(webCount)) {
+      results.webinars_realized = { current: webCount, pct: Math.round((webCount / 6) * 100), synced: false }
+    } else {
+      skipped.webinars_realized = webErr?.message ?? 'no count'
+    }
 
     // 7. Pilots active/completed
-    const { count: pilotsCount } = await sb.from('pilots')
+    const { count: pilotsCount, error: pilotsErr } = await sb.from('pilots')
       .select('id', { count: 'exact', head: true })
       .in('status', ['active', 'completed'])
-    results.pilots_ia_copilot = { current: pilotsCount ?? 0, pct: Math.round(((pilotsCount ?? 0) / 3) * 100), synced: false }
+    if (!pilotsErr && measured(pilotsCount)) {
+      results.pilots_ia_copilot = { current: pilotsCount, pct: Math.round((pilotsCount / 3) * 100), synced: false }
+    } else {
+      skipped.pilots_ia_copilot = pilotsErr?.message ?? 'no count'
+    }
 
     // 8. Hours of meetings (realized only)
-    const { data: eventsData } = await sb.from('events')
+    const { data: eventsData, error: eventsErr } = await sb.from('events')
       .select('duration_minutes')
       .lte('date', now)
       .gte('date', '2026-01-01')
-    const totalHours = Math.round(((eventsData || []).reduce((s, e) => s + (e.duration_minutes || 0), 0)) / 60 * 10) / 10
-    results.hours_meetings = { current: totalHours, pct: Math.round((totalHours / 90) * 100), synced: false }
+    if (!eventsErr && eventsData) {
+      const totalHours = Math.round((eventsData.reduce((s, e) => s + (e.duration_minutes || 0), 0)) / 60 * 10) / 10
+      results.hours_meetings = { current: totalHours, pct: Math.round((totalHours / 90) * 100), synced: false }
+    } else {
+      skipped.hours_meetings = eventsErr?.message ?? 'no rows object'
+    }
 
     // 9. Impact hours
     // Calculate from attendance
     // Impact hours: only count actual present (not excused)
     const { data: impactRaw } = await sb.rpc('get_impact_hours_excluding_excused')
-    let impactHours = impactRaw ?? 0
+    let impactHours: number | null = measured(impactRaw) ? impactRaw : null
     if (!impactRaw) {
       // Fallback: direct query excluding excused
-      const { data: attData } = await sb.from('events')
+      const { data: attData, error: attErr } = await sb.from('events')
         .select('duration_minutes, attendance(id, excused)')
         .lte('date', now)
         .gte('date', '2026-01-01')
-      impactHours = 0
-      for (const e of attData || []) {
-        const attCount = Array.isArray(e.attendance) ? e.attendance.filter((a: any) => !a.excused).length : 0
-        impactHours += ((e.duration_minutes || 0) / 60) * attCount
+      if (!attErr && attData) {
+        let sum = 0
+        for (const e of attData) {
+          const attCount = Array.isArray(e.attendance) ? e.attendance.filter((a: any) => !a.excused).length : 0
+          sum += ((e.duration_minutes || 0) / 60) * attCount
+        }
+        impactHours = Math.round(sum * 10) / 10
       }
-      impactHours = Math.round(impactHours * 10) / 10
     }
-    results.hours_impact = { current: impactHours, pct: Math.round((impactHours / 1800) * 100), synced: false }
+    if (impactHours !== null) {
+      results.hours_impact = { current: impactHours, pct: Math.round((impactHours / 1800) * 100), synced: false }
+    } else {
+      skipped.hours_impact = 'rpc and fallback query both failed'
+    }
 
     // ── Phase C.2.5 — 4 new KPIs (read manual values from annual_kpi_targets, auto-update ip_policy from governance_documents) ──
 
@@ -1289,37 +1335,50 @@ Deno.serve(async (req) => {
     const { data: limData } = await sb.from('annual_kpi_targets')
       .select('current_value, target_value')
       .eq('kpi_key', 'lim_lima_accepted').eq('cycle', 3).maybeSingle()
-    const limCurrent = Number(limData?.current_value ?? 1)
-    const limTarget = Number(limData?.target_value ?? 1)
-    results.lim_lima_accepted = { current: limCurrent, pct: Math.round((limCurrent / limTarget) * 100), synced: false }
+    if (limData?.current_value != null && Number(limData?.target_value) > 0) {
+      const limCurrent = Number(limData.current_value)
+      results.lim_lima_accepted = { current: limCurrent, pct: Math.round((limCurrent / Number(limData.target_value)) * 100), synced: false }
+    } else {
+      skipped.lim_lima_accepted = 'annual_kpi_targets row missing'
+    }
 
     // 11. Detroit submission (manual=0 currently, in_planning)
     const { data: detData } = await sb.from('annual_kpi_targets')
       .select('current_value, target_value')
       .eq('kpi_key', 'detroit_submission').eq('cycle', 3).maybeSingle()
-    const detCurrent = Number(detData?.current_value ?? 0)
-    const detTarget = Number(detData?.target_value ?? 1)
-    results.detroit_submission = { current: detCurrent, pct: Math.round((detCurrent / detTarget) * 100), synced: false }
+    if (detData?.current_value != null && Number(detData?.target_value) > 0) {
+      const detCurrent = Number(detData.current_value)
+      results.detroit_submission = { current: detCurrent, pct: Math.round((detCurrent / Number(detData.target_value)) * 100), synced: false }
+    } else {
+      skipped.detroit_submission = 'annual_kpi_targets row missing'
+    }
 
     // 12. IP Policy ratified (auto from governance_documents.current_ratified_at)
-    const { data: ipDoc } = await sb.from('governance_documents')
+    const { data: ipDoc, error: ipErr } = await sb.from('governance_documents')
       .select('current_ratified_at')
       .eq('id', 'cfb15185-2800-4441-9ff1-f36096e83aa8')
       .maybeSingle()
-    const ipRatified = ipDoc?.current_ratified_at ? 1 : 0
-    // Auto-update annual_kpi_targets to reflect ratification state
-    await sb.from('annual_kpi_targets')
-      .update({ current_value: ipRatified, updated_at: new Date().toISOString() })
-      .eq('kpi_key', 'ip_policy_ratified').eq('cycle', 3)
-    results.ip_policy_ratified = { current: ipRatified, pct: ipRatified === 1 ? 100 : 75, synced: false }
+    if (!ipErr && ipDoc) {
+      const ipRatified = ipDoc.current_ratified_at ? 1 : 0
+      // Auto-update annual_kpi_targets to reflect ratification state
+      await sb.from('annual_kpi_targets')
+        .update({ current_value: ipRatified, updated_at: new Date().toISOString() })
+        .eq('kpi_key', 'ip_policy_ratified').eq('cycle', 3)
+      results.ip_policy_ratified = { current: ipRatified, pct: ipRatified === 1 ? 100 : 75, synced: false }
+    } else {
+      skipped.ip_policy_ratified = ipErr?.message ?? 'governance document not found'
+    }
 
     // 13. Cooperation agreements signed (manual=4)
     const { data: coopData } = await sb.from('annual_kpi_targets')
       .select('current_value, target_value')
       .eq('kpi_key', 'cooperation_agreements_signed').eq('cycle', 3).maybeSingle()
-    const coopCurrent = Number(coopData?.current_value ?? 4)
-    const coopTarget = Number(coopData?.target_value ?? 4)
-    results.cooperation_agreements_signed = { current: coopCurrent, pct: Math.round((coopCurrent / coopTarget) * 100), synced: false }
+    if (coopData?.current_value != null && Number(coopData?.target_value) > 0) {
+      const coopCurrent = Number(coopData.current_value)
+      results.cooperation_agreements_signed = { current: coopCurrent, pct: Math.round((coopCurrent / Number(coopData.target_value)) * 100), synced: false }
+    } else {
+      skipped.cooperation_agreements_signed = 'annual_kpi_targets row missing'
+    }
 
     // ── Update annual_kpi_targets (current_value for non-auto KPIs) ──
     for (const [key, val] of Object.entries(results)) {
@@ -1357,6 +1416,7 @@ Deno.serve(async (req) => {
       response_summary: {
         synced_at: now,
         kpis: Object.fromEntries(Object.entries(results).map(([k, v]) => [k, { current: v.current, pct: v.pct, artia: v.synced }])),
+        skipped,
       },
       organization_id: PMI_GO_ORG_ID,
     })
@@ -1365,6 +1425,7 @@ Deno.serve(async (req) => {
       status: 'ok',
       synced_at: now,
       kpis: results,
+      skipped,
       artia_synced: artiaToken !== null,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
