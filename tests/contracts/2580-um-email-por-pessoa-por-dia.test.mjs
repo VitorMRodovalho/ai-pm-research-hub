@@ -20,23 +20,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { maskJsComments, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskJsComments, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const DIR = resolve(ROOT, 'supabase/migrations');
 const files = readdirSync(DIR).filter((f) => /^\d{14}_2580_um_email_por_pessoa_por_dia\.sql$/.test(f));
 const SQL = files.length === 1 ? maskLineComments(readFileSync(join(DIR, files[0]), 'utf8')) : '';
+// A lista viva vem da ultima captura (a migration do cutoff a redefine).
+const URGENT_CAP = () => maskLineComments(latestFunctionCapture(ROOT, '_is_urgent_email_type').block);
 const fn = (name) => (SQL.match(new RegExp(String.raw`CREATE OR REPLACE FUNCTION public\.${name}\([\s\S]*?\$function\$[\s\S]*?\$function\$`)) || [''])[0];
 const EF = maskJsComments(readFileSync(resolve(ROOT, 'supabase/functions/send-notification-email/index.ts'), 'utf8'));
 
-const D2 = ['affiliation_renewal_d7_urgent', 'selection_approved', 'selection_interview_scheduled', 'selection_reschedule_escalated', 'selection_termo_due'];
+// D2 + selection_cutoff_approved (decisao do GP de 08/10/2026, convite para marcar a entrevista depois do corte).
+const D2 = ['affiliation_renewal_d7_urgent', 'selection_approved', 'selection_cutoff_approved', 'selection_interview_scheduled', 'selection_reschedule_escalated', 'selection_termo_due'];
 
 test('a migration existe', () => {
   assert.equal(files.length, 1, `esperava 1 migration, achei ${files.length}`);
 });
 
 test('A. a lista de urgentes e a da D2, igual no banco e na Edge Function', () => {
-  const sqlList = (fn('_is_urgent_email_type').match(/p_type IN \(([\s\S]*?)\);/) || ['', ''])[1];
+  const sqlList = (URGENT_CAP().match(/p_type IN \(([\s\S]*?)\);/) || ['', ''])[1];
   const sqlTypes = [...sqlList.matchAll(/'([a-z0-9_]+)'/g)].map((m) => m[1]).sort();
   assert.deepEqual(sqlTypes, D2, 'lista do banco diferente da D2');
   const efList = (EF.match(/const URGENT_EMAIL_TYPES = new Set<string>\(\[([\s\S]*?)\]\)/) || ['', ''])[1];

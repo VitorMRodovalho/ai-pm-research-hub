@@ -126,6 +126,7 @@ const URGENT_EMAIL_TYPES = new Set<string>([
   'selection_interview_scheduled',
   'selection_reschedule_escalated',
   'selection_termo_due',
+  'selection_cutoff_approved',
   'affiliation_renewal_d7_urgent',
 ])
 const RELEASE_HOUR_BRT = 7
