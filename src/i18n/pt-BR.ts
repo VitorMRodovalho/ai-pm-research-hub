@@ -7967,6 +7967,17 @@ const ptBR: Record<string, string> = {
   'competition.status.waitlisted': 'em lista de espera',
   'competition.status.not_selected': 'não selecionada',
   'competition.status.withdrawn': 'retirada',
+  'unsubscribe.meta.title': 'Descadastro de campanhas | Núcleo IA & GP',
+  'unsubscribe.confirm.title': 'Parar de receber campanhas',
+  'unsubscribe.confirm.body': 'Este endereço deixará de receber as campanhas e os comunicados em massa do Núcleo IA & GP. Avisos ligados ao que você faz na plataforma, como acesso à conta, seleção e entrevistas, continuam chegando.',
+  'unsubscribe.confirm.button': 'Confirmar descadastro',
+  'unsubscribe.done.title': 'Descadastro feito',
+  'unsubscribe.done.body': 'Este endereço não vai mais receber campanhas do Núcleo IA & GP.',
+  'unsubscribe.already.body': 'Este endereço já estava descadastrado. Nada mudou.',
+  'unsubscribe.invalid.title': 'Link não reconhecido',
+  'unsubscribe.invalid.body': 'Não reconhecemos este link. Para sair da lista, escreva para',
+  'unsubscribe.error.title': 'Não foi possível registrar agora',
+  'unsubscribe.error.body': 'Tente de novo em alguns minutos, ou escreva para',
 };
 
 export default ptBR;

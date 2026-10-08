@@ -1,0 +1,83 @@
+---
+// #2130 E-a: descadastro de campanhas pelo link do e-mail e pelo POST de um clique (RFC 8058).
+// O GET so mostra o botao: leitores de link automaticos abrem o endereco e nao podem descadastrar ninguem.
+// Quem registra e `campaign_unsubscribe`, pelo token da linha do destinatario; avulso transacional segue chegando.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+
+export const prerender = false;
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const token = Astro.url.searchParams.get('token') ?? '';
+const tokenOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
+
+let state: 'confirm' | 'done' | 'already' | 'invalid' | 'error' = tokenOk ? 'confirm' : 'invalid';
+
+if (Astro.request.method === 'POST') {
+  let oneClick = false;
+  try {
+    const form = await Astro.request.formData();
+    oneClick = form.get('List-Unsubscribe') === 'One-Click';
+  } catch {
+    // corpo vazio ou de outro tipo: tratado como o botao desta pagina
+  }
+
+  if (tokenOk) {
+    try {
+      const sb = createClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+      const { data, error } = await sb.rpc('campaign_unsubscribe', { p_token: token, p_one_click: oneClick });
+      state = error ? 'error' : data?.ok === true ? (data.already ? 'already' : 'done') : 'invalid';
+    } catch {
+      state = 'error';
+    }
+  }
+
+  // O provedor de e-mail faz este POST sem navegador e so le o status.
+  if (oneClick) {
+    const ok = state === 'done' || state === 'already';
+    return new Response(ok ? 'ok' : state, {
+      status: ok ? 200 : state === 'error' ? 503 : 400,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    });
+  }
+}
+
+const formAction = Astro.url.pathname + Astro.url.search;
+---
+
+<BaseLayout title={t('unsubscribe.meta.title', lang)} lang={lang}>
+  <meta name="robots" content="noindex, nofollow" slot="head" />
+  <main class="max-w-xl mx-auto px-4 py-10 md:py-16">
+    {state === 'confirm' && (
+      <section class="space-y-4">
+        <h1 class="text-2xl font-bold text-[var(--text-primary)]">{t('unsubscribe.confirm.title', lang)}</h1>
+        <p class="text-[var(--text-secondary)]">{t('unsubscribe.confirm.body', lang)}</p>
+        <form method="POST" action={formAction}>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-[var(--accent)] text-white font-semibold">
+            {t('unsubscribe.confirm.button', lang)}
+          </button>
+        </form>
+      </section>
+    )}
+    {(state === 'done' || state === 'already') && (
+      <section class="space-y-4">
+        <h1 class="text-2xl font-bold text-[var(--text-primary)]">{t('unsubscribe.done.title', lang)}</h1>
+        <p class="text-[var(--text-secondary)]">
+          {t(state === 'done' ? 'unsubscribe.done.body' : 'unsubscribe.already.body', lang)}
+        </p>
+      </section>
+    )}
+    {(state === 'invalid' || state === 'error') && (
+      <section class="space-y-4">
+        <h1 class="text-2xl font-bold text-[var(--text-primary)]">
+          {t(state === 'invalid' ? 'unsubscribe.invalid.title' : 'unsubscribe.error.title', lang)}
+        </h1>
+        <p class="text-[var(--text-secondary)]">
+          {t(state === 'invalid' ? 'unsubscribe.invalid.body' : 'unsubscribe.error.body', lang)}{' '}
+          <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
+        </p>
+      </section>
+    )}
+  </main>
+</BaseLayout>

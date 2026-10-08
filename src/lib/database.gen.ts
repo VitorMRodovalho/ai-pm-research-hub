@@ -10428,6 +10428,35 @@ export type Database = {
           },
         ]
       }
+      email_unsubscribes: {
+        Row: {
+          campaign_recipient_id: string | null
+          created_at: string
+          email: string
+          source: string
+        }
+        Insert: {
+          campaign_recipient_id?: string | null
+          created_at?: string
+          email: string
+          source: string
+        }
+        Update: {
+          campaign_recipient_id?: string | null
+          created_at?: string
+          email?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_unsubscribes_campaign_recipient_id_fkey"
+            columns: ["campaign_recipient_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_verification_pending: {
         Row: {
           claiming_auth_id: string | null
@@ -30422,6 +30451,10 @@ export type Database = {
         Returns: boolean
       }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
+      _campaign_email_unsubscribed: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
       _can_anywhere: {
         Args: { p_action: string; p_person_id: string }
         Returns: boolean
@@ -31644,6 +31677,10 @@ export type Database = {
           p_to_email: string
           p_variables?: Json
         }
+        Returns: Json
+      }
+      campaign_unsubscribe: {
+        Args: { p_one_click?: boolean; p_token: string }
         Returns: Json
       }
       can: {

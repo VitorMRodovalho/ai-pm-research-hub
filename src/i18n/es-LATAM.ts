@@ -7958,6 +7958,17 @@ const esLATAM: Record<string, string> = {
   'competition.status.waitlisted': 'en lista de espera',
   'competition.status.not_selected': 'no seleccionada',
   'competition.status.withdrawn': 'retirada',
+  'unsubscribe.meta.title': 'Darse de baja de campañas | Núcleo IA & GP',
+  'unsubscribe.confirm.title': 'Dejar de recibir campañas',
+  'unsubscribe.confirm.body': 'Esta dirección dejará de recibir las campañas y los comunicados masivos del Núcleo IA & GP. Los avisos ligados a lo que haces en la plataforma, como acceso a la cuenta, selección y entrevistas, seguirán llegando.',
+  'unsubscribe.confirm.button': 'Confirmar baja',
+  'unsubscribe.done.title': 'Baja registrada',
+  'unsubscribe.done.body': 'Esta dirección ya no recibirá campañas del Núcleo IA & GP.',
+  'unsubscribe.already.body': 'Esta dirección ya estaba dada de baja. Nada cambió.',
+  'unsubscribe.invalid.title': 'Enlace no reconocido',
+  'unsubscribe.invalid.body': 'No reconocemos este enlace. Para salir de la lista, escribe a',
+  'unsubscribe.error.title': 'No pudimos registrarlo ahora',
+  'unsubscribe.error.body': 'Inténtalo de nuevo en unos minutos, o escribe a',
 };
 
 export default esLATAM;

@@ -214,7 +214,9 @@ Deno.serve(async (req) => {
       let html = tmpl.body_html[langKey] || tmpl.body_html['pt'] || ''
       let text = tmpl.body_text[langKey] || tmpl.body_text['pt'] || ''
 
-      const unsubUrl = `${platformUrl}/unsubscribe?token=${r.unsubscribe_token}`
+      // #2130: a pagina abre no idioma de quem recebeu; o POST de um clique (RFC 8058) vai para a mesma URL.
+      const unsubLang = langKey === 'en' ? 'en-US' : langKey === 'es' ? 'es-LATAM' : 'pt-BR'
+      const unsubUrl = `${platformUrl}/unsubscribe?token=${r.unsubscribe_token}&lang=${unsubLang}`
 
       const vars: [string, string][] = [
         ['{member.name}', memberName],
@@ -247,7 +249,7 @@ Deno.serve(async (req) => {
           subject: sandbox ? `[SANDBOX] ${subject}` : subject,
           html,
           text,
-          headers: { 'List-Unsubscribe': `<${unsubUrl}>` },
+          headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
           tracking: { open: true, click: true },
         }
         console.log('[campaign] sending to:', finalTo[0], 'from:', from)
