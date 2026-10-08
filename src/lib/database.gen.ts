@@ -17453,6 +17453,7 @@ export type Database = {
           privacy_consent_accepted_at: string | null
           privacy_consent_version: string | null
           profile_completed_at: string | null
+          public_map_prompt_dismissed_at: string | null
           secondary_auth_ids: string[] | null
           secondary_emails: string[] | null
           share_address: boolean | null
@@ -17520,6 +17521,7 @@ export type Database = {
           privacy_consent_accepted_at?: string | null
           privacy_consent_version?: string | null
           profile_completed_at?: string | null
+          public_map_prompt_dismissed_at?: string | null
           secondary_auth_ids?: string[] | null
           secondary_emails?: string[] | null
           share_address?: boolean | null
@@ -17587,6 +17589,7 @@ export type Database = {
           privacy_consent_accepted_at?: string | null
           privacy_consent_version?: string | null
           profile_completed_at?: string | null
+          public_map_prompt_dismissed_at?: string | null
           secondary_auth_ids?: string[] | null
           secondary_emails?: string[] | null
           share_address?: boolean | null
@@ -32243,6 +32246,7 @@ export type Database = {
         Returns: Json
       }
       dismiss_onboarding: { Args: never; Returns: undefined }
+      dismiss_public_map_prompt: { Args: never; Returns: Json }
       dismiss_visitor_lead: {
         Args: { p_lead_id: string; p_reason?: string }
         Returns: Json
@@ -33306,6 +33310,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_my_public_map_prompt: { Args: never; Returns: Json }
       get_my_quick_start_progress: { Args: never; Returns: Json }
       get_my_re_engagement_invitation: {
         Args: { p_pipeline_id: string }
@@ -33869,6 +33874,7 @@ export type Database = {
         Args: { p_application_id: string; p_reason: string }
         Returns: Json
       }
+      grant_public_map_consent: { Args: { p_evidence?: Json }; Returns: Json }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
       import_leader_evaluations: { Args: { p_data: Json }; Returns: Json }
@@ -35421,6 +35427,7 @@ export type Database = {
         Returns: Json
       }
       revoke_image_voice_consent: { Args: { p_reason?: string }; Returns: Json }
+      revoke_public_map_consent: { Args: { p_reason?: string }; Returns: Json }
       rl_check_and_bump: {
         Args: { p_action: string; p_limit: number; p_window_s?: number }
         Returns: boolean
@@ -35882,6 +35889,7 @@ export type Database = {
           privacy_consent_accepted_at: string | null
           privacy_consent_version: string | null
           profile_completed_at: string | null
+          public_map_prompt_dismissed_at: string | null
           secondary_auth_ids: string[] | null
           secondary_emails: string[] | null
           share_address: boolean | null
