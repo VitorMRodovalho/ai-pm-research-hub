@@ -146,6 +146,7 @@ const GAM_I18N = {
   trailStatusInProgress: t('gamification.trail.statusInProgress', lang),
   trailStatusPending: t('gamification.trail.statusPending', lang),
   trailViewCourse: t('gamification.trail.viewCourse', lang),
+  trailHowTo: t('gamification.trail.howTo', lang),
   credlyTierTitle: t('gamification.credly.tierTitle', lang),
   credlyTotalLabel: t('gamification.credly.totalLabel', lang),
   credlyTiersDesc: t('gamification.credly.tiersDesc', lang),
@@ -1681,7 +1682,7 @@ const SCORING_I18N = {
 
     try {
       const { data: courses, error: coursesError } = await withTimeout(
-        sb.from('courses').select('id, code, name, sort_order').eq('is_trail', true).order('sort_order', { ascending: true }),
+        sb.from('courses').select('id, code, name, url, sort_order').eq('is_trail', true).order('sort_order', { ascending: true }),
       );
       if (coursesError) throw coursesError;
 
@@ -1731,7 +1732,8 @@ const SCORING_I18N = {
         + I.trailPctComplete.replace('{pct}', String(pct)) + '</span></div>'
         + '<div class="h-2.5 bg-[var(--surface-base)] rounded-full overflow-hidden mb-4">'
         + '<div class="h-full rounded-full transition-all duration-700" style="width:' + pct + '%;background:' + (pct >= 100 ? '#10B981' : '#FF610F') + '"></div></div>'
-        + '<div class="space-y-0">' + courseRows + '</div>';
+        + '<div class="space-y-0">' + courseRows + '</div>'
+        + '<p class="text-[.7rem] text-[var(--text-secondary)] mt-3">' + escapeHtml(I.trailHowTo) + '</p>';
     } catch (e: any) {
       host.innerHTML = `<p class="text-crimson text-sm text-center py-2">${I.trailError}${e?.message || I.msgFailUnexpected}</p>`;
     }
