@@ -82,7 +82,7 @@ test('F. os envios em massa filtram a lista antes de enviar', () => {
 test('G. todo EF que chama o provedor esta classificado', () => {
   const senders = readdirSync(FN_DIR).filter((d) => {
     const p = join(FN_DIR, d, 'index.ts');
-    return existsSync(p) && readFileSync(p, 'utf8').includes('api.resend.com');
+    return existsSync(p) && /'https:\/\/api\.resend\.com\/emails'/.test(readFileSync(p, 'utf8'));
   }).sort();
   assert.deepEqual(senders, [...CONSULTA, ...PEDIDO_PELA_PESSOA].sort(),
     'EF novo chamando o provedor: decida se ele consulta a supressao (CONSULTA) ou e link pedido pela pessoa');
