@@ -41,6 +41,7 @@ const PODE_LER = new Map([
   // 20260925185424 o autenticado sem linha em members le 0 linha de events (as linhas
   // geral/webinar seguem publicas para anon, por coluna, e isso e o ultimo teste deste arquivo).
   ['blog_posts', 'so status=published (policy "Public reads published")'],
+  ['public_publications', 'so is_published=true (policy "pub_read_published"); vitrine publica de trabalhos, a mesma linha que a RPC anon get_public_publications devolve'],
   ['tribe_selections', 'contagem por tribo na home (Track R p59); membro->tribo ja e publico em public_members'],
   ['public_members', 'view accepted-DEFINER (ADR-0096 / #82)'],
   ['impact_hours_total', 'view accepted-DEFINER (ADR-0096 / #82), agregado sem linha de pessoa'],
