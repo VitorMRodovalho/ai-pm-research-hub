@@ -81,8 +81,9 @@ test('#420 follow-up: get_public_impact_data hours metrics filter a.present', ()
   const { file, code } = latestDeclarerCode('get_public_impact_data');
   assert.match(code, /WHERE e\.date >= '2026-03-01' AND a\.present/,
     `${file}: total_attendance_hours must filter a.present`);
-  assert.match(code, /FROM attendance a JOIN events e ON e\.id = a\.event_id\s+WHERE a\.present/,
-    `${file}: impact_hours must filter a.present`);
+  // #2365: impact_hours passou a chamar a fonte canônica, que filtra a.present (ADR-0100 §2C).
+  assert.match(code, /'impact_hours',\s*public\.get_impact_hours_canonical\(/,
+    `${file}: impact_hours must read get_impact_hours_canonical (which filters a.present)`);
 });
 
 // ── #555 (deferred 3rd consumer from #420/#554; mig 20260805000123) ──

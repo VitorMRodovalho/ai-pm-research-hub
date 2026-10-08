@@ -7,6 +7,8 @@ interface ImpactData {
   tribes: number;
   articles_published: number;
   impact_hours: number;
+  /** #2365: ano do primeiro registro contado em impact_hours (acumulado). */
+  impact_hours_since: number | null;
   webinars: number;
   partner_count: number;
   recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string; authors: string[] }>;
@@ -56,11 +58,13 @@ const LABELS: Record<string, Record<string, string>> = {
   'pt-BR': {
     hero: 'Transformando o Gerenciamento de Projetos na Era da Inteligência Artificial',
     heroSub: 'Uma iniciativa colaborativa entre capítulos do PMI® no Brasil',
-    chapters: 'Capítulos PMI',
+    chapters: 'Capítulos PMI engajados',
+    chaptersHint: 'assinados + em negociação',
     members: 'Colaboradores Ativos',
     tribesLabel: 'Tribos de Pesquisa',
     articles: 'Artigos Publicados',
     hours: 'Horas de Impacto',
+    hoursSince: 'desde',
     timeline: 'Nossa História',
     mission: 'Missão',
     missionText: 'Avançar a aplicação de IA no Gerenciamento de Projetos por meio de pesquisas inovadoras e comunidade engajada.',
@@ -105,11 +109,13 @@ const LABELS: Record<string, Record<string, string>> = {
   'en-US': {
     hero: 'Transforming Project Management in the Age of Artificial Intelligence',
     heroSub: 'A collaborative initiative among PMI® chapters in Brazil',
-    chapters: 'PMI Chapters',
+    chapters: 'Engaged PMI Chapters',
+    chaptersHint: 'signed + in negotiation',
     members: 'Active Contributors',
     tribesLabel: 'Research Tribes',
     articles: 'Published Articles',
     hours: 'Impact Hours',
+    hoursSince: 'since',
     timeline: 'Our Story',
     mission: 'Mission',
     missionText: 'Advance the application of AI in Project Management through innovative research and an engaged community.',
@@ -154,11 +160,13 @@ const LABELS: Record<string, Record<string, string>> = {
   'es-LATAM': {
     hero: 'Transformando la Gestión de Proyectos en la Era de la Inteligencia Artificial',
     heroSub: 'Una iniciativa colaborativa entre capítulos del PMI® en Brasil',
-    chapters: 'Capítulos PMI',
+    chapters: 'Capítulos PMI comprometidos',
+    chaptersHint: 'firmados + en negociación',
     members: 'Colaboradores Activos',
     tribesLabel: 'Tribus de Investigación',
     articles: 'Artículos Publicados',
     hours: 'Horas de Impacto',
+    hoursSince: 'desde',
     timeline: 'Nuestra Historia',
     mission: 'Misión',
     missionText: 'Avanzar la aplicación de IA en la Gestión de Proyectos a través de investigaciones innovadoras y comunidad comprometida.',
@@ -368,11 +376,11 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
 
       {/* Impact Counters */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
-        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div></div>
+        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div><div className="text-xs text-[var(--text-muted)]">{l.chaptersHint}</div></div>
         <div><AnimatedCounter target={data.active_members} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.members}</div></div>
         <div><AnimatedCounter target={data.tribes} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.tribesLabel}</div></div>
         <div><AnimatedCounter target={data.articles_published} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.articles}</div></div>
-        <div><AnimatedCounter target={Math.round(data.impact_hours)} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.hours}</div></div>
+        <div><AnimatedCounter target={Math.round(data.impact_hours)} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.hours}</div>{data.impact_hours_since ? <div className="text-xs text-[var(--text-muted)]">{l.hoursSince} {data.impact_hours_since}</div> : null}</div>
       </section>
 
       {/* Timeline */}

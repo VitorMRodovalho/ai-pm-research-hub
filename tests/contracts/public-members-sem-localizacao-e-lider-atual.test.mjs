@@ -202,7 +202,9 @@ test('DB: cada tribo do payload público nomeia só líder ativo de tribo ativa 
     return [tr.id, atual ? p.name : null];
   }));
 
-  assert.equal(resumo.length, tribos.length, 'tribes_summary não cobre todas as tribos');
+  // #2365: tribes_summary lista só as tribos ativas, como o contador `tribes`.
+  const ativas = tribos.filter((tr) => tr.is_active);
+  assert.equal(resumo.length, ativas.length, 'tribes_summary não cobre exatamente as tribos ativas');
   // Só ids na mensagem: o nome é justamente o dado que este guard protege.
   const divergentes = resumo
     .filter((linha) => (linha.leader_name ?? null) !== esperado.get(linha.id))
