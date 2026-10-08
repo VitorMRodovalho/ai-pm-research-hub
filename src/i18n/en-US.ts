@@ -4217,6 +4217,7 @@ const enUS: Record<string, string> = {
   'campaigns.toastDeliveryUnknown': 'Unknown error',
   'campaigns.toastDeliveredWithErrors': 'Delivered: {delivered}/{total} · {errors} error(s)',
   'campaigns.toastDeliveredOk': '{n} email(s) delivered successfully',
+  'campaigns.toastDeferred': '{n} member(s) already got an email today: theirs goes out tomorrow at 7 a.m. (Brasília)',
   'campaigns.toastCampaignCreatedDelivering': 'Campaign created, delivery may still be in progress.',
   'campaigns.toastCampaignCreated': 'Campaign created: {n} recipients',
   'campaigns.toastErrorSending': 'Error sending',

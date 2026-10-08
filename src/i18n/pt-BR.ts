@@ -4224,6 +4224,7 @@ const ptBR: Record<string, string> = {
   'campaigns.toastDeliveryUnknown': 'Erro desconhecido',
   'campaigns.toastDeliveredWithErrors': 'Entregues: {delivered}/{total} · {errors} erro(s)',
   'campaigns.toastDeliveredOk': '{n} email(s) entregues com sucesso',
+  'campaigns.toastDeferred': '{n} membro(s) já receberam e-mail hoje: o envio para eles sai amanhã às 07h',
   'campaigns.toastCampaignCreatedDelivering': 'Campanha criada, mas entrega pode estar em andamento.',
   'campaigns.toastCampaignCreated': 'Campanha criada: {n} destinatários',
   'campaigns.toastErrorSending': 'Erro ao enviar',

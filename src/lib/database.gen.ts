@@ -4997,6 +4997,7 @@ export type Database = {
           clicked_at: string | null
           complained_at: string | null
           created_at: string | null
+          deferred_until: string | null
           delivered: boolean | null
           delivered_at: string | null
           error_message: string | null
@@ -5024,6 +5025,7 @@ export type Database = {
           clicked_at?: string | null
           complained_at?: string | null
           created_at?: string | null
+          deferred_until?: string | null
           delivered?: boolean | null
           delivered_at?: string | null
           error_message?: string | null
@@ -5051,6 +5053,7 @@ export type Database = {
           clicked_at?: string | null
           complained_at?: string | null
           created_at?: string | null
+          deferred_until?: string | null
           delivered?: boolean | null
           delivered_at?: string | null
           error_message?: string | null
@@ -31629,6 +31632,10 @@ export type Database = {
       calc_trail_completion_pct: { Args: never; Returns: number }
       calculate_rankings: { Args: { p_cycle_id: string }; Returns: Json }
       caller_chapter_scope: { Args: never; Returns: string }
+      campaign_defer_recipients: {
+        Args: { p_recipient_ids: string[] }
+        Returns: string
+      }
       campaign_send_one_off: {
         Args: {
           p_metadata?: Json

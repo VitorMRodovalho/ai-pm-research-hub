@@ -31,6 +31,7 @@ const CAMPAIGNS_I18N = {
   toastDeliveryUnknown: t('campaigns.toastDeliveryUnknown', lang),
   toastDeliveredWithErrors: t('campaigns.toastDeliveredWithErrors', lang),
   toastDeliveredOk: t('campaigns.toastDeliveredOk', lang),
+  toastDeferred: t('campaigns.toastDeferred', lang),
   toastCampaignCreatedDelivering: t('campaigns.toastCampaignCreatedDelivering', lang),
   toastCampaignCreated: t('campaigns.toastCampaignCreated', lang),
   toastErrorSending: t('campaigns.toastErrorSending', lang),
@@ -311,6 +312,7 @@ const CAMPAIGNS_I18N = {
     toastDeliveryError: 'Erro na entrega: {msg}', toastDeliveryUnknown: 'Erro desconhecido',
     toastDeliveredWithErrors: 'Entregues: {delivered}/{total} · {errors} erro(s)',
     toastDeliveredOk: '{n} email(s) entregues com sucesso',
+    toastDeferred: '{n} membro(s) já receberam e-mail hoje: o envio para eles sai amanhã às 07h',
     toastCampaignCreatedDelivering: 'Campanha criada, mas entrega pode estar em andamento.',
     toastCampaignCreated: 'Campanha criada: {n} destinatários',
     toastErrorSending: 'Erro ao enviar', toastErrorLoading: 'Erro ao carregar',
@@ -638,6 +640,7 @@ const CAMPAIGNS_I18N = {
                     ? _interp(T.toastDeliveredWithErrors, { delivered: efData.delivered, total: efData.total, errors: efData.errors })
                     : _interp(T.toastDeliveredOk, { n: efData.delivered });
                   (window as any).toast?.(msg, efData.errors > 0 ? 'error' : 'success');
+                  if (efData.deferred > 0) (window as any).toast?.(_interp(T.toastDeferred, { n: efData.deferred }), 'info');
                   try { (window as any).__nucleoTrack?.('campaign_sent', { delivered: efData.delivered || 0 }); } catch {}
                 }
               } catch (e: any) {
@@ -729,7 +732,7 @@ const CAMPAIGNS_I18N = {
     };
 
     list.innerHTML = filtered.map((s: any) => {
-      const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400', pending_delivery: 'text-amber-400' };
+      const statusColors: Record<string,string> = { draft: 'text-gray-400', scheduled: 'text-blue-400', sending: 'text-amber-400', sent: 'text-green-400', failed: 'text-red-400', pending_delivery: 'text-amber-400', throttled: 'text-amber-400' };
       const dt = s.sent_at ? new Date(s.sent_at).toLocaleString('pt-BR') : new Date(s.created_at).toLocaleString('pt-BR');
       const stats = _historyAnalyticsMap[s.id];
       const miniStats = stats
