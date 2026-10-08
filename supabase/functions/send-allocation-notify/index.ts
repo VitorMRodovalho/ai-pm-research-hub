@@ -1,5 +1,6 @@
 import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 
 Deno.serve(async (req) => {
   const cors = {
@@ -102,6 +103,10 @@ Deno.serve(async (req) => {
     const callerPhone = caller.phone || '+1 267-874-8329'
     const callerLinkedin = caller.linkedin_url || 'https://www.linkedin.com/in/vitor-rodovalho-pmp/'
 
+    // #2130 E-b: endereco suprimido (reclamacao, supressao do provedor ou bounce permanente sem entrega depois) sai da
+    // lista. Sem conseguir ler a supressao, o envio sai e o erro fica no log: este caminho nao tem reenvio.
+    const suppressedAlloc = await suppressedAmong(sb, allocated.map((m: any) => m.email), false)
+
     for (const [tidStr, tribeMembers] of Object.entries(byTribe)) {
       const tid = Number(tidStr)
       const tribe = tribeMap[tid]
@@ -129,6 +134,7 @@ Deno.serve(async (req) => {
         + '</div></div>'
 
       const emails = tribeMembers.map((m: any) => m.email)
+        .filter((e: string) => !(suppressedAlloc && e && suppressedAlloc.has(normalizeEmail(e))))
       const finalTo = sandbox ? ['vitor@vitormr.dev'] : [from]
       const finalBcc = sandbox ? [] : emails
 

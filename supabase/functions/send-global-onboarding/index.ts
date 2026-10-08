@@ -1,5 +1,6 @@
 import { COMMS_ORIGIN } from '../_shared/comms-host.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 
 // Retry with exponential backoff for external API calls
 async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
@@ -187,9 +188,14 @@ Deno.serve(async (req) => {
     const cycleName = cycle?.cycle_label || 'Ciclo 3'
     const signatureHtml = buildSignatureHtml(senderData, cycleName)
 
+    // #2130 E-b: endereco suprimido (reclamacao, supressao do provedor ou bounce permanente sem entrega depois) sai da
+    // lista. Sem conseguir ler a supressao, o envio sai e o erro fica no log: este caminho nao tem reenvio.
+    const suppressedOnb = await suppressedAmong(sb, [...Object.values(grouped).flatMap((g) => g.emails), ...mgmtEmails], false)
+
     for (const [tribeIdStr, group] of Object.entries(grouped)) {
       const html = buildOnboardingHtml(group.name, group.names, signatureHtml)
       const allBcc = [...new Set([...group.emails, ...mgmtEmails])]
+        .filter((e) => !(suppressedOnb && suppressedOnb.has(normalizeEmail(e))))
 
       const finalTo = sandbox ? ['vitor@vitormr.dev'] : [from]
       const finalBcc = sandbox ? [] : allBcc

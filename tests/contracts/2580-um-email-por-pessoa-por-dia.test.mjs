@@ -66,9 +66,9 @@ test('D. urgentes saem todos; do resto, um envio por pessoa por dia; o excesso f
   assert.match(EF, /const normalAllowed = releaseOpen && \(sentTodayByPerson\[recipientId\] \?\? 0\) < 1/);
   assert.match(EF, /const sends = \[\.\.\.buildSends\(urgentRows\), \.\.\.\(normalAllowed \? normalSends\.slice\(0, 1\) : \[\]\)\]/);
   assert.match(EF, /for \(const s of \(normalAllowed \? normalSends\.slice\(1\) : normalSends\)\) held \+= s\.ids\.length/);
-  // o retido nao recebe email_sent_at: o unico update de envio e o do aceite e o da dedup
+  // o retido nao recebe email_sent_at: as escritas sao a do aceite, a da dedup e a da supressao (#2130)
   const updates = EF.match(/email_sent_at: /g) || [];
-  assert.equal(updates.length, 2, `esperava 2 escritas de email_sent_at (aceite e dedup), achei ${updates.length}`);
+  assert.equal(updates.length, 3, `esperava 3 escritas de email_sent_at (aceite, dedup e supressao), achei ${updates.length}`);
 });
 
 test('E. as duas funcoes so para service_role', () => {

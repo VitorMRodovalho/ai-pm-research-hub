@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 
 function buildSignatureHtml(sender: Record<string, any>, cycleName: string): string {
   const name = sender.name || 'Lider'
@@ -84,7 +85,12 @@ Deno.serve(async (req) => {
         .not('email', 'is', null)
       mgmtEmails = (mgmt || []).map((m: any) => m.email).filter((e: string) => e && e.includes('@'))
     }
-    const allBcc = [...new Set([...emails, ...mgmtEmails])]
+    const allBccRaw = [...new Set([...emails, ...mgmtEmails])]
+    // #2130 E-b: endereco suprimido (reclamacao, supressao do provedor ou bounce permanente sem entrega depois) sai da
+    // lista, e quem se descadastrou de campanha tambem. Sem conseguir ler a supressao, o envio sai e o erro fica no log:
+    // este caminho nao tem reenvio.
+    const suppressedBcc = await suppressedAmong(sb, allBccRaw, true)
+    const allBcc = suppressedBcc === null ? allBccRaw : allBccRaw.filter((e) => !suppressedBcc.has(normalizeEmail(e)))
 
     const tr = await sb.from('tribes').select('name').eq('id', tid).single()
     const tn = tr.data?.name || 'Tribo ' + tid
