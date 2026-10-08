@@ -116,7 +116,9 @@ test('#479 behavioural: get_public_impact_data chapters/engaged/webinars track t
   assert.ifError(e1);
   const { data: realized, error: e2 } = await sb.rpc('get_webinars_count', { p_start: null, p_end: null, p_mode: 'realized' });
   assert.ifError(e2);
-  assert.equal(Number(impact.chapters), Number(m.signed), 'impact.chapters == signed');
+  // #2365 (decisão do GP, 03/10/2026): a vitrine pública conta engaged; o signed segue em chapters_signed.
+  assert.equal(Number(impact.chapters), Number(m.engaged), 'impact.chapters == engaged');
+  assert.equal(Number(impact.chapters_signed), Number(m.signed), 'impact.chapters_signed == signed');
   assert.equal(Number(impact.chapters_engaged), Number(m.engaged), 'impact.chapters_engaged == engaged');
   assert.equal(Number(impact.webinars), Number(realized), 'impact.webinars == realized (completed)');
 });
