@@ -102,9 +102,11 @@ test('DB: tribe_request_deadline setting is present and parseable', { skip: !dbG
   const { data, error } = await supa.from('platform_settings').select('key,value').eq('key', 'tribe_request_deadline').single();
   assert.equal(error, null, error ? `select failed: ${error.message}` : '');
   assert.ok(data, 'setting row exists');
-  // value is a JSON string; must parse to a valid date
-  const iso = typeof data.value === 'string' ? data.value : String(data.value);
-  assert.ok(!Number.isNaN(Date.parse(iso)), `deadline value parses to a date (got ${iso})`);
+  // JSON null = open window (the documented contract, #1877: entry is continuous, so a global date closes the door
+  // on everyone who arrives after it). Otherwise the value is a JSON string that must parse to a valid date.
+  if (data.value === null) return;
+  assert.equal(typeof data.value, 'string', `deadline is null or an ISO string (got ${JSON.stringify(data.value)})`);
+  assert.ok(!Number.isNaN(Date.parse(data.value)), `deadline value parses to a date (got ${data.value})`);
 });
 
 test('DB: get_my_tribe_request_context includes the deadline key (null for the no-member caller)', { skip: !dbGated && skipMsg }, async () => {
