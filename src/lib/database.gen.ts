@@ -30662,6 +30662,7 @@ export type Database = {
         Args: { p_caller_id: string; p_event_id: string }
         Returns: boolean
       }
+      _management_daily_digest_cron: { Args: never; Returns: Json }
       _mask_email: { Args: { p_email: string }; Returns: string }
       _member_operational_since: {
         Args: { p_member_id: string }

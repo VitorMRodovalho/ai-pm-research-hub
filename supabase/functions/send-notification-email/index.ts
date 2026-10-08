@@ -34,6 +34,7 @@ const TYPE_SUBJECTS: Record<string, string> = {
   volunteer_term_signed_digest: 'Termos de Voluntariado assinados',
   weekly_member_digest: 'Seu resumo semanal — Núcleo IA',
   weekly_tribe_digest_leader: 'Resumo semanal — Núcleo IA',
+  management_daily_digest: 'Resumo diário da gestão',
 }
 
 // Digest types render body as multi-line text (preserve \n as <br>) without CTA deadline block.
@@ -48,6 +49,8 @@ const DIGEST_TYPES = new Set([
 // dedicated builders — separate from buildHtml dispatch.
 const WEEKLY_MEMBER_DIGEST_TYPE = 'weekly_member_digest'
 const WEEKLY_TRIBE_DIGEST_LEADER_TYPE = 'weekly_tribe_digest_leader'
+// #2580 regra 4: resumo diario da gestao (08h de Brasilia), corpo JSON de _management_daily_digest_cron.
+const MANAGEMENT_DAILY_DIGEST_TYPE = 'management_daily_digest'
 
 // Escape HTML-significant characters. Applied to title/body on all notification types
 // to prevent XSS via user-influenced content (doc names, submitter names, card titles).
@@ -112,10 +115,11 @@ const OPERATIONAL_CANDIDATE_FACING = new Set([
 const ALWAYS_INDIVIDUAL_TYPES = new Set<string>([
   WEEKLY_MEMBER_DIGEST_TYPE,
   WEEKLY_TRIBE_DIGEST_LEADER_TYPE,
+  MANAGEMENT_DAILY_DIGEST_TYPE,
   ...ONBOARDING_PREP_TYPES,
   ...GOVERNANCE_TYPES,
 ])
-const RICH_DIGEST_TYPES = new Set<string>([WEEKLY_MEMBER_DIGEST_TYPE, WEEKLY_TRIBE_DIGEST_LEADER_TYPE])
+const RICH_DIGEST_TYPES = new Set<string>([WEEKLY_MEMBER_DIGEST_TYPE, WEEKLY_TRIBE_DIGEST_LEADER_TYPE, MANAGEMENT_DAILY_DIGEST_TYPE])
 
 // #2580 regra 1 (decisao do GP, 08/10/2026): no maximo 1 e-mail por pessoa por dia, salvo os urgentes (D2). Mesma
 // lista de public._is_urgent_email_type(text); o guard 2580-um-email-por-pessoa-por-dia trava as duas juntas. Tipo
@@ -595,6 +599,55 @@ function buildWeeklyTribeDigestLeaderHtml(notification: any): string {
   return leaderDigestFrame(header, index + blocks, why)
 }
 
+// #2580 regra 4: resumo diario da gestao. Duas partes: os alertas da varredura da plataforma ainda nao enviados
+// por e-mail, e os avisos operacionais que ficaram so no sino desde o ultimo resumo.
+function buildManagementDailyDigestHtml(notification: any): string {
+  let payload: any = {}
+  try { payload = JSON.parse(notification.body || '{}') } catch { payload = {} }
+  const alerts: any[] = Array.isArray(payload.alerts) ? payload.alerts : []
+  const items: any[] = Array.isArray(payload.items) ? payload.items : []
+  const openCount = Number(payload.open_count || 0)
+  const resolved24h = Number(payload.resolved_24h || 0)
+
+  const alertsHtml = alerts.length === 0 ? '' : `
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; margin: 0 0 16px 0; overflow: hidden;">
+          <div style="background: #c62828; padding: 10px 14px;">
+            <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">🚨 Alertas da plataforma <span style="opacity: 0.85;">(${alerts.length})</span></h3>
+          </div>
+          <ul style="margin: 0; padding: 12px 16px 12px 34px; color: #495057; font-size: 13px; line-height: 1.6;">
+            ${alerts.map((a) => `<li><strong>[${escapeHtml(String(a.severity || '').toUpperCase())}]</strong> ${escapeHtml(a.title)}</li>`).join('')}
+          </ul>
+        </div>`
+
+  const itemsHtml = items.length === 0 ? '' : `
+        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; margin: 0 0 16px 0; overflow: hidden;">
+          <div style="background: #003B5C; padding: 10px 14px;">
+            <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">🔔 Avisos operacionais <span style="opacity: 0.85;">(${items.length})</span></h3>
+          </div>
+          <ul style="margin: 0; padding: 12px 16px 12px 34px; color: #495057; font-size: 13px; line-height: 1.6;">
+            ${items.map((x) => `<li><strong>${escapeHtml(x.title)}</strong>${x.body ? `: ${escapeHtml(String(x.body).slice(0, 240))}${String(x.body).length > 240 ? '…' : ''}` : ''}${x.link ? ` <a href="${COMMS_ORIGIN}${escapeHtml(x.link)}" style="color: #1976d2;">abrir</a>` : ''}</li>`).join('')}
+          </ul>
+        </div>`
+
+  return `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
+      <div style="background: #003B5C; padding: 24px 20px; text-align: center;">
+        <h1 style="color: white; font-size: 20px; margin: 0;">Resumo diário da gestão</h1>
+        <p style="color: #b8d8e8; font-size: 12px; margin: 8px 0 0 0;">${openCount} alerta(s) em aberto · ${resolved24h} resolvido(s) nas últimas 24 horas</p>
+      </div>
+      <div style="padding: 20px 16px;">
+        ${alertsHtml}
+        ${itemsHtml}
+        <div style="text-align: center; margin: 24px 0 0 0;">
+          <a href="${COMMS_ORIGIN}/admin" style="display: inline-block; background: #003B5C; color: white; padding: 12px 28px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600;">Abrir o painel</a>
+        </div>
+        <p style="color: #adb5bd; font-size: 11px; margin: 24px 0 0 0; line-height: 1.5; text-align: center;">
+          Você recebe este resumo porque administra a plataforma. Alerta crítico continua chegando na hora.
+        </p>
+      </div>
+    </div>`
+}
+
 // Helper used only by ata section: when 1-2 groups, list itself is enough;
 // when 3+ groups, the explicit total improves scanability.
 function isAtaSummaryNeeded(countGroups: number, countEvents: number): boolean {
@@ -607,6 +660,9 @@ function buildHtml(notification: any, recipientEmail?: string): string {
   }
   if (notification.type === WEEKLY_TRIBE_DIGEST_LEADER_TYPE) {
     return buildWeeklyTribeDigestLeaderHtml(notification)
+  }
+  if (notification.type === MANAGEMENT_DAILY_DIGEST_TYPE) {
+    return buildManagementDailyDigestHtml(notification)
   }
   const isGovernance = GOVERNANCE_TYPES.has(notification.type)
   const isDigest = DIGEST_TYPES.has(notification.type)
