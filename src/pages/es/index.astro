@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Toast from '../../components/ui/Toast.astro';
 import OnboardingCockpitNudge from '../../components/onboarding/OnboardingCockpitNudge';
+import MapConsentNudge from '../../components/onboarding/MapConsentNudge';
 import HomepageHero from '../../components/sections/HomepageHero.astro';
 import NucleoSection from '../../components/sections/NucleoSection.astro';
 import { getHomeSchedule } from '../../lib/schedule';
@@ -35,6 +36,10 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
+  <MapConsentNudge client:load lang={lang}
+    consentText={t('profile.allowPreciseLocationMapLabel', lang)}
+    title={t('mapConsent.title', lang)} accept={t('mapConsent.accept', lang)} later={t('mapConsent.later', lang)}
+    legacyNote={t('mapConsent.legacyNote', lang)} done={t('mapConsent.done', lang)} error={t('mapConsent.error', lang)} />
   {/* ── Zona ANON (arriba — el embudo): valor → modelo → prueba → escalera → cobertura → conversión → agenda → equipo ── */}
   <HomepageHero lang={lang} stats={homeStats} />
   <ModelSection lang={lang} />

@@ -2358,8 +2358,16 @@ const PROFILE_I18N = {
     const allowStateMap = (document.getElementById('self-allow-state-map') as HTMLInputElement)?.checked ?? false;
     if (allowStateMap !== (currentMember.allow_state_in_public_map ?? false)) fields.allow_state_in_public_map = allowStateMap;
     // PD-MAP unified opt-in: localização precisa (estado BR/US ou país) mesmo a k=1 (parecer 2026-06-25).
+    // #2556: passa por grant/revoke_public_map_consent, que gravam a prova no ledger; update_my_profile não aceita
+    // mais este campo.
     const allowPreciseMap = (document.getElementById('self-allow-precise-map') as HTMLInputElement)?.checked ?? false;
-    if (allowPreciseMap !== (currentMember.allow_precise_location_in_public_map ?? false)) fields.allow_precise_location_in_public_map = allowPreciseMap;
+    if (allowPreciseMap !== (currentMember.allow_precise_location_in_public_map ?? false)) {
+      const { error: mapErr } = allowPreciseMap
+        ? await sb.rpc('grant_public_map_consent', { p_evidence: { surface: 'profile', lang } })
+        : await sb.rpc('revoke_public_map_consent', { p_reason: 'profile toggle' });
+      // saveSelf não tem catch: um throw aqui sairia em silêncio.
+      if (mapErr) { (window as any).toast?.(mapErr.message, 'error'); return; }
+    }
 
     let data: any;
     if (Object.keys(fields).length > 0) {
