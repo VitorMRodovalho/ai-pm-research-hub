@@ -93,7 +93,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'visitor', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (page self-gates own data; RLS/SECDEF is the boundary, not nav)
 
   // ─── Tool pages (public) ───
-  { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
+  // #2555: hub_resources so e legivel por autenticado (acervo interno, sem curadoria publica); fora do menu do visitante.
+  { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'member', requiresAuth: true, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/workspace',   minTier: 'visitor', requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' }, // #867 pre-term journey — guest-reachable
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   // #701 Agenda Viva — public General Meetings agenda (anon-OK; reservation gated in-page).

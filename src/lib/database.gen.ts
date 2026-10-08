@@ -33460,6 +33460,7 @@ export type Database = {
           member_count: number
         }[]
       }
+      get_public_cpmai_course: { Args: never; Returns: Json }
       get_public_impact_data: { Args: never; Returns: Json }
       get_public_leaderboard: {
         Args: { p_limit?: number }

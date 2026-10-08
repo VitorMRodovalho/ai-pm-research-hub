@@ -15,24 +15,41 @@ export default function CpmaiLanding() {
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
+  // #2555: o visitante le get_public_cpmai_course (so o curso); quem e membro le o painel com a inscricao e o
+  // progresso. O painel devolve {error} a quem nao e membro, e entao a pagina cai na leitura publica.
+  const loadCourse = useCallback(async (sb: any) => {
+    const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
+    if (d && !d.error) return d;
+    const { data: pub, error } = await sb.rpc('get_public_cpmai_course');
+    return error ? null : pub;
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     let retries = 0;
     async function boot() {
       const sb = getSb();
+      if (!sb && retries < 30) { retries++; setTimeout(boot, 300); return; }
       const m = (window as any).navGetMember?.();
-      if ((!sb || !m) && retries < 30) { retries++; setTimeout(boot, 300); return; }
       if (m && !cancelled) setMember(m);
       if (!sb) { if (!cancelled) setLoading(false); return; }
       try {
-        const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
+        const d = await loadCourse(sb);
         if (!cancelled) setData(d);
       } catch (e) { console.warn('CPMAI load error:', e); }
       finally { if (!cancelled) setLoading(false); }
     }
+    // O membro pode chegar depois da primeira leitura: recarrega o painel com a parte pessoal.
+    const onMember = async (ev: any) => {
+      const sb = getSb();
+      if (!ev?.detail || !sb || cancelled) return;
+      setMember(ev.detail);
+      try { const d = await loadCourse(sb); if (!cancelled) setData(d); } catch {}
+    };
+    window.addEventListener('nav:member', onMember);
     boot();
-    return () => { cancelled = true; };
-  }, [getSb]);
+    return () => { cancelled = true; window.removeEventListener('nav:member', onMember); };
+  }, [getSb, loadCourse]);
 
   const handleEnroll = async () => {
     if (!data?.course?.id) return;
@@ -84,6 +101,11 @@ export default function CpmaiLanding() {
           <button onClick={() => setShowForm(true)}
             className="mt-4 px-6 py-2.5 rounded-lg bg-white text-navy font-bold text-sm cursor-pointer border-0 hover:opacity-90">
             {t('cpmai.enroll_cta', 'Inscrever-se')}
+          </button>
+        ) : canEnroll ? (
+          <button onClick={() => document.dispatchEvent(new CustomEvent('open-auth'))}
+            className="mt-4 px-6 py-2.5 rounded-lg bg-white text-navy font-bold text-sm cursor-pointer border-0 hover:opacity-90">
+            {t('cpmai.login_to_enroll', 'Entre para se inscrever')}
           </button>
         ) : null}
       </div>

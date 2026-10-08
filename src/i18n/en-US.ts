@@ -1379,6 +1379,7 @@ const enUS: Record<string, string> = {
   'cpmai.subtitle': 'Preparatory course for the PMI-CPMAI™ certification',
   'cpmai.disclaimer': 'This preparatory course is an initiative of the AI & PM Research Hub and does NOT replace the official 21-hour PMI course, which is a mandatory prerequisite to schedule the PMI-CPMAI™ exam.',
   'cpmai.enroll_cta': 'Enroll',
+  'cpmai.login_to_enroll': 'Sign in to enroll',
   'cpmai.enrollment_closed': 'Enrollment closed',
   'cpmai.dashboard_title': 'My CPMAI Progress',
   'cpmai.progress_overall': 'Overall Progress',
