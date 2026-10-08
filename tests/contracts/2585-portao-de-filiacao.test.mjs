@@ -76,8 +76,11 @@ test('D. o termo consulta o portao (guest, antes do perfil) e grava a afiliacao 
 test('E. renovacao passa; o aviso vai a gestao e Diretoria de Filiacao, uma vez por dia', () => {
   const g = fn('get_my_affiliation_gate');
   assert.match(g, /WHEN EXISTS \(SELECT 1 FROM public\.members WHERE id = v_member_id AND operational_role IS DISTINCT FROM 'guest'\)\s+THEN jsonb_build_object\('open', true, 'path', 'renewal'\)\s+ELSE public\.affiliation_gate\(v_member_id\)/);
-  const r = fn('request_affiliation_recheck');
-  assert.match(r, /AND \(public\.can_by_member\(m\.id, 'manage_platform'\) OR 'filiacao_director' = ANY\(COALESCE\(m\.designations, '\{\}'::text\[\]\)\)\)/);
+  // Ajuste de 08/10/2026: o aviso vai so para o administrador da plataforma; a captura vigente esta na migration
+  // do ajuste, entao a asserção le a ultima captura.
+  const r = maskLineComments(latestFunctionCapture(ROOT, 'request_affiliation_recheck').block);
+  assert.match(r, /AND m\.id <> v_member_id\s+AND public\.can_by_member\(m\.id, 'manage_platform'\)\s+AND NOT EXISTS/);
+  assert.doesNotMatch(r, /filiacao_director/, 'o aviso nao vai para a designacao de filiacao');
   assert.match(r, /n\.source_type = 'affiliation_recheck'\s+AND n\.source_id = v_member_id AND n\.created_at >= v_inicio/);
 });
 
