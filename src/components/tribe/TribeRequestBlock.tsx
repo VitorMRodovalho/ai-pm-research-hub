@@ -79,6 +79,8 @@ interface Copy {
   deadlineNotice: (date: string) => string;
   windowClosedTitle: string;
   windowClosedBody: string;
+  // #1877: a concrete channel, not just "contact the coordination" (a member had to hunt for a phone number).
+  windowClosedContact: string;
   tribeLegend: string;
   messageLabel: string;
   messagePlaceholder: string;
@@ -122,6 +124,9 @@ interface Copy {
   toastFull: string;
 }
 
+// #1877: the Núcleo's official address, the same one the rest of the site already shows.
+const COORDINATION_EMAIL = 'nucleoia@pmigo.org.br';
+
 const COPY: Record<string, Copy> = {
   'pt-BR': {
     ariaLabel: 'Pedir para entrar em uma tribo',
@@ -129,7 +134,8 @@ const COPY: Record<string, Copy> = {
     pickBody: 'Você concluiu sua entrada no Núcleo. Escolha uma tribo e conte por que quer participar. O líder da tribo confirma seu ingresso.',
     deadlineNotice: (date) => `Prazo para escolher sua tribo: ${date}.`,
     windowClosedTitle: 'O prazo para escolher tribo encerrou',
-    windowClosedBody: 'O período para pedir entrada em uma tribo terminou. Fale com a coordenação do Núcleo para entrar ou trocar de tribo.',
+    windowClosedBody: 'O período para pedir entrada em uma tribo terminou. Escreva para a coordenação do Núcleo para entrar ou trocar de tribo.',
+    windowClosedContact: 'Escrever para a coordenação',
     tribeLegend: 'Tribos disponíveis',
     messageLabel: 'Por que você quer entrar nesta tribo?',
     messagePlaceholder: 'Conte sua motivação, experiência e o que pode contribuir (mín. 50 caracteres).',
@@ -181,7 +187,8 @@ const COPY: Record<string, Copy> = {
     pickBody: 'You have completed your onboarding. Pick a tribe and tell them why you want to join. The tribe leader confirms your entry.',
     deadlineNotice: (date) => `Deadline to choose your tribe: ${date}.`,
     windowClosedTitle: 'Tribe selection is closed',
-    windowClosedBody: 'The window to request a tribe has ended. Contact the Núcleo coordination to join or switch tribes.',
+    windowClosedBody: 'The window to request a tribe has ended. Write to the Núcleo coordination to join or switch tribes.',
+    windowClosedContact: 'Write to the coordination',
     tribeLegend: 'Available tribes',
     messageLabel: 'Why do you want to join this tribe?',
     messagePlaceholder: 'Share your motivation, experience and what you can contribute (min. 50 characters).',
@@ -231,7 +238,8 @@ const COPY: Record<string, Copy> = {
     pickBody: 'Completaste tu ingreso al Núcleo. Elige una tribu y cuenta por qué quieres participar. El líder de la tribu confirma tu ingreso.',
     deadlineNotice: (date) => `Plazo para elegir tu tribu: ${date}.`,
     windowClosedTitle: 'El plazo para elegir tribu terminó',
-    windowClosedBody: 'El período para solicitar entrada a una tribu finalizó. Contacta a la coordinación del Núcleo para entrar o cambiar de tribu.',
+    windowClosedBody: 'El período para solicitar entrada a una tribu finalizó. Escribe a la coordinación del Núcleo para entrar o cambiar de tribu.',
+    windowClosedContact: 'Escribir a la coordinación',
     tribeLegend: 'Tribus disponibles',
     messageLabel: '¿Por qué quieres entrar en esta tribu?',
     messagePlaceholder: 'Cuenta tu motivación, experiencia y lo que puedes aportar (mín. 50 caracteres).',
@@ -492,6 +500,12 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
           <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
             <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.windowClosedTitle}</h2>
             <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.windowClosedBody}</p>
+            <a
+              href={`mailto:${COORDINATION_EMAIL}`}
+              className="mt-3 inline-flex items-center min-h-[44px] px-4 rounded-lg bg-navy text-white text-sm font-bold no-underline hover:opacity-90 break-all"
+            >
+              {copy.windowClosedContact}: {COORDINATION_EMAIL}
+            </a>
           </div>
         </section>
       );
