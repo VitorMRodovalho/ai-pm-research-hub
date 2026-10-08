@@ -4,10 +4,10 @@
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
   "version": "W1.9",
-  "updated_at": "2026-09-16",
+  "updated_at": "2026-10-08",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
-    "digest_weekly": "Bundled into weekly digest sent Saturday 12:00 UTC via send-weekly-member-digest EF. Default for most types.",
+    "digest_weekly": "Bundled into the single weekly digest, Monday 12:00 UTC (09:00 Brasilia), via generate_weekly_member_digest_cron. Default for most types.",
     "suppress": "In-app only. Never emailed. Use for low-priority / per-cycle aggregated noise."
   },
   "types": {
@@ -251,7 +251,8 @@
     "sql_helper": "public._delivery_mode_for(p_type text) → text",
     "column_check": "notifications.delivery_mode CHECK (delivery_mode IN ('transactional_immediate','digest_weekly','suppress'))",
     "column_default": "'digest_weekly'",
-    "partial_index": "idx_notifications_digest_pending ON (recipient_id, created_at) WHERE delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL"
+    "partial_index": "idx_notifications_digest_pending ON (recipient_id, created_at) WHERE delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL",
+    "repeat_to_digest_trigger": "trg_notification_repeat_to_digest (BEFORE INSERT, #2580 rule 3): an informational type (fixed list in public._notification_repeat_to_digest) sent immediately to the same person within 7 days about a DIFFERENT item (source_id) is re-routed to digest_weekly, only for recipients who receive the weekly digest. Types with deadlines and urgent types are outside the list."
   },
   "ef_routing": {
     "transactional_immediate": "send-transactional-emails (cron */5 min) — picks rows where delivery_mode = 'transactional_immediate' AND email_sent_at IS NULL",
