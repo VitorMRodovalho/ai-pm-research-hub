@@ -1383,6 +1383,7 @@ const ptBR: Record<string, string> = {
   'cpmai.subtitle': 'Curso preparatório para a certificação PMI-CPMAI™',
   'cpmai.disclaimer': 'Este curso preparatório é uma iniciativa do Núcleo IA & GP e NÃO substitui o curso oficial do PMI de 21 horas, que é pré-requisito obrigatório para agendar o exame PMI-CPMAI™.',
   'cpmai.enroll_cta': 'Inscrever-se',
+  'cpmai.login_to_enroll': 'Entre para se inscrever',
   'cpmai.enrollment_closed': 'Inscrições encerradas',
   'cpmai.dashboard_title': 'Meu Progresso CPMAI',
   'cpmai.progress_overall': 'Progresso Geral',
