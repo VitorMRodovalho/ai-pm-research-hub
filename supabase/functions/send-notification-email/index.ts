@@ -225,7 +225,36 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
     : ''
   const achievementsCount = certs.length + (xp > 0 ? 1 : 0)
 
-  const totalItems = cardsCount + events.length + pubs.length + broadcasts.length + governance.length + engagements.length + achievementsCount + attendancePending.length + otherNotifications.length
+  // #2580 regra 2: resumo unico. Cada item de `leadership` e um resumo de lider (payload v2 com `initiatives`,
+  // ou v1 com a iniciativa no topo) que o gerador gravou como digest_weekly minutos antes.
+  const leadership = sections.leadership || []
+  const leaderInitiatives: any[] = []
+  for (const item of leadership) {
+    let lp: any = {}
+    try { lp = JSON.parse(item.body || '{}') } catch { lp = {} }
+    if (Array.isArray(lp?.initiatives)) leaderInitiatives.push(...lp.initiatives)
+    else if (lp && Object.keys(lp).length > 0) leaderInitiatives.push(lp)
+  }
+  const leadershipHtml = leaderInitiatives.length === 0 ? '' : `
+        <div style="background: #003B5C; border-radius: 8px 8px 0 0; padding: 10px 14px; margin: 0;">
+          <h3 style="color: white; font-size: 13px; margin: 0; font-weight: 600;">🧭 Sua liderança <span style="opacity: 0.85;">(${leaderInitiatives.length})</span></h3>
+        </div>
+        <div style="padding: 12px 0 0 0; margin: 0 0 16px 0;">
+          ${leaderInitiatives.map((lp) => {
+            const m = leaderInitiativeMeta(lp)
+            return `
+          <div style="border-top: 3px solid #003B5C; margin: 0 0 12px 0; padding: 12px 0 0 0;">
+            <h2 style="color: #003B5C; font-size: 15px; margin: 0 0 2px 0; font-weight: 700;">${escapeHtml(m.name)}</h2>
+            <p style="color: #868e96; font-size: 11px; margin: 0 0 12px 0;">${m.kindCap} · ${m.activeMembers} membros ativos</p>
+          </div>
+          ${buildLeaderInitiativeBodyHtml(lp)}`
+          }).join('')}
+          <p style="color: #6b4e00; background: #fff8e1; border-left: 4px solid #ffc107; padding: 10px 12px; font-size: 12px; margin: 0; line-height: 1.5; border-radius: 4px;">
+            Os indicadores de cards da liderança mostram só contadores, sem nomes nem títulos. Para o detalhe, abra o <a href="${COMMS_ORIGIN}/admin/portfolio" style="color: #6b4e00;">portfolio</a>.
+          </p>
+        </div>`
+
+  const totalItems = cardsCount + events.length + pubs.length + broadcasts.length + governance.length + engagements.length + achievementsCount + attendancePending.length + otherNotifications.length + leaderInitiatives.length
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 640px; margin: 0 auto; background: #f8f9fa;">
@@ -235,6 +264,7 @@ function buildWeeklyMemberDigestHtml(notification: any): string {
       </div>
       <div style="padding: 20px 16px;">
         ${cardsCount > 0 ? sectionBlock('📋 Seus cards', cardsCount, '#003B5C', cardsContent) : ''}
+        ${leadershipHtml}
         ${events.length > 0 ? sectionBlock('📅 Próximos eventos (7 dias)', events.length, '#1976d2', renderEventList(events)) : ''}
         ${engagements.length > 0 ? sectionBlock('🤝 Novos vínculos', engagements.length, '#388e3c', renderTitleList(engagements)) : ''}
         ${broadcasts.length > 0 ? sectionBlock('📢 Comunicados da tribo', broadcasts.length, '#f57c00', renderTitleList(broadcasts)) : ''}
