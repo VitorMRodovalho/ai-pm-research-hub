@@ -117,6 +117,24 @@ const ALWAYS_INDIVIDUAL_TYPES = new Set<string>([
 ])
 const RICH_DIGEST_TYPES = new Set<string>([WEEKLY_MEMBER_DIGEST_TYPE, WEEKLY_TRIBE_DIGEST_LEADER_TYPE])
 
+// #2580 regra 1 (decisao do GP, 08/10/2026): no maximo 1 e-mail por pessoa por dia, salvo os urgentes (D2). Mesma
+// lista de public._is_urgent_email_type(text); o guard 2580-um-email-por-pessoa-por-dia trava as duas juntas. Tipo
+// novo nasce nao urgente. O excesso fica pendente (email_sent_at NULL) e sai num unico e-mail a partir das 07h de
+// Brasilia do dia seguinte, quando o coalescimento abaixo junta tudo o que ficou retido.
+const URGENT_EMAIL_TYPES = new Set<string>([
+  'selection_approved',
+  'selection_interview_scheduled',
+  'selection_reschedule_escalated',
+  'selection_termo_due',
+  'affiliation_renewal_d7_urgent',
+])
+const RELEASE_HOUR_BRT = 7
+
+function hourInBrasilia(d: Date): number {
+  const h = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', hour: 'numeric', hourCycle: 'h23' }).format(d)
+  return Number(h)
+}
+
 // #1424 Fase B: when the daily budget is tight, digest/summary mail yields the
 // remaining quota to transactional/operational mail (recipients with any
 // non-low-priority notification are served first).
@@ -775,9 +793,19 @@ Deno.serve(async (req) => {
       return new Date(a[1][0].created_at).getTime() - new Date(b[1][0].created_at).getTime()
     })
 
+    // #2580 regra 1: quantos e-mails nao urgentes cada pessoa ja recebeu hoje (dia de Brasilia). Sem conseguir ler,
+    // nao envia nada nao urgente nesta rodada: um limite que nao se le nao protege ninguem.
+    const { data: perPersonData, error: perPersonErr } = await sb.rpc('email_people_sent_today', {
+      p_member_ids: [...groups.keys()],
+    })
+    const perPersonReadable = !perPersonErr && perPersonData !== null && typeof perPersonData === 'object'
+    const sentTodayByPerson: Record<string, number> = perPersonReadable ? perPersonData as Record<string, number> : {}
+    const releaseOpen = perPersonReadable && hourInBrasilia(new Date()) >= RELEASE_HOUR_BRT
+
     let sent = 0
     let deferred = 0
     let deduped = 0
+    let held = 0
     const errors: string[] = []
     const nowIso = new Date().toISOString()
 
@@ -785,19 +813,14 @@ Deno.serve(async (req) => {
       const member = memberById.get(recipientId)
       if (!member?.email) continue
 
-      // Split: ALWAYS_INDIVIDUAL (rich digests + onboarding-prep + governance)
-      // render one email each; everything else coalesces into one list email.
-      const individual = items.filter((n: any) => ALWAYS_INDIVIDUAL_TYPES.has(n.type))
-      const coalesce = items.filter((n: any) => !ALWAYS_INDIVIDUAL_TYPES.has(n.type))
-
       // Dedup rich digests: a recipient sometimes has >1 of the SAME rich type in a
       // run (producer re-run / fan-out — audit: weekly_member_digest 2.2×/pessoa).
       // Send only the newest per type; mark the rest sent so they don't re-queue.
       const newestRichByType = new Map<string, any>()
       const richDupIds: string[] = []
-      const individualToSend: any[] = []
-      for (const n of individual) {
-        if (!RICH_DIGEST_TYPES.has(n.type)) { individualToSend.push(n); continue }
+      const kept: any[] = []
+      for (const n of items) {
+        if (!RICH_DIGEST_TYPES.has(n.type)) { kept.push(n); continue }
         const cur = newestRichByType.get(n.type)
         if (!cur || new Date(n.created_at).getTime() > new Date(cur.created_at).getTime()) {
           if (cur) richDupIds.push(cur.id)
@@ -806,7 +829,7 @@ Deno.serve(async (req) => {
           richDupIds.push(n.id)
         }
       }
-      for (const n of newestRichByType.values()) individualToSend.push(n)
+      for (const n of newestRichByType.values()) kept.push(n)
       if (richDupIds.length) {
         // #2130 — estas linhas recebem `email_sent_at` SEM QUE NADA SEJA ENVIADO, de proposito (é a
         // dedup). Marca-las como 'accepted' faria o campo significar duas coisas, e um detector de
@@ -818,34 +841,48 @@ Deno.serve(async (req) => {
         deduped += richDupIds.length
       }
 
-      // Build the send list: one coalesced email (if any simple rows) + one email
-      // per individual notification.
-      const sends: { ids: string[]; subject: string; html: string; idemKey: string }[] = []
-      if (coalesce.length === 1) {
-        sends.push({
-          ids: [coalesce[0].id],
-          subject: subjectFor(coalesce[0]),
-          html: buildHtml(coalesce[0], member.email),
-          idemKey: `critical-notification/${coalesce[0].id}`,
-        })
-      } else if (coalesce.length > 1) {
-        const ids = coalesce.map((n: any) => n.id)
-        const anchor = ids.slice().sort()[0]
-        sends.push({
-          ids,
-          subject: `Você tem ${coalesce.length} novas notificações — Nucleo IA & GP`,
-          html: buildCoalescedHtml(coalesce),
-          idemKey: `coalesced-notification/${recipientId}/${anchor}`,
-        })
+      // Split: ALWAYS_INDIVIDUAL (rich digests + onboarding-prep + governance)
+      // render one email each; everything else coalesces into one list email.
+      const buildSends = (rows: any[]) => {
+        const out: { ids: string[]; subject: string; html: string; idemKey: string }[] = []
+        const coalesce = rows.filter((n: any) => !ALWAYS_INDIVIDUAL_TYPES.has(n.type))
+        const individual = rows.filter((n: any) => ALWAYS_INDIVIDUAL_TYPES.has(n.type))
+        if (coalesce.length === 1) {
+          out.push({
+            ids: [coalesce[0].id],
+            subject: subjectFor(coalesce[0]),
+            html: buildHtml(coalesce[0], member.email),
+            idemKey: `critical-notification/${coalesce[0].id}`,
+          })
+        } else if (coalesce.length > 1) {
+          const ids = coalesce.map((n: any) => n.id)
+          const anchor = ids.slice().sort()[0]
+          out.push({
+            ids,
+            subject: `Você tem ${coalesce.length} novas notificações — Nucleo IA & GP`,
+            html: buildCoalescedHtml(coalesce),
+            idemKey: `coalesced-notification/${recipientId}/${anchor}`,
+          })
+        }
+        for (const n of individual) {
+          out.push({
+            ids: [n.id],
+            subject: subjectFor(n),
+            html: buildHtml(n, member.email),
+            idemKey: `critical-notification/${n.id}`,
+          })
+        }
+        return out
       }
-      for (const n of individualToSend) {
-        sends.push({
-          ids: [n.id],
-          subject: subjectFor(n),
-          html: buildHtml(n, member.email),
-          idemKey: `critical-notification/${n.id}`,
-        })
-      }
+
+      // #2580 regra 1: urgentes saem todos; do resto sai no maximo UM envio por pessoa por dia, e so a partir das 07h
+      // de Brasilia. O primeiro da lista e o coalescido (onde caem os avisos com prazo); o que sobra fica pendente.
+      const urgentRows = kept.filter((n: any) => URGENT_EMAIL_TYPES.has(n.type))
+      const normalRows = kept.filter((n: any) => !URGENT_EMAIL_TYPES.has(n.type))
+      const normalSends = buildSends(normalRows)
+      const normalAllowed = releaseOpen && (sentTodayByPerson[recipientId] ?? 0) < 1
+      const sends = [...buildSends(urgentRows), ...(normalAllowed ? normalSends.slice(0, 1) : [])]
+      for (const s of (normalAllowed ? normalSends.slice(1) : normalSends)) held += s.ids.length
 
       for (const s of sends) {
         // Fase B: stop once this run has consumed the day's remaining budget.
@@ -897,7 +934,7 @@ Deno.serve(async (req) => {
     if (deferred > 0) await sb.rpc('email_cap_reached', { p_lane: 'notificacoes' })
 
     return new Response(JSON.stringify({
-      sent, deferred, deduped,
+      sent, deferred, deduped, held, release_open: releaseOpen,
       recipients: orderedRecipients.length,
       totalRows: notifications.length,
       sentToday, cap: dailyCap, dailyBudget,

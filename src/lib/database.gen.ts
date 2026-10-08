@@ -30621,6 +30621,7 @@ export type Database = {
         Args: { p_type: string }
         Returns: boolean
       }
+      _is_urgent_email_type: { Args: { p_type: string }; Returns: boolean }
       _issue_interview_booking_token_core: {
         Args: {
           p_application_id: string
@@ -32278,6 +32279,10 @@ export type Database = {
       }
       email_cap_reached: { Args: { p_lane: string }; Returns: number }
       email_daily_cap: { Args: never; Returns: number }
+      email_people_sent_today: {
+        Args: { p_member_ids: string[] }
+        Returns: Json
+      }
       email_send_retry_eligible: {
         Args: { p_created_at: string; p_error_log: string; p_status: string }
         Returns: boolean
