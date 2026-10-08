@@ -235,12 +235,16 @@
       "rationale": "ÉPICO D (2026-06-18): admin/GP-facing alert that a candidate no-showed an interview (selection_interviews.status=noshow) with no recovery row after noshow_recovery_grace days and no future slot — invisible to _selection_interview_overdue_cron. Emitted by detect_stuck_selection_funnel cron. digest_weekly: in-app immediate, email batched."
     },
     "unlinked_accounts_detected": {
-      "delivery_mode": "transactional_immediate",
-      "rationale": "#2285 (2026-09-14) - emitted by the weekly cron wrapper public.detect_unlinked_accounts_cron() to every active member with manage_platform, deduped on a 25-day window (weekly measurement, monthly nudge). Carries the COUNT only; the masked list stays behind detect_unlinked_accounts(). Immediate rather than digest_weekly on purpose: get_weekly_member_digest builds its sections from a per-type allowlist while consumed_notification_ids does not filter by type, so a type in no section is stamped digest_delivered_at without ever being rendered (measured: 76 of 78 rows across two sibling types - see #2286)."
+      "delivery_mode": "suppress",
+      "rationale": "#2285 (2026-09-14) emitted weekly by public.detect_unlinked_accounts_cron() to every active member with manage_platform, deduped on a 25-day window; carries the COUNT only. #2580 C1 (2026-10-08): in-app immediately, and the email goes out in the daily management digest (_management_daily_digest_cron, 08:00 America/Sao_Paulo). suppress, not digest_weekly: the weekly digest reads only digest_weekly, so nothing is stamped without being rendered (#2286)."
     },
     "recurring_meeting_drift": {
       "delivery_mode": "digest_weekly",
       "rationale": "#2524 (2026-09-30). Varredura semanal detect_recurring_meeting_drift_cron (segunda 07:00 UTC, depois do reconcile das 06:00): regra de reunião recorrente com reunião futura fora do horário ou do link da regra, ou com ocorrência faltando, e iniciativa ativa que se reuniu ao menos 2 vezes em 90 dias sem nenhuma reunião marcada adiante. Vai a quem gere a plataforma (manage_platform), no máximo uma vez a cada 6 dias; é revisão, não urgência, por isso digest."
+    },
+    "management_daily_digest": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2580 rule 4 (2026-10-08): one email per day at 08:00 America/Sao_Paulo for members with manage_platform, built by _management_daily_digest_cron() from the platform alert sweep and the operational notices that stayed in-app (system_alert from email_cap_reached and request_affiliation_recheck, unlinked_accounts_detected). JSON body rendered by a dedicated builder in send-notification-email."
     }
   },
   "implementation": {

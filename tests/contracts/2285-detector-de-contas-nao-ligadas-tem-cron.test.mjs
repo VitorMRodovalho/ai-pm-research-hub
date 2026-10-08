@@ -246,11 +246,13 @@ test('G · o tipo está no catálogo ADR-0022 e no corpo do helper', () => {
   const entrada = cat.types['unlinked_accounts_detected'];
   assert.ok(entrada, 'o tipo não está no catálogo. O próprio catálogo manda: "New types added ' +
     'to notifications must be added here in the same migration."');
-  assert.equal(entrada.delivery_mode, 'transactional_immediate',
+  // #2580 C1 (decisão do GP, 08/10/2026): no sino na hora, e o e-mail sai no resumo diário da gestão.
+  // `suppress`, nunca digest_weekly: o resumo semanal só lê digest_weekly, então não há carimbo sem renderizar.
+  assert.equal(entrada.delivery_mode, 'suppress',
     'digest_weekly aqui significa nunca entregue: get_weekly_member_digest monta as seções por ' +
     'lista branca de tipos, e consumed_notification_ids NÃO filtra por tipo, então um tipo fora ' +
     'de toda seção é carimbado como entregue sem nunca ser renderizado (#2286)');
   const corpo = corpoDe(ultimaQueDefine('_delivery_mode_for('), '_delivery_mode_for(');
-  assert.match(corpo, /WHEN 'unlinked_accounts_detected'\s+THEN 'transactional_immediate'/,
+  assert.match(corpo, /WHEN 'unlinked_accounts_detected'\s+THEN 'suppress'/,
     'o helper não conhece o tipo, então ele cai no ELSE — que é digest_weekly, o caminho que engole');
 });
