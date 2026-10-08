@@ -31458,6 +31458,7 @@ export type Database = {
         }
         Returns: Json
       }
+      affiliation_gate: { Args: { p_member_id: string }; Returns: Json }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean
@@ -33227,6 +33228,7 @@ export type Database = {
         }[]
       }
       get_my_affiliation_attestation: { Args: never; Returns: Json }
+      get_my_affiliation_gate: { Args: never; Returns: Json }
       get_my_application_status: { Args: never; Returns: Json }
       get_my_attendance_history: {
         Args: { p_limit?: number }
@@ -35303,6 +35305,7 @@ export type Database = {
         Returns: Json
       }
       request_account_claim: { Args: { p_identifier: string }; Returns: Json }
+      request_affiliation_recheck: { Args: never; Returns: Json }
       request_application_enrichment: {
         Args: { p_field_updates: Json; p_token: string }
         Returns: Json
