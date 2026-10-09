@@ -103,6 +103,9 @@ const STORAGE_ONLY_ALLOWLIST = new Map([
   // create/update_initiative (PR-4), not derived from any other state. The companion helper
   // rls_can_see_initiative() reads it; no cache/sync relationship to maintain.
   ['initiatives.visibility', 'Confidential-initiative visibility gate (#785); governance choice set on create/update, no derivation source'],
+  // #2609: public presentation text written by the leadership via update_initiative_public_profile; authored, not derived.
+  ['initiatives.description_i18n', 'Public description {pt,en,es} authored by the initiative leadership (#2609); no derivation source'],
+  ['initiatives.deliverables_i18n', 'Public deliverables {pt,en,es} authored by the initiative leadership (#2609); no derivation source'],
 ]);
 
 // ADR-0011 contract reuses this allowlist — keep it sorted for review.

@@ -1,6 +1,9 @@
 // ─── Tribe data — i18n via translation keys ───
 // Static data: leader names, links, videos (language-independent)
-// Translated data: name, description, deliverables, meetingSchedule (via i18n keys)
+// Translated data: name, description, deliverables (via i18n keys).
+// #2609: description/deliverables are only the FALLBACK; the source is initiatives.description_i18n /
+// deliverables_i18n via get_tribe_public_profiles. The meeting schedule comes only from the recurring
+// rule (tribe_meeting_slots), never from here.
 
 import { t, type Lang } from '../i18n/utils';
 
@@ -13,7 +16,6 @@ export interface Tribe {
   quadrantLabelKey: string;
   descriptionKey: string;
   deliverableKeys: string[];
-  meetingScheduleKey: string;
   videoUrl: string;
   videoDuration: string;
 }
@@ -28,7 +30,6 @@ export interface ResolvedTribe {
   quadrantLabel: string;
   description: string;
   deliverables: string[];
-  meetingSchedule: string;
   videoUrl: string;
   videoDuration: string;
 }
@@ -53,7 +54,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe1.quadrantLabel',
     descriptionKey: 'data.tribe1.desc',
     deliverableKeys: ['data.tribe1.d1', 'data.tribe1.d2', 'data.tribe1.d3'],
-    meetingScheduleKey: 'data.tribe1.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=XJLAvcHFKT8',
     videoDuration: '7min',
   },
@@ -68,7 +68,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe4.quadrantLabel',
     descriptionKey: 'data.tribe4.desc',
     deliverableKeys: ['data.tribe4.d1', 'data.tribe4.d2', 'data.tribe4.d3', 'data.tribe4.d4'],
-    meetingScheduleKey: 'data.tribe4.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=LZSk96EsepA',
     videoDuration: '3min',
   },
@@ -81,7 +80,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe5.quadrantLabel',
     descriptionKey: 'data.tribe5.desc',
     deliverableKeys: ['data.tribe5.d1', 'data.tribe5.d2', 'data.tribe5.d3', 'data.tribe5.d4'],
-    meetingScheduleKey: 'data.tribe5.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=KbhnAJdSeDw',
     videoDuration: '5min',
   },
@@ -94,7 +92,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe6.quadrantLabel',
     descriptionKey: 'data.tribe6.desc',
     deliverableKeys: ['data.tribe6.d1', 'data.tribe6.d2', 'data.tribe6.d3', 'data.tribe6.d4'],
-    meetingScheduleKey: 'data.tribe6.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=R2fA7hVE1dc',
     videoDuration: '11min',
   },
@@ -107,7 +104,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe7.quadrantLabel',
     descriptionKey: 'data.tribe7.desc',
     deliverableKeys: ['data.tribe7.d1', 'data.tribe7.d2', 'data.tribe7.d3', 'data.tribe7.d4', 'data.tribe7.d5'],
-    meetingScheduleKey: 'data.tribe7.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=3su8GgtFzVY',
     videoDuration: '3min',
   },
@@ -120,7 +116,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe8.quadrantLabel',
     descriptionKey: 'data.tribe8.desc',
     deliverableKeys: ['data.tribe8.d1', 'data.tribe8.d2', 'data.tribe8.d3', 'data.tribe8.d4'],
-    meetingScheduleKey: 'data.tribe8.meetings',
     videoUrl: 'https://www.youtube.com/watch?v=ghrgJ3_nk4k',
     videoDuration: '14min',
   },
@@ -135,7 +130,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe9.quadrantLabel',
     descriptionKey: 'data.tribe9.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe9.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -148,7 +142,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe10.quadrantLabel',
     descriptionKey: 'data.tribe10.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe10.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -161,7 +154,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe11.quadrantLabel',
     descriptionKey: 'data.tribe11.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe11.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -174,7 +166,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe12.quadrantLabel',
     descriptionKey: 'data.tribe12.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe12.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -188,7 +179,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe13.quadrantLabel',
     descriptionKey: 'data.tribe13.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe13.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -201,7 +191,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe14.quadrantLabel',
     descriptionKey: 'data.tribe14.desc',
     deliverableKeys: [],
-    meetingScheduleKey: 'data.tribe14.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -216,7 +205,6 @@ export const TRIBES: Tribe[] = [
     quadrantLabelKey: 'data.tribe15.quadrantLabel',
     descriptionKey: 'data.tribe15.desc',
     deliverableKeys: ['data.tribe15.d1', 'data.tribe15.d2', 'data.tribe15.d3'],
-    meetingScheduleKey: 'data.tribe15.meetings',
     videoUrl: '',
     videoDuration: '',
   },
@@ -240,7 +228,6 @@ export function resolveTribe(tribe: Tribe, lang: Lang): ResolvedTribe {
     quadrantLabel: t(tribe.quadrantLabelKey, lang),
     description: t(tribe.descriptionKey, lang),
     deliverables: tribe.deliverableKeys.map(k => t(k, lang)),
-    meetingSchedule: t(tribe.meetingScheduleKey, lang),
     videoUrl: tribe.videoUrl,
     videoDuration: tribe.videoDuration,
   };

@@ -306,7 +306,9 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
   // WS-A governance: whatsapp_url removed from the anon-key tribes select (served only via gated RPC).
-  assert.equal(tribesSection.includes(".select('id, name, name_i18n, notes, is_active')"), true);
+  // #2609: tribes.notes is an internal note and no longer feeds the public tribe card; the description comes from get_tribe_public_profiles.
+  assert.equal(tribesSection.includes(".select('id, name, name_i18n, is_active')"), true);
+  assert.equal(tribesSection.includes("name_i18n, notes, is_active"), false);
   assert.equal(tribesSection.includes("if (card && activeMap[tid] === false)"), true);
   assert.equal(tribesSection.includes("if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);"), true);
   assert.equal(catalog.includes('export function getTribeColor'), true);
