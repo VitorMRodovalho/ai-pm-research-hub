@@ -54,6 +54,14 @@ first is a gap the rule in CLAUDE.md still covers; the second is a conservative 
 it is the probe used to exercise this gate live without writing anything. This is a
 guardrail against ACCIDENTS between sessions of the same user, not a security boundary.
 
+Nucleo MCP (2026-10-09, decisao do GP): the lanes run in auto mode, and the platform's own MCP (wiki, cards, minutes,
+attendance, engagements...) writes to the same database without going through Supabase, so the rule "the lane
+prepares, the orchestrator applies" had no lock there. For a session that is NOT the orchestrator and runs in a clone
+or worktree of this repo, or in a path registered as a lane (LANE_REGISTRY), a WRITE through the Nucleo MCP is denied.
+Write = every tool in NUCLEO_WRITE_TOOLS, and the mixed tools in NUCLEO_MIXED_READ_ACTIONS unless the action is one of
+the read actions measured in their schemas (an unknown action counts as a write). Sessions of other projects of the
+portfolio are not affected.
+
 When the gate itself fails (2026-10-09, decisao do GP, opcao do meio): until then every failure let the call
 through. Unreadable stdin returned 0, an exception inside decide() made Python exit 1, and Claude Code treats
 exit 1 as a NON-blocking error (code.claude.com/docs/en/hooks: "If your hook is meant to enforce a policy, use
@@ -68,7 +76,7 @@ exit 2"). Now:
     write tool or matches a Bash write pattern, and open (with the warning) otherwise.
 
 Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; DB_GATE_QUEUE="<prs>,<jobs>" replaces
-it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE;
+it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE; LANE_REGISTRY overrides LANE_REGISTRY_FILE;
 DB_GATE_INJECT_ERROR=1 raises inside decide(), to exercise the failure policy above.
 """
 import json
@@ -127,6 +135,28 @@ GIT_PUSH_RE = re.compile(r"\bgit((?:\s+-[cC]\s+\S+)*)\s+push\b([^\n;&|]*)")
 MAIN_REFSPEC_RE = re.compile(r"^(?:[^:]*:)?(?:refs/heads/)?main$")
 PUSH_ALL_FLAGS = ("--all", "--mirror")
 GITHUB_MAIN_TOOLS = ("merge_pull_request", "push_files", "create_or_update_file", "delete_file")
+LANE_REGISTRY_FILE = os.environ.get(
+    "LANE_REGISTRY",
+    os.path.expanduser("~/projects/_pmo/lanes/ai-pm-research-hub.tsv"),
+)
+NUCLEO_RE = re.compile(r"^mcp__.*[Nn]ucleo-ia__([a-z_]+)$")
+# Always a write (schemas read 2026-10-09).
+NUCLEO_WRITE_TOOLS = (
+    "card_write", "card_comment", "card_checklist", "event_write", "engagement_write", "attendance_record",
+    "attendance_seal", "document_version_write", "document_comment", "signature_flow", "selection_decide",
+    "evaluation_submit", "interview_manage", "member_lifecycle", "certificate_manage", "champion_award",
+    "comms_post", "change_request", "ip_exclusion", "lgpd_admin", "drive_access_admin",
+)
+# Mixed: write unless the action is a measured read action.
+NUCLEO_MIXED_READ_ACTIONS = {
+    "wiki_write": ("context",),
+    "meeting_minutes": ("read", "prepare"),
+    "meeting_actions": ("list", "decision_log"),
+    "webinar_manage": ("list", "list_tribe"),
+    "partner_crm": ("search", "list_cards", "card_partners", "pipeline", "followups", "interactions"),
+    "idea_pipeline": ("list", "research"),
+    "agenda_blocks": ("list",),
+}
 
 
 def repo_is_this(cwd: str) -> bool:
@@ -387,6 +417,41 @@ def read_only_escape_reason(session_id: str, orch: str, cwd: str) -> str:
     )
 
 
+def nucleo_write(tool: str, tool_input: dict) -> str:
+    """Escrita pelo MCP do Nucleo: o nome da ferramenta e a acao, ou "" quando e leitura."""
+    m = NUCLEO_RE.match(tool or "")
+    if not m:
+        return ""
+    name = m.group(1)
+    if name in NUCLEO_WRITE_TOOLS:
+        return name
+    if name in NUCLEO_MIXED_READ_ACTIONS:
+        action = (tool_input or {}).get("action") or ""
+        if action not in NUCLEO_MIXED_READ_ACTIONS[name]:
+            return f"{name}:{action or '?'}"
+    return ""
+
+
+def lane_registered(cwd: str) -> bool:
+    """O cwd esta dentro de um caminho registrado como lane deste projeto."""
+    try:
+        with open(LANE_REGISTRY_FILE, encoding="utf-8") as fh:
+            paths = [ln.split("\t", 1)[0].strip() for ln in fh if ln.strip() and not ln.startswith("caminho")]
+    except OSError:
+        return False
+    real = os.path.realpath(cwd or "")
+    return any(p and (real == os.path.realpath(p) or real.startswith(os.path.realpath(p) + os.sep)) for p in paths)
+
+
+def nucleo_deny_reason(session_id: str, orch: str, cwd: str, what: str) -> str:
+    who = f"a sessao orquestradora designada e {orch[:8]}" if orch else "NENHUMA sessao orquestradora esta designada"
+    return (
+        f"LANE NAO ESCREVE PELO MCP DO NUCLEO ({what}). Esta sessao ({session_id[:8] or '?'}) roda {where(cwd)} ({cwd}); "
+        f"{who}. Prepare o pacote (texto pronto, ids, o que executar) e mande para a orquestradora pela ferramenta "
+        "SendMessage, destinatario gs66-ai-pm-research-hub. Decisao do GP em 09/10/2026: a lane prepara, a orquestradora aplica."
+    )
+
+
 def decide(event: dict):
     if os.environ.get("DB_GATE_INJECT_ERROR") == "1":
         raise RuntimeError("erro injetado (DB_GATE_INJECT_ERROR=1)")
@@ -416,6 +481,15 @@ def decide(event: dict):
         orch = orchestrator_id()
         if not orch or session_id != orch:
             return "deny", main_deny_reason(session_id, orch, event.get("cwd") or os.getcwd(), gh_what)
+        return None, None
+    nucleo_what = nucleo_write(tool, tool_input)
+    if nucleo_what:
+        cwd = event.get("cwd") or os.getcwd()
+        if repo_is_this(cwd) or is_lane(cwd) or lane_registered(cwd):
+            session_id = event.get("session_id") or ""
+            orch = orchestrator_id()
+            if not orch or session_id != orch:
+                return "deny", nucleo_deny_reason(session_id, orch, cwd, nucleo_what)
         return None, None
     action = tool_action(tool)
     is_sql = action == "execute_sql"
@@ -460,13 +534,16 @@ def bash_is_write_path(cmd: str) -> bool:
 
 def is_write_path(event: dict) -> bool:
     tool = event.get("tool_name", "") or ""
+    if NUCLEO_RE.match(tool):
+        return bool(nucleo_write(tool, event.get("tool_input") or {}))
     if tool == "Bash":
         return bash_is_write_path((event.get("tool_input") or {}).get("command") or "")
     return tool_action(tool) in WRITE_TOOL_ACTIONS
 
 
 def raw_is_write_path(raw: str) -> bool:
-    return any(name in raw for name in WRITE_TOOL_ACTIONS) or bash_is_write_path(raw)
+    return (any(name in raw for name in WRITE_TOOL_ACTIONS) or bash_is_write_path(raw)
+            or any(name in raw for name in NUCLEO_WRITE_TOOLS + tuple(NUCLEO_MIXED_READ_ACTIONS)))
 
 
 def gate_failed(write: bool, what: str) -> int:
