@@ -29,11 +29,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { suiteFiles } from '../../scripts/classify-test-suite.mjs';
 
 const ROOT = process.cwd();
 const EF = resolve(ROOT, 'supabase/functions/nucleo-mcp/index.ts');
 const FUNCTIONS_DIR = resolve(ROOT, 'supabase/functions');
-const PKG = resolve(ROOT, 'package.json');
 
 const src = existsSync(EF) ? readFileSync(EF, 'utf8') : '';
 
@@ -126,10 +126,12 @@ test('1619: o caminho de ERRO também é marcado', () => {
   assert.match(e, /wrapUntrusted\(/, 'err() sem marca é metade da superfície desprotegida');
 });
 
-test('1619 guard: o teste está registrado nas DUAS listas do package.json', () => {
-  const pkg = readFileSync(PKG, 'utf8');
-  const hits = (pkg.match(/1619-mcp-untrusted-provenance\.test\.mjs/g) || []).length;
-  assert.equal(hits, 2, 'precisa estar em "test" E em "test:contracts" — senão nunca roda em CI');
+test('1619 guard: o teste roda no CI (balde de "test" e balde "contracts")', () => {
+  // 09/10/2026: as listas do package.json sairam; os baldes sao derivados do disco (scripts/run-suite.mjs).
+  const alvo = 'tests/contracts/1619-mcp-untrusted-provenance.test.mjs';
+  const test_ = [...suiteFiles('structural'), ...suiteFiles('behavioural')];
+  assert.ok(test_.includes(alvo), 'precisa estar num balde de "test" — senão nunca roda em CI');
+  assert.ok(suiteFiles('contracts').includes(alvo), 'precisa estar no balde "contracts"');
 });
 
 test('1619 guard: em CI o smoke da EF NÃO pode pular calado', () => {

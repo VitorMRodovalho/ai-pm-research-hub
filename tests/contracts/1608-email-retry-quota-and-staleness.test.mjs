@@ -30,10 +30,10 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
+import { suiteFiles } from '../../scripts/classify-test-suite.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000513_1608_retry_cobre_cota_diaria_e_para_de_ressuscitar.sql');
-const PKG = resolve(ROOT, 'package.json');
 
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 // comentários fora: o cabeçalho cita de propósito o predicado antigo que a
@@ -80,10 +80,12 @@ test('1608 static: escada de grants — o predicado não alcança anon', () => {
   assert.match(migRaw, /NOTIFY pgrst, 'reload schema'/);
 });
 
-test('1608 guard: o teste está registrado nas DUAS listas do package.json', () => {
-  const pkg = readFileSync(PKG, 'utf8');
-  const hits = (pkg.match(/1608-email-retry-quota-and-staleness\.test\.mjs/g) || []).length;
-  assert.equal(hits, 2, 'precisa estar em "test" E em "test:contracts" — senão nunca roda em CI');
+test('1608 guard: o teste roda no CI (balde de "test" e balde "contracts")', () => {
+  // 09/10/2026: as listas do package.json sairam; os baldes sao derivados do disco (scripts/run-suite.mjs).
+  const alvo = 'tests/contracts/1608-email-retry-quota-and-staleness.test.mjs';
+  const test_ = [...suiteFiles('structural'), ...suiteFiles('behavioural')];
+  assert.ok(test_.includes(alvo), 'precisa estar num balde de "test" — senão nunca roda em CI');
+  assert.ok(suiteFiles('contracts').includes(alvo), 'precisa estar no balde "contracts"');
 });
 
 // ── COMPORTAMENTAL (DB-gated) ────────────────────────────────────────────────

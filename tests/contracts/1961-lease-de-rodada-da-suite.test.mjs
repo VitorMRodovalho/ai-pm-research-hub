@@ -26,6 +26,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { suiteFiles } from '../../scripts/classify-test-suite.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260824213839_1961_lease_de_rodada_da_suite_db_aware.sql');
@@ -79,9 +80,11 @@ test('#1961 static: a tabela tem RLS ligada', () => {
 
 // ── STATIC: o wrapper e o wiring ──────────────────────────────────────────────────────
 test('#1961 static: `test:behavioural` passa pelo wrapper, e a lista de arquivos sobrevive', () => {
-  const s = pkg.scripts['test:behavioural'];
-  assert.ok(s.startsWith('node scripts/with-db-lease.mjs -- '), 'o balde comportamental é embrulhado');
-  assert.ok((s.match(/\.test\.mjs/g) || []).length > 300, 'a lista de arquivos continua inteira');
+  // 09/10/2026: a lista e derivada do disco por scripts/run-suite.mjs; o embrulho do lease mora no executor.
+  assert.match(pkg.scripts['test:behavioural'], /node scripts\/run-suite\.mjs behavioural\b/);
+  const runner = readFileSync(resolve(ROOT, 'scripts/run-suite.mjs'), 'utf8');
+  assert.match(runner, /behavioural: \['node', 'scripts\/with-db-lease\.mjs', '--', 'node'/, 'o balde comportamental é embrulhado');
+  assert.ok(suiteFiles('behavioural').length > 300, 'a lista de arquivos continua inteira');
 });
 
 test('#1961 static: falta de lease NÃO reprova — contenção não pode virar vermelho', () => {
