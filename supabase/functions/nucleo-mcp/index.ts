@@ -297,6 +297,15 @@ async function canV4(sb: Sb, memberId: string, action: string, resourceType?: st
   return data === true;
 }
 
+// #1977 no MCP: "tem esta autoridade em ALGUM lugar?" — a mesma pergunta que as RPCs de curadoria
+// e comms fazem com _can_anywhere_by_member. canV4 sem recurso nao e equivalente: a forma de 2
+// argumentos de can_by_member depende de legacy_tribe_id e nega escopo de iniciativa que nao e tribo.
+async function canAnywhereV4(sb: Sb, memberId: string, action: string): Promise<boolean> {
+  const { data, error } = await sb.rpc("_can_anywhere_by_member", { p_member_id: memberId, p_action: action });
+  if (error) return false; // fail-closed
+  return data === true;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
@@ -1707,7 +1716,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: requires curate_content or write_board authority."); }
+    // #2621: mesma pergunta da RPC (#1977): write_board em ALGUM lugar, nao a forma sem recurso, que
+    // barrava escopo de iniciativa que nao e tribo (1 pessoa medida em 09/10).
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canAnywhereV4(sb, member.id, 'write_board')))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: requires curate_content or write_board authority."); }
     const { data, error } = await sb.rpc("get_curation_dashboard");
     if (error) { await logUsage(sb, member.id, "get_curation_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_dashboard", true, undefined, start);
@@ -1730,7 +1741,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_queue_state", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')) || (await canV4(sb, member.id, 'participate_in_governance_review')))) { await logUsage(sb, member.id, "get_curation_queue_state", false, "Unauthorized", start); return err("Unauthorized: requires curate_content, write_board, or participate_in_governance_review."); }
+    // #2621: write_board em ALGUM lugar, como a RPC (#1977).
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canAnywhereV4(sb, member.id, 'write_board')) || (await canV4(sb, member.id, 'participate_in_governance_review')))) { await logUsage(sb, member.id, "get_curation_queue_state", false, "Unauthorized", start); return err("Unauthorized: requires curate_content, write_board, or participate_in_governance_review."); }
     const { data, error } = await sb.rpc("get_curation_queue_state", { p_status: params.status || null });
     if (error) { await logUsage(sb, member.id, "get_curation_queue_state", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_queue_state", true, undefined, start);

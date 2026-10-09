@@ -115,3 +115,18 @@ test('G. mover para review com o card em rascunho avisa que nao envia', () => {
   assert.match(SRC, /warnings: moveWarnings,\s+next_actions: \[\.\.\.moveNext, "card_get: re-read the card"/,
     'o aviso e a acao seguinte chegam ao envelope');
 });
+
+test('H. as leituras de curadoria perguntam write_board em ALGUM lugar, como as RPCs (#1977)', () => {
+  const helperAny = slice('async function canAnywhereV4(', '\n}\n', 'canAnywhereV4');
+  assert.match(helperAny,
+    /const \{ data, error \} = await sb\.rpc\("_can_anywhere_by_member", \{ p_member_id: memberId, p_action: action \}\);\s+if \(error\) return false;/,
+    'mesma funcao da RPC, e falha fechada');
+  for (const tool of ['get_curation_dashboard', 'get_curation_queue_state']) {
+    const t = slice(`mcp.tool("${tool}"`, '\n  });\n', tool);
+    const call = t.indexOf(`sb.rpc("${tool}"`);
+    assert.ok(call !== -1, `${tool} chama a RPC`);
+    const gate = t.slice(0, call);
+    assert.match(gate, /\(await canAnywhereV4\(sb, member\.id, 'write_board'\)\)/, `${tool}: write_board em algum lugar`);
+    assert.doesNotMatch(gate, /canV4\(sb, member\.id, 'write_board'\)/, `${tool}: sem a forma sem recurso`);
+  }
+});
