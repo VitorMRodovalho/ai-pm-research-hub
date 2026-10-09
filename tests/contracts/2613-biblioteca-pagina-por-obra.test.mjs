@@ -20,7 +20,7 @@ import {
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const MIG = maskLineComments(read('supabase/migrations/29991231000001_2613_biblioteca_pagina_por_obra.sql'));
+const MIG = maskLineComments(read('supabase/migrations/20261009193146_2613_biblioteca_pagina_por_obra.sql'));
 
 /** Corpo de uma função da migration: do CREATE até o $function$; que fecha o corpo. */
 function fnBody(name) {

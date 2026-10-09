@@ -21,7 +21,7 @@ import {
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-const MIG = maskLineComments(read('supabase/migrations/29991231000002_2609_descricao_e_horario_da_tribo_com_uma_fonte.sql'));
+const MIG = maskLineComments(read('supabase/migrations/20261009194544_2609_descricao_e_horario_da_tribo_com_uma_fonte.sql'));
 
 function fnBody(name) {
   const start = MIG.indexOf(`CREATE OR REPLACE FUNCTION public.${name}(`);
