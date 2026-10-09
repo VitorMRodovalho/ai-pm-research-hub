@@ -30,6 +30,13 @@ const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANON_KEY = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 const dbGated = !!(SUPABASE_URL && SERVICE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
+// #1742: a varredura completa (uma sonda por relacao) so pula com GHOST_READ_SWEEP=0 EXPLICITO, que o
+// CI define quando o diff nao toca supabase/migrations/. Variavel ausente = varre (na duvida, varre).
+// Os controles (br_holidays / persons) rodam sempre: sao duas sondas.
+const sweepOff = process.env.GHOST_READ_SWEEP === '0';
+const sweepSkip = !dbGated ? skipMsg
+  : sweepOff ? 'Skipped (#1742): GHOST_READ_SWEEP=0, o diff nao mexe em supabase/migrations; a varredura roda nas PRs com migration e toda noite na main'
+  : false;
 
 /**
  * Relacoes que um nao-membro PODE ler, cada uma com o motivo. Entrar aqui e uma decisao: o motivo
@@ -183,7 +190,7 @@ test('controles: o instrumento diz SIM (br_holidays) e diz NAO (persons)', { ski
   assert.equal(nao.ghost_rows, 0, 'controle negativo: persons legivel => a troca de papel nao aconteceu');
 });
 
-test('nenhuma relacao fora da allowlist e legivel por nao-membro', { skip: dbGated ? false : skipMsg }, async () => {
+test('nenhuma relacao fora da allowlist e legivel por nao-membro', { skip: sweepSkip }, async () => {
   const catalogo = await rpc('_audit_ghost_read_catalog');
   assert.ok(Array.isArray(catalogo) && catalogo.length > 100,
     `catalogo suspeito (${Array.isArray(catalogo) ? catalogo.length : typeof catalogo} relacoes)`);
