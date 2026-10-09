@@ -25,6 +25,16 @@
 -- (5) Dados: a primeira obra (Capítulo 6 do toolkit da Tribo 13) recebe slug, licença e PDF, e o
 --     toolkit vira a primeira coleção. Licença e PDF lidos na API pública do figshare em 09/10/2026
 --     (license "CC BY 4.0"; um arquivo PDF).
+--
+-- (6) Revisão do conselho (09/10/2026): FKs da coleção com RESTRICT (SET NULL colidia com o CHECK
+--     de posição e, na iniciativa, tornaria visível a coleção de uma iniciativa confidencial apagada);
+--     portão também no JOIN da coleção na lista; LinkedIn do autor só de membro ativo; pdf_url e
+--     external_url só http(s); backfill genérico de slug para qualquer obra publicada sem slug.
+--
+-- Rollback: DROP das três funções novas e do trigger/funções de slug; DROP POLICY
+--   public_publications_confidential_gate; recriar get_public_publications pela captura
+--   20260427200000 (com o search_path de 20260428150000); DROP das colunas novas de
+--   public_publications e da tabela publication_collections.
 
 -- ── (2) coleções ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.publication_collections (
@@ -34,7 +44,7 @@ CREATE TABLE IF NOT EXISTS public.publication_collections (
   description        text,
   collection_type    text NOT NULL DEFAULT 'toolkit'
                        CHECK (collection_type IN ('toolkit','book','proceedings','series')),
-  initiative_id      uuid REFERENCES public.initiatives(id) ON DELETE SET NULL,
+  initiative_id      uuid REFERENCES public.initiatives(id) ON DELETE RESTRICT,
   doi                text,
   license            text CHECK (license IS NULL OR license ~ '^[A-Za-z0-9.+-]+$'),
   is_published       boolean NOT NULL DEFAULT false,
@@ -48,6 +58,8 @@ CREATE INDEX IF NOT EXISTS idx_publication_collections_initiative ON public.publ
 
 ALTER TABLE public.publication_collections ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.publication_collections FROM PUBLIC, anon, authenticated;
+DROP POLICY IF EXISTS rpc_only_deny_all ON public.publication_collections;
+CREATE POLICY rpc_only_deny_all ON public.publication_collections FOR ALL USING (false);
 
 COMMENT ON TABLE public.publication_collections IS
   '#2613: coleção de obras publicadas (toolkit com capítulos, livro, anais). Leitura pública só por get_public_publication_collection. Não é publication_series (série editorial).';
@@ -57,7 +69,7 @@ ALTER TABLE public.public_publications
   ADD COLUMN IF NOT EXISTS slug                text,
   ADD COLUMN IF NOT EXISTS first_published_at  timestamptz,
   ADD COLUMN IF NOT EXISTS license             text,
-  ADD COLUMN IF NOT EXISTS collection_id       uuid REFERENCES public.publication_collections(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS collection_id       uuid REFERENCES public.publication_collections(id) ON DELETE RESTRICT,
   ADD COLUMN IF NOT EXISTS collection_position integer;
 
 ALTER TABLE public.public_publications DROP CONSTRAINT IF EXISTS public_publications_slug_key;
@@ -65,6 +77,9 @@ ALTER TABLE public.public_publications ADD CONSTRAINT public_publications_slug_k
 ALTER TABLE public.public_publications DROP CONSTRAINT IF EXISTS public_publications_slug_format;
 ALTER TABLE public.public_publications ADD CONSTRAINT public_publications_slug_format
   CHECK (slug IS NULL OR (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' AND slug NOT IN ('submissions','collections','feed')));
+ALTER TABLE public.public_publications DROP CONSTRAINT IF EXISTS public_publications_urls_http;
+ALTER TABLE public.public_publications ADD CONSTRAINT public_publications_urls_http
+  CHECK ((pdf_url IS NULL OR pdf_url ~* '^https?://') AND (external_url IS NULL OR external_url ~* '^https?://'));
 ALTER TABLE public.public_publications DROP CONSTRAINT IF EXISTS public_publications_license_format;
 ALTER TABLE public.public_publications ADD CONSTRAINT public_publications_license_format
   CHECK (license IS NULL OR license ~ '^[A-Za-z0-9.+-]+$');
@@ -165,6 +180,7 @@ CREATE TRIGGER trg_publication_collections_slug_guard
   FOR EACH ROW EXECUTE FUNCTION public._publication_collections_slug_guard();
 
 REVOKE ALL ON FUNCTION public._public_publications_slug_guard() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public._publication_slugify(text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public._publication_collections_slug_guard() FROM PUBLIC, anon, authenticated;
 
 -- ── (3) portão da ADR-0105 na tabela ──────────────────────────────────────────
@@ -197,6 +213,7 @@ BEGIN
     FROM public.public_publications pp
     LEFT JOIN public.initiatives i ON i.id = pp.initiative_id
     LEFT JOIN public.publication_collections pc ON pc.id = pp.collection_id AND pc.is_published = true
+      AND public.rls_can_see_initiative(pc.initiative_id)
     WHERE pp.is_published = true
       AND public.rls_can_see_initiative(pp.initiative_id)
       AND public.rls_can_see_item(pp.board_item_id)
@@ -226,7 +243,9 @@ AS $function$
     'abstract', pp.abstract,
     'authors', to_jsonb(pp.authors),
     'author_profiles', COALESCE((
-      SELECT jsonb_agg(jsonb_build_object('name', pm.name, 'linkedin_url', pm.linkedin_url) ORDER BY a.ord)
+      -- o nome do autor já está em pp.authors; o LinkedIn sai só de quem segue membro ativo
+      SELECT jsonb_agg(jsonb_build_object('name', pm.name,
+               'linkedin_url', CASE WHEN pm.is_active THEN pm.linkedin_url END) ORDER BY a.ord)
       FROM unnest(pp.author_member_ids) WITH ORDINALITY AS a(member_id, ord)
       JOIN public.public_members pm ON pm.id = a.member_id
     ), '[]'::jsonb),
@@ -319,6 +338,8 @@ FROM public.initiatives i
 WHERE i.id = '7502b6c2-5c8c-472c-bab0-09f757b98ea4'
 ON CONFLICT (slug) DO NOTHING;
 
+-- first_published_at = updated_at: a obra foi publicada no último UPDATE dela (08/10/2026 18:40Z,
+-- mesmo minuto do registro da publicação na #2613); created_at é de 13 minutos antes, ainda rascunho.
 UPDATE public.public_publications pp
 SET slug = 'capitulo-6-gestao-de-linhagem-e-rastreabilidade-de-dados-em-projetos-de-ia',
     first_published_at = COALESCE(pp.first_published_at, pp.updated_at),
@@ -329,6 +350,10 @@ SET slug = 'capitulo-6-gestao-de-linhagem-e-rastreabilidade-de-dados-em-projetos
     collection_position = 6
 WHERE pp.id = '353929b3-ab02-4aea-a8fa-d771341ba497'
   AND pp.slug IS NULL;
+
+-- Qualquer outra obra publicada até o apply ganha slug pelo trigger. SET title = title de propósito:
+-- tocar is_published dispararia trg_notify_publication_published (AFTER UPDATE OF is_published).
+UPDATE public.public_publications SET title = title WHERE is_published AND slug IS NULL;
 
 -- Depois do backfill: a obra já publicada só tem slug a partir do UPDATE acima.
 ALTER TABLE public.public_publications DROP CONSTRAINT IF EXISTS public_publications_published_has_slug;
@@ -353,6 +378,12 @@ BEGIN
   WHERE p.pronamespace = 'public'::regnamespace AND p.proname = 'get_public_publications'
     AND p.prosecdef AND p.proconfig @> ARRAY['search_path=public, pg_temp'];
   IF v_n <> 1 THEN RAISE EXCEPTION '#2613: get_public_publications perdeu SECURITY DEFINER ou search_path'; END IF;
+
+  SELECT count(*) INTO v_n FROM public.public_publications pp
+  JOIN public.publication_collections pc ON pc.id = pp.collection_id
+  WHERE pp.id = '353929b3-ab02-4aea-a8fa-d771341ba497' AND pc.slug = 'qualidade-de-dados-em-projetos-de-ia'
+    AND pp.collection_position = 6;
+  IF v_n <> 1 THEN RAISE EXCEPTION '#2613: o Capítulo 6 não ficou ligado à coleção do toolkit'; END IF;
 
   IF public._publication_slugify('Capítulo 6 — Gestão de Linhagem') <> 'capitulo-6-gestao-de-linhagem' THEN
     RAISE EXCEPTION '#2613: _publication_slugify devolveu %', public._publication_slugify('Capítulo 6 — Gestão de Linhagem');

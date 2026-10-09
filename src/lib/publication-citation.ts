@@ -33,31 +33,58 @@ export function publicationYear(date?: string | null): string {
   return m ? m[1] : 's.d.';
 }
 
+/** Só http(s): valor de coluna livre (linkedin_url, pdf_url, external_url) nunca vira href `javascript:`. */
+export function safeHttpUrl(u?: string | null): string | null {
+  if (!u) return null;
+  try {
+    const url = new URL(u.trim());
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export function doiUrl(doi?: string | null): string {
   return doi ? `https://doi.org/${doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, '')}` : '';
 }
 
 /** URL a citar: o DOI quando existe; senão a página permanente da obra. */
 export function citationUrl(pub: CitablePublication, origin: string): string {
-  return doiUrl(pub.doi) || (pub.slug ? `${origin}/publications/${pub.slug}` : pub.external_url ?? '');
+  return doiUrl(pub.doi) || (pub.slug ? `${origin}/publications/${pub.slug}` : safeHttpUrl(pub.external_url) ?? '');
 }
 
 const MONTHS_PT = ['jan.', 'fev.', 'mar.', 'abr.', 'maio', 'jun.', 'jul.', 'ago.', 'set.', 'out.', 'nov.', 'dez.'];
 
-/** ABNT NBR 6023:2018. `accessed` é a data de acesso exigida para documento online. */
+/** Data de acesso no fuso de Brasília: o Worker roda em UTC, e perto da meia-noite o dia mudaria. */
+function accessDateBr(accessed: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: 'numeric', day: 'numeric' })
+    .formatToParts(accessed);
+  const get = (type: string) => Number(parts.find(p => p.type === type)?.value);
+  return `${get('day')} ${MONTHS_PT[get('month') - 1]} ${get('year')}`;
+}
+
+/** Sem autor, a entrada da ABNT é o título, com a primeira palavra em maiúsculas. */
+function titleEntry(title: string): string {
+  const [first, ...rest] = title.split(' ');
+  return [first.toUpperCase(), ...rest].join(' ');
+}
+
+/** ABNT NBR 6023:2018. Com DOI, cita só o DOI; sem DOI, a URL e a data de acesso. */
 export function formatAbnt(pub: CitablePublication, origin: string, accessed: Date): string {
   const authors = pub.authors.map(a => {
     const { given, family } = splitName(a);
     return given ? `${family.toUpperCase()}, ${given}` : family.toUpperCase();
   }).join('; ');
   const year = publicationYear(pub.publication_date);
+  const ano = year === 's.d.' ? '[s.d.]' : year;
+  const title = authors ? pub.title : titleEntry(pub.title);
   const work = pub.collection
-    ? `${pub.title}. In: ${PUBLISHER.toUpperCase()}. ${pub.collection.title}. [S. l.]: ${PUBLISHER}, ${year}.`
-    : `${pub.title}. [S. l.]: ${PUBLISHER}, ${year}.`;
-  const doi = pub.doi ? ` DOI: ${doiUrl(pub.doi).replace('https://doi.org/', '')}.` : '';
+    ? `${title}. In: ${PUBLISHER.toUpperCase()}. ${pub.collection.title}. [S. l.]: ${PUBLISHER}, ${ano}.`
+    : `${title}. [S. l.]: ${PUBLISHER}, ${ano}.`;
+  const head = `${authors ? authors + '. ' : ''}${work}`;
+  if (pub.doi) return `${head} DOI: ${doiUrl(pub.doi).replace('https://doi.org/', '')}.`;
   const url = citationUrl(pub, origin);
-  const acesso = `${accessed.getDate()} ${MONTHS_PT[accessed.getMonth()]} ${accessed.getFullYear()}`;
-  return `${authors ? authors + '. ' : ''}${work}${doi}${url ? ` Disponível em: ${url}. Acesso em: ${acesso}.` : ''}`;
+  return url ? `${head} Disponível em: ${url}. Acesso em: ${accessDateBr(accessed)}.` : head;
 }
 
 /** APA 7. */
@@ -72,15 +99,22 @@ export function formatApa(pub: CitablePublication, origin: string): string {
     : names.length === 2 ? `${names[0]}, & ${names[1]}`
     : `${names.slice(0, -1).join(', ')}, & ${names[names.length - 1]}`;
   const year = publicationYear(pub.publication_date);
-  const work = pub.collection
-    ? `${pub.title}. In ${pub.collection.title}. ${PUBLISHER}.`
-    : `${pub.title}. ${PUBLISHER}.`;
+  const date = `(${year === 's.d.' ? 'n.d.' : year}).`;
+  const source = pub.collection ? `In ${pub.collection.title}. ${PUBLISHER}.` : `${PUBLISHER}.`;
   const url = citationUrl(pub, origin);
-  return `${authors ? authors + ' ' : ''}(${year === 's.d.' ? 'n.d.' : year}). ${work}${url ? ' ' + url : ''}`;
+  // Sem autor, o título ocupa a posição do autor (APA 7, 9.12).
+  const body = authors ? `${authors} ${date} ${pub.title}. ${source}` : `${pub.title}. ${date} ${source}`;
+  return `${body}${url ? ' ' + url : ''}`;
 }
 
+const BIB_ESCAPES: Record<string, string> = {
+  '\\': '\\textbackslash{}', '&': '\\&', '%': '\\%', '$': '\\$', '#': '\\#', '_': '\\_',
+  '{': '\\{', '}': '\\}', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}',
+};
+
+/** Uma passada só: escapar `\\` e depois `{}` escaparia as chaves do próprio `\\textbackslash{}`. */
 function bibEscape(s: string): string {
-  return s.replace(/\\/g, '\\textbackslash{}').replace(/([&%$#_{}])/g, '\\$1');
+  return s.replace(/[\\&%$#_{}~^]/g, c => BIB_ESCAPES[c]);
 }
 
 export function bibtexKey(pub: CitablePublication): string {
@@ -91,16 +125,19 @@ export function bibtexKey(pub: CitablePublication): string {
 }
 
 export function formatBibtex(pub: CitablePublication, origin: string): string {
-  const type = pub.collection ? 'incollection' : pub.publication_type === 'article' ? 'article' : 'misc';
-  const fields: [string, string][] = [
-    ['title', `{${bibEscape(pub.title)}}`],
-    ['author', `{${pub.authors.map(a => {
+  // @article exigiria `journal`, que não temos: obra avulsa sai como @misc.
+  const type = pub.collection ? 'incollection' : 'misc';
+  const fields: [string, string][] = [['title', `{${bibEscape(pub.title)}}`]];
+  if (pub.authors.length > 0) {
+    fields.push(['author', `{${pub.authors.map(a => {
       const { given, family } = splitName(a);
       return bibEscape(given ? `${family}, ${given}` : family);
-    }).join(' and ')}}`],
+    }).join(' and ')}}`]);
+  }
+  fields.push(
     ['year', `{${publicationYear(pub.publication_date).replace('s.d.', 'n.d.')}}`],
     ['publisher', `{${bibEscape(PUBLISHER)}}`],
-  ];
+  );
   if (pub.collection) fields.push(['booktitle', `{${bibEscape(pub.collection.title)}}`]);
   if (pub.doi) fields.push(['doi', `{${doiUrl(pub.doi).replace('https://doi.org/', '')}}`]);
   const url = citationUrl(pub, origin);
