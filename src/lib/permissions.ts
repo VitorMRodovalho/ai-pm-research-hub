@@ -270,10 +270,10 @@ export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
   comms_leader: [
     'board.view_global',
     'admin.gamification',
-    'champion.award', 'champion.award_general',
+    'champion.award', 'champion.award_general', 'admin.portfolio',
   ],
   comms_member: [
-    'board.view_global',
+    'board.view_global', 'admin.portfolio',
   ],
   ambassador: [
     'data.view_analytics', 'admin.analytics.chapter',
