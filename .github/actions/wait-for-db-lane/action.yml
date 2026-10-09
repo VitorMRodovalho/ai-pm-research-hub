@@ -60,25 +60,36 @@ inputs:
 
       NAO afrouxa o #1509: esgotado este teto, a funcao retorna erro e o job FALHA, como antes.
       A unica coisa que muda e quanto tempo se espera antes de chamar de permanente.
+
+      #1742 (09/10/2026): 900 -> 3600. A cota do token do Actions renova de hora em hora, e com 900
+      o guard desistia sempre que o reset estava a mais de 15 min (medido: duas PRs mortas as
+      07:00:56Z depois de esperar 35s). O teto de tempo do proprio job continua limitando a espera,
+      e um job morto por timeout tambem falha fechado.
     required: false
-    default: '900'
+    default: '3600'
   poll-seconds:
     description: >
       Intervalo entre consultas enquanto a faixa esta ocupada. #1923: cada ciclo custa
       1 + (runs de faixa ativos) chamadas, POR job em espera, entao o intervalo e um multiplicador
       direto do consumo de cota.
+
+      #1742 (09/10/2026): 15 -> 60. Com 4-5 jobs na fila por 20-60 min, consultar a cada 15s
+      esgotou a cota do token do Actions duas vezes no mesmo dia; os jobs falharam fechados, a
+      reexecucao pos mais um job na fila, e o ciclo se realimentou. A fila do banco anda em minutos
+      (cada suite leva dezenas deles), entao ate 1 min a mais de espera nao muda o tempo total.
     required: false
-    default: '15'
+    default: '60'
   poll-seconds-long:
     description: >
       #1923: intervalo depois de `poll-backoff-after` ciclos. Uma espera longa e justamente a que
       mais consome, e quem ja esperou 5 minutos nao precisa de resolucao de 15s.
+      #1742: 30 -> 120, pelo mesmo motivo do `poll-seconds`.
     required: false
-    default: '30'
+    default: '120'
   poll-backoff-after:
-    description: 'Ciclos no intervalo curto antes de passar ao longo (#1923).'
+    description: 'Ciclos no intervalo curto antes de passar ao longo (#1923). #1742: 20 -> 5, para manter ~5 min no intervalo curto com o novo `poll-seconds`.'
     required: false
-    default: '20'
+    default: '5'
 
 runs:
   using: composite
@@ -124,7 +135,7 @@ runs:
         # (7 jobs de runs independentes morrendo na mesma janela de 30s) porque a mensagem da API
         # nunca chegou ao log.
         api_with_retry() {
-          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out="" errfile raw msg wait_s rl_waited=0
+          local endpoint="$1" jq_expr="$2" attempt=1 backoff=5 out="" errfile raw msg wait_s rl_left rl_waited=0
           while :; do
             errfile="$(mktemp)"
             if out=$(gh api "$endpoint" --jq "$jq_expr" 2>"$errfile"); then
@@ -164,11 +175,15 @@ runs:
               else
                 wait_s="$(rate_limit_reset_in)"
               fi
-              [ "$wait_s" -gt "$RL_MAX_WAIT" ] && wait_s="$RL_MAX_WAIT"
-              if [ $(( rl_waited + wait_s )) -gt "$RL_MAX_WAIT" ]; then
+              # #1742: espera o que RESTA do teto em vez de desistir quando o reset passa dele. Antes, um
+              # reset a mais de (teto - ja esperado) fazia o guard falhar na hora, e o teto quase
+              # nunca era usado (medido 09/10: 35s esperados de 900s e o job morreu).
+              rl_left=$(( RL_MAX_WAIT - rl_waited ))
+              if [ "$rl_left" -le 0 ]; then
                 echo "::error::cota da API esgotada e nao voltou dentro de ${RL_MAX_WAIT}s ($endpoint): ${msg}. Parando em vez de arriscar rodar concorrente (#1509, #1923)." >&2
                 return 1
               fi
+              [ "$wait_s" -gt "$rl_left" ] && wait_s="$rl_left"
               rl_waited=$(( rl_waited + wait_s ))
               echo "  (cota da API esgotada; aguardando ${wait_s}s ate o reset — total ${rl_waited}s/${RL_MAX_WAIT}s) — ${msg}" >&2
               sleep "$wait_s"
