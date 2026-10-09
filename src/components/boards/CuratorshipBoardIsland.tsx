@@ -100,6 +100,7 @@ type I18n = Record<string, string>;
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 import { getSb, waitForSb } from '../../hooks/useBoard';
+import { ATTACH_BUCKET, storagePathOf } from '../../lib/boardAttachments';
 import { useMemberContext } from '../../hooks/useBoardPermissions';
 import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 import { usePageI18n } from '../../i18n/usePageI18n';
@@ -357,6 +358,9 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
   const [submitting, setSubmitting] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [drive, setDrive] = useState<DriveAccess | null>(null);
+  // #2449: anexo do bucket privado abre por link assinado (1h); a URL gravada e publica e devolve
+  // "Bucket not found" (medido na curadoria em 08/10/2026).
+  const [signedAttachments, setSignedAttachments] = useState<Record<string, string>>({});
 
   const allScored = CRITERIA.every((c) => (scores[c.key] || 0) > 0);
   const avgScore = allScored
@@ -385,6 +389,22 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
       setDrive(error ? null : (data as DriveAccess));
     })();
     return () => { cancelled = true; };
+  }, [open, item?.id]);
+
+  useEffect(() => {
+    if (!open || !item?.id) { setSignedAttachments({}); return; }
+    const paths = Array.from(new Set(normalizeAttachments(item.attachments).map((a) => storagePathOf(a)).filter(Boolean))) as string[];
+    if (paths.length === 0) { setSignedAttachments({}); return; }
+    const sb = getSb();
+    if (!sb) return;
+    let alive = true;
+    sb.storage.from(ATTACH_BUCKET).createSignedUrls(paths, 3600).then(({ data }: any) => {
+      if (!alive || !Array.isArray(data)) return;
+      const map: Record<string, string> = {};
+      for (const r of data) if (r?.path && r?.signedUrl) map[r.path] = r.signedUrl;
+      setSignedAttachments(map);
+    });
+    return () => { alive = false; };
   }, [open, item?.id]);
 
   const historyBtnLabel = `${ui.historyLabel || 'Histórico'} (${item.review_history?.length || 0})`;
@@ -457,9 +477,19 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
                       const label = a.name || (a.url.length > 56 ? a.url.slice(0, 53) + '…' : a.url);
                       let ariaLabel = a.name || 'Link externo';
                       try { if (!a.name) ariaLabel = new URL(a.url).hostname + ' — link externo'; } catch { /* malformed URL — keep fallback */ }
+                      // #2449: arquivo do bucket privado abre pelo link assinado; link externo segue cru.
+                      const bucketPath = storagePathOf(a);
+                      const href = bucketPath ? signedAttachments[bucketPath] : a.url;
+                      if (bucketPath && !href) {
+                        return (
+                          <li key={`${a.url}-${i}`} className="text-xs text-[var(--text-muted)] inline-flex items-center gap-1">
+                            <Paperclip size={12} aria-hidden="true" className="flex-shrink-0" /> {label}
+                          </li>
+                        );
+                      }
                       return (
                         <li key={`${a.url}-${i}`}>
-                          <a href={a.url} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} title={a.url} className="text-xs text-teal hover:underline inline-flex items-center gap-1 break-all">
+                          <a href={href} target="_blank" rel="noopener noreferrer" aria-label={ariaLabel} title={bucketPath ? label : a.url} className="text-xs text-teal hover:underline inline-flex items-center gap-1 break-all">
                             <ExternalLink size={12} aria-hidden="true" className="flex-shrink-0" /> {label}
                           </a>
                         </li>

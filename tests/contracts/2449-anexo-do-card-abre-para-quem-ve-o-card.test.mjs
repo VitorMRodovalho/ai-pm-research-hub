@@ -25,16 +25,33 @@ const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 const sb = () => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 const CARD = readFileSync('src/components/board/CardDetail.tsx', 'utf8');
+// O helper que extrai o caminho mora num modulo compartilhado desde que a curadoria passou a usa-lo (08/10/2026):
+// uma copia por tela foi o que deixou a curadoria com o link cru.
+const LIB = readFileSync('src/lib/boardAttachments.ts', 'utf8');
+const CURA = readFileSync('src/components/boards/CuratorshipBoardIsland.tsx', 'utf8');
+const IMPORTA = /import \{ ATTACH_BUCKET, storagePathOf \} from '\.\.\/\.\.\/lib\/boardAttachments';/;
+const DERIVA = /\/\\\/storage\\\/v1\\\/object\\\/\(\?:public\|sign\)\\\/board-attachments\\\/\(\[\^\?#\]\+\)\//;
 
 /** A tela: link assinado do bucket, derivado do caminho; nunca a URL publica crua. */
 export function tela(src) {
   const c = maskJsComments(src);
   return {
     assina: /sb\.storage\.from\(ATTACH_BUCKET\)\.createSignedUrls\(paths, 3600\)/.test(c),
-    derivaCaminho: /\/\\\/storage\\\/v1\\\/object\\\/\(\?:public\|sign\)\\\/board-attachments\\\/\(\[\^\?#\]\+\)\//.test(c),
+    derivaCaminho: IMPORTA.test(c) && DERIVA.test(maskJsComments(LIB)),
     abrePeloAssinado: /const href = attachmentHref\(att\);/.test(c) && /<a href=\{href \|\| undefined\}/.test(c),
     naoUsaUrlCrua: !/<a href=\{att\.url\}/.test(c) && !/<img src=\{att\.url\}/.test(c),
     gravaCaminho: /const newAttachment = \{ name: file\.name, url: urlData\?\.publicUrl \|\| storagePath, path: storagePath \};/.test(c),
+  };
+}
+
+/** A curadoria: o mesmo link assinado, e o href do arquivo do bucket nunca e a URL crua. */
+export function curadoria(src) {
+  const c = maskJsComments(src);
+  return {
+    importa: IMPORTA.test(c),
+    assina: /sb\.storage\.from\(ATTACH_BUCKET\)\.createSignedUrls\(paths, 3600\)/.test(c),
+    hrefAssinado: /const bucketPath = storagePathOf\(a\);\s*const href = bucketPath \? signedAttachments\[bucketPath\] : a\.url;/.test(c),
+    naoUsaUrlCrua: !/<a href=\{a\.url\}/.test(c) && /<a href=\{href\}/.test(c),
   };
 }
 
@@ -53,6 +70,25 @@ export function helper(body) {
 test('#2449: a tela abre o anexo por link assinado, nunca pela URL publica', () => {
   const t = tela(CARD);
   assert.deepEqual(t, Object.fromEntries(Object.keys(t).map((k) => [k, true])));
+});
+
+test('#2449: a curadoria abre o anexo do card pelo mesmo link assinado', () => {
+  const t = curadoria(CURA);
+  assert.deepEqual(t, Object.fromEntries(Object.keys(t).map((k) => [k, true])));
+});
+
+test('#2449 mutacao: a curadoria reprova cada forma do defeito', () => {
+  const m = (src, a, b) => { const out = src.replace(a, b); assert.notEqual(out, src, `mutacao nao aplicou: ${a}`); return out; };
+  // o defeito de 08/10: href cru
+  assert.equal(curadoria(m(CURA, '<a href={href}', '<a href={a.url}')).naoUsaUrlCrua, false);
+  // deixa de assinar
+  assert.equal(curadoria(m(CURA, 'createSignedUrls(paths, 3600)', 'getPublicUrl(paths)')).assina, false);
+  // o href ignora o assinado
+  assert.equal(curadoria(m(CURA, 'bucketPath ? signedAttachments[bucketPath] : a.url', 'a.url')).hrefAssinado, false);
+  // volta a ter copia local do helper
+  assert.equal(curadoria(m(CURA, "import { ATTACH_BUCKET, storagePathOf } from '../../lib/boardAttachments';", '')).importa, false);
+  // o card deixa de usar o helper compartilhado
+  assert.equal(tela(m(CARD, "import { ATTACH_BUCKET, storagePathOf } from '../../lib/boardAttachments';", '')).derivaCaminho, false);
 });
 
 test(dbGated ? '#2449: a leitura do bucket exige quem ve o card' : `SKIP: ${skipMsg}`,
