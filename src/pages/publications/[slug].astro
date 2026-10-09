@@ -1,0 +1,211 @@
+---
+/**
+ * /publications/[slug] — página permanente de uma obra (#2613).
+ * SSR com a chave anon: a leitura sai só por get_public_publication, que aplica is_published e o
+ * portão de iniciativa confidencial (ADR-0105). Obra ausente, despublicada ou confidencial = 404.
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { SEO_CANONICAL_ORIGIN } from '../../lib/canonical';
+import { formatDateOnly } from '../../lib/date-only';
+import {
+  PUBLISHER, doiUrl, formatAbnt, formatApa, formatBibtex, licenseInfo, publicationYear,
+} from '../../lib/publication-citation';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const langQuery = lang === 'pt-BR' ? '' : `?lang=${lang}`;
+const { slug } = Astro.params;
+
+const sb = createClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+const { data: pub } = await sb.rpc('get_public_publication', { p_slug: slug ?? '' });
+if (!pub) Astro.response.status = 404;
+
+const TYPE_KEYS: Record<string, string> = {
+  article: 'publications.typeArticle', framework: 'publications.typeFramework', toolkit: 'publications.typeToolkit',
+  case_study: 'publications.typeCaseStudy', webinar_recording: 'publications.typeWebinar',
+  ebook: 'publications.typeEbook', podcast: 'publications.typePodcast',
+};
+const typeLabel = pub ? t(TYPE_KEYS[pub.publication_type] ?? 'publications.typeArticle', lang) : '';
+const pageUrl = `${SEO_CANONICAL_ORIGIN}/publications/${slug}`;
+const citable = pub ? {
+  title: pub.title, authors: pub.authors ?? [], publication_date: pub.publication_date,
+  publication_type: pub.publication_type, doi: pub.doi, external_url: pub.external_url, slug: pub.slug,
+  collection: pub.collection ? { title: pub.collection.title, position: pub.collection.position } : null,
+} : null;
+const citations = citable ? [
+  { id: 'abnt', label: 'ABNT', text: formatAbnt(citable, SEO_CANONICAL_ORIGIN, new Date()) },
+  { id: 'apa', label: 'APA', text: formatApa(citable, SEO_CANONICAL_ORIGIN) },
+  { id: 'bibtex', label: 'BibTeX', text: formatBibtex(citable, SEO_CANONICAL_ORIGIN) },
+] : [];
+const license = licenseInfo(pub?.license);
+const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
+const dateStr = pub?.publication_date ? formatDateOnly(pub.publication_date, { day: 'numeric', month: 'long', year: 'numeric' }, locale) : '';
+const profiles: { name: string; linkedin_url: string | null }[] = pub?.author_profiles ?? [];
+const linkedinOf = (name: string) => profiles.find(p => p.name === name)?.linkedin_url ?? null;
+const pageTitle = pub ? `${pub.title} | ${PUBLISHER}` : t('publications.page.notFound', lang);
+const description = (pub?.abstract ?? '').slice(0, 300);
+const jsonLd = pub ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': pub.publication_type === 'article' ? 'ScholarlyArticle' : 'CreativeWork',
+  name: pub.title,
+  headline: pub.title,
+  abstract: pub.abstract,
+  author: (pub.authors ?? []).map((a: string) => ({ '@type': 'Person', name: a })),
+  datePublished: pub.publication_date,
+  inLanguage: pub.language,
+  keywords: pub.keywords,
+  publisher: { '@type': 'Organization', name: PUBLISHER },
+  url: pageUrl,
+  ...(pub.doi ? { identifier: { '@type': 'PropertyValue', propertyID: 'DOI', value: pub.doi }, sameAs: doiUrl(pub.doi) } : {}),
+  ...(license?.url ? { license: license.url } : {}),
+  ...(pub.collection ? { isPartOf: { '@type': 'CreativeWork', name: pub.collection.title, url: `${SEO_CANONICAL_ORIGIN}/publications/collections/${pub.collection.slug}` } } : {}),
+}).replace(/</g, '\\u003c') : '';
+---
+
+<BaseLayout activePage="publications" title={pageTitle} description={description || undefined} lang={lang}>
+  {pub && (
+    <Fragment slot="head">
+      <meta name="citation_title" content={pub.title} />
+      {(pub.authors ?? []).map((a: string) => <meta name="citation_author" content={a} />)}
+      {pub.publication_date && <meta name="citation_publication_date" content={pub.publication_date.replaceAll('-', '/')} />}
+      <meta name="citation_publisher" content={PUBLISHER} />
+      {pub.language && <meta name="citation_language" content={pub.language} />}
+      {pub.doi && <meta name="citation_doi" content={pub.doi} />}
+      {pub.pdf_url && <meta name="citation_pdf_url" content={pub.pdf_url} />}
+      {pub.collection && <meta name="citation_inbook_title" content={pub.collection.title} />}
+      {(pub.keywords ?? []).length > 0 && <meta name="citation_keywords" content={(pub.keywords ?? []).join('; ')} />}
+      <meta property="article:published_time" content={pub.publication_date ?? ''} />
+      <script type="application/ld+json" set:html={jsonLd} />
+    </Fragment>
+  )}
+
+  <div class="max-w-[860px] mx-auto px-4 py-10">
+    <a href={`${langPrefix}/publications`} class="text-sm text-teal hover:underline mb-6 inline-block">&larr; {t('publications.page.backToList', lang)}</a>
+
+    {!pub ? (
+      <div class="text-center py-16" data-testid="publication-not-found">
+        <p class="text-[var(--text-secondary)]">{t('publications.page.notFound', lang)}</p>
+      </div>
+    ) : (
+      <article data-publication-id={pub.id}>
+        <div class="flex flex-wrap items-center gap-2 mb-3 text-[.72rem]">
+          <span class="font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700">{typeLabel}</span>
+          {dateStr && <span class="text-[var(--text-muted)]">{dateStr}</span>}
+          {pub.cycle_code && <span class="text-[var(--text-muted)]">· {pub.cycle_code}</span>}
+          {pub.language && <span class="text-[var(--text-muted)]">· {pub.language}</span>}
+        </div>
+
+        {pub.collection && (
+          <p class="text-sm text-[var(--text-secondary)] mb-2">
+            {t('publications.page.partOf', lang)}{' '}
+            <a href={`/publications/collections/${pub.collection.slug}${langQuery}`} class="text-teal font-semibold hover:underline">{pub.collection.title}</a>
+            {pub.collection.position && <span> · {t('publications.page.position', lang).replace('{n}', String(pub.collection.position))}</span>}
+          </p>
+        )}
+
+        <h1 class="text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold leading-tight text-navy mb-4">{pub.title}</h1>
+
+        <p class="text-[.95rem] text-[var(--text-primary)] mb-1">
+          {(pub.authors ?? []).map((a: string, i: number) => (
+            <>
+              {i > 0 && ', '}
+              {linkedinOf(a)
+                ? <a href={linkedinOf(a)} target="_blank" rel="noopener" class="hover:underline">{a}</a>
+                : <span>{a}</span>}
+            </>
+          ))}
+        </p>
+        {pub.initiative && (
+          <p class="text-sm text-[var(--text-secondary)] mb-6">
+            {pub.initiative.tribe_id
+              ? <a href={`/tribe/${pub.initiative.tribe_id}${langQuery}`} class="hover:underline">{pub.initiative.title}</a>
+              : <span>{pub.initiative.title}</span>}
+          </p>
+        )}
+
+        <div class="flex flex-wrap gap-2 mb-8">
+          {pub.pdf_url && (
+            <a href={pub.pdf_url} target="_blank" rel="noopener" data-track-pub-view class="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">{t('publications.page.downloadPdf', lang)}</a>
+          )}
+          {pub.doi && (
+            <a href={doiUrl(pub.doi)} target="_blank" rel="noopener" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold no-underline hover:bg-[var(--surface-hover)]">DOI: {pub.doi}</a>
+          )}
+          {!pub.doi && pub.external_url && (
+            <a href={pub.external_url} target="_blank" rel="noopener" class="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold no-underline hover:bg-[var(--surface-hover)]">{t('publications.page.openExternal', lang)}</a>
+          )}
+        </div>
+
+        {pub.abstract && (
+          <section class="mb-8">
+            <h2 class="text-lg font-bold text-navy mb-2">{t('publications.page.abstract', lang)}</h2>
+            <p class="text-[var(--text-secondary)] leading-relaxed whitespace-pre-line">{pub.abstract}</p>
+          </section>
+        )}
+
+        {(pub.keywords ?? []).length > 0 && (
+          <section class="mb-8">
+            <h2 class="text-lg font-bold text-navy mb-2">{t('publications.page.keywords', lang)}</h2>
+            <div class="flex flex-wrap gap-1.5">
+              {(pub.keywords ?? []).map((k: string) => (
+                <a href={`/publications?q=${encodeURIComponent(k)}${lang === 'pt-BR' ? '' : `&lang=${lang}`}`} class="px-2 py-0.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded text-xs no-underline hover:underline">{k}</a>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section class="mb-8" id="cite">
+          <h2 class="text-lg font-bold text-navy mb-2">{t('publications.page.cite', lang)}</h2>
+          <div class="space-y-3">
+            {citations.map(c => (
+              <div class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3">
+                <div class="flex items-center justify-between mb-1.5">
+                  <span class="text-xs font-bold text-[var(--text-secondary)]">{c.label}</span>
+                  <button type="button" data-copy-target={`cite-${c.id}`} class="text-xs px-2 py-0.5 rounded bg-[var(--surface-section-cool)] border-0 cursor-pointer hover:bg-[var(--surface-hover)]">{t('publications.page.copy', lang)}</button>
+                </div>
+                <pre id={`cite-${c.id}`} class="text-[.78rem] text-[var(--text-primary)] whitespace-pre-wrap break-words font-mono m-0">{c.text}</pre>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section class="text-sm text-[var(--text-secondary)] border-t border-[var(--border-subtle)] pt-4 space-y-1">
+          {license && (
+            <p>{t('publications.page.license', lang)}:{' '}
+              {license.url ? <a href={license.url} target="_blank" rel="noopener license" class="text-teal hover:underline">{license.label}</a> : <span>{license.label}</span>}
+            </p>
+          )}
+          <p>{t('publications.page.permanentUrl', lang)}: <a href={pageUrl} class="text-teal hover:underline break-all">{pageUrl}</a></p>
+          <p>{t('publications.page.year', lang)}: {publicationYear(pub.publication_date)}</p>
+        </section>
+      </article>
+    )}
+  </div>
+</BaseLayout>
+
+<span id="pub-page-i18n-copied" class="hidden">{t('publications.page.copied', lang)}</span>
+
+<script define:vars={{ pubId: pub?.id ?? null }}>
+  document.querySelectorAll('[data-copy-target]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(btn.getAttribute('data-copy-target'));
+      if (!el) return;
+      const done = () => window.toast?.(document.getElementById('pub-page-i18n-copied')?.textContent || 'OK', 'success');
+      navigator.clipboard?.writeText(el.textContent || '').then(done).catch(() => {
+        const range = document.createRange(); range.selectNodeContents(el);
+        const sel = window.getSelection(); sel?.removeAllRanges(); sel?.addRange(range);
+      });
+    });
+  });
+  // Contagem de visualização, uma por sessão (increment_publication_view só conta obra publicada).
+  (function countView(attempt) {
+    if (!pubId) return;
+    const key = `pub_viewed_${pubId}`;
+    try { if (sessionStorage.getItem(key)) return; } catch { /* sem storage: conta mesmo assim */ }
+    const sb = window.navGetSb?.();
+    if (!sb) { if (attempt < 10) setTimeout(() => countView(attempt + 1), 500); return; }
+    sb.rpc('increment_publication_view', { p_id: pubId });
+    try { sessionStorage.setItem(key, '1'); } catch { /* ignore */ }
+  })(0);
+</script>

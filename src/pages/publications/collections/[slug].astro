@@ -1,0 +1,83 @@
+---
+/**
+ * /publications/collections/[slug] — página de uma coleção (toolkit com capítulos, em ordem) (#2613).
+ * SSR com a chave anon via get_public_publication_collection (is_published + portão da ADR-0105).
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
+import { createClient } from '@supabase/supabase-js';
+import { SEO_CANONICAL_ORIGIN } from '../../../lib/canonical';
+import { PUBLISHER, doiUrl, licenseInfo } from '../../../lib/publication-citation';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const langQuery = lang === 'pt-BR' ? '' : `?lang=${lang}`;
+const { slug } = Astro.params;
+
+const sb = createClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+const { data: col } = await sb.rpc('get_public_publication_collection', { p_slug: slug ?? '' });
+if (!col) Astro.response.status = 404;
+
+const items: { slug: string; title: string; position: number | null; authors: string[]; doi: string | null; abstract: string | null }[] = col?.items ?? [];
+const license = licenseInfo(col?.license);
+const pageTitle = col ? `${col.title} | ${PUBLISHER}` : t('publications.page.collectionNotFound', lang);
+const jsonLd = col ? JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'CreativeWork',
+  name: col.title,
+  description: col.description,
+  publisher: { '@type': 'Organization', name: PUBLISHER },
+  url: `${SEO_CANONICAL_ORIGIN}/publications/collections/${col.slug}`,
+  ...(license?.url ? { license: license.url } : {}),
+  hasPart: items.map(i => ({ '@type': 'CreativeWork', name: i.title, url: `${SEO_CANONICAL_ORIGIN}/publications/${i.slug}` })),
+}).replace(/</g, '\\u003c') : '';
+---
+
+<BaseLayout activePage="publications" title={pageTitle} description={col?.description || undefined} lang={lang}>
+  {col && <script slot="head" type="application/ld+json" set:html={jsonLd} />}
+
+  <div class="max-w-[860px] mx-auto px-4 py-10">
+    <a href={`${langPrefix}/publications`} class="text-sm text-teal hover:underline mb-6 inline-block">&larr; {t('publications.page.backToList', lang)}</a>
+
+    {!col ? (
+      <div class="text-center py-16" data-testid="collection-not-found">
+        <p class="text-[var(--text-secondary)]">{t('publications.page.collectionNotFound', lang)}</p>
+      </div>
+    ) : (
+      <section>
+        <div class="text-[.72rem] font-bold tracking-[.15em] uppercase text-indigo-600 mb-2">{t('publications.page.collection', lang)}</div>
+        <h1 class="text-[clamp(1.5rem,3.5vw,2.1rem)] font-extrabold leading-tight text-navy mb-3">{col.title}</h1>
+        {col.initiative && (
+          <p class="text-sm text-[var(--text-secondary)] mb-3">
+            {col.initiative.tribe_id
+              ? <a href={`/tribe/${col.initiative.tribe_id}${langQuery}`} class="hover:underline">{col.initiative.title}</a>
+              : <span>{col.initiative.title}</span>}
+          </p>
+        )}
+        {col.description && <p class="text-[var(--text-secondary)] leading-relaxed mb-6 whitespace-pre-line">{col.description}</p>}
+        <div class="flex flex-wrap gap-3 text-sm text-[var(--text-secondary)] mb-8">
+          {col.doi && <a href={doiUrl(col.doi)} target="_blank" rel="noopener" class="text-teal hover:underline">DOI: {col.doi}</a>}
+          {license && (license.url
+            ? <a href={license.url} target="_blank" rel="noopener license" class="text-teal hover:underline">{t('publications.page.license', lang)}: {license.label}</a>
+            : <span>{t('publications.page.license', lang)}: {license.label}</span>)}
+        </div>
+
+        <h2 class="text-lg font-bold text-navy mb-3">{t('publications.page.collectionItems', lang)}</h2>
+        {items.length === 0 ? (
+          <p class="text-sm text-[var(--text-muted)]">{t('publications.page.collectionEmpty', lang)}</p>
+        ) : (
+          <ol class="space-y-3 list-none p-0">
+            {items.map(i => (
+              <li class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-4">
+                <a href={`/publications/${i.slug}${langQuery}`} class="font-bold text-navy hover:underline">
+                  {i.position && <span class="text-[var(--text-muted)] mr-1">{i.position}.</span>}{i.title}
+                </a>
+                {(i.authors ?? []).length > 0 && <p class="text-xs text-[var(--text-secondary)] mt-1">{i.authors.join(', ')}</p>}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    )}
+  </div>
+</BaseLayout>

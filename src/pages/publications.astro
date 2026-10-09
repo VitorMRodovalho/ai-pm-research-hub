@@ -21,6 +21,10 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-6">
       {t('publications.publicSubtitle', lang)}
     </p>
+    <p class="text-[.78rem] text-[var(--text-muted)] max-w-[700px] -mt-4 mb-6">
+      {t('publications.libraryCrossLink', lang)}{' '}
+      <a href={`${langPrefix}/library`} class="text-teal font-semibold hover:underline">{t('publications.libraryCrossLinkCta', lang)}</a>
+    </p>
 
     <!-- Stats bar -->
     <div id="pub-stats" class="hidden flex flex-wrap gap-4 mb-6">
@@ -163,10 +167,14 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 <span id="pub-i18n-read" class="hidden">{t('publications.readMore', lang)}</span>
 <span id="pub-i18n-featured" class="hidden">{t('publications.featured', lang)}</span>
 <span id="pub-i18n-createError" class="hidden">{t('publications.createError', lang)}</span>
+<script is:inline define:vars={{ langPrefix }}>window.__LANG_PREFIX = langPrefix;</script>
+<span id="pub-i18n-page" class="hidden">{t('publications.page.openPage', lang)}</span>
 
 <script>
   import { hasPermission } from '../lib/permissions';
-  import { formatDateOnly, parseDateOnly } from '../lib/date-only';
+  import { formatDateOnly } from '../lib/date-only';
+  import { formatBibtex } from '../lib/publication-citation';
+  import { SEO_CANONICAL_ORIGIN } from '../lib/canonical';
   const TYPE_ICONS: Record<string, string> = {
     article: '\u{1F4C4}', framework: '\u{1F3D7}\uFE0F', toolkit: '\u{1F9F0}',
     case_study: '\u{1F4CB}', webinar_recording: '\u{1F3AC}', ebook: '\u{1F4D6}', podcast: '\u{1F3A7}'
@@ -179,18 +187,11 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
   function escHtml(s: string) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
   function generateBibtex(pub: any): string {
-    const firstAuthor = (pub.authors?.[0] || 'Unknown').split(' ');
-    const surname = firstAuthor[firstAuthor.length - 1].toLowerCase();
-    // #1511 — `publication_date` é coluna `date`: com parse UTC, uma publicação de
-    // 1 de janeiro citava o ANO anterior no BibTeX em fuso negativo.
-    const year = parseDateOnly(pub.publication_date)?.getFullYear() ?? 'nd';
-    const key = `${surname}${year}`;
-    const authorsFormatted = (pub.authors || []).map((a: string) => {
-      const parts = a.trim().split(' ');
-      return parts.length > 1 ? `${parts[parts.length-1]}, ${parts.slice(0,-1).join(' ')}` : a;
-    }).join(' and ');
-    const safeTitle = (pub.title || '').replace(/&/g, '\\&');
-    return `@article{${key},\n  title={${safeTitle}},\n  author={${authorsFormatted}},\n  year={${year}},\n  publisher={Núcleo IA \\& GP — PMI Brazilian Chapters}${pub.external_url ? `,\n  url={${pub.external_url}}` : ''}${pub.doi ? `,\n  doi={${pub.doi}}` : ''}\n}`;
+    return formatBibtex({
+      title: pub.title || '', authors: pub.authors || [], publication_date: pub.publication_date,
+      publication_type: pub.publication_type, doi: pub.doi, external_url: pub.external_url, slug: pub.slug,
+      collection: pub.collection_title ? { title: pub.collection_title, position: pub.collection_position } : null,
+    }, SEO_CANONICAL_ORIGIN);
   }
 
   function copyBibtex(pub: any) {
@@ -242,6 +243,8 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     const viewsLabel = document.getElementById('pub-i18n-views')?.textContent || 'views';
     const readLabel = document.getElementById('pub-i18n-read')?.textContent || 'Ler \u2192';
     const featuredLabel = document.getElementById('pub-i18n-featured')?.textContent || 'Destaque';
+    const lp = (window as any).__LANG_PREFIX || '';
+    const pageLabel = document.getElementById('pub-i18n-page')?.textContent || 'Página';
 
     grid.innerHTML = pubs.map((p: any) => {
       const icon = TYPE_ICONS[p.publication_type] || '\u{1F4C4}';
@@ -258,13 +261,14 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
             <span class="text-[.65rem] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">${icon} ${escHtml(typeLabel)}</span>
             ${dateStr ? `<span class="text-[.65rem] text-[var(--text-muted)]">${escHtml(dateStr)}</span>` : ''}
           </div>
-          <h3 class="text-sm font-bold text-navy leading-snug mb-1.5 line-clamp-2">${escHtml(p.title)}</h3>
+          <h3 class="text-sm font-bold text-navy leading-snug mb-1.5 line-clamp-2">${p.slug ? `<a href="${lp}/publications/${encodeURIComponent(p.slug)}" class="no-underline hover:underline text-navy">${escHtml(p.title)}</a>` : escHtml(p.title)}</h3>
           <p class="text-[.7rem] text-[var(--text-secondary)] mb-1.5">${escHtml(authors)}</p>
           ${abstractShort ? `<p class="text-[.68rem] text-[var(--text-muted)] italic mb-2 line-clamp-2">"${escHtml(abstractShort)}"</p>` : ''}
           ${keywords.length > 0 ? `<div class="flex flex-wrap gap-1 mb-2">${keywords.map((k: string) => `<span class="px-1.5 py-0.5 bg-[var(--surface-section-cool)] text-[var(--text-secondary)] rounded text-[.6rem] font-medium">${escHtml(k)}</span>`).join('')}</div>` : ''}
           <div class="mt-auto pt-2 flex items-center gap-2 border-t border-[var(--border-subtle)]">
             <span class="text-[.65rem] text-[var(--text-muted)]">\u{1F441} ${p.view_count || 0} ${escHtml(viewsLabel)}</span>
             <span class="flex-1"></span>
+            ${p.slug ? `<a href="${lp}/publications/${encodeURIComponent(p.slug)}" class="text-[.68rem] text-teal font-semibold no-underline hover:underline">${escHtml(pageLabel)}</a>` : ''}
             ${p.external_url ? `<a href="${escHtml(p.external_url)}" target="_blank" rel="noopener" data-track-pub-view data-pub-view-id="${escHtml(p.id)}" class="text-[.68rem] text-teal font-semibold no-underline hover:underline">${escHtml(readLabel)}</a>` : ''}
             <button onclick="window.__copyBibtex(${pubs.indexOf(p)})" class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)] font-medium cursor-pointer border-0 hover:bg-[var(--surface-hover)]">BibTeX</button>
             ${p.pdf_url ? `<a href="${escHtml(p.pdf_url)}" target="_blank" rel="noopener" data-track-pub-view data-pub-view-id="${escHtml(p.id)}" class="text-[.65rem] px-1.5 py-0.5 rounded bg-[var(--surface-section-cool)] text-[var(--text-secondary)] font-medium no-underline hover:bg-[var(--surface-hover)]">PDF</a>` : ''}
@@ -526,6 +530,9 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
   function boot() {
     const sb = (window as any).navGetSb?.();
     if (!sb) { setTimeout(boot, 300); return; }
+    const q = new URLSearchParams(window.location.search).get('q');
+    const searchEl = document.getElementById('pub-search') as HTMLInputElement | null;
+    if (q && searchEl && !searchEl.value) searchEl.value = q;
     loadPublicPublications();
     checkInternalAccess();
     checkMySubmissionsAccess();

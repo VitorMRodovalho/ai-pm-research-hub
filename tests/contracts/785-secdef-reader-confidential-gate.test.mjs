@@ -179,7 +179,7 @@ const ALLOWLIST = {
   get_geral_agenda_viva: 'result restricted to type=geral; confidential events are type=1on1',
   get_next_general_meeting: 'type=geral AND initiative_id IS NULL; confidential (1on1, non-null initiative) doubly excluded',
   get_pilots_summary: 'reads pilots registry only (0 pilots reference confidential); never reads events',
-  get_public_publications: 'is_published=true only; joins initiatives for legacy_tribe_id only; 0 confidential published publications',
+  // get_public_publications saiu daqui na #2613: passou a aplicar rls_can_see_initiative e rls_can_see_item.
   get_public_verticals: 'kind=community_vertical AND status=active; confidential is kind=committee',
   get_publication_pipeline_summary: 'reads publication_submissions only; confidential committee has 0 submissions',
   get_publication_submissions: 'reads publication_submissions (p_tribe_id by legacy_tribe_id); confidential has 0 submissions',
