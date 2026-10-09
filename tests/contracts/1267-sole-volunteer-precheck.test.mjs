@@ -8,14 +8,13 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const MIG = join(
-  __dirname,
-  '../../supabase/migrations/20260805000399_1267_sole_volunteer_precheck_context.sql',
-);
 const TSX = join(__dirname, '../../src/components/tribe/TribeRequestBlock.tsx');
-const sql = readFileSync(MIG, 'utf8');
+// #1932: read the CURRENT capture, not the #1267 file. A later migration (#1877) redefines this function, and a
+// pinned file would keep asserting on a body that is no longer live.
+const sql = latestFunctionCapture(join(__dirname, '../..'), 'get_my_tribe_request_context').block;
 const tsx = readFileSync(TSX, 'utf8');
 
 test('#1267: migration redefine get_my_tribe_request_context', () => {

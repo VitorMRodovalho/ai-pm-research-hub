@@ -25,27 +25,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
 
-const MIG = 'supabase/migrations/20260805000431_1350_request_tribe_assignment_capacity_gate.sql';
-const mig = read(MIG);
-
-test('#1350: migration present + re-captures request_tribe_assignment', () => {
-  assert.ok(existsSync(resolve(ROOT, MIG)), 'migration file present');
-  assert.match(mig, /CREATE OR REPLACE FUNCTION public\.request_tribe_assignment\(/);
-});
 
 // #1476 Onda 1 rebased request_tribe_assignment's slot formula onto the canonical set
 // (v_tribe_active_members). The gate BEHAVIOUR is unchanged (cap from SSOT, blocks at/over cap,
 // "Tribo lotada" before the INSERT); only the counting source moved off operational_role. The
 // live definition now lives in mig 484 — assert there, not against the stale 431 formula.
-const MIG_1476 = 'supabase/migrations/20260805000484_1476_wave1_tribe_membership_canonical.sql';
-const mig1476 = read(MIG_1476);
+// #1932: the gate is asserted on the CURRENT capture of request_tribe_assignment (it was pinned to 431, then 484;
+// #1877 redefined it again). Reading the newest definition keeps this guard about the live body.
+const mig1476 = latestFunctionCapture(ROOT, 'request_tribe_assignment').block;
 
 test('#1350/#1476: capacity gate uses tribe_capacity_limit() + the canonical slot formula', () => {
-  assert.match(mig1476, /CREATE OR REPLACE FUNCTION public\.request_tribe_assignment\(/, '484 recaptures request_tribe_assignment');
+  assert.match(mig1476, /CREATE OR REPLACE FUNCTION public\.request_tribe_assignment\(/, 'the current capture defines request_tribe_assignment');
   assert.match(mig1476, /v_max_slots integer := public\.tribe_capacity_limit\(\)/, 'cap from SSOT');
   // slot count now derives from the engagement-based canonical set, not the operational_role label
   assert.match(mig1476, /SELECT count\(\*\) INTO v_slot_count\s*\n\s*FROM public\.v_tribe_active_members v\s*\n\s*WHERE v\.legacy_tribe_id = p_tribe_id;/,
