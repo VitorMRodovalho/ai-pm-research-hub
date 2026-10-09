@@ -52,7 +52,7 @@ export const howToClassify: GuideStep[] = [
   {
     title: 'Escolha o tipo de artefato',
     who: 'Líder da iniciativa ou GP',
-    detail: 'Logo abaixo aparece <strong>Tipo de artefato</strong>. A plataforma sugere um tipo pelo título; confira e clique em <strong>usar</strong>, ou escolha outro. Para publicação, escolha também o <strong>formato</strong> (artigo, e-book, estudo de caso, relatório...).',
+    detail: 'Logo abaixo aparece <strong>Tipo de artefato</strong>. A plataforma sugere um tipo pelo título; confira e clique em <strong>usar</strong>, ou escolha outro. Para publicação, o <strong>formato é obrigatório</strong>: escolha artigo LinkedIn, artigo acadêmico, e-book, estudo de caso, infográfico ou report. A publicação só é gravada, e só segue para a curadoria, com o formato escolhido.',
   },
   {
     title: 'Confira para onde o card vai',

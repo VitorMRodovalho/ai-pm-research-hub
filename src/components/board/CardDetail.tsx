@@ -47,6 +47,7 @@ const REVIEW_ERRORS: Array<[RegExp, string]> = [
   [/artefato publicável/i, 'reviewErrNotArtifact'],
   [/Waiver requires a reason/i, 'reviewErrWaiverReason'],
   [/^Decision must be|desconhecido|Subtipo so existe/i, 'reviewErrInvalid'],
+  [/^Publicação precisa de exatamente um formato/i, 'reviewErrNoSubtype'],
 ];
 const reviewErrorKey = (message: string | undefined): string | null => {
   const m = message || '';
@@ -125,13 +126,21 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
     return (key && (i18n as any)[key]) || message || fallback;
   };
   const [savingArtifactType, setSavingArtifactType] = useState(false);
+  // #2624: publicacao so se grava com o formato. Escolher 'publicacao' abre o seletor de formato e
+  // so o formato escolhido dispara a gravacao (a RPC recusa publicacao sem formato).
+  const [pendingPublication, setPendingPublication] = useState(false);
+  const chooseArtifactType = (type: string | null) => {
+    if (type === 'publicacao' && classif?.type !== 'publicacao') { setPendingPublication(true); return; }
+    setPendingPublication(false);
+    saveArtifactType(type, null);
+  };
   const loadClassif = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
     const { data, error } = await sb.rpc('get_artifact_classification', { p_item_id: item.id });
     if (!error && data && typeof data === 'object') setClassif(data as ArtifactClassification);
   }, [item.id]);
-  useEffect(() => { setClassif(null); loadClassif(); }, [loadClassif, item.is_portfolio_item]);
+  useEffect(() => { setClassif(null); setPendingPublication(false); loadClassif(); }, [loadClassif, item.is_portfolio_item]);
   // Revisão e curadoria só para artefato publicável; card já no fluxo continua visível, para que o
   // líder possa devolver o que entrou sem ser artefato (#2447).
   const needsCuration = !!classif?.needs_curation;
@@ -168,6 +177,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       const { error } = await sb.rpc('set_board_item_artifact_type', { p_item_id: item.id, p_type: type, p_subtype: subtype });
       if (error) throw error;
       (window as any).toast?.(i18n.artifactTypeSaved || 'Tipo de artefato salvo', 'success');
+      setPendingPublication(false);
       await loadClassif();
     } catch (err: any) {
       (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o tipo'), 'error');
@@ -528,7 +538,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       ]);
       (window as any).toast?.('Membro adicionado', 'success');
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao adicionar membro', 'error');
+      // #2624: designar parecerista em card concluido envia o card a curadoria (gatilho p197), e a
+      // trava de formato pode recusar; o erro passa pela mesma traducao do fluxo de revisao.
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao adicionar membro'), 'error');
     }
   }, [item.id, members]);
 
@@ -543,7 +555,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
       setItemAssignments((prev) => prev.filter((a) => !(a.member_id === memberId && a.role === role)));
       (window as any).toast?.('Membro removido');
     } catch (err: any) {
-      (window as any).toast?.(err.message || 'Erro ao remover membro', 'error');
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao remover membro'), 'error');
     }
   }, [item.id]);
 
@@ -1532,16 +1544,17 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* #2447: o tipo do artefato, na taxonomia que o painel de portfólio lê */}
             {item.is_portfolio_item && classif && (
               <div className="space-y-1">
-                <label className="text-[10px] font-semibold text-[var(--text-secondary)] flex items-center justify-between uppercase tracking-wide">
+                <label htmlFor={`artifact-type-${item.id}`} className="text-[10px] font-semibold text-[var(--text-secondary)] flex items-center justify-between uppercase tracking-wide">
                   <span>{i18n.artifactTypeLabel || 'Tipo de artefato'}</span>
                   <a href={guideHref()} target="_blank" rel="noopener" className="normal-case font-normal text-teal underline">
                     {i18n.artifactHowItWorks || 'ⓘ Como funciona'}
                   </a>
                 </label>
                 <select
-                  value={classif.type || ''}
+                  id={`artifact-type-${item.id}`}
+                  value={pendingPublication ? 'publicacao' : (classif.type || '')}
                   disabled={!classif.can_edit || savingArtifactType}
-                  onChange={(e) => saveArtifactType(e.target.value || null, null)}
+                  onChange={(e) => chooseArtifactType(e.target.value || null)}
                   className="w-full px-2 py-1 border border-[var(--border-default)] rounded-lg text-[11px] bg-[var(--surface-input)] text-[var(--text-primary)]">
                   <option value="">{i18n.artifactTypeNone || '— Escolha o tipo —'}</option>
                   {(classif.types || []).map((t) => (
@@ -1553,28 +1566,37 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     {i18n.artifactSuggested || 'Sugestão:'}{' '}
                     <b>{tagLabel((classif.types || []).find((t) => t.name === classif.suggested))}</b>{' '}
                     <button type="button" disabled={savingArtifactType}
-                      onClick={() => saveArtifactType(classif.suggested, null)}
+                      onClick={() => chooseArtifactType(classif.suggested)}
                       className="underline text-teal cursor-pointer border-0 bg-transparent p-0">
                       {i18n.artifactUseSuggestion || 'usar'}
                     </button>
                   </div>
                 )}
-                {classif.type === 'publicacao' && (
+                {(classif.type === 'publicacao' || pendingPublication) && (
                   <select
                     value={classif.subtype || ''}
                     disabled={!classif.can_edit || savingArtifactType}
                     onChange={(e) => saveArtifactType('publicacao', e.target.value || null)}
                     className="w-full px-2 py-1 border border-[var(--border-default)] rounded-lg text-[11px] bg-[var(--surface-input)] text-[var(--text-primary)]"
-                    aria-label={i18n.artifactSubtypeLabel || 'Formato da publicação'}>
-                    <option value="">{i18n.artifactSubtypeNone || '— Sem formato específico —'}</option>
+                    aria-label={i18n.artifactSubtypeLabel || 'Formato da publicação'}
+                    aria-invalid={!classif.subtype}
+                    aria-describedby={!classif.subtype ? `artifact-subtype-hint-${item.id}` : undefined}>
+                    <option value="" disabled>{i18n.artifactSubtypeNone || '— Escolha o formato (obrigatório) —'}</option>
                     {(classif.subtypes || []).map((t) => (
                       <option key={t.name} value={t.name}>{tagLabel(t)}</option>
                     ))}
                   </select>
                 )}
-                {classif.type && (
+                {(classif.type === 'publicacao' || pendingPublication) && !classif.subtype && classif.can_edit && (
+                  <p id={`artifact-subtype-hint-${item.id}`} role="status" className="text-[11px] text-amber-800 bg-amber-50 rounded px-2 py-1">
+                    {'⚠ '}{pendingPublication
+                      ? (i18n.artifactSubtypePending || 'Ainda não salvo: escolha o formato neste campo para gravar a publicação.')
+                      : (i18n.artifactSubtypeMissing || 'Falta o formato: sem ele, esta publicação não vai para a curadoria.')}
+                  </p>
+                )}
+                {(pendingPublication || classif.type) && (
                   <p className="text-[10px] text-[var(--text-muted)]">
-                    {needsCuration
+                    {(pendingPublication || needsCuration)
                       ? (i18n.artifactGoesToCuration || 'Este tipo passa por peer review, revisão do líder e curadoria.')
                       : (i18n.artifactPortfolioOnly || 'Este tipo vai para o portfólio, sem revisão nem curadoria.')}
                   </p>
