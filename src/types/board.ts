@@ -383,6 +383,8 @@ export interface BoardI18n {
   artifactUseSuggestion?: string;
   artifactGoesToCuration?: string;
   artifactPortfolioOnly?: string;
+  artifactSubtypeMissing?: string;
+  artifactSubtypePending?: string;
   artifactTypeSaved?: string;
   preCurationNotArtifact?: string;
   artifactHowItWorks?: string;
@@ -393,6 +395,7 @@ export interface BoardI18n {
   reviewErrNotArtifact?: string;
   reviewErrWaiverReason?: string;
   reviewErrInvalid?: string;
+  reviewErrNoSubtype?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -510,11 +513,13 @@ export const DEFAULT_I18N: BoardI18n = {
   artifactTypeLabel: 'Tipo de artefato',
   artifactTypeNone: '— Escolha o tipo —',
   artifactSubtypeLabel: 'Formato da publicação',
-  artifactSubtypeNone: '— Sem formato específico —',
+  artifactSubtypeNone: '— Escolha o formato (obrigatório) —',
   artifactSuggested: 'Sugestão:',
   artifactUseSuggestion: 'usar',
   artifactGoesToCuration: 'Este tipo passa por peer review, revisão do líder e curadoria.',
   artifactPortfolioOnly: 'Este tipo vai para o portfólio, sem revisão nem curadoria.',
+  artifactSubtypeMissing: 'Falta o formato: sem ele, esta publicação não vai para a curadoria.',
+  artifactSubtypePending: 'Ainda não salvo: escolha o formato neste campo para gravar a publicação.',
   artifactTypeSaved: 'Tipo de artefato salvo',
   preCurationNotArtifact: 'Este card não é artefato publicável: revisão e curadoria não se aplicam. Use Devolver para tirá-lo do fluxo.',
   artifactHowItWorks: 'ⓘ Como funciona',
@@ -526,6 +531,7 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewErrNotArtifact: 'Revisão e curadoria valem só para artefato publicável: marque o card como entregável de portfólio e escolha um tipo de publicação, ou use Devolver.',
   reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
   reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
+  reviewErrNoSubtype: 'Publicação precisa de um formato: escolha o formato da publicação no card (artigo, e-book, infográfico, etc.) e tente de novo.',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

@@ -53,7 +53,7 @@ const CORRIGIDAS = [
 // rls_can_see_artifact_link pelo evento e rls_can_see_item pelo card).
 const SEM_GATE_BASELINE = new Set([
   'board_sla_config', 'content_products', 'event_showcases',
-  'partner_cards', 'pilots', 'public_publications', 'publication_submission_events',
+  'partner_cards', 'pilots', 'publication_submission_events', // public_publications: gate na #2613
   'publication_submissions', 'webinars',
 ]);
 

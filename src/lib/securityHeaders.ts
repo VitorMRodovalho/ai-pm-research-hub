@@ -42,6 +42,11 @@
  * (img-src) e o áudio por `anchor.fm`, que redireciona para `d3ctxlq1ktw2nl.cloudfront.net`
  * (media-src; a CSP confere cada salto do redirecionamento). Medido no feed em 06/10/2026.
  * Não há frame-src novo: o player é o <audio> nativo, não o embed do Spotify.
+ *
+ * Exportação de PDF dos documentos de governança (09/10/2026): o @react-pdf/renderer carrega o
+ * motor de layout (WebAssembly) por fetch de uma URL `data:` (connect-src) e decodifica o PNG do
+ * logo num worker criado de `blob:` (worker-src; sem ele a CSP cai no script-src). Os dois eram
+ * bloqueados e a exportação falhava no navegador.
  */
 export const CSP =
   "default-src 'self'; " +
@@ -50,7 +55,8 @@ export const CSP =
   "font-src 'self' https://fonts.gstatic.com; " +
   "img-src 'self' data: blob: https://ldrfrvwhxsmgaabwmaik.supabase.co https://*.googleusercontent.com https://i.ytimg.com https://d3t3ozftmdmh3i.cloudfront.net; " +
   "media-src 'self' https://anchor.fm https://d3ctxlq1ktw2nl.cloudfront.net; " +
-  "connect-src 'self' https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com https://viacep.com.br; " +
+  "connect-src 'self' data: https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com https://viacep.com.br; " +
+  "worker-src 'self' blob:; " +
   "frame-src https://calendar.google.com; " +
   "object-src 'none'; " +
   "frame-ancestors 'none'; " +

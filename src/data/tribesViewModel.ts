@@ -42,10 +42,10 @@ export function buildTribesViewModel(lang: Lang): TribesViewModel {
   const tribes = resolveTribes(lang).filter((tribe) => {
     // #1116: video + deliverables are optional — newly-formed C4 tribes (9/10/11/12)
     // have no explainer video or fixed deliverables yet, but must still render.
+    // #2609: the schedule no longer comes from i18n (it is the recurring rule, loaded at SSR).
     const valid =
       hasText(tribe.name) &&
-      hasText(tribe.description) &&
-      hasText(tribe.meetingSchedule);
+      hasText(tribe.description);
     if (!valid) warnings.push(`Tribe payload incomplete for T${String(tribe.id).padStart(2, '0')}`);
     return valid;
   });

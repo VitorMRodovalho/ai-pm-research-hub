@@ -143,7 +143,8 @@ export default function ReportPage() {
 
       try {
         const [reportRes, cfgRes, chapters] = await Promise.all([
-          sb.rpc('get_cycle_report', { p_cycle: 3 }),
+          // #2565 (a) / ADR-0100: sem ciclo, a funcao resolve o ciclo corrente e a janela dele.
+          sb.rpc('get_cycle_report', {}),
           sb.from('site_config').select('value').eq('key', 'report_config').maybeSingle(),
           loadChapters(sb),
         ]);

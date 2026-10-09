@@ -117,6 +117,30 @@ jobs:
       - name: Run client-script undefined-identifier gate
         run: npm run lint:client-scripts
 
+      # #1742 (09/10/2026) — a varredura de leitura por nao-membro (uma sonda por relacao do
+      # catalogo) era 191.075 dos blocos lidos do banco desde o reinicio das 06:12Z, em 2.464
+      # chamadas: o maior consumo constante de IO de disco. So uma mudanca de acesso (migration)
+      # muda o que ela mede, entao ela roda quando o diff toca supabase/migrations/, e toda noite na
+      # main (ghost-read-sweep-nightly.yml, que pega mudanca feita fora de PR). Na DUVIDA, VARRE: se
+      # o diff nao puder ser calculado, GHOST_READ_SWEEP fica 1. O teste so pula com 0 explicito.
+      # Guard da fiacao: tests/contracts/1742-varredura-so-quando-muda-acesso.test.mjs.
+      - name: Decide a varredura de leitura por nao-membro (#1742)
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          sweep=1; why="padrao: na duvida, varre"
+          if [ -n "$BASE_SHA" ] && [ "$BASE_SHA" != "0000000000000000000000000000000000000000" ] \
+             && git fetch -q --depth=1 origin "$BASE_SHA" \
+             && files="$(git diff --name-only "$BASE_SHA" HEAD)"; then
+            if printf '%s\n' "$files" | grep -q '^supabase/migrations/'; then
+              why="o diff mexe em supabase/migrations"
+            else
+              sweep=0; why="o diff nao mexe em supabase/migrations"
+            fi
+          fi
+          echo "GHOST_READ_SWEEP=$sweep" >> "$GITHUB_ENV"
+          echo "varredura de leitura por nao-membro: GHOST_READ_SWEEP=$sweep ($why)"
+
       - name: Run Unit Tests
         # SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY enable DB-aware contract tests
         # (rpc-migration-coverage Q-C orphan check + drift detection). Without
