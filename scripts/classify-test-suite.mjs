@@ -108,10 +108,32 @@ export function testesEmDisco(root = ROOT) {
   return encontrados.sort();
 }
 
+/**
+ * Os arquivos de cada balde, derivados do DISCO na hora (09/10/2026, decisao do GP). Ate entao os scripts do
+ * package.json eram listas materializadas desta classificacao, numa linha so por balde, e toda lane que criava um
+ * teste editava a MESMA linha: em 09/10 isso causou conflito em toda PR paralela e pelo menos 4 de 14 reexecucoes de
+ * CI. Agora `scripts/run-suite.mjs <balde>` chama esta funcao. Nada some em silencio: todo teste em disco cai num
+ * balde, salvo exclusao DECLARADA, e o teste de banco cai no comportamental porque o classificador le o conteudo.
+ */
+export function suiteFiles(balde, root = ROOT) {
+  const disco = testesEmDisco(root).filter((f) => !EXCLUSOES_DECLARADAS.has(f));
+  if (balde === 'contracts') return disco.filter((f) => f.startsWith('tests/contracts/'));
+  const p = classificar(disco, root);
+  if (balde === 'structural') return p.structural;
+  if (balde === 'behavioural') return p.behavioural;
+  throw new Error(`balde desconhecido: ${balde}`);
+}
+
+/** Arquivos de um script npm: o executor derivado (`run-suite.mjs <balde>`) ou uma lista explicita antiga. */
+export function arquivosDoScriptOuSuite(script, root = ROOT) {
+  const m = (script || '').match(/scripts\/run-suite\.mjs\s+(structural|behavioural|contracts)\b/);
+  return m ? suiteFiles(m[1], root) : arquivosDoScript(script);
+}
+
 export function lerParticao(pkg) {
   return {
-    structural: arquivosDoScript(pkg.scripts['test:structural']),
-    behavioural: arquivosDoScript(pkg.scripts['test:behavioural']),
+    structural: arquivosDoScriptOuSuite(pkg.scripts['test:structural']),
+    behavioural: arquivosDoScriptOuSuite(pkg.scripts['test:behavioural']),
   };
 }
 

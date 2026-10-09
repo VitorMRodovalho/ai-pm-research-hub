@@ -104,9 +104,14 @@ test('#1908 (3) a lista de exclusões só DESCE', () => {
 test('#1908 os dois baldes rodam com a concorrência certa', () => {
   // A serialização do #1261 vale para quem fala com o banco. Aplicá-la ao balde hermético é
   // justamente o custo que a A1 remove: 30,4s em série contra 12,6s com concorrência 4.
-  assert.match(pkg.scripts['test:behavioural'], /--test-concurrency=1\b/,
+  // 09/10/2026: os baldes sao derivados do disco por scripts/run-suite.mjs; a concorrencia mora no executor.
+  assert.match(pkg.scripts['test:behavioural'], /node scripts\/run-suite\.mjs behavioural\b/);
+  assert.match(pkg.scripts['test:structural'], /node scripts\/run-suite\.mjs structural\b/);
+  const runner = readFileSync(resolve(ROOT, 'scripts/run-suite.mjs'), 'utf8');
+  const cmd = (b) => (runner.match(new RegExp(`${b}: \\[([^\\]]*)\\]`)) || [])[1] || '';
+  assert.match(cmd('behavioural'), /'--test-concurrency=1'/,
     'o balde comportamental TEM de rodar em série: é a garantia do #1261 sobre o banco compartilhado');
-  assert.doesNotMatch(pkg.scripts['test:structural'], /--test-concurrency=1\b/,
+  assert.doesNotMatch(cmd('structural'), /'--test-concurrency=1'/,
     'o balde estrutural em série devolve os 30s que a A1 existe para cortar');
 });
 
