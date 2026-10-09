@@ -41,6 +41,8 @@ const TRIBE_I18N = {
   commsHubTab: t('tribe.commsHubTab', lang),
   meetingSchedule: t('tribe.meetingSchedule', lang),
   scheduleText: formatMeetingSlots(tribeProfile?.slots, lang),
+  // Without the DB read there is no schedule to show: "a definir" would be a false statement.
+  scheduleKnown: tribeProfile !== null,
   scheduleTbd: t('tribe.scheduleTbd', lang),
   editScheduleInPanel: t('tribe.editScheduleInPanel', lang),
   editProfile: t('tribe.profile.edit', lang),
@@ -639,7 +641,9 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     // #2609: the schedule comes only from the recurring rule (formatted at SSR); no free text.
     const scheduleHtml = I18N.scheduleText
       ? escapeHtml(String(I18N.scheduleText))
-      : `<span class="text-[var(--text-muted)] italic">${escapeHtml(I18N.scheduleTbd || '—')}</span>`;
+      : I18N.scheduleKnown
+        ? `<span class="text-[var(--text-muted)] italic">${escapeHtml(I18N.scheduleTbd || '—')}</span>`
+        : '<span class="text-[var(--text-muted)]">—</span>';
     const PENCIL = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>';
     // The schedule is edited where the rule lives: the recurring meetings panel of the initiative page.
     const scheduleLabel = I18N.scheduleText ? I18N.editSchedule : I18N.defineSchedule;

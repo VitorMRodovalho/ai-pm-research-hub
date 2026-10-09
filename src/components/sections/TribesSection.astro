@@ -101,9 +101,12 @@ try {
 // deliverables_i18n and the recurring rule (tribe_meeting_slots) — read via the anon SECURITY DEFINER
 // RPC get_tribe_public_profiles. The i18n text in tribes.ts is only the fallback if the RPC fails.
 const scheduleByTribe = new Map<number, string>();
+// Without the DB read there is no schedule to show: "a definir" would be a false statement.
+let profilesLoaded = false;
 try {
   const { data: profiles } = await profilesRequest;
   if (Array.isArray(profiles)) {
+    profilesLoaded = true;
     const byId = new Map<number, TribePublicProfile>(profiles.map((p: TribePublicProfile) => [Number(p.tribe_id), p]));
     safeTribes = safeTribes.map((tr) => {
       const p = byId.get(tr.id);
@@ -355,7 +358,9 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                       <strong>{t('tribes.meetings', lang)}</strong>{' '}
                       {scheduleByTribe.get(tr.id)
                         ? <span>{scheduleByTribe.get(tr.id)}</span>
-                        : <span class="text-[var(--text-muted)] italic">{t('tribes.scheduleTbd', lang)}</span>}
+                        : profilesLoaded
+                          ? <span class="text-[var(--text-muted)] italic">{t('tribes.scheduleTbd', lang)}</span>
+                          : <span class="text-[var(--text-muted)]">—</span>}
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">

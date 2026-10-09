@@ -88,7 +88,8 @@ test('#2609 home: descrição e entregáveis do banco, dicionário só como fall
 
 test('#2609 home: horário da regra, "a definir" sem regra, e nunca tribes.notes', () => {
   assert.match(HOME, /scheduleByTribe\.set\(tr\.id, formatMeetingSlots\(p\.slots, lang\)\);/);
-  assert.match(HOME, /\{scheduleByTribe\.get\(tr\.id\)\s+\? <span>\{scheduleByTribe\.get\(tr\.id\)\}<\/span>\s+: <span[^>]*>\{t\('tribes\.scheduleTbd', lang\)\}<\/span>\}/);
+  assert.match(HOME, /\{scheduleByTribe\.get\(tr\.id\)\s+\? <span>\{scheduleByTribe\.get\(tr\.id\)\}<\/span>\s+: profilesLoaded\s+\? <span[^>]*>\{t\('tribes\.scheduleTbd', lang\)\}<\/span>\s+: <span[^>]*>—<\/span>\}/);
+  assert.match(HOME, /if \(Array\.isArray\(profiles\)\) \{\s+profilesLoaded = true;/);
   assert.doesNotMatch(HOME, /notesMap|tr\.meetingSchedule|\.select\([^)]*\bnotes\b/);
 });
 
@@ -100,7 +101,8 @@ test('#2609 página da tribo: descrição do perfil, nunca tribes.notes', () => 
 
 test('#2609 página da tribo: horário só da regra, e o texto livre não é lido nem gravado', () => {
   assert.match(PAGE, /scheduleText: formatMeetingSlots\(tribeProfile\?\.slots, lang\),/);
-  assert.match(PAGE, /const scheduleHtml = I18N\.scheduleText\s+\? escapeHtml\(String\(I18N\.scheduleText\)\)\s+: `<span[^`]*\$\{escapeHtml\(I18N\.scheduleTbd/);
+  assert.match(PAGE, /const scheduleHtml = I18N\.scheduleText\s+\? escapeHtml\(String\(I18N\.scheduleText\)\)\s+: I18N\.scheduleKnown\s+\? `<span[^`]*\$\{escapeHtml\(I18N\.scheduleTbd/);
+  assert.match(PAGE, /scheduleKnown: tribeProfile !== null,/);
   assert.doesNotMatch(PAGE, /meeting_schedule/);
 });
 
