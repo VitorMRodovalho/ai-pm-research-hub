@@ -151,6 +151,16 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "mcp__.*[Nn]ucleo-ia__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/db-write-gate.py\"",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "Elicitation": [

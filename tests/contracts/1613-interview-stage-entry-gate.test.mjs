@@ -35,12 +35,12 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { createSyntheticApplication } from '../helpers/selection-fixtures.mjs';
+import { suiteFiles } from '../../scripts/classify-test-suite.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000514_1613_gate_entrada_fase_objetiva.sql');
 const WEBHOOK = resolve(ROOT, 'src/pages/api/calendar-webhook.ts');
 const MCP = resolve(ROOT, 'supabase/functions/nucleo-mcp/index.ts');
-const PKG = resolve(ROOT, 'package.json');
 
 const migRaw = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 // comentários fora: as asserções têm de casar SQL real, não a documentação — que menciona de
@@ -243,10 +243,12 @@ test('1613 static: o override tem SUPERFÍCIE (declarado e inalcançável seria 
   assert.match(mcpRaw, /override_reason: z\.string\(\)\.optional\(\)/);
 });
 
-test('1613 guard: o teste está registrado nas DUAS listas do package.json', () => {
-  const pkg = readFileSync(PKG, 'utf8');
-  const hits = (pkg.match(/1613-interview-stage-entry-gate\.test\.mjs/g) || []).length;
-  assert.equal(hits, 2, 'precisa estar em "test" E em "test:contracts" — senão nunca roda em CI');
+test('1613 guard: o teste roda no CI (balde de "test" e balde "contracts")', () => {
+  // 09/10/2026: as listas do package.json sairam; os baldes sao derivados do disco (scripts/run-suite.mjs).
+  const alvo = 'tests/contracts/1613-interview-stage-entry-gate.test.mjs';
+  const test_ = [...suiteFiles('structural'), ...suiteFiles('behavioural')];
+  assert.ok(test_.includes(alvo), 'precisa estar num balde de "test" — senão nunca roda em CI');
+  assert.ok(suiteFiles('contracts').includes(alvo), 'precisa estar no balde "contracts"');
 });
 
 // ── COMPORTAMENTAL (DB-gated) ────────────────────────────────────────────────
