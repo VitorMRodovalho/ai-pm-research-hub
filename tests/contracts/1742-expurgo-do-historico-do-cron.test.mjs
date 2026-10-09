@@ -10,7 +10,9 @@
  *
  * Estatico, sobre a captura mais nova da funcao: cada asserção amarra a condicao ao bloco que
  * decide (o DELETE, o conjunto protegido, os defaults, o REVOKE, o agendamento). Exercer a funcao
- * apagaria historico de producao, entao o efeito foi exercido em transacao desfeita na aplicacao.
+ * apagaria historico de producao, entao o efeito NAO foi exercido na aplicacao (nem em transacao
+ * desfeita: n_tup_del da tabela seguia em 0 depois dela). A prova de efeito e a primeira rodada
+ * agendada: o delta de n_tup_del em pg_stat_all_tables antes e depois das 04:17Z.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
