@@ -23,9 +23,15 @@
 -- (4) tribes.meeting_schedule fica aposentada: nenhuma tela lê nem grava (o front sai na mesma PR).
 --     A coluna e os dados ficam, para consulta, até uma remoção decidida à parte.
 -- (5) Seed das 13 tribos ativas com o texto dos dicionários (só onde description_i18n é NULL).
+-- (6) can_edit_initiative_public_profile: a tela pergunta ao servidor se mostra o editor, pelo mesmo
+--     portão da escrita (antes ela adivinhava por tribes.leader_member_id, que não é o roster).
 --
--- Rollback: DROP FUNCTION update_initiative_public_profile(uuid, jsonb, jsonb) e
---   get_tribe_public_profiles(); ALTER TABLE initiatives DROP COLUMN description_i18n, deliverables_i18n.
+-- Revisão do conselho (09/10/2026): chamada sem nenhum dos dois campos é recusada (não grava auditoria
+-- vazia); a leitora usa DISTINCT ON por tribo, e a pós-condição conta tribos distintas, para que uma
+-- iniciativa duplicada não compense uma ausente. Hoje são 15 research_tribe, nenhuma duplicada.
+--
+-- Rollback: DROP FUNCTION update_initiative_public_profile(uuid, jsonb, jsonb),
+--   can_edit_initiative_public_profile(uuid) e get_tribe_public_profiles(); ALTER TABLE initiatives DROP COLUMN description_i18n, deliverables_i18n.
 
 -- ── (1) colunas ───────────────────────────────────────────────────────────────
 ALTER TABLE public.initiatives
@@ -80,6 +86,10 @@ BEGIN
       USING ERRCODE = 'insufficient_privilege';
   END IF;
 
+  IF p_description_i18n IS NULL AND p_deliverables_i18n IS NULL THEN
+    RAISE EXCEPTION 'Nothing to update: pass description_i18n and/or deliverables_i18n' USING ERRCODE = 'check_violation';
+  END IF;
+
   SELECT jsonb_build_object('description_i18n', i.description_i18n, 'deliverables_i18n', i.deliverables_i18n)
     INTO v_before
   FROM public.initiatives i WHERE i.id = p_initiative_id;
@@ -121,7 +131,7 @@ BEGIN
       FROM jsonb_array_elements(v_val) WITH ORDINALITY AS x(e, o)
       WHERE jsonb_typeof(e) = 'string' AND btrim(e #>> '{}') <> '';
       IF jsonb_array_length(v_items) > 8
-         OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(v_items) t WHERE length(t) > 300) THEN
+         OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(v_items) AS t(item) WHERE length(t.item) > 300) THEN
         RAISE EXCEPTION 'deliverables_i18n.% allows up to 8 items of 300 characters', v_key USING ERRCODE = 'check_violation';
       END IF;
       IF jsonb_array_length(v_items) > 0 THEN
@@ -152,6 +162,20 @@ $function$;
 REVOKE ALL ON FUNCTION public.update_initiative_public_profile(uuid, jsonb, jsonb) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.update_initiative_public_profile(uuid, jsonb, jsonb) TO authenticated, service_role;
 
+CREATE OR REPLACE FUNCTION public.can_edit_initiative_public_profile(p_initiative_id uuid)
+ RETURNS boolean
+ LANGUAGE sql
+ STABLE
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT COALESCE(public._can_manage_recurring_rule(
+           (SELECT m.id FROM public.members m WHERE m.auth_id = auth.uid()), p_initiative_id), false)
+$function$;
+
+REVOKE ALL ON FUNCTION public.can_edit_initiative_public_profile(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.can_edit_initiative_public_profile(uuid) TO authenticated, service_role;
+
 -- ── (3) leitura pública ───────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.get_tribe_public_profiles()
  RETURNS TABLE(tribe_id integer, description_i18n jsonb, deliverables_i18n jsonb, slots jsonb)
@@ -160,7 +184,8 @@ CREATE OR REPLACE FUNCTION public.get_tribe_public_profiles()
  SECURITY DEFINER
  SET search_path TO ''
 AS $function$
-  SELECT t.id,
+  SELECT DISTINCT ON (t.id)
+         t.id,
          i.description_i18n,
          i.deliverables_i18n,
          COALESCE((
@@ -174,7 +199,7 @@ AS $function$
   JOIN public.initiatives i ON i.legacy_tribe_id = t.id AND i.kind = 'research_tribe'
   WHERE t.is_active = true
     AND public.rls_can_see_initiative(i.id)
-  ORDER BY t.id
+  ORDER BY t.id, (i.status = 'active') DESC, i.updated_at DESC
 $function$;
 
 REVOKE ALL ON FUNCTION public.get_tribe_public_profiles() FROM PUBLIC;
@@ -246,7 +271,7 @@ BEGIN
              AND coalesce(i.description_i18n->>'es', '') <> '');
   IF v_n <> 0 THEN RAISE EXCEPTION '#2609: % tribo(s) ativa(s) sem descrição nas 3 línguas', v_n; END IF;
 
-  SELECT count(*) INTO v_n FROM public.get_tribe_public_profiles();
+  SELECT count(DISTINCT tribe_id) INTO v_n FROM public.get_tribe_public_profiles();
   IF v_n <> (SELECT count(*) FROM public.tribes WHERE is_active) THEN
     RAISE EXCEPTION '#2609: get_tribe_public_profiles devolveu % linhas', v_n;
   END IF;

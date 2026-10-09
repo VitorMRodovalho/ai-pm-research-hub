@@ -39,6 +39,21 @@ test('#2609 edição: só manage_platform ou a liderança da iniciativa (mesma a
   assert.doesNotMatch(MIG, /GRANT EXECUTE ON FUNCTION public\.update_initiative_public_profile\([^)]*\) TO[^;]*\banon\b/);
 });
 
+test('#2609 edição: chamada sem nenhum campo é recusada antes de gravar auditoria', () => {
+  assert.match(
+    fnBody('update_initiative_public_profile'),
+    /IF p_description_i18n IS NULL AND p_deliverables_i18n IS NULL THEN\s+RAISE EXCEPTION 'Nothing to update/,
+  );
+});
+
+test('#2609 a tela pergunta ao servidor quem edita, pelo mesmo portão da escrita', () => {
+  assert.match(
+    fnBody('can_edit_initiative_public_profile'),
+    /SELECT COALESCE\(public\._can_manage_recurring_rule\(\s+\(SELECT m\.id FROM public\.members m WHERE m\.auth_id = auth\.uid\(\)\), p_initiative_id\), false\)/,
+  );
+  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.can_edit_initiative_public_profile\(uuid\) FROM PUBLIC, anon;/);
+});
+
 test('#2609 edição: português obrigatório e trilha de auditoria', () => {
   const body = fnBody('update_initiative_public_profile');
   assert.match(body, /IF NOT \(v_desc \? 'pt'\) THEN\s+RAISE EXCEPTION 'description_i18n\.pt is required'/);
@@ -50,6 +65,9 @@ test('#2609 leitura pública: tribo ativa, portão confidencial e horário só d
   assert.match(body, /WHERE t\.is_active = true\s+AND public\.rls_can_see_initiative\(i\.id\)/);
   assert.match(body, /FROM public\.tribe_meeting_slots s\s+WHERE s\.tribe_id = t\.id AND s\.is_active = true/);
   assert.doesNotMatch(body, /meeting_schedule|notes/);
+  // uma linha por tribo, mesmo que exista iniciativa duplicada; a pós-condição conta tribos distintas
+  assert.match(body, /SELECT DISTINCT ON \(t\.id\)[\s\S]*ORDER BY t\.id, \(i\.status = 'active'\) DESC/);
+  assert.match(MIG, /SELECT count\(DISTINCT tribe_id\) INTO v_n FROM public\.get_tribe_public_profiles\(\);/);
 });
 
 test('#2609 seed: as 13 tribos ativas, sem sobrescrever o que a liderança já editou', () => {
@@ -61,9 +79,11 @@ const HOME = maskJsComments(read('src/components/sections/TribesSection.astro'))
 const PAGE = maskJsComments(read('src/pages/tribe/[id].astro'));
 
 test('#2609 home: descrição e entregáveis do banco, dicionário só como fallback', () => {
-  assert.match(HOME, /await sbAnonForStats\.rpc\('get_tribe_public_profiles'\)/);
+  assert.match(HOME, /const profilesRequest = sbAnonForStats\.rpc\('get_tribe_public_profiles'\);/);
+  assert.match(HOME, /const \{ data: profiles \} = await profilesRequest;/);
   assert.match(HOME, /description: profileDescription\(p, lang\) \|\| tr\.description,/);
-  assert.match(HOME, /deliverables: deliverables\.length \? deliverables : tr\.deliverables,/);
+  // com linha no banco, os entregáveis dele valem mesmo vazios (quem apagou não vê o dicionário voltar)
+  assert.match(HOME, /deliverables: profileDeliverables\(p, lang\),/);
 });
 
 test('#2609 home: horário da regra, "a definir" sem regra, e nunca tribes.notes', () => {
@@ -86,7 +106,13 @@ test('#2609 página da tribo: horário só da regra, e o texto livre não é lid
 
 test('#2609 página da tribo: o editor grava pela RPC com portão', () => {
   assert.match(PAGE, /await sb\.rpc\('update_initiative_public_profile', \{\s+p_initiative_id: INITIATIVE_ID,/);
-  assert.match(PAGE, /canEditProfile = isHighManagement\(currentMember\)\s+\|\| hasPermission\(currentMember, 'admin\.access'\)\s+\|\| \(!!tribeData\?\.leader_member_id && tribeData\.leader_member_id === currentMember\.id\);/);
+  assert.match(PAGE, /const \{ data \} = await sb\.rpc\('can_edit_initiative_public_profile', \{ p_initiative_id: INITIATIVE_ID \}\);\s+canEditProfile = data === true;/);
+  assert.doesNotMatch(PAGE, /canEditProfile = (isHighManagement|true)/);
+});
+
+test('#2609 editor: valida o português antes de enviar e separa recusa de permissão de erro comum', () => {
+  assert.match(PAGE, /if \(!description\.pt\) \{ showProfileError\(I18N\.profilePtRequired \|\| ''\); return; \}/);
+  assert.match(PAGE, /showProfileError\(error\.code === '42501' \? \(I18N\.profileForbidden \|\| ''\) : \(I18N\.profileSaveError \|\| ''\)\);/);
 });
 
 test('#2609 catálogo estático e dicionários sem horário de tribo', () => {

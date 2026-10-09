@@ -44,8 +44,14 @@ const TRIBE_I18N = {
   scheduleTbd: t('tribe.scheduleTbd', lang),
   editScheduleInPanel: t('tribe.editScheduleInPanel', lang),
   editProfile: t('tribe.profile.edit', lang),
+  editProfileButton: t('tribe.profile.editButton', lang),
+  editSchedule: t('tribe.editSchedule', lang),
+  defineSchedule: t('tribe.defineSchedule', lang),
   profileSaved: t('tribe.profile.saved', lang),
   profileSaveError: t('tribe.profile.saveError', lang),
+  profileForbidden: t('tribe.profile.forbidden', lang),
+  profilePtRequired: t('tribe.profile.ptRequired', lang),
+  profileTooManyDeliverables: t('tribe.profile.tooManyDeliverables', lang),
   profile: { description_i18n: tribeProfile?.description_i18n ?? null, deliverables_i18n: tribeProfile?.deliverables_i18n ?? null },
   noMembers: t('tribe.noMembers', lang),
   interestedTitle: t('tribe.interested.title', lang),
@@ -340,20 +346,22 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     <div class="absolute inset-0 bg-black/40" data-action="close-profile-modal"></div>
     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[var(--surface-elevated)] rounded-2xl shadow-xl w-[calc(100%-2rem)] max-w-2xl max-h-[90vh] overflow-y-auto p-6 border border-[var(--border-default)]">
       <h2 id="tribe-profile-title" class="text-lg font-extrabold text-navy mb-1">{t('tribe.profile.edit', lang)}</h2>
-      <p class="text-xs text-[var(--text-secondary)] mb-4">{t('tribe.profile.hint', lang)}</p>
+      <p id="tribe-profile-hint" class="text-xs text-[var(--text-secondary)] mb-4">{t('tribe.profile.hint', lang)}</p>
       <div class="flex flex-col gap-4">
         {(['pt', 'en', 'es'] as const).map((code) => (
           <fieldset class="border border-[var(--border-subtle)] rounded-xl p-3">
-            <legend class="px-1 text-xs font-bold text-[var(--text-secondary)]">{t(`tribe.profile.lang.${code}`, lang)}</legend>
+            <legend class="px-1 text-xs font-bold text-[var(--text-secondary)]">{t(`tribe.profile.lang.${code}`, lang)}{code === 'pt' ? ` · ${t('tribe.profile.required', lang)}` : ''}</legend>
             <label class="block text-xs font-semibold text-[var(--text-secondary)] mb-1" for={`tribe-profile-desc-${code}`}>{t('tribe.profile.description', lang)}</label>
-            <textarea id={`tribe-profile-desc-${code}`} rows="4" maxlength="1500"
+            <textarea id={`tribe-profile-desc-${code}`} rows="4" maxlength="1500" aria-describedby="tribe-profile-hint"
+              placeholder={code === 'pt' ? '' : t('tribe.profile.fallbackPlaceholder', lang)}
               class="w-full px-3 py-2 border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
             <label class="block text-xs font-semibold text-[var(--text-secondary)] mt-2 mb-1" for={`tribe-profile-deliv-${code}`}>{t('tribe.profile.deliverables', lang)}</label>
             <textarea id={`tribe-profile-deliv-${code}`} rows="3" placeholder={t('tribe.profile.deliverablesHint', lang)}
               class="w-full px-3 py-2 border border-[var(--border-default)] bg-[var(--surface-input)] text-[var(--text-primary)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple/40"></textarea>
           </fieldset>
         ))}
-        <div class="flex justify-end gap-2">
+        <p id="tribe-profile-error" class="hidden text-sm text-red-700 bg-red-50 rounded-lg px-3 py-2" role="alert"></p>
+        <div class="flex justify-end gap-2 sticky bottom-0 bg-[var(--surface-elevated)] py-3 -mb-6 border-t border-[var(--border-subtle)]">
           <button type="button" data-action="close-profile-modal" class="px-4 py-2 text-sm font-semibold text-[var(--text-secondary)] border border-[var(--border-default)] rounded-lg cursor-pointer hover:bg-[var(--surface-hover)] transition-all">{t('tribe.modal.cancel', lang)}</button>
           <button type="button" data-action="save-profile" class="px-4 py-2 text-sm font-semibold text-white bg-navy rounded-lg cursor-pointer border-0 hover:opacity-90 transition-all">{t('tribe.modal.save', lang)}</button>
         </div>
@@ -633,12 +641,14 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       ? escapeHtml(String(I18N.scheduleText))
       : `<span class="text-[var(--text-muted)] italic">${escapeHtml(I18N.scheduleTbd || '—')}</span>`;
     const PENCIL = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>';
-    // The schedule is edited where the rule lives: the recurring meetings panel of the initiative.
+    // The schedule is edited where the rule lives: the recurring meetings panel of the initiative page.
+    const scheduleLabel = I18N.scheduleText ? I18N.editSchedule : I18N.defineSchedule;
     const editBtnHtml = canEditProfile && INITIATIVE_ID
-      ? ` <a href="${lp}/initiative/${encodeURIComponent(INITIATIVE_ID)}" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-navy transition-all" title="${escapeHtml(I18N.editScheduleInPanel || '')}" aria-label="${escapeHtml(I18N.editScheduleInPanel || '')}">${PENCIL}</a>`
+      ? ` <a href="${lp}/initiative/${encodeURIComponent(INITIATIVE_ID)}" class="inline-flex items-center gap-1 min-h-[36px] px-2 rounded-lg text-[.75rem] font-semibold text-teal no-underline hover:bg-[var(--surface-hover)] transition-all" title="${escapeHtml(I18N.editScheduleInPanel || '')}">${PENCIL}${escapeHtml(scheduleLabel || '')} &rarr;</a>`
       : '';
+    // Own line, outside the 2-line clamp of the description, so it is never cut off.
     const editProfileBtnHtml = canEditProfile && INITIATIVE_ID
-      ? ` <button data-action="open-profile-modal" type="button" class="inline-flex items-center justify-center w-6 h-6 rounded-lg text-[var(--text-muted)] hover:bg-[var(--surface-hover)] hover:text-navy transition-all cursor-pointer align-middle" title="${escapeHtml(I18N.editProfile || '')}" aria-label="${escapeHtml(I18N.editProfile || '')}">${PENCIL}</button>`
+      ? `<button data-action="open-profile-modal" type="button" class="inline-flex items-center gap-1 min-h-[36px] px-2 -ml-2 mb-2 rounded-lg text-[.75rem] font-semibold text-teal bg-transparent border-0 hover:bg-[var(--surface-hover)] transition-all cursor-pointer">${PENCIL}${escapeHtml(I18N.editProfileButton || '')}</button>`
       : '';
 
     // p124: prefer trilingual labels stored in tribes.name_i18n / quadrant_name_i18n
@@ -680,7 +690,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
           </div>
         </div>
         <div class="px-5 pb-4 pt-0 border-t border-[var(--border-subtle)]">
-          <p class="text-[.88rem] text-[var(--text-secondary)] mb-3 line-clamp-2">${escapeHtml(tribeDescription)}${editProfileBtnHtml}</p>
+          <p class="text-[.88rem] text-[var(--text-secondary)] mb-1 line-clamp-2">${escapeHtml(tribeDescription)}</p>
+          ${editProfileBtnHtml || '<div class="mb-2"></div>'}
           <div class="flex flex-wrap gap-x-5 gap-y-2 text-[.82rem]">
             <div class="flex items-center gap-1.5" id="tribe-schedule-cell">
               <strong class="text-[var(--text-secondary)]">📅 ${I18N.meetingSchedule}:</strong>
@@ -1740,7 +1751,21 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
   // #2609: one source for the tribe's public description and deliverables (initiatives.*_i18n).
   const PROFILE_LANGS = ['pt', 'en', 'es'] as const;
+  let profileOpener: HTMLElement | null = null;
+  function showProfileError(msg: string) {
+    const el = document.getElementById('tribe-profile-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle('hidden', !msg);
+  }
+  function closeProfileModal() {
+    document.getElementById('tribe-profile-modal')?.classList.add('hidden');
+    profileOpener?.focus();
+    profileOpener = null;
+  }
   function openProfileModal() {
+    profileOpener = document.activeElement as HTMLElement | null;
+    showProfileError('');
     const prof = I18N.profile || {};
     for (const code of PROFILE_LANGS) {
       const desc = document.getElementById(`tribe-profile-desc-${code}`) as HTMLTextAreaElement | null;
@@ -1764,6 +1789,11 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       if (desc) description[code] = desc;
       deliverables[code] = deliv;
     }
+    // Same rules as the RPC, checked first so the leader sees what is wrong instead of a generic error.
+    if (!description.pt) { showProfileError(I18N.profilePtRequired || ''); return; }
+    if (Object.values(deliverables).some((l) => l.length > 8 || l.some((x) => x.length > 300))) {
+      showProfileError(I18N.profileTooManyDeliverables || ''); return;
+    }
     const { error } = await sb.rpc('update_initiative_public_profile', {
       p_initiative_id: INITIATIVE_ID,
       p_description_i18n: description,
@@ -1771,13 +1801,13 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     });
     if (error) {
       console.error('update_initiative_public_profile error:', error);
-      (window as any).toast?.(I18N.profileSaveError || 'Erro ao salvar', 'error');
+      showProfileError(error.code === '42501' ? (I18N.profileForbidden || '') : (I18N.profileSaveError || ''));
       return;
     }
     const code = lp === '/en' ? 'en' : lp === '/es' ? 'es' : 'pt';
     I18N.profile = { description_i18n: description, deliverables_i18n: deliverables };
     I18N.tribeDesc = description[code] || description.pt || I18N.tribeDesc;
-    document.getElementById('tribe-profile-modal')?.classList.add('hidden');
+    closeProfileModal();
     (window as any).toast?.(I18N.profileSaved || 'Salvo', 'success');
     renderHeader(tribeData, headerLeader, headerSlots);
   }
@@ -1922,7 +1952,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       }
 
       if (action === 'open-profile-modal') openProfileModal();
-      if (action === 'close-profile-modal') document.getElementById('tribe-profile-modal')?.classList.add('hidden');
+      if (action === 'close-profile-modal') closeProfileModal();
       if (action === 'save-profile') saveProfile();
     });
 
@@ -1935,7 +1965,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
 
     document.addEventListener('keydown', (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeDeliverableModal();
-      if (e.key === 'Escape') document.getElementById('tribe-profile-modal')?.classList.add('hidden');
+      if (e.key === 'Escape' && !document.getElementById('tribe-profile-modal')?.classList.contains('hidden')) closeProfileModal();
     });
   }
 
@@ -2195,7 +2225,7 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
       const [tribeRes, slotsRes, membersRes, selectionsRes, delivRes, resourcesRes, artifactsRes, cycleRes] = await Promise.all([
         // WS-A1: explicit columns (NOT select('*')) so the anon key never receives
         // whatsapp_url/drive_url. The group link is served only via get_tribe_group_link.
-        sb.from('tribes').select('id, name, quadrant, quadrant_name, leader_member_id, meeting_time_start, meeting_time_end, miro_url, meeting_link, notes, updated_at, updated_by, is_active, workstream_type, legacy_board_url, video_url, video_duration, name_i18n, quadrant_name_i18n, organization_id').eq('id', TRIBE_ID).single(),
+        sb.from('tribes').select('id, name, quadrant, quadrant_name, leader_member_id, meeting_time_start, meeting_time_end, miro_url, meeting_link, updated_at, updated_by, is_active, workstream_type, legacy_board_url, video_url, video_duration, name_i18n, quadrant_name_i18n, organization_id').eq('id', TRIBE_ID).single(),
         sb.from('tribe_meeting_slots').select('day_of_week, time_start, time_end').eq('tribe_id', TRIBE_ID).eq('is_active', true).order('day_of_week'),
         // #1217: derive the roster from the engagement PRIMITIVE (get_initiative_roster_members ->
         // v_initiative_roster), NOT the single-slot members.initiative_id cache. The fill-only cache
@@ -2257,8 +2287,8 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
         || null;
       headerSlots = slotsRes.data || [];
 
-      // Render header. #2609: re-check now that tribeData (leader_member_id) is loaded.
-      checkEditPermission();
+      // Render header. #2609: the profile editor is shown only if the server says so (same gate as the write).
+      await refreshProfilePermission();
       renderHeader(tribeRes.data, headerLeader, headerSlots);
 
       // G6: Auto-complete 'meet_tribe' onboarding step when visiting own tribe
@@ -2420,12 +2450,18 @@ const pageTitle = t('tribe.meta', lang).replace('{name}', staticFallback?.name |
     return workstream === 'operational' && name.includes('comunica');
   }
 
+  // #2609: one rule for "who edits the public presentation" — asked to the server, which applies the
+  // same gate as update_initiative_public_profile (manage_platform or the initiative leader in the roster).
+  async function refreshProfilePermission() {
+    const sb = getSb();
+    if (!sb || !currentMember || !INITIATIVE_ID) { canEditProfile = false; return; }
+    const { data } = await sb.rpc('can_edit_initiative_public_profile', { p_initiative_id: INITIATIVE_ID });
+    canEditProfile = data === true;
+  }
+
   function checkEditPermission() {
     if (!currentMember) return;
-    // #2609: mirrors update_initiative_public_profile (_can_manage_recurring_rule: manage_platform or leader).
-    canEditProfile = isHighManagement(currentMember)
-      || hasPermission(currentMember, 'admin.access')
-      || (!!tribeData?.leader_member_id && tribeData.leader_member_id === currentMember.id);
+    // #2609: canEditProfile comes from the server (refreshProfilePermission), never guessed here.
     if (hasPermission(currentMember, 'admin.access')) { canEdit = true; return; }
     const desigs: string[] = currentMember.designations || [];
     const canOperateComms = isCommunicationOperationalTribe()

@@ -67,6 +67,9 @@ const safeQuadrants = viewModel.quadrants;
 let safeTribes = viewModel.tribes;
 const viewWarnings = viewModel.warnings;
 
+// #2609: started here so it runs in parallel with get_tribe_picker_cards below.
+const profilesRequest = sbAnonForStats.rpc('get_tribe_public_profiles');
+
 // #1227: leader LinkedIn + explainer video derive from the DB SSOT, not the static
 // tribes.ts. The SSOT is tribes.video_url/video_duration + tribes.leader_member_id →
 // members.linkedin_url, surfaced via the SECURITY DEFINER RPC get_tribe_picker_cards
@@ -99,18 +102,19 @@ try {
 // RPC get_tribe_public_profiles. The i18n text in tribes.ts is only the fallback if the RPC fails.
 const scheduleByTribe = new Map<number, string>();
 try {
-  const { data: profiles } = await sbAnonForStats.rpc('get_tribe_public_profiles');
+  const { data: profiles } = await profilesRequest;
   if (Array.isArray(profiles)) {
     const byId = new Map<number, TribePublicProfile>(profiles.map((p: TribePublicProfile) => [Number(p.tribe_id), p]));
     safeTribes = safeTribes.map((tr) => {
       const p = byId.get(tr.id);
       if (!p) return tr;
       scheduleByTribe.set(tr.id, formatMeetingSlots(p.slots, lang));
-      const deliverables = profileDeliverables(p, lang);
+      // With a DB row, its deliverables win even when empty: a leader who cleared them must not see the
+      // dictionary list come back. The dictionary is only for when the RPC fails or has no row.
       return {
         ...tr,
         description: profileDescription(p, lang) || tr.description,
-        deliverables: deliverables.length ? deliverables : tr.deliverables,
+        deliverables: profileDeliverables(p, lang),
       };
     });
   }
