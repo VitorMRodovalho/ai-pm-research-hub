@@ -30855,6 +30855,16 @@ export type Database = {
         Returns: boolean
       }
       _publication_slugify: { Args: { p_text: string }; Returns: string }
+      _purge_cron_job_run_details: {
+        Args: {
+          p_batch?: number
+          p_keep_days?: number
+          p_keep_failed_days?: number
+          p_keep_per_job?: number
+          p_max?: number
+        }
+        Returns: Json
+      }
       _reacceptance_disengage: {
         Args: {
           p_member_id: string
