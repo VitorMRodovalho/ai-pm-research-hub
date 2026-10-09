@@ -11,6 +11,7 @@ import { t, type Lang } from '../../i18n/utils';
 import { getPlaylistUrl } from '../../data/youtube-playlists';
 import { createClient } from '@supabase/supabase-js';
 import { withScheme } from '../../lib/external-url';
+import { formatMeetingSlots, profileDeliverables, profileDescription, type TribePublicProfile } from '../../lib/tribes/public-profile';
 
 interface Props { lang?: Lang; deadline?: string | null; }
 const { lang = 'pt-BR', deadline: deadlineProp } = Astro.props;
@@ -88,6 +89,28 @@ try {
         leaderLinkedIn: pick(db.leader_linkedin, tr.leaderLinkedIn),
         videoUrl: pick(db.video_url, tr.videoUrl),
         videoDuration: pick(db.video_duration, tr.videoDuration),
+      };
+    });
+  }
+} catch {}
+
+// #2609: description, deliverables and schedule have ONE source each — initiatives.description_i18n /
+// deliverables_i18n and the recurring rule (tribe_meeting_slots) — read via the anon SECURITY DEFINER
+// RPC get_tribe_public_profiles. The i18n text in tribes.ts is only the fallback if the RPC fails.
+const scheduleByTribe = new Map<number, string>();
+try {
+  const { data: profiles } = await sbAnonForStats.rpc('get_tribe_public_profiles');
+  if (Array.isArray(profiles)) {
+    const byId = new Map<number, TribePublicProfile>(profiles.map((p: TribePublicProfile) => [Number(p.tribe_id), p]));
+    safeTribes = safeTribes.map((tr) => {
+      const p = byId.get(tr.id);
+      if (!p) return tr;
+      scheduleByTribe.set(tr.id, formatMeetingSlots(p.slots, lang));
+      const deliverables = profileDeliverables(p, lang);
+      return {
+        ...tr,
+        description: profileDescription(p, lang) || tr.description,
+        deliverables: deliverables.length ? deliverables : tr.deliverables,
       };
     });
   }
@@ -325,7 +348,10 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
                     )}
 
                     <p class="text-[.82rem] mb-3" id={`ms-${tr.id}`}>
-                      <strong>{t('tribes.meetings', lang)}</strong> <span class="text-[var(--text-muted)]">{tr.meetingSchedule || t('tribes.loading', lang)}</span>
+                      <strong>{t('tribes.meetings', lang)}</strong>{' '}
+                      {scheduleByTribe.get(tr.id)
+                        ? <span>{scheduleByTribe.get(tr.id)}</span>
+                        : <span class="text-[var(--text-muted)] italic">{t('tribes.scheduleTbd', lang)}</span>}
                     </p>
 
                     <div class="flex gap-3 flex-wrap items-center mt-4">
@@ -623,41 +649,23 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
     updateUI();
   }
 
-  // ── Load meeting slots from DB ──
-  const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
+  // ── Tribe names and active flag from DB ──
+  // #2609: the schedule line (ms-<id>) is rendered at SSR from the recurring rule; this loader no longer
+  // touches it, and never falls back to tribes.notes (an internal note).
   async function loadMeetingSlots() {
     const sb = getSb();
     if (!sb) return;
 
-    const [{ data: slots }, { data: tribes }] = await Promise.all([
-      sb.from('tribe_meeting_slots')
-        .select('tribe_id, day_of_week, time_start, time_end')
-        .eq('is_active', true)
-        .order('day_of_week'),
-      sb.from('tribes')
-        .select('id, name, name_i18n, notes, is_active')
-    ]);
+    const { data: tribes } = await sb.from('tribes').select('id, name, name_i18n, is_active');
 
-    // Group slots by tribe
-    const slotMap = {};
-    (slots || []).forEach((s) => {
-      if (!slotMap[s.tribe_id]) slotMap[s.tribe_id] = [];
-      slotMap[s.tribe_id].push(s);
-    });
-
-    // Notes map
-    const notesMap = {};
     const activeMap = {};
     const nameMap = {};
     (tribes || []).forEach((t) => {
-      if (t.notes) notesMap[t.id] = t.notes;
       if (typeof t.is_active === 'boolean') activeMap[t.id] = t.is_active;
       const _sl = location.pathname.startsWith('/en') ? 'en' : location.pathname.startsWith('/es') ? 'es' : 'pt';
       if (t.name) nameMap[t.id] = t.name_i18n?.[_sl] || t.name;
     });
 
-    // Update each tribe's meeting schedule display
     for (const tid of TRIBE_IDS) {
       const card = document.getElementById(`t-${tid}`);
       if (card && activeMap[tid] === false) {
@@ -669,31 +677,6 @@ const TRIBE_IDS = safeTribes.map(tr => tr.id);
       }
       const title = document.getElementById(`tn-${tid}`);
       if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);
-
-      const el = document.getElementById(`ms-${tid}`);
-      if (!el) continue;
-
-      const tribeSlots = slotMap[tid];
-      let scheduleHtml = '';
-
-      if (tribeSlots?.length) {
-        const formatted = tribeSlots.map((s) => {
-          const day = DAY_NAMES[s.day_of_week] || '?';
-          const start = s.time_start.substring(0, 5);
-          const end = s.time_end.substring(0, 5);
-          return `${day} ${start}–${end}`;
-        }).join(' · ');
-        scheduleHtml = formatted;
-      } else if (notesMap[tid]) {
-        scheduleHtml = `<span class="text-[var(--text-muted)] italic">${notesMap[tid]}</span>`;
-      } else {
-        scheduleHtml = '<span class="text-[var(--text-muted)] italic">A definir</span>';
-      }
-
-      // WhatsApp group link is intentionally NOT exposed on the public homepage.
-      // It is served only to active, term-signed tribe members via the gated
-      // get_tribe_group_link RPC on the tribe page (governance: WS-A).
-      el.innerHTML = `<strong>📅 Encontros:</strong> ${scheduleHtml}`;
     }
   }
 
