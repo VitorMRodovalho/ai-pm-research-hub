@@ -4,7 +4,7 @@
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
   "version": "W1.9",
-  "updated_at": "2026-10-08",
+  "updated_at": "2026-10-09",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into the single weekly digest, Monday 12:00 UTC (09:00 Brasilia), via generate_weekly_member_digest_cron. Default for most types.",
@@ -177,6 +177,18 @@
     "curation_submitted_to_tribe": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2496 (2026-09-27) — aviso a tribo quando um board_item entra em curation_status='curation_pending'. Emitido por `notify_on_curation_status_change` na TRANSICAO, uma vez por pessoa ativa entre os participantes do card (board_item_assignments) e a lideranca ativa da iniciativa do board (engagements role=leader), com link para o board da tribo (/tribe/<id>?tab=board) ou para a pagina da iniciativa, e o prazo do parecer quando ja existe. Imediato de proposito: antes a tribo so recebia card_moved (digest_weekly), com o codigo cru do status e link generico, e nenhuma das 3 pessoas do primeiro item medido recebeu e-mail."
+    },
+    "curation_decision_returned": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2621 (2026-10-09): a curadoria devolveu o item para ajuste (curation_pending -> draft, card nao arquivado). Emitido por `notify_on_curation_status_change` na TRANSICAO, para a mesma audiencia de curation_submitted_to_tribe (participantes do card UNION lideranca ativa da iniciativa, so pessoas ativas), com a rodada e o parecer do curation_review_log (cortado em 400 caracteres; o texto inteiro segue no card) e o convite a reenviar depois do ajuste. Imediato de proposito: antes a devolucao nao avisava ninguem, e o primeiro parecer real da plataforma passou mudo."
+    },
+    "curation_decision_rejected": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2621 (2026-10-09): a curadoria rejeitou o item (curation_pending -> draft com o card arquivado). Emitido por `notify_on_curation_status_change` na TRANSICAO, mesma audiencia de curation_submitted_to_tribe, com a rodada e o motivo do curation_review_log. Imediato pelo mesmo motivo da devolucao: a rejeicao arquivava o card sem avisar quem fez o trabalho."
+    },
+    "curation_decision_approved": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2621 (2026-10-09): a curadoria aprovou o item (curation_pending -> published, via publish_board_item_from_curation). Emitido por `notify_on_curation_status_change` na TRANSICAO, mesma audiencia de curation_submitted_to_tribe, em linguagem humana. Substitui, nesta transicao, o card_moved (digest_weekly) que mandava o codigo cru 'published'."
     },
     "wiki_review_requested": {
       "delivery_mode": "transactional_immediate",
