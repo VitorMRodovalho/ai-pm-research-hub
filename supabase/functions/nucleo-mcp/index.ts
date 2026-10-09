@@ -297,6 +297,15 @@ async function canV4(sb: Sb, memberId: string, action: string, resourceType?: st
   return data === true;
 }
 
+// #1977 no MCP: "tem esta autoridade em ALGUM lugar?" — a mesma pergunta que as RPCs de curadoria
+// e comms fazem com _can_anywhere_by_member. canV4 sem recurso nao e equivalente: a forma de 2
+// argumentos de can_by_member depende de legacy_tribe_id e nega escopo de iniciativa que nao e tribo.
+async function canAnywhereV4(sb: Sb, memberId: string, action: string): Promise<boolean> {
+  const { data, error } = await sb.rpc("_can_anywhere_by_member", { p_member_id: memberId, p_action: action });
+  if (error) return false; // fail-closed
+  return data === true;
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(v: string | undefined): boolean { return !!v && UUID_RE.test(v); }
 
@@ -654,6 +663,7 @@ O Núcleo de IA Aplicada à Gestão de Projetos é uma iniciativa de pesquisa do
 | 77 | get_curation_queue_state | status? | curate_content \\| write_board \\| participate_in_governance_review | Fila de curadoria normalizada (#190): estado FSM, SLA, eligible_actions por chamador + estado de grant de Drive por item (gated curate\\|manage) |
 | 78 | submit_curation_review | item_id, decision, criteria_scores?, feedback_notes? | participate_in_governance_review | Submeter revisão estruturada (aprovar/devolver/rejeitar; auto-publica no N-ésimo OK) |
 | 79 | assign_curation_reviewer | item_id, reviewer_id, round | participate_in_governance_review | Designar revisor (curate_content/co_gp) para uma rodada de curadoria |
+| 80 | submit_for_curation | item_id | (a RPC decide: participate_in_governance_review \\| lider de tribo) | Enviar card publicavel a curadoria; devolve status, prazo, rodada e quantos pareceristas foram designados (#2621) |
 
 ## Notas
 - Escrita usa \`canV4(action)\` — permissão derivada de engagements (ADR-0007)
@@ -1706,7 +1716,9 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_dashboard", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: requires curate_content or write_board authority."); }
+    // #2621: mesma pergunta da RPC (#1977): write_board em ALGUM lugar, nao a forma sem recurso, que
+    // barrava escopo de iniciativa que nao e tribo (1 pessoa medida em 09/10).
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canAnywhereV4(sb, member.id, 'write_board')))) { await logUsage(sb, member.id, "get_curation_dashboard", false, "Unauthorized", start); return err("Unauthorized: requires curate_content or write_board authority."); }
     const { data, error } = await sb.rpc("get_curation_dashboard");
     if (error) { await logUsage(sb, member.id, "get_curation_dashboard", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_dashboard", true, undefined, start);
@@ -1729,7 +1741,8 @@ function registerTools(mcp: McpServer, sb: Sb) {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "get_curation_queue_state", false, "Not authenticated", start); return err("Not authenticated"); }
-    if (!((await canV4(sb, member.id, 'curate_content')) || (await canV4(sb, member.id, 'write_board')) || (await canV4(sb, member.id, 'participate_in_governance_review')))) { await logUsage(sb, member.id, "get_curation_queue_state", false, "Unauthorized", start); return err("Unauthorized: requires curate_content, write_board, or participate_in_governance_review."); }
+    // #2621: write_board em ALGUM lugar, como a RPC (#1977).
+    if (!((await canV4(sb, member.id, 'curate_content')) || (await canAnywhereV4(sb, member.id, 'write_board')) || (await canV4(sb, member.id, 'participate_in_governance_review')))) { await logUsage(sb, member.id, "get_curation_queue_state", false, "Unauthorized", start); return err("Unauthorized: requires curate_content, write_board, or participate_in_governance_review."); }
     const { data, error } = await sb.rpc("get_curation_queue_state", { p_status: params.status || null });
     if (error) { await logUsage(sb, member.id, "get_curation_queue_state", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "get_curation_queue_state", true, undefined, start);
@@ -1758,6 +1771,23 @@ function registerTools(mcp: McpServer, sb: Sb) {
     if (error) { await logUsage(sb, member.id, "submit_curation_review", false, error.message, start); return err(error.message); }
     await logUsage(sb, member.id, "submit_curation_review", true, undefined, start);
     return ok({ action: "submit_curation_review", review_log_id: data, item_id: params.item_id, decision: params.decision });
+  });
+
+  // TOOL: submit_for_curation (#2621) — envia o card a curadoria. Sem canV4 de proposito: quem decide
+  // e a RPC (governanca OU lider de tribo, ADR-0041), e um portao de governanca aqui barraria os
+  // lideres de tribo, que sao quem envia. Ver submitForCurationAndReadState.
+  mcp.tool("submit_for_curation", "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.", {
+    item_id: z.string().describe("UUID of the board item to submit to curation")
+  }, async (params: { item_id: string }) => {
+    const start = Date.now();
+    const member = await getMember(sb);
+    if (!member) { await logUsage(sb, null, "submit_for_curation", false, "Not authenticated", start); return err("Not authenticated"); }
+    if (!isUUID(params.item_id)) { await logUsage(sb, member.id, "submit_for_curation", false, "Invalid item_id", start); return err("item_id must be a UUID"); }
+    if (!(await canSee(sb, "item", params.item_id))) { await logUsage(sb, member.id, "submit_for_curation", false, "Confidential/no access", start); return err("Card not found or not visible to you."); }
+    const res = await submitForCurationAndReadState(sb, params.item_id);
+    if (res.error) { await logUsage(sb, member.id, "submit_for_curation", false, res.error, start); return err(res.error); }
+    await logUsage(sb, member.id, "submit_for_curation", true, undefined, start);
+    return ok({ action: "submit_for_curation", ...res.state, warnings: res.warnings });
   });
 
   // TOOL: assign_curation_reviewer — Governance reviewers only. Designates a curator (curate_content
@@ -8009,6 +8039,53 @@ async function canSee(sb: Sb, kind: "item" | "board" | "initiative", id: string)
   return !error && data === true;
 }
 
+// #2621: envio a curadoria pelo MCP, compartilhado pela ferramenta crua `submit_for_curation` e pelo
+// `card_write action='submit_for_curation'`. A RPC decide QUEM envia (participate_in_governance_review
+// OU lider de tribo, ADR-0041 "Path Y") e O QUE entra (so artefato publicavel, #2447), e o erro dela
+// volta como esta. NAO ha portao de autoridade aqui de proposito: medido em 08/10, 13 dos 14 lideres
+// de tribo ativos nao tem participate_in_governance_review, e um canV4 dessa capacidade antes da
+// chamada barraria justamente quem envia (ficando verde em todo teste feito com o GP).
+// Depois do envio le o estado resultante, para o autor saber que foi: status, prazo, rodada e
+// QUANTOS pareceristas foram designados. Quem sao fica de fora (desenho dos revisores na #2227).
+// O codigo do erro segue o contrato do envelope semantico (unauthenticated|unauthorized|invalid_input|
+// not_found|internal_error). Recusa da REGRA e RAISE EXCEPTION da RPC (SQLSTATE P0001); o resto
+// (rede, PostgREST, EXECUTE negado) e falha tecnica e nao pode ser dito ao usuario como "sem permissao".
+function curationSubmitErrorCode(error: { code?: string; message: string }): string {
+  if (error.code !== "P0001") return "internal_error";
+  if (/^Requires /.test(error.message)) return "unauthorized";
+  if (/not found/i.test(error.message)) return "not_found";
+  return "invalid_input";
+}
+
+async function submitForCurationAndReadState(sb: Sb, itemId: string): Promise<{ error?: string; errorCode?: string; state?: Record<string, unknown>; warnings: string[] }> {
+  const { error } = await sb.rpc("submit_for_curation", { p_item_id: itemId });
+  if (error) return { error: error.message, errorCode: curationSubmitErrorCode(error), warnings: [] };
+  const warnings: string[] = [];
+  const [itemRes, assignRes] = await Promise.all([
+    sb.from("board_items").select("title, curation_status, curation_due_at").eq("id", itemId).maybeSingle(),
+    // as designacoes abertas ja existem aqui: o gatilho trg_curation_auto_assign_on_pending roda no
+    // UPDATE para curation_pending, dentro da propria RPC
+    sb.from("curation_reviewer_assignments").select("review_round").eq("board_item_id", itemId).is("released_at", null),
+  ]);
+  if (itemRes.error || !itemRes.data) warnings.push("Envio feito, mas o estado do card nao pode ser relido agora; confira com card_get.");
+  if (assignRes.error) warnings.push("Envio feito, mas a designacao de pareceristas nao pode ser lida agora.");
+  const rows = (assignRes.data ?? []) as Array<{ review_round: number }>;
+  const round = rows.length > 0 ? Math.max(...rows.map((r) => r.review_round)) : null;
+  const current = rows.filter((r) => r.review_round === round);
+  if (!assignRes.error && current.length === 0) warnings.push("Nenhum parecerista designado ainda: a curadoria vai designar manualmente.");
+  return {
+    state: {
+      card_id: itemId,
+      title: itemRes.data?.title ?? null,
+      curation_status: itemRes.data?.curation_status ?? null,
+      curation_due_at: itemRes.data?.curation_due_at ?? null,
+      review_round: round,
+      reviewers_assigned: assignRes.error ? null : current.length,
+    },
+    warnings,
+  };
+}
+
 // #1383 W2: PII visibility helper (LGPD data-minimization). Callers with view_pii see the sensitive
 // columns (email/phone/pmi_id/auth_id); others get them redacted. Fail-closed via canV4.
 async function canSeePII(sb: Sb, memberId: string): Promise<boolean> {
@@ -8797,15 +8874,15 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W1 · card_write (W) — 297 calls/180d; 10 actions over one card ──────────
   mcp.tool(
     "card_write",
-    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
     {
-      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast", "assign_role", "unassign_role"]).describe("Card operation."),
+      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast", "assign_role", "unassign_role", "submit_for_curation"]).describe("Card operation."),
       card_id: z.string().optional().describe("Card UUID — required for every action EXCEPT 'create'."),
       board_id: z.string().optional().describe("Board UUID — required for action='create'."),
       target_board_id: z.string().optional().describe("Destination board UUID — move_to_board (required), duplicate/mirror (optional/required)."),
       title: z.string().optional().describe("create (required) / update."),
       description: z.string().optional().describe("create / update."),
-      status: z.string().optional().describe("action='move' target status (backlog|in_progress|review|done|archived)."),
+      status: z.string().optional().describe("action='move' target status (backlog|in_progress|review|done|archived). 'review' is the board column only: it does NOT submit to curation (use action='submit_for_curation')."),
       position: z.number().optional().describe("action='move' 0-based position within the column."),
       restore_status: z.string().optional().describe("action='restore' target column (default 'backlog')."),
       assignee_id: z.string().optional().describe("update — member UUID ('' to unassign)."),
@@ -8844,7 +8921,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       // curation_reviewer / autoatribuicao como 'author'). Um canV4('write_board') aqui seria mais
       // ESTRITO que a RPC chamada — o mesmo defeito que o #1778 corrigiu no card_checklist.
       const ROLE_ACTIONS = new Set(["assign_role", "unassign_role"]);
-      if (!ROLE_ACTIONS.has(params.action) && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
+      // #2621: submit_for_curation idem — a RPC aceita governanca OU lider de tribo (ADR-0041).
+      const RPC_DECIDES = new Set([...ROLE_ACTIONS, "submit_for_curation"]);
+      if (!RPC_DECIDES.has(params.action) && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
 
       // Per-action input validation
       if (params.action === "create" && (!params.title || !params.title.trim())) return invalid("action='create' requires title.", "Pass title.");
@@ -8866,6 +8945,29 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           warnings: [params.action === "delete" ? "Destructive: permanently deletes the card + checklist/assignments." : "Soft-delete: sets status='archived' (reversible)."],
           next_actions: [`card_write action='${params.action}' confirm=true`],
           audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "write_board", source_tools: [], caller_member_id: member.id, gate_checked: "rls_can_see_item + write_board (preview, not executed)", resource_id: resourceId, extra: { action: params.action, preview: true } },
+        });
+      }
+
+      if (params.action === "submit_for_curation") {
+        const res = await submitForCurationAndReadState(sb, params.card_id);
+        if (res.error) {
+          await logUsage(sb, member.id, "card_write", false, res.error, start);
+          const rule = res.errorCode !== "internal_error";
+          return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: res.errorCode!, message: res.error,
+            action: rule
+              ? "Explique ao usuario o motivo acima, literalmente. Nao contorne movendo o card nem comentando: so lider de tribo ou governanca envia, e so artefato publicavel em rascunho ou revisao do lider."
+              : "Falha tecnica no envio; o card nao foi enviado. Tente de novo em instantes." }));
+        }
+        await logUsage(sb, member.id, "card_write", true, undefined, start);
+        const st = res.state as Record<string, any>;
+        return semanticOk({
+          data: { action: "submit_for_curation", ...st },
+          summary: st.curation_status
+            ? `Card ${params.card_id} enviado a curadoria: ${st.curation_status}, prazo ${st.curation_due_at ?? "sem prazo lido"}${st.reviewers_assigned === null ? "" : `, ${st.reviewers_assigned} parecerista(s) designado(s)`}.`
+            : `Card ${params.card_id} enviado a curadoria; o estado nao pode ser relido agora.`,
+          warnings: res.warnings,
+          next_actions: ["card_get: re-read the card and its curation timeline"],
+          audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "rpc:submit_for_curation", source_tools: ["submit_for_curation"], caller_member_id: member.id, gate_checked: "rls_can_see_item + RPC-internal (participate_in_governance_review | tribe_leader)", resource_id: resourceId, extra: { action: params.action } },
         });
       }
 
@@ -8906,10 +9008,21 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (error) { await logUsage(sb, member.id, "card_write", false, error.message, start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "internal_error", message: error.message })); }
       const newCardId = params.action === "create" ? (data ?? null) : params.action === "duplicate" ? (data ?? null) : params.action === "mirror" ? (data ?? null) : (params.card_id ?? null);
       await logUsage(sb, member.id, "card_write", true, undefined, start);
+      // #2621: mover para 'review' NAO envia a curadoria (coluna e status de curadoria sao estados
+      // independentes). O agente do caso real moveu e comentou que o envio estava pendente.
+      const moveWarnings: string[] = []; const moveNext: string[] = [];
+      if (params.action === "move" && params.status === "review") {
+        const { data: cur } = await sb.from("board_items").select("curation_status").eq("id", params.card_id).maybeSingle();
+        if (cur && (cur.curation_status === "draft" || cur.curation_status === "leader_review")) {
+          moveWarnings.push(`Mover para 'review' NAO envia o card a curadoria (curation_status continua '${cur.curation_status}'). Se for artefato publicavel e a intencao for a curadoria, use card_write action='submit_for_curation'.`);
+          moveNext.push(`card_write action='submit_for_curation' card_id=${params.card_id}: enviar a curadoria (artefato publicavel; quem envia: lider de tribo ou governanca)`);
+        }
+      }
       return semanticOk({
         data: { action: params.action, card_id: newCardId, source_card_id: params.card_id ?? null, result: data ?? null },
         summary: `card_write action='${params.action}' ok (${params.action === "create" || params.action === "duplicate" || params.action === "mirror" ? `novo card ${newCardId}` : `card ${params.card_id}`}).`,
-        next_actions: ["card_get: re-read the card", "card_checklist: manage its checklist"],
+        warnings: moveWarnings,
+        next_actions: [...moveNext, "card_get: re-read the card", "card_checklist: manage its checklist"],
         audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "write_board", source_tools: [rpc!], caller_member_id: member.id, gate_checked: `rls_can_see_${gateKind} + write_board`, resource_id: resourceId, extra: { action: params.action } },
       });
     },
@@ -12843,6 +12956,7 @@ const ACTIONS_ALLOWLIST: Set<string> = new Set([
   "submit_chapter_need",
   "submit_curation_review",
   "submit_evaluation",
+  "submit_for_curation",
   "submit_interview_scores",
   "unlink_board_from_drive",
   "unlink_initiative_from_drive",
