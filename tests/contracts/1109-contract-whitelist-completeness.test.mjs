@@ -28,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { SKIP_LIST, SKIP_SET } from '../helpers/contract-whitelist-skips.mjs';
+import { arquivosDoScriptOuSuite } from '../../scripts/classify-test-suite.mjs';
 
 const ROOT = process.cwd();
 const CONTRACT_DIR = 'tests/contracts';
@@ -47,11 +48,13 @@ const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8'));
 // test:behavioural`. Continuar lendo `test` aqui deixaria este guard VAZIO, ou seja, verde para
 // sempre — o pior desfecho possível para um guard cujo trabalho é ser o denominador. A união dos
 // dois baldes é o mesmo conjunto de antes, e é ela que passa a valer.
+// 09/10/2026: os scripts deixaram de listar arquivo; scripts/run-suite.mjs deriva a lista do disco. Este guard
+// passa a ler a lista DERIVADA (a mesma que roda), e continua reprovando se um arquivo nao for coberto.
 const testScript = [
-  pkg.scripts?.['test:structural'] ?? '',
-  pkg.scripts?.['test:behavioural'] ?? '',
+  ...arquivosDoScriptOuSuite(pkg.scripts?.['test:structural']),
+  ...arquivosDoScriptOuSuite(pkg.scripts?.['test:behavioural']),
 ].join(' ');
-const contractsScript = pkg.scripts?.['test:contracts'] ?? '';
+const contractsScript = arquivosDoScriptOuSuite(pkg.scripts?.['test:contracts']).join(' ');
 
 // A file is "referenced" if its whitelist path token appears verbatim in the
 // script string — exactly how `node --test` tokenizes the space-separated list.

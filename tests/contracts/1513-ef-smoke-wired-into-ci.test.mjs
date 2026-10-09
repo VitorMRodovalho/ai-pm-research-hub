@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
+import { arquivosDoScriptOuSuite } from '../../scripts/classify-test-suite.mjs';
 
 /**
  * #1513 — guard da FIACAO dos smokes de EF deployada.
@@ -63,10 +64,9 @@ test('#1513: ef-smoke.test.mjs esta no script `npm test` (senao nunca roda em CI
   // mais caminho. Ler so ele deixaria ESTA asserçao vazia, ou seja, verde para sempre — que e
   // o modo de falha que este guard existe para impedir. A uniao dos dois baldes e o mesmo
   // conjunto de antes. (Mesma correçao aplicada ao guard do #1109.)
-  const files = [pkg.scripts['test:structural'] ?? '', pkg.scripts['test:behavioural'] ?? '']
-    .join(' ')
-    .split(/\s+/)
-    .filter((f) => f.endsWith('.mjs'));
+  // 09/10/2026: a lista e derivada do disco (scripts/run-suite.mjs); le-se a lista que de fato roda.
+  const files = [...arquivosDoScriptOuSuite(pkg.scripts['test:structural']),
+    ...arquivosDoScriptOuSuite(pkg.scripts['test:behavioural'])];
   assert.ok(
     files.includes(EF_SMOKE_PATH),
     `${EF_SMOKE_PATH} saiu do script "test" do package.json. O CI so roda esse script; ` +
