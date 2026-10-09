@@ -3190,7 +3190,7 @@ const ptBR: Record<string, string> = {
 
   'data.tribe5.name': 'Talentos & Upskilling',
   'data.tribe5.quadrantLabel': 'Q3 — Liderança Organizacional',
-  'data.tribe5.desc': 'Enquanto o mercado gasta 93 centavos de cada dólar em tecnologia e apenas 7 nas pessoas (McKinsey, 2026), fazendo com que 84% das falhas em projetos de IA sejam causadas por lacunas de liderança e cultura (IBM, 2026), nossa missão é produzir a evidência científica que transformará os gestores de projetos nos líderes estratégicos dessas equipes híbridas.',
+  'data.tribe5.desc': 'A IA está transformando o trabalho do gestor de projetos: menos execução operacional e mais validação, curadoria, julgamento, responsabilidade e liderança de ecossistemas híbridos. A Tribo Talentos & Upskilling investiga quais capacidades passam a ser críticas nesse novo contexto e como desenvolvê-las de forma prática e aplicável ao trabalho, integrando liderança, pessoas, governança, dados, avaliação crítica e aprendizagem.',
   'data.tribe5.d1': 'Artigo de Mercado 1 (LinkedIn, ago/2026): “A Crise dos 93 Cêntimos”',
   'data.tribe5.d2': 'Artigo de Mercado 2 (LinkedIn, set/2026): “O Paradoxo da Autonomia”',
   'data.tribe5.d3': 'Webinário Nacional (nov/2026) com convidado internacional',

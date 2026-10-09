@@ -3183,7 +3183,7 @@ const enUS: Record<string, string> = {
 
   'data.tribe5.name': 'Talent & Upskilling',
   'data.tribe5.quadrantLabel': 'Q3 — Organizational Leadership',
-  'data.tribe5.desc': 'While the market spends 93 cents of every dollar on technology and only 7 on people (McKinsey, 2026), with 84% of AI project failures caused by leadership and culture gaps (IBM, 2026), our mission is to produce the scientific evidence that turns project managers into the strategic leaders of these hybrid teams.',
+  'data.tribe5.desc': 'AI is transforming the project manager\'s work: less operational execution and more validation, curation, judgment, accountability and leadership of hybrid ecosystems. The Talent & Upskilling tribe investigates which capabilities become critical in this new context and how to develop them in a practical way that applies to real work, integrating leadership, people, governance, data, critical evaluation and learning.',
   'data.tribe5.d1': 'Market Article 1 (LinkedIn, Aug 2026): “The 93-Cent Crisis”',
   'data.tribe5.d2': 'Market Article 2 (LinkedIn, Sep 2026): “The Autonomy Paradox”',
   'data.tribe5.d3': 'National Webinar (Nov 2026) with an international guest',

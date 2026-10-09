@@ -41,18 +41,29 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
 // ── Aviso à tribo ───────────────────────────────────────────────────────────────────────────────
+// #2621: o bloco do aviso à tribo passou a cobrir também as DECISÕES da curadoria (classe em
+// `v_kind`, tipo em `v_type`, um laço só). As decisões são afirmadas em 2621-decisao-da-curadoria-*.
+function tribeBlock() {
+  const start = notify.indexOf('IF v_kind IS NOT NULL THEN');
+  const end = notify.lastIndexOf('RETURN NEW;');
+  assert.ok(start !== -1 && end > start, 'bloco do aviso à tribo ausente do corpo vigente');
+  return notify.slice(start, end);
+}
+
 test('#2496: a TRANSIÇÃO para curation_pending emite curation_submitted_to_tribe', () => {
-  const block = ifBlockContaining(notify, "'curation_submitted_to_tribe'");
+  const block = tribeBlock();
+  assert.match(notify,
+    /v_kind := CASE\s+WHEN NEW\.curation_status = 'curation_pending'\s+AND OLD\.curation_status IS DISTINCT FROM 'curation_pending'\s+THEN 'entrada'/,
+    'a entrada só é reconhecida na transição (idempotente)');
+  assert.match(block, /v_type := CASE v_kind\s+WHEN 'entrada'\s+THEN 'curation_submitted_to_tribe'/,
+    'a entrada vira o tipo do aviso à tribo');
   assert.match(block,
-    /^IF NEW\.curation_status = 'curation_pending'\s+AND OLD\.curation_status IS DISTINCT FROM 'curation_pending' THEN/,
-    'o aviso à tribo só sai na transição (idempotente)');
-  assert.match(block,
-    /create_notification\(\s*v_recipient\.member_id,\s*'curation_submitted_to_tribe'/,
-    'cada destinatário do laço recebe o tipo novo');
+    /PERFORM create_notification\(\s*v_recipient\.member_id,\s*v_type,/,
+    'cada destinatário do laço recebe o tipo da classe');
 });
 
 test('#2496: destinatários = participantes ∪ liderança ativa da iniciativa, só pessoas ativas', () => {
-  const block = ifBlockContaining(notify, "'curation_submitted_to_tribe'");
+  const block = tribeBlock();
   assert.match(block,
     /FOR v_recipient IN\s+SELECT r\.member_id\s+FROM \(\s*SELECT bia\.member_id FROM board_item_assignments bia WHERE bia\.item_id = NEW\.id\s+UNION\s+SELECT m\.id FROM engagements e JOIN members m ON m\.person_id = e\.person_id[\s\S]*?e\.initiative_id = v_initiative_id\s+AND e\.status = 'active'\s+AND e\.role = 'leader'\s*\) r\s+JOIN members mr ON mr\.id = r\.member_id\s+WHERE mr\.member_status = 'active'\s+LOOP/,
     'UNION (não UNION ALL) dá uma linha por pessoa; a liderança vem do engajamento ativo');
