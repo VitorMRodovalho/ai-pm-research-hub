@@ -4,7 +4,8 @@
 # comportamento em vez de presenca de string.
 #
 # Uso: lane-guard-harness.sh <cenario> <dir-de-trabalho>
-# Cenarios: filtro | cota-recupera | cota-nao-volta | erro-permanente
+# Cenarios: filtro | cota-recupera | cota-reset-longe | cota-nao-volta | erro-permanente
+# ACTION_FILE (opcional) aponta para uma copia da acao, para os testes de mutacao (#1742).
 set -euo pipefail
 
 CENARIO="$1"
@@ -13,7 +14,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 mkdir -p "$WORK/bin" "$WORK/ws/.github/workflows"
 
-python3 - "$ROOT/.github/actions/wait-for-db-lane/action.yml" "$WORK/lane.sh" <<'PY'
+python3 - "${ACTION_FILE:-$ROOT/.github/actions/wait-for-db-lane/action.yml}" "$WORK/lane.sh" <<'PY'
 import sys, io, yaml
 d = yaml.safe_load(io.open(sys.argv[1], encoding='utf-8'))
 io.open(sys.argv[2], 'w', encoding='utf-8').write(d['runs']['steps'][0]['run'])
@@ -34,14 +35,26 @@ endpoint="\$2"
 
 case "\$endpoint" in
   rate_limit)
-    # reset daqui a 2s, para o cenario de recuperacao terminar rapido
-    echo \$(( \$(date +%s) + 2 ))
+    # reset daqui a 2s, para o cenario de recuperacao terminar rapido. Em cota-reset-longe, so a
+    # PRIMEIRA leitura e curta: as seguintes apontam um reset alem do teto (o caso de 09/10/2026).
+    if [ "$CENARIO" = cota-reset-longe ] && [ "\$(grep -c '^api rate_limit' "$WORK/calls.log")" -gt 1 ]; then
+      echo \$(( \$(date +%s) + 100 ))
+    else
+      echo \$(( \$(date +%s) + 2 ))
+    fi
     exit 0
     ;;
 esac
 
 case "$CENARIO" in
   cota-recupera)
+    n=\$(grep -c 'actions/runs?per_page' "$WORK/calls.log" || true)
+    if [ "\$n" -le 2 ]; then
+      echo "gh: API rate limit exceeded for installation" >&2
+      exit 1
+    fi
+    ;;
+  cota-reset-longe)
     n=\$(grep -c 'actions/runs?per_page' "$WORK/calls.log" || true)
     if [ "\$n" -le 2 ]; then
       echo "gh: API rate limit exceeded for installation" >&2
