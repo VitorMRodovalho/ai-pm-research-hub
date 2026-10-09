@@ -7,6 +7,7 @@ import MemberPicker from './MemberPicker';
 import MemberPickerMulti from './MemberPickerMulti';
 import CardDriveFiles from './CardDriveFiles';
 import CardComments from './CardComments';
+import { ATTACH_BUCKET, storagePathOf } from '../../lib/boardAttachments';
 
 // Etapas da revisão pré-curadoria (Manual §4.2) e os campos que ela lê. Ver o efeito de carga.
 const PRE_CURATION = ['draft', 'peer_review', 'leader_review'] as const;
@@ -32,19 +33,7 @@ const pageLang = (): 'pt' | 'en' | 'es' => {
   const p = window.location.pathname;
   return p.startsWith('/en/') ? 'en' : p.startsWith('/es/') ? 'es' : 'pt';
 };
-// #2449: anexo enviado pelo card vive no bucket PRIVADO `board-attachments`. A URL gravada vinha de
-// getPublicUrl, que não serve arquivo de bucket privado (400 medido em 24/09/2026), então nenhum
-// anexo enviado abria. O caminho sai do próprio anexo (campo `path`, ou a URL antiga) e o link
-// assinado é gerado para quem a policy do bucket deixa ler: quem vê o card.
-const ATTACH_BUCKET = 'board-attachments';
-const storagePathOf = (att: { url?: string; path?: string }): string | null => {
-  if (att.path) return att.path;
-  const url = att.url || '';
-  const m = url.match(/\/storage\/v1\/object\/(?:public|sign)\/board-attachments\/([^?#]+)/);
-  if (m) return decodeURIComponent(m[1]);
-  // getPublicUrl sem retorno gravava o próprio caminho
-  return /^[0-9a-f-]{36}\/[0-9a-f-]{36}\//i.test(url) ? url : null;
-};
+// #2449: anexo do bucket privado abre por link assinado; helper compartilhado com a curadoria.
 
 // #2456: as RPCs do fluxo de revisão levantam mensagens técnicas, várias em inglês ("Peer review can
 // only be completed from draft or peer_review status (current: leader_review)"), e a tela mostrava o

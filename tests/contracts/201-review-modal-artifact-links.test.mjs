@@ -33,7 +33,10 @@ test('#201: review modal renders artifact links + empty-state', () => {
 
 test('#201: artifact links open safely (target=_blank + noopener noreferrer)', () => {
   // assert attributes independently — robust to JSX attribute reordering
-  assert.match(island, /href=\{a\.url\}/, 'artifact link uses the url as href');
+  // #2449: a file in the private bucket opens through its signed link; only an external link uses the raw url.
+  // `href={a.url}` was the defect behind "Bucket not found" on the curation screen (08/10/2026).
+  assert.match(island, /const href = bucketPath \? signedAttachments\[bucketPath\] : a\.url;/, 'href derives from the signed link for bucket files');
+  assert.match(island, /href=\{href\}/, 'artifact link uses the derived href');
   assert.match(island, /target="_blank"/, 'opens in a new tab');
   assert.match(island, /rel="noopener noreferrer"/, 'safe external-link rel');
 });
