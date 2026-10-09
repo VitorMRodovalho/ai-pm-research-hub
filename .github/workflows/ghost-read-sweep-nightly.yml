@@ -1,0 +1,34 @@
+name: Ghost-read sweep (nightly)
+
+# #1742 (09/10/2026) — a varredura de leitura por nao-membro saiu do CI de toda PR/push (so roda
+# quando o diff toca supabase/migrations/). Esta rodada noturna na main cobre o que nao passa por
+# PR: GRANT, RLS ou policy mudados pelo painel ou por SQL direto. So LE (cada sonda troca de papel
+# numa transacao local), por isso nao entra na faixa serializada do banco.
+# Guard: tests/contracts/1742-varredura-so-quando-muda-acesso.test.mjs.
+
+on:
+  schedule:
+    - cron: '23 6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ghost-read-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - name: Varredura completa de leitura por nao-membro
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GHOST_READ_SWEEP: '1'
+        run: node --test --test-concurrency=1 tests/contracts/leitura-por-nao-membro-derivada-do-catalogo.test.mjs
