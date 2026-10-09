@@ -54,8 +54,22 @@ first is a gap the rule in CLAUDE.md still covers; the second is a conservative 
 it is the probe used to exercise this gate live without writing anything. This is a
 guardrail against ACCIDENTS between sessions of the same user, not a security boundary.
 
+When the gate itself fails (2026-10-09, decisao do GP, opcao do meio): until then every failure let the call
+through. Unreadable stdin returned 0, an exception inside decide() made Python exit 1, and Claude Code treats
+exit 1 as a NON-blocking error (code.claude.com/docs/en/hooks: "If your hook is meant to enforce a policy, use
+exit 2"). Now:
+  * a call on a WRITE path fails CLOSED: exit 2 with the reason on stderr (exit 2 blocks whatever the JSON says).
+    Write path = apply_migration, execute_sql (before classification there is no way to tell a read), the
+    MUTATING_TOOLS, the GitHub MCP tools in GITHUB_MAIN_TOOLS, and a Bash command the gate already treats as a
+    write path (BASH_RISK_RE, git push, gh pr merge, the merge API, --admin);
+  * any other call (ordinary Bash, other tools) fails OPEN with a loud stderr warning: the hook runs on every Bash
+    call of the machine, and a gate bug must not stop every session;
+  * unreadable stdin cannot be attributed to a tool, so the RAW TEXT decides: it fails closed when the text names a
+    write tool or matches a Bash write pattern, and open (with the warning) otherwise.
+
 Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; DB_GATE_QUEUE="<prs>,<jobs>" replaces
-it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE.
+it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE;
+DB_GATE_INJECT_ERROR=1 raises inside decide(), to exercise the failure policy above.
 """
 import json
 import os
@@ -374,6 +388,8 @@ def read_only_escape_reason(session_id: str, orch: str, cwd: str) -> str:
 
 
 def decide(event: dict):
+    if os.environ.get("DB_GATE_INJECT_ERROR") == "1":
+        raise RuntimeError("erro injetado (DB_GATE_INJECT_ERROR=1)")
     tool = event.get("tool_name", "")
     tool_input = event.get("tool_input") or {}
     if tool == "Bash":
@@ -434,12 +450,52 @@ def decide(event: dict):
     return None, None
 
 
+WRITE_TOOL_ACTIONS = ("apply_migration", "execute_sql") + MUTATING_TOOLS + GITHUB_MAIN_TOOLS
+
+
+def bash_is_write_path(cmd: str) -> bool:
+    return bool(BASH_RISK_RE.search(cmd) or GH_MERGE_RE.search(cmd) or GH_GRAPHQL_MERGE_RE.search(cmd)
+                or GH_ADMIN_RE.search(cmd) or GIT_PUSH_RE.search(cmd))
+
+
+def is_write_path(event: dict) -> bool:
+    tool = event.get("tool_name", "") or ""
+    if tool == "Bash":
+        return bash_is_write_path((event.get("tool_input") or {}).get("command") or "")
+    return tool_action(tool) in WRITE_TOOL_ACTIONS
+
+
+def raw_is_write_path(raw: str) -> bool:
+    return any(name in raw for name in WRITE_TOOL_ACTIONS) or bash_is_write_path(raw)
+
+
+def gate_failed(write: bool, what: str) -> int:
+    if write:
+        print(f"DB-WRITE-GATE FALHOU NUM CAMINHO DE ESCRITA ({what}): a chamada foi BLOQUEADA por seguranca "
+              "(falha fechada). Rode de novo; se repetir, o gate tem defeito e quem conserta e a orquestradora.",
+              file=sys.stderr)
+        return 2
+    print(f"AVISO DB-WRITE-GATE: o gate falhou ({what}) numa chamada que nao e escrita; ela SEGUE, mas o gate "
+          "precisa de conserto.", file=sys.stderr)
+    return 0
+
+
 def main():
+    raw = sys.stdin.read()
     try:
-        event = json.load(sys.stdin)
-    except Exception:
-        return 0
-    decision, reason = decide(event)
+        event = json.loads(raw)
+        if not isinstance(event, dict):
+            raise ValueError("entrada nao e um objeto JSON")
+    except Exception as e:
+        return gate_failed(raw_is_write_path(raw), f"entrada ilegivel: {type(e).__name__}")
+    try:
+        decision, reason = decide(event)
+    except Exception as e:
+        try:
+            write = is_write_path(event)
+        except Exception:
+            write = raw_is_write_path(raw)
+        return gate_failed(write, f"{type(e).__name__}: {e}")
     if decision:
         out = {"hookEventName": "PreToolUse", "permissionDecision": decision}
         # Quem devolve (motivo, entrada nova) reescreve a chamada: updatedInput SUBSTITUI a entrada inteira,
