@@ -252,7 +252,8 @@ const scriptI18n = JSON.stringify({
     const healthGrid = document.getElementById('kpi-health-grid');
     if (!healthPanel || !healthGrid) return;
 
-    const { data, error } = await sb.rpc('get_annual_kpis', { p_cycle: 3, p_year: 2026 });
+    // #2565 (a) / ADR-0100: sem ciclo, a funcao resolve o ciclo corrente e a janela dele.
+    const { data, error } = await sb.rpc('get_annual_kpis', {});
     if (error || !data?.kpis) return;
 
     const kpis = data.kpis;
