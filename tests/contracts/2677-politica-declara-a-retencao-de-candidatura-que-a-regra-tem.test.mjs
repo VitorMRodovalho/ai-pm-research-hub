@@ -25,9 +25,12 @@ const LANGS = {
   'es-LATAM': /^(\d+) años después de la decisión sobre la candidatura$/,
 };
 
+/** Escapa todo metacaractere de regex (inclusive a barra invertida) para casar o texto literal. */
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 /** Valor literal de uma chave do dicionário, ou null. */
 function value(src, key) {
-  const m = src.match(new RegExp(`'${key.replace(/\./g, '\\.')}': '((?:[^'\\\\]|\\\\.)*)'`));
+  const m = src.match(new RegExp(`'${reEsc(key)}': '((?:[^'\\\\]|\\\\.)*)'`));
   return m ? m[1] : null;
 }
 

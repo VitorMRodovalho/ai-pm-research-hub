@@ -14,6 +14,8 @@ import { maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
+/** Escapa todo metacaractere de regex (inclusive a barra invertida) para casar o texto literal. */
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const migs = readdirSync(resolve(ROOT, 'supabase/migrations')).filter((f) => /^\d{14}_2586_envio_avulso_e_historico_por_pessoa\.sql$/.test(f));
 const MIG = maskLineComments(read(`supabase/migrations/${migs[0] ?? 'x'}`));
 const EF = maskJsComments(read('supabase/functions/send-campaign/index.ts'));
@@ -150,7 +152,7 @@ test('#2586 política v2.3: a página declara a pessoa não membro (finalidade e
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
     assert.match(dict, /'privacy\.version': 'v2\.3'/, `${lang} sem v2.3`);
-    for (const k of keys) assert.match(dict, new RegExp(`'privacy\\.${k.replace(/\./g, '\\.')}': '[^']+`), `${lang} sem ${k}`);
+    for (const k of keys) assert.match(dict, new RegExp(`'privacy\\.${reEsc(k)}': '[^']+`), `${lang} sem ${k}`);
     // decisão do GP (10/10): a linha 10 (convidados) passa a declarar o que a varredura executa, 1 ano e
     // anonimização; a promessa antiga de 30 dias não tinha executor e não pode voltar
     assert.match(dict, /'privacy\.s6ret\.row10\.retention': '1 (ano|year|año)/, `${lang}: prazo da pessoa não membro`);

@@ -19,7 +19,7 @@ const base = {
 test('corpo digitado é escapado e vira parágrafos (nunca HTML cru)', () => {
   const { html } = renderFreeform(base);
   assert.match(html, /^<p>Linha 1<br>Linha 2<\/p><p>&lt;script&gt;alert\(1\)&lt;\/script&gt; &amp; &quot;aspas&quot;<\/p>/);
-  assert.doesNotMatch(html, /<script>/);
+  assert.doesNotMatch(html, /<script\b/i);
 });
 
 test('{first_name} vira o primeiro nome no assunto e no corpo', () => {
