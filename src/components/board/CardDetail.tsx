@@ -496,8 +496,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
         if (rf.data && typeof rf.data === 'object') setReviewFields(rf.data as Partial<BoardItem>);
       }
 
-      // Fetch curation history if item has curation_status
-      if (item.curation_status && item.curation_status !== 'draft') {
+      // Fetch curation history if item has curation_status. #2621: tambem em rascunho para card de
+      // portfolio, que e o estado depois de uma devolucao, quando o autor mais precisa do parecer.
+      if (item.curation_status && (item.curation_status !== 'draft' || item.is_portfolio_item)) {
         const ch = await safe(sb.rpc('get_item_curation_history', { p_item_id: item.id }));
         if (ch.data && typeof ch.data === 'object') setCurationHistory(ch.data as CurationHistory);
       }
@@ -1264,6 +1265,63 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                     })()}
                   </div>
                 )}
+
+                {/* #2621: linha do tempo do envio (etapa atual destacada, proximas visiveis) */}
+                {((curationHistory.submissions?.length ?? 0) > 0 || curationHistory.reviews.length > 0) && (() => {
+                  const fmt = (d: string | null | undefined) => d ? new Date(d).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';
+                  type Ev = { at: string; text: string; tone: 'done' | 'warn' | 'bad' | 'ok' };
+                  const evs: Ev[] = [];
+                  for (const s of curationHistory.submissions ?? []) {
+                    evs.push({ at: s.at, tone: 'done', text: `${i18n.tlSubmitted || 'Enviado à curadoria'} ${fmt(s.at)}${s.sla_deadline ? ` · ${i18n.tlDeadline || 'prazo do parecer'} ${fmt(s.sla_deadline)}` : ''}` });
+                  }
+                  for (const r of curationHistory.reviews) {
+                    const dec = r.decision === 'approved' ? (i18n.tlFavorable || 'parecer favorável')
+                      : r.decision === 'rejected' ? (i18n.tlRejected || 'não aprovado')
+                      : (i18n.tlReturned || 'devolvido para ajuste');
+                    evs.push({ at: r.completed_at, tone: r.decision === 'approved' ? 'ok' : r.decision === 'rejected' ? 'bad' : 'warn',
+                      text: `${r.review_round ? `${i18n.tlRound || 'Rodada'} ${r.review_round}: ` : ''}${dec} ${fmt(r.completed_at)}` });
+                  }
+                  if (curationHistory.approved_at) evs.push({ at: curationHistory.approved_at, tone: 'ok', text: `${i18n.tlApproved || 'Aprovado pela curadoria'} ${fmt(curationHistory.approved_at)}` });
+                  evs.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+                  const st = item.curation_status;
+                  const lastReturned = curationHistory.reviews.length > 0
+                    && [...curationHistory.reviews].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())[0].decision !== 'approved';
+                  const current = st === 'curation_pending' ? (i18n.tlCuration || 'Curadoria')
+                    : st === 'published' ? (i18n.tlPublication || 'Publicação')
+                    : st === 'draft' && lastReturned && item.status !== 'archived' ? (i18n.tlAdjust || 'Ajuste do autor') : null;
+                  const next: string[] = st === 'curation_pending' ? [i18n.tlDecision || 'Decisão da curadoria', i18n.tlPublication || 'Publicação']
+                    : current === (i18n.tlAdjust || 'Ajuste do autor') ? [i18n.tlResubmit || 'Reenvio à curadoria', i18n.tlCuration || 'Curadoria', i18n.tlPublication || 'Publicação']
+                    : [];
+                  const toneCls: Record<Ev['tone'], string> = { done: 'bg-teal', ok: 'bg-emerald-600', warn: 'bg-amber-600', bad: 'bg-red-600' };
+                  return (
+                    <div className="mb-3" aria-label={i18n.curationTimelineTitle || 'Linha do tempo do envio'}>
+                      <div className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-1.5">{i18n.curationTimelineTitle || 'Linha do tempo do envio'}</div>
+                      <ol className="space-y-1">
+                        {evs.map((ev, i) => (
+                          <li key={`ev-${i}`} className="flex items-start gap-2 text-[11px] text-[var(--text-primary)]">
+                            <span className={`mt-1 inline-block w-2 h-2 rounded-full ${toneCls[ev.tone]}`} aria-hidden="true" />
+                            <span>{ev.text}</span>
+                          </li>
+                        ))}
+                        {current && (
+                          <li className="flex items-start gap-2 text-[11px] font-bold text-[var(--text-primary)]" aria-current="step">
+                            <span className="mt-1 inline-block w-2 h-2 rounded-full ring-2 ring-teal bg-white" aria-hidden="true" />
+                            <span>{current} · {i18n.tlNow || 'agora'}</span>
+                          </li>
+                        )}
+                        {next.map((n) => (
+                          <li key={`next-${n}`} className="flex items-start gap-2 text-[11px] text-[var(--text-muted)]">
+                            <span className="mt-1 inline-block w-2 h-2 rounded-full border border-[var(--border-default)]" aria-hidden="true" />
+                            <span>{n}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      {current === (i18n.tlAdjust || 'Ajuste do autor') && needsCuration && (
+                        <p className="mt-1.5 text-[10px] text-[var(--text-secondary)]">{i18n.tlResubmitHint || 'Depois de ajustar, envie de novo pelo botão de envio à curadoria deste card.'}</p>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Review history */}
                 {curationHistory.reviews.length > 0 && (
