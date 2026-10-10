@@ -3706,6 +3706,8 @@ export type Database = {
           created_by: string | null
           curation_due_at: string | null
           curation_status: string
+          curation_target_date: string | null
+          curation_target_venue: string | null
           cycle: number | null
           description: string | null
           due_date: string | null
@@ -3752,6 +3754,8 @@ export type Database = {
           created_by?: string | null
           curation_due_at?: string | null
           curation_status?: string
+          curation_target_date?: string | null
+          curation_target_venue?: string | null
           cycle?: number | null
           description?: string | null
           due_date?: string | null
@@ -3798,6 +3802,8 @@ export type Database = {
           created_by?: string | null
           curation_due_at?: string | null
           curation_status?: string
+          curation_target_date?: string | null
+          curation_target_venue?: string | null
           cycle?: number | null
           description?: string | null
           due_date?: string | null
@@ -35807,6 +35813,10 @@ export type Database = {
       }
       set_board_item_artifact_type: {
         Args: { p_item_id: string; p_subtype?: string; p_type: string }
+        Returns: Json
+      }
+      set_curation_target: {
+        Args: { p_date: string; p_item_id: string; p_venue: string }
         Returns: Json
       }
       set_event_audience: {

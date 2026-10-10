@@ -1751,11 +1751,11 @@ function registerTools(mcp: McpServer, sb: Sb) {
 
   // TOOL: submit_curation_review — Governance reviewers only. Records a structured review decision
   // for a curation_pending item; on the Nth approval (reviewers_required) the RPC auto-publishes.
-  mcp.tool("submit_curation_review", "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.", {
+  mcp.tool("submit_curation_review", "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft; the review stays in the curation record and in the decision notice to the author (not appended to the card). Requires participate_in_governance_review.", {
     item_id: z.string().describe("UUID of the board item under curation"),
     decision: z.enum(["approved", "returned_for_revision", "rejected"]).describe("Review decision"),
     criteria_scores: z.record(z.string(), z.number()).optional().describe("Optional rubric scores 1-5 per criterion: clarity, originality, adherence, relevance, ethics"),
-    feedback_notes: z.string().optional().describe("Optional reviewer feedback (appended to the item on revision/rejection)")
+    feedback_notes: z.string().optional().describe("Optional reviewer feedback (kept in the curation record and sent to the author with the decision)")
   }, async (params: { item_id: string; decision: string; criteria_scores?: Record<string, number>; feedback_notes?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
@@ -1776,16 +1776,20 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // TOOL: submit_for_curation (#2621) — envia o card a curadoria. Sem canV4 de proposito: quem decide
   // e a RPC (governanca OU lider de tribo, ADR-0041), e um portao de governanca aqui barraria os
   // lideres de tribo, que sao quem envia. Ver submitForCurationAndReadState.
-  mcp.tool("submit_for_curation", "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.", {
-    item_id: z.string().describe("UUID of the board item to submit to curation")
-  }, async (params: { item_id: string }) => {
+  mcp.tool("submit_for_curation", "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Optional target_venue/target_date record the publication destination first (see their descriptions). Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.", {
+    item_id: z.string().describe("UUID of the board item to submit to curation"),
+    target_venue: z.string().nullish().describe("Optional publication destination with its own deadline (journal, event, newsletter), free text up to 200 characters. Pass it only if the user named one; never invent it. Recorded BEFORE the submission and kept even if the submission is refused. Omit to keep the stored value; empty string or null clears it."),
+    target_date: z.string().nullish().describe("Optional target date of that destination, YYYY-MM-DD. Same rules as target_venue: only if the user gave it, recorded before submitting, omit to keep, empty string or null clears. Curation is alerted when its due date falls after it.")
+  }, async (params: { item_id: string; target_venue?: string | null; target_date?: string | null }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_for_curation", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.item_id)) { await logUsage(sb, member.id, "submit_for_curation", false, "Invalid item_id", start); return err("item_id must be a UUID"); }
     if (!(await canSee(sb, "item", params.item_id))) { await logUsage(sb, member.id, "submit_for_curation", false, "Confidential/no access", start); return err("Card not found or not visible to you."); }
+    const tgt = await setCurationTargetIfGiven(sb, params.item_id, params.target_venue, params.target_date);
+    if (tgt?.error) { await logUsage(sb, member.id, "submit_for_curation", false, tgt.error, start); return err(`${tgt.error} (nothing was saved and the card was not submitted)`); }
     const res = await submitForCurationAndReadState(sb, params.item_id);
-    if (res.error) { await logUsage(sb, member.id, "submit_for_curation", false, res.error, start); return err(res.error); }
+    if (res.error) { await logUsage(sb, member.id, "submit_for_curation", false, res.error, start); return err(tgt?.saved ? `${res.error} (target_venue/target_date WERE saved; only the submission was refused)` : res.error); }
     await logUsage(sb, member.id, "submit_for_curation", true, undefined, start);
     return ok({ action: "submit_for_curation", ...res.state, warnings: res.warnings });
   });
@@ -8050,9 +8054,35 @@ async function canSee(sb: Sb, kind: "item" | "board" | "initiative", id: string)
 // O codigo do erro segue o contrato do envelope semantico (unauthenticated|unauthorized|invalid_input|
 // not_found|internal_error). Recusa da REGRA e RAISE EXCEPTION da RPC (SQLSTATE P0001); o resto
 // (rede, PostgREST, EXECUTE negado) e falha tecnica e nao pode ser dito ao usuario como "sem permissao".
+// #2621: destino da publicacao (opcional), gravado pela RPC que decide quem pode gravar. Campo omitido
+// MANTEM o valor gravado; "" ou null LIMPA (a RPC grava os dois juntos, entao o omitido e relido aqui).
+// Sem nenhum dos dois, nada e chamado. A data e conferida antes, para o erro de formato voltar como
+// entrada invalida e nao como falha tecnica.
+type CurationTargetResult = { error?: string; errorCode?: string; saved?: { target_venue: string | null; target_date: string | null; target_at_risk: boolean } };
+function isCalendarDate(v: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+async function setCurationTargetIfGiven(sb: Sb, itemId: string, venue?: string | null, date?: string | null): Promise<CurationTargetResult | null> {
+  if (venue === undefined && date === undefined) return null;
+  if (date && !isCalendarDate(date)) return { error: "target_date must be a calendar date in YYYY-MM-DD.", errorCode: "invalid_input" };
+  let v = venue; let d = date;
+  if (v === undefined || d === undefined) {
+    const { data: cur, error } = await sb.from("board_items").select("curation_target_venue, curation_target_date").eq("id", itemId).maybeSingle();
+    if (error) return { error: error.message, errorCode: "internal_error" };
+    if (v === undefined) v = cur?.curation_target_venue ?? null;
+    if (d === undefined) d = cur?.curation_target_date ?? null;
+  }
+  const { data, error } = await sb.rpc("set_curation_target", { p_item_id: itemId, p_venue: v || null, p_date: d || null });
+  if (error) return { error: error.message, errorCode: curationSubmitErrorCode(error) };
+  return { saved: data as CurationTargetResult["saved"] };
+}
+
 function curationSubmitErrorCode(error: { code?: string; message: string }): string {
   if (error.code !== "P0001") return "internal_error";
   if (/^Requires /.test(error.message)) return "unauthorized";
+  if (/^Not authenticated/.test(error.message)) return "unauthenticated";
   if (/not found/i.test(error.message)) return "not_found";
   return "invalid_input";
 }
@@ -8902,9 +8932,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W1 · card_write (W) — 297 calls/180d; 10 actions over one card ──────────
   mcp.tool(
     "card_write",
-    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+    "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC; aceita target_venue/target_date, gravados ANTES do envio), 'set_curation_target' (card_id + target_venue and/or target_date; grava o destino da publicacao sem enviar, antes da publicacao; quem grava decide a RPC: autoria, lideranca da iniciativa ou governanca). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
     {
-      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast", "assign_role", "unassign_role", "submit_for_curation"]).describe("Card operation."),
+      action: z.enum(["create", "update", "move", "move_to_board", "archive", "restore", "delete", "duplicate", "mirror", "forecast", "assign_role", "unassign_role", "submit_for_curation", "set_curation_target"]).describe("Card operation."),
       card_id: z.string().optional().describe("Card UUID — required for every action EXCEPT 'create'."),
       board_id: z.string().optional().describe("Board UUID — required for action='create'."),
       target_board_id: z.string().optional().describe("Destination board UUID — move_to_board (required), duplicate/mirror (optional/required)."),
@@ -8926,6 +8956,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       notes: z.string().optional().describe("mirror — optional notes on the copy."),
       reason: z.string().optional().describe("delete (required) / move / archive / restore — audit reason."),
       confirm: z.boolean().optional().describe("archive/delete: pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+      target_venue: z.string().nullish().describe("submit_for_curation / set_curation_target: publication destination with its own deadline (journal, event, newsletter), free text up to 200 characters. Only if the user named one; never invent it. Omit to keep the stored value; empty string or null clears it. With submit_for_curation it is recorded BEFORE submitting and kept even if the submission is refused."),
+      target_date: z.string().nullish().describe("submit_for_curation / set_curation_target: target date of that destination, YYYY-MM-DD. Same keep/clear rules as target_venue."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -8950,7 +8982,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       // ESTRITO que a RPC chamada — o mesmo defeito que o #1778 corrigiu no card_checklist.
       const ROLE_ACTIONS = new Set(["assign_role", "unassign_role"]);
       // #2621: submit_for_curation idem — a RPC aceita governanca OU lider de tribo (ADR-0041).
-      const RPC_DECIDES = new Set([...ROLE_ACTIONS, "submit_for_curation"]);
+      const RPC_DECIDES = new Set([...ROLE_ACTIONS, "submit_for_curation", "set_curation_target"]);
       if (!RPC_DECIDES.has(params.action) && !(await canV4(sb, member.id, "write_board"))) { await logUsage(sb, member.id, "card_write", false, "Unauthorized", start); return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: "unauthorized", message: "Requires write_board.", action: "Ask a tribe leader / GP." })); }
 
       // Per-action input validation
@@ -8961,6 +8993,10 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       if (params.action === "duplicate" && params.target_board_id && !isUUID(params.target_board_id)) return invalid("target_board_id must be a UUID.", "Fix target_board_id.");
       if (params.action === "delete" && (!params.reason || !params.reason.trim())) return invalid("action='delete' requires reason (audit).", "Pass reason.");
       if (params.action === "forecast" && (!params.forecast_date || !params.justification || !params.justification.trim())) return invalid("action='forecast' requires forecast_date + justification.", "Pass forecast_date and justification.");
+      const TARGET_ACTIONS = new Set(["submit_for_curation", "set_curation_target"]);
+      const hasTarget = params.target_venue !== undefined || params.target_date !== undefined;
+      if (hasTarget && !TARGET_ACTIONS.has(params.action)) return invalid(`target_venue/target_date only apply to submit_for_curation or set_curation_target, not '${params.action}'.`, "Use action='set_curation_target' to record the destination.");
+      if (params.action === "set_curation_target" && !hasTarget) return invalid("action='set_curation_target' requires target_venue and/or target_date.", "Pass target_venue and/or target_date.");
       if (ROLE_ACTIONS.has(params.action) && (!isUUID(params.member_id ?? "") || !params.assignment_role)) return invalid(`action='${params.action}' requires member_id (UUID) + assignment_role (author|reviewer|contributor|curation_reviewer).`, "Pass member_id and assignment_role.");
 
       // ADR-0018 confirm-gate for destructive verbs (archive/delete) — return a preview unless confirm=true.
@@ -8976,15 +9012,40 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         });
       }
 
+      if (params.action === "set_curation_target") {
+        const tgt = await setCurationTargetIfGiven(sb, params.card_id, params.target_venue, params.target_date);
+        if (tgt?.error) {
+          await logUsage(sb, member.id, "card_write", false, tgt.error, start);
+          return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: tgt.errorCode!, message: tgt.error,
+            action: "O destino da publicacao nao foi gravado. Explique o motivo ao usuario." }));
+        }
+        await logUsage(sb, member.id, "card_write", true, undefined, start);
+        const saved = tgt?.saved ?? null;
+        return semanticOk({
+          data: { action: "set_curation_target", card_id: params.card_id, ...(saved ?? {}) },
+          summary: `Destino da publicacao do card ${params.card_id}: ${saved?.target_venue ?? "sem destino"}, ${saved?.target_date ?? "sem data-alvo"}.`,
+          warnings: saved?.target_at_risk ? ["O prazo da curadoria passa da data-alvo: combine um novo prazo com a curadoria."] : [],
+          next_actions: ["card_get: re-read the card"],
+          audit: { tool: "card_write", semantic_domain: dom, pii_level: "low", permission: "rpc:set_curation_target", source_tools: ["set_curation_target"], caller_member_id: member.id, gate_checked: "rls_can_see_item + RPC-internal (authorship | initiative leader | participate_in_governance_review)", resource_id: resourceId, extra: { action: params.action } },
+        });
+      }
+
       if (params.action === "submit_for_curation") {
+        const tgt = await setCurationTargetIfGiven(sb, params.card_id, params.target_venue, params.target_date);
+        if (tgt?.error) {
+          await logUsage(sb, member.id, "card_write", false, tgt.error, start);
+          return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: tgt.errorCode!, message: tgt.error,
+            action: "O destino da publicacao nao foi gravado e o card nao foi enviado. Explique o motivo ao usuario." }));
+        }
         const res = await submitForCurationAndReadState(sb, params.card_id);
         if (res.error) {
           await logUsage(sb, member.id, "card_write", false, res.error, start);
           const rule = res.errorCode !== "internal_error";
+          const savedNote = tgt?.saved ? " O destino da publicacao FOI gravado; so o envio foi recusado." : "";
           return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: res.errorCode!, message: res.error,
-            action: rule
+            action: (rule
               ? "Explique ao usuario o motivo acima, literalmente. Nao contorne movendo o card nem comentando: so lider de tribo ou governanca envia, e so artefato publicavel em rascunho ou revisao do lider."
-              : "Falha tecnica no envio; o card nao foi enviado. Tente de novo em instantes." }));
+              : "Falha tecnica no envio; o card nao foi enviado. Tente de novo em instantes.") + savedNote }));
         }
         await logUsage(sb, member.id, "card_write", true, undefined, start);
         const st = res.state as Record<string, any>;

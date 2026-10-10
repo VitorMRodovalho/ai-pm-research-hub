@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-09T05:07:33.540Z",
+  "generated_at": "2026-10-10T04:35:04.807Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -1145,7 +1145,7 @@
     },
     {
       "name": "card_write",
-      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC; aceita target_venue/target_date, gravados ANTES do envio), 'set_curation_target' (card_id + target_venue and/or target_date; grava o destino da publicacao sem enviar, antes da publicacao; quem grava decide a RPC: autoria, lideranca da iniciativa ou governanca). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false
@@ -1558,14 +1558,14 @@
     },
     {
       "name": "submit_curation_review",
-      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.",
+      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft; the review stays in the curation record and in the decision notice to the author (not appended to the card). Requires participate_in_governance_review.",
       "domain": "board",
       "permission": "write",
       "is_sensitive": false
     },
     {
       "name": "submit_for_curation",
-      "description": "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.",
+      "description": "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Optional target_venue/target_date record the publication destination first (see their descriptions). Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.",
       "domain": "board",
       "permission": "write",
       "is_sensitive": false

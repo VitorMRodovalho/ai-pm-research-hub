@@ -48,6 +48,8 @@ const REVIEW_ERRORS: Array<[RegExp, string]> = [
   [/Waiver requires a reason/i, 'reviewErrWaiverReason'],
   [/^Decision must be|desconhecido|Subtipo so existe/i, 'reviewErrInvalid'],
   [/^Publicação precisa de exatamente um formato/i, 'reviewErrNoSubtype'],
+  [/can only be set before publication/i, 'reviewErrStale'],
+  [/^Target venue too long/i, 'reviewErrInvalid'],
 ];
 const reviewErrorKey = (message: string | undefined): string | null => {
   const m = message || '';
@@ -129,6 +131,49 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   // #2624: publicacao so se grava com o formato. Escolher 'publicacao' abre o seletor de formato e
   // so o formato escolhido dispara a gravacao (a RPC recusa publicacao sem formato).
   const [pendingPublication, setPendingPublication] = useState(false);
+  // #2621: prazo do destino (opcional), gravado por set_curation_target e visto pela curadoria
+  const [targetVenue, setTargetVenue] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [targetSaved, setTargetSaved] = useState<{ venue: string; date: string }>({ venue: '', date: '' });
+  const [savingTarget, setSavingTarget] = useState(false);
+  // so libera os campos depois de ler o valor gravado: a RPC grava os dois juntos, e salvar sobre uma
+  // leitura que falhou apagaria o prazo de verdade
+  const [targetLoaded, setTargetLoaded] = useState(false);
+  const targetItemRef = useRef(item.id);
+  targetItemRef.current = item.id;
+  useEffect(() => {
+    let alive = true;
+    setTargetVenue(''); setTargetDate(''); setTargetSaved({ venue: '', date: '' }); setTargetLoaded(false);
+    if (!item.is_portfolio_item) return;
+    const sb = getSb();
+    if (!sb) return;
+    sb.from('board_items').select('curation_target_venue, curation_target_date').eq('id', item.id).maybeSingle()
+      .then(({ data, error }: any) => {
+        if (!alive || error || !data) return;
+        const v = data.curation_target_venue || ''; const d = data.curation_target_date || '';
+        setTargetVenue(v); setTargetDate(d); setTargetSaved({ venue: v, date: d }); setTargetLoaded(true);
+      });
+    return () => { alive = false; };
+  }, [item.id, item.is_portfolio_item]);
+  const saveTarget = async () => {
+    const sb = getSb();
+    if (!sb) return;
+    const savingFor = item.id;
+    const sent = { venue: targetVenue.trim(), date: targetDate };
+    setSavingTarget(true);
+    try {
+      const { error } = await sb.rpc('set_curation_target', { p_item_id: savingFor, p_venue: sent.venue || null, p_date: sent.date || null });
+      if (error) throw error;
+      if (targetItemRef.current !== savingFor) return;
+      setTargetVenue(sent.venue); setTargetSaved(sent);
+      (window as any).toast?.(i18n.targetSaved || 'Destino da publicação salvo', 'success');
+    } catch (err: any) {
+      if (targetItemRef.current !== savingFor) return;
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o destino da publicação'), 'error');
+    } finally {
+      if (targetItemRef.current === savingFor) setSavingTarget(false);
+    }
+  };
   const chooseArtifactType = (type: string | null) => {
     if (type === 'publicacao' && classif?.type !== 'publicacao') { setPendingPublication(true); return; }
     setPendingPublication(false);
@@ -496,8 +541,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
         if (rf.data && typeof rf.data === 'object') setReviewFields(rf.data as Partial<BoardItem>);
       }
 
-      // Fetch curation history if item has curation_status
-      if (item.curation_status && item.curation_status !== 'draft') {
+      // Fetch curation history if item has curation_status. #2621: tambem em rascunho para card de
+      // portfolio, que e o estado depois de uma devolucao, quando o autor mais precisa do parecer.
+      if (item.curation_status && (item.curation_status !== 'draft' || item.is_portfolio_item)) {
         const ch = await safe(sb.rpc('get_item_curation_history', { p_item_id: item.id }));
         if (ch.data && typeof ch.data === 'object') setCurationHistory(ch.data as CurationHistory);
       }
@@ -1006,12 +1052,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             <CardDriveFiles boardItemId={item.id} />
 
             {/* Comments (Mayanna Item 01) */}
+            <div id={`card-comments-${item.id}`}>
             <CardComments
               boardItemId={item.id}
               currentMemberId={permissions.member?.id}
               currentMemberIsAdmin={!!permissions.canEditAny}
               members={members.map((m) => ({ id: m.id, name: m.name }))}
             />
+            </div>
 
             {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
             {showPreCuration && (['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
@@ -1202,6 +1250,70 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               </div>
             )}
 
+            {/* #2621: prazo do destino (opcional), antes da publicacao */}
+            {needsCuration && ['draft', 'peer_review', 'leader_review', 'curation_pending'].includes(item.curation_status || '') && (() => {
+              const canEditTarget = isLeader || isCardAssignee;
+              const dueLocal = item.curation_due_at
+                ? new Date(item.curation_due_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+                : null;
+              const atRisk = !!(targetSaved.date && dueLocal && dueLocal > targetSaved.date);
+              const fmtD = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR');
+              if (!canEditTarget && !targetSaved.venue && !targetSaved.date) return null;
+              const dirty = targetVenue.trim() !== targetSaved.venue || targetDate !== targetSaved.date;
+              const inputCls = 'mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)] disabled:opacity-50';
+              return (
+                <section className="mt-2 space-y-1" aria-labelledby={`target-title-${item.id}`}>
+                  <h4 id={`target-title-${item.id}`} className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+                    {i18n.targetTitle || 'Destino da publicação (opcional)'}
+                  </h4>
+                  {canEditTarget ? (
+                    <>
+                      <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetHelp || 'Informe onde e até quando pretende publicar. A curadoria vê isso no quadro dela.'}</p>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="flex flex-col text-[11px] text-[var(--text-secondary)] grow min-w-[10rem]">
+                          {i18n.targetVenueLabel || 'Destino (revista, evento, newsletter)'}
+                          <input type="text" maxLength={200} autoComplete="off" value={targetVenue} disabled={!targetLoaded}
+                            onChange={(e) => setTargetVenue(e.target.value)} className={inputCls} />
+                        </label>
+                        <label className="flex flex-col text-[11px] text-[var(--text-secondary)]">
+                          {i18n.targetDateLabel || 'Data-alvo'}
+                          <input type="date" value={targetDate} disabled={!targetLoaded}
+                            onChange={(e) => setTargetDate(e.target.value)} className={inputCls} />
+                        </label>
+                        {targetDate && (
+                          <button type="button" onClick={() => setTargetDate('')} disabled={!targetLoaded}
+                            className="min-h-[36px] px-2 py-1.5 rounded-lg text-[11px] text-[var(--text-secondary)] bg-transparent border-0 underline cursor-pointer">
+                            {i18n.targetClearDate || 'Limpar data'}
+                          </button>
+                        )}
+                        <button type="button" onClick={saveTarget}
+                          disabled={!targetLoaded || savingTarget || !dirty}
+                          className="min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent disabled:opacity-50 cursor-pointer">
+                          {savingTarget ? '...' : (i18n.targetSave || 'Salvar')}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[12px] text-[var(--text-primary)]">
+                        {targetSaved.venue || (i18n.targetNoVenue || 'Destino não informado')}{' · '}{targetSaved.date ? fmtD(targetSaved.date) : (i18n.targetNoDate || 'sem data-alvo')}
+                      </p>
+                      <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetReadOnly || 'Só o líder ou o responsável pelo card edita.'}</p>
+                    </>
+                  )}
+                  {atRisk ? (
+                    <p role="alert" className="text-[12px] text-amber-800 bg-amber-50 rounded px-2 py-1">
+                      <span aria-hidden="true">{'⚠ '}</span>
+                      {(i18n.targetAtRisk || 'A curadoria vai até {due} e a data-alvo é {target}. Combine um novo prazo com a curadoria.')
+                        .replace('{due}', fmtD(dueLocal!)).replace('{target}', fmtD(targetSaved.date))}
+                    </p>
+                  ) : (targetSaved.date && !dueLocal && (
+                    <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetNoDueYet || 'O prazo da curadoria começa a contar quando o card entra na curadoria.'}</p>
+                  ))}
+                </section>
+              );
+            })()}
+
             {/* ── Curation Pipeline Visual ── */}
             {item.curation_status && item.curation_status !== 'draft' && (
               <div className="mb-3">
@@ -1265,6 +1377,100 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   </div>
                 )}
 
+                {/* #2621: linha do tempo do envio (etapa atual destacada, proximas visiveis) */}
+                {((curationHistory.submissions?.length ?? 0) > 0 || curationHistory.reviews.length > 0) && (() => {
+                  const loc = pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR';
+                  const fmt = (d: string | null | undefined) => d ? new Date(d).toLocaleDateString(loc, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }) : '';
+                  type Ev = { at: string; rank: number; text: string; tone: 'done' | 'warn' | 'bad' | 'ok' };
+                  const evs: Ev[] = [];
+                  (curationHistory.submissions ?? []).forEach((s, i) => {
+                    const label = i === 0 ? (i18n.tlSubmitted || 'Enviado à curadoria') : (i18n.tlResubmitted || 'Reenviado à curadoria');
+                    const due = s.sla_deadline ? `${i18n.tlDeadline || 'prazo do parecer'} ${fmt(s.sla_deadline)}` : (i18n.tlNoDeadline || 'sem prazo definido ainda');
+                    evs.push({ at: s.at, rank: 0, tone: 'done', text: `${label} · ${fmt(s.at)} · ${due}` });
+                  });
+                  for (const r of curationHistory.reviews) {
+                    const dec = r.decision === 'approved' ? (i18n.tlFavorable || 'parecer favorável')
+                      : r.decision === 'rejected' ? (i18n.tlRejected || 'não aprovado')
+                      : (i18n.tlReturned || 'devolvido para ajuste');
+                    evs.push({ at: r.completed_at, rank: 1, tone: r.decision === 'approved' ? 'ok' : r.decision === 'rejected' ? 'bad' : 'warn',
+                      text: `${r.review_round ? `${i18n.tlRound || 'Rodada'} ${r.review_round} · ` : ''}${dec} · ${fmt(r.completed_at)}` });
+                  }
+                  if (curationHistory.approved_at) evs.push({ at: curationHistory.approved_at, rank: 2, tone: 'ok', text: `${i18n.tlApproved || 'Aprovado pela curadoria'} · ${fmt(curationHistory.approved_at)}` });
+                  // ordem pelo momento; no empate, envio antes de parecer antes de aprovacao
+                  evs.sort((x, y) => (new Date(x.at).getTime() - new Date(y.at).getTime()) || (x.rank - y.rank));
+                  const lastReview = [...curationHistory.reviews].sort((x, y) => new Date(y.completed_at).getTime() - new Date(x.completed_at).getTime())[0];
+                  const st = item.curation_status;
+                  // etapa atual como codigo; o texto so na hora de desenhar
+                  const stage: 'curation' | 'adjust' | 'published' | 'closed' | null =
+                    st === 'curation_pending' ? 'curation'
+                    : st === 'published' ? 'published'
+                    : st === 'draft' && lastReview?.decision === 'rejected' && item.status === 'archived' ? 'closed'
+                    : st === 'draft' && lastReview && lastReview.decision !== 'approved' ? 'adjust'
+                    : null;
+                  const next: string[] = stage === 'curation' ? [i18n.tlDecision || 'Decisão da curadoria', i18n.tlPublication || 'Publicação']
+                    : stage === 'adjust' ? [i18n.tlResubmit || 'Reenvio à curadoria', i18n.tlCuration || 'Curadoria', i18n.tlPublication || 'Publicação']
+                    : [];
+                  const canResubmit = needsCuration && (isLeader || isCardAssignee);
+                  const toneCls: Record<Ev['tone'], string> = { done: 'bg-teal', ok: 'bg-emerald-600', warn: 'bg-amber-600', bad: 'bg-red-600' };
+                  const goToComments = () => {
+                    const box = document.getElementById(`card-comments-${item.id}`);
+                    box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    (box?.querySelector('textarea') as HTMLTextAreaElement | null)?.focus();
+                  };
+                  const titleId = `curation-timeline-${item.id}`;
+                  return (
+                    <section className="mb-3" aria-labelledby={titleId}>
+                      <h4 id={titleId} className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-1.5">{i18n.curationTimelineTitle || 'Linha do tempo do envio'}</h4>
+                      <ol className="space-y-1">
+                        {evs.map((ev, i) => (
+                          <li key={`ev-${i}`} className="flex items-start gap-2 text-[12px] text-[var(--text-primary)]">
+                            <span className={`mt-1.5 inline-block w-2 h-2 rounded-full ${toneCls[ev.tone]}`} aria-hidden="true" />
+                            <span><span className="sr-only">{i18n.tlSrDone || 'concluído:'} </span>{ev.text}</span>
+                          </li>
+                        ))}
+                        {stage === 'published' && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full bg-emerald-600" aria-hidden="true" />
+                            <span>{i18n.tlPublished || 'Publicado'}{curationHistory.approved_at ? ` · ${fmt(curationHistory.approved_at)}` : ''}</span>
+                          </li>
+                        )}
+                        {stage === 'closed' && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full bg-red-600" aria-hidden="true" />
+                            <span>{i18n.tlClosed || 'Encerrado: este envio não foi aprovado. Fale com a curadoria para entender o parecer.'}</span>
+                          </li>
+                        )}
+                        {(stage === 'curation' || stage === 'adjust') && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]" aria-current="step">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full ring-2 ring-teal bg-[var(--surface-base)]" aria-hidden="true" />
+                            <span>{stage === 'curation' ? (i18n.tlCuration || 'Curadoria') : (i18n.tlAdjust || 'Ajuste do autor')} · {i18n.tlNow || 'agora'}</span>
+                          </li>
+                        )}
+                        {next.map((n) => (
+                          <li key={`next-${n}`} className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full border border-[var(--border-default)]" aria-hidden="true" />
+                            <span><span className="sr-only">{i18n.tlSrNext || 'próxima etapa:'} </span>{n}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      {stage === 'adjust' && (
+                        <p className="mt-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {i18n.tlReadReview || 'Leia o parecer da curadoria logo abaixo.'}{' '}
+                          {needsCuration && (canResubmit
+                            ? `${i18n.tlResubmitHint || 'Depois de ajustar, use'} "${i18n.curationSubmitButton || 'Submeter para Curadoria'}".`
+                            : (i18n.tlAskLeader || 'Para reenviar, peça à liderança da tribo.'))}
+                        </p>
+                      )}
+                      {(stage === 'curation' || stage === 'adjust' || stage === 'closed') && (
+                        <button type="button" onClick={goToComments}
+                          className="mt-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent cursor-pointer">
+                          💬 {i18n.tlContact || 'Falar com a curadoria'}
+                        </button>
+                      )}
+                    </section>
+                  );
+                })()}
+
                 {/* Review history */}
                 {curationHistory.reviews.length > 0 && (
                   <div className="space-y-3 mb-3">
@@ -1277,7 +1483,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                             : rev.decision === 'rejected' ? 'bg-red-100 text-red-700'
                             : 'bg-amber-100 text-amber-700'
                           }`}>
-                            {rev.decision === 'approved' ? 'Aprovado' : rev.decision === 'rejected' ? 'Rejeitado' : 'Revisão solicitada'}
+                            {rev.decision === 'approved' ? (i18n.reviewDecApproved || 'Aprovado') : rev.decision === 'rejected' ? (i18n.reviewDecRejected || 'Rejeitado') : (i18n.reviewDecReturned || 'Revisão solicitada')}
                           </span>
                         </div>
                         {/* Rubric scores as bars */}
@@ -1305,10 +1511,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                           </div>
                         )}
                         {rev.feedback_notes && (
-                          <p className="text-[10px] text-[var(--text-muted)] italic mt-1">{rev.feedback_notes}</p>
+                          <p className="text-[12px] text-[var(--text-primary)] mt-1 whitespace-pre-line">{rev.feedback_notes}</p>
                         )}
                         <span className="text-[9px] text-[var(--text-muted)]">
-                          {new Date(rev.completed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(rev.completed_at).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' })}
                         </span>
                       </div>
                     ))}

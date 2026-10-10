@@ -150,10 +150,16 @@ export interface CurationReview {
   criteria_scores: RubricScore;
   feedback_notes: string | null;
   completed_at: string;
+  /** #2621: rodada do parecer (curation_review_log.review_round). */
+  review_round?: number;
 }
 
 export interface CurationHistory {
   reviews: CurationReview[];
+  /** #2621: cada envio a curadoria, com o prazo do parecer daquele envio. */
+  submissions?: { at: string; sla_deadline: string | null }[];
+  /** #2621: momento da aprovacao da curadoria, se houve. */
+  approved_at?: string | null;
   assignments: { reviewer_name: string; reviewer_id: string; round: number; assigned_at: string; sla_deadline: string | null }[];
   sla_config: { sla_days: number; reviewers_required: number; max_review_rounds: number; rubric_criteria: string[] } | Record<string, never>;
 }
@@ -396,6 +402,45 @@ export interface BoardI18n {
   reviewErrWaiverReason?: string;
   reviewErrInvalid?: string;
   reviewErrNoSubtype?: string;
+  curationTimelineTitle?: string;
+  tlSubmitted?: string;
+  tlDeadline?: string;
+  tlRound?: string;
+  tlReturned?: string;
+  tlRejected?: string;
+  tlFavorable?: string;
+  tlApproved?: string;
+  tlNow?: string;
+  tlAdjust?: string;
+  tlResubmit?: string;
+  tlCuration?: string;
+  tlDecision?: string;
+  tlPublication?: string;
+  tlResubmitHint?: string;
+  tlResubmitted?: string;
+  tlNoDeadline?: string;
+  tlPublished?: string;
+  tlClosed?: string;
+  tlReadReview?: string;
+  tlAskLeader?: string;
+  tlContact?: string;
+  tlSrDone?: string;
+  tlSrNext?: string;
+  reviewDecApproved?: string;
+  reviewDecRejected?: string;
+  reviewDecReturned?: string;
+  targetTitle?: string;
+  targetVenueLabel?: string;
+  targetDateLabel?: string;
+  targetSave?: string;
+  targetNoVenue?: string;
+  targetAtRisk?: string;
+  targetSaved?: string;
+  targetHelp?: string;
+  targetNoDueYet?: string;
+  targetReadOnly?: string;
+  targetNoDate?: string;
+  targetClearDate?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -532,6 +577,45 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
   reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
   reviewErrNoSubtype: 'Publicação precisa de um formato: escolha o formato da publicação no card (artigo, e-book, infográfico, etc.) e tente de novo.',
+  curationTimelineTitle: 'Linha do tempo do envio',
+  tlSubmitted: 'Enviado à curadoria',
+  tlDeadline: 'prazo do parecer',
+  tlRound: 'Rodada',
+  tlReturned: 'devolvido para ajuste',
+  tlRejected: 'não aprovado',
+  tlFavorable: 'parecer favorável',
+  tlApproved: 'Aprovado pela curadoria',
+  tlNow: 'agora',
+  tlAdjust: 'Ajuste do autor',
+  tlResubmit: 'Reenvio à curadoria',
+  tlCuration: 'Curadoria',
+  tlDecision: 'Decisão da curadoria',
+  tlPublication: 'Publicação',
+  tlResubmitHint: 'Depois de ajustar, use',
+  tlResubmitted: 'Reenviado à curadoria',
+  tlNoDeadline: 'sem prazo definido ainda',
+  tlPublished: 'Publicado',
+  tlClosed: 'Encerrado: este envio não foi aprovado. Fale com a curadoria para entender o parecer.',
+  tlReadReview: 'Leia o parecer da curadoria logo abaixo.',
+  tlAskLeader: 'Para reenviar, peça à liderança da tribo.',
+  tlContact: 'Falar com a curadoria',
+  tlSrDone: 'concluído:',
+  tlSrNext: 'próxima etapa:',
+  reviewDecApproved: 'Aprovado',
+  reviewDecRejected: 'Rejeitado',
+  reviewDecReturned: 'Revisão solicitada',
+  targetTitle: 'Destino da publicação (opcional)',
+  targetVenueLabel: 'Destino (revista, evento, newsletter)',
+  targetDateLabel: 'Data-alvo',
+  targetSave: 'Salvar',
+  targetNoVenue: 'Destino não informado',
+  targetAtRisk: 'A curadoria vai até {due} e a data-alvo é {target}. Combine um novo prazo com a curadoria.',
+  targetSaved: 'Destino da publicação salvo',
+  targetHelp: 'Informe onde e até quando pretende publicar. A curadoria vê isso no quadro dela.',
+  targetNoDueYet: 'O prazo da curadoria começa a contar quando o card entra na curadoria.',
+  targetReadOnly: 'Só o líder ou o responsável pelo card edita.',
+  targetNoDate: 'sem data-alvo',
+  targetClearDate: 'Limpar data',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

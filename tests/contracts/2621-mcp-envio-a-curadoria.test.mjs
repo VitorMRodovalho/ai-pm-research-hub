@@ -57,8 +57,8 @@ test('B. a ferramenta crua so checa visibilidade antes de chamar, nunca canV4', 
     /if \(!\(await canSee\(sb, "item", params\.item_id\)\)\) \{[^}]*return err\(/,
     'card invisivel (confidencial) e recusado antes de chamar');
   assert.match(t.slice(call),
-    /if \(res\.error\) \{[^}]*return err\(res\.error\); \}/,
-    'o erro da RPC e repassado ao agente');
+    /if \(res\.error\) \{ await logUsage\([^\n]*return err\(tgt\?\.saved \? `[^`]*` : res\.error\); \}/,
+    'o erro da RPC e repassado ao agente (com a nota do destino gravado, #2621)');
 });
 
 test('C. o card_write leva a acao ao helper e a tira do portao write_board', () => {
@@ -66,11 +66,11 @@ test('C. o card_write leva a acao ao helper e a tira do portao write_board', () 
     /action: z\.enum\(\[[^\]]*"submit_for_curation"[^\]]*\]\)\.describe\("Card operation\."\)/,
     'a acao existe no enum do card_write');
   assert.match(SRC,
-    /const RPC_DECIDES = new Set\(\[\.\.\.ROLE_ACTIONS, "submit_for_curation"\]\);\s+if \(!RPC_DECIDES\.has\(params\.action\) && !\(await canV4\(sb, member\.id, "write_board"\)\)\)/,
+    /const RPC_DECIDES = new Set\(\[\.\.\.ROLE_ACTIONS, "submit_for_curation", "set_curation_target"\]\);\s+if \(!RPC_DECIDES\.has\(params\.action\) && !\(await canV4\(sb, member\.id, "write_board"\)\)\)/,
     'submit_for_curation nao passa pelo canV4(write_board)');
   const b = cardBranch();
-  assert.match(b, /^if \(params\.action === "submit_for_curation"\) \{\s+const res = await submitForCurationAndReadState\(sb, params\.card_id\);/,
-    'o ramo chama o helper');
+  assert.match(b, /^if \(params\.action === "submit_for_curation"\) \{\s+const tgt = await setCurationTargetIfGiven\(sb, params\.card_id, params\.target_venue, params\.target_date\);\s+if \(tgt\?\.error\) \{[^}]*?return ok\(buildSemanticError\([^}]*\}\)\);\s+\}\s+const res = await submitForCurationAndReadState\(sb, params\.card_id\);/,
+    'o ramo chama o helper (depois de gravar o prazo do destino, #2621)');
   assert.doesNotMatch(b, /canV4\(/, 'o ramo nao tem portao de autoridade proprio');
   assert.match(b, /if \(res\.error\) \{[\s\S]*?buildSemanticError\(\{ tool: "card_write", semantic_domain: dom, code: res\.errorCode!, message: res\.error,/,
     'a recusa da RPC volta com a mensagem e o codigo classificado');
