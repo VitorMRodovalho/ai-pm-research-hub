@@ -139,3 +139,19 @@ test('telas chamam as RPCs com portão', () => {
   assert.match(maskJsComments(read('src/components/admin/campaigns/OneOffMessageIsland.tsx')), /sb\.rpc\('admin_send_one_off_message', \{/);
   assert.match(maskJsComments(read('src/components/admin/members/MemberCommunicationsPanel.tsx')), /sb\.rpc\('get_member_communications', \{ p_member_id: memberId \}\)/);
 });
+
+test('#2586 política v2.3: a página declara a pessoa não membro (finalidade e retenção) e a lista de descadastro', () => {
+  const page = read('src/pages/privacy.astro');
+  assert.match(page, /const S3_ROWS = \[1,2,3,4,5,6,7,8,9,10,11,12,13\] as const;/);
+  assert.match(page, /const S6_ROWS = \[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15\] as const;/);
+  const keys = ['s3.row13.purpose', 's3.row13.data', 's3.row13.basis',
+    's6ret.row14.data', 's6ret.row14.retention', 's6ret.row14.after',
+    's6ret.row15.data', 's6ret.row15.retention', 's6ret.row15.after'];
+  for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const dict = read(`src/i18n/${lang}.ts`);
+    assert.match(dict, /'privacy\.version': 'v2\.3'/, `${lang} sem v2.3`);
+    for (const k of keys) assert.match(dict, new RegExp(`'privacy\\.${k.replace(/\./g, '\\.')}': '[^']+`), `${lang} sem ${k}`);
+    // a retenção declarada é a mesma que a varredura executa: 1 ano
+    assert.match(dict, /'privacy\.s6ret\.row14\.retention': '1 (ano|year|año)/, `${lang}: prazo da pessoa não membro`);
+  }
+});

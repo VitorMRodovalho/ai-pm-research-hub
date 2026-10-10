@@ -3888,7 +3888,7 @@ const enUS: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Privacy Policy — AI & PM Research Hub',
   'privacy.title': 'Privacy Policy and Data Protection',
-  'privacy.version': 'v2.2',
+  'privacy.version': 'v2.3',
   'privacy.lastUpdated': 'Last updated',
 
   // S1 — Data Controller
@@ -3967,6 +3967,9 @@ const enUS: Record<string, string> = {
   'privacy.s3.row12.purpose': 'Delivery and custody of the signed Volunteer Agreement',
   'privacy.s3.row12.data': 'Signed agreement (name, address, phone, date of birth, PMI ID, signatures and timestamps)',
   'privacy.s3.row12.basis': 'Contract performance (Art. 7, V): each party receives the copy of the instrument it signed. For the institutional archive of the contracting chapter, also Legitimate interest (Art. 7, IX)',
+  'privacy.s3.row13.purpose': 'Contact with people who are not members (guest speaker at a meeting, individual message from management)',
+  'privacy.s3.row13.data': 'Name and e-mail provided by a member or by management; delivery, open and click metrics; the guest\'s name on the meeting\'s public agenda',
+  'privacy.s3.row13.basis': 'Legitimate interest (Art. 7, IX). The person is informed in the e-mail itself, can ask to stop receiving messages and can object (Art. 18, §2)',
   // S3.1 — Public display of location on the geographic map (opt-in, two levels)
   'privacy.s3map.title': 'Public display of your location on the geographic map',
   'privacy.s3map.intro': 'The homepage shows a map of the geographic distribution of Núcleo IA & GP members. Including your location in an identifiable way on this map is optional and based on your consent, with two levels:',
@@ -4052,6 +4055,12 @@ const enUS: Record<string, string> = {
   'privacy.s6ret.row13.data': 'Signed agreement copy in restricted Drive folder',
   'privacy.s6ret.row13.retention': '5 years after offboarding',
   'privacy.s6ret.row13.after': 'File deletion',
+  'privacy.s6ret.row14.data': 'E-mail and name of a person who is not a member (guest, individual message)',
+  'privacy.s6ret.row14.retention': '1 year after the meeting or the message',
+  'privacy.s6ret.row14.after': 'Anonymization; the guest\'s name on the agenda becomes "External guest"',
+  'privacy.s6ret.row15.data': 'Unsubscribe list (e-mail only)',
+  'privacy.s6ret.row15.retention': 'For as long as the request stands, only to make sure the person receives no more messages',
+  'privacy.s6ret.row15.after': 'Deleted at the data subject\'s request',
   // S7 — Data subject rights
   'privacy.s7rights.title': 'Your Rights (LGPD Art. 18)',
   'privacy.s7rights.access': 'Access',

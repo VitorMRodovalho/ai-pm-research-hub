@@ -3888,7 +3888,7 @@ const esLATAM: Record<string, string> = {
   // ── Privacy Policy v2.0 (GC-080 LGPD Rewrite) ──
   'privacy.pageTitle': 'Política de Privacidad — Núcleo IA & GP',
   'privacy.title': 'Política de Privacidad y Protección de Datos',
-  'privacy.version': 'v2.2',
+  'privacy.version': 'v2.3',
   'privacy.lastUpdated': 'Última actualización',
 
   // S1 — Controlador
@@ -3967,6 +3967,9 @@ const esLATAM: Record<string, string> = {
   'privacy.s3.row12.purpose': 'Entrega y custodia de la copia firmada del Término de Voluntariado',
   'privacy.s3.row12.data': 'Término firmado (nombre, dirección, teléfono, fecha de nacimiento, PMI ID, firmas y sellos de tiempo)',
   'privacy.s3.row12.basis': 'Ejecución de contrato (Art. 7, V): cada parte recibe la copia del instrumento que firmó. Para el archivo institucional del capítulo contratante, también Interés legítimo (Art. 7, IX)',
+  'privacy.s3.row13.purpose': 'Contacto con personas que no son miembros (invitado a hablar en una reunión, mensaje individual de la gestión)',
+  'privacy.s3.row13.data': 'Nombre y correo informados por un miembro o por la gestión; métricas de entrega, apertura y clic; nombre del invitado en la agenda pública de la reunión',
+  'privacy.s3.row13.basis': 'Interés legítimo (Art. 7, IX). La persona es avisada en el propio correo, puede pedir no recibir más y puede oponerse (Art. 18, §2)',
   // S3.1 — Exhibición pública de ubicación en el mapa geográfico (opt-in, dos niveles)
   'privacy.s3map.title': 'Exhibición pública de tu ubicación en el mapa geográfico',
   'privacy.s3map.intro': 'La página de inicio muestra un mapa de distribución geográfica de los miembros de Núcleo IA & GP. La inclusión de tu ubicación de forma identificable en ese mapa es opcional y se basa en tu consentimiento, con dos niveles:',
@@ -4052,6 +4055,12 @@ const esLATAM: Record<string, string> = {
   'privacy.s6ret.row13.data': 'Copia firmada del Término en carpeta Drive restringida',
   'privacy.s6ret.row13.retention': '5 años después del desvinculación',
   'privacy.s6ret.row13.after': 'Eliminación del archivo',
+  'privacy.s6ret.row14.data': 'Correo y nombre de persona que no es miembro (invitado, mensaje individual)',
+  'privacy.s6ret.row14.retention': '1 año después de la reunión o del envío',
+  'privacy.s6ret.row14.after': 'Anonimización; el nombre del invitado en la agenda pasa a "Invitado(a) externo(a)"',
+  'privacy.s6ret.row15.data': 'Lista de bajas (solo el correo)',
+  'privacy.s6ret.row15.retention': 'Mientras dure el pedido, solo para garantizar que la persona no reciba más mensajes',
+  'privacy.s6ret.row15.after': 'Eliminada a pedido del titular',
   // S7 — Derechos LGPD
   'privacy.s7rights.title': 'Tus Derechos (LGPD Art. 18)',
   'privacy.s7rights.access': 'Acceso',
