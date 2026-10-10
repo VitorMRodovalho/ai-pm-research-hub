@@ -23,7 +23,7 @@
 --     b) apaga vínculos vencidos;
 --     c) apaga a pessoa CRIADA por este caminho (consent_version = 'external-contact') que ficou sem vínculo e
 --        sem nenhum laço: login, membro, PMI ID, engajamento, certificado, progresso, afiliação, acesso ao
---        Drive. Pessoa que já existia antes (candidato, competição, membro) só perde o vínculo. O critério é
+--        Drive, inscrição em competição (FK NO ACTION, medida pela orquestradora em 10/10). Pessoa que já existia antes (candidato, competição, membro) só perde o vínculo. O critério é
 --        de ESTADO, então quem uma FK pulou hoje é revista amanhã;
 --     d) troca o nome do convidado externo da agenda por "Convidado(a) externo(a)" 1 ano depois da reunião
 --        (hoje: 14 blocos com nome de convidado, 2 externos; o coapresentador membro não é tocado).
@@ -338,6 +338,8 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM public.initiative_member_progress imp WHERE imp.person_id = p.id)
       AND NOT EXISTS (SELECT 1 FROM public.member_chapter_affiliations mca WHERE mca.person_id = p.id)
       AND NOT EXISTS (SELECT 1 FROM public.drive_membership_grants dmg WHERE dmg.grantee_person_id = p.id)
+      -- FK NO ACTION: com inscrição de competição o DELETE falharia; a competição tem a própria retenção
+      AND NOT EXISTS (SELECT 1 FROM competition.registrations cr2 WHERE cr2.person_id = p.id)
   LOOP
     IF p_dry_run THEN
       v_deleted := v_deleted || r.id;

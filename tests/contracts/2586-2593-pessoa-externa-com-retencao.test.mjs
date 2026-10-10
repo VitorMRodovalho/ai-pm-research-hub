@@ -80,6 +80,7 @@ test('varredura: só apaga a pessoa CRIADA pelo caminho externo, por estado, sem
     SWEEP(),
     /WHERE p\.consent_version = 'external-contact'\s+AND p\.auth_id IS NULL AND p\.legacy_member_id IS NULL AND p\.pmi_id IS NULL\s+AND NOT EXISTS \(SELECT 1 FROM public\.person_external_links l\s+WHERE l\.person_id = p\.id AND l\.retention_until >= current_date\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.members m WHERE m\.person_id = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.engagements en\s+WHERE en\.person_id = p\.id OR en\.granted_by = p\.id OR en\.revoked_by = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.event_guest_certificates g WHERE g\.person_id = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.initiative_member_progress imp WHERE imp\.person_id = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.member_chapter_affiliations mca WHERE mca\.person_id = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.drive_membership_grants dmg WHERE dmg\.grantee_person_id = p\.id\)/,
   );
+  assert.match(SWEEP(), /AND NOT EXISTS \(SELECT 1 FROM public\.drive_membership_grants dmg WHERE dmg\.grantee_person_id = p\.id\)\s+AND NOT EXISTS \(SELECT 1 FROM competition\.registrations cr2 WHERE cr2\.person_id = p\.id\)\s+LOOP/);
   assert.doesNotMatch(SWEEP(), /v_expired/);
   assert.match(SWEEP(), /EXCEPTION WHEN foreign_key_violation THEN\s+v_skipped := v_skipped \|\| r\.id;/);
 });
