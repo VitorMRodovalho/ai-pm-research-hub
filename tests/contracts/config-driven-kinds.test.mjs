@@ -273,8 +273,10 @@ test('Phase 6 Frontend: Admin UI exists', async (t) => {
 test('Phase 6 Frontend: CPMAI landing uses V4 RPCs', async (t) => {
   const content = readFile('src/components/cpmai/CpmaiLanding.tsx');
 
-  await t.test('uses join_initiative instead of enroll_in_cpmai_course', () => {
-    assert.ok(content.includes('join_initiative'), 'Must use generic join_initiative RPC');
+  // GP, 09/10/2026: o CPMAI virou grupo de estudos com entrada pela gestão; a tela não autoinscreve mais,
+  // nem pela RPC legada nem pela genérica (que agora só aceita join_policy = 'open').
+  await t.test('does not self-enroll (no legacy enroll RPC, no join_initiative)', () => {
+    assert.ok(!content.includes('join_initiative'), 'CPMAI landing must not self-enroll');
     assert.ok(!content.includes('enroll_in_cpmai_course'), 'Must NOT use legacy enroll RPC');
   });
 

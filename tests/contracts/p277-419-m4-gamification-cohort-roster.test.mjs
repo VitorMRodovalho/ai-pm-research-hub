@@ -155,11 +155,20 @@ test('M4-gam DB: native forks — get_initiative_stats.member_count == roster ==
   // #1249: the absolute fixtures (Mesa=4, LATAM=3, Grupo=3) are dead cohort snapshots — Grupo drifted
   // to 5 as its study group grew. The durable contract: get_initiative_stats shares the roster, and
   // both equal the canonical view. Observer-kind reviewers stay excluded (defended by the roster tests).
+  // O Grupo CPMAI virou confidencial (GP, 09/10/2026). Sem sessão, get_initiative_stats cai no portão da ADR-0105 e
+  // devolve 'Initiative not found': a contagem não se compara, e o teste afirma que ela NÃO vaza.
+  const { data: vis } = await sb.from('initiatives').select('id, visibility').in('id', [MESA, LATAM, GRUPO]);
+  const confidential = new Set((vis ?? []).filter((r) => r.visibility === 'confidential').map((r) => r.id));
   for (const id of [MESA, LATAM, GRUPO]) {
     const viewCount = await rosterViewCount(sb, id);
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: id });
     const { data: stats } = await sb.rpc('get_initiative_stats', { p_initiative_id: id });
     assert.equal(Number(roster), viewCount, `roster(${id}) == canonical view`);
+    if (confidential.has(id)) {
+      assert.equal(stats?.error, 'Initiative not found', `get_initiative_stats(${id}) confidencial: o portão segura sem sessão`);
+      assert.equal(stats?.member_count, undefined, `get_initiative_stats(${id}) confidencial: a contagem não vaza`);
+      continue;
+    }
     assert.equal(Number(stats.member_count), viewCount, `get_initiative_stats(${id}).member_count == canonical view (shares the roster)`);
   }
 });
