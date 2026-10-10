@@ -65,9 +65,10 @@ test('C. EXECUTE revogado de PUBLIC e concedido a anon', () => {
 
 test('D. a ilha nao cai em leitura publica e nao autoinscreve; quem nao pode ve o aviso', () => {
   assert.doesNotMatch(ISLAND, /get_public_cpmai_course|join_initiative/);
+  // cada erro do painel vira o seu aviso (login, grupo inexistente, falha, e por fim forbidden); nenhum vira outra leitura
   assert.match(
     ISLAND,
-    /if \(d && !d\.error\) \{ setDenied\(null\); return d; \}\s*setDenied\(d\?\.error === 'Not authenticated' \|\| !d \? 'login' : 'forbidden'\);\s*return null;/,
+    /if \(error\) next = \{ data: null, denied: 'error' \};\s+else if \(d && !d\.error\) next = \{ data: d, denied: null \};\s+else if \(d\?\.error === 'Not authenticated'\) next = \{ data: null, denied: 'login' \};\s+else if \(d\?\.error === 'No course found'\) next = \{ data: null, denied: 'none' \};\s+else next = \{ data: null, denied: 'forbidden' \};/,
     'erro do painel tem de virar aviso de acesso, nunca outra leitura',
   );
 });

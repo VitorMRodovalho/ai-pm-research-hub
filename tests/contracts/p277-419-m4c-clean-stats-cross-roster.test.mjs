@@ -132,9 +132,18 @@ test('M4-C-clean DB: get_tribe_stats(8).member_count == roster primitive == 5 (p
 test('M4-C-clean DB: fork KILLED — get_initiative_stats(X).member_count == roster for every native initiative', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   // before mig 086 these forked (Mesa 7 vs 4, LATAM 5 vs 3 in exec_cross); now all agree on the roster
+  // O Grupo CPMAI virou confidencial (GP, 09/10/2026). Sem sessão, get_initiative_stats cai no portão da ADR-0105 e
+  // devolve 'Initiative not found': a contagem não se compara, e o teste afirma que ela NÃO vaza.
+  const { data: vis } = await sb.from('initiatives').select('id, visibility').in('id', [MESA, LATAM, GRUPO]);
+  const confidential = new Set((vis ?? []).filter((r) => r.visibility === 'confidential').map((r) => r.id));
   for (const id of [MESA, LATAM, GRUPO]) {
     const { data: roster } = await sb.rpc('get_initiative_roster_count', { p_initiative_id: id });
     const { data: stats } = await sb.rpc('get_initiative_stats', { p_initiative_id: id });
+    if (confidential.has(id)) {
+      assert.equal(stats?.error, 'Initiative not found', `get_initiative_stats(${id}) confidencial: o portão segura sem sessão`);
+      assert.equal(stats?.member_count, undefined, `get_initiative_stats(${id}) confidencial: a contagem não vaza`);
+      continue;
+    }
     assert.equal(Number(stats.member_count), Number(roster),
       `get_initiative_stats(${id}).member_count (${stats?.member_count}) must equal roster (${roster})`);
   }
