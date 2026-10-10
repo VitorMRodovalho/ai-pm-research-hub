@@ -56,6 +56,10 @@ type BoardItem = {
   updated_at?: string | null;
   curation_status?: string | null;
   curation_due_at?: string | null;
+  /** #2621: prazo do destino informado pelo autor */
+  curation_target_venue?: string | null;
+  curation_target_date?: string | null;
+  target_at_risk?: boolean | null;
   attachments?: Array<{ url: string; name?: string; kind?: string; embed?: string }> | string | null;
   board_name?: string | null;
   tags?: string[] | null;
@@ -148,6 +152,36 @@ function driveStatusMeta(status: string | null | undefined, t: (k: string, f?: s
 
 // ─── SLA Badge ──────────────────────────────────────────────────────────────
 
+// #2621: destino e data-alvo informados pelo autor, com alerta quando o prazo da curadoria passa dela.
+function TargetBadge({ item, ui = {} }: { item: { curation_target_venue?: string | null; curation_target_date?: string | null; target_at_risk?: boolean | null }; ui?: Record<string, string> }) {
+  if (!item.curation_target_venue && !item.curation_target_date) return null;
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  const locale = path.startsWith('/en/') ? 'en-US' : path.startsWith('/es/') ? 'es' : 'pt-BR';
+  let date = '';
+  if (item.curation_target_date) {
+    const d = new Date(`${item.curation_target_date}T12:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      const otherYear = d.getFullYear() !== new Date().getFullYear();
+      date = d.toLocaleDateString(locale, otherYear ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+    }
+  }
+  const label = [item.curation_target_venue, date].filter(Boolean).join(' · ');
+  const targetText = `${ui.targetLabel || 'Destino'}: ${label}`;
+  const riskIcon = '⚠ ';
+  return (
+    <>
+      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-[var(--surface-section-cool)] text-[var(--text-secondary)] max-w-[14rem] truncate" title={label}>
+        {targetText}
+      </span>
+      {item.target_at_risk && (
+        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-800">
+          <span aria-hidden="true">{riskIcon}</span>{ui.targetAtRisk || 'curadoria passa da data-alvo'}
+        </span>
+      )}
+    </>
+  );
+}
+
 function SlaBadge({ dueAt, ui = {} }: { dueAt?: string | null; ui?: Record<string, string> }) {
   const days = daysUntilDue(dueAt);
   if (days === null) return null;
@@ -196,6 +230,7 @@ function TribeSortableCard({ item, onOpen, ui = {} }: { item: BoardItem; onOpen:
         <SlaBadge dueAt={item.curation_due_at} ui={ui} />
       </div>
       <div className="flex items-center gap-2 flex-wrap">
+        <TargetBadge item={item} ui={ui} />
         {item.tribe_name ? (
           <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 font-semibold">{item.tribe_name}</span>
         ) : null}
@@ -455,6 +490,7 @@ function ReviewRubricDialog({ item, open, onClose, onSubmit, ui = {} }: {
               <div className="flex flex-wrap gap-2">
                 {item.tribe_name ? <span className="text-[11px] px-2 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-secondary)]">{item.tribe_name}</span> : null}
                 <SlaBadge dueAt={item.curation_due_at} ui={ui} />
+                <TargetBadge item={item} ui={ui} />
               </div>
               {item.assignee_name ? <p className="text-xs text-[var(--text-secondary)] flex items-center gap-1"><User size={12} /> {item.assignee_name}</p> : null}
               {item.description ? <p className="text-xs text-[var(--text-secondary)] whitespace-pre-wrap max-h-32 overflow-y-auto bg-[var(--surface-base)] rounded-lg p-3">{item.description}</p> : null}

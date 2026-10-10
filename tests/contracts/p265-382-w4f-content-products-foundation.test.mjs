@@ -293,20 +293,20 @@ describe('p265 #382 W4f Foundation — content_products canonical surface (ADR-0
   });
 
   describe('DB-gated smoke (requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)', () => {
-    it('content_products has exactly 37 backfilled rows from publication_submissions', { skip: !sb }, async () => {
-      const { data, error } = await sb
-        .from('content_products')
-        .select('id', { count: 'exact', head: true });
-      assert.equal(error, null);
-      // Live verification — backfill produces 37 rows.
-      // Check total separately (head:true only returns count metadata via response).
+    it('content_products keeps the 37 backfilled rows from publication_submissions intact', { skip: !sb }, async () => {
+      // #2565 (2026-10-09): create_publication_submission now creates a product for each new submission, so
+      // the table grows. What the p265 backfill promised stays: exactly 37 backfilled rows, all external.
       const { data: rows, error: e2 } = await sb
         .from('content_products')
         .select('id, source_kind, publication_metadata');
       assert.equal(e2, null);
-      assert.equal(rows.length, 37);
-      assert.ok(rows.every(r => r.source_kind === 'external'));
-      assert.ok(rows.every(r => r.publication_metadata?.backfill_source === 'publication_submissions'));
+      const backfilled = rows.filter(r => r.publication_metadata?.backfill_source === 'publication_submissions');
+      assert.equal(backfilled.length, 37);
+      assert.ok(backfilled.every(r => r.source_kind === 'external'));
+      // every product not from the backfill came from the submission function (no third origin unseen)
+      const others = rows.filter(r => r.publication_metadata?.backfill_source !== 'publication_submissions');
+      assert.ok(others.every(r => r.publication_metadata?.origin === 'create_publication_submission'),
+        `products of unknown origin: ${others.filter(r => r.publication_metadata?.origin !== 'create_publication_submission').length}`);
     });
 
     it('check_schema_invariants() includes W invariant with violation_count=0 (>= 22 invariants total)', { skip: !sb }, async () => {
@@ -336,13 +336,19 @@ describe('p265 #382 W4f Foundation — content_products canonical surface (ADR-0
       assert.equal(count, 0);
     });
 
-    it('board_items.content_product_id populated for exactly 8 board_items (bridges from publication_submissions.board_item_id)', { skip: !sb }, async () => {
-      const { count, error } = await sb
+    it('board_items.content_product_id: the 8 backfill bridges plus cards linked by new submissions', { skip: !sb }, async () => {
+      // #2565 (2026-10-09): a submission with a card links the card to its product, so the count grows from 8.
+      const { data, error } = await sb
         .from('board_items')
-        .select('id', { count: 'exact', head: true })
+        .select('id, content_product_id')
         .not('content_product_id', 'is', null);
       assert.equal(error, null);
-      assert.equal(count, 8);
+      assert.ok(data.length >= 8, `expected >= 8 linked cards, got ${data.length}`);
+      // every linked card points to an existing product
+      const ids = [...new Set(data.map(r => r.content_product_id))];
+      const { data: prods, error: e2 } = await sb.from('content_products').select('id').in('id', ids);
+      assert.equal(e2, null);
+      assert.equal(prods.length, ids.length, 'linked cards point to existing products');
     });
   });
 });

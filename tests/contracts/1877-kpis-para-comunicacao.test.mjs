@@ -31,8 +31,9 @@ export function regras(body) {
     analytics: /v_analytics := v_caller_id IS NOT NULL AND \(public\.can_by_member\(v_caller_id, 'view_internal_analytics'\) OR public\.can_by_member\(v_caller_id, 'view_aggregate_analytics'\)\);/.test(b),
     // the gate admits the comms path, and refusing still raises
     portao: /IF v_caller_id IS NULL OR NOT \(v_analytics OR public\.can_view_comms_analytics\(\)\) THEN RAISE EXCEPTION 'Unauthorized';/.test(b),
-    // the financial field is bound to the analytics flag, not to the comms path
-    custo: /'infra_cost_current', CASE WHEN NOT v_analytics THEN NULL ELSE \(SELECT COALESCE\(SUM\(ce\.amount_brl\), 0\)/.test(b),
+    // the financial field is bound to the finance capability (2026-10-09), not to analytics nor the comms path
+    financas: /v_finance := v_caller_id IS NOT NULL AND public\.can_by_member\(v_caller_id, 'view_finance'\);/.test(b),
+    custo: /'infra_cost_current', CASE WHEN NOT v_finance THEN NULL ELSE \(SELECT COALESCE\(SUM\(ce\.amount_brl\), 0\)/.test(b),
     // and nothing wider was granted
     semAmpliar: !/view_aggregate_analytics[^)]*\)\s*OR\s*true/.test(b),
   };
@@ -40,7 +41,7 @@ export function regras(body) {
 
 const CAP = latestFunctionCapture(ROOT, 'get_annual_kpis').body;
 
-test('#1877 (capture): KPIs open to the comms gate, infra cost bound to analytics', () => {
+test('#1877 (capture): KPIs open to the comms gate, infra cost bound to the finance capability', () => {
   const r = regras(CAP);
   assert.deepEqual(r, Object.fromEntries(Object.keys(r).map((k) => [k, true])));
 });
@@ -48,7 +49,9 @@ test('#1877 (capture): KPIs open to the comms gate, infra cost bound to analytic
 test('#1877 mutation: each detector fails on its defect, by the same function', () => {
   const m = (a, b) => { const out = CAP.replace(a, b); assert.notEqual(out, CAP, `mutation did not apply: ${a}`); return out; };
   assert.equal(regras(m('OR public.can_view_comms_analytics()', '')).portao, false);
-  assert.equal(regras(m("CASE WHEN NOT v_analytics THEN NULL ELSE", 'CASE WHEN false THEN NULL ELSE')).custo, false);
+  assert.equal(regras(m("CASE WHEN NOT v_finance THEN NULL ELSE", 'CASE WHEN false THEN NULL ELSE')).custo, false);
+  assert.equal(regras(m("CASE WHEN NOT v_finance THEN NULL ELSE", 'CASE WHEN NOT v_analytics THEN NULL ELSE')).custo, false);
+  assert.equal(regras(m("public.can_by_member(v_caller_id, 'view_finance');", "public.can_by_member(v_caller_id, 'view_internal_analytics');")).financas, false);
   assert.equal(regras(m("OR public.can_by_member(v_caller_id, 'view_aggregate_analytics'));", '));')).analytics, false);
 });
 
