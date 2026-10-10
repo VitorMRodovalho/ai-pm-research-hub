@@ -375,6 +375,21 @@ const SEL_I18N = {
     correctRefusal: t('admin.selection.bookingExceptionsCorrectRefusal', lang),
     suppressed: t('admin.selection.bookingExceptionsSuppressed', lang),
     empty: t('admin.selection.bookingExceptionsEmpty', lang),
+    hiddenCount: t('admin.selection.bookingExceptionsHiddenCount', lang),
+    showHidden: t('admin.selection.bookingExceptionsShowHidden', lang),
+    hideHidden: t('admin.selection.bookingExceptionsHideHidden', lang),
+    past: t('admin.selection.bookingExceptionsPast', lang),
+    scheduledFor: t('admin.selection.bookingExceptionsScheduledFor', lang),
+    suggestions: t('admin.selection.bookingExceptionsSuggestions', lang),
+    noSuggestion: t('admin.selection.bookingExceptionsNoSuggestion', lang),
+    bySecondaryEmail: t('admin.selection.bookingExceptionsBySecondaryEmail', lang),
+    byName: t('admin.selection.bookingExceptionsByName', lang),
+    objectivePending: t('admin.selection.bookingExceptionsObjectivePending', lang),
+    link: t('admin.selection.bookingExceptionsLink', lang),
+    confirmLink: t('admin.selection.bookingExceptionsConfirmLink', lang),
+    linked: t('admin.selection.bookingExceptionsLinked', lang),
+    linkError: t('admin.selection.bookingExceptionsLinkError', lang),
+    linkForbidden: t('admin.selection.bookingExceptionsLinkForbidden', lang),
   },
 };
 ---
@@ -442,13 +457,17 @@ const SEL_I18N = {
              quando não há nada a fazer: a fila só aparece se existir ao menos uma
              reserva pendente, para não virar mais um painel que se aprende a
              ignorar. -->
-        <div id="booking-exceptions" class="hidden mb-4 bg-[var(--surface-card)] border border-amber-200 rounded-xl p-3">
-          <div class="flex flex-wrap items-baseline gap-2 mb-2">
+        <!-- #2671: recolhido por padrão, agrupado por pessoa; o título conta só o que é acionável hoje. -->
+        <details id="booking-exceptions" class="hidden mb-4 bg-[var(--surface-card)] border border-amber-200 rounded-xl p-3">
+          <summary class="flex flex-wrap items-baseline gap-2 cursor-pointer list-none">
             <h2 id="booking-exceptions-title" class="text-sm font-bold text-navy">—</h2>
             <span id="booking-exceptions-hint" class="text-[11px] text-[var(--text-secondary)]"></span>
+          </summary>
+          <div class="mt-2 flex items-center gap-2">
+            <button type="button" id="booking-exceptions-toggle-hidden" class="text-[11px] font-semibold text-teal-700 bg-transparent border-0 cursor-pointer underline"></button>
           </div>
-          <div id="booking-exceptions-body" class="overflow-x-auto"></div>
-        </div>
+          <div id="booking-exceptions-body" class="mt-2 max-h-[360px] overflow-y-auto overflow-x-auto"></div>
+        </details>
 
         <!-- #1590: aviso de modo leitura. É o INVERSO de `data-sel-requires` — some para quem
              escreve. Sem o aviso, a tela sem botão de ação parece quebrada, não restrita. -->
@@ -1977,43 +1996,104 @@ const SEL_I18N = {
     cycle_closed:       { label: () => T.bookingExceptions?.outcomeCycleClosed ?? 'Ciclo fechado',         cls: 'bg-gray-100 text-gray-600' },
   };
 
+  // #2671: a RPC já tira e-mail de membro e marca o que está oculto (suprimido ou passado). A tela agrupa por pessoa,
+  // mostra as ocultas só a pedido e oferece o vínculo da reserva com a candidatura sugerida.
+  let bookingShowHidden = false;
+  let bookingPendingLink: string | null = null;
+
+  async function linkBooking(eventId: string, guestEmail: string, applicationId: string) {
+    const i18n = T.bookingExceptions ?? {};
+    const { data, error } = await sb.rpc('link_booking_to_application', {
+      p_calendar_event_id: eventId, p_guest_email: guestEmail, p_application_id: applicationId,
+    });
+    bookingPendingLink = null;
+    // a RPC recusa por RAISE; o sucesso é só o corpo que diz success, nunca a ausência de erro de transporte
+    if (error || data?.error || data?.success !== true) {
+      const msg = error?.code === '42501' ? (i18n.linkForbidden ?? 'Sem permissão para vincular.') : `${i18n.linkError ?? 'Não foi possível vincular.'} ${error?.message ?? data?.error ?? ''}`;
+      (window as any).toast?.(msg, 'error');
+    } else {
+      (window as any).toast?.(i18n.linked ?? 'Reserva vinculada: a entrevista foi registrada na candidatura.', 'success');
+    }
+    await loadBookingExceptions();
+  }
+
   async function loadBookingExceptions() {
     if (!sb) return;
-    const card = document.getElementById('booking-exceptions');
+    const card = document.getElementById('booking-exceptions') as HTMLDetailsElement | null;
     const body = document.getElementById('booking-exceptions-body');
     if (!card || !body) return;
-    const { data, error } = await sb.rpc('get_booking_exception_queue', { p_include_resolved: false });
+    const { data, error } = await sb.rpc('get_booking_exception_queue', { p_include_resolved: false, p_include_hidden: true });
     // Sem autoridade (a RPC levanta exceção) ou sem fila → o cartão some. Um
     // painel vazio permanente é ruído; a ausência aqui É a informação.
     if (error || !Array.isArray(data) || data.length === 0) { card.classList.add('hidden'); return; }
 
     const i18n = T.bookingExceptions ?? {};
     const actionable = data.filter((r: any) => r.actionable).length;
+    const hiddenCount = data.filter((r: any) => r.hidden).length;
     const titleEl = document.getElementById('booking-exceptions-title');
     const hintEl = document.getElementById('booking-exceptions-hint');
-    if (titleEl) titleEl.textContent = `${i18n.title ?? 'Reservas de entrevista sem candidatura'} (${actionable}/${data.length})`;
-    if (hintEl) hintEl.textContent = i18n.hint ?? '';
+    if (titleEl) titleEl.textContent = `${i18n.title ?? 'Reservas de entrevista sem candidatura'} (${actionable})`;
+    if (hintEl) hintEl.textContent = `${i18n.hint ?? ''}${hiddenCount ? ` · ${(i18n.hiddenCount ?? '{n} ocultas').replace('{n}', String(hiddenCount))}` : ''}`;
+    const toggle = document.getElementById('booking-exceptions-toggle-hidden');
+    if (toggle) {
+      toggle.classList.toggle('hidden', hiddenCount === 0);
+      toggle.textContent = bookingShowHidden ? (i18n.hideHidden ?? 'Esconder ocultas') : (i18n.showHidden ?? 'Mostrar ocultas (suprimidas ou passadas)');
+      toggle.onclick = () => { bookingShowHidden = !bookingShowHidden; loadBookingExceptions(); };
+    }
 
-    body.innerHTML = `<table class="w-full text-[12px]">
-      <thead><tr class="text-left text-[var(--text-secondary)]">
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colGuest ?? 'Convidado')}</th>
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colOutcome ?? 'Desfecho')}</th>
-        <th class="py-1 pr-3 font-semibold text-right">${esc(i18n.colAttempts ?? 'Tentativas')}</th>
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colLastSeen ?? 'Última')}</th>
-      </tr></thead><tbody>${data.map((r: any) => {
-        const style = BOOKING_OUTCOME_STYLE[r.last_outcome] ?? { label: () => r.last_outcome, cls: 'bg-gray-100 text-gray-600' };
-        const who = r.applicant_name ? `${esc(r.guest_email)} <span class="text-[var(--text-secondary)]">— ${esc(r.applicant_name)} (${esc(r.app_status ?? '')})</span>` : esc(r.guest_email);
-        const tag = r.actionable
-          ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${esc(i18n.actionable ?? 'acionável')}</span>`
-          : `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">${esc(i18n.correctRefusal ?? 'recusa correta')}</span>`;
-        const muted = r.suppressed ? `<span class="ml-1 text-[10px] text-[var(--text-muted)]">${esc(i18n.suppressed ?? 'log cortado')}</span>` : '';
-        return `<tr class="border-t border-[var(--border-default)]">
-          <td class="py-1 pr-3">${who}</td>
-          <td class="py-1 pr-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${style.cls}">${esc(style.label())}</span>${tag}</td>
-          <td class="py-1 pr-3 text-right font-mono">${esc(String(r.attempts))}${muted}</td>
-          <td class="py-1 pr-3">${esc(r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('pt-BR') : '—')}</td>
-        </tr>`;
-      }).join('')}</tbody></table>`;
+    const rows = data.filter((r: any) => bookingShowHidden || !r.hidden);
+    // uma linha por pessoa (e-mail do convidado), com as reservas dela embaixo
+    const groups = new Map<string, any[]>();
+    for (const r of rows) {
+      const k = String(r.guest_email || '').toLowerCase();
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k)!.push(r);
+    }
+    const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+
+    body.innerHTML = groups.size === 0
+      ? `<p class="text-[12px] text-[var(--text-secondary)]">${esc(i18n.empty ?? 'Nada acionável hoje.')}</p>`
+      : [...groups.entries()].map(([emailKey, items]) => {
+        const first = items[0];
+        const style = BOOKING_OUTCOME_STYLE[first.last_outcome] ?? { label: () => first.last_outcome, cls: 'bg-gray-100 text-gray-600' };
+        const who = first.applicant_name
+          ? `${esc(first.guest_email)} <span class="text-[var(--text-secondary)]">— ${esc(first.applicant_name)} (${esc(first.app_status ?? '')})</span>`
+          : esc(first.guest_email);
+        const events = items.map((r: any) => {
+          const tags = [
+            r.actionable ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${esc(i18n.actionable ?? 'acionável')}</span>` : '',
+            r.last_outcome !== 'no_application' ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">${esc(i18n.correctRefusal ?? 'recusa correta')}</span>` : '',
+            r.suppressed ? `<span class="text-[10px] text-[var(--text-muted)]">${esc(i18n.suppressed ?? 'log cortado')}</span>` : '',
+            r.is_past ? `<span class="text-[10px] text-[var(--text-muted)]">${esc(i18n.past ?? 'já passou')}</span>` : '',
+          ].filter(Boolean).join(' ');
+          const sugg = Array.isArray(r.suggestions) ? r.suggestions : [];
+          const suggHtml = r.last_outcome !== 'no_application' ? '' : (sugg.length === 0
+            ? `<div class="text-[11px] text-[var(--text-muted)] mt-1">${esc(i18n.noSuggestion ?? 'Nenhuma candidatura parecida.')}</div>`
+            : `<div class="mt-1 flex flex-col gap-1"><span class="text-[11px] font-semibold text-[var(--text-secondary)]">${esc(i18n.suggestions ?? 'Candidatura provável')}:</span>${sugg.map((g: any) => {
+                const key = `${r.calendar_event_id}|${g.application_id}|${r.guest_email}`;
+                const reason = g.reason === 'secondary_email' ? (i18n.bySecondaryEmail ?? 'e-mail secundário') : `${i18n.byName ?? 'nome'} ${esc(String(g.score ?? ''))}`;
+                const btn = !g.objective_done
+                  ? `<span class="text-[10px] text-[var(--text-muted)]">${esc(i18n.objectivePending ?? 'fase objetiva pendente')}</span>`
+                  : `<button type="button" data-link-booking="${esc(key)}" class="px-2 py-0.5 rounded text-[11px] font-semibold border-0 cursor-pointer ${bookingPendingLink === key ? 'bg-red-600 text-white' : 'bg-navy text-white'}">${esc(bookingPendingLink === key ? (i18n.confirmLink ?? 'Confirmar vínculo') : (i18n.link ?? 'Vincular'))}</button>`;
+                return `<div class="flex flex-wrap items-center gap-2 text-[12px]"><span>${esc(g.applicant_name ?? '')} <span class="text-[var(--text-muted)]">(${esc(g.status ?? '')} · ${reason})</span></span>${btn}</div>`;
+              }).join('')}</div>`);
+          return `<li class="py-1 border-t border-[var(--border-default)] first:border-t-0">
+            <div class="flex flex-wrap items-center gap-2 text-[12px]"><span class="text-[var(--text-secondary)]">${esc(i18n.scheduledFor ?? 'Reserva para')} ${esc(fmt(r.last_scheduled_at))}</span>${tags}</div>${suggHtml}</li>`;
+        }).join('');
+        return `<div class="py-2 border-t border-[var(--border-default)] first:border-t-0" data-guest="${esc(emailKey)}">
+          <div class="text-[12px]"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${style.cls}">${esc(style.label())}</span> ${who}</div>
+          <ul class="list-none pl-3 m-0 mt-1">${events}</ul>
+        </div>`;
+      }).join('');
+
+    body.querySelectorAll('[data-link-booking]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const key = (el as HTMLElement).dataset.linkBooking || '';
+        if (bookingPendingLink !== key) { bookingPendingLink = key; loadBookingExceptions(); return; }
+        const [eventId, appId, ...rest] = key.split('|');
+        linkBooking(eventId, rest.join('|'), appId);
+      });
+    });
     card.classList.remove('hidden');
   }
 
