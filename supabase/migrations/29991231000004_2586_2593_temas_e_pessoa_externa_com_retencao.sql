@@ -15,15 +15,22 @@
 --     (como o certificado já faz) ou a cria; e-mail de membro ou de quem tem login segue o ciclo de vida de
 --     membro e não ganha vínculo de prazo.
 -- (4) _external_contact_retention_sweep, diária:
---     a) anonimiza e-mail e nome em campaign_recipients de envio externo com mais de 1 ano, SALVO e-mail de
---        membro (ou de quem tem login), de candidatura não anonimizada (o prazo da seleção é outro), ou de
---        pessoa externa com vínculo ainda vigente. Medido em 09/10: 692 linhas externas, 615 de e-mail de
---        candidatura, 491 de membro (há sobreposição), 13 de mais ninguém; a mais antiga é de 29/04/2026,
---        então a primeira anonimização cai em 29/04/2027;
+--     a) anonimiza e-mail, nome, erro e user agent em campaign_recipients de envio externo com mais de 1 ano,
+--        SALVO e-mail de membro (members.email/secondary_emails, ou persons com membro ou login) ou de
+--        candidatura não anonimizada (o prazo da seleção é outro). Cada envio vence pela própria data: um uso
+--        novo do e-mail não renova envio antigo. Medido em 09/10: 692 linhas externas, 615 de e-mail de
+--        candidatura, 491 de membro (há sobreposição), 13 de mais ninguém; a mais antiga é de 29/04/2026;
 --     b) apaga vínculos vencidos;
---     c) apaga a pessoa que só existia por esses vínculos, quando não tem login, membro, engajamento nem
---        certificado (a mesma regra de delete_expired_event_guest_certificates); FK alheia pula a linha.
+--     c) apaga a pessoa CRIADA por este caminho (consent_version = 'external-contact') que ficou sem vínculo e
+--        sem nenhum laço: login, membro, PMI ID, engajamento, certificado, progresso, afiliação, acesso ao
+--        Drive. Pessoa que já existia antes (candidato, competição, membro) só perde o vínculo. O critério é
+--        de ESTADO, então quem uma FK pulou hoje é revista amanhã;
+--     d) troca o nome do convidado externo da agenda por "Convidado(a) externo(a)" 1 ano depois da reunião
+--        (hoje: 14 blocos com nome de convidado, 2 externos; o coapresentador membro não é tocado).
 --     A lista de supressão de e-mail (#2130) não é tocada: quem pediu para não receber continua sem receber.
+--     'pending' aqui NÃO é "falta consentir": é tratamento por legítimo interesse (convite, envio pontual),
+--     sem consentimento coletado. Nada promove a 'accepted' por RSVP de calendário.
+--     Revisão do conselho (legal-counsel, security-engineer, data-architect, 09/10/2026) incorporada.
 -- (5) campaign_recipients.person_id, para o envio avulso a pessoa externa (fatia B).
 --
 -- Rollback: SELECT cron.unschedule('external-contact-retention-daily'); DELETE das duas linhas de
@@ -198,7 +205,7 @@ AS $function$
 DECLARE
   v_email     text := lower(btrim(coalesce(p_email, '')));
   v_id        uuid;
-  v_is_member boolean := false;
+  v_protected boolean := false;
 BEGIN
   IF v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' THEN
     RAISE EXCEPTION 'A valid e-mail is required' USING ERRCODE = 'check_violation';
@@ -210,9 +217,14 @@ BEGIN
     RAISE EXCEPTION 'source_id and retention_until are required' USING ERRCODE = 'check_violation';
   END IF;
 
+  -- persons.email não é UNIQUE: duas chamadas simultâneas para o mesmo e-mail criariam duas pessoas
+  PERFORM pg_advisory_xact_lock(hashtext('external_person:' || v_email));
+
   -- mesma busca do certificado de convidado: e-mail principal ou secundário; membro tem prioridade
-  SELECT p.id, (p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL)
-    INTO v_id, v_is_member
+  SELECT p.id,
+         (p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL OR p.pmi_id IS NOT NULL
+          OR EXISTS (SELECT 1 FROM public.members m WHERE m.person_id = p.id))
+    INTO v_id, v_protected
   FROM public.persons p
   WHERE lower(p.email) = v_email
      OR EXISTS (SELECT 1 FROM unnest(p.secondary_emails) se WHERE lower(se) = v_email)
@@ -220,14 +232,15 @@ BEGIN
   LIMIT 1;
 
   IF v_id IS NULL THEN
-    INSERT INTO public.persons (name, email, consent_status)
-    VALUES (COALESCE(NULLIF(btrim(p_name), ''), split_part(v_email, '@', 1)), v_email, 'pending')
+    -- a marca de origem: só a pessoa criada aqui pode ser apagada pela varredura
+    INSERT INTO public.persons (name, email, consent_status, consent_version)
+    VALUES (COALESCE(NULLIF(btrim(p_name), ''), split_part(v_email, '@', 1)), v_email, 'pending', 'external-contact')
     RETURNING id INTO v_id;
-    v_is_member := false;
+    v_protected := false;
   END IF;
 
-  -- membro ou quem tem login segue o ciclo de vida de membro: sem vínculo de prazo
-  IF NOT v_is_member THEN
+  -- membro, quem tem login ou PMI ID segue o próprio ciclo de vida: sem vínculo de prazo
+  IF NOT v_protected THEN
     INSERT INTO public.person_external_links (person_id, purpose, source_id, retention_until)
     VALUES (v_id, p_purpose, p_source_id, p_retention_until)
     ON CONFLICT (person_id, purpose, source_id) DO UPDATE
@@ -238,6 +251,9 @@ BEGIN
   RETURN v_id;
 END;
 $function$;
+
+COMMENT ON FUNCTION public._external_person_upsert(text, text, text, uuid, date) IS
+  '#2586/#2593: acha ou cria a pessoa de um e-mail de fora. O e-mail NÃO é verificado: o chamador não deve tratar a pessoa como identidade confirmada nem devolver ao cliente nome ou e-mail da pessoa resolvida (seria oráculo de "este e-mail é de membro"). pending = legítimo interesse, sem consentimento coletado.';
 
 REVOKE ALL ON FUNCTION public._external_person_upsert(text, text, text, uuid, date) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public._external_person_upsert(text, text, text, uuid, date) TO service_role;
@@ -259,44 +275,48 @@ CREATE OR REPLACE FUNCTION public._external_contact_retention_sweep(p_dry_run bo
 AS $function$
 DECLARE
   v_cutoff     timestamptz := now() - interval '1 year';
+  v_guest_name constant text := 'Convidado(a) externo(a)';
   v_recipients integer := 0;
   v_links      integer := 0;
-  v_persons    integer := 0;
-  v_skipped    integer := 0;
-  v_expired    uuid[];
+  v_guests     integer := 0;
+  v_deleted    uuid[] := '{}';
+  v_skipped    uuid[] := '{}';
   r            record;
 BEGIN
-  -- (a) envio a e-mail externo com mais de 1 ano: anonimiza, salvo quando outro prazo governa o e-mail
+  -- (a) envio a e-mail externo com mais de 1 ano. Os e-mails protegidos vêm numa CTE só, para a busca ser
+  --     um anti-join em hash e não um seq scan por linha.
   IF p_dry_run THEN
+    WITH protected AS (
+      SELECT lower(p.email) AS e FROM public.persons p
+       WHERE p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL
+      UNION SELECT lower(se) FROM public.persons p, unnest(p.secondary_emails) se
+       WHERE p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL
+      UNION SELECT lower(m.email) FROM public.members m
+      UNION SELECT lower(se) FROM public.members m, unnest(m.secondary_emails) se
+      UNION SELECT lower(a.email) FROM public.selection_applications a WHERE a.anonymized_at IS NULL
+    )
     SELECT count(*) INTO v_recipients
     FROM public.campaign_recipients cr
     WHERE cr.member_id IS NULL AND cr.external_email IS NOT NULL AND cr.created_at < v_cutoff
-      AND NOT EXISTS (SELECT 1 FROM public.persons p
-                      WHERE (p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL)
-                        AND (lower(p.email) = lower(cr.external_email)
-                             OR EXISTS (SELECT 1 FROM unnest(p.secondary_emails) se WHERE lower(se) = lower(cr.external_email))))
-      AND NOT EXISTS (SELECT 1 FROM public.selection_applications a
-                      WHERE lower(a.email) = lower(cr.external_email) AND a.anonymized_at IS NULL)
-      AND NOT EXISTS (SELECT 1 FROM public.person_external_links l
-                      WHERE l.person_id = cr.person_id AND l.retention_until >= current_date);
+      AND NOT EXISTS (SELECT 1 FROM protected pr WHERE pr.e = lower(cr.external_email));
   ELSE
+    WITH protected AS (
+      SELECT lower(p.email) AS e FROM public.persons p
+       WHERE p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL
+      UNION SELECT lower(se) FROM public.persons p, unnest(p.secondary_emails) se
+       WHERE p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL
+      UNION SELECT lower(m.email) FROM public.members m
+      UNION SELECT lower(se) FROM public.members m, unnest(m.secondary_emails) se
+      UNION SELECT lower(a.email) FROM public.selection_applications a WHERE a.anonymized_at IS NULL
+    )
     UPDATE public.campaign_recipients cr
-    SET external_email = NULL, external_name = NULL
+    SET external_email = NULL, external_name = NULL, error_message = NULL, last_user_agent = NULL
     WHERE cr.member_id IS NULL AND cr.external_email IS NOT NULL AND cr.created_at < v_cutoff
-      AND NOT EXISTS (SELECT 1 FROM public.persons p
-                      WHERE (p.legacy_member_id IS NOT NULL OR p.auth_id IS NOT NULL)
-                        AND (lower(p.email) = lower(cr.external_email)
-                             OR EXISTS (SELECT 1 FROM unnest(p.secondary_emails) se WHERE lower(se) = lower(cr.external_email))))
-      AND NOT EXISTS (SELECT 1 FROM public.selection_applications a
-                      WHERE lower(a.email) = lower(cr.external_email) AND a.anonymized_at IS NULL)
-      AND NOT EXISTS (SELECT 1 FROM public.person_external_links l
-                      WHERE l.person_id = cr.person_id AND l.retention_until >= current_date);
+      AND NOT EXISTS (SELECT 1 FROM protected pr WHERE pr.e = lower(cr.external_email));
     GET DIAGNOSTICS v_recipients = ROW_COUNT;
   END IF;
 
-  -- (b) vínculos vencidos, e as pessoas que eles tocavam
-  SELECT COALESCE(array_agg(DISTINCT l.person_id), '{}') INTO v_expired
-  FROM public.person_external_links l WHERE l.retention_until < current_date;
+  -- (b) vínculos vencidos
   IF p_dry_run THEN
     SELECT count(*) INTO v_links FROM public.person_external_links l WHERE l.retention_until < current_date;
   ELSE
@@ -304,38 +324,62 @@ BEGIN
     GET DIAGNOSTICS v_links = ROW_COUNT;
   END IF;
 
-  -- (c) a pessoa que só existia por vínculos agora vencidos, sem nenhum outro laço
+  -- (c) por ESTADO: pessoa criada por este caminho, sem vínculo vigente e sem nenhum outro laço
   FOR r IN
     SELECT p.id FROM public.persons p
-    WHERE p.id = ANY (v_expired)
-      AND p.auth_id IS NULL AND p.legacy_member_id IS NULL
+    WHERE p.consent_version = 'external-contact'
+      AND p.auth_id IS NULL AND p.legacy_member_id IS NULL AND p.pmi_id IS NULL
       AND NOT EXISTS (SELECT 1 FROM public.person_external_links l
                       WHERE l.person_id = p.id AND l.retention_until >= current_date)
-      AND NOT EXISTS (SELECT 1 FROM public.engagements en WHERE en.person_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM public.members m WHERE m.person_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM public.engagements en
+                      WHERE en.person_id = p.id OR en.granted_by = p.id OR en.revoked_by = p.id)
       AND NOT EXISTS (SELECT 1 FROM public.event_guest_certificates g WHERE g.person_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM public.initiative_member_progress imp WHERE imp.person_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM public.member_chapter_affiliations mca WHERE mca.person_id = p.id)
+      AND NOT EXISTS (SELECT 1 FROM public.drive_membership_grants dmg WHERE dmg.grantee_person_id = p.id)
   LOOP
     IF p_dry_run THEN
-      v_persons := v_persons + 1;
+      v_deleted := v_deleted || r.id;
     ELSE
       BEGIN
         DELETE FROM public.persons WHERE id = r.id;
-        v_persons := v_persons + 1;
+        v_deleted := v_deleted || r.id;
       EXCEPTION WHEN foreign_key_violation THEN
-        v_skipped := v_skipped + 1;
+        v_skipped := v_skipped || r.id;
       END;
     END IF;
   END LOOP;
 
-  IF NOT p_dry_run THEN
+  -- (d) nome do convidado externo na agenda, 1 ano depois da reunião
+  IF p_dry_run THEN
+    SELECT count(*) INTO v_guests
+    FROM public.event_agenda_blocks b JOIN public.events e ON e.id = b.event_id
+    WHERE b.external_guest AND b.guest_name IS NOT NULL AND b.guest_name <> v_guest_name
+      AND e.date < current_date - interval '1 year';
+  ELSE
+    UPDATE public.event_agenda_blocks b SET guest_name = v_guest_name
+    FROM public.events e
+    WHERE e.id = b.event_id
+      AND b.external_guest AND b.guest_name IS NOT NULL AND b.guest_name <> v_guest_name
+      AND e.date < current_date - interval '1 year';
+    GET DIAGNOSTICS v_guests = ROW_COUNT;
+  END IF;
+
+  -- trilha só quando houve efeito (ou pulo): um dia sem nada não vira linha de auditoria
+  IF NOT p_dry_run AND (v_recipients + v_links + v_guests + cardinality(v_deleted) + cardinality(v_skipped)) > 0 THEN
     INSERT INTO public.admin_audit_log (actor_id, action, target_type, changes, metadata)
     VALUES (NULL, 'lgpd.external_contact_retention_sweep', 'retention',
             jsonb_build_object('recipients_anonymized', v_recipients, 'links_deleted', v_links,
-                               'persons_deleted', v_persons, 'persons_skipped_fk', v_skipped),
+                               'agenda_guest_names_anonymized', v_guests,
+                               'persons_deleted', to_jsonb(v_deleted), 'persons_skipped_fk', to_jsonb(v_skipped)),
             jsonb_build_object('source', '_external_contact_retention_sweep'));
   END IF;
 
   RETURN jsonb_build_object('dry_run', p_dry_run, 'recipients_anonymized', v_recipients,
-                            'links_deleted', v_links, 'persons_deleted', v_persons, 'persons_skipped_fk', v_skipped);
+                            'links_deleted', v_links, 'agenda_guest_names_anonymized', v_guests,
+                            'persons_deleted', cardinality(v_deleted), 'persons_skipped_fk', cardinality(v_skipped),
+                            'person_ids', to_jsonb(v_deleted));
 END;
 $function$;
 
@@ -358,9 +402,9 @@ INSERT INTO public.data_retention_policy (table_name, retention_days, cleanup_ty
 SELECT v.table_name, v.retention_days, v.cleanup_type, v.description, true, 'external-contact-retention-daily'
 FROM (VALUES
   ('campaign_recipients', 365, 'anonymize',
-   'LGPD (#2586): envio a e-mail externo anonimizado 1 ano depois do envio, salvo e-mail de membro, de candidatura viva ou de pessoa externa com vínculo vigente.'),
+   'LGPD (#2586): envio a e-mail externo anonimizado 1 ano depois do envio, salvo e-mail de membro ou de candidatura não anonimizada.'),
   ('person_external_links', 365, 'delete',
-   'LGPD (#2586/#2593): vínculo de pessoa externa apagado no seu retention_until (evento + 1 ano, envio + 1 ano); a pessoa sem outro laço sai junto.')
+   'LGPD (#2586/#2593): vínculo de pessoa externa apagado no seu retention_until (evento + 1 ano, envio + 1 ano); a pessoa criada por esse caminho e sem outro laço sai junto, e o nome do convidado externo na agenda é anonimizado 1 ano depois da reunião.')
 ) AS v(table_name, retention_days, cleanup_type, description)
 WHERE NOT EXISTS (SELECT 1 FROM public.data_retention_policy d
                   WHERE d.table_name = v.table_name AND d.executor = 'external-contact-retention-daily');
@@ -372,8 +416,11 @@ SELECT cron.schedule('external-contact-retention-daily', '23 5 * * *',
 -- ── pós-condição: aborta a migration inteira se algo saiu errado ─────────────
 DO $postcondition$
 DECLARE
-  v_n integer;
-  v_dry jsonb;
+  v_n        integer;
+  v_dry      jsonb;
+  v_ctrl     jsonb;
+  v_ctrl_new uuid;
+  v_ctrl_old uuid;
 BEGIN
   SELECT count(*) INTO v_n FROM public.campaign_themes;
   IF v_n <> 11 THEN RAISE EXCEPTION '#2586: esperava 11 temas, há %', v_n; END IF;
@@ -393,6 +440,29 @@ BEGIN
   v_dry := public._external_contact_retention_sweep(true);
   IF (v_dry->>'recipients_anonymized')::int <> 0 THEN
     RAISE EXCEPTION '#2586: o ensaio anonimizaria % envio(s) hoje; esperava 0', v_dry->>'recipients_anonymized';
+  END IF;
+
+  -- Controles em subtransação desfeita (nada fica gravado): o instrumento precisa saber dizer SIM e NÃO.
+  --   positivo: pessoa criada pelo caminho externo, com vínculo vencido -> entra na conta de apagadas;
+  --   negativo: pessoa que já existia (sem a marca de origem), com vínculo vencido -> NÃO entra.
+  BEGIN
+    v_ctrl_new := public._external_person_upsert('controle-2586-novo@exemplo.invalid', 'Controle', 'campaign_one_off',
+                                                 gen_random_uuid(), current_date + 1);
+    UPDATE public.person_external_links SET retention_until = current_date - 1 WHERE person_id = v_ctrl_new;
+    INSERT INTO public.persons (name, email, consent_status)
+    VALUES ('Controle antigo', 'controle-2586-antigo@exemplo.invalid', 'pending') RETURNING id INTO v_ctrl_old;
+    INSERT INTO public.person_external_links (person_id, purpose, source_id, retention_until)
+    VALUES (v_ctrl_old, 'campaign_one_off', gen_random_uuid(), current_date - 1);
+    v_ctrl := public._external_contact_retention_sweep(true);
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'controle-2586-desfazer';
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM <> 'controle-2586-desfazer' THEN RAISE; END IF;
+  END;
+  IF NOT (v_ctrl->'person_ids') ? v_ctrl_new::text THEN
+    RAISE EXCEPTION '#2586: controle positivo falhou: a pessoa criada pelo caminho externo não seria apagada';
+  END IF;
+  IF (v_ctrl->'person_ids') ? v_ctrl_old::text THEN
+    RAISE EXCEPTION '#2586: controle negativo falhou: a pessoa sem a marca de origem seria apagada';
   END IF;
 END
 $postcondition$;
