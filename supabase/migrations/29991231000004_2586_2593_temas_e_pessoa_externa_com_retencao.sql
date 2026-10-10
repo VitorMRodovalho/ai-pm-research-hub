@@ -310,7 +310,7 @@ BEGIN
       UNION SELECT lower(a.email) FROM public.selection_applications a WHERE a.anonymized_at IS NULL
     )
     UPDATE public.campaign_recipients cr
-    SET external_email = NULL, external_name = NULL, error_message = NULL, last_user_agent = NULL
+    SET external_email = NULL, external_name = NULL, error_message = NULL, last_user_agent = NULL, person_id = NULL
     WHERE cr.member_id IS NULL AND cr.external_email IS NOT NULL AND cr.created_at < v_cutoff
       AND NOT EXISTS (SELECT 1 FROM protected pr WHERE pr.e = lower(cr.external_email));
     GET DIAGNOSTICS v_recipients = ROW_COUNT;

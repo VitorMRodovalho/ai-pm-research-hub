@@ -53,7 +53,7 @@ test('varredura: e-mail de membro (members e persons) e de candidatura viva fica
   assert.equal((SWEEP().match(PROTECTED) || []).length, 2);
   assert.match(
     SWEEP(),
-    /UPDATE public\.campaign_recipients cr\s+SET external_email = NULL, external_name = NULL, error_message = NULL, last_user_agent = NULL\s+WHERE cr\.member_id IS NULL AND cr\.external_email IS NOT NULL AND cr\.created_at < v_cutoff\s+AND NOT EXISTS \(SELECT 1 FROM protected pr WHERE pr\.e = lower\(cr\.external_email\)\);/,
+    /UPDATE public\.campaign_recipients cr\s+SET external_email = NULL, external_name = NULL, error_message = NULL, last_user_agent = NULL, person_id = NULL\s+WHERE cr\.member_id IS NULL AND cr\.external_email IS NOT NULL AND cr\.created_at < v_cutoff\s+AND NOT EXISTS \(SELECT 1 FROM protected pr WHERE pr\.e = lower\(cr\.external_email\)\);/,
   );
   // cada envio vence pela própria data: vínculo vigente de outro uso não renova envio antigo
   assert.doesNotMatch(SWEEP(), /l\.person_id = cr\.person_id/);
