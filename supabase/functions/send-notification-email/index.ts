@@ -74,6 +74,33 @@ function formatDigestBody(body: string): string {
   return escaped.split(/\n\n+/).map(p => p.replace(/\n/g, '<br>')).map(p => `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0;">${p}</p>`).join('')
 }
 
+// Corpo em LINHAS, com os itens da lista ("- <url>") como links clicaveis. So vira link a URL de issue ou PR do
+// GitHub, inteira na linha, e depois de escapar: o resto do corpo continua texto. Usado pelo aviso de dado pessoal
+// no tracker, cujo corpo e contagem + lista de links.
+const LINK_LIST_BODY_TYPES = new Set(['tracker_pii_found'])
+const GITHUB_ITEM_URL = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/(?:issues|pull)\/\d+(?:#[A-Za-z0-9_-]+)?$/
+function formatLinkListBody(body: string): string {
+  if (!body) return ''
+  const p = 'color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 8px 0;'
+  const out: string[] = []
+  let itens: string[] = []
+  const fecharLista = () => {
+    if (itens.length) out.push(`<ul style="margin: 0 0 12px 0; padding-left: 20px;">${itens.join('')}</ul>`)
+    itens = []
+  }
+  for (const linha of escapeHtml(body).split(/\r?\n/)) {
+    const m = linha.match(/^- (.+)$/)
+    if (m && GITHUB_ITEM_URL.test(m[1])) {
+      itens.push(`<li style="margin-bottom: 4px;"><a href="${m[1]}" style="color: #1976d2;">${m[1]}</a></li>`)
+      continue
+    }
+    fecharLista()
+    if (linha.trim()) out.push(`<p style="${p}">${linha}</p>`)
+  }
+  fecharLista()
+  return out.join('')
+}
+
 // Governance types get a gentle deadline nudge inline (15 dias suggested)
 const GOVERNANCE_TYPES = new Set([
   'ip_ratification_gate_pending',
@@ -119,6 +146,9 @@ const ALWAYS_INDIVIDUAL_TYPES = new Set<string>([
   MANAGEMENT_DAILY_DIGEST_TYPE,
   ...ONBOARDING_PREP_TYPES,
   ...GOVERNANCE_TYPES,
+  // Aviso da varredura de dado pessoal no tracker publico: o corpo e a lista de links dos itens, e no e-mail
+  // coalescido ele viraria um trecho de 160 caracteres sem os links.
+  'tracker_pii_found',
 ])
 const RICH_DIGEST_TYPES = new Set<string>([WEEKLY_MEMBER_DIGEST_TYPE, WEEKLY_TRIBE_DIGEST_LEADER_TYPE, MANAGEMENT_DAILY_DIGEST_TYPE])
 
@@ -133,6 +163,8 @@ const URGENT_EMAIL_TYPES = new Set<string>([
   'selection_termo_due',
   'selection_cutoff_approved',
   'affiliation_renewal_d7_urgent',
+  // Decisao do GP de 10/10/2026: o dado pessoal achado no tracker publico segue publico enquanto ninguem age.
+  'tracker_pii_found',
 ])
 const RELEASE_HOUR_BRT = 7
 
@@ -678,7 +710,9 @@ function buildHtml(notification: any, recipientEmail?: string): string {
     : ''
   const bodyHtml = isDigest
     ? formatDigestBody(notification.body || '')
-    : `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${escapeHtml(notification.body)}</p>`
+    : LINK_LIST_BODY_TYPES.has(notification.type)
+      ? formatLinkListBody(notification.body || '')
+      : `<p style="color: #495057; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">${escapeHtml(notification.body)}</p>`
   const optOutBlock = isDigest
     ? `<p style="color: #adb5bd; font-size: 11px; margin: 16px 0 0 0; line-height: 1.4;">
          Deseja parar de receber este resumo? Ajuste em <a href="${COMMS_ORIGIN}/profile" style="color: #6c757d;">preferencias de notificacao</a>.

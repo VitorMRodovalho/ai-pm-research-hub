@@ -240,3 +240,56 @@ test('o aviso sai por e-mail NA HORA: o tipo do script e o mapeado como imediato
   const catalogo = JSON.parse(readFileSync('docs/adr/ADR-0022-notification-types-catalog.json', 'utf8'));
   assert.equal(catalogo.types[tipo]?.delivery_mode, 'transactional_immediate', 'o catalogo ADR-0022 diz o mesmo');
 });
+
+// ── O e-mail sai NA HORA e legivel: urgente nos dois lados da regra de 1 e-mail por dia, individual, com links ──
+
+const EF_EMAIL = readFileSync('supabase/functions/send-notification-email/index.ts', 'utf8');
+const EF_CODIGO = maskJs(EF_EMAIL);
+const conjuntoDaEf = (nome) => {
+  const m = EF_CODIGO.match(new RegExp(`const ${nome} = new Set(?:<string>)?\\(\\[([\\s\\S]*?)\\]\\)`));
+  assert.ok(m, `${nome} nao achado na Edge Function`);
+  return [...maskJs(m[1]).matchAll(/'([a-z0-9_]+)'/g)].map((x) => x[1]);
+};
+
+test('o aviso e URGENTE na Edge Function e no banco, e sai sozinho, nao coalescido', () => {
+  const tipo = CODIGO.match(/p_type: '([a-z_]+)'/)?.[1];
+  assert.equal(tipo, 'tracker_pii_found');
+  assert.ok(conjuntoDaEf('URGENT_EMAIL_TYPES').includes(tipo), 'urgente na Edge Function: sai na hora, fora do 1 por dia');
+  const sql = maskJs(latestFunctionCapture(process.cwd(), '_is_urgent_email_type').body).replace(/^\s*--.*$/gm, '');
+  const lista = [...(sql.match(/p_type IN \(([\s\S]*?)\)/)?.[1] ?? '').matchAll(/'([a-z0-9_]+)'/g)].map((x) => x[1]);
+  assert.ok(lista.includes(tipo), 'urgente no banco: nao gasta o e-mail do dia de quem recebe');
+  assert.ok(conjuntoDaEf('ALWAYS_INDIVIDUAL_TYPES').includes(tipo), 'individual: no coalescido o corpo vira 160 caracteres sem links');
+  assert.ok(conjuntoDaEf('LINK_LIST_BODY_TYPES').includes(tipo), 'corpo renderizado em linhas com links');
+  assert.match(EF_CODIGO, /: LINK_LIST_BODY_TYPES\.has\(notification\.type\)\s*\? formatLinkListBody\(notification\.body \|\| ''\)/,
+    'o ramo do corpo usa o renderizador de lista para esses tipos');
+});
+
+// Exerce o renderizador de verdade: as duas funcoes sao recortadas da Edge Function e avaliadas sem os tipos do TS.
+function renderizadorDaEf() {
+  const recorte = (ini) => {
+    const i = EF_EMAIL.indexOf(ini);
+    assert.ok(i >= 0, `${ini} nao achado`);
+    return EF_EMAIL.slice(i, EF_EMAIL.indexOf('\n}\n', i) + 2);
+  };
+  const re = EF_EMAIL.match(/const GITHUB_ITEM_URL = (\/.*\/)\n/)[1];
+  const fonte = [recorte('function escapeHtml('), `const GITHUB_ITEM_URL = ${re}`, recorte('function formatLinkListBody(')]
+    .join('\n').replace(/\(s: string \| null \| undefined\): string/, '(s)').replace(/\(body: string\): string/, '(body)')
+    .replace(/const out: string\[\] = \[\]/, 'const out = []').replace(/let itens: string\[\] = \[\]/, 'let itens = []');
+  return new Function(`${fonte}\nreturn formatLinkListBody;`)();
+}
+
+test('o corpo do e-mail: uma linha por item, cada link clicavel, e nada alem de URL do GitHub vira link', () => {
+  const render = renderizadorDaEf();
+  const html = render(['2 item(ns) com achado.', 'Itens:', '- https://github.com/o/r/issues/7', '- https://github.com/o/r/pull/9#discussion_r12'].join('\n'));
+  const links = [...html.matchAll(/<li[^>]*><a href="([^"]+)"[^>]*>([^<]+)<\/a><\/li>/g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(links, [['https://github.com/o/r/issues/7', 'https://github.com/o/r/issues/7'], ['https://github.com/o/r/pull/9#discussion_r12', 'https://github.com/o/r/pull/9#discussion_r12']],
+    'cada item vira um <li> com o link');
+  assert.equal((html.match(/<p /g) ?? []).length, 2, 'as duas linhas de texto viram dois paragrafos, nao um');
+  const hostil = render(['- https://github.com/o/r/issues/1"><script>x</script>', '- javascript:alert(1)',
+    '- https://evil.example/o/r/issues/1', '- javascript:alert(1)//https://github.com/o/r/issues/1',
+    '- https://github.com/o/r/issues/1 e mais texto', '- https://github.com/o/r/issues/1&x=1'].join('\n'));
+  assert.doesNotMatch(hostil, /<a /, 'nada que nao seja URL de item do GitHub, inteira, vira link');
+  assert.doesNotMatch(hostil, /<script>/, 'e o texto continua escapado');
+  const crlf = render('Itens:\r\n- https://github.com/o/r/issues/7\r\n');
+  assert.match(crlf, /<li[^>]*><a href="https:\/\/github\.com\/o\/r\/issues\/7"/, 'quebra de linha \\r\\n nao apaga o link');
+});
