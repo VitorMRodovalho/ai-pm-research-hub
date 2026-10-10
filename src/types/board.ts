@@ -429,6 +429,13 @@ export interface BoardI18n {
   reviewDecApproved?: string;
   reviewDecRejected?: string;
   reviewDecReturned?: string;
+  targetTitle?: string;
+  targetVenueLabel?: string;
+  targetDateLabel?: string;
+  targetSave?: string;
+  targetNoVenue?: string;
+  targetAtRisk?: string;
+  targetSaved?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -592,6 +599,13 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewDecApproved: 'Aprovado',
   reviewDecRejected: 'Rejeitado',
   reviewDecReturned: 'Revisão solicitada',
+  targetTitle: 'Prazo do destino (opcional)',
+  targetVenueLabel: 'Destino (revista, evento, newsletter)',
+  targetDateLabel: 'Data-alvo',
+  targetSave: 'Salvar',
+  targetNoVenue: 'Destino não informado',
+  targetAtRisk: 'O prazo da curadoria passa da data-alvo do destino. Combine com a curadoria.',
+  targetSaved: 'Prazo do destino salvo',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',
