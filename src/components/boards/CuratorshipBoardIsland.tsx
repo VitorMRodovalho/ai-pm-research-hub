@@ -155,12 +155,28 @@ function driveStatusMeta(status: string | null | undefined, t: (k: string, f?: s
 // #2621: destino e data-alvo informados pelo autor, com alerta quando o prazo da curadoria passa dela.
 function TargetBadge({ item, ui = {} }: { item: { curation_target_venue?: string | null; curation_target_date?: string | null; target_at_risk?: boolean | null }; ui?: Record<string, string> }) {
   if (!item.curation_target_venue && !item.curation_target_date) return null;
-  const date = item.curation_target_date ? new Date(`${item.curation_target_date}T12:00:00`).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }) : '';
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  const locale = path.startsWith('/en/') ? 'en-US' : path.startsWith('/es/') ? 'es' : 'pt-BR';
+  let date = '';
+  if (item.curation_target_date) {
+    const d = new Date(`${item.curation_target_date}T12:00:00`);
+    if (!Number.isNaN(d.getTime())) {
+      const otherYear = d.getFullYear() !== new Date().getFullYear();
+      date = d.toLocaleDateString(locale, otherYear ? { day: '2-digit', month: '2-digit', year: 'numeric' } : { day: '2-digit', month: '2-digit' });
+    }
+  }
+  const label = [item.curation_target_venue, date].filter(Boolean).join(' · ');
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${item.target_at_risk ? 'bg-amber-50 text-amber-800' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-      {ui.targetLabel || 'Destino'}: {item.curation_target_venue || ''}{date ? ` · ${date}` : ''}
-      {item.target_at_risk ? ` · ⚠ ${ui.targetAtRisk || 'prazo da curadoria passa da data-alvo'}` : ''}
-    </span>
+    <>
+      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-[var(--surface-section-cool)] text-[var(--text-secondary)] max-w-[14rem] truncate" title={label}>
+        {ui.targetLabel || 'Destino'}: {label}
+      </span>
+      {item.target_at_risk && (
+        <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-800">
+          <span aria-hidden="true">{'⚠ '}</span>{ui.targetAtRisk || 'curadoria passa da data-alvo'}
+        </span>
+      )}
+    </>
   );
 }
 

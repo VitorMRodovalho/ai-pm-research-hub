@@ -403,6 +403,11 @@ export interface BoardI18n {
   targetNoVenue?: string;
   targetAtRisk?: string;
   targetSaved?: string;
+  targetHelp?: string;
+  targetNoDueYet?: string;
+  targetReadOnly?: string;
+  targetNoDate?: string;
+  targetClearDate?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -539,13 +544,18 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
   reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
   reviewErrNoSubtype: 'Publicação precisa de um formato: escolha o formato da publicação no card (artigo, e-book, infográfico, etc.) e tente de novo.',
-  targetTitle: 'Prazo do destino (opcional)',
+  targetTitle: 'Destino da publicação (opcional)',
   targetVenueLabel: 'Destino (revista, evento, newsletter)',
   targetDateLabel: 'Data-alvo',
   targetSave: 'Salvar',
   targetNoVenue: 'Destino não informado',
-  targetAtRisk: 'O prazo da curadoria passa da data-alvo do destino. Combine com a curadoria.',
-  targetSaved: 'Prazo do destino salvo',
+  targetAtRisk: 'A curadoria vai até {due} e a data-alvo é {target}. Combine um novo prazo com a curadoria.',
+  targetSaved: 'Destino da publicação salvo',
+  targetHelp: 'Informe onde e até quando pretende publicar. A curadoria vê isso no quadro dela.',
+  targetNoDueYet: 'O prazo da curadoria começa a contar quando o card entra na curadoria.',
+  targetReadOnly: 'Só o líder ou o responsável pelo card edita.',
+  targetNoDate: 'sem data-alvo',
+  targetClearDate: 'Limpar data',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

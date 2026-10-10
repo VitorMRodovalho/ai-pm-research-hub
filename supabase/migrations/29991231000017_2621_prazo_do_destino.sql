@@ -8,6 +8,10 @@
 -- alerta quando o prazo da curadoria passa da data-alvo (data em America/Sao_Paulo). Quando a 2B
 -- da #2565 criar o produto na aprovacao, estes campos migram para ele.
 --
+-- target_at_risk so e verdadeiro quando ha prazo da curadoria (curation_due_at, carimbado na entrada
+-- em curation_pending). Em peer_review e leader_review ele e false por falta de prazo, nao por folga:
+-- a tela diz que o prazo da curadoria ainda nao comecou.
+--
 -- list_curation_pending_board_items e get_curation_queue_state: corpos montados sobre o vivo
 -- (md5 normalizado == captura 20260825031531, conferido em 09/10); so ganham os tres campos.
 -- ROLLBACK: reaplicar a captura 20260825031531 das duas funcoes; DROP FUNCTION
@@ -19,10 +23,55 @@ ALTER TABLE public.board_items
   ADD COLUMN IF NOT EXISTS curation_target_venue text NULL,
   ADD COLUMN IF NOT EXISTS curation_target_date date NULL;
 
+-- Defesa em profundidade: o teto da RPC vale tambem para qualquer outro escritor SECDEF ou service_role.
+ALTER TABLE public.board_items DROP CONSTRAINT IF EXISTS board_items_curation_target_venue_len;
+ALTER TABLE public.board_items ADD CONSTRAINT board_items_curation_target_venue_len
+  CHECK (curation_target_venue IS NULL OR char_length(curation_target_venue) BETWEEN 1 AND 200);
+
 COMMENT ON COLUMN public.board_items.curation_target_venue IS
   '#2621: destino do artefato com prazo proprio (submissao, newsletter, evento). Opcional; gravado por set_curation_target.';
 COMMENT ON COLUMN public.board_items.curation_target_date IS
   '#2621: data-alvo do destino. Opcional; as listas da curadoria alertam quando curation_due_at passa dela.';
+
+-- O historico do card aceita a acao nova. O CHECK e remontado a partir da definicao VIVA (a ultima
+-- captura em arquivo e de 20260805000300, e uma migration sem arquivo que o tenha mudado depois
+-- sumiria se ele fosse reescrito de memoria); a pos-condicao confere que nenhum valor antigo caiu.
+DO $chk$
+DECLARE
+  v_def  text;
+  v_old  text[];
+  v_new  text[];
+BEGIN
+  SELECT pg_get_constraintdef(c.oid) INTO v_def
+    FROM pg_constraint c
+   WHERE c.conrelid = 'public.board_lifecycle_events'::regclass
+     AND c.conname = 'board_lifecycle_events_action_check';
+  IF v_def IS NULL THEN
+    RAISE EXCEPTION 'board_lifecycle_events_action_check nao encontrado';
+  END IF;
+  SELECT array_agg(DISTINCT m[1] ORDER BY m[1]) INTO v_old
+    FROM regexp_matches(v_def, '''([a-z_]+)''', 'g') AS m;
+  -- piso: a captura de 20260805000300 tem 37 valores; ler menos e sinal de que o formato mudou, e
+  -- remontar com uma lista curta barraria acoes que existem
+  IF v_old IS NULL OR cardinality(v_old) < 37 THEN
+    RAISE EXCEPTION 'leitura do CHECK devolveu % valores (esperado >= 37): %', cardinality(v_old), v_def;
+  END IF;
+  IF 'curation_target_set' = ANY (v_old) THEN
+    RETURN;
+  END IF;
+  ALTER TABLE public.board_lifecycle_events DROP CONSTRAINT board_lifecycle_events_action_check;
+  EXECUTE format(
+    'ALTER TABLE public.board_lifecycle_events ADD CONSTRAINT board_lifecycle_events_action_check CHECK (action = ANY (ARRAY[%s]))',
+    (SELECT string_agg(quote_literal(x), ', ') FROM unnest(array_append(v_old, 'curation_target_set')) AS x));
+  SELECT array_agg(DISTINCT m[1] ORDER BY m[1]) INTO v_new
+    FROM pg_constraint c, regexp_matches(pg_get_constraintdef(c.oid), '''([a-z_]+)''', 'g') AS m
+   WHERE c.conrelid = 'public.board_lifecycle_events'::regclass
+     AND c.conname = 'board_lifecycle_events_action_check';
+  IF NOT (v_new @> v_old AND 'curation_target_set' = ANY (v_new) AND cardinality(v_new) = cardinality(v_old) + 1) THEN
+    RAISE EXCEPTION 'pos-condicao do CHECK falhou: antes %, depois %', cardinality(v_old), cardinality(v_new);
+  END IF;
+END
+$chk$;
 
 CREATE OR REPLACE FUNCTION public.set_curation_target(p_item_id uuid, p_venue text, p_date date)
  RETURNS jsonb
@@ -89,6 +138,20 @@ BEGIN
          curation_target_date  = p_date,
          updated_at = now()
    WHERE id = p_item_id;
+
+  -- a mudanca fica no historico do card, como o parecer de complete_peer_review
+  IF v_item.curation_target_venue IS DISTINCT FROM v_venue OR v_item.curation_target_date IS DISTINCT FROM p_date THEN
+    INSERT INTO public.board_lifecycle_events (board_id, item_id, action, reason, actor_member_id)
+    VALUES (
+      v_item.board_id,
+      p_item_id,
+      'curation_target_set',
+      format('destino: %s -> %s; data-alvo: %s -> %s',
+             coalesce(v_item.curation_target_venue, '-'), coalesce(v_venue, '-'),
+             coalesce(v_item.curation_target_date::text, '-'), coalesce(p_date::text, '-')),
+      v_caller.id
+    );
+  END IF;
 
   RETURN jsonb_build_object(
     'card_id', p_item_id,
