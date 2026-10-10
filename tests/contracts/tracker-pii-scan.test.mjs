@@ -10,6 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import {
   detectar, controlePositivo, julgar, corpoDoAviso, impressao, emailsPessoais, telefones, coletar,
 } from '../../scripts/tracker-pii-scan.mjs';
@@ -220,4 +221,15 @@ test('a entrega e conferida antes de gravar o estado', () => {
   assert.match(main, /from\('notifications'\)\.select\('id', \{ count: 'exact', head: true \}\)\s*\.eq\('type', 'tracker_pii_found'\)\.in\('recipient_id', gestores\)\.gte\('created_at', desde\);/,
     'a conferencia conta avisos deste tipo, destes destinatarios, desta execucao');
   assert.match(main, /const ja = await todas\(/, 'o estado e lido inteiro, paginado');
+});
+
+test('o aviso sai por e-mail NA HORA: o tipo do script e o mapeado como imediato, no SQL e no catalogo', () => {
+  const tipo = CODIGO.match(/p_type: '([a-z_]+)'/)?.[1];
+  assert.equal(tipo, 'tracker_pii_found', 'o script cria avisos deste tipo');
+  const helper = maskJs(latestFunctionCapture(process.cwd(), '_delivery_mode_for').body).replace(/^\s*--.*$/gm, '');
+  const caso = helper.slice(helper.indexOf('CASE p_type'), helper.indexOf('ELSE'));
+  assert.match(caso, new RegExp(`WHEN '${tipo}'\\s+THEN 'transactional_immediate'`),
+    'a captura mais nova de _delivery_mode_for manda o tipo para o e-mail imediato, dentro do CASE');
+  const catalogo = JSON.parse(readFileSync('docs/adr/ADR-0022-notification-types-catalog.json', 'utf8'));
+  assert.equal(catalogo.types[tipo]?.delivery_mode, 'transactional_immediate', 'o catalogo ADR-0022 diz o mesmo');
 });
