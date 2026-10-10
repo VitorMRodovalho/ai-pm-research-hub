@@ -30,7 +30,8 @@ export default defineConfig({
         && !page.includes('/profile')
         && !page.includes('/private')
         && !page.includes('/preview')
-        && !page.includes('/report'),
+        && !page.includes('/report')
+        && !page.includes('/cpmai'),
       i18n: {
         defaultLocale: 'pt',
         locales: { pt: 'pt-BR', en: 'en-US', es: 'es-LATAM' },

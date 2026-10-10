@@ -175,7 +175,7 @@ const ALLOWLIST = {
   get_tribe_gamification: 'tribe-scoped (legacy_tribe_id); confidential committee unaddressable by integer p_tribe_id',
   list_tribe_pending_requests: 'tribe-scoped (research_tribe by legacy_tribe_id); confidential kind=committee/NULL unreachable',
   // -- public / domain structurally excludes the confidential governance initiative
-  get_cpmai_course_dashboard: 'scoped to kind=study_group initiatives (confidential is governance-kind); my_* blocks self-filtered',
+  // get_cpmai_course_dashboard saiu daqui (GP, 09/10/2026): passou a aplicar rls_can_see_initiative + engajamento.
   get_geral_agenda_viva: 'result restricted to type=geral; confidential events are type=1on1',
   get_next_general_meeting: 'type=geral AND initiative_id IS NULL; confidential (1on1, non-null initiative) doubly excluded',
   get_pilots_summary: 'reads pilots registry only (0 pilots reference confidential); never reads events',

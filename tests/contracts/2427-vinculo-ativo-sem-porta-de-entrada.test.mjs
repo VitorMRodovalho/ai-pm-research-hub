@@ -35,6 +35,24 @@
  * vermelho por historico. O baseline e NOMEADO, com data, e so pode ENCOLHER: caso novo reprova;
  * caso resolvido reprova pedindo que o baseline diminua.
  *
+ * ⚠️ O FUNIL TEM PORTA PROPRIA, E O DETECTOR NAO A LIA (10/10/2026). Dois candidatos aprovados no
+ * ciclo aberto, convertidos pelo funil, reprovaram a catraca minutos depois de criados: sem login,
+ * com vinculo de voluntario, sem claim e sem convite da ficha. Mas a porta deles ja tinha saido: o
+ * e-mail `selection_approved` ("acesse a plataforma para iniciar o onboarding"), enviado no mesmo
+ * minuto. A conta nasce de OAuth e o reconhecimento liga pelo e-mail do membro (#2273), entao com o
+ * aviso entregue a bola esta com a pessoa — o mesmo criterio do convite da ficha.
+ *
+ * O que conta, e o que NAO conta, foi decidido medindo, nao por janela de tempo:
+ *   - `selection_approved` com `email_sent_at` e sem falha de entrega CONTA. Medido: 75 dessas
+ *     notificacoes, todas com envio, nenhuma com status de falha.
+ *   - `engagement_welcome` NAO conta. A pessoa que originou a #2427 (lider criada fora do funil,
+ *     `76a38ad4`) recebeu esse e-mail em 19/09 e continuou travada: ele descreve o vinculo, nao
+ *     abre porta. Contar o welcome teria escondido o proprio caso fundador.
+ *   - Token do portal (`onboarding_tokens`, `pmi_application`) so conta valido e com escopo
+ *     `profile_completion`, que e o portal com caminho para a conta (#2273). O de
+ *     `interview_booking` agenda entrevista e NAO leva para dentro: medido, os 9 tokens validos de
+ *     10/10 eram todos desse escopo, e um dos dois casos nem tinha token valido.
+ *
  * Cross-ref: #2427, #2400/#2416 (o par externo que pressupoe acesso sem te-lo), ADR-0131.
  */
 import test from 'node:test';
@@ -64,6 +82,25 @@ const BASELINE = [
 const CONHECIDOS = new Set(BASELINE.map((b) => b.opaco));
 
 /**
+ * O aviso de aprovacao so e porta se SAIU e nao voltou. Status nulo com envio e o caso comum (o
+ * webhook de entrega nem sempre chega); qualquer status alem de `delivered` (bounce, reclamacao,
+ * atraso) nao conta, e a pessoa volta a aparecer como travada, que e o lado seguro.
+ */
+export function aprovacaoEntregue(n) {
+  return !!n.email_sent_at && (n.email_delivery_status == null || n.email_delivery_status === 'delivered');
+}
+
+/**
+ * Pessoas com o portal do token aberto: token -> candidatura (`source_id`) -> pessoa, pelo vinculo
+ * ESTRUTURAL `engagements.selection_application_id`, o mesmo do resolvedor do portal (#2273).
+ * Funcao propria para a juncao ser exercida pela mutacao, e nao so o classificador.
+ */
+export function pessoasComPortal(tokens, origens) {
+  const candidaturaAberta = new Set(tokens.map((t) => t.source_id));
+  return new Set(origens.filter((o) => candidaturaAberta.has(o.selection_application_id)).map((o) => o.person_id));
+}
+
+/**
  * Travado = membro ATIVO, sem `auth_id`, COM vinculo ativo e SEM convite de conta emitido.
  *
  * As quatro condicoes juntas importam. Sem `auth_id` e sem vinculo e cadastro inerte, nao gente
@@ -77,6 +114,12 @@ export function travados(membros) {
     .filter((m) => m.member_status === 'active')
     .filter((m) => m.auth_id === null)
     .filter((m) => !m.tem_claim)
+    // A porta do funil: o aviso de aprovacao entregue, ou o portal do token ainda aberto.
+    // O aviso so vale para o que o FUNIL criou. Quem foi aprovado um dia e depois ganhou vinculo por
+    // outro caminho (ficha, importacao) nunca foi avisado DESSE vinculo, e sem isto o aviso antigo
+    // viraria porta permanente. Regra estrutural, sem janela de tempo.
+    .filter((m) => !(m.aprovacao_entregue && (m.vinculos_fora_do_funil ?? 0) === 0))
+    .filter((m) => !m.portal_aberto)
     // A tela E o trabalho: vinculo ligado a uma INICIATIVA, ou vinculo de VOLUNTARIO do Nucleo.
     // Cadastro institucional em escopo de organizacao (chapter_board, sponsor, observer) fica de
     // fora de proposito — ver o afunilamento no cabecalho.
@@ -90,8 +133,26 @@ async function lerMembros() {
     .from('members').select('id, auth_id, member_status, person_id, created_at');
   assert.ifError(e1);
   const { data: engs, error: e2 } = await c
-    .from('engagements').select('person_id, status, kind, initiative_id').eq('status', 'active');
+    .from('engagements').select('person_id, status, kind, initiative_id, selection_application_id').eq('status', 'active');
   assert.ifError(e2);
+  // Candidatura -> pessoa pelo vinculo ESTRUTURAL, o mesmo do resolvedor do portal (#2273). Le
+  // todo engagement com candidatura, nao so o ativo: a candidatura e a origem, o status nao muda isso.
+  const { data: origens, error: e5, count: nOrigens } = await c
+    .from('engagements').select('person_id, selection_application_id', { count: 'exact' })
+    .not('selection_application_id', 'is', null);
+  assert.ifError(e5);
+  const { data: aprovacoes, error: e6, count: nAprovacoes } = await c
+    .from('notifications').select('recipient_id, email_sent_at, email_delivery_status', { count: 'exact' })
+    .eq('type', 'selection_approved');
+  assert.ifError(e6);
+  // O teto de linhas do PostgREST corta em silencio: leitura truncada vira gente falsamente travada.
+  assert.equal(origens.length, nOrigens, `leitura truncada: ${origens.length} de ${nOrigens} engagements com candidatura`);
+  assert.equal(aprovacoes.length, nAprovacoes, `leitura truncada: ${aprovacoes.length} de ${nAprovacoes} avisos de aprovacao`);
+  const { data: tokens, error: e7 } = await c
+    .from('onboarding_tokens').select('source_id')
+    .eq('source_type', 'pmi_application').contains('scopes', ['profile_completion'])
+    .is('consumed_at', null).gt('expires_at', new Date().toISOString());
+  assert.ifError(e7);
   const { data: claims, error: e3 } = await c
     .from('email_verification_pending').select('target_member_id, purpose').eq('purpose', 'account_claim');
   assert.ifError(e3);
@@ -103,13 +164,22 @@ async function lerMembros() {
 
   const comIniciativa = new Map();
   const voluntario = new Map();
+  const foraDoFunil = new Map();
   for (const e of engs) {
+    if ((e.initiative_id || e.kind === 'volunteer') && !e.selection_application_id) {
+      foraDoFunil.set(e.person_id, (foraDoFunil.get(e.person_id) ?? 0) + 1);
+    }
     if (e.initiative_id) comIniciativa.set(e.person_id, (comIniciativa.get(e.person_id) ?? 0) + 1);
     if (e.kind === 'volunteer') voluntario.set(e.person_id, (voluntario.get(e.person_id) ?? 0) + 1);
   }
   const comClaim = new Set([...claims.map((c2) => c2.target_member_id), ...convites.map((v) => v.target_id)]);
+  const comAprovacao = new Set(aprovacoes.filter(aprovacaoEntregue).map((n) => n.recipient_id));
+  const comPortal = pessoasComPortal(tokens, origens);
 
   return membros.map((m) => ({
+    aprovacao_entregue: comAprovacao.has(m.id),
+    portal_aberto: comPortal.has(m.person_id),
+    vinculos_fora_do_funil: foraDoFunil.get(m.person_id) ?? 0,
     id: m.id,
     auth_id: m.auth_id,
     member_status: m.member_status,
@@ -137,6 +207,12 @@ test('#2427 catraca — nenhum vinculo ativo NOVO sem porta de entrada',
       'controle positivo: ninguem com vinculo de voluntario — o campo kind nao esta sendo lido');
     assert.ok(membros.some((m) => m.auth_id === null && m.tem_claim),
       'controle positivo: ninguem sem login com convite — o eixo do convite nao esta sendo lido');
+    // O eixo do aviso de aprovacao: estavel porque conta quem JA entrou tambem. Vazio aqui quer dizer
+    // que o tipo da notificacao ou o recipient_id deixou de casar, e todo aprovado pareceria travado.
+    // O eixo do portal nao tem controle vivo: na medicao de 10/10 havia 0 tokens validos de
+    // profile_completion. Ele fica provado pela mutacao abaixo, nao por esta varredura.
+    assert.ok(membros.some((m) => m.aprovacao_entregue),
+      'controle positivo: ninguem com aviso de aprovacao entregue — o eixo do funil nao esta sendo lido');
 
     const achados = travados(membros);
     const novos = achados.filter((t) => !CONHECIDOS.has(t.opaco));
@@ -199,6 +275,41 @@ test('#2427 mutacao — o detector reprova cada forma do defeito, pela MESMA fun
   const resolvidos = [...CONHECIDOS_F].filter((o) => !vivosFicticios.has(o));
   assert.deepEqual(resolvidos, [BASE_F[0].opaco],
     'catraca: quem foi resolvido tem de ser cobrado para sair do baseline');
+
+  // Mutacao 5 — a porta do funil (10/10). O caso real de hoje: aprovado, convertido, sem login, com
+  // vinculo de voluntario, sem claim, com o aviso de aprovacao entregue. Nao esta travado; sem o
+  // aviso, esta. As duas metades juntas: so a primeira passaria com o filtro removido E com o campo
+  // nunca preenchido.
+  const doFunil = { id: 'ffffffff-6', auth_id: null, member_status: 'active', vinculos_com_iniciativa: 0, vinculos_voluntario: 1, tem_claim: false, aprovacao_entregue: true, portal_aberto: false, vinculos_fora_do_funil: 0, criado: '2026-10-10' };
+  assert.deepEqual(travados([doFunil]), [],
+    'mutacao 5a: aprovado com o aviso entregue tem porta, nao esta travado');
+  assert.deepEqual(travados([{ ...doFunil, aprovacao_entregue: false }]), [{ opaco: 'ffffffff', desde: '2026-10-10' }],
+    'mutacao 5b: sem o aviso de aprovacao, o mesmo aprovado esta travado');
+  assert.deepEqual(travados([{ ...doFunil, aprovacao_entregue: false, portal_aberto: true }]), [],
+    'mutacao 5c: com o portal do token aberto, tem porta');
+  assert.deepEqual(travados([{ ...doFunil, vinculos_fora_do_funil: 1 }]), [{ opaco: 'ffffffff', desde: '2026-10-10' }],
+    'mutacao 5d: aviso de aprovacao antigo nao abre porta para vinculo criado fora do funil');
+
+  // Mutacao 7 — a juncao do portal: token -> candidatura -> pessoa. So o token valido da PROPRIA
+  // candidatura liga a pessoa; o de outra candidatura nao.
+  const origensF = [
+    { person_id: 'p-1', selection_application_id: 'app-1' },
+    { person_id: 'p-2', selection_application_id: 'app-2' },
+  ];
+  assert.deepEqual([...pessoasComPortal([{ source_id: 'app-1' }], origensF)], ['p-1'],
+    'mutacao 7a: o token da candidatura app-1 abre o portal de p-1, e so de p-1');
+  assert.deepEqual([...pessoasComPortal([{ source_id: 'app-9' }], origensF)], [],
+    'mutacao 7b: token de candidatura sem vinculo nao liga ninguem');
+
+  // Mutacao 6 — o que NAO e aviso entregue. Nao enviado, ou devolvido, nao abre porta.
+  assert.equal(aprovacaoEntregue({ email_sent_at: '2026-10-10T15:30:00Z', email_delivery_status: null }), true,
+    'mutacao 6a: enviado sem retorno de entrega conta');
+  assert.equal(aprovacaoEntregue({ email_sent_at: '2026-10-10T15:30:00Z', email_delivery_status: 'delivered' }), true,
+    'mutacao 6b: entregue conta');
+  assert.equal(aprovacaoEntregue({ email_sent_at: null, email_delivery_status: null }), false,
+    'mutacao 6c: aviso criado e nunca enviado nao e porta');
+  assert.equal(aprovacaoEntregue({ email_sent_at: '2026-10-10T15:30:00Z', email_delivery_status: 'bounced' }), false,
+    'mutacao 6d: aviso devolvido nao e porta');
 
   // Mutacao 4 — o detector nao pode passar por vacuidade com lista vazia.
   assert.deepEqual(travados([]), [], 'lista vazia produz lista vazia — por isso o controle positivo existe');
