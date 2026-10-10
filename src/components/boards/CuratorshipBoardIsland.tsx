@@ -166,14 +166,16 @@ function TargetBadge({ item, ui = {} }: { item: { curation_target_venue?: string
     }
   }
   const label = [item.curation_target_venue, date].filter(Boolean).join(' · ');
+  const targetText = `${ui.targetLabel || 'Destino'}: ${label}`;
+  const riskIcon = '⚠ ';
   return (
     <>
       <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-[var(--surface-section-cool)] text-[var(--text-secondary)] max-w-[14rem] truncate" title={label}>
-        {ui.targetLabel || 'Destino'}: {label}
+        {targetText}
       </span>
       {item.target_at_risk && (
         <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-50 text-amber-800">
-          <span aria-hidden="true">{'⚠ '}</span>{ui.targetAtRisk || 'curadoria passa da data-alvo'}
+          <span aria-hidden="true">{riskIcon}</span>{ui.targetAtRisk || 'curadoria passa da data-alvo'}
         </span>
       )}
     </>
