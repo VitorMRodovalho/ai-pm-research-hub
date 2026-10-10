@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 const DOMAIN_COLORS = ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
@@ -7,18 +7,32 @@ export default function CpmaiLanding() {
   const t = usePageI18n();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [member, setMember] = useState<any>(null);
-  const [denied, setDenied] = useState<'login' | 'forbidden' | null>(null);
+  // login: sem sessao; forbidden: logado, fora do grupo e fora da gestao; none: grupo inexistente; error: falha de rede
+  const [denied, setDenied] = useState<'login' | 'forbidden' | 'none' | 'error' | null>(null);
+  const requestSeq = useRef(0);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
   // Grupo de Estudos CPMAI · Piloto (GP, 09/10/2026): so participantes engajados e a gestao. O painel decide no
-  // servidor e devolve {error} aos demais; nao ha leitura publica nem autoinscricao.
-  const loadCourse = useCallback(async (sb: any) => {
-    const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
-    if (d && !d.error) { setDenied(null); return d; }
-    setDenied(d?.error === 'Not authenticated' || !d ? 'login' : 'forbidden');
-    return null;
+  // servidor e devolve {error} aos demais; nao ha leitura publica nem autoinscricao. So a resposta mais recente
+  // vale: a leitura sem sessao nao pode sobrescrever a que chegou depois do login.
+  const load = useCallback(async (sb: any) => {
+    const seq = ++requestSeq.current;
+    let next: { data: any; denied: typeof denied };
+    try {
+      const { data: d, error } = await sb.rpc('get_cpmai_course_dashboard');
+      if (error) next = { data: null, denied: 'error' };
+      else if (d && !d.error) next = { data: d, denied: null };
+      else if (d?.error === 'Not authenticated') next = { data: null, denied: 'login' };
+      else if (d?.error === 'No course found') next = { data: null, denied: 'none' };
+      else next = { data: null, denied: 'forbidden' };
+    } catch (e) {
+      console.warn('CPMAI load error:', e);
+      next = { data: null, denied: 'error' };
+    }
+    if (seq !== requestSeq.current) return;
+    setData(next.data);
+    setDenied(next.denied);
   }, []);
 
   useEffect(() => {
@@ -27,29 +41,25 @@ export default function CpmaiLanding() {
     async function boot() {
       const sb = getSb();
       if (!sb && retries < 30) { retries++; setTimeout(boot, 300); return; }
-      const m = (window as any).navGetMember?.();
-      if (m && !cancelled) setMember(m);
-      if (!sb) { if (!cancelled) setLoading(false); return; }
-      try {
-        const d = await loadCourse(sb);
-        if (!cancelled) setData(d);
-      } catch (e) { console.warn('CPMAI load error:', e); }
-      finally { if (!cancelled) setLoading(false); }
+      if (!sb) { if (!cancelled) { setDenied('error'); setLoading(false); } return; }
+      await load(sb);
+      if (!cancelled) setLoading(false);
     }
-    // O membro pode chegar depois da primeira leitura: recarrega o painel com a parte pessoal.
+    // O membro pode chegar depois da primeira leitura: le o painel de novo, ja com a sessao.
     const onMember = async (ev: any) => {
       const sb = getSb();
       if (!ev?.detail || !sb || cancelled) return;
-      setMember(ev.detail);
-      try { const d = await loadCourse(sb); if (!cancelled) setData(d); } catch {}
+      await load(sb);
     };
     window.addEventListener('nav:member', onMember);
     boot();
     return () => { cancelled = true; window.removeEventListener('nav:member', onMember); };
-  }, [getSb, loadCourse]);
+  }, [getSb, load]);
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin h-6 w-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" /></div>;
 
+  const lp = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+  const pageLocale = lp === '/en' ? 'en-US' : lp === '/es' ? 'es-419' : 'pt-BR';
   const course = data?.course;
   const domains = data?.domains || [];
   const enrolled = !!data?.my_enrollment;
@@ -81,7 +91,11 @@ export default function CpmaiLanding() {
                   {t('cpmai.login_cta', 'Entrar')}
                 </button>
               </>
-            : <p>{t('cpmai.restricted', 'Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo.')}</p>}
+            : <p>{denied === 'none'
+                ? t('cpmai.not_found', 'O grupo de estudos ainda não está disponível.')
+                : denied === 'error'
+                  ? t('cpmai.load_error', 'Não foi possível carregar o grupo de estudos. Tente de novo em instantes.')
+                  : t('cpmai.restricted', 'Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo.')}</p>}
         </div>
       )}
 
@@ -94,7 +108,7 @@ export default function CpmaiLanding() {
 
       {/* Disclaimer */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-900">
-        ⚠️ {t('cpmai.disclaimer', 'Este curso NÃO substitui o curso oficial do PMI de 21 horas.')}
+        ⚠️ {t('cpmai.disclaimer', 'Este grupo de estudos NÃO substitui o curso oficial do PMI de 21 horas.')}
       </div>
 
       {/* 5 Domains */}
@@ -110,7 +124,7 @@ export default function CpmaiLanding() {
               <div key={d.id} className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-4">
                 <div className="text-xs font-bold uppercase tracking-wider mb-1" style={{ color: DOMAIN_COLORS[i] }}>D{d.domain_number} · {d.weight_pct}%</div>
                 <div className="text-sm font-semibold text-[var(--text-primary)] mb-2">{d.name_pt}</div>
-                <div className="text-xs text-[var(--text-muted)] mb-2">{total} módulos</div>
+                <div className="text-xs text-[var(--text-muted)] mb-2">{t('cpmai.modules_count', '{n} módulos').replace('{n}', String(total))}</div>
                 {enrolled && (
                   <>
                     <div className="h-1.5 rounded-full bg-[var(--border-subtle)] overflow-hidden">
@@ -136,7 +150,7 @@ export default function CpmaiLanding() {
                   <span className="text-sm font-bold" style={{ color: ms.score_pct >= 75 ? '#10B981' : ms.score_pct >= 60 ? '#F59E0B' : '#EF4444' }}>{ms.score_pct}%</span>
                   {ms.mock_source && <span className="text-xs text-[var(--text-muted)] ml-2">{ms.mock_source}</span>}
                 </div>
-                <span className="text-xs text-[var(--text-muted)]">{new Date(ms.taken_at).toLocaleDateString('pt-BR')}</span>
+                <span className="text-xs text-[var(--text-muted)]">{new Date(ms.taken_at).toLocaleDateString(pageLocale)}</span>
               </div>
             ))}
           </div>

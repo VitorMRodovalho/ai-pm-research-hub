@@ -1419,8 +1419,11 @@ const esLATAM: Record<string, string> = {
   'cpmai.title': "Grupo de Estudio CPMAI · Piloto",
   'cpmai.subtitle': "Grupo de estudio del Núcleo IA & GP para la certificación PMI-CPMAI™, en fase piloto.",
   'cpmai.disclaimer': "Este grupo de estudio es una iniciativa del Núcleo IA & GP y NO reemplaza el curso oficial del PMI de 21 horas, que es un prerrequisito obligatorio para agendar el examen PMI-CPMAI™.",
-  'cpmai.restricted': "Esta página es solo para participantes del grupo de estudio y para la gestión. El ingreso al grupo lo realiza la gestión del Núcleo.",
-  'cpmai.login_required': "Inicie sesión con su cuenta para ver el grupo de estudio.",
+  'cpmai.restricted': "Esta página es solo para participantes del grupo de estudio y para la gestión. El ingreso al grupo lo realiza la gestión del Núcleo: contáctala si quieres participar.",
+  'cpmai.not_found': "El grupo de estudio aún no está disponible.",
+  'cpmai.load_error': "No se pudo cargar el grupo de estudio. Inténtalo de nuevo en unos instantes.",
+  'cpmai.modules_count': "{n} módulos",
+  'cpmai.login_required': "Inicia sesión con tu cuenta para ver el grupo de estudio.",
   'cpmai.login_cta': "Iniciar sesión",
   'cpmai.participant_area': "Área del participante: eventos, materiales y tablero del grupo",
   'cpmai.dashboard_title': 'Mi Progreso CPMAI',
@@ -4894,6 +4897,7 @@ const esLATAM: Record<string, string> = {
   'tribe.readOnly': 'Solo lectura',
 
   // ── Initiative Page (CR-051) ──
+  'initiative.cpmaiLink': "Página del Grupo de Estudio CPMAI · Piloto",
   'initiative.loading': 'Cargando iniciativa...',
   'initiative.notFound': 'Iniciativa no encontrada.',
   'initiative.accessRestricted': 'Acceso restringido — inicie sesión para ver.',

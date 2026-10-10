@@ -33,15 +33,22 @@ test('autoinscrição só onde a iniciativa declara join_policy = open, e antes 
     'a checagem precisa vir antes do INSERT');
 });
 
-test('o CPMAI passa a entrada pela gestão por configuração, não por id no código da RPC', () => {
-  assert.match(MIG, /UPDATE public\.initiatives SET join_policy = 'invite_only'[^;]*WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19'/);
+test('o CPMAI passa a entrada pela gestão e a confidencial, por configuração, não por id no código da RPC', () => {
+  assert.match(MIG, /UPDATE public\.initiatives SET join_policy = 'invite_only', visibility = 'confidential'[^;]*WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19'/);
   assert.doesNotMatch(fnBody('join_initiative'), /2f5846f3/);
 });
 
 test('painel: só engajado ativo/onboarding ou manage_platform, e o portão confidencial; os demais recebem forbidden', () => {
   assert.match(
     fnBody('get_cpmai_course_dashboard'),
-    /IF NOT public\.rls_can_see_initiative\(v_initiative\.id\)\s+OR NOT \(public\.can_by_member\(v_member_id, 'manage_platform'\)\s+OR EXISTS \(SELECT 1 FROM public\.engagements e\s+WHERE e\.initiative_id = v_initiative\.id AND e\.person_id = v_person_id\s+AND e\.status IN \('active', 'onboarding'\)\)\) THEN\s+RETURN jsonb_build_object\('error', 'forbidden'\);/,
+    /IF NOT public\.rls_can_see_initiative\(v_initiative\.id\)\s+OR NOT \(public\.can_by_member\(v_member_id, 'manage_platform'\)\s+OR \(EXISTS \(SELECT 1 FROM public\.members m WHERE m\.id = v_member_id AND m\.is_active\)\s+AND EXISTS \(SELECT 1 FROM public\.engagements e\s+WHERE e\.initiative_id = v_initiative\.id AND e\.person_id = v_person_id\s+AND e\.status IN \('active', 'onboarding'\)\)\)\) THEN\s+RETURN jsonb_build_object\('error', 'forbidden'\);/,
+  );
+});
+
+test('painel escolhe primeiro o grupo em que quem chama está engajado', () => {
+  assert.match(
+    fnBody('get_cpmai_course_dashboard'),
+    /ORDER BY EXISTS \(SELECT 1 FROM public\.engagements e\s+WHERE e\.initiative_id = i\.id AND e\.person_id = v_person_id\s+AND e\.status IN \('active', 'onboarding'\)\) DESC,\s+i\.created_at DESC/,
   );
 });
 
@@ -60,6 +67,12 @@ const PAGE = maskJsComments(read('src/pages/cpmai.astro'));
 
 test('tela: sem autoinscrição, sem leitura pública, sem contador de inscritos', () => {
   assert.doesNotMatch(ISLAND, /join_initiative|get_public_cpmai_course|enrollment_count/);
+});
+
+test('tela: só a resposta mais recente vale, e cada erro do servidor vira o seu aviso', () => {
+  assert.match(ISLAND, /const seq = \+\+requestSeq\.current;[\s\S]*?if \(seq !== requestSeq\.current\) return;\s+setData\(next\.data\);/);
+  assert.match(ISLAND, /if \(error\) next = \{ data: null, denied: 'error' \};/);
+  assert.match(ISLAND, /else if \(d\?\.error === 'No course found'\) next = \{ data: null, denied: 'none' \};/);
 });
 
 test('tela: sem curso, mostra o aviso de acesso; com curso, o conteúdo do grupo', () => {

@@ -1423,7 +1423,10 @@ const ptBR: Record<string, string> = {
   'cpmai.title': "Grupo de Estudos CPMAI · Piloto",
   'cpmai.subtitle': "Grupo de estudos do Núcleo IA & GP para a certificação PMI-CPMAI™, em fase piloto.",
   'cpmai.disclaimer': "Este grupo de estudos é uma iniciativa do Núcleo IA & GP e NÃO substitui o curso oficial do PMI de 21 horas, que é pré-requisito obrigatório para agendar o exame PMI-CPMAI™.",
-  'cpmai.restricted': "Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo.",
+  'cpmai.restricted': "Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo: fale com ela se quiser participar.",
+  'cpmai.not_found': "O grupo de estudos ainda não está disponível.",
+  'cpmai.load_error': "Não foi possível carregar o grupo de estudos. Tente de novo em instantes.",
+  'cpmai.modules_count': "{n} módulos",
   'cpmai.login_required': "Entre com a sua conta para ver o grupo de estudos.",
   'cpmai.login_cta': "Entrar",
   'cpmai.participant_area': "Área do participante: eventos, materiais e quadro do grupo",
@@ -4901,6 +4904,7 @@ const ptBR: Record<string, string> = {
   'tribe.readOnly': 'Somente leitura',
 
   // ── Initiative Page (CR-051) ──
+  'initiative.cpmaiLink': "Página do Grupo de Estudos CPMAI · Piloto",
   'initiative.loading': 'Carregando iniciativa...',
   'initiative.notFound': 'Iniciativa não encontrada.',
   'initiative.accessRestricted': 'Acesso restrito — faça login para visualizar.',

@@ -1419,7 +1419,10 @@ const enUS: Record<string, string> = {
   'cpmai.title': "CPMAI Study Group · Pilot",
   'cpmai.subtitle': "AI & PM Research Hub study group for the PMI-CPMAI™ certification, in its pilot phase.",
   'cpmai.disclaimer': "This study group is an initiative of the AI & PM Research Hub and does NOT replace the official 21-hour PMI course, which is a mandatory prerequisite to schedule the PMI-CPMAI™ exam.",
-  'cpmai.restricted': "This page is only for study group participants and management. Joining the group is handled by the Hub management.",
+  'cpmai.restricted': "This page is only for study group participants and management. Joining the group is handled by the Hub management: contact them if you want to take part.",
+  'cpmai.not_found': "The study group is not available yet.",
+  'cpmai.load_error': "Could not load the study group. Please try again in a moment.",
+  'cpmai.modules_count': "{n} modules",
   'cpmai.login_required': "Sign in with your account to see the study group.",
   'cpmai.login_cta': "Sign in",
   'cpmai.participant_area': "Participant area: events, materials and the group board",
@@ -4893,6 +4896,7 @@ const enUS: Record<string, string> = {
   'tribe.readOnly': 'Read-only',
 
   // ── Initiative Page (CR-051) ──
+  'initiative.cpmaiLink': "CPMAI Study Group · Pilot page",
   'initiative.loading': 'Loading initiative...',
   'initiative.notFound': 'Initiative not found.',
   'initiative.accessRestricted': 'Access restricted — log in to view.',

@@ -8,21 +8,35 @@
 --     23/05 e 1 autoinscrição no CPMAI em 10/07 (hoje expired). Nenhum em iniciativa fechada.
 --   * get_cpmai_course_dashboard devolvia sessões (com meeting_link) e o contador a qualquer membro.
 --
+-- Revisão do conselho: fechar só /cpmai deixava as sessões (3 eventos, 2 com link de reunião), o quadro
+-- (40 cards) e o TAP legíveis a qualquer membro pela página da iniciativa, pela tabela events e pelo MCP,
+-- porque esses caminhos só barram iniciativa confidencial. Decisão do GP (09/10/2026): o grupo vira
+-- confidencial (ADR-0105) e todo engajamento ativo conta como participante.
+--
 -- Agora:
---   (1) a iniciativa CPMAI passa a 'invite_only' (entrada pela gestão), por configuração, não por id no código;
+--   (0) a iniciativa CPMAI passa a visibility = 'confidential': eventos, quadro, documentos e detalhe só para
+--       engajados e manage_platform; sai da curadoria e dos agregados públicos. Medido em 09/10: o grupo tem
+--       0 linhas em publication_submissions, webinars, broadcast_log, pilots e hub_resources, então as
+--       justificativas do allowlist do #785 seguem verdadeiras.
+--       ⚠ O signatário 'sponsor' do TAP não está engajado e perderia o acesso ao documento: o pacote pede à
+--       orquestradora engajá-lo como observador ANTES do apply, fora desta migration (pode disparar boas-vindas,
+--       e comunicação com participantes é do GP).
+--   (1) a iniciativa CPMAI passa a 'invite_only' (entrada pela gestão), por configuração, não por id no código.
+--       Efeito esperado: sai da descoberta de iniciativas abertas e request_to_join_initiative passa a recusá-la;
 --   (2) join_initiative recusa autoinscrição fora de join_policy = 'open' (vale para todas as iniciativas);
---   (3) get_cpmai_course_dashboard: só engajados na iniciativa (ativo/onboarding) e manage_platform, e o
---       portão da ADR-0105;
+--   (3) get_cpmai_course_dashboard: só membro ativo engajado na iniciativa (ativo/onboarding, qualquer kind)
+--       e manage_platform, e o portão da ADR-0105. A escolha do grupo passa a preferir aquele em que quem
+--       chama está engajado (antes: o study_group mais recente, o que um segundo grupo quebraria);
 --   (4) get_public_cpmai_course: sem EXECUTE para PUBLIC, anon e authenticated (só /cpmai a chamava).
 -- Os corpos partem dos vivos de 09/10/2026, idênticos às capturas 20260685000000 (join_initiative,
 -- md5 a836a5f94c28e6ba4dc5a3ddddcc168c) e 20260684000000 (get_cpmai_course_dashboard,
 -- md5 82e3f91a8ac4eb59a3fd0a29d2c86fbc). Assinatura, SECURITY DEFINER e search_path mantidos.
 --
--- Rollback: join_policy do CPMAI de volta a 'request_to_join'; recriar as duas funções pelas capturas
+-- Rollback: visibility do CPMAI de volta a 'standard' e join_policy a 'request_to_join'; recriar as duas funções pelas capturas
 --   citadas; GRANT EXECUTE ON FUNCTION public.get_public_cpmai_course() TO anon, authenticated.
 
-UPDATE public.initiatives SET join_policy = 'invite_only', updated_at = now()
-WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19' AND join_policy = 'request_to_join';
+UPDATE public.initiatives SET join_policy = 'invite_only', visibility = 'confidential', updated_at = now()
+WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19';
 
 CREATE OR REPLACE FUNCTION public.join_initiative(p_initiative_id uuid, p_motivation text DEFAULT NULL::text, p_metadata jsonb DEFAULT '{}'::jsonb)
  RETURNS uuid
@@ -82,16 +96,24 @@ BEGIN
   IF p_course_id IS NOT NULL THEN
     SELECT * INTO v_initiative FROM public.initiatives WHERE metadata->>'cpmai_legacy_course_id' = p_course_id::text AND kind = 'study_group';
   ELSE
-    SELECT * INTO v_initiative FROM public.initiatives WHERE kind = 'study_group' AND status != 'archived' ORDER BY created_at DESC LIMIT 1;
+    -- o grupo em que quem chama está engajado vem primeiro; depois, o mais recente
+    SELECT i.* INTO v_initiative FROM public.initiatives i
+    WHERE i.kind = 'study_group' AND i.status != 'archived'
+    ORDER BY EXISTS (SELECT 1 FROM public.engagements e
+                     WHERE e.initiative_id = i.id AND e.person_id = v_person_id
+                       AND e.status IN ('active', 'onboarding')) DESC,
+             i.created_at DESC
+    LIMIT 1;
   END IF;
   IF v_initiative IS NULL THEN RETURN jsonb_build_object('error', 'No course found'); END IF;
   -- Só quem está engajado na iniciativa (ativo ou em onboarding) e a gestão veem o grupo: o painel traz
   -- sessões com link de reunião e progresso. Nunca a iniciativa confidencial a quem não a enxerga.
   IF NOT public.rls_can_see_initiative(v_initiative.id)
      OR NOT (public.can_by_member(v_member_id, 'manage_platform')
-             OR EXISTS (SELECT 1 FROM public.engagements e
+             OR (EXISTS (SELECT 1 FROM public.members m WHERE m.id = v_member_id AND m.is_active)
+                 AND EXISTS (SELECT 1 FROM public.engagements e
                         WHERE e.initiative_id = v_initiative.id AND e.person_id = v_person_id
-                          AND e.status IN ('active', 'onboarding'))) THEN
+                          AND e.status IN ('active', 'onboarding')))) THEN
     RETURN jsonb_build_object('error', 'forbidden');
   END IF;
   v_initiative_id := v_initiative.id;
@@ -124,8 +146,18 @@ GRANT EXECUTE ON FUNCTION public.get_public_cpmai_course() TO service_role;
 -- ── pós-condição: aborta a migration inteira se algo saiu errado ─────────────
 DO $postcondition$
 BEGIN
-  IF (SELECT join_policy FROM public.initiatives WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19') <> 'invite_only' THEN
-    RAISE EXCEPTION 'cpmai: a iniciativa não ficou invite_only';
+  IF NOT EXISTS (SELECT 1 FROM public.initiatives WHERE id = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19'
+                 AND join_policy = 'invite_only' AND visibility = 'confidential') THEN
+    RAISE EXCEPTION 'cpmai: a iniciativa não ficou invite_only e confidencial';
+  END IF;
+  IF NOT has_function_privilege('service_role', 'public.get_public_cpmai_course()', 'EXECUTE') THEN
+    RAISE EXCEPTION 'cpmai: service_role perdeu o EXECUTE de get_public_cpmai_course';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_proc p WHERE p.pronamespace = 'public'::regnamespace
+                 AND p.proname = 'get_cpmai_course_dashboard' AND p.prosecdef
+                 AND p.proconfig @> ARRAY['search_path=public, pg_temp']
+                 AND p.prosrc LIKE '%''error'', ''forbidden''%') THEN
+    RAISE EXCEPTION 'cpmai: get_cpmai_course_dashboard sem o portão, SECURITY DEFINER ou search_path';
   END IF;
   IF has_function_privilege('anon', 'public.get_public_cpmai_course()', 'EXECUTE')
      OR has_function_privilege('authenticated', 'public.get_public_cpmai_course()', 'EXECUTE') THEN
