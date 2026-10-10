@@ -4031,7 +4031,7 @@ const enUS: Record<string, string> = {
   'privacy.s6ret.row5.retention': '5 years',
   'privacy.s6ret.row5.after': 'Actor anonymization',
   'privacy.s6ret.row6.data': 'Applications',
-  'privacy.s6ret.row6.retention': '3 years after application',
+  'privacy.s6ret.row6.retention': '5 years after the decision on the application',
   'privacy.s6ret.row6.after': 'Anonymization',
   'privacy.s6ret.row7.data': 'Notifications',
   'privacy.s6ret.row7.retention': '6 months after read',

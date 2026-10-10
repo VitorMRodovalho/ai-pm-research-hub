@@ -4038,7 +4038,7 @@ const ptBR: Record<string, string> = {
   'privacy.s6ret.row5.retention': '5 anos',
   'privacy.s6ret.row5.after': 'Anonimização do actor',
   'privacy.s6ret.row6.data': 'Candidaturas',
-  'privacy.s6ret.row6.retention': '3 anos após candidatura',
+  'privacy.s6ret.row6.retention': '5 anos após a decisão da candidatura',
   'privacy.s6ret.row6.after': 'Anonimização',
   'privacy.s6ret.row7.data': 'Notificações',
   'privacy.s6ret.row7.retention': '6 meses após leitura',
