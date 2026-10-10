@@ -1777,13 +1777,17 @@ function registerTools(mcp: McpServer, sb: Sb) {
   // e a RPC (governanca OU lider de tribo, ADR-0041), e um portao de governanca aqui barraria os
   // lideres de tribo, que sao quem envia. Ver submitForCurationAndReadState.
   mcp.tool("submit_for_curation", "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.", {
-    item_id: z.string().describe("UUID of the board item to submit to curation")
-  }, async (params: { item_id: string }) => {
+    item_id: z.string().describe("UUID of the board item to submit to curation"),
+    target_venue: z.string().optional().describe("Optional destination with its own deadline (journal, event, newsletter); curators see it"),
+    target_date: z.string().optional().describe("Optional destination target date, YYYY-MM-DD; curation is alerted when its due date passes it")
+  }, async (params: { item_id: string; target_venue?: string; target_date?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
     if (!member) { await logUsage(sb, null, "submit_for_curation", false, "Not authenticated", start); return err("Not authenticated"); }
     if (!isUUID(params.item_id)) { await logUsage(sb, member.id, "submit_for_curation", false, "Invalid item_id", start); return err("item_id must be a UUID"); }
     if (!(await canSee(sb, "item", params.item_id))) { await logUsage(sb, member.id, "submit_for_curation", false, "Confidential/no access", start); return err("Card not found or not visible to you."); }
+    const tgt = await setCurationTargetIfGiven(sb, params.item_id, params.target_venue, params.target_date);
+    if (tgt) { await logUsage(sb, member.id, "submit_for_curation", false, tgt.message, start); return err(tgt.message); }
     const res = await submitForCurationAndReadState(sb, params.item_id);
     if (res.error) { await logUsage(sb, member.id, "submit_for_curation", false, res.error, start); return err(res.error); }
     await logUsage(sb, member.id, "submit_for_curation", true, undefined, start);
@@ -8050,6 +8054,14 @@ async function canSee(sb: Sb, kind: "item" | "board" | "initiative", id: string)
 // O codigo do erro segue o contrato do envelope semantico (unauthenticated|unauthorized|invalid_input|
 // not_found|internal_error). Recusa da REGRA e RAISE EXCEPTION da RPC (SQLSTATE P0001); o resto
 // (rede, PostgREST, EXECUTE negado) e falha tecnica e nao pode ser dito ao usuario como "sem permissao".
+// #2621: prazo do destino (opcional) gravado ANTES do envio, pela RPC que decide quem pode gravar.
+// Sem nenhum dos dois campos, nada e chamado. Devolve o erro da RPC, ou null.
+async function setCurationTargetIfGiven(sb: Sb, itemId: string, venue?: string, date?: string): Promise<{ message: string; code?: string } | null> {
+  if (venue === undefined && date === undefined) return null;
+  const { error } = await sb.rpc("set_curation_target", { p_item_id: itemId, p_venue: venue ?? null, p_date: date || null });
+  return error ? { message: error.message, code: error.code } : null;
+}
+
 function curationSubmitErrorCode(error: { code?: string; message: string }): string {
   if (error.code !== "P0001") return "internal_error";
   if (/^Requires /.test(error.message)) return "unauthorized";
@@ -8898,6 +8910,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       notes: z.string().optional().describe("mirror — optional notes on the copy."),
       reason: z.string().optional().describe("delete (required) / move / archive / restore — audit reason."),
       confirm: z.boolean().optional().describe("archive/delete: pass confirm=true to execute; otherwise a preview is returned (ADR-0018)."),
+      target_venue: z.string().optional().describe("submit_for_curation — optional destination with its own deadline (journal, event, newsletter)."),
+      target_date: z.string().optional().describe("submit_for_curation — optional destination target date, YYYY-MM-DD."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -8949,6 +8963,12 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       }
 
       if (params.action === "submit_for_curation") {
+        const tgt = await setCurationTargetIfGiven(sb, params.card_id, params.target_venue, params.target_date);
+        if (tgt) {
+          await logUsage(sb, member.id, "card_write", false, tgt.message, start);
+          return ok(buildSemanticError({ tool: "card_write", semantic_domain: dom, code: curationSubmitErrorCode(tgt), message: tgt.message,
+            action: "O prazo do destino nao foi gravado e o card nao foi enviado. Explique o motivo ao usuario." }));
+        }
         const res = await submitForCurationAndReadState(sb, params.card_id);
         if (res.error) {
           await logUsage(sb, member.id, "card_write", false, res.error, start);

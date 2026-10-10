@@ -396,6 +396,13 @@ export interface BoardI18n {
   reviewErrWaiverReason?: string;
   reviewErrInvalid?: string;
   reviewErrNoSubtype?: string;
+  targetTitle?: string;
+  targetVenueLabel?: string;
+  targetDateLabel?: string;
+  targetSave?: string;
+  targetNoVenue?: string;
+  targetAtRisk?: string;
+  targetSaved?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -532,6 +539,13 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
   reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
   reviewErrNoSubtype: 'Publicação precisa de um formato: escolha o formato da publicação no card (artigo, e-book, infográfico, etc.) e tente de novo.',
+  targetTitle: 'Prazo do destino (opcional)',
+  targetVenueLabel: 'Destino (revista, evento, newsletter)',
+  targetDateLabel: 'Data-alvo',
+  targetSave: 'Salvar',
+  targetNoVenue: 'Destino não informado',
+  targetAtRisk: 'O prazo da curadoria passa da data-alvo do destino. Combine com a curadoria.',
+  targetSaved: 'Prazo do destino salvo',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

@@ -69,8 +69,8 @@ test('C. o card_write leva a acao ao helper e a tira do portao write_board', () 
     /const RPC_DECIDES = new Set\(\[\.\.\.ROLE_ACTIONS, "submit_for_curation"\]\);\s+if \(!RPC_DECIDES\.has\(params\.action\) && !\(await canV4\(sb, member\.id, "write_board"\)\)\)/,
     'submit_for_curation nao passa pelo canV4(write_board)');
   const b = cardBranch();
-  assert.match(b, /^if \(params\.action === "submit_for_curation"\) \{\s+const res = await submitForCurationAndReadState\(sb, params\.card_id\);/,
-    'o ramo chama o helper');
+  assert.match(b, /^if \(params\.action === "submit_for_curation"\) \{\s+const tgt = await setCurationTargetIfGiven\(sb, params\.card_id, params\.target_venue, params\.target_date\);\s+if \(tgt\) \{[\s\S]*?\}\s+const res = await submitForCurationAndReadState\(sb, params\.card_id\);/,
+    'o ramo chama o helper (depois de gravar o prazo do destino, #2621)');
   assert.doesNotMatch(b, /canV4\(/, 'o ramo nao tem portao de autoridade proprio');
   assert.match(b, /if \(res\.error\) \{[\s\S]*?buildSemanticError\(\{ tool: "card_write", semantic_domain: dom, code: res\.errorCode!, message: res\.error,/,
     'a recusa da RPC volta com a mensagem e o codigo classificado');

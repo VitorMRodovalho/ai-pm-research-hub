@@ -48,6 +48,8 @@ const REVIEW_ERRORS: Array<[RegExp, string]> = [
   [/Waiver requires a reason/i, 'reviewErrWaiverReason'],
   [/^Decision must be|desconhecido|Subtipo so existe/i, 'reviewErrInvalid'],
   [/^Publicação precisa de exatamente um formato/i, 'reviewErrNoSubtype'],
+  [/can only be set before publication/i, 'reviewErrStale'],
+  [/^Target venue too long/i, 'reviewErrInvalid'],
 ];
 const reviewErrorKey = (message: string | undefined): string | null => {
   const m = message || '';
@@ -129,6 +131,40 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   // #2624: publicacao so se grava com o formato. Escolher 'publicacao' abre o seletor de formato e
   // so o formato escolhido dispara a gravacao (a RPC recusa publicacao sem formato).
   const [pendingPublication, setPendingPublication] = useState(false);
+  // #2621: prazo do destino (opcional), gravado por set_curation_target e visto pela curadoria
+  const [targetVenue, setTargetVenue] = useState('');
+  const [targetDate, setTargetDate] = useState('');
+  const [targetSaved, setTargetSaved] = useState<{ venue: string; date: string }>({ venue: '', date: '' });
+  const [savingTarget, setSavingTarget] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    setTargetVenue(''); setTargetDate(''); setTargetSaved({ venue: '', date: '' });
+    if (!item.is_portfolio_item) return;
+    const sb = getSb();
+    if (!sb) return;
+    sb.from('board_items').select('curation_target_venue, curation_target_date').eq('id', item.id).maybeSingle()
+      .then(({ data }: any) => {
+        if (!alive || !data) return;
+        const v = data.curation_target_venue || ''; const d = data.curation_target_date || '';
+        setTargetVenue(v); setTargetDate(d); setTargetSaved({ venue: v, date: d });
+      });
+    return () => { alive = false; };
+  }, [item.id, item.is_portfolio_item]);
+  const saveTarget = async () => {
+    const sb = getSb();
+    if (!sb) return;
+    setSavingTarget(true);
+    try {
+      const { error } = await sb.rpc('set_curation_target', { p_item_id: item.id, p_venue: targetVenue || null, p_date: targetDate || null });
+      if (error) throw error;
+      setTargetSaved({ venue: targetVenue, date: targetDate });
+      (window as any).toast?.(i18n.targetSaved || 'Prazo do destino salvo', 'success');
+    } catch (err: any) {
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o prazo do destino'), 'error');
+    } finally {
+      setSavingTarget(false);
+    }
+  };
   const chooseArtifactType = (type: string | null) => {
     if (type === 'publicacao' && classif?.type !== 'publicacao') { setPendingPublication(true); return; }
     setPendingPublication(false);
@@ -1201,6 +1237,52 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 )}
               </div>
             )}
+
+            {/* #2621: prazo do destino (opcional), antes da publicacao */}
+            {needsCuration && ['draft', 'peer_review', 'leader_review', 'curation_pending'].includes(item.curation_status || '') && (() => {
+              const canEditTarget = isLeader || isCardAssignee;
+              const dueLocal = item.curation_due_at
+                ? new Date(item.curation_due_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+                : null;
+              const atRisk = !!(targetSaved.date && dueLocal && dueLocal > targetSaved.date);
+              const fmtD = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR');
+              if (!canEditTarget && !targetSaved.venue && !targetSaved.date) return null;
+              return (
+                <section className="mt-2 space-y-1" aria-labelledby={`target-title-${item.id}`}>
+                  <h4 id={`target-title-${item.id}`} className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
+                    {i18n.targetTitle || 'Prazo do destino (opcional)'}
+                  </h4>
+                  {canEditTarget ? (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <label className="flex flex-col text-[11px] text-[var(--text-secondary)] grow min-w-[10rem]">
+                        {i18n.targetVenueLabel || 'Destino (revista, evento, newsletter)'}
+                        <input type="text" maxLength={200} value={targetVenue} onChange={(e) => setTargetVenue(e.target.value)}
+                          className="mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)]" />
+                      </label>
+                      <label className="flex flex-col text-[11px] text-[var(--text-secondary)]">
+                        {i18n.targetDateLabel || 'Data-alvo'}
+                        <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
+                          className="mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)]" />
+                      </label>
+                      <button type="button" onClick={saveTarget}
+                        disabled={savingTarget || (targetVenue === targetSaved.venue && targetDate === targetSaved.date)}
+                        className="min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent disabled:opacity-50 cursor-pointer">
+                        {savingTarget ? '...' : (i18n.targetSave || 'Salvar')}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[12px] text-[var(--text-primary)]">
+                      {targetSaved.venue || (i18n.targetNoVenue || 'Destino não informado')}{targetSaved.date ? ` · ${fmtD(targetSaved.date)}` : ''}
+                    </p>
+                  )}
+                  {atRisk && (
+                    <p role="status" className="text-[12px] text-amber-800 bg-amber-50 rounded px-2 py-1">
+                      {'⚠ '}{i18n.targetAtRisk || 'O prazo da curadoria passa da data-alvo do destino. Combine com a curadoria.'}
+                    </p>
+                  )}
+                </section>
+              );
+            })()}
 
             {/* ── Curation Pipeline Visual ── */}
             {item.curation_status && item.curation_status !== 'draft' && (
