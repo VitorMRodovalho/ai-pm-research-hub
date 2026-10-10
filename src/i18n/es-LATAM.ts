@@ -4031,7 +4031,7 @@ const esLATAM: Record<string, string> = {
   'privacy.s6ret.row5.retention': '5 años',
   'privacy.s6ret.row5.after': 'Anonimización del actor',
   'privacy.s6ret.row6.data': 'Candidaturas',
-  'privacy.s6ret.row6.retention': '5 años después de la decisión sobre la candidatura',
+  'privacy.s6ret.row6.retention': '2 años después de la decisión sobre la candidatura (1 año si la persona desistió)',
   'privacy.s6ret.row6.after': 'Anonimización',
   'privacy.s6ret.row7.data': 'Notificaciones',
   'privacy.s6ret.row7.retention': '6 meses después de lectura',
