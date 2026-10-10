@@ -8061,20 +8061,26 @@ function curationSubmitErrorCode(error: { code?: string; message: string }): str
 // lider) => nomeia o envio; card em curadoria => prazo e QUANTOS pareceristas (quem sao fica de fora, #2227).
 // Leitura que falha vira aviso, nunca uma acao inventada.
 async function curationNextActions(sb: Sb, cardId: string, card: any, warnings: string[]): Promise<string[]> {
-  const status = card?.curation_status ?? null;
+  if (!card) { warnings.push("curation: card não lido; a próxima ação da curadoria não pôde ser calculada."); return []; }
+  const status = card.curation_status ?? null;
+  const prazo = card.curation_due_at
+    ? new Date(card.curation_due_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    : null;
   if (status === "draft" || status === "leader_review") {
     const { data, error } = await sb.rpc("get_artifact_classification", { p_item_id: cardId });
     if (error) { warnings.push(`curation: ${error.message}`); return []; }
     if (data?.needs_curation !== true) return [];
-    return [`card_write action='submit_for_curation' card_id=${cardId}: enviar a curadoria (artefato publicavel ainda nao enviado; mover para a coluna 'review' NAO envia; quem envia: lider de tribo ou governanca)`];
+    return [`Este card é artefato publicável e AINDA NÃO foi enviado à curadoria. A coluna 'review' não envia; só card_write action='submit_for_curation' card_id=${cardId} envia (líder de tribo ou governança; se a regra recusar, repasse a mensagem ao usuário). Confirme com o usuário antes de enviar.`];
   }
   if (status === "curation_pending") {
+    const head = `Em curadoria${prazo ? `, prazo do parecer ${prazo}` : ""}.`;
     const { data, error } = await sb.from("curation_reviewer_assignments").select("review_round").eq("board_item_id", cardId).is("released_at", null);
-    if (error) { warnings.push(`curation: ${error.message}`); return [`Em curadoria${card?.curation_due_at ? ` ate ${card.curation_due_at}` : ""}: aguardar o parecer`]; }
+    if (error) { warnings.push(`curation: ${error.message}`); return [`${head} Pareceristas: não consegui ler. Nada a enviar: aguarde o parecer.`]; }
     const rows = (data ?? []) as Array<{ review_round: number }>;
-    const round = rows.length > 0 ? Math.max(...rows.map((r) => r.review_round)) : null;
+    if (rows.length === 0) return [`${head} Pareceristas designados não visíveis para você ou ainda não designados. Nada a enviar: aguarde o parecer.`];
+    const round = Math.max(...rows.map((r) => r.review_round));
     const n = rows.filter((r) => r.review_round === round).length;
-    return [`Em curadoria${card?.curation_due_at ? ` ate ${card.curation_due_at}` : ""}: ${n} parecerista(s) designado(s)${round ? ` na rodada ${round}` : ""}; aguardar o parecer (o aviso da decisao chega ao autor e a lideranca)`];
+    return [`${head} ${n} parecerista(s) na rodada ${round}. Nada a enviar: aguarde o parecer (autor e liderança são avisados da decisão).`];
   }
   return [];
 }

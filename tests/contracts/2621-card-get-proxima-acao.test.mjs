@@ -36,19 +36,29 @@ test('A. as acoes da curadoria entram no envelope do card_get', () => {
 test('B. publicavel ainda nao enviado => o envio e nomeado', () => {
   const h = helper();
   assert.match(h,
-    /if \(status === "draft" \|\| status === "leader_review"\) \{\s+const \{ data, error \} = await sb\.rpc\("get_artifact_classification", \{ p_item_id: cardId \}\);[\s\S]*?if \(data\?\.needs_curation !== true\) return \[\];\s+return \[`card_write action='submit_for_curation' card_id=\$\{cardId\}:/);
+    /if \(status === "draft" \|\| status === "leader_review"\) \{\s+const \{ data, error \} = await sb\.rpc\("get_artifact_classification", \{ p_item_id: cardId \}\);[\s\S]*?if \(data\?\.needs_curation !== true\) return \[\];\s+return \[`Este card é artefato publicável e AINDA NÃO foi enviado à curadoria\. A coluna 'review' não envia; só card_write action='submit_for_curation' card_id=\$\{cardId\} envia/);
 });
 
 test('C. em curadoria => prazo e quantos pareceristas, sem identidade', () => {
   const h = helper();
   assert.match(h,
-    /if \(status === "curation_pending"\) \{\s+const \{ data, error \} = await sb\.from\("curation_reviewer_assignments"\)\.select\("review_round"\)\.eq\("board_item_id", cardId\)\.is\("released_at", null\);/);
+    /if \(status === "curation_pending"\) \{\s+const head = [^\n]+\n\s+const \{ data, error \} = await sb\.from\("curation_reviewer_assignments"\)\.select\("review_round"\)\.eq\("board_item_id", cardId\)\.is\("released_at", null\);/);
   assert.doesNotMatch(h, /reviewer_id/, 'nenhuma identidade de parecerista');
-  assert.match(h, /\$\{n\} parecerista\(s\) designado\(s\)/);
+  assert.match(h, /const n = rows\.filter\(\(r\) => r\.review_round === round\)\.length;/, 'conta so a rodada atual');
+  assert.match(h, /if \(rows\.length === 0\) return \[`\$\{head\} Pareceristas designados não visíveis para você ou ainda não designados\./,
+    'lista vazia (RLS ou sem designacao) nao vira "0 pareceristas"');
+  assert.match(h, /\$\{n\} parecerista\(s\) na rodada \$\{round\}/);
 });
 
 test('D. leitura que falha vira aviso, nunca acao inventada', () => {
   const h = helper();
-  assert.match(h, /if \(error\) \{ warnings\.push\(`curation: \$\{error\.message\}`\); return \[\]; \}/,
+  assert.match(h, /if \(!card\) \{ warnings\.push\("curation: card não lido/, 'card ilegivel: aviso');
+  assert.match(h, /if \(error\) \{ warnings\.push\(`curation: \$\{error\.message\}`\); return \[\]; \}\s+if \(data\?\.needs_curation/,
     'classificacao ilegivel: nenhuma acao de envio');
+  assert.match(h, /if \(error\) \{ warnings\.push\(`curation: \$\{error\.message\}`\); return \[`\$\{head\} Pareceristas: não consegui ler\./,
+    'designacoes ilegiveis: aviso e mensagem sem contagem');
+});
+
+test('E. o prazo sai como data no fuso de Brasilia, nao como timestamp cru', () => {
+  assert.match(helper(), /new Date\(card\.curation_due_at\)\.toLocaleDateString\("pt-BR", \{ timeZone: "America\/Sao_Paulo" \}\)/);
 });
