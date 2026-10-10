@@ -31569,6 +31569,19 @@ export type Database = {
         Returns: Json
       }
       admin_send_member_access: { Args: { p_member_id: string }; Returns: Json }
+      admin_send_one_off_message: {
+        Args: {
+          p_application_id?: string
+          p_body?: string
+          p_email?: string
+          p_language?: string
+          p_member_id?: string
+          p_name?: string
+          p_subject?: string
+          p_theme?: string
+        }
+        Returns: Json
+      }
       admin_set_ingestion_source_policy: {
         Args: {
           p_allow_apply: boolean
@@ -33457,6 +33470,10 @@ export type Database = {
       }
       get_member_comms_card: {
         Args: { p_person_id?: string; p_query?: string }
+        Returns: Json
+      }
+      get_member_communications: {
+        Args: { p_limit?: number; p_member_id: string }
         Returns: Json
       }
       get_member_cycle_xp: { Args: { p_member_id: string }; Returns: Json }
