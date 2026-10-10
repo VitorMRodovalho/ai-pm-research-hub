@@ -49,6 +49,10 @@ const PROVEDOR_GLOBAL = /^(?:gmail|hotmail|outlook|live|msn|yahoo|ymail|aol|gmx|
 const RE_EMAIL = /(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@((?:[A-Za-z0-9-]{1,63}\.){1,8}[A-Za-z]{2,24})(?![A-Za-z0-9-])/g;
 const LOCAL_DE_SISTEMA = /^(?:no-?reply|do-?not-?reply|donotreply|noreply\+.*|mailer-daemon|postmaster)$/i;
 
+// O noreply do GitHub e um dominio exato. Comparar por IGUALDADE, e nao por sufixo: `endsWith` aceitaria
+// `xusers.noreply.github.com`, que e outro dominio (alerta do CodeQL na #2673).
+export const noreplyDoGithub = (dominio) => dominio === 'users.noreply.github.com';
+
 export function emailsPessoais(texto) {
   const achados = [];
   for (const m of texto.matchAll(RE_EMAIL)) {
@@ -56,7 +60,7 @@ export function emailsPessoais(texto) {
     const dominio = m[1].toLowerCase();
     if (LOCAL_DE_SISTEMA.test(local)) continue;
     if (/(^|\.)(example\.(com|org|net)|invalid|test|example|localhost|local)$/.test(dominio)) continue;
-    if (dominio.endsWith('users.noreply.github.com')) continue;
+    if (noreplyDoGithub(dominio)) continue;
     if (!DOMINIOS_DE_CONSUMO.has(dominio) && !PROVEDOR_GLOBAL.test(dominio)) continue;
     achados.push(m.index);
   }

@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import {
-  detectar, controlePositivo, julgar, corpoDoAviso, impressao, emailsPessoais, telefones, coletar,
+  detectar, controlePositivo, julgar, corpoDoAviso, impressao, emailsPessoais, telefones, coletar, noreplyDoGithub,
 } from '../../scripts/tracker-pii-scan.mjs';
 
 const SCRIPT = readFileSync('scripts/tracker-pii-scan.mjs', 'utf8');
@@ -52,6 +52,12 @@ test('e-mail: so dominio de consumo, com as exclusoes de sistema', () => {
   for (const t of [`noreply${A}gmail.com`, `x${A}example.com`, `x${A}empresa.invalid`, `123+bot${A}users.noreply.github.com`, `pessoa${A}pmigo.org.br`]) {
     assert.equal(emailsPessoais(t).length, 0, `nao conta: ${t.replace(/^[^@]+/, '<local>')}`);
   }
+});
+
+test('o noreply do GitHub e o dominio EXATO, nao um sufixo', () => {
+  assert.equal(noreplyDoGithub('users.noreply.github.com'), true);
+  assert.equal(noreplyDoGithub('xusers.noreply.github.com'), false, 'sem o ponto e outro dominio');
+  assert.equal(noreplyDoGithub('users.noreply.github.com.evil.com'), false, 'prefixo nao basta');
 });
 
 test('telefone: formatado conta; sem formatacao so com contexto ou em lista; exclusoes valem', () => {
@@ -116,7 +122,8 @@ test('o corpo do aviso leva contagem e link, nunca o dado', () => {
   const email = emailDeConsumo('fulano.x');
   const no = { id: 'NO1', url: 'https://github.com/o/r/issues/7', body: `contato ${email} tel (62) 90000-0000`, classe: 'issue' };
   const corpo = corpoDoAviso(julgar([no], new Map()));
-  assert.ok(corpo.includes('https://github.com/o/r/issues/7'), 'o link do item vai');
+  const itens = corpo.split('\n').filter((l) => l.startsWith('- '));
+  assert.deepEqual(itens, ['- https://github.com/o/r/issues/7'], 'o link do item vai, como linha propria da lista');
   assert.ok(!corpo.includes(email) && !/90000/.test(corpo), 'nem o e-mail nem o telefone vao');
   assert.match(corpo, /e-mail pessoal 1, telefone formatado 1/);
 });
