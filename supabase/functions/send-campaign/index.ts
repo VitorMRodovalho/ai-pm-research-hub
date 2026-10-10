@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
 import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
+import { renderFreeform, resolveReplyTo } from '../_shared/freeform-message.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -67,6 +68,18 @@ Deno.serve(async (req) => {
 
     const tmpl = send.campaign_templates
     if (!tmpl) return json({ error: 'Template not found' }, 404)
+
+    // #2586: reply-to pelo tema do envio (ou do template); sem reply-to no tema, o padrão da plataforma.
+    // A resposta da pessoa chega a uma caixa que alguém lê, e não ao remetente técnico.
+    const themeSlug: string | null = send.theme ?? tmpl.theme ?? null
+    const [{ data: themeRow }, { data: defaultReply }] = await Promise.all([
+      themeSlug
+        ? sb.from('campaign_themes').select('reply_to').eq('slug', themeSlug).maybeSingle()
+        : Promise.resolve({ data: null }),
+      sb.from('platform_settings').select('value').eq('key', 'campaign_default_reply_to').maybeSingle(),
+    ])
+    const replyTo = resolveReplyTo(themeRow?.reply_to, typeof defaultReply?.value === 'string' ? defaultReply.value : null)
+    const isFreeform = send.audience_filter?.freeform === true
 
     // #2580: teto diário do hub, lido do banco (site_config, chave email_daily_cap), contra o que o hub
     // enviou hoje (notificações e campanhas). Ao bater no teto, os destinatários ficam pending_throttled e
@@ -167,7 +180,9 @@ Deno.serve(async (req) => {
     const addressOf = (r: { member_id: string | null; external_email: string | null }) =>
       r.member_id && memberMap[r.member_id] ? memberMap[r.member_id].email : r.external_email
     const pendingRows = recipients.filter((r) => !r.delivered && !r.unsubscribed)
-    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff)
+    // #2586: a mensagem avulsa de corpo livre não é transacional e oferece descadastro no rodapé; ela respeita
+    // o descadastro como a campanha. O avulso transacional (acesso, entrevista) segue só com a supressão.
+    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff || isFreeform)
     if (suppressedSet === null) {
       await sb.from('campaign_sends').update({ status: 'throttled', error_log: 'suppression_unreadable' }).eq('id', sendId)
       return json({ error: 'suppression_unreadable', send_id: sendId }, 503)
@@ -236,6 +251,24 @@ Deno.serve(async (req) => {
       let html = tmpl.body_html[langKey] || tmpl.body_html['pt'] || ''
       let text = tmpl.body_text[langKey] || tmpl.body_text['pt'] || ''
 
+      // #2586: corpo livre. O texto do admin é escapado e vira parágrafos; o aviso de privacidade só vai a
+      // quem é externo. Não passa pelo laço {{key}} abaixo, que injeta valores crus no HTML.
+      if (isFreeform) {
+        const fv = (send.audience_filter?.variables ?? {}) as Record<string, unknown>
+        const rendered = renderFreeform({
+          subject: String(fv.subject ?? ''),
+          body: String(fv.body ?? ''),
+          recipientName: memberName,
+          isExternal: !r.member_id,
+          templateSubject: tmpl.subject[langKey] || tmpl.subject['pt'] || '{{subject}}',
+          templateHtml: html,
+          templateText: text,
+        })
+        subject = rendered.subject
+        html = rendered.html
+        text = rendered.text
+      }
+
       // #2130: a pagina abre no idioma de quem recebeu; o POST de um clique (RFC 8058) vai para a mesma URL.
       const unsubLang = langKey === 'en' ? 'en-US' : langKey === 'es' ? 'es-LATAM' : 'pt-BR'
       const unsubUrl = `${platformUrl}/unsubscribe?token=${r.unsubscribe_token}&lang=${unsubLang}`
@@ -254,7 +287,7 @@ Deno.serve(async (req) => {
 
       // Transactional one-off support: render {{key}} placeholders from
       // audience_filter.variables (used by campaign_send_one_off RPC).
-      const oneOffVars = (send.audience_filter?.variables ?? {}) as Record<string, unknown>
+      const oneOffVars = (isFreeform ? {} : (send.audience_filter?.variables ?? {})) as Record<string, unknown>
       for (const [k, v] of Object.entries(oneOffVars)) {
         const needle = `{{${k}}}`
         const replacement = String(v ?? '')
@@ -273,6 +306,7 @@ Deno.serve(async (req) => {
           text,
           headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
           tracking: { open: true, click: true },
+          ...(replyTo ? { reply_to: replyTo } : {}),
         }
         console.log('[campaign] sending to:', finalTo[0], 'from:', from)
 

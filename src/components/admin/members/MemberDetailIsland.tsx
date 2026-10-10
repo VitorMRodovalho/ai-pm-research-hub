@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../../i18n/usePageI18n';
+import MemberCommunicationsPanel from './MemberCommunicationsPanel';
 import { ArrowLeft, Edit2, Save, X, Loader2, Award, Calendar, BookOpen, Shield, Trophy, ChevronDown, ChevronRight } from 'lucide-react';
 import { loadChapters, type Chapter } from '../../../lib/chapters';
 
@@ -75,7 +76,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'cycles' | 'gamification' | 'attendance' | 'publications' | 'audit'>('cycles');
+  const [activeTab, setActiveTab] = useState<'cycles' | 'gamification' | 'attendance' | 'publications' | 'comms' | 'audit'>('cycles');
 
   // Edit form state
   const [editRole, setEditRole] = useState('');
@@ -193,6 +194,7 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     { key: 'gamification' as const, label: 'Gamificacao' },
     { key: 'attendance' as const, label: 'Presenca' },
     { key: 'publications' as const, label: 'Publicacoes' },
+    { key: 'comms' as const, label: t('comp.memberDetail.comms.tab', 'Comunicações') },
     { key: 'audit' as const, label: 'Auditoria' },
   ];
 
@@ -546,6 +548,9 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
           </div>
         </div>
       )}
+
+      {/* Tab: Comunicacoes (#2586) */}
+      {activeTab === 'comms' && <MemberCommunicationsPanel memberId={memberId} />}
 
       {/* Tab: Auditoria */}
       {activeTab === 'audit' && (
