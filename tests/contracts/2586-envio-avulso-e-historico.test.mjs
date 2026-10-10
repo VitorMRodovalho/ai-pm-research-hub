@@ -49,10 +49,29 @@ test('limite diário por quem envia, lido da configuração', () => {
   assert.match(body, /IF v_sent_today >= v_limit THEN\s+RAISE EXCEPTION/);
 });
 
-test('e-mail de membro vira o membro; de fora vira pessoa externa com envio + 1 ano; domínio reservado é recusado', () => {
+test('e-mail estrito (sem "<", vírgula ou aspas) e domínio reservado recusado', () => {
+  assert.match(SEND(), /IF length\(v_email\) > 254 OR v_email !~ '\^\[a-z0-9\._%\+-\]\+@\[a-z0-9-\]\+\(\\\.\[a-z0-9-\]\+\)\+\$' OR v_email ~\* c_reserved_domain THEN\s+RAISE EXCEPTION/);
+});
+
+test('e-mail de membro vira o membro sem apagar o nome digitado; de fora vira pessoa externa com envio + 1 ano', () => {
   const body = SEND();
-  assert.match(body, /IF v_email !~ '[^']+' OR v_email ~\* c_reserved_domain THEN\s+RAISE EXCEPTION/);
-  assert.match(body, /IF v_member_id IS NOT NULL THEN\s+v_email := NULL;\s+v_kind := 'member';\s+ELSIF v_kind = 'external' THEN\s+v_person_id := public\._external_person_upsert\(v_email, v_name, 'campaign_one_off', v_send_id, current_date \+ 365\);/);
+  // variáveis próprias: SELECT INTO sem linha zeraria v_name
+  assert.match(body, /SELECT m\.id, m\.name, lower\(btrim\(m\.email\)\) INTO v_m_id, v_m_name, v_m_email\s+FROM public\.members m/);
+  assert.match(body, /IF v_m_id IS NOT NULL THEN\s+v_member_id := v_m_id;\s+v_name := v_m_name;\s+v_email := NULL;\s+v_kind := 'member';\s+ELSIF v_kind = 'external' THEN\s+v_person_id := public\._external_person_upsert\(v_email, v_name, 'campaign_one_off', v_send_id, current_date \+ 365\);/);
+  assert.match(body, /v_name := NULLIF\(left\(btrim\(regexp_replace\(coalesce\(p_name, ''\), '\[\[:cntrl:\]\]', '', 'g'\)\), 120\), ''\);/);
+});
+
+test('endereço suprimido é recusado antes de existir envio (descadastro conta só para externo)', () => {
+  const body = SEND();
+  assert.match(body, /IF cardinality\(public\.email_suppressed_among\(ARRAY\[COALESCE\(v_email, v_m_email\)\], v_member_id IS NULL\)\) > 0 THEN\s+RAISE EXCEPTION 'Recipient address is suppressed'/);
+  assert.ok(body.indexOf('email_suppressed_among') < body.indexOf('INSERT INTO public.campaign_sends'));
+});
+
+test('limite por endereço externo, somando quem envia, e trava por quem envia', () => {
+  const body = SEND();
+  assert.match(body, /IF v_ext_day >= COALESCE\(\(v_ext_limits->>'per_day'\)::int, 1\)\s+OR v_ext_month >= COALESCE\(\(v_ext_limits->>'per_30_days'\)::int, 3\) THEN\s+RAISE EXCEPTION 'Per-address limit/);
+  assert.match(body, /PERFORM pg_advisory_xact_lock\(hashtext\('one_off_sender:' \|\| v_caller::text\)\);/);
+  assert.ok(body.indexOf('pg_advisory_xact_lock') < body.indexOf('INTO v_sent_today'));
 });
 
 test('sem segunda aprovação, com quem enviou registrado; marca de corpo livre no envio', () => {
@@ -70,8 +89,10 @@ test('a resposta não devolve nome nem e-mail resolvido (o upsert não verifica 
 
 test('histórico: manage_member ou manage_platform; sem corpo da mensagem', () => {
   const body = fnBody('get_member_communications');
-  assert.match(body, /IF v_caller IS NULL OR NOT \(public\.can_by_member\(v_caller, 'manage_member'\)\s+OR public\.can_by_member\(v_caller, 'manage_platform'\)\) THEN\s+RAISE EXCEPTION/);
+  assert.match(body, /v_platform := v_caller IS NOT NULL AND public\.can_by_member\(v_caller, 'manage_platform'\);\s+IF v_caller IS NULL OR NOT \(public\.can_by_member\(v_caller, 'manage_member'\) OR v_platform\) THEN\s+RAISE EXCEPTION/);
   assert.doesNotMatch(body, /'body'|body_html|body_text/);
+  // o assunto digitado pela gestão só para quem tem manage_platform
+  assert.match(body, /THEN CASE WHEN v_platform THEN cs\.audience_filter->'variables'->>'subject' END/);
   assert.match(body, /WHERE cr\.member_id = p_member_id/);
 });
 
@@ -105,8 +126,13 @@ test('EF: reply-to do tema ou do padrão vai no payload', () => {
   assert.match(EF, /\.\.\.\(replyTo \? \{ reply_to: replyTo \} : \{\}\),/);
 });
 
-test('EF: a mensagem de corpo livre respeita o descadastro', () => {
-  assert.match(EF, /suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| isFreeform\)/);
+test('EF: o corpo livre a externo respeita o descadastro; a membro, só a supressão', () => {
+  assert.match(EF, /const freeformToExternal = isFreeform && recipients\.some\(\(r\) => !r\.member_id\)/);
+  assert.match(EF, /suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| freeformToExternal\)/);
+});
+
+test('EF: no corpo livre, valor de {member.name} e afins entra escapado no HTML', () => {
+  assert.match(EF, /html = html\.split\(k\)\.join\(isFreeform \? escapeHtml\(v\) : v\)/);
 });
 
 test('telas chamam as RPCs com portão', () => {

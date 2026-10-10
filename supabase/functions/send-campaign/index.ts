@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
 import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
-import { renderFreeform, resolveReplyTo } from '../_shared/freeform-message.ts'
+import { escapeHtml, renderFreeform, resolveReplyTo } from '../_shared/freeform-message.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -180,9 +180,10 @@ Deno.serve(async (req) => {
     const addressOf = (r: { member_id: string | null; external_email: string | null }) =>
       r.member_id && memberMap[r.member_id] ? memberMap[r.member_id].email : r.external_email
     const pendingRows = recipients.filter((r) => !r.delivered && !r.unsubscribed)
-    // #2586: a mensagem avulsa de corpo livre não é transacional e oferece descadastro no rodapé; ela respeita
-    // o descadastro como a campanha. O avulso transacional (acesso, entrevista) segue só com a supressão.
-    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff || isFreeform)
+    // #2586: a mensagem avulsa de corpo livre a um EXTERNO oferece descadastro no rodapé e o respeita; a um membro
+    // ela é administrativa (o membro não recebe o link) e segue só a supressão, como o avulso transacional.
+    const freeformToExternal = isFreeform && recipients.some((r) => !r.member_id)
+    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff || freeformToExternal)
     if (suppressedSet === null) {
       await sb.from('campaign_sends').update({ status: 'throttled', error_log: 'suppression_unreadable' }).eq('id', sendId)
       return json({ error: 'suppression_unreadable', send_id: sendId }, 503)
@@ -280,8 +281,9 @@ Deno.serve(async (req) => {
         ['{platform.url}', platformUrl],
         ['{unsubscribe_url}', unsubUrl],
       ]
+      // #2586: no corpo livre, um "{member.name}" digitado no texto já escapado não pode trazer HTML cru de volta
       for (const [k, v] of vars) {
-        html = html.split(k).join(v)
+        html = html.split(k).join(isFreeform ? escapeHtml(v) : v)
         text = text.split(k).join(v)
       }
 

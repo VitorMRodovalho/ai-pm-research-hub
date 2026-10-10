@@ -2,7 +2,7 @@
 //
 // O corpo é TEXTO digitado no admin. Ele nunca entra cru no HTML: é escapado e quebrado em parágrafos. As
 // variáveis do envio avulso comum ({{key}}) entram cruas no HTML do template, e por isso o corpo livre NÃO passa
-// por aquele laço.
+// por aquele laço; e o laço de chave simples ({member.name}, ...) escapa o valor quando o envio é corpo livre.
 //
 // O template tem um bloco que só o destinatário externo recebe (o aviso de privacidade, art. 9 da LGPD):
 //   HTML:  <!--EXTERNO--> ... <!--/EXTERNO-->
@@ -58,6 +58,7 @@ export function renderFreeform(i: FreeformInput): { subject: string; html: strin
 
 /** Reply-to do envio: o do tema; sem ele, o padrão da plataforma; sem os dois, nenhum. */
 export function resolveReplyTo(themeReplyTo: string | null | undefined, defaultReplyTo: string | null | undefined): string | null {
-  const ok = (v: string | null | undefined) => (typeof v === 'string' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v.trim()) ? v.trim() : null)
+  // estrito: o reply-to vai num cabeçalho; "<", vírgula ou aspas abririam outro destinatário
+  const ok = (v: string | null | undefined) => (typeof v === 'string' && /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(v.trim()) && v.trim().length <= 254 ? v.trim() : null)
   return ok(themeReplyTo) ?? ok(defaultReplyTo)
 }

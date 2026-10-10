@@ -45,10 +45,13 @@ test('assunto não carrega quebra de linha (cabeçalho de e-mail)', () => {
 });
 
 test('reply-to: o do tema; sem ele, o padrão; endereço inválido é ignorado', () => {
-  assert.equal(resolveReplyTo('tema@pmigo.org.br', 'padrao@pmigo.org.br'), 'tema@pmigo.org.br');
-  assert.equal(resolveReplyTo(null, 'padrao@pmigo.org.br'), 'padrao@pmigo.org.br');
-  assert.equal(resolveReplyTo('nao é email', 'padrao@pmigo.org.br'), 'padrao@pmigo.org.br');
+  assert.equal(resolveReplyTo('tema@example.org', 'padrao@example.org'), 'tema@example.org');
+  assert.equal(resolveReplyTo(null, 'padrao@example.org'), 'padrao@example.org');
+  assert.equal(resolveReplyTo('nao é email', 'padrao@example.org'), 'padrao@example.org');
   assert.equal(resolveReplyTo(null, null), null);
+  // estrito: um endereço com "<" ou vírgula abriria outro destinatário no cabeçalho
+  assert.equal(resolveReplyTo('x<alvo@example.org>', 'padrao@example.org'), 'padrao@example.org');
+  assert.equal(resolveReplyTo('a@example.org, c@example.org', null), null);
 });
 
 test('auxiliares: primeiro nome e parágrafos', () => {

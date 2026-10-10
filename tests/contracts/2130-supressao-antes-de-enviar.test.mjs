@@ -59,11 +59,11 @@ test('D. avisos: suprimido nao sai, e sem leitura a rodada nao envia', () => {
   assert.ok(s.indexOf('suppressedAmong(sb') < s.indexOf('const orderedRecipients'), 'a supressao tem de ser lida antes de ordenar e enviar');
 });
 
-// #2586: o avulso de corpo livre (isFreeform) respeita o descadastro como a campanha; o avulso transacional nao.
+// #2586: o avulso de corpo livre a EXTERNO respeita o descadastro como a campanha; a membro e o transacional, nao.
 test('E. campanha: descadastro fora do avulso, suppressed_at, e sem leitura volta para a fila', () => {
   const s = ef('send-campaign');
   assert.match(s, /const isOneOff = send\.audience_filter\?\.one_off === true/);
-  assert.match(s, /const suppressedSet = await suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| isFreeform\)\s+if \(suppressedSet === null\) \{\s+await sb\.from\('campaign_sends'\)\.update\(\{ status: 'throttled', error_log: 'suppression_unreadable' \}\)\.eq\('id', sendId\)\s+return json\(\{ error: 'suppression_unreadable', send_id: sendId \}, 503\)/);
+  assert.match(s, /const suppressedSet = await suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| freeformToExternal\)\s+if \(suppressedSet === null\) \{\s+await sb\.from\('campaign_sends'\)\.update\(\{ status: 'throttled', error_log: 'suppression_unreadable' \}\)\.eq\('id', sendId\)\s+return json\(\{ error: 'suppression_unreadable', send_id: sendId \}, 503\)/);
   assert.match(s, /if \(suppressedIds\.size > 0\) \{\s+await sb\.from\('campaign_recipients'\)\.update\(\{ suppressed_at: new Date\(\)\.toISOString\(\) \}\)\.in\('id', \[\.\.\.suppressedIds\]\)/);
   assert.match(s, /if \(r\.unsubscribed \|\| r\.delivered\) continue\s+if \(suppressedIds\.has\(r\.id\)\) continue/);
   assert.ok(s.indexOf('suppressedAmong(sb') < s.indexOf("fetch('https://api.resend.com/emails'"), 'a supressao tem de ser lida antes do envio');

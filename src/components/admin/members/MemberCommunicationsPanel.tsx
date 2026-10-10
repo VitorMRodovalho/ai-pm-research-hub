@@ -23,10 +23,15 @@ interface Row {
   deferred_until: string | null;
 }
 
-function statusOf(r: Row): 'complained' | 'bounced' | 'suppressed' | 'clicked' | 'opened' | 'delivered' | 'deferred' | 'pending' {
+type Status = 'complained' | 'bounced' | 'suppressed' | 'unsubscribed' | 'failed' | 'clicked' | 'opened' | 'delivered' | 'deferred' | 'pending';
+
+// A ordem decide: o que impede a entrega vem antes de qualquer sinal de leitura, e "falhou" nunca vira "na fila".
+function statusOf(r: Row): Status {
   if (r.complained_at) return 'complained';
   if (r.bounced_at) return 'bounced';
   if (r.suppressed_at) return 'suppressed';
+  if (r.unsubscribed) return 'unsubscribed';
+  if (!r.delivered && r.send_status === 'failed') return 'failed';
   if (r.clicked_at) return 'clicked';
   if (r.first_opened_at) return 'opened';
   if (r.delivered) return 'delivered';
@@ -36,6 +41,7 @@ function statusOf(r: Row): 'complained' | 'bounced' | 'suppressed' | 'clicked' |
 
 const STATUS_STYLE: Record<string, string> = {
   complained: 'bg-red-50 text-red-700', bounced: 'bg-red-50 text-red-700', suppressed: 'bg-amber-50 text-amber-800',
+  unsubscribed: 'bg-amber-50 text-amber-800', failed: 'bg-red-50 text-red-700',
   clicked: 'bg-emerald-50 text-emerald-700', opened: 'bg-emerald-50 text-emerald-700', delivered: 'bg-sky-50 text-sky-700',
   deferred: 'bg-amber-50 text-amber-800', pending: 'bg-gray-100 text-gray-700',
 };
@@ -88,10 +94,10 @@ export default function MemberCommunicationsPanel({ memberId }: { memberId: stri
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-[.72rem] uppercase tracking-wide text-[var(--text-muted)]">
-                <th className="px-4 py-2">{t('comp.memberDetail.comms.when', 'Quando')}</th>
-                <th className="px-4 py-2">{t('comp.memberDetail.comms.theme', 'Tema')}</th>
-                <th className="px-4 py-2">{t('comp.memberDetail.comms.subject', 'Assunto')}</th>
-                <th className="px-4 py-2">{t('comp.memberDetail.comms.status', 'Situação')}</th>
+                <th scope="col" className="px-4 py-2">{t('comp.memberDetail.comms.when', 'Quando')}</th>
+                <th scope="col" className="px-4 py-2">{t('comp.memberDetail.comms.theme', 'Tema')}</th>
+                <th scope="col" className="px-4 py-2">{t('comp.memberDetail.comms.subject', 'Assunto')}</th>
+                <th scope="col" className="px-4 py-2">{t('comp.memberDetail.comms.status', 'Situação')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-default)]">

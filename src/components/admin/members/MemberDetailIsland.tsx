@@ -345,18 +345,18 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
 
       {/* Tab Bar */}
       <div className="flex gap-0 border-b border-[var(--border-default)] mb-4">
-        {tabs.map(t => (
+        {tabs.map(tab => (
           <button
-            key={t.key}
-            onClick={() => setActiveTab(t.key)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
             className={`px-4 py-2.5 text-sm font-semibold border-0 bg-transparent cursor-pointer transition-colors ${
-              activeTab === t.key
+              activeTab === tab.key
                 ? 'text-teal-500 border-b-2 border-teal-500'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
-            style={activeTab === t.key ? { borderBottom: '2px solid #14B8A6' } : {}}
+            style={activeTab === tab.key ? { borderBottom: '2px solid #14B8A6' } : {}}
           >
-            {t.label}
+            {tab.label}
           </button>
         ))}
       </div>
