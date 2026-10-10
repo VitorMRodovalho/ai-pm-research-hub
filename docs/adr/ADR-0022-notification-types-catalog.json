@@ -3,8 +3,8 @@
   "$id": "ADR-0022-notification-types-catalog",
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
-  "version": "W1.9",
-  "updated_at": "2026-10-09",
+  "version": "W1.10",
+  "updated_at": "2026-10-10",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into the single weekly digest, Monday 12:00 UTC (09:00 Brasilia), via generate_weekly_member_digest_cron. Default for most types.",
@@ -257,6 +257,10 @@
     "management_daily_digest": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2580 rule 4 (2026-10-08): one email per day at 08:00 America/Sao_Paulo for members with manage_platform, built by _management_daily_digest_cron() from the platform alert sweep and the operational notices that stayed in-app (system_alert from email_cap_reached and request_affiliation_recheck, unlinked_accounts_detected). JSON body rendered by a dedicated builder in send-notification-email."
+    },
+    "tracker_pii_found": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "Varredura diaria de dado pessoal no tracker publico (10/10/2026, scripts/tracker-pii-scan.mjs). Vai a quem tem manage_platform, so com contagem e links, uma vez por achado novo. Imediato de proposito: o dado segue publico enquanto ninguem age, e no digest semanal o e-mail chegaria em ate sete dias."
     }
   },
   "implementation": {
