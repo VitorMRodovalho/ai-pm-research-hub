@@ -30642,6 +30642,10 @@ export type Database = {
         Args: { p_item_id: string }
         Returns: boolean
       }
+      _booking_guest_is_internal: {
+        Args: { p_email: string }
+        Returns: boolean
+      }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
       _campaign_email_unsubscribed: {
         Args: { p_email: string }
@@ -32904,7 +32908,7 @@ export type Database = {
       get_board_tags: { Args: { p_board_id: string }; Returns: Json }
       get_board_timeline: { Args: { p_board_id: string }; Returns: Json }
       get_booking_exception_queue: {
-        Args: { p_include_resolved?: boolean }
+        Args: { p_include_hidden?: boolean; p_include_resolved?: boolean }
         Returns: {
           actionable: boolean
           app_status: string
@@ -32914,10 +32918,13 @@ export type Database = {
           calendar_event_id: string
           first_seen_at: string
           guest_email: string
+          hidden: boolean
+          is_past: boolean
           last_outcome: string
           last_scheduled_at: string
           last_seen_at: string
           resolved_at: string
+          suggestions: Json
           suppressed: boolean
         }[]
       }
@@ -34319,6 +34326,14 @@ export type Database = {
           p_drive_folder_id: string
           p_drive_folder_name?: string
           p_drive_folder_url: string
+        }
+        Returns: Json
+      }
+      link_booking_to_application: {
+        Args: {
+          p_application_id: string
+          p_calendar_event_id: string
+          p_guest_email: string
         }
         Returns: Json
       }

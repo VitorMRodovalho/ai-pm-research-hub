@@ -375,6 +375,23 @@ const SEL_I18N = {
     correctRefusal: t('admin.selection.bookingExceptionsCorrectRefusal', lang),
     suppressed: t('admin.selection.bookingExceptionsSuppressed', lang),
     empty: t('admin.selection.bookingExceptionsEmpty', lang),
+    hiddenCount: t('admin.selection.bookingExceptionsHiddenCount', lang),
+    showHidden: t('admin.selection.bookingExceptionsShowHidden', lang),
+    hideHidden: t('admin.selection.bookingExceptionsHideHidden', lang),
+    past: t('admin.selection.bookingExceptionsPast', lang),
+    scheduledFor: t('admin.selection.bookingExceptionsScheduledFor', lang),
+    suggestions: t('admin.selection.bookingExceptionsSuggestions', lang),
+    noSuggestion: t('admin.selection.bookingExceptionsNoSuggestion', lang),
+    bySecondaryEmail: t('admin.selection.bookingExceptionsBySecondaryEmail', lang),
+    byName: t('admin.selection.bookingExceptionsByName', lang),
+    objectivePending: t('admin.selection.bookingExceptionsObjectivePending', lang),
+    link: t('admin.selection.bookingExceptionsLink', lang),
+    confirmLink: t('admin.selection.bookingExceptionsConfirmLink', lang),
+    linked: t('admin.selection.bookingExceptionsLinked', lang),
+    linkError: t('admin.selection.bookingExceptionsLinkError', lang),
+    linkForbidden: t('admin.selection.bookingExceptionsLinkForbidden', lang),
+    linkAria: t('admin.selection.bookingExceptionsLinkAria', lang),
+    nameHigh: t('admin.selection.bookingExceptionsNameHigh', lang),
   },
 };
 ---
@@ -442,13 +459,19 @@ const SEL_I18N = {
              quando não há nada a fazer: a fila só aparece se existir ao menos uma
              reserva pendente, para não virar mais um painel que se aprende a
              ignorar. -->
-        <div id="booking-exceptions" class="hidden mb-4 bg-[var(--surface-card)] border border-amber-200 rounded-xl p-3">
-          <div class="flex flex-wrap items-baseline gap-2 mb-2">
-            <h2 id="booking-exceptions-title" class="text-sm font-bold text-navy">—</h2>
-            <span id="booking-exceptions-hint" class="text-[11px] text-[var(--text-secondary)]"></span>
+        <!-- #2671: recolhido por padrão, agrupado por pessoa; o título conta só o que é acionável hoje. -->
+        <details id="booking-exceptions" class="group hidden mb-4 bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-3">
+          <summary class="flex flex-wrap items-center gap-2 cursor-pointer list-none rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600">
+            <span aria-hidden="true" class="inline-block text-[var(--text-secondary)] transition-transform group-open:rotate-90">▸</span>
+            <h2 id="booking-exceptions-title" class="text-sm font-bold text-navy m-0" tabindex="-1">—</h2>
+            <span id="booking-exceptions-hidden-badge" class="hidden px-1.5 py-0.5 rounded text-[11px] bg-gray-100 text-gray-600"></span>
+          </summary>
+          <p id="booking-exceptions-hint" class="mt-2 mb-0 text-[12px] text-[var(--text-secondary)]"></p>
+          <div class="mt-2 flex items-center gap-2">
+            <button type="button" id="booking-exceptions-toggle-hidden" aria-pressed="false" class="min-h-[32px] text-[12px] font-semibold text-teal-700 bg-transparent border-0 cursor-pointer underline"></button>
           </div>
-          <div id="booking-exceptions-body" class="overflow-x-auto"></div>
-        </div>
+          <div id="booking-exceptions-body" aria-live="polite" class="mt-2 sm:max-h-[420px] sm:overflow-y-auto"></div>
+        </details>
 
         <!-- #1590: aviso de modo leitura. É o INVERSO de `data-sel-requires` — some para quem
              escreve. Sem o aviso, a tela sem botão de ação parece quebrada, não restrita. -->
@@ -1977,44 +2000,161 @@ const SEL_I18N = {
     cycle_closed:       { label: () => T.bookingExceptions?.outcomeCycleClosed ?? 'Ciclo fechado',         cls: 'bg-gray-100 text-gray-600' },
   };
 
+  // #2671: a RPC já tira e-mail de membro e marca o que está oculto (suprimido ou passado). A tela agrupa por pessoa,
+  // mostra as ocultas só a pedido e oferece o vínculo da reserva com a candidatura sugerida. Buscar e desenhar são
+  // passos separados: armar a confirmação, alternar as ocultas e o tempo de desarme só redesenham o que já veio.
+  let bookingRows: any[] = [];
+  let bookingShowHidden = false;
+  let bookingPendingLink: string | null = null;
+  let bookingDisarmTimer: ReturnType<typeof setTimeout> | null = null;
+  let bookingLinking = false;
+  let bookingLoadSeq = 0;
+  let bookingOpenedOnce = false;
+
+  function disarmBookingLink() {
+    bookingPendingLink = null;
+    if (bookingDisarmTimer) { clearTimeout(bookingDisarmTimer); bookingDisarmTimer = null; }
+  }
+
+  async function linkBooking(eventId: string, guestEmail: string, applicationId: string) {
+    if (bookingLinking) return;
+    bookingLinking = true;
+    const i18n = T.bookingExceptions ?? {};
+    renderBookingExceptions();
+    try {
+      const { data, error } = await sb.rpc('link_booking_to_application', {
+        p_calendar_event_id: eventId, p_guest_email: guestEmail, p_application_id: applicationId,
+      });
+      disarmBookingLink();
+      // a RPC recusa por RAISE; o sucesso é só o corpo que diz success, nunca a ausência de erro de transporte
+      if (error || data?.error || data?.success !== true) {
+        console.warn('[booking-link]', error ?? data);
+        toast(error?.code === '42501' ? (i18n.linkForbidden ?? 'Sem permissão para vincular.') : (i18n.linkError ?? 'Não foi possível vincular.'), 'error');
+      } else {
+        toast(i18n.linked ?? 'Reserva vinculada: a entrevista foi registrada na candidatura.', 'success');
+      }
+    } finally {
+      bookingLinking = false;
+    }
+    await loadBookingExceptions();
+    (document.getElementById('booking-exceptions-title') as HTMLElement | null)?.focus();
+  }
+
   async function loadBookingExceptions() {
     if (!sb) return;
-    const card = document.getElementById('booking-exceptions');
-    const body = document.getElementById('booking-exceptions-body');
-    if (!card || !body) return;
-    const { data, error } = await sb.rpc('get_booking_exception_queue', { p_include_resolved: false });
+    const card = document.getElementById('booking-exceptions') as HTMLDetailsElement | null;
+    if (!card) return;
+    const seq = ++bookingLoadSeq;
+    const { data, error } = await sb.rpc('get_booking_exception_queue', { p_include_resolved: false, p_include_hidden: true });
+    if (seq !== bookingLoadSeq) return; // uma busca mais nova já respondeu ou vai responder
     // Sem autoridade (a RPC levanta exceção) ou sem fila → o cartão some. Um
     // painel vazio permanente é ruído; a ausência aqui É a informação.
-    if (error || !Array.isArray(data) || data.length === 0) { card.classList.add('hidden'); return; }
+    if (error || !Array.isArray(data) || data.length === 0) { bookingRows = []; card.classList.add('hidden'); return; }
+    bookingRows = data;
+    const actionable = data.filter((r: any) => r.actionable).length;
+    // abre sozinho só na primeira carga e só se há o que fazer; depois quem decide é quem usa
+    if (!bookingOpenedOnce) { bookingOpenedOnce = true; if (actionable > 0) card.open = true; }
+    card.classList.toggle('border-amber-300', actionable > 0);
+    card.classList.toggle('border-[var(--border-default)]', actionable === 0);
+    renderBookingExceptions();
+    card.classList.remove('hidden');
+  }
 
+  function renderBookingExceptions() {
+    const body = document.getElementById('booking-exceptions-body');
+    if (!body) return;
+    const data = bookingRows;
     const i18n = T.bookingExceptions ?? {};
     const actionable = data.filter((r: any) => r.actionable).length;
+    const hiddenCount = data.filter((r: any) => r.hidden).length;
     const titleEl = document.getElementById('booking-exceptions-title');
     const hintEl = document.getElementById('booking-exceptions-hint');
-    if (titleEl) titleEl.textContent = `${i18n.title ?? 'Reservas de entrevista sem candidatura'} (${actionable}/${data.length})`;
+    const badge = document.getElementById('booking-exceptions-hidden-badge');
+    if (titleEl) titleEl.textContent = `${i18n.title ?? 'Reservas de entrevista sem candidatura'} (${actionable})`;
     if (hintEl) hintEl.textContent = i18n.hint ?? '';
+    if (badge) {
+      badge.classList.toggle('hidden', hiddenCount === 0);
+      badge.textContent = (i18n.hiddenCount ?? '{n} ocultas').replace('{n}', String(hiddenCount));
+    }
+    const toggle = document.getElementById('booking-exceptions-toggle-hidden');
+    if (toggle) {
+      toggle.classList.toggle('hidden', hiddenCount === 0);
+      toggle.setAttribute('aria-pressed', String(bookingShowHidden));
+      toggle.textContent = (bookingShowHidden ? (i18n.hideHidden ?? 'Esconder as {n} ocultas') : (i18n.showHidden ?? 'Mostrar as {n} ocultas'))
+        .replace('{n}', String(hiddenCount));
+      toggle.onclick = () => { bookingShowHidden = !bookingShowHidden; disarmBookingLink(); renderBookingExceptions(); };
+    }
 
-    body.innerHTML = `<table class="w-full text-[12px]">
-      <thead><tr class="text-left text-[var(--text-secondary)]">
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colGuest ?? 'Convidado')}</th>
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colOutcome ?? 'Desfecho')}</th>
-        <th class="py-1 pr-3 font-semibold text-right">${esc(i18n.colAttempts ?? 'Tentativas')}</th>
-        <th class="py-1 pr-3 font-semibold">${esc(i18n.colLastSeen ?? 'Última')}</th>
-      </tr></thead><tbody>${data.map((r: any) => {
-        const style = BOOKING_OUTCOME_STYLE[r.last_outcome] ?? { label: () => r.last_outcome, cls: 'bg-gray-100 text-gray-600' };
-        const who = r.applicant_name ? `${esc(r.guest_email)} <span class="text-[var(--text-secondary)]">— ${esc(r.applicant_name)} (${esc(r.app_status ?? '')})</span>` : esc(r.guest_email);
-        const tag = r.actionable
-          ? `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">${esc(i18n.actionable ?? 'acionável')}</span>`
-          : `<span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">${esc(i18n.correctRefusal ?? 'recusa correta')}</span>`;
-        const muted = r.suppressed ? `<span class="ml-1 text-[10px] text-[var(--text-muted)]">${esc(i18n.suppressed ?? 'log cortado')}</span>` : '';
-        return `<tr class="border-t border-[var(--border-default)]">
-          <td class="py-1 pr-3">${who}</td>
-          <td class="py-1 pr-3"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${style.cls}">${esc(style.label())}</span>${tag}</td>
-          <td class="py-1 pr-3 text-right font-mono">${esc(String(r.attempts))}${muted}</td>
-          <td class="py-1 pr-3">${esc(r.last_seen_at ? new Date(r.last_seen_at).toLocaleDateString('pt-BR') : '—')}</td>
-        </tr>`;
-      }).join('')}</tbody></table>`;
-    card.classList.remove('hidden');
+    const rows = data.filter((r: any) => bookingShowHidden || !r.hidden);
+    // uma linha por pessoa (e-mail do convidado), com as reservas dela embaixo
+    const groups = new Map<string, any[]>();
+    for (const r of rows) {
+      const k = String(r.guest_email || '').toLowerCase();
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k)!.push(r);
+    }
+    const fmt = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—');
+    const band = (score: number) => (score >= 0.5 ? (i18n.nameHigh ?? 'nome muito parecido') : (i18n.byName ?? 'nome parecido'));
+
+    body.innerHTML = groups.size === 0
+      ? `<p class="text-[12px] text-[var(--text-secondary)]">${esc(i18n.empty ?? 'Nada precisa de ação hoje.')}</p>`
+      : [...groups.entries()].map(([emailKey, items]) => {
+        const first = items[0];
+        const who = first.applicant_name
+          ? `${esc(first.guest_email)} <span class="text-[var(--text-secondary)]">— ${esc(first.applicant_name)} (${esc(first.app_status ?? '')})</span>`
+          : esc(first.guest_email);
+        const events = items.map((r: any) => {
+          const style = BOOKING_OUTCOME_STYLE[r.last_outcome] ?? { label: () => r.last_outcome, cls: 'bg-gray-100 text-gray-600' };
+          const tags = [
+            `<span class="px-1.5 py-0.5 rounded text-[11px] font-bold ${style.cls}">${esc(style.label())}</span>`,
+            r.actionable ? `<span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800">${esc(i18n.actionable ?? 'precisa de ação')}</span>` : '',
+            r.last_outcome !== 'no_application' ? `<span class="px-1.5 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700">${esc(i18n.correctRefusal ?? 'recusada corretamente')}</span>` : '',
+            r.suppressed ? `<span class="text-[11px] text-[var(--text-muted)]">${esc(i18n.suppressed ?? 'registro incompleto')}</span>` : '',
+            r.is_past ? `<span class="text-[11px] text-[var(--text-muted)]">${esc(i18n.past ?? 'já passou')}</span>` : '',
+          ].filter(Boolean).join(' ');
+          const sugg = Array.isArray(r.suggestions) ? r.suggestions : [];
+          const suggHtml = r.last_outcome !== 'no_application' ? '' : (sugg.length === 0
+            ? `<div class="text-[12px] text-[var(--text-muted)] mt-1">${esc(i18n.noSuggestion ?? 'Nenhuma candidatura parecida.')}</div>`
+            : `<div class="mt-1 flex flex-col gap-1"><span class="text-[12px] font-semibold text-[var(--text-secondary)]">${esc(i18n.suggestions ?? 'Candidatura provável')}:</span>${sugg.map((g: any) => {
+                const key = `${r.calendar_event_id}|${g.application_id}|${r.guest_email}`;
+                const reason = g.reason === 'secondary_email' ? (i18n.bySecondaryEmail ?? 'e-mail secundário') : band(Number(g.score ?? 0));
+                const armed = bookingPendingLink === key;
+                const label = armed
+                  ? (i18n.confirmLink ?? 'Confirmar: vincular a {name}').replace('{name}', String(g.applicant_name ?? ''))
+                  : (i18n.link ?? 'Vincular');
+                const aria = (i18n.linkAria ?? 'Vincular a reserva de {email} à candidatura de {name}')
+                  .replace('{email}', String(r.guest_email ?? '')).replace('{name}', String(g.applicant_name ?? ''));
+                const btn = !g.objective_done
+                  ? `<span class="text-[12px] text-[var(--text-muted)]">${esc(i18n.objectivePending ?? 'fase objetiva pendente')}</span>`
+                  : `<button type="button" data-link-booking="${esc(key)}" aria-label="${esc(armed ? label : aria)}" ${bookingLinking ? 'disabled' : ''} class="min-h-[32px] px-3 rounded text-[12px] font-semibold border-0 cursor-pointer disabled:opacity-50 ${armed ? 'bg-red-600 text-white' : 'bg-navy text-white'}">${esc(label)}</button>`;
+                return `<div class="flex flex-wrap items-center gap-2 text-[12px]"><span>${esc(g.applicant_name ?? '')} <span class="text-[var(--text-muted)]">(${esc(g.status ?? '')} · ${esc(reason)})</span></span>${btn}</div>`;
+              }).join('')}</div>`);
+          return `<li class="py-1 border-t border-[var(--border-default)] first:border-t-0">
+            <div class="flex flex-wrap items-center gap-2 text-[12px]"><span class="text-[var(--text-secondary)]">${esc(i18n.scheduledFor ?? 'Reserva para')} ${esc(fmt(r.last_scheduled_at))}</span>${tags}</div>${suggHtml}</li>`;
+        }).join('');
+        return `<div class="py-2 border-t border-[var(--border-default)] first:border-t-0" data-guest="${esc(emailKey)}">
+          <div class="text-[12px]">${who}</div>
+          <ul class="list-none pl-3 m-0 mt-1">${events}</ul>
+        </div>`;
+      }).join('');
+
+    body.querySelectorAll('[data-link-booking]').forEach((el) => {
+      el.addEventListener('click', () => {
+        if (bookingLinking) return;
+        const key = (el as HTMLElement).dataset.linkBooking || '';
+        if (bookingPendingLink !== key) {
+          // primeiro clique só arma, no lugar e sem buscar de novo; desarma sozinho
+          disarmBookingLink();
+          bookingPendingLink = key;
+          bookingDisarmTimer = setTimeout(() => { disarmBookingLink(); renderBookingExceptions(); }, 6000);
+          renderBookingExceptions();
+          (body.querySelector(`[data-link-booking="${CSS.escape(key)}"]`) as HTMLElement | null)?.focus();
+          return;
+        }
+        const [eventId, appId, ...rest] = key.split('|');
+        linkBooking(eventId, rest.join('|'), appId);
+      });
+    });
   }
 
   function renderQuickStats() {

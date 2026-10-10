@@ -287,7 +287,9 @@ test('R4.3 behavioural: a fila de exceção é legível sem varrer admin_audit_l
     for (const r of data) {
       assert.ok(['no_application', 'status_not_allowed', 'cycle_closed', 'matched'].includes(r.last_outcome),
         `desfecho fora do vocabulário: ${r.last_outcome}`);
-      // `actionable` é a separação que o #1611 pede: só o buraco real.
-      assert.equal(r.actionable, r.last_outcome === 'no_application' && r.resolved_at === null);
+      // `actionable` é a separação que o #1611 pede: só o buraco real. Desde a #2671, só o que pede ação HOJE:
+      // suprimida (o poller parou de registrar) ou com horário passado sai da conta.
+      assert.equal(r.actionable,
+        r.last_outcome === 'no_application' && r.resolved_at === null && r.suppressed === false && r.is_past === false);
     }
   });
