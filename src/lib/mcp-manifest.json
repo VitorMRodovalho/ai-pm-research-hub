@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-09T05:07:33.540Z",
+  "generated_at": "2026-10-10T01:14:39.238Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -1558,7 +1558,7 @@
     },
     {
       "name": "submit_curation_review",
-      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.",
+      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft; the review stays in the curation record and in the decision notice to the author (not appended to the card). Requires participate_in_governance_review.",
       "domain": "board",
       "permission": "write",
       "is_sensitive": false
