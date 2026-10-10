@@ -153,7 +153,8 @@ test('#1812 DB: as politicas de delete estao cobertas de ponta a ponta', { skip:
   // caminho dedicado competition-purge-hourly.
   assert.deepEqual(
     cobertas.map(r => r.politica).sort(),
-    ['competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'visitor_leads/delete'],
+    // #2586/#2593: as duas politicas do executor external-contact-retention-daily
+    ['campaign_recipients/anonymize', 'competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'person_external_links/delete', 'visitor_leads/delete'],
   );
   // coberta exige as quatro condicoes, nao so job registrado
   for (const r of cobertas) {
