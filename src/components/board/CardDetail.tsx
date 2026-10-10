@@ -136,33 +136,42 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const [targetDate, setTargetDate] = useState('');
   const [targetSaved, setTargetSaved] = useState<{ venue: string; date: string }>({ venue: '', date: '' });
   const [savingTarget, setSavingTarget] = useState(false);
+  // so libera os campos depois de ler o valor gravado: a RPC grava os dois juntos, e salvar sobre uma
+  // leitura que falhou apagaria o prazo de verdade
+  const [targetLoaded, setTargetLoaded] = useState(false);
+  const targetItemRef = useRef(item.id);
+  targetItemRef.current = item.id;
   useEffect(() => {
     let alive = true;
-    setTargetVenue(''); setTargetDate(''); setTargetSaved({ venue: '', date: '' });
+    setTargetVenue(''); setTargetDate(''); setTargetSaved({ venue: '', date: '' }); setTargetLoaded(false);
     if (!item.is_portfolio_item) return;
     const sb = getSb();
     if (!sb) return;
     sb.from('board_items').select('curation_target_venue, curation_target_date').eq('id', item.id).maybeSingle()
-      .then(({ data }: any) => {
-        if (!alive || !data) return;
+      .then(({ data, error }: any) => {
+        if (!alive || error || !data) return;
         const v = data.curation_target_venue || ''; const d = data.curation_target_date || '';
-        setTargetVenue(v); setTargetDate(d); setTargetSaved({ venue: v, date: d });
+        setTargetVenue(v); setTargetDate(d); setTargetSaved({ venue: v, date: d }); setTargetLoaded(true);
       });
     return () => { alive = false; };
   }, [item.id, item.is_portfolio_item]);
   const saveTarget = async () => {
     const sb = getSb();
     if (!sb) return;
+    const savingFor = item.id;
+    const sent = { venue: targetVenue.trim(), date: targetDate };
     setSavingTarget(true);
     try {
-      const { error } = await sb.rpc('set_curation_target', { p_item_id: item.id, p_venue: targetVenue || null, p_date: targetDate || null });
+      const { error } = await sb.rpc('set_curation_target', { p_item_id: savingFor, p_venue: sent.venue || null, p_date: sent.date || null });
       if (error) throw error;
-      setTargetSaved({ venue: targetVenue, date: targetDate });
-      (window as any).toast?.(i18n.targetSaved || 'Prazo do destino salvo', 'success');
+      if (targetItemRef.current !== savingFor) return;
+      setTargetVenue(sent.venue); setTargetSaved(sent);
+      (window as any).toast?.(i18n.targetSaved || 'Destino da publicação salvo', 'success');
     } catch (err: any) {
-      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o prazo do destino'), 'error');
+      if (targetItemRef.current !== savingFor) return;
+      (window as any).toast?.(friendlyReviewError(err?.message, 'Erro ao salvar o destino da publicação'), 'error');
     } finally {
-      setSavingTarget(false);
+      if (targetItemRef.current === savingFor) setSavingTarget(false);
     }
   };
   const chooseArtifactType = (type: string | null) => {
@@ -1250,39 +1259,57 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
               const atRisk = !!(targetSaved.date && dueLocal && dueLocal > targetSaved.date);
               const fmtD = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR');
               if (!canEditTarget && !targetSaved.venue && !targetSaved.date) return null;
+              const dirty = targetVenue.trim() !== targetSaved.venue || targetDate !== targetSaved.date;
+              const inputCls = 'mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)] disabled:opacity-50';
               return (
                 <section className="mt-2 space-y-1" aria-labelledby={`target-title-${item.id}`}>
                   <h4 id={`target-title-${item.id}`} className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide">
-                    {i18n.targetTitle || 'Prazo do destino (opcional)'}
+                    {i18n.targetTitle || 'Destino da publicação (opcional)'}
                   </h4>
                   {canEditTarget ? (
-                    <div className="flex flex-wrap items-end gap-2">
-                      <label className="flex flex-col text-[11px] text-[var(--text-secondary)] grow min-w-[10rem]">
-                        {i18n.targetVenueLabel || 'Destino (revista, evento, newsletter)'}
-                        <input type="text" maxLength={200} value={targetVenue} onChange={(e) => setTargetVenue(e.target.value)}
-                          className="mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)]" />
-                      </label>
-                      <label className="flex flex-col text-[11px] text-[var(--text-secondary)]">
-                        {i18n.targetDateLabel || 'Data-alvo'}
-                        <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)}
-                          className="mt-0.5 px-2 py-1.5 border border-[var(--border-default)] rounded-lg text-[12px] bg-[var(--surface-input)] text-[var(--text-primary)]" />
-                      </label>
-                      <button type="button" onClick={saveTarget}
-                        disabled={savingTarget || (targetVenue === targetSaved.venue && targetDate === targetSaved.date)}
-                        className="min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent disabled:opacity-50 cursor-pointer">
-                        {savingTarget ? '...' : (i18n.targetSave || 'Salvar')}
-                      </button>
-                    </div>
+                    <>
+                      <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetHelp || 'Informe onde e até quando pretende publicar. A curadoria vê isso no quadro dela.'}</p>
+                      <div className="flex flex-wrap items-end gap-2">
+                        <label className="flex flex-col text-[11px] text-[var(--text-secondary)] grow min-w-[10rem]">
+                          {i18n.targetVenueLabel || 'Destino (revista, evento, newsletter)'}
+                          <input type="text" maxLength={200} autoComplete="off" value={targetVenue} disabled={!targetLoaded}
+                            onChange={(e) => setTargetVenue(e.target.value)} className={inputCls} />
+                        </label>
+                        <label className="flex flex-col text-[11px] text-[var(--text-secondary)]">
+                          {i18n.targetDateLabel || 'Data-alvo'}
+                          <input type="date" value={targetDate} disabled={!targetLoaded}
+                            onChange={(e) => setTargetDate(e.target.value)} className={inputCls} />
+                        </label>
+                        {targetDate && (
+                          <button type="button" onClick={() => setTargetDate('')} disabled={!targetLoaded}
+                            className="min-h-[36px] px-2 py-1.5 rounded-lg text-[11px] text-[var(--text-secondary)] bg-transparent border-0 underline cursor-pointer">
+                            {i18n.targetClearDate || 'Limpar data'}
+                          </button>
+                        )}
+                        <button type="button" onClick={saveTarget}
+                          disabled={!targetLoaded || savingTarget || !dirty}
+                          className="min-h-[36px] px-3 py-1.5 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent disabled:opacity-50 cursor-pointer">
+                          {savingTarget ? '...' : (i18n.targetSave || 'Salvar')}
+                        </button>
+                      </div>
+                    </>
                   ) : (
-                    <p className="text-[12px] text-[var(--text-primary)]">
-                      {targetSaved.venue || (i18n.targetNoVenue || 'Destino não informado')}{targetSaved.date ? ` · ${fmtD(targetSaved.date)}` : ''}
-                    </p>
+                    <>
+                      <p className="text-[12px] text-[var(--text-primary)]">
+                        {targetSaved.venue || (i18n.targetNoVenue || 'Destino não informado')}{' · '}{targetSaved.date ? fmtD(targetSaved.date) : (i18n.targetNoDate || 'sem data-alvo')}
+                      </p>
+                      <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetReadOnly || 'Só o líder ou o responsável pelo card edita.'}</p>
+                    </>
                   )}
-                  {atRisk && (
-                    <p role="status" className="text-[12px] text-amber-800 bg-amber-50 rounded px-2 py-1">
-                      {'⚠ '}{i18n.targetAtRisk || 'O prazo da curadoria passa da data-alvo do destino. Combine com a curadoria.'}
+                  {atRisk ? (
+                    <p role="alert" className="text-[12px] text-amber-800 bg-amber-50 rounded px-2 py-1">
+                      <span aria-hidden="true">{'⚠ '}</span>
+                      {(i18n.targetAtRisk || 'A curadoria vai até {due} e a data-alvo é {target}. Combine um novo prazo com a curadoria.')
+                        .replace('{due}', fmtD(dueLocal!)).replace('{target}', fmtD(targetSaved.date))}
                     </p>
-                  )}
+                  ) : (targetSaved.date && !dueLocal && (
+                    <p className="text-[11px] text-[var(--text-muted)]">{i18n.targetNoDueYet || 'O prazo da curadoria começa a contar quando o card entra na curadoria.'}</p>
+                  ))}
                 </section>
               );
             })()}
