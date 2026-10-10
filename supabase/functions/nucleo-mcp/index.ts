@@ -8087,6 +8087,34 @@ function curationSubmitErrorCode(error: { code?: string; message: string }): str
   return "invalid_input";
 }
 
+// #2621: proxima acao da curadoria para o card_get. Card publicavel ainda nao enviado (rascunho ou revisao do
+// lider) => nomeia o envio; card em curadoria => prazo e QUANTOS pareceristas (quem sao fica de fora, #2227).
+// Leitura que falha vira aviso, nunca uma acao inventada.
+async function curationNextActions(sb: Sb, cardId: string, card: any, warnings: string[]): Promise<string[]> {
+  if (!card) { warnings.push("curation: card não lido; a próxima ação da curadoria não pôde ser calculada."); return []; }
+  const status = card.curation_status ?? null;
+  const prazo = card.curation_due_at
+    ? new Date(card.curation_due_at).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    : null;
+  if (status === "draft" || status === "leader_review") {
+    const { data, error } = await sb.rpc("get_artifact_classification", { p_item_id: cardId });
+    if (error) { warnings.push(`curation: ${error.message}`); return []; }
+    if (data?.needs_curation !== true) return [];
+    return [`Este card é artefato publicável e AINDA NÃO foi enviado à curadoria. A coluna 'review' não envia; só card_write action='submit_for_curation' card_id=${cardId} envia (líder de tribo ou governança; se a regra recusar, repasse a mensagem ao usuário). Confirme com o usuário antes de enviar.`];
+  }
+  if (status === "curation_pending") {
+    const head = `Em curadoria${prazo ? `, prazo do parecer ${prazo}` : ""}.`;
+    const { data, error } = await sb.from("curation_reviewer_assignments").select("review_round").eq("board_item_id", cardId).is("released_at", null);
+    if (error) { warnings.push(`curation: ${error.message}`); return [`${head} Pareceristas: não consegui ler. Nada a enviar: aguarde o parecer.`]; }
+    const rows = (data ?? []) as Array<{ review_round: number }>;
+    if (rows.length === 0) return [`${head} Pareceristas designados não visíveis para você ou ainda não designados. Nada a enviar: aguarde o parecer.`];
+    const round = Math.max(...rows.map((r) => r.review_round));
+    const n = rows.filter((r) => r.review_round === round).length;
+    return [`${head} ${n} parecerista(s) na rodada ${round}. Nada a enviar: aguarde o parecer (autor e liderança são avisados da decisão).`];
+  }
+  return [];
+}
+
 async function submitForCurationAndReadState(sb: Sb, itemId: string): Promise<{ error?: string; errorCode?: string; state?: Record<string, unknown>; warnings: string[] }> {
   const { error } = await sb.rpc("submit_for_curation", { p_item_id: itemId });
   if (error) return { error: error.message, errorCode: curationSubmitErrorCode(error), warnings: [] };
@@ -9251,12 +9279,15 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       }
       const d0: any = dataOut.detail;
       const title = d0?.title ?? d0?.card?.title ?? null;
+      // #2621: a proxima acao da curadoria em linguagem de acao. Coluna e status de curadoria sao estados
+      // independentes; um agente le "Revisao" como "enviado" se ninguem disser o contrario.
+      const curationNext = await curationNextActions(sb, params.card_id, d0?.card ?? null, warnings);
       await logUsage(sb, member.id, "card_get", true, undefined, start);
       return semanticOk({
         data: dataOut,
         summary: `Card ${title ? `"${title}"` : params.card_id} (detail_level='${detail}')${Array.isArray(dataOut.checklist) ? ` · ${(dataOut.checklist as any[]).length} checklist` : ""}${Array.isArray(dataOut.comments) ? ` · ${(dataOut.comments as any[]).length} comentário(s)` : ""}.`,
         warnings,
-        next_actions: ["card_write: mutate this card", "card_checklist: manage its checklist", "card_comment: comment on it"],
+        next_actions: [...curationNext, "card_write: mutate this card", "card_checklist: manage its checklist", "card_comment: comment on it"],
         audit: { tool: "card_get", semantic_domain: dom, pii_level: "low", permission: "authenticated", source_tools: ["get_card_detail", "board_item_checklists", "list_card_comments", "get_card_timeline", detail === "full" ? "list_card_drive_files" : null, detail === "full" ? "get_card_full_history" : null], caller_member_id: member.id, gate_checked: "rls_can_see_item", resource_id: params.card_id, extra: { detail_level: detail } },
       });
     },
