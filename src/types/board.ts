@@ -150,10 +150,16 @@ export interface CurationReview {
   criteria_scores: RubricScore;
   feedback_notes: string | null;
   completed_at: string;
+  /** #2621: rodada do parecer (curation_review_log.review_round). */
+  review_round?: number;
 }
 
 export interface CurationHistory {
   reviews: CurationReview[];
+  /** #2621: cada envio a curadoria, com o prazo do parecer daquele envio. */
+  submissions?: { at: string; sla_deadline: string | null }[];
+  /** #2621: momento da aprovacao da curadoria, se houve. */
+  approved_at?: string | null;
   assignments: { reviewer_name: string; reviewer_id: string; round: number; assigned_at: string; sla_deadline: string | null }[];
   sla_config: { sla_days: number; reviewers_required: number; max_review_rounds: number; rubric_criteria: string[] } | Record<string, never>;
 }
@@ -396,6 +402,21 @@ export interface BoardI18n {
   reviewErrWaiverReason?: string;
   reviewErrInvalid?: string;
   reviewErrNoSubtype?: string;
+  curationTimelineTitle?: string;
+  tlSubmitted?: string;
+  tlDeadline?: string;
+  tlRound?: string;
+  tlReturned?: string;
+  tlRejected?: string;
+  tlFavorable?: string;
+  tlApproved?: string;
+  tlNow?: string;
+  tlAdjust?: string;
+  tlResubmit?: string;
+  tlCuration?: string;
+  tlDecision?: string;
+  tlPublication?: string;
+  tlResubmitHint?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -532,6 +553,21 @@ export const DEFAULT_I18N: BoardI18n = {
   reviewErrWaiverReason: 'Para dispensar o peer review, informe o motivo.',
   reviewErrInvalid: 'Opção inválida para esta etapa. Atualize a página e tente de novo.',
   reviewErrNoSubtype: 'Publicação precisa de um formato: escolha o formato da publicação no card (artigo, e-book, infográfico, etc.) e tente de novo.',
+  curationTimelineTitle: 'Linha do tempo do envio',
+  tlSubmitted: 'Enviado à curadoria',
+  tlDeadline: 'prazo do parecer',
+  tlRound: 'Rodada',
+  tlReturned: 'devolvido para ajuste',
+  tlRejected: 'não aprovado',
+  tlFavorable: 'parecer favorável',
+  tlApproved: 'Aprovado pela curadoria',
+  tlNow: 'agora',
+  tlAdjust: 'Ajuste do autor',
+  tlResubmit: 'Reenvio à curadoria',
+  tlCuration: 'Curadoria',
+  tlDecision: 'Decisão da curadoria',
+  tlPublication: 'Publicação',
+  tlResubmitHint: 'Depois de ajustar, envie de novo pelo botão de envio à curadoria deste card.',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

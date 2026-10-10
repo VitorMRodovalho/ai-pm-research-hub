@@ -58,7 +58,8 @@ const CASOS = [
   ['get_event_tags', 'RETURN; END IF;', 'RETURN QUERY'],
   ['get_event_tags_batch', 'RETURN; END IF;', 'RETURN QUERY'],
   ['get_initiative_drive_links', "RETURN jsonb_build_object('error', 'Initiative not found');", 'IF NOT public.rls_can_see_initiative(p_initiative_id)'],
-  ['get_item_curation_history', "RETURN jsonb_build_object('reviews', '[]'::jsonb, 'assignments', '[]'::jsonb, 'sla_config', '{}'::jsonb);", 'IF NOT public.rls_can_see_item(p_item_id)'],
+  // #2621: a resposta vazia ganhou 'submissions' e 'approved_at' (linha do tempo do envio)
+  ['get_item_curation_history', "RETURN jsonb_build_object('reviews', '[]'::jsonb, 'assignments', '[]'::jsonb, 'sla_config', '{}'::jsonb, 'submissions', '[]'::jsonb, 'approved_at', NULL);", 'IF NOT public.rls_can_see_item(p_item_id)'],
   ['get_mirror_target_boards', 'RETURN; END IF;', 'RETURN QUERY'],
   ['get_tribe_housekeeping', "RAISE EXCEPTION 'Not authorized'; END IF;", 'IF p_initiative_id IS NOT NULL THEN'],
   ['get_webinar_lifecycle', "RETURN '[]'::jsonb; END IF;", 'SELECT COALESCE(jsonb_agg(row_to_json(r)'],
