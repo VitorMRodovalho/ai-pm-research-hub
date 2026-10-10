@@ -14673,7 +14673,9 @@ export type Database = {
           artia_folder_id: number | null
           artia_synced_at: string | null
           created_at: string
+          deliverables_i18n: Json | null
           description: string | null
+          description_i18n: Json | null
           id: string
           join_policy: string
           kind: string
@@ -14692,7 +14694,9 @@ export type Database = {
           artia_folder_id?: number | null
           artia_synced_at?: string | null
           created_at?: string
+          deliverables_i18n?: Json | null
           description?: string | null
+          description_i18n?: Json | null
           id?: string
           join_policy?: string
           kind: string
@@ -14711,7 +14715,9 @@ export type Database = {
           artia_folder_id?: number | null
           artia_synced_at?: string | null
           created_at?: string
+          deliverables_i18n?: Json | null
           description?: string | null
+          description_i18n?: Json | null
           id?: string
           join_policy?: string
           kind?: string
@@ -20633,21 +20639,26 @@ export type Database = {
           authors: string[]
           board_item_id: string | null
           citation_count: number | null
+          collection_id: string | null
+          collection_position: number | null
           created_at: string | null
           cycle_code: string | null
           doi: string | null
           external_platform: string | null
           external_url: string | null
+          first_published_at: string | null
           id: string
           initiative_id: string | null
           is_featured: boolean | null
           is_published: boolean | null
           keywords: string[] | null
           language: string
+          license: string | null
           organization_id: string
           pdf_url: string | null
           publication_date: string | null
           publication_type: string
+          slug: string | null
           source_idea_id: string | null
           thumbnail_url: string | null
           title: string
@@ -20660,21 +20671,26 @@ export type Database = {
           authors: string[]
           board_item_id?: string | null
           citation_count?: number | null
+          collection_id?: string | null
+          collection_position?: number | null
           created_at?: string | null
           cycle_code?: string | null
           doi?: string | null
           external_platform?: string | null
           external_url?: string | null
+          first_published_at?: string | null
           id?: string
           initiative_id?: string | null
           is_featured?: boolean | null
           is_published?: boolean | null
           keywords?: string[] | null
           language?: string
+          license?: string | null
           organization_id?: string
           pdf_url?: string | null
           publication_date?: string | null
           publication_type?: string
+          slug?: string | null
           source_idea_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -20687,21 +20703,26 @@ export type Database = {
           authors?: string[]
           board_item_id?: string | null
           citation_count?: number | null
+          collection_id?: string | null
+          collection_position?: number | null
           created_at?: string | null
           cycle_code?: string | null
           doi?: string | null
           external_platform?: string | null
           external_url?: string | null
+          first_published_at?: string | null
           id?: string
           initiative_id?: string | null
           is_featured?: boolean | null
           is_published?: boolean | null
           keywords?: string[] | null
           language?: string
+          license?: string | null
           organization_id?: string
           pdf_url?: string | null
           publication_date?: string | null
           publication_type?: string
+          slug?: string | null
           source_idea_id?: string | null
           thumbnail_url?: string | null
           title?: string
@@ -20714,6 +20735,13 @@ export type Database = {
             columns: ["board_item_id"]
             isOneToOne: false
             referencedRelation: "board_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_publications_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "publication_collections"
             referencedColumns: ["id"]
           },
           {
@@ -20743,6 +20771,66 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "publication_ideas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      publication_collections: {
+        Row: {
+          collection_type: string
+          created_at: string
+          description: string | null
+          doi: string | null
+          first_published_at: string | null
+          id: string
+          initiative_id: string | null
+          is_published: boolean
+          license: string | null
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collection_type?: string
+          created_at?: string
+          description?: string | null
+          doi?: string | null
+          first_published_at?: string | null
+          id?: string
+          initiative_id?: string | null
+          is_published?: boolean
+          license?: string | null
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collection_type?: string
+          created_at?: string
+          description?: string | null
+          doi?: string | null
+          first_published_at?: string | null
+          id?: string
+          initiative_id?: string | null
+          is_published?: boolean
+          license?: string | null
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_collections_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_collections_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["initiative_id"]
           },
         ]
       }
@@ -30766,6 +30854,17 @@ export type Database = {
         Args: { p_chain_id: string; p_gate_kind: string }
         Returns: boolean
       }
+      _publication_slugify: { Args: { p_text: string }; Returns: string }
+      _purge_cron_job_run_details: {
+        Args: {
+          p_batch?: number
+          p_keep_days?: number
+          p_keep_failed_days?: number
+          p_keep_per_job?: number
+          p_max?: number
+        }
+        Returns: Json
+      }
       _reacceptance_disengage: {
         Args: {
           p_member_id: string
@@ -31702,6 +31801,10 @@ export type Database = {
           p_resource_id?: string
           p_resource_type?: string
         }
+        Returns: boolean
+      }
+      can_edit_initiative_public_profile: {
+        Args: { p_initiative_id: string }
         Returns: boolean
       }
       can_manage_card_checklist: {
@@ -33546,6 +33649,11 @@ export type Database = {
           member_count: number
         }[]
       }
+      get_public_publication: { Args: { p_slug: string }; Returns: Json }
+      get_public_publication_collection: {
+        Args: { p_slug: string }
+        Returns: Json
+      }
       get_public_publications: {
         Args: {
           p_cycle?: string
@@ -33851,6 +33959,15 @@ export type Database = {
           tribe_id: number
           video_duration: string
           video_url: string
+        }[]
+      }
+      get_tribe_public_profiles: {
+        Args: never
+        Returns: {
+          deliverables_i18n: Json
+          description_i18n: Json
+          slots: Json
+          tribe_id: number
         }[]
       }
       get_tribe_stats: { Args: { p_tribe_id: number }; Returns: Json }
@@ -36131,6 +36248,14 @@ export type Database = {
           p_status?: string
           p_title?: string
           p_visibility?: string
+        }
+        Returns: Json
+      }
+      update_initiative_public_profile: {
+        Args: {
+          p_deliverables_i18n?: Json
+          p_description_i18n?: Json
+          p_initiative_id: string
         }
         Returns: Json
       }

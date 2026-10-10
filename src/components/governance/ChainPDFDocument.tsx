@@ -14,7 +14,10 @@
  *   - Block-level: H2/H3/H4, P, LI, BLOCKQUOTE
  *   - Tables (p220 #273): <table>/<thead>/<tbody>/<tr>/<th>/<td> rendered as
  *     flex View rows with bold header row, padded cells, equal column widths.
- *     Rows kept atomic (wrap=false) so a row never splits across pages.
+ *     #2658: rows WRAP across pages (a row taller than the room left used to be
+ *     pushed whole to the next page, leaving a header with an empty body, and a
+ *     row taller than a page was clipped with its tail on no page at all). The
+ *     leading header rows are `fixed`, so they repeat on every page the table spans.
  *   - Inline: STRONG/B (bold), EM/I (italic), A (link com URL preservado),
  *     BR (newline)
  *   - Blockquote envolve parágrafos com border-left + indent
@@ -24,6 +27,7 @@
  *     heading-like styling) — deferred for follow-up.
  */
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
+import { fmtBrasilia } from './brasiliaTime';
 
 // #632 — diagramação institucional: logo do capítulo sede (PMI-GO) nos
 // instrumentos exportados. Compliance Policy Manual §8.3: logo do CAPÍTULO,
@@ -39,13 +43,52 @@ const CHAPTER_LOGO_SRC = typeof window !== 'undefined'
 // endereço do capítulo sede, não o domínio canônico da plataforma.
 const INSTITUTIONAL_HOST = 'nucleoia.pmigo.org.br';
 
-// Disable react-pdf default hyphenation (hyphen library) — em docs jurídicos
-// PT-BR queremos palavras inteiras: "Propriedade Intelectual" não "Pro-priedade".
-// Callback retorna array com 1 elemento = 0 split points = sem hifenização.
-Font.registerHyphenationCallback((word) => [word]);
+// #2658 — fonte Unicode embutida e auto-hospedada (public/fonts/dejavu, licença ao lado).
+// As 14 fontes-padrão do PDF (Helvetica etc.) só codificam WinAnsi e NÃO são embutidas:
+// `≥` saía como `e`, invertendo o sentido de um limiar. DejaVu Sans cobre latim,
+// setas, operadores matemáticos (≥ ≠ ≈), números circulados (① ②) e dingbats (✓ ✔).
+// Mesmo padrão do logo: react-pdf faz fetch(src) no navegador (connect-src 'self').
+export const PDF_FONT_FAMILY = 'DejaVuSans';
+const PDF_FONT_DIR = '/fonts/dejavu/';
+const fontSrc = (file: string) => (typeof window !== 'undefined'
+  ? new URL(PDF_FONT_DIR + file, window.location.href).href
+  : PDF_FONT_DIR + file);
+Font.register({
+  family: PDF_FONT_FAMILY,
+  fonts: [
+    { src: fontSrc('DejaVuSans.ttf'), fontWeight: 'normal', fontStyle: 'normal' },
+    { src: fontSrc('DejaVuSans-Bold.ttf'), fontWeight: 'bold', fontStyle: 'normal' },
+    { src: fontSrc('DejaVuSans-Oblique.ttf'), fontWeight: 'normal', fontStyle: 'italic' },
+    { src: fontSrc('DejaVuSans-BoldOblique.ttf'), fontWeight: 'bold', fontStyle: 'italic' },
+  ],
+});
+
+// Sem hifenização em palavras comuns: em docs jurídicos PT-BR queremos palavras inteiras
+// ("Propriedade Intelectual", não "Pro-priedade"). #2658: a exceção é o TOKEN LONGO
+// (URL, hash, identificador), que sem ponto de quebra vazava para a coluna vizinha e era
+// cortado na margem. Ele ganha pontos de quebra depois de / . ? & = _ # e, em trecho
+// corrido sem nenhum desses, a cada LONG_TOKEN_CHUNK caracteres. O react-pdf só quebra
+// linha em espaço ou nesses pontos, e marca a quebra com um hífen.
+const LONG_TOKEN = 24;
+const LONG_TOKEN_CHUNK = 16;
+export function splitLongToken(word: string): string[] {
+  if (word.length <= LONG_TOKEN) return [word];
+  const parts: string[] = [];
+  let current = '';
+  for (const ch of word) {
+    current += ch;
+    if ('/.?&=_#'.includes(ch) || current.length >= LONG_TOKEN_CHUNK) {
+      parts.push(current);
+      current = '';
+    }
+  }
+  if (current) parts.push(current);
+  return parts;
+}
+Font.registerHyphenationCallback(splitLongToken);
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica', color: '#1a1a1a' },
+  page: { padding: 40, fontSize: 10, fontFamily: PDF_FONT_FAMILY, color: '#1a1a1a' },
   draftBanner: {
     backgroundColor: '#fef3c7',
     borderTop: '2px solid #f59e0b',
@@ -213,23 +256,18 @@ function decodeEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
-// Substitui caracteres fora da encoding WinAnsi (Helvetica padrão) por
-// equivalentes Latin-1 ou ASCII. Necessário para arrows (→), emoji e dingbats
-// que aparecem nos docs governance mas não renderizam na fonte default do
-// @react-pdf/renderer. Mantém en/em-dash, smart quotes, bullet, ellipsis e
-// midpoint (todos em WinAnsi 0x80-0x9F).
+// #2658 — com a fonte Unicode embutida, setas, operadores e números circulados saem
+// como estão (antes eram trocados por equivalentes WinAnsi, e o que não tinha troca,
+// como `≥`, saía com outro glifo). Sobra o que a DejaVu Sans não tem: emoji colorido
+// (par substituto, removido), seletor de variação (invisível) e os dois emoji BMP mais
+// comuns nos documentos, trocados pelo dingbat equivalente que a fonte tem.
 function sanitizeText(text: string): string {
   return text
-    .replace(/→/g, '›')                                    // U+2192 → U+203A (single right angle, em WinAnsi)
-    .replace(/←/g, '‹')                                    // U+2190 → U+2039
-    .replace(/↔/g, '<->')                                  // U+2194 sem espaços — source provê spacing
-    .replace(/⇒/g, '›')                                    // U+21D2
-    .replace(/⇐/g, '‹')                                    // U+21D0
-    .replace(/[↑↓↕]/g, '|')                                // arrows verticais
-    .replace(/✓/g, '[OK]')                                 // U+2713 checkmark
-    .replace(/[✗✕]/g, '[X]')                              // U+2717/U+2715 cross
-    .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '')        // emoji surrogate pairs (📝 ⚠️ etc.)
-    .replace(/\s{2,}/g, ' ');                              // collapse any double spaces criados pelos replaces
+    .replace(/\u2705/g, '\u2714')                          // ✅ → ✔
+    .replace(/\u274C/g, '\u2716')                          // ❌ → ✖
+    .replace(/[\uFE0E\uFE0F]/g, '')                         // seletores de variação (⚠️ → ⚠)
+    .replace(/[\uD83C-\uDBFF][\uDC00-\uDFFF]/g, '')          // emoji fora do BMP (📝 etc.)
+    .replace(/\s{2,}/g, ' ');                              // collapse double spaces criados pelos replaces
 }
 
 function mergeAdjacent(segments: Segment[]): Segment[] {
@@ -292,8 +330,8 @@ function parseInlineSegments(html: string): Segment[] {
       }
     }
   }
-  // Apply char sanitization to each segment text (after merging) — converts
-  // arrows (→ → ›), emoji (📝 → ''), checkmarks (✓ → [OK]) etc. para Helvetica WinAnsi.
+  // Apply char sanitization to each segment text (after merging) — só o que a fonte
+  // embutida não cobre (emoji), ver sanitizeText.
   return mergeAdjacent(segments)
     .map((s) => ({ ...s, text: sanitizeText(s.text) }))
     .filter((s) => s.text.length > 0);
@@ -380,11 +418,8 @@ function parseHtml(html: string): Node[] {
 // Render helpers
 // ============================================================================
 
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
+// #2658 — fuso fixo de Brasília com rótulo (antes: fuso do navegador, sem rótulo).
+const fmtDate = fmtBrasilia;
 
 function thresholdLabel(t: string | number): string {
   if (t === 'all' || t === '"all"') return 'todos';
@@ -412,13 +447,20 @@ function renderSegments(segments: Segment[]) {
 }
 
 function renderTable(n: Extract<Node, { type: 'table' }>, key: string | number) {
+  // #2658 — a linha QUEBRA entre páginas (sem wrap={false}): o conteúdo longo continua
+  // na página seguinte em vez de ser empurrado inteiro ou cortado. Só as linhas de
+  // cabeçalho do TOPO da tabela são `fixed`, e repetem em cada página que ela ocupa;
+  // minPresenceAhead evita o cabeçalho sozinho no pé da página.
+  const leadingHeaderCount = n.rows.findIndex((r) => !r.isHeader);
+  const headerRows = leadingHeaderCount === -1 ? 0 : leadingHeaderCount;
   return (
     <View key={key} style={styles.tableContainer}>
       {n.rows.map((row, ri) => (
         <View
           key={`r-${ri}`}
           style={[styles.tableRow, row.isHeader ? styles.tableHeaderRow : undefined]}
-          wrap={false}
+          fixed={ri < headerRows}
+          minPresenceAhead={ri < headerRows ? 40 : undefined}
         >
           {row.cells.map((cell, ci) => (
             <View key={`c-${ri}-${ci}`} style={styles.tableCell}>
@@ -472,7 +514,7 @@ function renderContent(nodes: Node[]) {
         i++;
       }
       out.push(
-        <View key={`bq-${i}`} style={styles.blockquoteWrapper} wrap={false}>
+        <View key={`bq-${i}`} style={styles.blockquoteWrapper}>
           {group.map((g, j) => renderNode(g, `bq-${i}-${j}`))}
         </View>,
       );
@@ -599,8 +641,8 @@ export default function ChainPDFDocument({
           </View>
 
           {data.gates.map((gate) => (
-            <View key={gate.kind} style={styles.gateBlock} wrap={false}>
-              <Text style={styles.gateHeader}>
+            <View key={gate.kind} style={styles.gateBlock}>
+              <Text style={styles.gateHeader} minPresenceAhead={40}>
                 Gate {gate.order} · {gate.label}
               </Text>
               <Text style={styles.gateMeta}>
@@ -618,7 +660,7 @@ export default function ChainPDFDocument({
                           {s.signer_role} · {s.signer_chapter} · {s.signoff_type}
                         </Text>
                       </View>
-                      <View style={{ width: 140 }}>
+                      <View style={{ width: 175 }}>
                         <Text style={styles.signerDetail}>{fmtDate(s.signed_at)}</Text>
                         <Text style={styles.hashBlock}>hash: {s.signature_hash_short}</Text>
                       </View>

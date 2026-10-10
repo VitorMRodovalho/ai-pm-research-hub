@@ -12551,7 +12551,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       let data: any = null; let error: any = null; let source = "";
       switch (params.scope) {
         case "admin": ({ data, error } = await sb.rpc("get_admin_dashboard")); source = "get_admin_dashboard"; break;
-        case "annual_kpis": ({ data, error } = await sb.rpc("get_annual_kpis", { p_cycle: params.cycle ?? 4, p_year: params.year ?? 2026 })); source = "get_annual_kpis"; break;
+        case "annual_kpis": ({ data, error } = await sb.rpc("get_annual_kpis", { p_cycle: params.cycle ?? null, p_year: params.year ?? null })); source = "get_annual_kpis"; break;
         case "chapter":
           if (!params.chapter) return invalid("scope='chapter' requires chapter.");
           ({ data, error } = await sb.rpc("get_chapter_dashboard", { p_chapter: params.chapter })); source = "get_chapter_dashboard"; break;
@@ -12561,7 +12561,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "volunteer_funnel": ({ data, error } = await sb.rpc("volunteer_funnel_summary", { p_cycle_code: params.cycle_code ?? null })); source = "volunteer_funnel_summary"; break;
         case "volunteer_funnel_stats": ({ data, error } = await sb.rpc("get_volunteer_funnel_stats", { p_cycle_id: params.cycle_id ?? null })); source = "get_volunteer_funnel_stats"; break;
         case "role_transitions": ({ data, error } = await sb.rpc("exec_role_transitions", { p_cycle_code: params.cycle_code ?? null, p_tribe_id: params.tribe_id ?? null, p_chapter: params.chapter ?? null })); source = "exec_role_transitions"; break;
-        case "cycle_report": ({ data, error } = await sb.rpc("get_cycle_report", { p_cycle: params.cycle ?? 3 })); source = "get_cycle_report"; break;
+        case "cycle_report": ({ data, error } = await sb.rpc("get_cycle_report", { p_cycle: params.cycle ?? null })); source = "get_cycle_report"; break;
         case "exec_cycle_report": ({ data, error } = await sb.rpc("exec_cycle_report", { p_cycle_code: params.cycle_code ?? "cycle3-2026" })); source = "exec_cycle_report"; break;
         case "cycle_evolution": ({ data, error } = await sb.rpc("get_cycle_evolution")); source = "get_cycle_evolution"; break;
         case "public_impact": ({ data, error } = await sb.rpc("get_public_impact_data")); source = "get_public_impact_data"; break;

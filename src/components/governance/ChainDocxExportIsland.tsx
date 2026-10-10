@@ -26,6 +26,7 @@ import { useCallback, useEffect, useState } from 'react';
 // import. That's what the IIFE was designed for — sets `window.HTMLToDOCX`
 // on load. We bypass bundler interop entirely.
 import htmlToDocxScriptUrl from '@turbodocx/html-to-docx/dist/html-to-docx.browser.js?url';
+import { fmtBrasilia } from './brasiliaTime';
 
 type HTMLtoDOCXFn = (
   html: string,
@@ -135,8 +136,8 @@ export default function ChainDocxExportIsland({ chainId }: { chainId: string }) 
     <strong>${escapeHtml(data.document.title)}</strong><br/>
     Versão: ${escapeHtml(data.version.label)} · Status da cadeia: ${escapeHtml(data.chain_status)}<br/>
     Submetido por: ${escapeHtml(data.submitter?.name || '—')}<br/>
-    Lacrado em: ${data.version.locked_at ? escapeHtml(new Date(data.version.locked_at).toLocaleString('pt-BR')) : '—'}<br/>
-    Cadeia aberta em: ${data.opened_at ? escapeHtml(new Date(data.opened_at).toLocaleString('pt-BR')) : '—'}<br/>
+    Lacrado em: ${escapeHtml(fmtBrasilia(data.version.locked_at))}<br/>
+    Cadeia aberta em: ${escapeHtml(fmtBrasilia(data.opened_at))}<br/>
     <em>Documento exportado para revisão offline. Use o PDF Oficial para envio formal pós-ratificação.</em>
   </p>
   <hr/>

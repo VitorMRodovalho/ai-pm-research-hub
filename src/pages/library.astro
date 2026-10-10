@@ -39,6 +39,10 @@ const WORKSPACE_I18N = {
     <div class="mb-6">
       <h1 class="text-2xl font-extrabold text-navy">{t('workspace.heading', lang)}</h1>
       <p class="text-[var(--text-secondary)] text-sm mt-1">{t('workspace.subtitle', lang)}</p>
+      <p class="text-[var(--text-muted)] text-xs mt-1">
+        {t('workspace.publicationsCrossLink', lang)}{' '}
+        <a href={lang === 'pt-BR' ? '/publications' : `/publications?lang=${lang}`} class="text-teal font-semibold hover:underline">{t('workspace.publicationsCrossLinkCta', lang)}</a>
+      </p>
     </div>
 
     <div class="mb-4">
