@@ -7,7 +7,7 @@ import { loadChapters } from '../lib/chapters';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const S3_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12,13] as const;
-const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] as const;
+const S6_ROWS = [1,2,3,4,5,6,7,8,9,10,11,12,13,14] as const;
 
 // p83 — chapter list rendered dynamically (privacy.s1.chapters i18n key now uses {list} placeholder)
 const sbAnon = createClient(

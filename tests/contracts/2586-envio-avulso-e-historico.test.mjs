@@ -143,15 +143,18 @@ test('telas chamam as RPCs com portão', () => {
 test('#2586 política v2.3: a página declara a pessoa não membro (finalidade e retenção) e a lista de descadastro', () => {
   const page = read('src/pages/privacy.astro');
   assert.match(page, /const S3_ROWS = \[1,2,3,4,5,6,7,8,9,10,11,12,13\] as const;/);
-  assert.match(page, /const S6_ROWS = \[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15\] as const;/);
+  assert.match(page, /const S6_ROWS = \[1,2,3,4,5,6,7,8,9,10,11,12,13,14\] as const;/);
   const keys = ['s3.row13.purpose', 's3.row13.data', 's3.row13.basis',
-    's6ret.row14.data', 's6ret.row14.retention', 's6ret.row14.after',
-    's6ret.row15.data', 's6ret.row15.retention', 's6ret.row15.after'];
+    's6ret.row10.data', 's6ret.row10.retention', 's6ret.row10.after',
+    's6ret.row14.data', 's6ret.row14.retention', 's6ret.row14.after'];
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
     assert.match(dict, /'privacy\.version': 'v2\.3'/, `${lang} sem v2.3`);
     for (const k of keys) assert.match(dict, new RegExp(`'privacy\\.${k.replace(/\./g, '\\.')}': '[^']+`), `${lang} sem ${k}`);
-    // a retenção declarada é a mesma que a varredura executa: 1 ano
-    assert.match(dict, /'privacy\.s6ret\.row14\.retention': '1 (ano|year|año)/, `${lang}: prazo da pessoa não membro`);
+    // decisão do GP (10/10): a linha 10 (convidados) passa a declarar o que a varredura executa, 1 ano e
+    // anonimização; a promessa antiga de 30 dias não tinha executor e não pode voltar
+    assert.match(dict, /'privacy\.s6ret\.row10\.retention': '1 (ano|year|año)/, `${lang}: prazo da pessoa não membro`);
+    assert.ok(!/'privacy\.s6ret\.row10\.retention': '30 /.test(dict), `${lang}: voltou a promessa de 30 dias`);
+    assert.ok(!/'privacy\.s6ret\.row15\./.test(dict), `${lang}: sobrou a linha 15`);
   }
 });
