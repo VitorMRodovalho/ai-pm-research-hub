@@ -15,6 +15,7 @@ const i18nBundle = buildPageI18n(['initiative', 'comp.board', 'comp.card', 'comp
 const { id } = Astro.params;
 
 const INIT_I18N = {
+  cpmaiLink: t('initiative.cpmaiLink', lang),
   loading: t('initiative.loading', lang),
   notFound: t('initiative.notFound', lang),
   accessRestricted: t('initiative.accessRestricted', lang),
@@ -443,7 +444,7 @@ const INIT_I18N = {
     // Cross-link for study_group → /cpmai
     if (initData.initiative.kind === 'study_group') {
       el.insertAdjacentHTML('beforeend', `<a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/cpmai" class="block mb-4 no-underline bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 text-sm text-purple-800 hover:bg-purple-100 transition-all">
-        📖 Ver pagina publica do curso preparatorio → /cpmai
+        📖 ${escapeHtml(I18N.cpmaiLink || '')} → /cpmai
       </a>`);
     }
 

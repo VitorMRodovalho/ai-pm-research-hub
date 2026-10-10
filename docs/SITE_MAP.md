@@ -67,7 +67,7 @@ Login required. Personal data, tribe interaction, and collaboration tools.
 | `/certificates` | member | Certificados | Certificados emitidos + termo de voluntariado |
 | `/volunteer-agreement` | member | Termo de Voluntariado | Assinatura do termo de voluntariado |
 | `/presentations` | member | Apresentacoes | Decks e materiais de apresentacao |
-| `/cpmai` | member | Trilha CPMAI | Trilha de certificacao PMI-CPMAI |
+| `/cpmai` | participante do grupo + gestão | Grupo de Estudos CPMAI · Piloto | Painel do grupo (fora do menu; sem acesso anônimo) |
 | `/publications/submissions` | leader+ | Publicacoes | Pipeline de submissao de artigos |
 | `/stakeholder` | observer+ | Stakeholder | Dashboard executivo para sponsors |
 

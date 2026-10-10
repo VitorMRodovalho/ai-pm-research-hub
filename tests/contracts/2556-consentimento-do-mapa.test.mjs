@@ -118,5 +118,6 @@ test('H. (banco) anon nao executa as quatro; controle: executa uma RPC publica',
     const status = await anonRpc(name, body);
     assert.ok(status === 401 || status === 403 || status === 404, `${name} como anon voltou ${status}`);
   }
-  assert.equal(await anonRpc('get_public_cpmai_course'), 200, 'controle: anon deveria executar a RPC publica');
+  // get_public_cpmai_course deixou de ser publica (GP, 09/10/2026); o controle passa a outra leitura anon.
+  assert.equal(await anonRpc('get_public_publications'), 200, 'controle: anon deveria executar a RPC publica');
 });

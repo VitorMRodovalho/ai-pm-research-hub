@@ -1,0 +1,58 @@
+name: Tracker PII scan (daily)
+
+# Condicao 3 da decisao do GP de manter o repo publico (10/10/2026): varrer o tracker PUBLICO atras de e-mail
+# pessoal e telefone, INCLUSIVE o historico de edicao (UserContentEdit): editar o corpo nao apaga a revisao.
+# Script e racional: scripts/tracker-pii-scan.mjs. Guard: tests/contracts/tracker-pii-scan.test.mjs.
+#
+# JANELA DE DETECCAO DECLARADA: ate 24 h entre o dado aparecer no tracker e o aviso chegar ao sino de quem gere a
+# plataforma (o sino le toda notificacao do destinatario; o e-mail desse tipo sai no resumo semanal). A cadencia
+# sai dela:
+#   - POR QUE NAO SEMANAL (a cadencia do bypass-audit): o bypass-audit conta um evento que ja e passado; aqui o dado
+#     segue publico enquanto ninguem age, e sete dias de exposicao por omissao e janela demais para um custo zero.
+#   - POR QUE NAO MAIS FREQUENTE: a varredura completa custa ~490 pontos de GraphQL (medido em 10/10) contra
+#     1.000 pontos por hora por repositorio do GITHUB_TOKEN. De hora em hora ela comeria
+#     metade da cota de todo workflow do repo. E o aviso so sai para o que e NOVO (estado por impressao), entao
+#     rodar mais nao repete aviso, mas tambem nao encurta o tempo ate alguem agir.
+#   - Actions e gratis em repo publico; se a visibilidade mudar, o motivo deste job deixa de existir junto.
+#
+# O LOG E PUBLICO. O script so escreve nele o estado do controle positivo e quantos nos foram varridos, nunca o
+# dado, nem link, nem se houve achado. O relatorio vai por notificacao da plataforma.
+#
+# ENDURECIMENTO: so roda a partir da main (o disparo manual por outra branch entregaria o segredo a codigo nao
+# revisado); checkout sem credencial persistida; npm ci sem scripts de instalacao, porque o passo seguinte tem o
+# service role.
+
+on:
+  schedule:
+    - cron: '41 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: tracker-pii-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci --ignore-scripts
+      - name: Varredura do tracker com controle positivo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/tracker-pii-scan.mjs

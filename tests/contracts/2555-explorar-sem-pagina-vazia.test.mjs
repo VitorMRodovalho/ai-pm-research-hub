@@ -14,6 +14,11 @@
  *   D. a ilha cai na leitura publica quando o painel devolve erro, e o visitante ve o convite para entrar;
  *   E. (banco) como anon: a leitura publica devolve o curso so com as chaves permitidas, e o painel segue negado
  *      (controle: o instrumento sabe dizer nao).
+ *
+ * SUPERADO EM PARTE (GP, 09/10/2026): /cpmai virou "Grupo de Estudos CPMAI · Piloto", so para participantes e
+ * gestao (migration cpmai_grupo_de_estudos_so_participantes). A, D e E passam a afirmar o contrario: o item sai
+ * do menu, a ilha nao cai em leitura publica, e anon nao executa get_public_cpmai_course. B e C seguem
+ * afirmando o arquivo da #2555, que e historia e nao mudou.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -33,12 +38,11 @@ function navItem(key) {
   return (NAV.match(new RegExp(String.raw`\{\s*key:\s*'${key}',[^\n]*\}`)) || [''])[0];
 }
 
-test('A. library exige membro e sessao; cpmai segue no menu do visitante', () => {
+test('A. library exige membro e sessao; cpmai saiu do menu', () => {
   const lib = navItem('library');
   assert.ok(lib, 'item library nao encontrado');
   assert.match(lib, /minTier:\s*'member',\s*requiresAuth:\s*true/, 'library ainda aparece ao visitante');
-  const cp = navItem('cpmai');
-  assert.match(cp, /minTier:\s*'visitor',\s*requiresAuth:\s*false/, 'cpmai saiu do menu do visitante');
+  assert.equal(navItem('cpmai'), '', 'cpmai voltou ao menu');
 });
 
 test('B. leitura publica: SECDEF, filtro de grupo ativo e nao confidencial, dominios por lista fechada', () => {
@@ -59,16 +63,13 @@ test('C. EXECUTE revogado de PUBLIC e concedido a anon', () => {
   assert.match(SQL, /GRANT EXECUTE ON FUNCTION public\.get_public_cpmai_course\(\) TO anon, authenticated, service_role;/);
 });
 
-test('D. a ilha cai na leitura publica e convida o visitante a entrar', () => {
+test('D. a ilha nao cai em leitura publica e nao autoinscreve; quem nao pode ve o aviso', () => {
+  assert.doesNotMatch(ISLAND, /get_public_cpmai_course|join_initiative/);
+  // cada erro do painel vira o seu aviso (login, grupo inexistente, falha, e por fim forbidden); nenhum vira outra leitura
   assert.match(
     ISLAND,
-    /rpc\('get_cpmai_course_dashboard'\);\s*if \(d && !d\.error\) return d;\s*const \{ data: pub, error \} = await sb\.rpc\('get_public_cpmai_course'\);/,
-    'a ilha precisa cair em get_public_cpmai_course quando o painel devolve erro',
-  );
-  assert.match(
-    ISLAND,
-    /\) : canEnroll \? \(\s*<button onClick=\{\(\) => document\.dispatchEvent\(new CustomEvent\('open-auth'\)\)\}/,
-    'visitante sem sessao precisa do convite para entrar',
+    /if \(error\) next = \{ data: null, denied: 'error' \};\s+else if \(d && !d\.error\) next = \{ data: d, denied: null \};\s+else if \(d\?\.error === 'Not authenticated'\) next = \{ data: null, denied: 'login' \};\s+else if \(d\?\.error === 'No course found'\) next = \{ data: null, denied: 'none' \};\s+else next = \{ data: null, denied: 'forbidden' \};/,
+    'erro do painel tem de virar aviso de acesso, nunca outra leitura',
   );
 });
 
@@ -85,16 +86,12 @@ async function anonRpc(name) {
   return { status: r.status, body: await r.json() };
 }
 
-test('E. (banco) como anon: curso publico com chaves permitidas; painel segue negado', { skip: dbGated ? false : 'SUPABASE_URL + anon key required' }, async () => {
+test('E. (banco) como anon: a leitura publica do curso foi fechada; painel segue negado', { skip: dbGated ? false : 'SUPABASE_URL + anon key required' }, async () => {
   const pub = await anonRpc('get_public_cpmai_course');
-  assert.equal(pub.status, 200, `get_public_cpmai_course como anon voltou ${pub.status}`);
-  assert.deepEqual(Object.keys(pub.body).sort(), ['course', 'domains']);
-  assert.deepEqual(Object.keys(pub.body.course).sort(), ['description', 'id', 'status', 'title']);
-  assert.ok(pub.body.domains.length > 0, 'nenhum dominio devolvido');
-  for (const d of pub.body.domains) {
-    assert.deepEqual(Object.keys(d).sort(), ['domain_number', 'id', 'name_en', 'name_es', 'name_pt', 'weight_pct']);
-  }
-  assert.doesNotMatch(JSON.stringify(pub.body), /whatsapp|chat\.whatsapp\.com/i, 'link de grupo vazou');
+  assert.ok([401, 403, 404].includes(pub.status), `get_public_cpmai_course como anon voltou ${pub.status}`);
+  // controle positivo: o instrumento sabe dizer sim (uma leitura publica que segue aberta)
+  const controle = await anonRpc('get_public_publications');
+  assert.equal(controle.status, 200, 'controle: anon deveria executar get_public_publications');
   const painel = await anonRpc('get_cpmai_course_dashboard');
   assert.equal(painel.body?.error, 'Not authenticated', 'controle: o painel pessoal deveria seguir negado ao anon');
 });
