@@ -5017,6 +5017,7 @@ export type Database = {
           open_count: number | null
           opened: boolean | null
           opened_at: string | null
+          person_id: string | null
           resend_id: string | null
           send_id: string
           status: string | null
@@ -5046,6 +5047,7 @@ export type Database = {
           open_count?: number | null
           opened?: boolean | null
           opened_at?: string | null
+          person_id?: string | null
           resend_id?: string | null
           send_id: string
           status?: string | null
@@ -5075,6 +5077,7 @@ export type Database = {
           open_count?: number | null
           opened?: boolean | null
           opened_at?: string | null
+          person_id?: string | null
           resend_id?: string | null
           send_id?: string
           status?: string | null
@@ -5154,6 +5157,13 @@ export type Database = {
             referencedColumns: ["member_id"]
           },
           {
+            foreignKeyName: "campaign_recipients_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "campaign_recipients_send_id_fkey"
             columns: ["send_id"]
             isOneToOne: false
@@ -5179,6 +5189,7 @@ export type Database = {
           source_idea_id: string | null
           status: string | null
           template_id: string
+          theme: string | null
         }
         Insert: {
           approved_at?: string | null
@@ -5196,6 +5207,7 @@ export type Database = {
           source_idea_id?: string | null
           status?: string | null
           template_id: string
+          theme?: string | null
         }
         Update: {
           approved_at?: string | null
@@ -5213,6 +5225,7 @@ export type Database = {
           source_idea_id?: string | null
           status?: string | null
           template_id?: string
+          theme?: string | null
         }
         Relationships: [
           {
@@ -5369,6 +5382,13 @@ export type Database = {
             referencedRelation: "campaign_templates"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_sends_theme_fkey"
+            columns: ["theme"]
+            isOneToOne: false
+            referencedRelation: "campaign_themes"
+            referencedColumns: ["slug"]
+          },
         ]
       }
       campaign_templates: {
@@ -5384,6 +5404,7 @@ export type Database = {
           source_idea_id: string | null
           subject: Json
           target_audience: Json
+          theme: string | null
           updated_at: string | null
           variables: Json | null
         }
@@ -5399,6 +5420,7 @@ export type Database = {
           source_idea_id?: string | null
           subject: Json
           target_audience?: Json
+          theme?: string | null
           updated_at?: string | null
           variables?: Json | null
         }
@@ -5414,6 +5436,7 @@ export type Database = {
           source_idea_id?: string | null
           subject?: Json
           target_audience?: Json
+          theme?: string | null
           updated_at?: string | null
           variables?: Json | null
         }
@@ -5495,7 +5518,41 @@ export type Database = {
             referencedRelation: "publication_ideas"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "campaign_templates_theme_fkey"
+            columns: ["theme"]
+            isOneToOne: false
+            referencedRelation: "campaign_themes"
+            referencedColumns: ["slug"]
+          },
         ]
+      }
+      campaign_themes: {
+        Row: {
+          created_at: string
+          is_active: boolean
+          label_i18n: Json
+          reply_to: string | null
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          is_active?: boolean
+          label_i18n: Json
+          reply_to?: string | null
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          is_active?: boolean
+          label_i18n?: Json
+          reply_to?: string | null
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       certificates: {
         Row: {
@@ -19223,6 +19280,44 @@ export type Database = {
           },
         ]
       }
+      person_external_links: {
+        Row: {
+          created_at: string
+          id: string
+          person_id: string
+          purpose: string
+          retention_until: string
+          source_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          person_id: string
+          purpose: string
+          retention_until: string
+          source_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          person_id?: string
+          purpose?: string
+          retention_until?: string
+          source_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_external_links_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       persons: {
         Row: {
           address: string | null
@@ -30696,6 +30791,21 @@ export type Database = {
           p_duration_minutes: number
           p_time_start: string
           p_timezone: string
+        }
+        Returns: string
+      }
+      _external_contact_retention_cron: { Args: never; Returns: undefined }
+      _external_contact_retention_sweep: {
+        Args: { p_dry_run?: boolean }
+        Returns: Json
+      }
+      _external_person_upsert: {
+        Args: {
+          p_email: string
+          p_name: string
+          p_purpose: string
+          p_retention_until: string
+          p_source_id: string
         }
         Returns: string
       }
