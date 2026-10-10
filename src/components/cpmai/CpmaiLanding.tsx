@@ -8,20 +8,17 @@ export default function CpmaiLanding() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [member, setMember] = useState<any>(null);
-  const [enrolling, setEnrolling] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [motivation, setMotivation] = useState('');
-  const [aiExp, setAiExp] = useState('beginner');
+  const [denied, setDenied] = useState<'login' | 'forbidden' | null>(null);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
-  // #2555: o visitante le get_public_cpmai_course (so o curso); quem e membro le o painel com a inscricao e o
-  // progresso. O painel devolve {error} a quem nao e membro, e entao a pagina cai na leitura publica.
+  // Grupo de Estudos CPMAI · Piloto (GP, 09/10/2026): so participantes engajados e a gestao. O painel decide no
+  // servidor e devolve {error} aos demais; nao ha leitura publica nem autoinscricao.
   const loadCourse = useCallback(async (sb: any) => {
     const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
-    if (d && !d.error) return d;
-    const { data: pub, error } = await sb.rpc('get_public_cpmai_course');
-    return error ? null : pub;
+    if (d && !d.error) { setDenied(null); return d; }
+    setDenied(d?.error === 'Not authenticated' || !d ? 'login' : 'forbidden');
+    return null;
   }, []);
 
   useEffect(() => {
@@ -51,31 +48,11 @@ export default function CpmaiLanding() {
     return () => { cancelled = true; window.removeEventListener('nav:member', onMember); };
   }, [getSb, loadCourse]);
 
-  const handleEnroll = async () => {
-    if (!data?.course?.id) return;
-    setEnrolling(true);
-    try {
-      const sb = getSb();
-      const { data: res, error } = await sb.rpc('join_initiative', {
-        p_initiative_id: data.course.id,
-        p_motivation: motivation || null,
-        p_metadata: { ai_experience: aiExp },
-      });
-      if (error) throw new Error(error.message);
-      (window as any).toast?.('Inscrito com sucesso!', 'success');
-      setShowForm(false);
-      const { data: d } = await sb.rpc('get_cpmai_course_dashboard');
-      setData(d);
-    } catch (e: any) { (window as any).toast?.(e.message || 'Erro', 'error'); }
-    finally { setEnrolling(false); }
-  };
-
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin h-6 w-6 border-2 border-[var(--accent)] border-t-transparent rounded-full" /></div>;
 
   const course = data?.course;
   const domains = data?.domains || [];
   const enrolled = !!data?.my_enrollment;
-  const canEnroll = course?.status === 'active' || course?.status === 'enrollment_open' || course?.status === 'in_progress';
   const progress = data?.my_progress || [];
   const mockScores = data?.my_mock_scores || [];
 
@@ -84,31 +61,36 @@ export default function CpmaiLanding() {
       {/* Hero */}
       <div className="bg-gradient-to-br from-navy to-purple-900 rounded-2xl p-8 text-white">
         <div className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2">PMI-CPMAI™</div>
-        <h1 className="text-3xl font-extrabold mb-2">{t('cpmai.title', 'Preparatório CPMAI')}</h1>
-        <p className="text-white/70 text-sm max-w-xl">{t('cpmai.subtitle', 'Curso preparatório para a certificação PMI-CPMAI™')}</p>
-        {course && (
-          <div className="flex flex-wrap gap-3 mt-4 text-xs">
-            <span className="px-2.5 py-1 rounded-full bg-white/10">{course.status === 'draft' ? 'Em preparação' : course.status}</span>
-            {data.enrollment_count > 0 && <span className="px-2.5 py-1 rounded-full bg-white/10">{data.enrollment_count} inscritos</span>}
-            {course.max_capacity && <span className="px-2.5 py-1 rounded-full bg-white/10">Máx. {course.max_capacity} vagas</span>}
+        <h1 className="text-3xl font-extrabold mb-2">{t('cpmai.title', 'Grupo de Estudos CPMAI · Piloto')}</h1>
+        <p className="text-white/70 text-sm max-w-xl">{t('cpmai.subtitle', 'Grupo de estudos do Núcleo IA & GP para a certificação PMI-CPMAI™, em fase piloto.')}</p>
+        {enrolled && (
+          <div className="mt-4 px-4 py-2 rounded-lg bg-green-500/20 border border-green-400/30 text-green-300 text-sm font-semibold inline-block">
+            ✅ {t('cpmai.enrolled', 'Participante')}
           </div>
         )}
-        {enrolled ? (
-          <div className="mt-4 px-4 py-2 rounded-lg bg-green-500/20 border border-green-400/30 text-green-300 text-sm font-semibold inline-block">
-            ✅ {t('cpmai.enrolled', 'Inscrito')}
-          </div>
-        ) : canEnroll && member ? (
-          <button onClick={() => setShowForm(true)}
-            className="mt-4 px-6 py-2.5 rounded-lg bg-white text-navy font-bold text-sm cursor-pointer border-0 hover:opacity-90">
-            {t('cpmai.enroll_cta', 'Inscrever-se')}
-          </button>
-        ) : canEnroll ? (
-          <button onClick={() => document.dispatchEvent(new CustomEvent('open-auth'))}
-            className="mt-4 px-6 py-2.5 rounded-lg bg-white text-navy font-bold text-sm cursor-pointer border-0 hover:opacity-90">
-            {t('cpmai.login_to_enroll', 'Entre para se inscrever')}
-          </button>
-        ) : null}
       </div>
+
+      {/* Acesso restrito: quem nao participa nem e da gestao nao ve o grupo (o servidor decide) */}
+      {!course && (
+        <div className="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] px-5 py-4 text-sm text-[var(--text-secondary)]" role="status">
+          {denied === 'login'
+            ? <>
+                <p className="mb-3">{t('cpmai.login_required', 'Entre com a sua conta para ver o grupo de estudos.')}</p>
+                <button onClick={() => document.dispatchEvent(new CustomEvent('open-auth'))}
+                  className="px-4 py-2 rounded-lg bg-navy text-white font-semibold text-sm cursor-pointer border-0 hover:opacity-90">
+                  {t('cpmai.login_cta', 'Entrar')}
+                </button>
+              </>
+            : <p>{t('cpmai.restricted', 'Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo.')}</p>}
+        </div>
+      )}
+
+      {course && (
+        <a href={`${(window as any).__LANG_PREFIX || ''}/initiative/${course.id}`}
+          className="block rounded-xl bg-teal-50 border border-teal-200 px-4 py-3 text-sm font-semibold text-teal-700 no-underline hover:underline">
+          🚀 {t('cpmai.participant_area', 'Área do participante: eventos, materiais e quadro do grupo')} →
+        </a>
+      )}
 
       {/* Disclaimer */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-900">
@@ -116,7 +98,7 @@ export default function CpmaiLanding() {
       </div>
 
       {/* 5 Domains */}
-      <div>
+      {course && <div>
         <h2 className="text-lg font-extrabold text-navy mb-4">{t('cpmai.progress_by_domain', 'Domínios ECO v8')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           {domains.map((d: any, i: number) => {
@@ -141,7 +123,7 @@ export default function CpmaiLanding() {
             );
           })}
         </div>
-      </div>
+      </div>}
 
       {/* Mock scores (if enrolled) */}
       {enrolled && mockScores.length > 0 && (
@@ -161,35 +143,6 @@ export default function CpmaiLanding() {
         </div>
       )}
 
-      {/* Enrollment form modal */}
-      {showForm && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4" onClick={() => setShowForm(false)}>
-          <div className="bg-[var(--surface-elevated)] rounded-2xl border border-[var(--border-default)] shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-navy mb-4">{t('cpmai.enroll_cta', 'Inscrever-se')}</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-bold text-navy mb-1">{t('cpmai.motivation', 'Motivação')}</label>
-                <textarea value={motivation} onChange={e => setMotivation(e.target.value)} rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)] resize-y" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-navy mb-1">{t('cpmai.ai_experience', 'Experiência com IA')}</label>
-                <select value={aiExp} onChange={e => setAiExp(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--surface-base)] text-[var(--text-primary)]">
-                  <option value="none">Nenhuma</option>
-                  <option value="beginner">Iniciante</option>
-                  <option value="intermediate">Intermediário</option>
-                  <option value="advanced">Avançado</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-2 justify-end mt-4">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-sm font-semibold cursor-pointer bg-transparent text-[var(--text-secondary)]">Cancelar</button>
-              <button onClick={handleEnroll} disabled={enrolling} className="px-4 py-2 rounded-lg bg-navy text-white text-sm font-semibold cursor-pointer border-0 disabled:opacity-50">{enrolling ? '...' : t('cpmai.enroll_cta', 'Inscrever-se')}</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
