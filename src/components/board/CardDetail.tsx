@@ -1007,12 +1007,14 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             <CardDriveFiles boardItemId={item.id} />
 
             {/* Comments (Mayanna Item 01) */}
+            <div id={`card-comments-${item.id}`}>
             <CardComments
               boardItemId={item.id}
               currentMemberId={permissions.member?.id}
               currentMemberIsAdmin={!!permissions.canEditAny}
               members={members.map((m) => ({ id: m.id, name: m.name }))}
             />
+            </div>
 
             {/* ── p197: Pre-Curation Review (Manual §4.2 etapas 5 + 6) ── */}
             {showPreCuration && (['draft', 'peer_review', 'leader_review'] as readonly CurationStatus[]).includes(item.curation_status || 'draft') && (
@@ -1268,58 +1270,95 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
 
                 {/* #2621: linha do tempo do envio (etapa atual destacada, proximas visiveis) */}
                 {((curationHistory.submissions?.length ?? 0) > 0 || curationHistory.reviews.length > 0) && (() => {
-                  const fmt = (d: string | null | undefined) => d ? new Date(d).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR', { timeZone: 'America/Sao_Paulo' }) : '';
-                  type Ev = { at: string; text: string; tone: 'done' | 'warn' | 'bad' | 'ok' };
+                  const loc = pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR';
+                  const fmt = (d: string | null | undefined) => d ? new Date(d).toLocaleDateString(loc, { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' }) : '';
+                  type Ev = { at: string; rank: number; text: string; tone: 'done' | 'warn' | 'bad' | 'ok' };
                   const evs: Ev[] = [];
-                  for (const s of curationHistory.submissions ?? []) {
-                    evs.push({ at: s.at, tone: 'done', text: `${i18n.tlSubmitted || 'Enviado à curadoria'} ${fmt(s.at)}${s.sla_deadline ? ` · ${i18n.tlDeadline || 'prazo do parecer'} ${fmt(s.sla_deadline)}` : ''}` });
-                  }
+                  (curationHistory.submissions ?? []).forEach((s, i) => {
+                    const label = i === 0 ? (i18n.tlSubmitted || 'Enviado à curadoria') : (i18n.tlResubmitted || 'Reenviado à curadoria');
+                    const due = s.sla_deadline ? `${i18n.tlDeadline || 'prazo do parecer'} ${fmt(s.sla_deadline)}` : (i18n.tlNoDeadline || 'sem prazo definido ainda');
+                    evs.push({ at: s.at, rank: 0, tone: 'done', text: `${label} · ${fmt(s.at)} · ${due}` });
+                  });
                   for (const r of curationHistory.reviews) {
                     const dec = r.decision === 'approved' ? (i18n.tlFavorable || 'parecer favorável')
                       : r.decision === 'rejected' ? (i18n.tlRejected || 'não aprovado')
                       : (i18n.tlReturned || 'devolvido para ajuste');
-                    evs.push({ at: r.completed_at, tone: r.decision === 'approved' ? 'ok' : r.decision === 'rejected' ? 'bad' : 'warn',
-                      text: `${r.review_round ? `${i18n.tlRound || 'Rodada'} ${r.review_round}: ` : ''}${dec} ${fmt(r.completed_at)}` });
+                    evs.push({ at: r.completed_at, rank: 1, tone: r.decision === 'approved' ? 'ok' : r.decision === 'rejected' ? 'bad' : 'warn',
+                      text: `${r.review_round ? `${i18n.tlRound || 'Rodada'} ${r.review_round} · ` : ''}${dec} · ${fmt(r.completed_at)}` });
                   }
-                  if (curationHistory.approved_at) evs.push({ at: curationHistory.approved_at, tone: 'ok', text: `${i18n.tlApproved || 'Aprovado pela curadoria'} ${fmt(curationHistory.approved_at)}` });
-                  evs.sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+                  if (curationHistory.approved_at) evs.push({ at: curationHistory.approved_at, rank: 2, tone: 'ok', text: `${i18n.tlApproved || 'Aprovado pela curadoria'} · ${fmt(curationHistory.approved_at)}` });
+                  // ordem pelo momento; no empate, envio antes de parecer antes de aprovacao
+                  evs.sort((x, y) => (new Date(x.at).getTime() - new Date(y.at).getTime()) || (x.rank - y.rank));
+                  const lastReview = [...curationHistory.reviews].sort((x, y) => new Date(y.completed_at).getTime() - new Date(x.completed_at).getTime())[0];
                   const st = item.curation_status;
-                  const lastReturned = curationHistory.reviews.length > 0
-                    && [...curationHistory.reviews].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())[0].decision !== 'approved';
-                  const current = st === 'curation_pending' ? (i18n.tlCuration || 'Curadoria')
-                    : st === 'published' ? (i18n.tlPublication || 'Publicação')
-                    : st === 'draft' && lastReturned && item.status !== 'archived' ? (i18n.tlAdjust || 'Ajuste do autor') : null;
-                  const next: string[] = st === 'curation_pending' ? [i18n.tlDecision || 'Decisão da curadoria', i18n.tlPublication || 'Publicação']
-                    : current === (i18n.tlAdjust || 'Ajuste do autor') ? [i18n.tlResubmit || 'Reenvio à curadoria', i18n.tlCuration || 'Curadoria', i18n.tlPublication || 'Publicação']
+                  // etapa atual como codigo; o texto so na hora de desenhar
+                  const stage: 'curation' | 'adjust' | 'published' | 'closed' | null =
+                    st === 'curation_pending' ? 'curation'
+                    : st === 'published' ? 'published'
+                    : st === 'draft' && lastReview?.decision === 'rejected' && item.status === 'archived' ? 'closed'
+                    : st === 'draft' && lastReview && lastReview.decision !== 'approved' ? 'adjust'
+                    : null;
+                  const next: string[] = stage === 'curation' ? [i18n.tlDecision || 'Decisão da curadoria', i18n.tlPublication || 'Publicação']
+                    : stage === 'adjust' ? [i18n.tlResubmit || 'Reenvio à curadoria', i18n.tlCuration || 'Curadoria', i18n.tlPublication || 'Publicação']
                     : [];
+                  const canResubmit = needsCuration && (isLeader || isCardAssignee);
                   const toneCls: Record<Ev['tone'], string> = { done: 'bg-teal', ok: 'bg-emerald-600', warn: 'bg-amber-600', bad: 'bg-red-600' };
+                  const goToComments = () => {
+                    const box = document.getElementById(`card-comments-${item.id}`);
+                    box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    (box?.querySelector('textarea') as HTMLTextAreaElement | null)?.focus();
+                  };
+                  const titleId = `curation-timeline-${item.id}`;
                   return (
-                    <div className="mb-3" aria-label={i18n.curationTimelineTitle || 'Linha do tempo do envio'}>
-                      <div className="text-[10px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-1.5">{i18n.curationTimelineTitle || 'Linha do tempo do envio'}</div>
+                    <section className="mb-3" aria-labelledby={titleId}>
+                      <h4 id={titleId} className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wide mb-1.5">{i18n.curationTimelineTitle || 'Linha do tempo do envio'}</h4>
                       <ol className="space-y-1">
                         {evs.map((ev, i) => (
-                          <li key={`ev-${i}`} className="flex items-start gap-2 text-[11px] text-[var(--text-primary)]">
-                            <span className={`mt-1 inline-block w-2 h-2 rounded-full ${toneCls[ev.tone]}`} aria-hidden="true" />
-                            <span>{ev.text}</span>
+                          <li key={`ev-${i}`} className="flex items-start gap-2 text-[12px] text-[var(--text-primary)]">
+                            <span className={`mt-1.5 inline-block w-2 h-2 rounded-full ${toneCls[ev.tone]}`} aria-hidden="true" />
+                            <span><span className="sr-only">{i18n.tlSrDone || 'concluído:'} </span>{ev.text}</span>
                           </li>
                         ))}
-                        {current && (
-                          <li className="flex items-start gap-2 text-[11px] font-bold text-[var(--text-primary)]" aria-current="step">
-                            <span className="mt-1 inline-block w-2 h-2 rounded-full ring-2 ring-teal bg-white" aria-hidden="true" />
-                            <span>{current} · {i18n.tlNow || 'agora'}</span>
+                        {stage === 'published' && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full bg-emerald-600" aria-hidden="true" />
+                            <span>{i18n.tlPublished || 'Publicado'}{curationHistory.approved_at ? ` · ${fmt(curationHistory.approved_at)}` : ''}</span>
+                          </li>
+                        )}
+                        {stage === 'closed' && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full bg-red-600" aria-hidden="true" />
+                            <span>{i18n.tlClosed || 'Encerrado: este envio não foi aprovado. Fale com a curadoria para entender o parecer.'}</span>
+                          </li>
+                        )}
+                        {(stage === 'curation' || stage === 'adjust') && (
+                          <li className="flex items-start gap-2 text-[12px] font-bold text-[var(--text-primary)]" aria-current="step">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full ring-2 ring-teal bg-[var(--surface-base)]" aria-hidden="true" />
+                            <span>{stage === 'curation' ? (i18n.tlCuration || 'Curadoria') : (i18n.tlAdjust || 'Ajuste do autor')} · {i18n.tlNow || 'agora'}</span>
                           </li>
                         )}
                         {next.map((n) => (
-                          <li key={`next-${n}`} className="flex items-start gap-2 text-[11px] text-[var(--text-muted)]">
-                            <span className="mt-1 inline-block w-2 h-2 rounded-full border border-[var(--border-default)]" aria-hidden="true" />
-                            <span>{n}</span>
+                          <li key={`next-${n}`} className="flex items-start gap-2 text-[12px] text-[var(--text-secondary)]">
+                            <span className="mt-1.5 inline-block w-2 h-2 rounded-full border border-[var(--border-default)]" aria-hidden="true" />
+                            <span><span className="sr-only">{i18n.tlSrNext || 'próxima etapa:'} </span>{n}</span>
                           </li>
                         ))}
                       </ol>
-                      {current === (i18n.tlAdjust || 'Ajuste do autor') && needsCuration && (
-                        <p className="mt-1.5 text-[10px] text-[var(--text-secondary)]">{i18n.tlResubmitHint || 'Depois de ajustar, envie de novo pelo botão de envio à curadoria deste card.'}</p>
+                      {stage === 'adjust' && (
+                        <p className="mt-1.5 text-[12px] text-[var(--text-secondary)]">
+                          {i18n.tlReadReview || 'Leia o parecer da curadoria logo abaixo.'}{' '}
+                          {needsCuration && (canResubmit
+                            ? `${i18n.tlResubmitHint || 'Depois de ajustar, use'} "${i18n.curationSubmitButton || 'Submeter para Curadoria'}".`
+                            : (i18n.tlAskLeader || 'Para reenviar, peça à liderança da tribo.'))}
+                        </p>
                       )}
-                    </div>
+                      {(stage === 'curation' || stage === 'adjust' || stage === 'closed') && (
+                        <button type="button" onClick={goToComments}
+                          className="mt-1.5 min-h-[44px] px-3 py-2 rounded-lg border border-[var(--border-default)] text-[12px] font-semibold text-teal bg-transparent cursor-pointer">
+                          💬 {i18n.tlContact || 'Falar com a curadoria'}
+                        </button>
+                      )}
+                    </section>
                   );
                 })()}
 
@@ -1335,7 +1374,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                             : rev.decision === 'rejected' ? 'bg-red-100 text-red-700'
                             : 'bg-amber-100 text-amber-700'
                           }`}>
-                            {rev.decision === 'approved' ? 'Aprovado' : rev.decision === 'rejected' ? 'Rejeitado' : 'Revisão solicitada'}
+                            {rev.decision === 'approved' ? (i18n.reviewDecApproved || 'Aprovado') : rev.decision === 'rejected' ? (i18n.reviewDecRejected || 'Rejeitado') : (i18n.reviewDecReturned || 'Revisão solicitada')}
                           </span>
                         </div>
                         {/* Rubric scores as bars */}
@@ -1363,10 +1402,10 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                           </div>
                         )}
                         {rev.feedback_notes && (
-                          <p className="text-[10px] text-[var(--text-muted)] italic mt-1">{rev.feedback_notes}</p>
+                          <p className="text-[12px] text-[var(--text-primary)] mt-1 whitespace-pre-line">{rev.feedback_notes}</p>
                         )}
                         <span className="text-[9px] text-[var(--text-muted)]">
-                          {new Date(rev.completed_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(rev.completed_at).toLocaleDateString(pageLang() === 'en' ? 'en-US' : pageLang() === 'es' ? 'es' : 'pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'America/Sao_Paulo' })}
                         </span>
                       </div>
                     ))}

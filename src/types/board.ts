@@ -417,6 +417,18 @@ export interface BoardI18n {
   tlDecision?: string;
   tlPublication?: string;
   tlResubmitHint?: string;
+  tlResubmitted?: string;
+  tlNoDeadline?: string;
+  tlPublished?: string;
+  tlClosed?: string;
+  tlReadReview?: string;
+  tlAskLeader?: string;
+  tlContact?: string;
+  tlSrDone?: string;
+  tlSrNext?: string;
+  reviewDecApproved?: string;
+  reviewDecRejected?: string;
+  reviewDecReturned?: string;
   leaderReviewApproved?: string;
   leaderReviewReturned?: string;
   leaderReviewWaived?: string;
@@ -567,7 +579,19 @@ export const DEFAULT_I18N: BoardI18n = {
   tlCuration: 'Curadoria',
   tlDecision: 'Decisão da curadoria',
   tlPublication: 'Publicação',
-  tlResubmitHint: 'Depois de ajustar, envie de novo pelo botão de envio à curadoria deste card.',
+  tlResubmitHint: 'Depois de ajustar, use',
+  tlResubmitted: 'Reenviado à curadoria',
+  tlNoDeadline: 'sem prazo definido ainda',
+  tlPublished: 'Publicado',
+  tlClosed: 'Encerrado: este envio não foi aprovado. Fale com a curadoria para entender o parecer.',
+  tlReadReview: 'Leia o parecer da curadoria logo abaixo.',
+  tlAskLeader: 'Para reenviar, peça à liderança da tribo.',
+  tlContact: 'Falar com a curadoria',
+  tlSrDone: 'concluído:',
+  tlSrNext: 'próxima etapa:',
+  reviewDecApproved: 'Aprovado',
+  reviewDecRejected: 'Rejeitado',
+  reviewDecReturned: 'Revisão solicitada',
   leaderReviewApproved: 'Aprovado e submetido à curadoria',
   leaderReviewReturned: 'Devolvido ao autor',
   leaderReviewWaived: 'Dispensado e submetido',

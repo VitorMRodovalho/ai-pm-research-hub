@@ -1751,11 +1751,11 @@ function registerTools(mcp: McpServer, sb: Sb) {
 
   // TOOL: submit_curation_review — Governance reviewers only. Records a structured review decision
   // for a curation_pending item; on the Nth approval (reviewers_required) the RPC auto-publishes.
-  mcp.tool("submit_curation_review", "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.", {
+  mcp.tool("submit_curation_review", "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft; the review stays in the curation record and in the decision notice to the author (not appended to the card). Requires participate_in_governance_review.", {
     item_id: z.string().describe("UUID of the board item under curation"),
     decision: z.enum(["approved", "returned_for_revision", "rejected"]).describe("Review decision"),
     criteria_scores: z.record(z.string(), z.number()).optional().describe("Optional rubric scores 1-5 per criterion: clarity, originality, adherence, relevance, ethics"),
-    feedback_notes: z.string().optional().describe("Optional reviewer feedback (appended to the item on revision/rejection)")
+    feedback_notes: z.string().optional().describe("Optional reviewer feedback (kept in the curation record and sent to the author with the decision)")
   }, async (params: { item_id: string; decision: string; criteria_scores?: Record<string, number>; feedback_notes?: string }) => {
     const start = Date.now();
     const member = await getMember(sb);
