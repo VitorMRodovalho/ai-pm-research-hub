@@ -100,6 +100,13 @@ const mig905 = readdirSync(resolve(process.cwd(), 'supabase/migrations'))
   .filter((f) => f.endsWith('_905_retencao_de_candidatura_2_e_1_anos_e_executor_ligado.sql'));
 const M905 = mig905.length ? maskLineComments(read(`supabase/migrations/${mig905[0]}`)) : '';
 
+/** Corpo do anonimizador na migration: do CREATE até o $function$; que fecha ESTE corpo (a lister vem antes). */
+function anonymizer905() {
+  const a = M905.indexOf('CREATE OR REPLACE FUNCTION public.anonymize_premember_applications(');
+  assert.ok(a >= 0, 'a migration precisa redefinir o anonimizador');
+  return M905.slice(a, M905.indexOf('$function$;', M905.indexOf('$function$', a) + 10));
+}
+
 test('#905 há exatamente uma migration que liga o executor', () => {
   assert.equal(mig905.length, 1, `esperava 1 arquivo, achei ${mig905.length}`);
 });
@@ -113,7 +120,7 @@ test('#905 a tabela de retenção declara o horizonte do job (730 = 2 × 365)', 
 });
 
 test('#905 R3: candidatura com vídeo externo ainda apontado é pulada antes de qualquer apagamento', () => {
-  const fn = M905.slice(M905.indexOf('CREATE OR REPLACE FUNCTION public.anonymize_premember_applications('), M905.indexOf('$function$;'));
+  const fn = anonymizer905();
   const trava = fn.indexOf("IF EXISTS (SELECT 1 FROM public.pmi_video_screenings v");
   const apaga = fn.indexOf('v_child := public._erase_application_pii(v_cand.application_id);');
   assert.ok(trava > 0 && apaga > trava, 'a trava tem de vir antes do apagamento');
@@ -128,7 +135,7 @@ test('#905 R3: candidatura com vídeo externo ainda apontado é pulada antes de 
 });
 
 test('#905 quem ainda concorre no mesmo e-mail espera, antes de qualquer apagamento', () => {
-  const fn = M905.slice(M905.indexOf('CREATE OR REPLACE FUNCTION public.anonymize_premember_applications('), M905.indexOf('$function$;'));
+  const fn = anonymizer905();
   const espera = fn.indexOf('v_waiting := v_waiting + 1;');
   const apaga = fn.indexOf('v_child := public._erase_application_pii(v_cand.application_id);');
   assert.ok(espera > 0 && apaga > espera, 'a espera tem de vir antes do apagamento');
@@ -145,4 +152,21 @@ test('#905 pós-condição: ligar não apaga nada hoje e a política fica cobert
 test('#905 o anonimizador segue só para service_role', () => {
   assert.match(M905, /REVOKE ALL ON FUNCTION public\.anonymize_premember_applications\(boolean, integer, integer, integer\) FROM PUBLIC, anon, authenticated;/);
   assert.ok(!/GRANT EXECUTE ON FUNCTION public\.anonymize_premember_applications\([^)]*\)[^;]*\b(anon|authenticated)\b/.test(M905));
+});
+
+test('#905 R2: a coorte #935 segue a mesma janela — na lista, o último filtro de membro vai direto ao corte por janela', () => {
+  const a = M905.indexOf('CREATE OR REPLACE FUNCTION public.list_premember_anonymization_candidates(');
+  assert.ok(a >= 0, 'a migration precisa redefinir a lister');
+  const lister = M905.slice(a, M905.indexOf('$function$;', M905.indexOf('$function$', a) + 10));
+  // nenhuma exclusão da coorte sobra na lista (era o NOT (cutoff_approved ... AND vep_status_raw IN (...)) sem prazo)
+  assert.doesNotMatch(lister, /cutoff_approved_email_sent_at/, 'a exclusão sem prazo da coorte #935 voltou à lista');
+  // e o que separa o filtro de membro do corte é nada: a janela vale para todos, inclusive a coorte
+  assert.match(lister,
+    /WHERE trim\(lower\(se\)\) = trim\(lower\(sa\.email\)\)\)\s+\)\s+AND COALESCE\(sa\.cycle_decision_date, sa\.created_at\)\s+< \(now\(\) - make_interval\(years =>\s+CASE WHEN sa\.status = 'withdrawn' THEN COALESCE\(p_years_withdrawn, p_years\)\s+ELSE p_years END\)\)\s+ORDER BY retention_anchor ASC;/);
+  assert.match(M905, /REVOKE ALL ON FUNCTION public\.list_premember_anonymization_candidates\(integer, integer\) FROM PUBLIC, anon, authenticated;/);
+});
+
+test('#905 R2 pós-condição: com janela 0 a coorte aparece na lista (a exclusão saiu de fato)', () => {
+  assert.match(M905,
+    /FROM public\.list_premember_anonymization_candidates\(0, 0\) c\s+JOIN public\.selection_applications sa ON sa\.id = c\.application_id\s+WHERE sa\.cutoff_approved_email_sent_at IS NOT NULL\s+AND sa\.vep_status_raw IN \('Expired','OfferExpired','OfferNotExtended'\);\s+IF v_n = 0 THEN RAISE EXCEPTION/);
 });

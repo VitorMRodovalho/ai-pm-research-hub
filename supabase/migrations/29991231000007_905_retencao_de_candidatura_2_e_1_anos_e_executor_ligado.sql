@@ -26,12 +26,78 @@
 --     antiga no meio do processo seletivo tira o histórico de quem ainda está concorrendo (0 hoje, de 4
 --     com outra candidatura no mesmo e-mail); (d) o rótulo 'external_video_binaries' do sucesso dizia
 --     'pending_manual_or_ef_purge', o que a trava R3 tornou falso.
+-- (1b) list_premember_anonymization_candidates: mesmo corpo da captura 20260805000280 (md5 do corpo vivo
+--     ddc5c70b9a08956234180cb4d6616e96 conferido), sem a exclusão SEM PRAZO da coorte #935 (R2; opção 1 do
+--     GP, 10/10/2026): a coorte segue a mesma janela, e a proteção dela é a própria janela, porque esta
+--     lista só devolve quem já passou dela. Medido pela orquestradora 11/10 01:1xZ: coorte = 15 terminais
+--     (16 no total), âncora mais antiga 01/04/2026; com 2/1 a lista segue em 0.
 -- (2) cron: comando com p_years := 2, p_years_withdrawn := 1, e active := true.
 -- (3) data_retention_policy de selection_applications: 730 dias (a #1812 exige retention_days = p_years × 365).
 --
 -- Rollback: cron.alter_job(<jobid>, command := <p_years := 5, p_years_withdrawn := NULL>, active := false);
+--   recriar list_premember_anonymization_candidates pela captura 20260805000280 (volta a exclusão da coorte #935);
 --   retention_days = 1825; recriar anonymize_premember_applications pela captura 20260805000313.
 
+-- ── (1b) lister: a coorte #935 segue a mesma janela ──────────────────────────
+CREATE OR REPLACE FUNCTION public.list_premember_anonymization_candidates(
+  p_years integer DEFAULT 5,
+  p_years_withdrawn integer DEFAULT NULL
+)
+RETURNS TABLE(
+  application_id uuid,
+  cycle_id uuid,
+  status text,
+  vep_status_raw text,
+  retention_anchor timestamptz,
+  years_since_anchor numeric,
+  has_resume boolean
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+  SELECT
+    sa.id,
+    sa.cycle_id,
+    sa.status,
+    sa.vep_status_raw,
+    COALESCE(sa.cycle_decision_date, sa.created_at) AS retention_anchor,
+    ROUND(
+      (EXTRACT(EPOCH FROM (now() - COALESCE(sa.cycle_decision_date, sa.created_at))) / 31557600.0)::numeric
+    , 2) AS years_since_anchor,
+    (sa.resume_storage_path IS NOT NULL) AS has_resume
+  FROM public.selection_applications sa
+  WHERE sa.anonymized_at IS NULL
+    -- terminal pre-member statuses only
+    AND sa.status IN ('rejected','withdrawn')
+    -- pre-member: the application email is not tied to ANY member (primary, alternate table, or array)
+    AND NOT EXISTS (
+      SELECT 1 FROM public.members m WHERE trim(lower(m.email)) = trim(lower(sa.email))
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM public.member_emails me WHERE trim(lower(me.email)) = trim(lower(sa.email))
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM public.members m2
+      WHERE m2.secondary_emails IS NOT NULL
+        AND EXISTS (SELECT 1 FROM unnest(m2.secondary_emails) se WHERE trim(lower(se)) = trim(lower(sa.email)))
+    )
+    -- #935 (R2, decisão do GP em 10/10/2026): a coorte aprovada na nota de corte com a oferta do PMI vencida
+    -- é protegida enquanto pode ser chamada de novo, isto é, DENTRO da janela. Esta lista só devolve quem já
+    -- passou da janela, então a proteção é a própria janela, e a exclusão sem prazo final saiu.
+    -- retention window elapsed (withdrawn may get a shorter window)
+    AND COALESCE(sa.cycle_decision_date, sa.created_at)
+        < (now() - make_interval(years =>
+             CASE WHEN sa.status = 'withdrawn' THEN COALESCE(p_years_withdrawn, p_years)
+                  ELSE p_years END))
+  ORDER BY retention_anchor ASC;
+$function$;
+
+REVOKE ALL ON FUNCTION public.list_premember_anonymization_candidates(integer, integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.list_premember_anonymization_candidates(integer, integer) TO service_role;
+
+-- ── (1) anonimizador ─────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.anonymize_premember_applications(
   p_dry_run boolean DEFAULT true,
   p_years integer DEFAULT 5,
@@ -212,6 +278,14 @@ BEGIN
   IF NOT FOUND OR v_cov.coberta IS NOT TRUE OR v_cov.horizonte_bate IS NOT TRUE THEN
     RAISE EXCEPTION '#905: a política de candidaturas não ficou coberta (%)', to_jsonb(v_cov);
   END IF;
+
+  -- R2: com janela 0 a coorte #935 aparece na lista (controle de que a exclusão sem prazo saiu de fato)
+  SELECT count(*) INTO v_n
+  FROM public.list_premember_anonymization_candidates(0, 0) c
+  JOIN public.selection_applications sa ON sa.id = c.application_id
+  WHERE sa.cutoff_approved_email_sent_at IS NOT NULL
+    AND sa.vep_status_raw IN ('Expired','OfferExpired','OfferNotExtended');
+  IF v_n = 0 THEN RAISE EXCEPTION '#905 R2: com janela 0 nenhuma candidatura da coorte #935 aparece na lista'; END IF;
 
   -- ligar não pode apagar nada hoje: o ensaio com a janela nova não acha ninguém
   v_dry := public.anonymize_premember_applications(true, 2, 1, 500);
