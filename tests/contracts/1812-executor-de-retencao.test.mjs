@@ -125,10 +125,10 @@ const skipMsg = 'requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY';
 const sb = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
 /** Base declarada em 16/08/2026 — o ratchet so anda para BAIXO. */
+// #905 (10/10/2026, decisão do GP): selection_applications/anonymize saiu da base — o executor foi ligado.
 const DESCOBERTAS_DECLARADAS = [
   'attendance/archive',
   'board_lifecycle_events/archive',
-  'selection_applications/anonymize',
 ];
 
 test('#1812 DB: RATCHET — as politicas descobertas sao exatamente a base declarada', { skip: dbGated ? false : skipMsg }, async () => {
@@ -154,7 +154,8 @@ test('#1812 DB: as politicas de delete estao cobertas de ponta a ponta', { skip:
   assert.deepEqual(
     cobertas.map(r => r.politica).sort(),
     // #2586/#2593: as duas politicas do executor external-contact-retention-daily
-    ['campaign_recipients/anonymize', 'competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'person_external_links/delete', 'visitor_leads/delete'],
+    // #905: a anonimizacao de candidaturas entra com o executor ligado
+    ['campaign_recipients/anonymize', 'competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'person_external_links/delete', 'selection_applications/anonymize', 'visitor_leads/delete'],
   );
   // coberta exige as quatro condicoes, nao so job registrado
   for (const r of cobertas) {
@@ -174,14 +175,14 @@ test('#1812 DB: o motivo de cada descoberta e o motivo REAL, nao um rotulo gener
     assert.equal(por[p].executor, null);
     assert.match(por[p].motivo, /sem executor declarado/);
   }
-  // a anonimizacao: o job existe e esta dormante por portao legal (SPEC #905 R1-R5)
+  // a anonimizacao: o job dedicado (SPEC #905) foi LIGADO em 10/10/2026 com a janela 2 anos / 1 ano
   const anon = por['selection_applications/anonymize'];
   assert.equal(anon.executor, 'lgpd-anonymize-premember-monthly');
   assert.equal(anon.job_registrado, true);
-  assert.equal(anon.job_ativo, false);
-  assert.match(anon.motivo, /registrado porem INATIVO/);
-  // e o horizonte declarado bate com o argumento do job (1825 = p_years := 5)
-  assert.equal(anon.dias, 1825);
+  assert.equal(anon.job_ativo, true);
+  assert.equal(anon.motivo, null);
+  // e o horizonte declarado bate com o argumento do job (730 = p_years := 2)
+  assert.equal(anon.dias, 730);
   assert.equal(anon.horizonte_bate, true);
 });
 
