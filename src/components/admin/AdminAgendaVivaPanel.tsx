@@ -22,6 +22,7 @@ interface Block {
   owner_first_name: string;
   owner_full_name?: string;
   guest_name?: string | null;
+  guest_email?: string | null;
   material_url?: string | null;
 }
 interface EventRow {
@@ -211,6 +212,7 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
                         <div className="text-xs text-[var(--text-muted)]">
                           {fmtLabel(b.format_slug)} · {b.owner_full_name || b.owner_first_name}
                           {b.guest_name ? ` · ${b.guest_name}` : ''}
+                          {b.guest_email ? ` (${b.guest_email})` : ''}
                           {b.material_url && (
                             <a href={b.material_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 ml-1.5 text-[var(--accent)] hover:underline">
                               <ExternalLink size={11} /> {t('comp.agendaViva.materialLink', 'Material')}

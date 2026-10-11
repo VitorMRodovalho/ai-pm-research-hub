@@ -50,6 +50,8 @@ describe('p700 slice 2 — Agenda Viva RPCs', () => {
 
     it('LGPD: guest_name is only surfaced under the manage_event (is_admin) branch', () => {
       // guest_name must appear inside the v_is_admin CASE, never in the anon base object
+      // (lê a migration fixada desta fatia; a forma VIGENTE, com o dono vendo o próprio convidado e o nome público
+      //  só depois do aviso, é afirmada em 2593-convidado-externo-na-agenda-c1.test.mjs)
       assert.match(MIGRATION_SQL, /CASE WHEN v_is_admin\s*THEN jsonb_build_object\([^)]*'guest_name', bk\.guest_name\)/s);
       // the anon base block object exposes owner_first_name, not owner full name / member_id
       assert.match(MIGRATION_SQL, /'owner_first_name', bk\.owner_first_name/);

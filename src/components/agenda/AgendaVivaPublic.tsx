@@ -33,6 +33,8 @@ interface Block {
   owner_first_name: string | null;
   is_mine: boolean;
   material_url?: string | null;
+  // #2593: nome do convidado externo, público só no bloco confirmado (a RPC decide)
+  guest_public_name?: string | null;
 }
 interface EventRow {
   id: string;
@@ -252,6 +254,7 @@ export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', l
                       <div className="text-[.7rem] text-[var(--text-muted)] mt-1">
                         {formatLabel(b.format_slug)}
                         {b.owner_first_name ? <> · {b.owner_first_name}</> : null}
+                        {b.guest_public_name ? <> · {t('comp.agendaViva.withGuest', 'com')} {b.guest_public_name}</> : null}
                       </div>
                       {isAuth && b.material_url && (
                         <a href={b.material_url} target="_blank" rel="noopener noreferrer"

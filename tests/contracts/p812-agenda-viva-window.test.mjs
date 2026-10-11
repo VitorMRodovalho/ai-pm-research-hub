@@ -51,6 +51,8 @@ describe('p812 — Agenda Viva p_window', () => {
         'no_show name suppression CASE must be present',
       );
       // full-name / guest PII still only under manage_event
+      // (lê a migration fixada desta fatia; a forma VIGENTE, com o dono vendo o próprio convidado e o nome público
+      //  só depois do aviso, é afirmada em 2593-convidado-externo-na-agenda-c1.test.mjs)
       assert.match(MIGRATION_SQL, /CASE WHEN v_is_admin\s*THEN jsonb_build_object\([^)]*'guest_name', bk\.guest_name\)/s);
     });
 

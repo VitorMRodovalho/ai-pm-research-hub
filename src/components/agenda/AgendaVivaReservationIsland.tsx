@@ -23,6 +23,10 @@ interface Block {
   external_guest: boolean;
   is_mine: boolean;
   material_url?: string | null;
+  // #2593: só o dono do bloco (e manage_event) recebe estes dois
+  guest_name?: string | null;
+  guest_email?: string | null;
+  guest_language?: Lang | null;
 }
 interface EventRow {
   id: string;
@@ -44,10 +48,21 @@ interface DraftState {
   guest_name: string;
   material_url: string;
   external_guest: boolean;
+  guest_email: string;
+  // #2593: idioma do convite (decisão do GP: seletor, já com o idioma de quem reserva)
+  guest_language: Lang;
+  // #2593: remover é explícito; campo vazio na edição mantém o valor atual (a RPC usa COALESCE)
+  clear_guest?: boolean;
+  clear_material?: boolean;
+  // marca a primeira tentativa de salvar: o erro do convidado aparece no campo daí em diante
+  attempted?: boolean;
 }
-const emptyDraft = (format_slug: string, duration_min: number): DraftState => ({
-  format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false,
+const emptyDraft = (format_slug: string, duration_min: number, lang: Lang): DraftState => ({
+  format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false, guest_email: '',
+  guest_language: lang,
 });
+const GUEST_LANGS: Lang[] = ['pt-BR', 'en-US', 'es-LATAM'];
+const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
 // `range` mirrors AgendaVivaPublic's prop of the same name — deliberately NOT called `window`,
 // which would read as shadowing the global this component uses for events and toasts.
@@ -106,6 +121,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
       event_not_reservable: 'errEventNotReservable', reservation_window_closed: 'errWindowClosed',
       capacity_exceeded: 'errCapacity', already_reserved: 'errAlreadyReserved', access_denied: 'errDenied',
       edit_window_closed: 'errWindowEdit', cancel_window_closed: 'errWindowEdit',
+      guest_name_required: 'errGuestNameRequired', guest_email_required: 'errGuestEmailRequired',
+      invalid_guest_email: 'errInvalidGuestEmail',
     };
     const key = code && map[code] ? map[code] : 'errGeneric';
     return t(`comp.agendaViva.${key}`, 'Algo deu errado. Tente novamente.');
@@ -114,7 +131,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
   const ensureDraft = (eventId: string): DraftState => {
     if (drafts[eventId]) return drafts[eventId];
     const first = formats[0];
-    const d = emptyDraft(first?.slug || 'insight_rapido', first?.default_duration_min || 5);
+    const d = emptyDraft(first?.slug || 'insight_rapido', first?.default_duration_min || 5, lang);
     setDrafts((p) => ({ ...p, [eventId]: d }));
     return d;
   };
@@ -130,15 +147,27 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const afterChange = async () => { await load(); window.dispatchEvent(new CustomEvent('agenda:changed')); };
 
+  // o servidor recusa do mesmo jeito; aqui é só para a mensagem sair antes da ida ao banco
+  const guestProblem = (d: DraftState): string | null => {
+    if (!d.external_guest || d.clear_guest) return null;
+    if (!d.guest_name.trim()) return 'guest_name_required';
+    if (!d.guest_email.trim()) return 'guest_email_required';
+    if (!EMAIL_RE.test(d.guest_email.trim())) return 'invalid_guest_email';
+    return null;
+  };
+
   const reserve = async (eventId: string) => {
     const sb = getSb(); if (!sb) return;
     const d = ensureDraft(eventId);
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
+    const gp = guestProblem(d); if (gp) { setDraft(eventId, { attempted: true }); toast(errMsg(gp), 'error'); return; }
     setBusy(eventId);
     try {
       const { data, error } = await sb.rpc('reserve_agenda_block', {
         p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: d.duration_min,
         p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
+        p_guest_email: d.external_guest ? d.guest_email.trim() || null : null,
+        p_guest_language: d.external_guest ? d.guest_language : null,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -152,7 +181,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
   const startEdit = (b: Block) => setEditing((p) => ({
     ...p, [b.id]: {
       format_slug: b.format_slug, duration_min: b.duration_min, title: b.title,
-      guest_name: '', material_url: b.material_url || '', external_guest: b.external_guest,
+      guest_name: b.guest_name || '', material_url: b.material_url || '', external_guest: b.external_guest,
+      guest_email: b.guest_email || '', guest_language: b.guest_language || lang,
     },
   }));
   const cancelEdit = (blockId: string) => setEditing((p) => { const n = { ...p }; delete n[blockId]; return n; });
@@ -161,11 +191,17 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const sb = getSb(); if (!sb) return;
     const d = editing[blockId]; if (!d) return;
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
+    const gp = guestProblem(d); if (gp) { setEdit(blockId, { attempted: true }); toast(errMsg(gp), 'error'); return; }
     setBusy(blockId);
     try {
       const { data, error } = await sb.rpc('update_agenda_block', {
         p_block_id: blockId, p_title: d.title.trim(), p_format_slug: d.format_slug, p_duration_min: d.duration_min,
-        p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
+        p_guest_name: d.clear_guest ? null : d.guest_name.trim() || null,
+        p_material_url: d.clear_material ? null : d.material_url.trim() || null,
+        p_external_guest: d.clear_guest ? false : d.external_guest,
+        p_guest_email: !d.clear_guest && d.external_guest ? d.guest_email.trim() || null : null,
+        p_guest_language: !d.clear_guest && d.external_guest ? d.guest_language : null,
+        p_clear_guest: !!d.clear_guest, p_clear_material: !!d.clear_material,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -202,9 +238,19 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const inputCls = 'mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm';
 
-  const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void) => (
+  // `key` separa os ids de cada formulário (um por reunião e um por edição)
+  const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void,
+    key: string, isEdit = false) => {
+    const problem = d.attempted ? guestProblem(d) : null;
+    const nameErr = problem === 'guest_name_required';
+    const emailErr = problem === 'guest_email_required' || problem === 'invalid_guest_email';
+    const ids = { name: `agenda-guest-name-${key}`, email: `agenda-guest-email-${key}`, hint: `agenda-guest-hint-${key}`,
+      lang: `agenda-guest-lang-${key}`,
+      nameErr: `agenda-guest-name-err-${key}`, emailErr: `agenda-guest-email-err-${key}`, status: `agenda-removal-${key}` };
+    const external = d.external_guest && !d.clear_guest;
+    return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="block">
           <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fFormat', 'Formato')}</span>
           <select value={d.format_slug} onChange={(e) => onFmt(e.target.value)} className={inputCls}>
@@ -223,24 +269,81 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         <input value={d.title} onChange={(e) => set({ title: e.target.value })}
           placeholder={t('comp.agendaViva.fTitlePlaceholder', '')} className={inputCls} maxLength={140} />
       </label>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block">
-          <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuest', 'Convidado (opcional)')}</span>
-          <input value={d.guest_name} onChange={(e) => set({ guest_name: e.target.value })}
-            placeholder={t('comp.agendaViva.fGuestPlaceholder', '')} className={inputCls} maxLength={120} />
+      {/* #2593: nome, marca de externo e e-mail são uma coisa só, o convidado */}
+      <fieldset className="rounded-xl border border-[var(--border)] p-3 space-y-2">
+        <legend className="px-1 text-xs font-semibold text-[var(--text-muted)]">{t('comp.agendaViva.fGuestLegend', 'Convidado')}</legend>
+        <label className="block" htmlFor={ids.name}>
+          <span className="text-xs text-[var(--text-muted)]">
+            {external ? t('comp.agendaViva.fGuestExternalName', 'Nome do convidado externo') : t('comp.agendaViva.fGuest', 'Convidado (opcional)')}
+          </span>
+          <input id={ids.name} value={d.guest_name} onChange={(e) => set({ guest_name: e.target.value })}
+            placeholder={t('comp.agendaViva.fGuestPlaceholder', '')} className={inputCls} maxLength={120}
+            required={external} aria-required={external} aria-invalid={nameErr || undefined}
+            aria-describedby={nameErr ? ids.nameErr : undefined} />
+          {nameErr && <span id={ids.nameErr} role="alert" className="mt-1 block text-[12px] text-rose-600">{errMsg('guest_name_required')}</span>}
         </label>
-        <label className="block">
-          <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fMaterial', 'Material (opcional)')}</span>
-          <input value={d.material_url} onChange={(e) => set({ material_url: e.target.value })}
-            placeholder={t('comp.agendaViva.fMaterialPlaceholder', 'https://…')} className={inputCls} />
+        <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
+          <input type="checkbox" checked={d.external_guest} onChange={(e) => set({ external_guest: e.target.checked, clear_guest: false })} className="rounded" />
+          <span>{t('comp.agendaViva.fExternalGuest', 'Convidado externo ao núcleo')}</span>
         </label>
-      </div>
-      <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <input type="checkbox" checked={d.external_guest} onChange={(e) => set({ external_guest: e.target.checked })} className="rounded" />
-        <span>{t('comp.agendaViva.fExternalGuest', 'Convidado externo ao núcleo')}</span>
+        {external && (
+          <label className="block" htmlFor={ids.email}>
+            <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestEmail', 'E-mail do convidado')}</span>
+            <input id={ids.email} type="email" inputMode="email" autoComplete="off" value={d.guest_email}
+              onChange={(e) => set({ guest_email: e.target.value })}
+              placeholder={t('comp.agendaViva.fGuestEmailPlaceholder', 'convidado@example.org')} className={inputCls} maxLength={254}
+              required aria-required aria-invalid={emailErr || undefined}
+              aria-describedby={emailErr ? `${ids.emailErr} ${ids.hint}` : ids.hint} />
+            {emailErr && <span id={ids.emailErr} role="alert" className="mt-1 block text-[12px] text-rose-600">{errMsg(problem || undefined)}</span>}
+            <span id={ids.hint} className="mt-1 block text-[12px] text-[var(--text-muted)]">
+              {t('comp.agendaViva.fGuestEmailHint', 'O convidado recebe o convite por e-mail quando o bloco for confirmado. Guardamos o e-mail até 1 ano após a reunião.')}
+            </span>
+          </label>
+        )}
+        {external && (
+          <label className="block" htmlFor={ids.lang}>
+            <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestLanguage', 'Idioma do convite')}</span>
+            <select id={ids.lang} value={d.guest_language} onChange={(e) => set({ guest_language: e.target.value as Lang })} className={inputCls}>
+              {GUEST_LANGS.map((l) => (
+                <option key={l} value={l}>{t(`comp.agendaViva.lang.${l}`, l)}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        {isEdit && (d.guest_name || d.external_guest) && !d.clear_guest && (
+          <button type="button" onClick={() => set({ clear_guest: true })}
+            aria-label={`${t('comp.agendaViva.removeGuest', 'Remover convidado')}${d.guest_name ? `: ${d.guest_name}` : ''}`}
+            className="min-h-[44px] sm:min-h-0 px-3 py-1.5 rounded-lg text-xs border border-[var(--border)] text-rose-600 hover:bg-rose-50">
+            {t('comp.agendaViva.removeGuest', 'Remover convidado')}
+          </button>
+        )}
+      </fieldset>
+      <label className="block">
+        <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fMaterial', 'Material (opcional)')}</span>
+        <input value={d.clear_material ? '' : d.material_url} onChange={(e) => set({ material_url: e.target.value, clear_material: false })}
+          placeholder={t('comp.agendaViva.fMaterialPlaceholder', 'https://…')} className={inputCls} />
       </label>
+      {isEdit && d.material_url && !d.clear_material && (
+        <button type="button" onClick={() => set({ clear_material: true })}
+          aria-label={t('comp.agendaViva.removeMaterial', 'Remover material')}
+          className="min-h-[44px] sm:min-h-0 px-3 py-1.5 rounded-lg text-xs border border-[var(--border)] text-rose-600 hover:bg-rose-50">
+          {t('comp.agendaViva.removeMaterial', 'Remover material')}
+        </button>
+      )}
+      {/* região viva sempre montada: o leitor de tela anuncia quando o texto aparece */}
+      <p id={ids.status} role="status" className="text-[12px] text-[var(--text-muted)] flex flex-wrap items-center gap-2">
+        {isEdit && d.clear_guest && <span>{t('comp.agendaViva.removalGuestPending', 'O convidado será removido ao salvar.')}</span>}
+        {isEdit && d.clear_material && <span>{t('comp.agendaViva.removalMaterialPending', 'O material será removido ao salvar.')}</span>}
+        {isEdit && (d.clear_guest || d.clear_material) && (
+          <button type="button" onClick={() => set({ clear_guest: false, clear_material: false })}
+            className="underline text-[var(--accent)] min-h-[44px] sm:min-h-0">
+            {t('comp.agendaViva.undoRemoval', 'Desfazer')}
+          </button>
+        )}
+      </p>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="mb-8 space-y-4">
@@ -258,7 +361,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         // block that already happened would erase the record of it. So: no card without a block of
         // mine, and no reserve/cancel affordance on the ones that remain.
         if (ev.is_past && !myBlock) return null;
-        const draft = drafts[ev.id] || (formats[0] ? emptyDraft(formats[0].slug, formats[0].default_duration_min) : null);
+        const draft = drafts[ev.id] || (formats[0] ? emptyDraft(formats[0].slug, formats[0].default_duration_min, lang) : null);
         const isEditing = myBlock && editing[myBlock.id];
         return (
           <div key={ev.id} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
@@ -280,7 +383,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
                 {isEditing ? (
                   <>
                     {renderFields(editing[myBlock.id], (p) => setEdit(myBlock.id, p),
-                      (slug) => { const f = formats.find((x) => x.slug === slug); setEdit(myBlock.id, { format_slug: slug, duration_min: f?.default_duration_min ?? editing[myBlock.id].duration_min }); })}
+                      (slug) => { const f = formats.find((x) => x.slug === slug); setEdit(myBlock.id, { format_slug: slug, duration_min: f?.default_duration_min ?? editing[myBlock.id].duration_min }); },
+                      `edit-${myBlock.id}`, true)}
                     <div className="mt-3 flex justify-end gap-2">
                       <button onClick={() => cancelEdit(myBlock.id)} className="px-3 py-1.5 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]">
                         {t('comp.agendaViva.cancel', 'Cancelar')}
@@ -313,7 +417,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
               </div>
             ) : !ev.is_past && allowed && draft ? (
               <>
-                {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug))}
+                {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug), `new-${ev.id}`)}
                 <div className="mt-3 flex justify-end">
                   <button onClick={() => reserve(ev.id)} disabled={busy === ev.id}
                     className="px-4 py-2 rounded-lg text-sm bg-orange text-white hover:opacity-90 inline-flex items-center gap-1.5 disabled:opacity-60">
