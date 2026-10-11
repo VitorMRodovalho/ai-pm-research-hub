@@ -15,9 +15,10 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const read = (p) => readFileSync(resolve(process.cwd(), p), 'utf8');
 const LANGS = {
@@ -92,8 +93,6 @@ test('#2677 DB: o executor ancora na decisão (e na candidatura só quando falta
 });
 
 // ─── a migration que liga o executor (#905, cenário B) ───────────────────────────────────────────────
-import { readdirSync } from 'node:fs';
-import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const mig905 = readdirSync(resolve(process.cwd(), 'supabase/migrations'))
   .filter((f) => f.endsWith('_905_retencao_de_candidatura_2_e_1_anos_e_executor_ligado.sql'));
