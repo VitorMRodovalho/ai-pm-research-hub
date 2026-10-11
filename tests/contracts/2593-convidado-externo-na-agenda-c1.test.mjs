@@ -197,6 +197,10 @@ test('#2593 MCP agenda_blocks: convidado externo leva e-mail e idioma até a RPC
   assert.match(tool, /guest_language: z\.enum\(\["pt-BR", "en-US", "es-LATAM"\]\)\.optional\(\)/);
   assert.match(tool, /p_external_guest: params\.external_guest \?\? false,\s+p_guest_email: params\.guest_email \?\? null,\s+p_guest_language: params\.guest_language \?\? null,/);
   assert.match(tool, /if \(params\.external_guest && \(!params\.guest_email \|\| !String\(params\.guest_email\)\.trim\(\)\)\) return invalid\(/);
+  // e-mail malformado cai antes da prévia, com a mesma regra da RPC
+  assert.match(tool, /if \(params\.guest_email && !\/\^\[a-z0-9\._%\+-\]\+@\[a-z0-9-\]\+\(\\\.\[a-z0-9-\]\+\)\+\$\/\.test\(String\(params\.guest_email\)\.trim\(\)\.toLowerCase\(\)\)\) return invalid\(/);
+  // a trilha marca dado de terceiro sem guardar o valor
+  assert.match(tool, /pii_level: params\.guest_email \? "high" : "low",[\s\S]{0,400}?guest_email_provided: !!params\.guest_email \}/);
   // a prévia repassa os dois campos na next_call
   assert.match(tool, /\.\.\.\(params\.guest_email \? \{ guest_email: params\.guest_email \} : \{\}\),\s+\.\.\.\(params\.guest_language \? \{ guest_language: params\.guest_language \} : \{\}\),/);
 });
