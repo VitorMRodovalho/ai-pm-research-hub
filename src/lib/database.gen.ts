@@ -11098,7 +11098,10 @@ export type Database = {
           event_id: string
           external_guest: boolean
           format_slug: string
+          guest_language: string
           guest_name: string | null
+          guest_notified_at: string | null
+          guest_person_id: string | null
           id: string
           material_url: string | null
           organization_id: string
@@ -11119,7 +11122,10 @@ export type Database = {
           event_id: string
           external_guest?: boolean
           format_slug: string
+          guest_language?: string
           guest_name?: string | null
+          guest_notified_at?: string | null
+          guest_person_id?: string | null
           id?: string
           material_url?: string | null
           organization_id?: string
@@ -11140,7 +11146,10 @@ export type Database = {
           event_id?: string
           external_guest?: boolean
           format_slug?: string
+          guest_language?: string
           guest_name?: string | null
+          guest_notified_at?: string | null
+          guest_person_id?: string | null
           id?: string
           material_url?: string | null
           organization_id?: string
@@ -11305,6 +11314,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agenda_block_formats"
             referencedColumns: ["slug"]
+          },
+          {
+            foreignKeyName: "event_agenda_blocks_guest_person_id_fkey"
+            columns: ["guest_person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "event_agenda_blocks_organization_id_fkey"
@@ -19282,6 +19298,7 @@ export type Database = {
       }
       person_external_links: {
         Row: {
+          contact_email: string | null
           created_at: string
           id: string
           person_id: string
@@ -19291,6 +19308,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          contact_email?: string | null
           created_at?: string
           id?: string
           person_id: string
@@ -19300,6 +19318,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          contact_email?: string | null
           created_at?: string
           id?: string
           person_id?: string
@@ -30360,6 +30379,11 @@ export type Database = {
           title: string
         }[]
       }
+      _agenda_guest_attach: {
+        Args: { p_block_id: string; p_email: string; p_name: string }
+        Returns: string
+      }
+      _agenda_guest_detach: { Args: { p_block_id: string }; Returns: number }
       _alert_sweep_cron: { Args: { p_deliver_email?: boolean }; Returns: Json }
       _alert_upsert: {
         Args: {
@@ -35659,6 +35683,8 @@ export type Database = {
           p_event_id: string
           p_external_guest?: boolean
           p_format_slug: string
+          p_guest_email?: string
+          p_guest_language?: string
           p_guest_name?: string
           p_material_url?: string
           p_title: string
@@ -36257,9 +36283,13 @@ export type Database = {
       update_agenda_block: {
         Args: {
           p_block_id: string
+          p_clear_guest?: boolean
+          p_clear_material?: boolean
           p_duration_min?: number
           p_external_guest?: boolean
           p_format_slug?: string
+          p_guest_email?: string
+          p_guest_language?: string
           p_guest_name?: string
           p_material_url?: string
           p_title?: string
