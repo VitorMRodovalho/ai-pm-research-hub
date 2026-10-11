@@ -30366,6 +30366,10 @@ export type Database = {
         Args: { p_chain_id: string }
         Returns: undefined
       }
+      _agenda_block_owner_notice: {
+        Args: { p_block_id: string; p_type: string }
+        Returns: undefined
+      }
       _agenda_block_owner_visible: {
         Args: { p_is_admin: boolean; p_is_mine: boolean; p_status: string }
         Returns: boolean
@@ -30384,6 +30388,15 @@ export type Database = {
         Returns: string
       }
       _agenda_guest_detach: { Args: { p_block_id: string }; Returns: number }
+      _agenda_guest_send: {
+        Args: {
+          p_actor: string
+          p_block_id: string
+          p_dispatch?: boolean
+          p_kind: string
+        }
+        Returns: string
+      }
       _alert_sweep_cron: { Args: { p_deliver_email?: boolean }; Returns: Json }
       _alert_upsert: {
         Args: {
