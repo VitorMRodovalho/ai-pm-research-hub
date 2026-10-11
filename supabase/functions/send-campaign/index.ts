@@ -4,6 +4,7 @@ import { isServiceRoleToken } from '../_shared/service-auth.ts'
 import { isSandboxMode } from '../_shared/email-utils.ts'
 import { suppressedAmong, normalizeEmail } from '../_shared/suppression.ts'
 import { escapeHtml, renderFreeform, resolveReplyTo } from '../_shared/freeform-message.ts'
+import { buildAgendaIcs, icsAttachment, langFromKey, renderAgendaGuestMessage } from '../_shared/agenda-guest-invite.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -80,6 +81,8 @@ Deno.serve(async (req) => {
     ])
     const replyTo = resolveReplyTo(themeRow?.reply_to, typeof defaultReply?.value === 'string' ? defaultReply.value : null)
     const isFreeform = send.audience_filter?.freeform === true
+    // #2593: convite/cancelamento ao convidado externo da Agenda Viva (valores escapados + anexo ICS)
+    const isAgendaGuest = send.audience_filter?.source === 'agenda_guest'
 
     // #2580: teto diário do hub, lido do banco (site_config, chave email_daily_cap), contra o que o hub
     // enviou hoje (notificações e campanhas). Ao bater no teto, os destinatários ficam pending_throttled e
@@ -183,7 +186,9 @@ Deno.serve(async (req) => {
     // #2586: a mensagem avulsa de corpo livre a um EXTERNO oferece descadastro no rodapé e o respeita; a um membro
     // ela é administrativa (o membro não recebe o link) e segue só a supressão, como o avulso transacional.
     const freeformToExternal = isFreeform && recipients.some((r) => !r.member_id)
-    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff || freeformToExternal)
+    // #2593: o convidado externo da agenda também respeita o descadastro
+    const agendaToExternal = isAgendaGuest && recipients.some((r) => !r.member_id)
+    const suppressedSet = await suppressedAmong(sb, pendingRows.map(addressOf), !isOneOff || freeformToExternal || agendaToExternal)
     if (suppressedSet === null) {
       await sb.from('campaign_sends').update({ status: 'throttled', error_log: 'suppression_unreadable' }).eq('id', sendId)
       return json({ error: 'suppression_unreadable', send_id: sendId }, 503)
@@ -270,6 +275,54 @@ Deno.serve(async (req) => {
         text = rendered.text
       }
 
+      // #2593: os valores do convite vêm do bloco (título digitado por quem reservou) e dos nomes; no HTML todos
+      // entram escapados, e por isso o convite também não passa pelo laço {{key}} abaixo
+      let attachments: { filename: string; content: string; content_type: string }[] | undefined
+      if (isAgendaGuest) {
+        const av = (send.audience_filter?.variables ?? {}) as Record<string, unknown>
+        const ics = (send.audience_filter?.ics ?? {}) as Record<string, unknown>
+        const kind = send.audience_filter?.kind === 'cancel' ? 'cancel' : 'invite'
+        const rendered = renderAgendaGuestMessage({
+          vars: {
+            recipientName: memberName,
+            memberName: String(av.member_name ?? ''),
+            blockTitle: String(av.block_title ?? ''),
+            durationMin: String(av.duration ?? ''),
+            startUtc: String(av.start_utc ?? ''),
+            link: String(av.link ?? ''),
+          },
+          lang: langFromKey(langKey),
+          isExternal: !r.member_id,
+          templateSubject: tmpl.subject[langKey] || tmpl.subject['pt'] || '',
+          templateHtml: html,
+          templateText: text,
+        })
+        subject = rendered.subject
+        html = rendered.html
+        text = rendered.text
+        try {
+          const icsText = buildAgendaIcs({
+            kind,
+            uid: String(ics.uid ?? ''),
+            sequence: Number(ics.sequence ?? 0),
+            startUtc: String(av.start_utc ?? ''),
+            endUtc: String(ics.end_utc ?? ''),
+            summary: rendered.subject,
+            description: text.split(/\n\s*--\s*\n/)[0].trim(),
+            url: String(av.link ?? ''),
+            organizerEmail: String(ics.organizer_email ?? ''),
+            organizerName: String(ics.organizer_name ?? 'Núcleo IA & GP'),
+            attendeeEmail: toEmail,
+            attendeeName: memberName,
+          })
+          attachments = [icsAttachment(icsText, kind)]
+        } catch (e: unknown) {
+          // sem ICS válido o convite não sai: um e-mail que promete "o convite em anexo" sem anexo engana
+          errors.push(`${toEmail}: ics ${e instanceof Error ? e.message : String(e)}`)
+          continue
+        }
+      }
+
       // #2130: a pagina abre no idioma de quem recebeu; o POST de um clique (RFC 8058) vai para a mesma URL.
       const unsubLang = langKey === 'en' ? 'en-US' : langKey === 'es' ? 'es-LATAM' : 'pt-BR'
       const unsubUrl = `${platformUrl}/unsubscribe?token=${r.unsubscribe_token}&lang=${unsubLang}`
@@ -283,13 +336,13 @@ Deno.serve(async (req) => {
       ]
       // #2586: no corpo livre, um "{member.name}" digitado no texto já escapado não pode trazer HTML cru de volta
       for (const [k, v] of vars) {
-        html = html.split(k).join(isFreeform ? escapeHtml(v) : v)
+        html = html.split(k).join(isFreeform || isAgendaGuest ? escapeHtml(v) : v)
         text = text.split(k).join(v)
       }
 
       // Transactional one-off support: render {{key}} placeholders from
       // audience_filter.variables (used by campaign_send_one_off RPC).
-      const oneOffVars = (isFreeform ? {} : (send.audience_filter?.variables ?? {})) as Record<string, unknown>
+      const oneOffVars = (isFreeform || isAgendaGuest ? {} : (send.audience_filter?.variables ?? {})) as Record<string, unknown>
       for (const [k, v] of Object.entries(oneOffVars)) {
         const needle = `{{${k}}}`
         const replacement = String(v ?? '')
@@ -309,6 +362,7 @@ Deno.serve(async (req) => {
           headers: { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
           tracking: { open: true, click: true },
           ...(replyTo ? { reply_to: replyTo } : {}),
+          ...(attachments ? { attachments } : {}),
         }
         console.log('[campaign] sending to:', finalTo[0], 'from:', from)
 
@@ -331,6 +385,16 @@ Deno.serve(async (req) => {
           }).eq('id', r.id)
           delivered++
           if (r.member_id) sentThisRun.add(r.member_id)
+          // #2593: o nome do convidado só fica público depois que o convite com o aviso de privacidade foi ACEITO
+          // pelo provedor; o carimbo é deste envio, e só se o bloco ainda não tinha sido avisado
+          // em sandbox o e-mail foi para a caixa de teste, não para o convidado: nada a carimbar
+          if (isAgendaGuest && !sandbox && send.audience_filter?.kind === 'invite' && send.audience_filter?.block_id) {
+            const { error: notifErr } = await sb.from('event_agenda_blocks')
+              .update({ guest_notified_at: new Date().toISOString() })
+              .eq('id', String(send.audience_filter.block_id))
+              .is('guest_notified_at', null)
+            if (notifErr) console.error('[campaign] guest_notified_at:', notifErr.message)
+          }
         } else {
           errors.push(`${toEmail}: ${rt}`)
         }

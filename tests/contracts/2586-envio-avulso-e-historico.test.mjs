@@ -120,7 +120,7 @@ test('template: corpo por {{content_html}}/{{content_text}} e o aviso (dpo e des
 
 test('EF: corpo livre passa pela renderização pura e NÃO pelo laço de variáveis cruas', () => {
   assert.match(EF, /if \(isFreeform\) \{[\s\S]*?const rendered = renderFreeform\(\{[\s\S]*?isExternal: !r\.member_id,/);
-  assert.match(EF, /const oneOffVars = \(isFreeform \? \{\} : \(send\.audience_filter\?\.variables \?\? \{\}\)\) as Record<string, unknown>/);
+  assert.match(EF, /const oneOffVars = \(isFreeform \|\| isAgendaGuest \? \{\} : \(send\.audience_filter\?\.variables \?\? \{\}\)\) as Record<string, unknown>/);
 });
 
 test('EF: reply-to do tema ou do padrão vai no payload', () => {
@@ -130,11 +130,11 @@ test('EF: reply-to do tema ou do padrão vai no payload', () => {
 
 test('EF: o corpo livre a externo respeita o descadastro; a membro, só a supressão', () => {
   assert.match(EF, /const freeformToExternal = isFreeform && recipients\.some\(\(r\) => !r\.member_id\)/);
-  assert.match(EF, /suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| freeformToExternal\)/);
+  assert.match(EF, /suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| freeformToExternal \|\| agendaToExternal\)/);
 });
 
 test('EF: no corpo livre, valor de {member.name} e afins entra escapado no HTML', () => {
-  assert.match(EF, /html = html\.split\(k\)\.join\(isFreeform \? escapeHtml\(v\) : v\)/);
+  assert.match(EF, /html = html\.split\(k\)\.join\(isFreeform \|\| isAgendaGuest \? escapeHtml\(v\) : v\)/);
 });
 
 test('telas chamam as RPCs com portão', () => {

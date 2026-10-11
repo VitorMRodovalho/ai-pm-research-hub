@@ -16,7 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
@@ -98,7 +98,8 @@ test('#2593 edição: e-mail novo troca a pessoa; deixar de ser externo apaga o 
 });
 
 test('#2593 cancelamento apaga o vínculo e o ponteiro junto com o status', () => {
-  assert.match(fnBody('cancel_agenda_block'),
+  // a C2 redefine o cancelamento: afirma-se a definição VIGENTE (#1932), não a captura desta fatia
+  assert.match(maskLineComments(latestFunctionCapture(ROOT, 'cancel_agenda_block').body),
     /PERFORM public\._agenda_guest_detach\(p_block_id\);\s+UPDATE public\.event_agenda_blocks\s+SET status = 'cancelled', cancelled_by = v_caller, cancelled_reason = p_reason, guest_person_id = NULL\s+WHERE id = p_block_id;/);
 });
 
