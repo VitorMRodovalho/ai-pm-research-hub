@@ -5,7 +5,9 @@ name: Tracker PII scan (daily)
 # Script e racional: scripts/tracker-pii-scan.mjs. Guard: tests/contracts/tracker-pii-scan.test.mjs.
 #
 # JANELA DE DETECCAO DECLARADA: ate 24 h entre o dado aparecer no tracker e o aviso chegar ao sino de quem gere a
-# plataforma (o sino le toda notificacao do destinatario; o e-mail desse tipo sai no resumo semanal). A cadencia
+# plataforma (o sino le toda notificacao do destinatario). O e-mail sai na hora: o tipo e imediato em
+# _delivery_mode_for e urgente na regra de 1 e-mail por pessoa por dia (#2580), nos dois lados, banco e Edge
+# Function, decisao do GP de 10/10/2026. A cadencia
 # sai dela:
 #   - POR QUE NAO SEMANAL (a cadencia do bypass-audit): o bypass-audit conta um evento que ja e passado; aqui o dado
 #     segue publico enquanto ninguem age, e sete dias de exposicao por omissao e janela demais para um custo zero.

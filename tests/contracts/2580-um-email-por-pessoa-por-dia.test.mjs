@@ -2,7 +2,7 @@
  * #2580 frente 2, regra 1 (decisao do GP de 08/10/2026): no maximo 1 e-mail por pessoa por dia, salvo os urgentes.
  *
  * D2: urgentes = selection_approved, selection_interview_scheduled, selection_reschedule_escalated,
- * selection_termo_due, affiliation_renewal_d7_urgent. Excesso (decisao b): fica pendente e sai num unico e-mail a partir
+ * selection_termo_due, affiliation_renewal_d7_urgent, e desde 10/10 tracker_pii_found. Excesso (decisao b): fica pendente e sai num unico e-mail a partir
  * das 07h de Brasilia do dia seguinte.
  *
  * O QUE ESTE GUARD AFIRMA
@@ -32,7 +32,9 @@ const fn = (name) => (SQL.match(new RegExp(String.raw`CREATE OR REPLACE FUNCTION
 const EF = maskJsComments(readFileSync(resolve(ROOT, 'supabase/functions/send-notification-email/index.ts'), 'utf8'));
 
 // D2 + selection_cutoff_approved (decisao do GP de 08/10/2026, convite para marcar a entrevista depois do corte).
-const D2 = ['affiliation_renewal_d7_urgent', 'selection_approved', 'selection_cutoff_approved', 'selection_interview_scheduled', 'selection_reschedule_escalated', 'selection_termo_due'];
+// tracker_pii_found entrou em 10/10/2026 (decisao do GP): o dado pessoal achado no tracker publico segue publico
+// enquanto ninguem age.
+const D2 = ['affiliation_renewal_d7_urgent', 'selection_approved', 'selection_cutoff_approved', 'selection_interview_scheduled', 'selection_reschedule_escalated', 'selection_termo_due', 'tracker_pii_found'];
 
 test('a migration existe', () => {
   assert.equal(files.length, 1, `esperava 1 migration, achei ${files.length}`);
