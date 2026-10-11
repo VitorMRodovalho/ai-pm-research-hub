@@ -289,7 +289,7 @@ test('o corpo do e-mail: uma linha por item, cada link clicavel, e nada alem de 
     '- https://evil.example/o/r/issues/1', '- javascript:alert(1)//https://github.com/o/r/issues/1',
     '- https://github.com/o/r/issues/1 e mais texto', '- https://github.com/o/r/issues/1&x=1'].join('\n'));
   assert.doesNotMatch(hostil, /<a /, 'nada que nao seja URL de item do GitHub, inteira, vira link');
-  assert.doesNotMatch(hostil, /<script>/, 'e o texto continua escapado');
+  assert.doesNotMatch(hostil, /<script\b/i, 'e o texto continua escapado');
   const crlf = render('Itens:\r\n- https://github.com/o/r/issues/7\r\n');
   assert.match(crlf, /<li[^>]*><a href="https:\/\/github\.com\/o\/r\/issues\/7"/, 'quebra de linha \\r\\n nao apaga o link');
 });
