@@ -5,13 +5,15 @@
  * 2 anos para rejeitada e 1 ano para desistência, com o executor ligado; data_retention_policy
  * (selection_applications/anonymize) passa a 730 dias. O executor (list_premember_anonymization_candidates)
  * conta de COALESCE(cycle_decision_date, created_at).
- * "Após a decisão" é o texto que não fica falso: sem data de decisão, a âncora cai na candidatura, que é
- * anterior, e a anonimização vem ANTES do prometido; o inverso ("após a candidatura") prometeria menos
- * do que a regra guarda quando a decisão for registrada.
+ * O texto diz as duas metades do COALESCE ("após a decisão, ou após a candidatura quando a decisão não foi
+ * registrada"): medido em 10/10, nenhuma candidatura terminal tem cycle_decision_date, então hoje vale a
+ * segunda. Dizer só "após a decisão" seria verdade como teto e falso como descrição (conselho, 10/10).
  *
- * Estático: o texto nos 3 idiomas tem os dois números e a âncora. Com banco: o número da rejeitada é o
- * retention_days vivo em anos, o corpo vivo do executor ancora na decisão, e a política está coberta (job
+ * Estático: o texto nos 3 idiomas tem os dois números e as duas âncoras. Com banco: o número da rejeitada é
+ * o retention_days vivo em anos, o corpo vivo do executor ancora no COALESCE, e a política está coberta (job
  * ligado): a página não pode declarar uma regra que nada executa. Fica vermelho até a migration do #905.
+ * O "1 ano se desistiu" só tem lastro estático (o comando do job no arquivo da migration): nenhuma RPC
+ * alcançável expõe cron.job.command, e o auditor de cobertura compara só p_years.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,9 +24,9 @@ import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const read = (p) => readFileSync(resolve(process.cwd(), p), 'utf8');
 const LANGS = {
-  'pt-BR': /^(\d+) anos após a decisão da candidatura \((\d+) ano se a pessoa desistiu\)$/,
-  'en-US': /^(\d+) years after the decision on the application \((\d+) year if the person withdrew\)$/,
-  'es-LATAM': /^(\d+) años después de la decisión sobre la candidatura \((\d+) año si la persona desistió\)$/,
+  'pt-BR': /^(\d+) anos após a decisão da candidatura, ou após a candidatura quando a decisão não foi registrada \((\d+) ano se a pessoa desistiu\)$/,
+  'en-US': /^(\d+) years after the decision on the application, or after the application when no decision was recorded \((\d+) year if the person withdrew\)$/,
+  'es-LATAM': /^(\d+) años después de la decisión sobre la candidatura, o después de la candidatura cuando no se registró la decisión \((\d+) año si la persona desistió\)$/,
 };
 
 /** Escapa todo metacaractere de regex (inclusive a barra invertida) para casar o texto literal. */
@@ -115,13 +117,29 @@ test('#905 R3: candidatura com vídeo externo ainda apontado é pulada antes de 
   const trava = fn.indexOf("IF EXISTS (SELECT 1 FROM public.pmi_video_screenings v");
   const apaga = fn.indexOf('v_child := public._erase_application_pii(v_cand.application_id);');
   assert.ok(trava > 0 && apaga > trava, 'a trava tem de vir antes do apagamento');
-  assert.match(fn, /WHERE v\.application_id = v_cand\.application_id\s+AND \(v\.drive_file_id IS NOT NULL OR v\.youtube_url IS NOT NULL\)\) THEN\s+v_blocked := v_blocked \+ 1;[\s\S]{0,700}?'lgpd_premember_anonymization_blocked'[\s\S]{0,400}?END IF;\s+CONTINUE;\s+END IF;/);
+  assert.match(fn, /WHERE v\.application_id = v_cand\.application_id\s+AND \(v\.drive_file_id IS NOT NULL OR v\.youtube_url IS NOT NULL\)\) THEN\s+v_blocked := v_blocked \+ 1;[\s\S]{0,900}?'lgpd_premember_anonymization_blocked'[\s\S]{0,400}?END IF;\s+CONTINUE;\s+END IF;/);
   assert.match(fn, /'blocked_external_video', v_blocked,/);
+  // o registro de bloqueio sai uma vez por candidatura, não a cada rodada mensal
+  assert.match(fn, /IF NOT p_dry_run AND NOT EXISTS \(\s+SELECT 1 FROM public\.admin_audit_log al\s+WHERE al\.action = 'lgpd_premember_anonymization_blocked' AND al\.target_id = v_cand\.application_id\) THEN/);
+  // e a bloqueada vai para o fim da fila, antes do LIMIT
+  assert.match(fn, /ORDER BY EXISTS \(SELECT 1 FROM public\.pmi_video_screenings v\s+WHERE v\.application_id = c\.application_id\s+AND \(v\.drive_file_id IS NOT NULL OR v\.youtube_url IS NOT NULL\)\),\s+c\.retention_anchor\s+LIMIT p_limit/);
+  // o sucesso não afirma purga pendente que a trava tornou impossível
+  assert.ok(!/'pending_manual_or_ef_purge'/.test(fn), 'rótulo de purga pendente voltou ao registro de sucesso');
+});
+
+test('#905 quem ainda concorre no mesmo e-mail espera, antes de qualquer apagamento', () => {
+  const fn = M905.slice(M905.indexOf('CREATE OR REPLACE FUNCTION public.anonymize_premember_applications('), M905.indexOf('$function$;'));
+  const espera = fn.indexOf('v_waiting := v_waiting + 1;');
+  const apaga = fn.indexOf('v_child := public._erase_application_pii(v_cand.application_id);');
+  assert.ok(espera > 0 && apaga > espera, 'a espera tem de vir antes do apagamento');
+  assert.match(fn, /AND trim\(lower\(o\.email\)\) = trim\(lower\(me\.email\)\)\s+AND o\.anonymized_at IS NULL\s+AND o\.status NOT IN \('rejected', 'withdrawn'\)\s+AND oc\.status IN \('open', 'active'\)\) THEN\s+v_waiting := v_waiting \+ 1;\s+CONTINUE;/);
 });
 
 test('#905 pós-condição: ligar não apaga nada hoje e a política fica coberta', () => {
   assert.match(M905, /v_dry := public\.anonymize_premember_applications\(true, 2, 1, 500\);\s+IF \(v_dry->>'processed'\)::int <> 0 OR \(v_dry->>'blocked_external_video'\)::int <> 0 THEN\s+RAISE EXCEPTION/);
   assert.match(M905, /IF NOT FOUND OR v_cov\.coberta IS NOT TRUE OR v_cov\.horizonte_bate IS NOT TRUE THEN\s+RAISE EXCEPTION/);
+  assert.match(M905, /WHERE c\.tabela = 'selection_applications' AND c\.tipo = 'anonymize';/);
+  assert.match(M905, /AND retention_days = 730;\s+IF v_n <> 1 THEN RAISE EXCEPTION/);
 });
 
 test('#905 o anonimizador segue só para service_role', () => {

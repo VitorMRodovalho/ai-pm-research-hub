@@ -10,13 +10,22 @@
 -- Medido em 10/10/2026 (leitura): 62 candidaturas terminais não anonimizadas (60 rejected, 2 withdrawn);
 -- âncoras de 14/03/2026 (rejected) e 30/04/2026 (withdrawn) em diante; 0 com cycle_decision_date.
 -- pmi_video_screenings: 225 linhas, 220 opted_out e 5 no Google Drive, todas de 1 candidatura approved.
--- Elegíveis hoje com 2/1: 0 (a pós-condição exige), então ligar não apaga nada agora.
+-- Medido em 11/10/2026 01:02Z: das 62, 35 alcançáveis (33 rejected, 2 withdrawn; controle positivo com
+-- janela 0), 13 com e-mail de membro (caminho de membro) e 15 da coorte #935 (excluída SEM prazo final:
+-- R2 segue aberto; 1 pessoa nos dois grupos). Elegíveis hoje com 2/1: 0, e com 5: 0 (a pós-condição exige
+-- 0 com 2/1), então ligar não apaga nada agora.
 --
 -- (1) anonymize_premember_applications: mesmo corpo da captura 20260805000313 (md5 do corpo vivo
 --     34572871bca566f276c46502d401c21c conferido), mais a trava R3: candidatura com vídeo externo ainda
 --     apontado (drive_file_id/youtube_url) é pulada, contada em blocked_external_video e registrada em
 --     admin_audit_log ('lgpd_premember_anonymization_blocked', sem dado pessoal). _erase_application_pii
 --     apaga as linhas de pmi_video_screenings, e o arquivo no Drive ficaria sem ponteiro.
+--     Conselho (10/10): (a) o registro de bloqueio sai uma vez por candidatura, não todo mês; (b) a
+--     bloqueada vai para o fim da fila, para não ocupar o p_limit de quem pode sair; (c) candidatura
+--     antiga com outra candidatura EM ANDAMENTO no mesmo e-mail (ciclo aberto/ativo) espera: apagar a
+--     antiga no meio do processo seletivo tira o histórico de quem ainda está concorrendo (0 hoje, de 4
+--     com outra candidatura no mesmo e-mail); (d) o rótulo 'external_video_binaries' do sucesso dizia
+--     'pending_manual_or_ef_purge', o que a trava R3 tornou falso.
 -- (2) cron: comando com p_years := 2, p_years_withdrawn := 1, e active := true.
 -- (3) data_retention_policy de selection_applications: 730 dias (a #1812 exige retention_days = p_years × 365).
 --
@@ -47,9 +56,16 @@ DECLARE
   v_calib_scrubbed_total int := 0;
   v_blocked int := 0;
   v_blocked_ids uuid[] := '{}';
+  v_waiting int := 0;
 BEGIN
   FOR v_cand IN
-    SELECT * FROM public.list_premember_anonymization_candidates(p_years, p_years_withdrawn) LIMIT p_limit
+    SELECT c.* FROM public.list_premember_anonymization_candidates(p_years, p_years_withdrawn) c
+    -- a bloqueada por vídeo externo vai para o fim, para não ocupar o limite de quem pode sair
+    ORDER BY EXISTS (SELECT 1 FROM public.pmi_video_screenings v
+                     WHERE v.application_id = c.application_id
+                       AND (v.drive_file_id IS NOT NULL OR v.youtube_url IS NOT NULL)),
+             c.retention_anchor
+    LIMIT p_limit
   LOOP
     BEGIN
       -- #905 R3: o binário do vídeo mora fora do banco (Drive/YouTube). Apagar a linha antes de purgar o
@@ -60,7 +76,10 @@ BEGIN
                    AND (v.drive_file_id IS NOT NULL OR v.youtube_url IS NOT NULL)) THEN
         v_blocked := v_blocked + 1;
         v_blocked_ids := array_append(v_blocked_ids, v_cand.application_id);
-        IF NOT p_dry_run THEN
+        -- registra a primeira vez; o retorno do job lista as bloqueadas a cada rodada
+        IF NOT p_dry_run AND NOT EXISTS (
+             SELECT 1 FROM public.admin_audit_log al
+             WHERE al.action = 'lgpd_premember_anonymization_blocked' AND al.target_id = v_cand.application_id) THEN
           INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes)
           VALUES (NULL, 'lgpd_premember_anonymization_blocked', 'selection_application', v_cand.application_id,
             jsonb_build_object(
@@ -70,6 +89,19 @@ BEGIN
               'source', 'cron:anonymize_premember_applications'
             ));
         END IF;
+        CONTINUE;
+      END IF;
+
+      -- quem ainda concorre (outra candidatura no mesmo e-mail, em andamento, em ciclo aberto/ativo) espera
+      IF EXISTS (SELECT 1 FROM public.selection_applications o
+                 JOIN public.selection_applications me ON me.id = v_cand.application_id
+                 JOIN public.selection_cycles oc ON oc.id = o.cycle_id
+                 WHERE o.id <> me.id
+                   AND trim(lower(o.email)) = trim(lower(me.email))
+                   AND o.anonymized_at IS NULL
+                   AND o.status NOT IN ('rejected', 'withdrawn')
+                   AND oc.status IN ('open', 'active')) THEN
+        v_waiting := v_waiting + 1;
         CONTINUE;
       END IF;
 
@@ -97,7 +129,7 @@ BEGIN
             'video_screenings_deleted', COALESCE((v_child->>'video_screenings_deleted')::int, 0),
             'child_rows_deleted', COALESCE((v_child->>'child_rows_deleted')::int, 0),
             'calibration_runs_scrubbed', COALESCE((v_child->>'calibration_runs_scrubbed')::int, 0),
-            'external_video_binaries', 'pending_manual_or_ef_purge'
+            'external_video_binaries', 'none_pointed'
           ));
       END IF;
 
@@ -122,6 +154,7 @@ BEGIN
     'calibration_runs_scrubbed_total', v_calib_scrubbed_total,
     'blocked_external_video', v_blocked,
     'blocked_application_ids', to_jsonb(v_blocked_ids),
+    'waiting_open_application', v_waiting,
     'errors', v_errors,
     'executed_at', now()
   );
@@ -162,7 +195,12 @@ DECLARE
   v_job record;
   v_cov record;
   v_dry jsonb;
+  v_n integer;
 BEGIN
+  SELECT count(*) INTO v_n FROM public.data_retention_policy
+  WHERE table_name = 'selection_applications' AND cleanup_type = 'anonymize' AND retention_days = 730;
+  IF v_n <> 1 THEN RAISE EXCEPTION '#905: esperava 1 política de candidaturas com 730 dias, achei %', v_n; END IF;
+
   SELECT active, command INTO v_job FROM cron.job WHERE jobname = 'lgpd-anonymize-premember-monthly';
   IF NOT v_job.active THEN RAISE EXCEPTION '#905: o job continua inativo'; END IF;
   IF v_job.command !~ 'p_years\s*:=\s*2\M' OR v_job.command !~ 'p_years_withdrawn\s*:=\s*1\M'
@@ -170,7 +208,7 @@ BEGIN
     RAISE EXCEPTION '#905: comando do job fora do esperado: %', v_job.command;
   END IF;
 
-  SELECT * INTO v_cov FROM public._audit_retention_policy_coverage() c WHERE c.tabela = 'selection_applications';
+  SELECT * INTO v_cov FROM public._audit_retention_policy_coverage() c WHERE c.tabela = 'selection_applications' AND c.tipo = 'anonymize';
   IF NOT FOUND OR v_cov.coberta IS NOT TRUE OR v_cov.horizonte_bate IS NOT TRUE THEN
     RAISE EXCEPTION '#905: a política de candidaturas não ficou coberta (%)', to_jsonb(v_cov);
   END IF;
