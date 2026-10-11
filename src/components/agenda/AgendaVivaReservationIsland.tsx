@@ -23,6 +23,9 @@ interface Block {
   external_guest: boolean;
   is_mine: boolean;
   material_url?: string | null;
+  // #2593: só o dono do bloco (e manage_event) recebe estes dois
+  guest_name?: string | null;
+  guest_email?: string | null;
 }
 interface EventRow {
   id: string;
@@ -44,10 +47,15 @@ interface DraftState {
   guest_name: string;
   material_url: string;
   external_guest: boolean;
+  guest_email: string;
+  // #2593: remover é explícito; campo vazio na edição mantém o valor atual (a RPC usa COALESCE)
+  clear_guest?: boolean;
+  clear_material?: boolean;
 }
 const emptyDraft = (format_slug: string, duration_min: number): DraftState => ({
-  format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false,
+  format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false, guest_email: '',
 });
+const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
 // `range` mirrors AgendaVivaPublic's prop of the same name — deliberately NOT called `window`,
 // which would read as shadowing the global this component uses for events and toasts.
@@ -106,6 +114,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
       event_not_reservable: 'errEventNotReservable', reservation_window_closed: 'errWindowClosed',
       capacity_exceeded: 'errCapacity', already_reserved: 'errAlreadyReserved', access_denied: 'errDenied',
       edit_window_closed: 'errWindowEdit', cancel_window_closed: 'errWindowEdit',
+      guest_name_required: 'errGuestNameRequired', guest_email_required: 'errGuestEmailRequired',
+      invalid_guest_email: 'errInvalidGuestEmail',
     };
     const key = code && map[code] ? map[code] : 'errGeneric';
     return t(`comp.agendaViva.${key}`, 'Algo deu errado. Tente novamente.');
@@ -130,15 +140,26 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const afterChange = async () => { await load(); window.dispatchEvent(new CustomEvent('agenda:changed')); };
 
+  // o servidor recusa do mesmo jeito; aqui é só para a mensagem sair antes da ida ao banco
+  const guestProblem = (d: DraftState): string | null => {
+    if (!d.external_guest || d.clear_guest) return null;
+    if (!d.guest_name.trim()) return 'guest_name_required';
+    if (!d.guest_email.trim()) return 'guest_email_required';
+    if (!EMAIL_RE.test(d.guest_email.trim())) return 'invalid_guest_email';
+    return null;
+  };
+
   const reserve = async (eventId: string) => {
     const sb = getSb(); if (!sb) return;
     const d = ensureDraft(eventId);
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
+    const gp = guestProblem(d); if (gp) { toast(errMsg(gp), 'error'); return; }
     setBusy(eventId);
     try {
       const { data, error } = await sb.rpc('reserve_agenda_block', {
         p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: d.duration_min,
         p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
+        p_guest_email: d.external_guest ? d.guest_email.trim() || null : null,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -152,7 +173,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
   const startEdit = (b: Block) => setEditing((p) => ({
     ...p, [b.id]: {
       format_slug: b.format_slug, duration_min: b.duration_min, title: b.title,
-      guest_name: '', material_url: b.material_url || '', external_guest: b.external_guest,
+      guest_name: b.guest_name || '', material_url: b.material_url || '', external_guest: b.external_guest,
+      guest_email: b.guest_email || '',
     },
   }));
   const cancelEdit = (blockId: string) => setEditing((p) => { const n = { ...p }; delete n[blockId]; return n; });
@@ -161,11 +183,16 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const sb = getSb(); if (!sb) return;
     const d = editing[blockId]; if (!d) return;
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
+    const gp = guestProblem(d); if (gp) { toast(errMsg(gp), 'error'); return; }
     setBusy(blockId);
     try {
       const { data, error } = await sb.rpc('update_agenda_block', {
         p_block_id: blockId, p_title: d.title.trim(), p_format_slug: d.format_slug, p_duration_min: d.duration_min,
-        p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
+        p_guest_name: d.clear_guest ? null : d.guest_name.trim() || null,
+        p_material_url: d.clear_material ? null : d.material_url.trim() || null,
+        p_external_guest: d.clear_guest ? false : d.external_guest,
+        p_guest_email: !d.clear_guest && d.external_guest ? d.guest_email.trim() || null : null,
+        p_clear_guest: !!d.clear_guest, p_clear_material: !!d.clear_material,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -202,7 +229,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const inputCls = 'mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm';
 
-  const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void) => (
+  const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void,
+    isEdit = false) => (
     <div className="space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
@@ -236,9 +264,41 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         </label>
       </div>
       <label className="flex items-center gap-2 text-sm cursor-pointer">
-        <input type="checkbox" checked={d.external_guest} onChange={(e) => set({ external_guest: e.target.checked })} className="rounded" />
+        <input type="checkbox" checked={d.external_guest} onChange={(e) => set({ external_guest: e.target.checked, clear_guest: false })} className="rounded" />
         <span>{t('comp.agendaViva.fExternalGuest', 'Convidado externo ao núcleo')}</span>
       </label>
+      {d.external_guest && !d.clear_guest && (
+        <label className="block">
+          <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestEmail', 'E-mail do convidado')}</span>
+          <input type="email" value={d.guest_email} onChange={(e) => set({ guest_email: e.target.value })}
+            placeholder={t('comp.agendaViva.fGuestEmailPlaceholder', 'convidado@example.org')} className={inputCls} maxLength={254}
+            aria-describedby="agenda-guest-email-hint" required />
+          <span id="agenda-guest-email-hint" className="mt-1 block text-[11px] text-[var(--text-muted)]">
+            {t('comp.agendaViva.fGuestEmailHint', 'Quando o bloco for confirmado, o convidado recebe o convite com o aviso de privacidade. O e-mail fica guardado até 1 ano depois da reunião.')}
+          </span>
+        </label>
+      )}
+      {isEdit && (d.guest_name || d.external_guest || d.material_url) && (
+        <div className="flex flex-wrap gap-2">
+          {(d.guest_name || d.external_guest) && !d.clear_guest && (
+            <button type="button" onClick={() => set({ clear_guest: true, guest_name: '', guest_email: '', external_guest: false })}
+              className="px-2.5 py-1 rounded-lg text-xs border border-[var(--border)] text-rose-600 hover:bg-rose-50">
+              {t('comp.agendaViva.removeGuest', 'Remover convidado')}
+            </button>
+          )}
+          {d.material_url && !d.clear_material && (
+            <button type="button" onClick={() => set({ clear_material: true, material_url: '' })}
+              className="px-2.5 py-1 rounded-lg text-xs border border-[var(--border)] text-rose-600 hover:bg-rose-50">
+              {t('comp.agendaViva.removeMaterial', 'Remover material')}
+            </button>
+          )}
+        </div>
+      )}
+      {isEdit && (d.clear_guest || d.clear_material) && (
+        <p className="text-[11px] text-[var(--text-muted)]" role="status">
+          {t('comp.agendaViva.removalPending', 'A remoção vale quando você salvar.')}
+        </p>
+      )}
     </div>
   );
 
@@ -280,7 +340,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
                 {isEditing ? (
                   <>
                     {renderFields(editing[myBlock.id], (p) => setEdit(myBlock.id, p),
-                      (slug) => { const f = formats.find((x) => x.slug === slug); setEdit(myBlock.id, { format_slug: slug, duration_min: f?.default_duration_min ?? editing[myBlock.id].duration_min }); })}
+                      (slug) => { const f = formats.find((x) => x.slug === slug); setEdit(myBlock.id, { format_slug: slug, duration_min: f?.default_duration_min ?? editing[myBlock.id].duration_min }); },
+                      true)}
                     <div className="mt-3 flex justify-end gap-2">
                       <button onClick={() => cancelEdit(myBlock.id)} className="px-3 py-1.5 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]">
                         {t('comp.agendaViva.cancel', 'Cancelar')}
