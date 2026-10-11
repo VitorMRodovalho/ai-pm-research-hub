@@ -10897,7 +10897,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // (#1552) fez a pendencia ficar VISIVEL no `prepare` e no `close`; esta tool a torna ACIONAVEL.
   mcp.tool(
     "agenda_blocks",
-    "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; para inscrever outra pessoa, nomeie-a em guest_name (+ external_guest se for de fora). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
+    "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; para inscrever outra pessoa, nomeie-a em guest_name (+ external_guest se for de fora; convidado externo EXIGE guest_email, e guest_language escolhe o idioma do convite: pt-BR|en-US|es-LATAM, padrao pt-BR). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
     {
       action: z.enum(["list", "reserve", "confirm", "no_show"]).describe("Agenda-block operation."),
       event_id: z.string().optional().describe("Event UUID. action='list' — opcional (sem ele, janela corrente). action='reserve' — REQUERIDO, e tem de ser uma das 2 proximas Reunioes Gerais. action='confirm' — confirma TODOS os blocos reservados do evento."),
@@ -10908,7 +10908,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       duration_min: z.number().optional().describe("action='reserve' — REQUERIDO. Multiplo de 5, positivo. O evento tem teto de 90 min somando reservados e confirmados."),
       guest_name: z.string().optional().describe("action='reserve' — quem de fato apresenta, quando nao e o proprio chamador. A reserva continua em nome do chamador; este campo NOMEIA o apresentador."),
       material_url: z.string().optional().describe("action='reserve' — link do material (slides, doc, repo)."),
-      external_guest: z.boolean().optional().describe("action='reserve' — true quando o apresentador nomeado em guest_name nao e membro do Nucleo."),
+      external_guest: z.boolean().optional().describe("action='reserve' — true quando o apresentador nomeado em guest_name nao e membro do Nucleo. Exige guest_email."),
+      guest_email: z.string().optional().describe("action='reserve' — #2593: e-mail do convidado externo. REQUERIDO com external_guest=true (sem ele a RPC devolve guest_email_required). Fica guardado ate 1 ano depois da reuniao; o convite com o aviso de privacidade sai na confirmacao do bloco."),
+      guest_language: z.enum(["pt-BR", "en-US", "es-LATAM"]).optional().describe("action='reserve' — #2593: idioma do convite ao convidado externo. Padrao pt-BR."),
       confirm: z.boolean().optional().describe("Passe confirm=true para executar. Omitido/false devolve preview com os alvos exatos (ADR-0018 W1). Vale para confirm e no_show."),
     },
     async (params: any) => {
@@ -10968,6 +10970,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         if (!isUUID(params.event_id ?? "")) return invalid("action='reserve' requires event_id (UUID) da Reuniao Geral.", "Use action='list' sem event_id para ver as proximas.");
         if (!params.format_slug) return invalid("action='reserve' requires format_slug.", "Formatos ativos: prompt_semana, review_ferramenta, insight_rapido, pilula_quinzena, case_aplicado, demo_pratica, convidado, espaco_aberto.");
         if (!params.title || !String(params.title).trim()) return invalid("action='reserve' requires title (nao vazio).");
+        // #2593: convidado externo precisa de nome e e-mail, senao a plataforma nao consegue convida-lo
+        if (params.external_guest && (!params.guest_name || !String(params.guest_name).trim())) return invalid("external_guest=true requires guest_name.");
+        if (params.external_guest && (!params.guest_email || !String(params.guest_email).trim())) return invalid("external_guest=true requires guest_email.", "O convite com o aviso de privacidade vai para esse e-mail quando o bloco for confirmado.");
         const dur = Number(params.duration_min);
         if (!Number.isInteger(dur) || dur <= 0 || dur % 5 !== 0) {
           return invalid("duration_min tem de ser inteiro positivo e multiplo de 5.", "Ex.: 5, 10, 15, 20.");
@@ -10997,6 +11002,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
               ...(params.guest_name ? { guest_name: params.guest_name } : {}),
               ...(params.material_url ? { material_url: params.material_url } : {}),
               ...(params.external_guest ? { external_guest: params.external_guest } : {}),
+              ...(params.guest_email ? { guest_email: params.guest_email } : {}),
+              ...(params.guest_language ? { guest_language: params.guest_language } : {}),
               confirm: true,
             },
           });
@@ -11010,6 +11017,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           p_guest_name: params.guest_name ?? null,
           p_material_url: params.material_url ?? null,
           p_external_guest: params.external_guest ?? false,
+          p_guest_email: params.guest_email ?? null,
+          p_guest_language: params.guest_language ?? null,
         });
         if (rerror) { await logUsage(sb, member.id, "agenda_blocks", false, rerror.message, start); return ok(buildSemanticError({ tool: "agenda_blocks", semantic_domain: dom, code: "internal_error", message: rerror.message })); }
         // A RPC devolve {error: '...'} no CORPO em vez de estourar. Sem este ramo, um
@@ -11027,7 +11036,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
                   ? "Voce ja tem bloco neste evento; um bloco por pessoa por evento."
                   : (code === "capacity_exceeded"
                       ? "A pauta chegou ao teto de 90 min. Use action='list' para ver o que ja esta reservado."
-                      : "Use action='list' para conferir evento, formato e janela.")),
+                      : (code.startsWith("guest_") || code === "invalid_guest_email"
+                          ? "Convidado externo exige guest_name e um guest_email valido."
+                          : "Use action='list' para conferir evento, formato e janela."))),
           }));
         }
         await logUsage(sb, member.id, "agenda_blocks", true, undefined, start);

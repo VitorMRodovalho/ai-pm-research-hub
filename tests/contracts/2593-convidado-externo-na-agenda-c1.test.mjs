@@ -69,7 +69,7 @@ test('#2593 reserva: convidado externo exige nome e e-mail válido', () => {
 
 test('#2593 reserva: só o convidado de agora fica ligado ao bloco (linha reativada perde o vínculo antigo)', () => {
   assert.match(fnBody('reserve_agenda_block'),
-    /PERFORM public\._agenda_guest_detach\(v_block_id\);\s+IF v_external THEN\s+v_person := public\._agenda_guest_attach\(v_block_id, p_guest_name, v_email\);\s+END IF;\s+UPDATE public\.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL WHERE id = v_block_id;/);
+    /PERFORM public\._agenda_guest_detach\(v_block_id\);\s+IF v_external THEN\s+v_person := public\._agenda_guest_attach\(v_block_id, p_guest_name, v_email\);\s+END IF;\s+UPDATE public\.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL, guest_language = v_lang\s+WHERE id = v_block_id;/);
 });
 
 test('#2593 edição: remover convidado e material é explícito, e campo nulo mantém o atual', () => {
@@ -109,8 +109,8 @@ test('#2593 leitura: nome do convidado externo público só no bloco confirmado 
 
 test('#2593 leitura: o dono vê o próprio convidado; manage_event ganha o e-mail; o anônimo não vê nada disso', () => {
   const f = fnBody('get_geral_agenda_viva');
-  assert.match(f, /\|\| CASE WHEN v_caller IS NOT NULL AND bk\.owner_member_id = v_caller\s+THEN jsonb_build_object\('guest_name', bk\.guest_name, 'guest_email', bk\.guest_email\)/);
-  assert.match(f, /CASE WHEN v_is_admin\s+THEN jsonb_build_object\(\s+'owner_member_id', bk\.owner_member_id,\s+'owner_full_name', bk\.owner_full_name,\s+'guest_name', bk\.guest_name,\s+'guest_email', bk\.guest_email\)/);
+  assert.match(f, /\|\| CASE WHEN v_caller IS NOT NULL AND bk\.owner_member_id = v_caller\s+THEN jsonb_build_object\('guest_name', bk\.guest_name, 'guest_email', bk\.guest_email,\s+'guest_language', bk\.guest_language\)/);
+  assert.match(f, /CASE WHEN v_is_admin\s+THEN jsonb_build_object\(\s+'owner_member_id', bk\.owner_member_id,\s+'owner_full_name', bk\.owner_full_name,\s+'guest_name', bk\.guest_name,\s+'guest_email', bk\.guest_email,\s+'guest_language', bk\.guest_language\)/);
   // o e-mail vem do vínculo do bloco (o digitado), nunca de persons
   assert.match(f, /LEFT JOIN LATERAL \(\s+SELECT l\.contact_email FROM public\.person_external_links l\s+WHERE l\.purpose = 'agenda_guest' AND l\.source_id = b\.id[\s\S]{0,80}?\) gl ON true/);
   assert.match(f, /gl\.contact_email AS guest_email/);
@@ -123,8 +123,8 @@ test('#2593 leitura: o dono vê o próprio convidado; manage_event ganha o e-mai
 test('#2593 grants: auxiliares fora do alcance de quem chama a RPC; escrita fora do anônimo', () => {
   assert.match(MIG, /REVOKE ALL ON FUNCTION public\._agenda_guest_attach\(uuid, text, text\) FROM PUBLIC, anon, authenticated;/);
   assert.match(MIG, /REVOKE ALL ON FUNCTION public\._agenda_guest_detach\(uuid\) FROM PUBLIC, anon, authenticated;/);
-  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.reserve_agenda_block\(uuid, text, text, integer, text, text, boolean, text\) FROM PUBLIC, anon;/);
-  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.update_agenda_block\(uuid, text, text, integer, text, text, boolean, text, boolean, boolean\) FROM PUBLIC, anon;/);
+  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.reserve_agenda_block\(uuid, text, text, integer, text, text, boolean, text, text\) FROM PUBLIC, anon;/);
+  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.update_agenda_block\(uuid, text, text, integer, text, text, boolean, text, text, boolean, boolean\) FROM PUBLIC, anon;/);
   assert.match(MIG, /DROP FUNCTION IF EXISTS public\.reserve_agenda_block\(uuid, text, text, integer, text, text, boolean\);/);
   assert.match(MIG, /DROP FUNCTION IF EXISTS public\.update_agenda_block\(uuid, text, text, integer, text, text, boolean\);/);
   assert.ok(!/GRANT EXECUTE ON FUNCTION public\._agenda_guest_(attach|detach)\([^)]*\)[^;]*\b(anon|authenticated)\b/.test(MIG));
@@ -144,7 +144,7 @@ test('#2593 pós-condição: controle desfeito — nome público só depois do a
 
 test('#2593 tela: e-mail do convidado vai só com convidado externo, e a remoção é explícita', () => {
   assert.match(ISLAND, /p_guest_email: d\.external_guest \? d\.guest_email\.trim\(\) \|\| null : null,/);
-  assert.match(ISLAND, /p_guest_email: !d\.clear_guest && d\.external_guest \? d\.guest_email\.trim\(\) \|\| null : null,\s+p_clear_guest: !!d\.clear_guest, p_clear_material: !!d\.clear_material,/);
+  assert.match(ISLAND, /p_guest_email: !d\.clear_guest && d\.external_guest \? d\.guest_email\.trim\(\) \|\| null : null,\s+p_guest_language: !d\.clear_guest && d\.external_guest \? d\.guest_language : null,\s+p_clear_guest: !!d\.clear_guest, p_clear_material: !!d\.clear_material,/);
   assert.match(ISLAND, /const external = d\.external_guest && !d\.clear_guest;/);
   assert.match(ISLAND, /\{external && \(\s+<label className="block" htmlFor=\{ids\.email\}>[\s\S]{0,200}?fGuestEmail/);
   // remover marca a intenção; os valores ficam para o Desfazer, e quem decide é a marca no envio
@@ -171,12 +171,42 @@ test('#2593 tela: a agenda pública mostra só o nome público; o admin vê o e-
   assert.match(ADMIN, /\{b\.guest_email \? ` \(\$\{b\.guest_email\}\)` : ''\}/);
 });
 
+test('#2593 idioma do convite: coluna com padrão pt-BR, só as três tags, e normalizada na escrita', () => {
+  assert.match(MIG, /ALTER TABLE public\.event_agenda_blocks ADD COLUMN IF NOT EXISTS guest_language text NOT NULL DEFAULT 'pt-BR';/);
+  assert.match(MIG, /CHECK \(guest_language IN \('pt-BR', 'en-US', 'es-LATAM'\)\);/);
+  assert.match(fnBody('reserve_agenda_block'), /v_lang\s+text := public\.normalize_platform_language\(p_guest_language\);/);
+  assert.match(fnBody('update_agenda_block'), /guest_language = CASE WHEN p_guest_language IS NULL THEN guest_language\s+ELSE public\.normalize_platform_language\(p_guest_language\) END,/);
+  // a pós-condição afirma o padrão e o domínio
+  assert.match(MIG, /AND column_default LIKE '''pt-BR''%' AND is_nullable = 'NO';\s+IF v_n <> 1 THEN RAISE EXCEPTION/);
+  assert.match(MIG, /WHERE guest_language NOT IN \('pt-BR', 'en-US', 'es-LATAM'\);\s+IF v_n <> 0 THEN RAISE EXCEPTION/);
+});
+
+test('#2593 idioma do convite na tela: seletor só com convidado externo, já com o idioma de quem reserva', () => {
+  assert.match(ISLAND, /const emptyDraft = \(format_slug: string, duration_min: number, lang: Lang\): DraftState => \(\{[\s\S]{0,200}?guest_language: lang,/);
+  assert.match(ISLAND, /p_guest_language: d\.external_guest \? d\.guest_language : null,/);
+  assert.match(ISLAND, /guest_email: b\.guest_email \|\| '', guest_language: b\.guest_language \|\| lang,/);
+  assert.match(ISLAND, /\{external && \(\s+<label className="block" htmlFor=\{ids\.lang\}>[\s\S]{0,300}?GUEST_LANGS\.map/);
+});
+
+test('#2593 MCP agenda_blocks: convidado externo leva e-mail e idioma até a RPC, e falta de e-mail é recusada antes da prévia', () => {
+  const MCP = maskJsComments(read('supabase/functions/nucleo-mcp/index.ts'));
+  const a = MCP.indexOf('"agenda_blocks",');
+  assert.ok(a > 0, 'a tool agenda_blocks sumiu');
+  const tool = MCP.slice(a, MCP.indexOf('mcp.tool(', a + 20));
+  assert.match(tool, /guest_email: z\.string\(\)\.optional\(\)/);
+  assert.match(tool, /guest_language: z\.enum\(\["pt-BR", "en-US", "es-LATAM"\]\)\.optional\(\)/);
+  assert.match(tool, /p_external_guest: params\.external_guest \?\? false,\s+p_guest_email: params\.guest_email \?\? null,\s+p_guest_language: params\.guest_language \?\? null,/);
+  assert.match(tool, /if \(params\.external_guest && \(!params\.guest_email \|\| !String\(params\.guest_email\)\.trim\(\)\)\) return invalid\(/);
+  // a prévia repassa os dois campos na next_call
+  assert.match(tool, /\.\.\.\(params\.guest_email \? \{ guest_email: params\.guest_email \} : \{\}\),\s+\.\.\.\(params\.guest_language \? \{ guest_language: params\.guest_language \} : \{\}\),/);
+});
+
 test('#2593 i18n: as chaves novas existem nos três dicionários', () => {
   const keys = ['fGuestEmail', 'fGuestEmailPlaceholder', 'fGuestEmailHint', 'errGuestNameRequired', 'errGuestEmailRequired',
     'errInvalidGuestEmail', 'removeGuest', 'removeMaterial', 'withGuest', 'fGuestLegend', 'fGuestExternalName',
-    'removalGuestPending', 'removalMaterialPending', 'undoRemoval'];
+    'removalGuestPending', 'removalMaterialPending', 'undoRemoval', 'fGuestLanguage', 'lang.pt-BR', 'lang.en-US', 'lang.es-LATAM'];
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
-    for (const k of keys) assert.match(dict, new RegExp(`'comp\\.agendaViva\\.${k}': '`), `${lang} sem ${k}`);
+    for (const k of keys) assert.match(dict, new RegExp(`'comp\\.agendaViva\\.${k.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&')}': '`), `${lang} sem ${k}`);
   }
 });

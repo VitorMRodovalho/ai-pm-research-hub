@@ -19,8 +19,10 @@
 --     bloco com o e-mail digitado (retention_until = data do evento + 365). O vínculo é criado também quando o
 --     e-mail é de membro: a varredura só apaga pessoa com a marca de origem externa, e assim o dono nunca vê o
 --     e-mail principal de outra pessoa (conselho, 11/10: a busca casa e-mail secundário).
--- (3) reserve_agenda_block(+ p_guest_email): convidado externo exige nome e e-mail válido.
--- (4) update_agenda_block(+ p_guest_email, p_clear_guest, p_clear_material): troca de e-mail troca a pessoa;
+-- (3) reserve_agenda_block(+ p_guest_email, p_guest_language): convidado externo exige nome e e-mail válido.
+--     event_agenda_blocks.guest_language (decisão do GP, 11/10: seletor no cadastro, já com o idioma de quem
+--     reserva) diz em que idioma o convite da C2 sai; normalize_platform_language, padrão pt-BR.
+-- (4) update_agenda_block(+ p_guest_email, p_guest_language, p_clear_guest, p_clear_material): troca de e-mail troca a pessoa;
 --     deixar de ser externo, ou remover o convidado (também o caminho da oposição, Art. 18 §2º), apaga o vínculo.
 -- (5) cancel_agenda_block: apaga o vínculo e o ponteiro.
 -- (6) get_geral_agenda_viva: guest_public_name (convidado externo de bloco confirmado E já avisado) para todos; o
@@ -41,6 +43,12 @@ CREATE INDEX IF NOT EXISTS idx_event_agenda_blocks_guest_person ON public.event_
 ALTER TABLE public.event_agenda_blocks ADD COLUMN IF NOT EXISTS guest_notified_at timestamptz;
 COMMENT ON COLUMN public.event_agenda_blocks.guest_notified_at IS
   '#2593: quando o convidado externo recebeu o convite com o aviso de privacidade. O nome só é público depois disso. Zera quando nome ou e-mail do convidado mudam.';
+ALTER TABLE public.event_agenda_blocks ADD COLUMN IF NOT EXISTS guest_language text NOT NULL DEFAULT 'pt-BR';
+ALTER TABLE public.event_agenda_blocks DROP CONSTRAINT IF EXISTS event_agenda_blocks_guest_language_chk;
+ALTER TABLE public.event_agenda_blocks ADD CONSTRAINT event_agenda_blocks_guest_language_chk
+  CHECK (guest_language IN ('pt-BR', 'en-US', 'es-LATAM'));
+COMMENT ON COLUMN public.event_agenda_blocks.guest_language IS
+  '#2593: idioma do convite ao convidado externo (pt-BR, en-US, es-LATAM). A tela sugere o idioma de quem reserva.';
 ALTER TABLE public.person_external_links ADD COLUMN IF NOT EXISTS contact_email text;
 COMMENT ON COLUMN public.person_external_links.contact_email IS
   '#2593: o e-mail digitado para este uso (pode diferir do principal da pessoa). Some com o vínculo, no prazo.';
@@ -108,7 +116,8 @@ CREATE OR REPLACE FUNCTION public.reserve_agenda_block(
   p_guest_name     text DEFAULT NULL,
   p_material_url   text DEFAULT NULL,
   p_external_guest boolean DEFAULT false,
-  p_guest_email    text DEFAULT NULL
+  p_guest_email    text DEFAULT NULL,
+  p_guest_language text DEFAULT NULL
 )
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -126,6 +135,7 @@ DECLARE
   v_external boolean := COALESCE(p_external_guest, false);
   v_email    text := NULLIF(lower(btrim(COALESCE(p_guest_email, ''))), '');
   v_person   uuid;
+  v_lang     text := public.normalize_platform_language(p_guest_language);
 BEGIN
   -- Caller resolves from the session; reservations are always self-scoped.
   SELECT id INTO v_caller FROM public.members WHERE auth_id = auth.uid();
@@ -234,7 +244,8 @@ BEGIN
   IF v_external THEN
     v_person := public._agenda_guest_attach(v_block_id, p_guest_name, v_email);
   END IF;
-  UPDATE public.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL WHERE id = v_block_id;
+  UPDATE public.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL, guest_language = v_lang
+   WHERE id = v_block_id;
 
   RETURN jsonb_build_object(
     'success', true, 'block_id', v_block_id, 'event_id', p_event_id,
@@ -244,8 +255,8 @@ BEGIN
 END
 $function$;
 
-REVOKE ALL ON FUNCTION public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text) TO authenticated;
+REVOKE ALL ON FUNCTION public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text, text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text, text) TO authenticated;
 
 -- ── (4) edição ───────────────────────────────────────────────────────────────
 DROP FUNCTION IF EXISTS public.update_agenda_block(uuid, text, text, integer, text, text, boolean);
@@ -258,6 +269,7 @@ CREATE OR REPLACE FUNCTION public.update_agenda_block(
   p_material_url   text DEFAULT NULL,
   p_external_guest boolean DEFAULT NULL,
   p_guest_email    text DEFAULT NULL,
+  p_guest_language text DEFAULT NULL,
   p_clear_guest    boolean DEFAULT false,
   p_clear_material boolean DEFAULT false
 )
@@ -349,6 +361,8 @@ BEGIN
          material_url   = CASE WHEN COALESCE(p_clear_material, false) THEN NULL
                                ELSE COALESCE(p_material_url, material_url) END,
          external_guest = v_external,
+         guest_language = CASE WHEN p_guest_language IS NULL THEN guest_language
+                               ELSE public.normalize_platform_language(p_guest_language) END,
          -- convidado diferente (nome, e-mail, ou deixou de ser externo) ainda não foi avisado
          guest_notified_at = CASE WHEN v_external AND v_name IS NOT DISTINCT FROM v_block.guest_name
                                        AND v_email IS NOT DISTINCT FROM v_cur_email
@@ -372,8 +386,8 @@ BEGIN
 END
 $function$;
 
-REVOKE ALL ON FUNCTION public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, boolean, boolean) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, boolean, boolean) TO authenticated;
+REVOKE ALL ON FUNCTION public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, text, boolean, boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, text, boolean, boolean) TO authenticated;
 
 -- ── (5) cancelamento ─────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.cancel_agenda_block(
@@ -479,6 +493,7 @@ BEGIN
            split_part(m.name, ' ', 1) AS owner_first_name,
            m.name AS owner_full_name,
            b.guest_notified_at,
+           b.guest_language,
            gl.contact_email AS guest_email
     FROM selected s
     JOIN public.event_agenda_blocks b ON b.event_id = s.id
@@ -533,7 +548,8 @@ BEGIN
                       ELSE '{}'::jsonb END
               -- #2593: o dono vê o convidado que cadastrou (a edição abria vazia), inclusive o e-mail
               || CASE WHEN v_caller IS NOT NULL AND bk.owner_member_id = v_caller
-                      THEN jsonb_build_object('guest_name', bk.guest_name, 'guest_email', bk.guest_email)
+                      THEN jsonb_build_object('guest_name', bk.guest_name, 'guest_email', bk.guest_email,
+                                              'guest_language', bk.guest_language)
                       ELSE '{}'::jsonb END
               -- authenticated (non-admin) additionally see the material link
               || CASE WHEN v_caller IS NOT NULL
@@ -545,7 +561,8 @@ BEGIN
                              'owner_member_id', bk.owner_member_id,
                              'owner_full_name', bk.owner_full_name,
                              'guest_name', bk.guest_name,
-                             'guest_email', bk.guest_email)
+                             'guest_email', bk.guest_email,
+                             'guest_language', bk.guest_language)
                       ELSE '{}'::jsonb END
               ORDER BY bk.sort_order, bk.duration_min DESC
             ) FROM blocks bk WHERE bk.event_id = s.id
@@ -576,8 +593,8 @@ BEGIN
   -- quem chama a RPC não alcança os auxiliares
   IF has_function_privilege('authenticated', 'public._agenda_guest_attach(uuid, text, text)', 'EXECUTE')
      OR has_function_privilege('authenticated', 'public._agenda_guest_detach(uuid)', 'EXECUTE')
-     OR has_function_privilege('anon', 'public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text)', 'EXECUTE')
-     OR has_function_privilege('anon', 'public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, boolean, boolean)', 'EXECUTE') THEN
+     OR has_function_privilege('anon', 'public.reserve_agenda_block(uuid, text, text, integer, text, text, boolean, text, text)', 'EXECUTE')
+     OR has_function_privilege('anon', 'public.update_agenda_block(uuid, text, text, integer, text, text, boolean, text, text, boolean, boolean)', 'EXECUTE') THEN
     RAISE EXCEPTION '#2593: auxiliar alcançável por authenticated, ou escrita alcançável por anon';
   END IF;
 
@@ -633,6 +650,14 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN
     IF SQLERRM <> '__2593_rollback__' THEN RAISE; END IF;
   END;
+
+  -- idioma do convite: padrão pt-BR e nenhuma linha fora das três tags da plataforma
+  SELECT count(*) INTO v_n FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'event_agenda_blocks' AND column_name = 'guest_language'
+    AND column_default LIKE '''pt-BR''%' AND is_nullable = 'NO';
+  IF v_n <> 1 THEN RAISE EXCEPTION '#2593: guest_language sem o padrão pt-BR ou anulável'; END IF;
+  SELECT count(*) INTO v_n FROM public.event_agenda_blocks WHERE guest_language NOT IN ('pt-BR', 'en-US', 'es-LATAM');
+  IF v_n <> 0 THEN RAISE EXCEPTION '#2593: % bloco(s) com idioma fora do domínio', v_n; END IF;
 
   -- nenhum bloco ficou com ponteiro para pessoa sem ser convidado externo
   SELECT count(*) INTO v_n FROM public.event_agenda_blocks WHERE guest_person_id IS NOT NULL AND NOT external_guest;

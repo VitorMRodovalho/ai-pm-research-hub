@@ -26,6 +26,7 @@ interface Block {
   // #2593: só o dono do bloco (e manage_event) recebe estes dois
   guest_name?: string | null;
   guest_email?: string | null;
+  guest_language?: Lang | null;
 }
 interface EventRow {
   id: string;
@@ -48,15 +49,19 @@ interface DraftState {
   material_url: string;
   external_guest: boolean;
   guest_email: string;
+  // #2593: idioma do convite (decisão do GP: seletor, já com o idioma de quem reserva)
+  guest_language: Lang;
   // #2593: remover é explícito; campo vazio na edição mantém o valor atual (a RPC usa COALESCE)
   clear_guest?: boolean;
   clear_material?: boolean;
   // marca a primeira tentativa de salvar: o erro do convidado aparece no campo daí em diante
   attempted?: boolean;
 }
-const emptyDraft = (format_slug: string, duration_min: number): DraftState => ({
+const emptyDraft = (format_slug: string, duration_min: number, lang: Lang): DraftState => ({
   format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false, guest_email: '',
+  guest_language: lang,
 });
+const GUEST_LANGS: Lang[] = ['pt-BR', 'en-US', 'es-LATAM'];
 const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
 // `range` mirrors AgendaVivaPublic's prop of the same name — deliberately NOT called `window`,
@@ -126,7 +131,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
   const ensureDraft = (eventId: string): DraftState => {
     if (drafts[eventId]) return drafts[eventId];
     const first = formats[0];
-    const d = emptyDraft(first?.slug || 'insight_rapido', first?.default_duration_min || 5);
+    const d = emptyDraft(first?.slug || 'insight_rapido', first?.default_duration_min || 5, lang);
     setDrafts((p) => ({ ...p, [eventId]: d }));
     return d;
   };
@@ -162,6 +167,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: d.duration_min,
         p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
         p_guest_email: d.external_guest ? d.guest_email.trim() || null : null,
+        p_guest_language: d.external_guest ? d.guest_language : null,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -176,7 +182,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     ...p, [b.id]: {
       format_slug: b.format_slug, duration_min: b.duration_min, title: b.title,
       guest_name: b.guest_name || '', material_url: b.material_url || '', external_guest: b.external_guest,
-      guest_email: b.guest_email || '',
+      guest_email: b.guest_email || '', guest_language: b.guest_language || lang,
     },
   }));
   const cancelEdit = (blockId: string) => setEditing((p) => { const n = { ...p }; delete n[blockId]; return n; });
@@ -194,6 +200,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         p_material_url: d.clear_material ? null : d.material_url.trim() || null,
         p_external_guest: d.clear_guest ? false : d.external_guest,
         p_guest_email: !d.clear_guest && d.external_guest ? d.guest_email.trim() || null : null,
+        p_guest_language: !d.clear_guest && d.external_guest ? d.guest_language : null,
         p_clear_guest: !!d.clear_guest, p_clear_material: !!d.clear_material,
       });
       if (error) throw error;
@@ -238,6 +245,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const nameErr = problem === 'guest_name_required';
     const emailErr = problem === 'guest_email_required' || problem === 'invalid_guest_email';
     const ids = { name: `agenda-guest-name-${key}`, email: `agenda-guest-email-${key}`, hint: `agenda-guest-hint-${key}`,
+      lang: `agenda-guest-lang-${key}`,
       nameErr: `agenda-guest-name-err-${key}`, emailErr: `agenda-guest-email-err-${key}`, status: `agenda-removal-${key}` };
     const external = d.external_guest && !d.clear_guest;
     return (
@@ -292,6 +300,16 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
             </span>
           </label>
         )}
+        {external && (
+          <label className="block" htmlFor={ids.lang}>
+            <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestLanguage', 'Idioma do convite')}</span>
+            <select id={ids.lang} value={d.guest_language} onChange={(e) => set({ guest_language: e.target.value as Lang })} className={inputCls}>
+              {GUEST_LANGS.map((l) => (
+                <option key={l} value={l}>{t(`comp.agendaViva.lang.${l}`, l)}</option>
+              ))}
+            </select>
+          </label>
+        )}
         {isEdit && (d.guest_name || d.external_guest) && !d.clear_guest && (
           <button type="button" onClick={() => set({ clear_guest: true })}
             aria-label={`${t('comp.agendaViva.removeGuest', 'Remover convidado')}${d.guest_name ? `: ${d.guest_name}` : ''}`}
@@ -343,7 +361,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         // block that already happened would erase the record of it. So: no card without a block of
         // mine, and no reserve/cancel affordance on the ones that remain.
         if (ev.is_past && !myBlock) return null;
-        const draft = drafts[ev.id] || (formats[0] ? emptyDraft(formats[0].slug, formats[0].default_duration_min) : null);
+        const draft = drafts[ev.id] || (formats[0] ? emptyDraft(formats[0].slug, formats[0].default_duration_min, lang) : null);
         const isEditing = myBlock && editing[myBlock.id];
         return (
           <div key={ev.id} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-4">
