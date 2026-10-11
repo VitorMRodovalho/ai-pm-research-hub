@@ -25,6 +25,15 @@
 -- (5) Sino ao dono: agenda_block_confirmed e agenda_block_cancelled, catalogados como suppress (só no aplicativo)
 --     no ADR-0022, com WHEN próprio em _delivery_mode_for (não caem no ELSE).
 --
+-- Conselho (11/10): (a) cancelar antes de o convite ser entregue (ele pode ficar retido pelo teto diário) encerra o
+--     convite pendente como failed, e a EF não manda convite de bloco que já não está confirmado nem carimba o
+--     aviso nele; (b) a checagem de convite repetido ignora envio failed e sent (um sent sem carimbo é sandbox, e
+--     não pode travar o convite real); (c) SEQUENCE em segundos, para cancelar no mesmo minuto ainda vencer.
+-- Decisões conscientes: o convidado descadastrado não recebe nem o cancelamento (o descadastro vale para tudo);
+-- o fim do evento no ICS é o da reunião (início + duração do evento), porque o bloco não tem horário próprio; o
+-- título do bloco fica guardado no envio (é texto de quem reservou, sem contato do convidado).
+-- ⚠️ ORDEM DE DEPLOY: publicar a EF send-campaign ANTES de aplicar esta migration. O cron de pendentes pega todo
+--    envio pending_delivery; uma EF antiga mandaria o convite sem preencher nem anexar o ICS.
 -- Nenhum envio real até o GP dar OK ao merge (a orquestradora aplica; a EF send-campaign é publicada por ela).
 --
 -- Rollback: recriar confirm (20260805000179), cancel (20261011112204) e _delivery_mode_for (20261010192333) pelas
@@ -87,8 +96,8 @@ BEGIN
             '{"all": false, "roles": [], "chapters": [], "designations": []}'::jsonb, 'operational', 'eventos',
             '{"block_title": {"type": "text", "required": true}, "member_name": {"type": "text", "required": true}, "start_utc": {"type": "text", "required": true}, "duration": {"type": "text", "required": true}, "link": {"type": "text", "required": true}}'::jsonb)
     ON CONFLICT (slug) DO UPDATE
-      SET subject = EXCLUDED.subject, body_html = EXCLUDED.body_html, body_text = EXCLUDED.body_text,
-          theme = EXCLUDED.theme, variables = EXCLUDED.variables;
+      SET name = EXCLUDED.name, subject = EXCLUDED.subject, body_html = EXCLUDED.body_html,
+          body_text = EXCLUDED.body_text, theme = EXCLUDED.theme, variables = EXCLUDED.variables;
   END LOOP;
 END
 $templates$;
@@ -147,7 +156,8 @@ BEGIN
        WHERE s.audience_filter->>'source' = 'agenda_guest' AND s.audience_filter->>'kind' = 'invite'
          AND s.audience_filter->>'block_id' = p_block_id::text
          AND s.audience_filter->>'guest_person_id' IS NOT DISTINCT FROM v_b.guest_person_id::text
-         AND s.status IS DISTINCT FROM 'failed') THEN
+         -- failed não conta; sent sem carimbo é sandbox (o sent real carimbou e já saiu acima)
+         AND s.status NOT IN ('failed', 'sent')) THEN
     RETURN NULL;
   END IF;
 
@@ -171,8 +181,8 @@ BEGIN
               'link', COALESCE(v_b.meeting_link, '')),
             'ics', jsonb_build_object(
               'uid', 'agenda-block-' || p_block_id::text || '@nucleoia.vitormr.dev',
-              -- SEQUENCE cresce com o relógio: o cancelamento sempre vence o convite que veio antes
-              'sequence', (extract(epoch FROM now()) / 60)::bigint,
+              -- SEQUENCE cresce com o relógio, em segundos: o cancelamento vence o convite mesmo no mesmo minuto
+              'sequence', extract(epoch FROM now())::bigint,
               'end_utc', to_char((v_b.start_at + make_interval(mins => v_b.event_minutes)) AT TIME ZONE 'UTC',
                                  'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
               'organizer_email', v_organizer,
@@ -472,6 +482,13 @@ BEGIN
     IF now() >= v_block.start_at THEN RETURN jsonb_build_object('error', 'cancel_window_closed'); END IF;
   END IF;
 
+  -- #2593 (C2): convite ainda não entregue (pendente ou retido pelo teto diário) não sai mais: o bloco acabou
+  UPDATE public.campaign_sends s
+     SET status = 'failed', error_log = 'agenda block cancelled before the invite was delivered (#2593)'
+   WHERE s.audience_filter->>'source' = 'agenda_guest' AND s.audience_filter->>'kind' = 'invite'
+     AND s.audience_filter->>'block_id' = p_block_id::text
+     AND s.status IN ('pending_delivery', 'throttled');
+
   -- #2593 (C2): convidado que já recebeu o convite recebe o cancelamento com ICS, que libera a agenda dele. O
   -- envio copia o e-mail para o destinatário antes de o vínculo sair, então a ordem importa.
   IF v_block.external_guest AND v_block.guest_notified_at IS NOT NULL THEN
@@ -547,6 +564,7 @@ BEGIN
       SELECT v_event, v_owner, f.slug, 'controle #2593 C2', 5, 'Controle C2', true, 'es-LATAM', 'confirmed', 999, v_owner
       FROM public.agenda_block_formats f WHERE f.active LIMIT 1
       RETURNING id INTO v_block;
+      IF v_block IS NULL THEN RAISE EXCEPTION '#2593: controle sem formato de bloco ativo para inserir'; END IF;
       PERFORM public._agenda_guest_attach(v_block, 'Controle C2', 'controle-2593-c2@example.org');
 
       v_send := public._agenda_guest_send(v_block, 'invite', v_owner, false);

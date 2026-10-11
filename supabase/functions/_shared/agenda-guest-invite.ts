@@ -41,6 +41,14 @@ export interface AgendaVars {
   link: string
 }
 
+/** Link da reunião: só https; qualquer outro esquema (javascript:, data:, ...) vira vazio. */
+export function safeMeetingLink(v: string | null | undefined): string {
+  const t = (v ?? '').trim()
+  // caractere de controle (quebra de linha inclusive) recusa o link inteiro: ele iria para o ICS e para o href
+  if ([...t].some((c) => c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127)) return ''
+  return /^https:\/\/[^\s"<>]+$/i.test(t) ? t : ''
+}
+
 function keepOrDropBlock(source: string, open: string, close: string, keep: boolean): string {
   const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   const re = new RegExp(`${esc(open)}([\\s\\S]*?)${esc(close)}`, 'g')
@@ -63,10 +71,11 @@ export function renderAgendaGuestMessage(i: {
     duration: String(i.vars.durationMin ?? ''),
     date: when.date,
     time: when.time,
-    link: (i.vars.link ?? '').trim(),
+    link: safeMeetingLink(i.vars.link),
   }
+  // uma passada só: um valor que contenha "{{link}}" não é expandido de novo por uma chave seguinte
   const fill = (s: string, enc: (v: string) => string) =>
-    Object.entries(values).reduce((acc, [k, v]) => acc.split(`{{${k}}}`).join(enc(v)), s)
+    s.replace(/\{\{([a-z_]+)\}\}/g, (m, k: string) => (k in values ? enc(values[k]) : m))
   const subject = fill(i.templateSubject, (v) => v).replace(/[\r\n]+/g, ' ').trim()
   const html = fill(keepOrDropBlock(i.templateHtml, '<!--EXTERNO-->', '<!--/EXTERNO-->', i.isExternal), escapeHtml)
   const text = fill(keepOrDropBlock(i.templateText, '[[EXTERNO]]', '[[/EXTERNO]]', i.isExternal), (v) => v)
@@ -131,7 +140,9 @@ export interface IcsInput {
 }
 
 export function buildAgendaIcs(i: IcsInput): string {
+  if (!i.uid || !i.uid.trim()) throw new Error('ICS without UID')
   const method = i.kind === 'cancel' ? 'CANCEL' : 'REQUEST'
+  const url = safeMeetingLink(i.url)
   const cn = (n: string) => `"${(n ?? '').replace(/["\r\n]/g, '').trim()}"`
   const lines = [
     'BEGIN:VCALENDAR',
@@ -147,7 +158,8 @@ export function buildAgendaIcs(i: IcsInput): string {
     `DTEND:${icsUtc(i.endUtc)}`,
     `SUMMARY:${icsText(i.summary)}`,
     `DESCRIPTION:${icsText(i.description)}`,
-    ...(i.url ? [`LOCATION:${icsText(i.url)}`, `URL:${icsText(i.url)}`] : []),
+    // LOCATION é TEXT (escapado); URL é URI (crua: escapar vírgula ou ponto e vírgula quebraria o link)
+    ...(url ? [`LOCATION:${icsText(url)}`, `URL:${url}`] : []),
     `ORGANIZER;CN=${cn(i.organizerName)}:${mailto(i.organizerEmail)}`,
     `ATTENDEE;CN=${cn(i.attendeeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:${mailto(i.attendeeEmail)}`,
     `STATUS:${i.kind === 'cancel' ? 'CANCELLED' : 'CONFIRMED'}`,

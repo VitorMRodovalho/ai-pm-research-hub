@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   renderAgendaGuestMessage, buildAgendaIcs, foldLine, icsText, icsUtc, formatMeetingWhen, toBase64Utf8,
-  icsAttachment, langFromKey,
+  icsAttachment, langFromKey, safeMeetingLink,
 } from '../../supabase/functions/_shared/agenda-guest-invite.ts';
 
 const TEMPLATE_HTML = '<p>Olá, {{first_name}},</p><p>{{member_name}} confirmou. Bloco: {{block_title}} ({{duration}} min). '
@@ -127,4 +127,29 @@ test('anexo no formato do Resend, com base64 de UTF-8 que volta igual', () => {
   assert.equal(cancel.filename, 'cancelamento.ics');
   assert.match(cancel.content_type, /method=CANCEL$/);
   assert.equal(toBase64Utf8('ç'), 'w6c=');
+});
+
+test('link da reunião: só https entra; outro esquema vira vazio', () => {
+  assert.equal(safeMeetingLink('https://meet.example.org/abc?x=1,2;y'), 'https://meet.example.org/abc?x=1,2;y');
+  assert.equal(safeMeetingLink('javascript:alert(1)'), '');
+  assert.equal(safeMeetingLink('http://meet.example.org/abc'), '');
+  assert.equal(safeMeetingLink('https://meet.example.org/a\r\nX: y'), '');
+  // controle que não é espaço em branco (o regex de URL sozinho deixaria passar)
+  assert.equal(safeMeetingLink('https://meet.example.org/a\u0001b'), '');
+  assert.equal(safeMeetingLink('https://meet.example.org/a\u007fb'), '');
+  const { html } = render({ vars: { ...vars, link: 'javascript:alert(1)' } });
+  assert.doesNotMatch(html, /javascript:/);
+});
+
+test('preenchimento numa passada só: valor com {{chave}} não é expandido de novo', () => {
+  const { text } = render({ vars: { ...vars, blockTitle: 'Veja {{link}} e {{date}}' } });
+  assert.match(text, /Veja \{\{link\}\} e \{\{date\}\}/);
+});
+
+test('ICS: URL vai crua (é URI) e LOCATION escapada (é texto); sem UID não monta', () => {
+  const ics = buildAgendaIcs({ ...icsBase, url: 'https://meet.example.org/abc?x=1,2;y' }).replace(/\r\n /g, '');
+  assert.match(ics, /\r\nURL:https:\/\/meet\.example\.org\/abc\?x=1,2;y\r\n/);
+  assert.match(ics, /\r\nLOCATION:https:\/\/meet\.example\.org\/abc\?x=1\\,2\\;y\r\n/);
+  assert.throws(() => buildAgendaIcs({ ...icsBase, uid: '  ' }));
+  assert.doesNotMatch(buildAgendaIcs({ ...icsBase, url: 'javascript:x' }), /URL:|LOCATION:/);
 });

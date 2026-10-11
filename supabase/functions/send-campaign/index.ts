@@ -115,6 +115,16 @@ Deno.serve(async (req) => {
       })
     }
 
+    // #2593: convite de bloco que já não está confirmado (cancelado antes da entrega) não sai
+    if (isAgendaGuest && send.audience_filter?.kind === 'invite') {
+      const { data: blk } = await sb.from('event_agenda_blocks')
+        .select('status').eq('id', String(send.audience_filter?.block_id ?? '')).maybeSingle()
+      if (blk?.status !== 'confirmed') {
+        await sb.from('campaign_sends').update({ status: 'failed', error_log: 'agenda block no longer confirmed (#2593)' }).eq('id', sendId)
+        return json({ skipped: true, reason: 'agenda_block_not_confirmed', send_id: sendId })
+      }
+    }
+
     // Mark as sending
     await sb.from('campaign_sends').update({ status: 'sending' }).eq('id', sendId)
 
@@ -307,7 +317,8 @@ Deno.serve(async (req) => {
             sequence: Number(ics.sequence ?? 0),
             startUtc: String(av.start_utc ?? ''),
             endUtc: String(ics.end_utc ?? ''),
-            summary: rendered.subject,
+            // o mesmo título no convite e no cancelamento: a agenda reconhece o evento que está sendo cancelado
+            summary: `${String(av.block_title ?? '').trim()} · Núcleo IA & GP`,
             description: text.split(/\n\s*--\s*\n/)[0].trim(),
             url: String(av.link ?? ''),
             organizerEmail: String(ics.organizer_email ?? ''),
@@ -392,6 +403,7 @@ Deno.serve(async (req) => {
             const { error: notifErr } = await sb.from('event_agenda_blocks')
               .update({ guest_notified_at: new Date().toISOString() })
               .eq('id', String(send.audience_filter.block_id))
+              .eq('status', 'confirmed')
               .is('guest_notified_at', null)
             if (notifErr) console.error('[campaign] guest_notified_at:', notifErr.message)
           }

@@ -82,7 +82,7 @@ test('#2593 C2: convite só para confirmado ainda não avisado; cancelamento só
 
 test('#2593 C2: um convite por convidado por bloco', () => {
   assert.match(fnBody('_agenda_guest_send'),
-    /IF p_kind = 'invite' AND EXISTS \(\s+SELECT 1 FROM public\.campaign_sends s\s+WHERE s\.audience_filter->>'source' = 'agenda_guest' AND s\.audience_filter->>'kind' = 'invite'\s+AND s\.audience_filter->>'block_id' = p_block_id::text\s+AND s\.audience_filter->>'guest_person_id' IS NOT DISTINCT FROM v_b\.guest_person_id::text\s+AND s\.status IS DISTINCT FROM 'failed'\) THEN\s+RETURN NULL;/);
+    /IF p_kind = 'invite' AND EXISTS \(\s+SELECT 1 FROM public\.campaign_sends s\s+WHERE s\.audience_filter->>'source' = 'agenda_guest' AND s\.audience_filter->>'kind' = 'invite'\s+AND s\.audience_filter->>'block_id' = p_block_id::text\s+AND s\.audience_filter->>'guest_person_id' IS NOT DISTINCT FROM v_b\.guest_person_id::text\s+AND s\.status NOT IN \('failed', 'sent'\)\) THEN\s+RETURN NULL;/);
 });
 
 test('#2593 C2: o envio guardado não leva e-mail nem nome do convidado; o destinatário leva, no idioma do bloco', () => {
@@ -92,7 +92,8 @@ test('#2593 C2: o envio guardado não leva e-mail nem nome do convidado; o desti
   assert.doesNotMatch(filt, /v_email|guest_name/, 'o audience_filter não pode guardar contato do convidado');
   assert.match(f, /INSERT INTO public\.campaign_recipients \(send_id, member_id, external_email, external_name, person_id, language\)\s+VALUES \(v_send_id, NULL, v_email, v_b\.guest_name, v_b\.guest_person_id, v_b\.guest_language\);/);
   assert.match(filt, /'uid', 'agenda-block-' \|\| p_block_id::text \|\| '@nucleoia\.vitormr\.dev'/);
-  assert.match(filt, /'sequence', \(extract\(epoch FROM now\(\)\) \/ 60\)::bigint/);
+  // em segundos: confirmar e cancelar no mesmo minuto ainda dão SEQUENCE crescente
+  assert.match(filt, /'sequence', extract\(epoch FROM now\(\)\)::bigint,/);
 });
 
 test('#2593 C2: despacho só quando pedido (a pós-condição monta sem enviar)', () => {
@@ -105,6 +106,11 @@ test('#2593 C2: confirmar convida o convidado ainda não avisado; o sino vai ao 
   assert.match(f, /IF v_block\.status IS DISTINCT FROM 'confirmed' AND v_block\.owner_member_id <> v_caller THEN\s+PERFORM public\._agenda_block_owner_notice\(p_block_id, 'agenda_block_confirmed'\);/);
   // o convite sai depois da linha virar confirmed (a função de envio lê o estado novo)
   assert.ok(f.indexOf("SET status = 'confirmed'") < f.indexOf("_agenda_guest_send(p_block_id, 'invite'"));
+});
+
+test('#2593 C2: cancelar encerra o convite que ainda não foi entregue', () => {
+  const f = fnBody('cancel_agenda_block');
+  assert.match(f, /UPDATE public\.campaign_sends s\s+SET status = 'failed', error_log = [^;]*\s+WHERE s\.audience_filter->>'source' = 'agenda_guest' AND s\.audience_filter->>'kind' = 'invite'\s+AND s\.audience_filter->>'block_id' = p_block_id::text\s+AND s\.status IN \('pending_delivery', 'throttled'\);/);
 });
 
 test('#2593 C2: cancelar avisa o convidado já convidado ANTES de o vínculo sair, e o dono pelo sino', () => {
@@ -157,6 +163,22 @@ test('#2593 C2 EF: o convidado da agenda respeita o descadastro', () => {
   assert.match(EF, /suppressedAmong\(sb, pendingRows\.map\(addressOf\), !isOneOff \|\| freeformToExternal \|\| agendaToExternal\)/);
 });
 
-test('#2593 C2 EF: o aviso só é carimbado quando o provedor aceita o convite, nunca em sandbox', () => {
-  assert.match(EF, /if \(res\.ok\) \{[\s\S]{0,1600}?if \(isAgendaGuest && !sandbox && send\.audience_filter\?\.kind === 'invite' && send\.audience_filter\?\.block_id\) \{\s+const \{ error: notifErr \} = await sb\.from\('event_agenda_blocks'\)\s+\.update\(\{ guest_notified_at: new Date\(\)\.toISOString\(\) \}\)\s+\.eq\('id', String\(send\.audience_filter\.block_id\)\)\s+\.is\('guest_notified_at', null\)/);
+test('#2593 C2 EF: o aviso só é carimbado quando o provedor aceita o convite, nunca em sandbox, e só em bloco confirmado', () => {
+  // o ramo de sucesso, recortado do "if (res.ok) {" até o registro do erro do provedor
+  const a = EF.indexOf('if (res.ok) {');
+  const ok = EF.slice(a, EF.indexOf('errors.push(`${toEmail}: ${rt}`)', a));
+  assert.ok(a > 0 && ok.length > 0, 'ramo de sucesso do envio não achado');
+  assert.match(ok, /if \(isAgendaGuest && !sandbox && send\.audience_filter\?\.kind === 'invite' && send\.audience_filter\?\.block_id\) \{\s+const \{ error: notifErr \} = await sb\.from\('event_agenda_blocks'\)\s+\.update\(\{ guest_notified_at: new Date\(\)\.toISOString\(\) \}\)\s+\.eq\('id', String\(send\.audience_filter\.block_id\)\)\s+\.eq\('status', 'confirmed'\)\s+\.is\('guest_notified_at', null\)/);
+});
+
+test('#2593 C2 EF: convite de bloco que já não está confirmado não sai', () => {
+  assert.match(EF, /if \(isAgendaGuest && send\.audience_filter\?\.kind === 'invite'\) \{\s+const \{ data: blk \} = await sb\.from\('event_agenda_blocks'\)\s+\.select\('status'\)\.eq\('id', String\(send\.audience_filter\?\.block_id \?\? ''\)\)\.maybeSingle\(\)\s+if \(blk\?\.status !== 'confirmed'\) \{\s+await sb\.from\('campaign_sends'\)\.update\(\{ status: 'failed'[^}]*\}\)\.eq\('id', sendId\)\s+return json\(/);
+  // e a checagem vem antes de marcar o envio como em andamento
+  assert.ok(EF.indexOf("blk?.status !== 'confirmed'") < EF.indexOf("update({ status: 'sending' })"));
+});
+
+test('#2593 C2 EF: o mesmo título de evento no convite e no cancelamento; tipo e descrição vêm do envio', () => {
+  assert.match(EF, /summary: `\$\{String\(av\.block_title \?\? ''\)\.trim\(\)\} · Núcleo IA & GP`,/);
+  assert.match(EF, /const kind = send\.audience_filter\?\.kind === 'cancel' \? 'cancel' : 'invite'/);
+  assert.match(EF, /description: text\.split\(\/\\n\\s\*--\\s\*\\n\/\)\[0\]\.trim\(\),/);
 });
