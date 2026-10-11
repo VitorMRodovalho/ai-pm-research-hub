@@ -29,6 +29,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIGRATION = join(
@@ -37,6 +38,9 @@ const MIGRATION = join(
 );
 // Defensive read (LL #684): a missing file becomes a clean assertion, not an ENOENT module crash.
 const sql = existsSync(MIGRATION) ? readFileSync(MIGRATION, 'utf8') : '';
+// #905 (10/10/2026): o anonimizador de pré-membro foi redefinido depois desta migration (trava R3). O que
+// se afirma sobre ele é a definição VIGENTE, não o texto fixado aqui (#1932).
+const premember = maskLineComments(latestFunctionCapture(join(__dirname, '../..'), 'anonymize_premember_applications').body);
 
 // ─────────────────────────────────────────────────────────────────────────
 // (A) Static migration-file guard — always runs
@@ -73,13 +77,15 @@ test('#946 BOTH anonymizers are (re)defined and call the shared helper', () => {
     sql.includes('CREATE OR REPLACE FUNCTION public.anonymize_inactive_members('),
     'member anonymizer must be redefined',
   );
-  assert.ok(
-    sql.includes('CREATE OR REPLACE FUNCTION public.anonymize_premember_applications('),
-    'pre-member anonymizer must be redefined',
-  );
-  // both bodies must invoke the helper; expect >= 2 call sites (one per anonymizer)
+  // the member path invokes the helper here (definition + >= 1 call site in this migration)
   const calls = (sql.match(/public\._erase_application_pii\(/g) || []).length;
-  assert.ok(calls >= 3, `expected the helper definition + >=2 call sites, found ${calls} occurrences of public._erase_application_pii(`);
+  assert.ok(calls >= 2, `expected the helper definition + the member call site, found ${calls} occurrences of public._erase_application_pii(`);
+  // the CURRENT pre-member anonymizer erases through the shared helper, only outside the dry run
+  assert.match(
+    premember,
+    /IF NOT p_dry_run THEN\s+v_child := public\._erase_application_pii\(v_cand\.application_id\);/,
+    'pre-member anonymizer must erase through _erase_application_pii, and only when not a dry run',
+  );
 });
 
 test('#946 helper DELETEs every candidate-derived child table (biometric + 9 pure children)', () => {
