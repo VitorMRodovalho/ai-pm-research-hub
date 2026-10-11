@@ -10,15 +10,22 @@
 -- get_geral_agenda_viva f0b5e86a (20260825193745), _external_person_upsert 31811976 (20261010153307).
 --
 -- (1) event_agenda_blocks.guest_person_id → persons, ON DELETE SET NULL: a varredura apaga a pessoa e o bloco só
---     perde o ponteiro; nenhuma mudança na varredura.
--- (2) _agenda_guest_attach / _agenda_guest_detach: pessoa por _external_person_upsert (purpose agenda_guest,
---     source = bloco, retention_until = data do evento + 365); detach apaga o vínculo do bloco.
+--     perde o ponteiro; nenhuma mudança na varredura. event_agenda_blocks.guest_notified_at: quando o convidado
+--     recebeu o convite com o aviso de privacidade (a C2 preenche; nulo até lá, e zera se nome ou e-mail mudar).
+--     person_external_links.contact_email: o e-mail DIGITADO para aquele uso. Mora no vínculo, e não no bloco,
+--     porque o vínculo some no prazo pela varredura que já existe e não é copiado pelo gatilho de auditoria do
+--     bloco (eab_audit_trigger grava a linha inteira em event_agenda_block_audit, que nunca é limpa).
+-- (2) _agenda_guest_attach / _agenda_guest_detach: pessoa por _external_person_upsert e vínculo agenda_guest do
+--     bloco com o e-mail digitado (retention_until = data do evento + 365). O vínculo é criado também quando o
+--     e-mail é de membro: a varredura só apaga pessoa com a marca de origem externa, e assim o dono nunca vê o
+--     e-mail principal de outra pessoa (conselho, 11/10: a busca casa e-mail secundário).
 -- (3) reserve_agenda_block(+ p_guest_email): convidado externo exige nome e e-mail válido.
 -- (4) update_agenda_block(+ p_guest_email, p_clear_guest, p_clear_material): troca de e-mail troca a pessoa;
 --     deixar de ser externo, ou remover o convidado (também o caminho da oposição, Art. 18 §2º), apaga o vínculo.
 -- (5) cancel_agenda_block: apaga o vínculo e o ponteiro.
--- (6) get_geral_agenda_viva: guest_public_name (só convidado externo de bloco confirmado) para todos; o dono vê
---     guest_name e guest_email do próprio bloco; manage_event ganha guest_email. guest_name cru nunca vai ao anônimo.
+-- (6) get_geral_agenda_viva: guest_public_name (convidado externo de bloco confirmado E já avisado) para todos; o
+--     dono vê guest_name e o e-mail que digitou; manage_event ganha o mesmo e-mail. guest_name cru e e-mail nunca
+--     vão ao anônimo. Até a C2, ninguém é avisado, então nenhum nome de convidado fica público (conselho, 11/10).
 --
 -- ⚠️ A ferramenta MCP agenda_blocks não passa e-mail: reserva com convidado externo por ela passa a receber
 --    guest_email_required até a ferramenta ser atualizada (depois da lane B, pelo briefing).
@@ -31,6 +38,12 @@ ALTER TABLE public.event_agenda_blocks
   ADD COLUMN IF NOT EXISTS guest_person_id uuid REFERENCES public.persons(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS idx_event_agenda_blocks_guest_person ON public.event_agenda_blocks (guest_person_id)
   WHERE guest_person_id IS NOT NULL;
+ALTER TABLE public.event_agenda_blocks ADD COLUMN IF NOT EXISTS guest_notified_at timestamptz;
+COMMENT ON COLUMN public.event_agenda_blocks.guest_notified_at IS
+  '#2593: quando o convidado externo recebeu o convite com o aviso de privacidade. O nome só é público depois disso. Zera quando nome ou e-mail do convidado mudam.';
+ALTER TABLE public.person_external_links ADD COLUMN IF NOT EXISTS contact_email text;
+COMMENT ON COLUMN public.person_external_links.contact_email IS
+  '#2593: o e-mail digitado para este uso (pode diferir do principal da pessoa). Some com o vínculo, no prazo.';
 COMMENT ON COLUMN public.event_agenda_blocks.guest_person_id IS
   '#2593: pessoa do convidado externo (persons), criada por _external_person_upsert com vínculo agenda_guest até evento + 1 ano. Nulo sem convidado externo.';
 
@@ -42,7 +55,8 @@ CREATE OR REPLACE FUNCTION public._agenda_guest_attach(p_block_id uuid, p_name t
  SET search_path TO ''
 AS $function$
 DECLARE
-  v_date date;
+  v_date   date;
+  v_person uuid;
 BEGIN
   SELECT e.date INTO v_date
   FROM public.event_agenda_blocks b JOIN public.events e ON e.id = b.event_id
@@ -50,7 +64,16 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Agenda block not found' USING ERRCODE = 'no_data_found';
   END IF;
-  RETURN public._external_person_upsert(p_email, p_name, 'agenda_guest', p_block_id, v_date + 365);
+  v_person := public._external_person_upsert(p_email, p_name, 'agenda_guest', p_block_id, v_date + 365);
+  -- o vínculo do bloco guarda o e-mail digitado, inclusive quando a pessoa é membro (o upsert não cria vínculo
+  -- para pessoa protegida; a varredura nunca apaga pessoa sem a marca de origem externa)
+  INSERT INTO public.person_external_links (person_id, purpose, source_id, retention_until, contact_email)
+  VALUES (v_person, 'agenda_guest', p_block_id, v_date + 365, lower(btrim(p_email)))
+  ON CONFLICT (person_id, purpose, source_id) DO UPDATE
+    SET contact_email = EXCLUDED.contact_email,
+        retention_until = GREATEST(public.person_external_links.retention_until, EXCLUDED.retention_until),
+        updated_at = now();
+  RETURN v_person;
 END;
 $function$;
 
@@ -211,7 +234,7 @@ BEGIN
   IF v_external THEN
     v_person := public._agenda_guest_attach(v_block_id, p_guest_name, v_email);
   END IF;
-  UPDATE public.event_agenda_blocks SET guest_person_id = v_person WHERE id = v_block_id;
+  UPDATE public.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL WHERE id = v_block_id;
 
   RETURN jsonb_build_object(
     'success', true, 'block_id', v_block_id, 'event_id', p_event_id,
@@ -301,7 +324,10 @@ BEGIN
                      ELSE COALESCE(p_external_guest, v_block.external_guest) END;
   v_name := CASE WHEN COALESCE(p_clear_guest, false) THEN NULL
                  ELSE COALESCE(NULLIF(btrim(p_guest_name), ''), v_block.guest_name) END;
-  SELECT lower(p.email) INTO v_cur_email FROM public.persons p WHERE p.id = v_block.guest_person_id;
+  -- o e-mail atual é o que foi digitado (no vínculo do bloco), nunca o principal da pessoa
+  SELECT l.contact_email INTO v_cur_email FROM public.person_external_links l
+  WHERE l.purpose = 'agenda_guest' AND l.source_id = p_block_id
+  ORDER BY l.updated_at DESC LIMIT 1;
   v_email := COALESCE(NULLIF(lower(btrim(COALESCE(p_guest_email, ''))), ''), v_cur_email);
   IF v_external THEN
     IF v_name IS NULL OR btrim(v_name) = '' THEN
@@ -322,7 +348,11 @@ BEGIN
          guest_name     = v_name,
          material_url   = CASE WHEN COALESCE(p_clear_material, false) THEN NULL
                                ELSE COALESCE(p_material_url, material_url) END,
-         external_guest = v_external
+         external_guest = v_external,
+         -- convidado diferente (nome, e-mail, ou deixou de ser externo) ainda não foi avisado
+         guest_notified_at = CASE WHEN v_external AND v_name IS NOT DISTINCT FROM v_block.guest_name
+                                       AND v_email IS NOT DISTINCT FROM v_cur_email
+                                  THEN guest_notified_at ELSE NULL END
    WHERE id = p_block_id;
 
   -- a pessoa só troca quando o convidado troca (e-mail novo, ou passou a ser externo); deixar de ser externo
@@ -448,11 +478,17 @@ BEGIN
            b.external_guest, b.owner_member_id, b.guest_name, b.material_url,
            split_part(m.name, ' ', 1) AS owner_first_name,
            m.name AS owner_full_name,
-           gp.email AS guest_email
+           b.guest_notified_at,
+           gl.contact_email AS guest_email
     FROM selected s
     JOIN public.event_agenda_blocks b ON b.event_id = s.id
     JOIN public.members m ON m.id = b.owner_member_id
-    LEFT JOIN public.persons gp ON gp.id = b.guest_person_id
+    -- #2593: o e-mail mostrado é o digitado para este bloco (vínculo), nunca o principal da pessoa
+    LEFT JOIN LATERAL (
+      SELECT l.contact_email FROM public.person_external_links l
+      WHERE l.purpose = 'agenda_guest' AND l.source_id = b.id
+      ORDER BY l.updated_at DESC LIMIT 1
+    ) gl ON true
     -- upcoming: reserved+confirmed (futuro reservável); past: confirmed+no_show (realizado/falta).
     -- #1071: past 'reserved' also visible to admins (manage_event) so they can confirm/
     -- no-show a block whose meeting already ended (protagonism never confirmed live).
@@ -489,9 +525,10 @@ BEGIN
                 END,
                 'is_mine', (v_caller IS NOT NULL AND bk.owner_member_id = v_caller)
               )
-              -- #2593 (decisão do GP): o nome do convidado EXTERNO é público, mas só no bloco confirmado, que é
-              -- quando ele recebe o convite com o aviso de privacidade. guest_name cru segue protegido abaixo.
-              || CASE WHEN bk.external_guest AND bk.status = 'confirmed' AND bk.guest_name IS NOT NULL
+              -- #2593 (decisão do GP): o nome do convidado EXTERNO é público, mas só no bloco confirmado e depois
+              -- que ele recebeu o convite com o aviso de privacidade. guest_name cru segue protegido abaixo.
+              || CASE WHEN bk.external_guest AND bk.status = 'confirmed' AND bk.guest_notified_at IS NOT NULL
+                       AND bk.guest_name IS NOT NULL
                       THEN jsonb_build_object('guest_public_name', bk.guest_name)
                       ELSE '{}'::jsonb END
               -- #2593: o dono vê o convidado que cadastrou (a edição abria vazia), inclusive o e-mail
@@ -549,6 +586,53 @@ BEGIN
   IF v_anon::text ~ '"(guest_name|guest_email|owner_full_name|owner_member_id)"' THEN
     RAISE EXCEPTION '#2593: a leitura sem sessão vazou campo protegido';
   END IF;
+
+  -- controle em subtransação desfeita: convidado externo confirmado aparece pelo nome público só depois do aviso,
+  -- e o e-mail nunca vai ao anônimo
+  DECLARE
+    v_event uuid;
+    v_owner uuid;
+    v_block uuid;
+    v_seen  jsonb;
+  BEGIN
+    SELECT e.id INTO v_event FROM public.events e
+    WHERE e.type = 'geral' AND e.status IS DISTINCT FROM 'cancelled' AND e.time_start IS NOT NULL
+      AND (e.date + e.time_start) AT TIME ZONE COALESCE(e.timezone, 'America/Sao_Paulo') > now()
+    ORDER BY (e.date + e.time_start) LIMIT 1;
+    SELECT m.id INTO v_owner FROM public.members m
+    WHERE v_event IS NOT NULL
+      AND NOT EXISTS (SELECT 1 FROM public.event_agenda_blocks b WHERE b.event_id = v_event AND b.owner_member_id = m.id)
+    LIMIT 1;
+    IF v_event IS NULL OR v_owner IS NULL THEN
+      RAISE NOTICE '#2593: sem reunião geral futura para o controle; pulado';
+    ELSE
+      INSERT INTO public.event_agenda_blocks (event_id, owner_member_id, format_slug, title, duration_min,
+                                              guest_name, external_guest, status, sort_order, created_by)
+      SELECT v_event, v_owner, f.slug, 'controle #2593', 5, 'Controle 2593', true, 'confirmed', 999, v_owner
+      FROM public.agenda_block_formats f WHERE f.active LIMIT 1
+      RETURNING id INTO v_block;
+      PERFORM public._agenda_guest_attach(v_block, 'Controle 2593', 'controle-2593@example.org');
+
+      v_seen := (SELECT bb.blk FROM jsonb_array_elements(public.get_geral_agenda_viva(6, NULL, 'both')->'events') AS ev(evt),
+                        jsonb_array_elements(ev.evt->'blocks') AS bb(blk) WHERE bb.blk->>'id' = v_block::text);
+      IF v_seen ? 'guest_public_name' THEN
+        RAISE EXCEPTION '#2593: nome público antes do aviso';
+      END IF;
+
+      UPDATE public.event_agenda_blocks SET guest_notified_at = now() WHERE id = v_block;
+      v_seen := (SELECT bb.blk FROM jsonb_array_elements(public.get_geral_agenda_viva(6, NULL, 'both')->'events') AS ev(evt),
+                        jsonb_array_elements(ev.evt->'blocks') AS bb(blk) WHERE bb.blk->>'id' = v_block::text);
+      IF v_seen IS NULL OR v_seen->>'guest_public_name' IS DISTINCT FROM 'Controle 2593' THEN
+        RAISE EXCEPTION '#2593: depois do aviso o nome público não apareceu (%)', v_seen;
+      END IF;
+      IF v_seen::text ~ '"(guest_name|guest_email)"' OR v_seen::text ~ 'controle-2593@' THEN
+        RAISE EXCEPTION '#2593: o anônimo recebeu nome cru ou e-mail do convidado';
+      END IF;
+      RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = '__2593_rollback__';
+    END IF;
+  EXCEPTION WHEN raise_exception THEN
+    IF SQLERRM <> '__2593_rollback__' THEN RAISE; END IF;
+  END;
 
   -- nenhum bloco ficou com ponteiro para pessoa sem ser convidado externo
   SELECT count(*) INTO v_n FROM public.event_agenda_blocks WHERE guest_person_id IS NOT NULL AND NOT external_guest;

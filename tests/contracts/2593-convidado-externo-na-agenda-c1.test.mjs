@@ -7,7 +7,9 @@
  *  - a pessoa do convidado vem do caminho único de pessoa externa, com vínculo até a data do evento + 365;
  *  - convidado externo exige nome e e-mail válido na reserva e na edição;
  *  - trocar o e-mail troca a pessoa; deixar de ser externo, remover o convidado ou cancelar apaga o vínculo;
- *  - o nome do convidado externo é público só no bloco confirmado; guest_name cru e e-mail nunca vão ao anônimo;
+ *  - o nome do convidado externo é público só no bloco confirmado E já avisado; guest_name cru e e-mail nunca vão
+ *    ao anônimo;
+ *  - o e-mail mostrado é o DIGITADO (mora no vínculo, que some no prazo), nunca o principal de outra pessoa;
  *  - o dono vê o próprio convidado; os auxiliares não são chamáveis por quem usa a RPC.
  */
 import test from 'node:test';
@@ -42,8 +44,16 @@ test('#2593 o bloco aponta para a pessoa, e a pessoa apagada só zera o ponteiro
 
 test('#2593 a pessoa do convidado sai do caminho único de pessoa externa, até o evento + 365', () => {
   assert.match(fnBody('_agenda_guest_attach'),
-    /RETURN public\._external_person_upsert\(p_email, p_name, 'agenda_guest', p_block_id, v_date \+ 365\);/);
+    /v_person := public\._external_person_upsert\(p_email, p_name, 'agenda_guest', p_block_id, v_date \+ 365\);/);
   assert.match(fnBody('_agenda_guest_attach'), /SELECT e\.date INTO v_date\s+FROM public\.event_agenda_blocks b JOIN public\.events e ON e\.id = b\.event_id\s+WHERE b\.id = p_block_id;/);
+});
+
+test('#2593 o vínculo do bloco guarda o e-mail digitado, para qualquer pessoa, no mesmo prazo', () => {
+  assert.match(fnBody('_agenda_guest_attach'),
+    /INSERT INTO public\.person_external_links \(person_id, purpose, source_id, retention_until, contact_email\)\s+VALUES \(v_person, 'agenda_guest', p_block_id, v_date \+ 365, lower\(btrim\(p_email\)\)\)\s+ON CONFLICT \(person_id, purpose, source_id\) DO UPDATE\s+SET contact_email = EXCLUDED\.contact_email,/);
+  assert.match(MIG, /ALTER TABLE public\.person_external_links ADD COLUMN IF NOT EXISTS contact_email text;/);
+  // o bloco não guarda e-mail: o gatilho de auditoria copia a linha inteira do bloco e nunca é limpo
+  assert.doesNotMatch(MIG, /ALTER TABLE public\.event_agenda_blocks[^;]*guest_email/);
 });
 
 test('#2593 desligar o convidado apaga só o vínculo daquele bloco', () => {
@@ -59,15 +69,22 @@ test('#2593 reserva: convidado externo exige nome e e-mail válido', () => {
 
 test('#2593 reserva: só o convidado de agora fica ligado ao bloco (linha reativada perde o vínculo antigo)', () => {
   assert.match(fnBody('reserve_agenda_block'),
-    /PERFORM public\._agenda_guest_detach\(v_block_id\);\s+IF v_external THEN\s+v_person := public\._agenda_guest_attach\(v_block_id, p_guest_name, v_email\);\s+END IF;\s+UPDATE public\.event_agenda_blocks SET guest_person_id = v_person WHERE id = v_block_id;/);
+    /PERFORM public\._agenda_guest_detach\(v_block_id\);\s+IF v_external THEN\s+v_person := public\._agenda_guest_attach\(v_block_id, p_guest_name, v_email\);\s+END IF;\s+UPDATE public\.event_agenda_blocks SET guest_person_id = v_person, guest_notified_at = NULL WHERE id = v_block_id;/);
 });
 
 test('#2593 edição: remover convidado e material é explícito, e campo nulo mantém o atual', () => {
   const f = fnBody('update_agenda_block');
   assert.match(f, /v_external := CASE WHEN COALESCE\(p_clear_guest, false\) THEN false\s+ELSE COALESCE\(p_external_guest, v_block\.external_guest\) END;/);
   assert.match(f, /v_name := CASE WHEN COALESCE\(p_clear_guest, false\) THEN NULL\s+ELSE COALESCE\(NULLIF\(btrim\(p_guest_name\), ''\), v_block\.guest_name\) END;/);
-  assert.match(f, /material_url   = CASE WHEN COALESCE\(p_clear_material, false\) THEN NULL\s+ELSE COALESCE\(p_material_url, material_url\) END,/);
-  assert.match(f, /guest_name     = v_name,[\s\S]{0,200}?external_guest = v_external\s+WHERE id = p_block_id;/);
+  assert.match(f, /material_url\s+= CASE WHEN COALESCE\(p_clear_material, false\) THEN NULL\s+ELSE COALESCE\(p_material_url, material_url\) END,/);
+  assert.match(f, /guest_name\s+= v_name,[\s\S]{0,200}?external_guest = v_external,/);
+});
+
+test('#2593 edição: o e-mail atual é o digitado (vínculo), e convidado diferente ainda não foi avisado', () => {
+  const f = fnBody('update_agenda_block');
+  assert.match(f, /SELECT l\.contact_email INTO v_cur_email FROM public\.person_external_links l\s+WHERE l\.purpose = 'agenda_guest' AND l\.source_id = p_block_id/);
+  assert.doesNotMatch(f, /FROM public\.persons p WHERE p\.id = v_block\.guest_person_id/, 'o e-mail atual não pode vir do principal da pessoa');
+  assert.match(f, /guest_notified_at = CASE WHEN v_external AND v_name IS NOT DISTINCT FROM v_block\.guest_name\s+AND v_email IS NOT DISTINCT FROM v_cur_email\s+THEN guest_notified_at ELSE NULL END\s+WHERE id = p_block_id;/);
 });
 
 test('#2593 edição: convidado externo exige nome e e-mail, inclusive o e-mail já salvo', () => {
@@ -85,16 +102,19 @@ test('#2593 cancelamento apaga o vínculo e o ponteiro junto com o status', () =
     /PERFORM public\._agenda_guest_detach\(p_block_id\);\s+UPDATE public\.event_agenda_blocks\s+SET status = 'cancelled', cancelled_by = v_caller, cancelled_reason = p_reason, guest_person_id = NULL\s+WHERE id = p_block_id;/);
 });
 
-test('#2593 leitura: nome do convidado externo público só no bloco confirmado', () => {
+test('#2593 leitura: nome do convidado externo público só no bloco confirmado e depois do aviso', () => {
   assert.match(fnBody('get_geral_agenda_viva'),
-    /\|\| CASE WHEN bk\.external_guest AND bk\.status = 'confirmed' AND bk\.guest_name IS NOT NULL\s+THEN jsonb_build_object\('guest_public_name', bk\.guest_name\)\s+ELSE '\{\}'::jsonb END/);
+    /\|\| CASE WHEN bk\.external_guest AND bk\.status = 'confirmed' AND bk\.guest_notified_at IS NOT NULL\s+AND bk\.guest_name IS NOT NULL\s+THEN jsonb_build_object\('guest_public_name', bk\.guest_name\)\s+ELSE '\{\}'::jsonb END/);
 });
 
 test('#2593 leitura: o dono vê o próprio convidado; manage_event ganha o e-mail; o anônimo não vê nada disso', () => {
   const f = fnBody('get_geral_agenda_viva');
   assert.match(f, /\|\| CASE WHEN v_caller IS NOT NULL AND bk\.owner_member_id = v_caller\s+THEN jsonb_build_object\('guest_name', bk\.guest_name, 'guest_email', bk\.guest_email\)/);
   assert.match(f, /CASE WHEN v_is_admin\s+THEN jsonb_build_object\(\s+'owner_member_id', bk\.owner_member_id,\s+'owner_full_name', bk\.owner_full_name,\s+'guest_name', bk\.guest_name,\s+'guest_email', bk\.guest_email\)/);
-  assert.match(f, /LEFT JOIN public\.persons gp ON gp\.id = b\.guest_person_id/);
+  // o e-mail vem do vínculo do bloco (o digitado), nunca de persons
+  assert.match(f, /LEFT JOIN LATERAL \(\s+SELECT l\.contact_email FROM public\.person_external_links l\s+WHERE l\.purpose = 'agenda_guest' AND l\.source_id = b\.id[\s\S]{0,80}?\) gl ON true/);
+  assert.match(f, /gl\.contact_email AS guest_email/);
+  assert.doesNotMatch(f, /JOIN public\.persons/, 'a leitura não pode tirar e-mail de persons');
   // guest_name e guest_email só aparecem nos dois ramos com sessão
   assert.equal((f.match(/'guest_email', bk\.guest_email/g) || []).length, 2);
   assert.equal((f.match(/'guest_name', bk\.guest_name/g) || []).length, 2);
@@ -114,10 +134,22 @@ test('#2593 pós-condição: a leitura sem sessão não vaza nome cru nem e-mail
   assert.match(MIG, /v_anon := public\.get_geral_agenda_viva\(6, NULL, 'both'\);\s+IF v_anon::text ~ '"\(guest_name\|guest_email\|owner_full_name\|owner_member_id\)"' THEN\s+RAISE EXCEPTION/);
 });
 
+test('#2593 pós-condição: controle desfeito — nome público só depois do aviso, e-mail nunca ao anônimo', () => {
+  assert.match(MIG, /IF v_seen \? 'guest_public_name' THEN\s+RAISE EXCEPTION '#2593: nome público antes do aviso';\s+END IF;\s+UPDATE public\.event_agenda_blocks SET guest_notified_at = now\(\) WHERE id = v_block;/);
+  assert.match(MIG, /IF v_seen IS NULL OR v_seen->>'guest_public_name' IS DISTINCT FROM 'Controle 2593' THEN\s+RAISE EXCEPTION/);
+  assert.match(MIG, /IF v_seen::text ~ '"\(guest_name\|guest_email\)"' OR v_seen::text ~ 'controle-2593@' THEN\s+RAISE EXCEPTION/);
+  // a subtransação é desfeita de propósito, e só o marcador é engolido
+  assert.match(MIG, /RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = '__2593_rollback__';\s+END IF;\s+EXCEPTION WHEN raise_exception THEN\s+IF SQLERRM <> '__2593_rollback__' THEN RAISE; END IF;/);
+});
+
 test('#2593 tela: e-mail do convidado vai só com convidado externo, e a remoção é explícita', () => {
   assert.match(ISLAND, /p_guest_email: d\.external_guest \? d\.guest_email\.trim\(\) \|\| null : null,/);
   assert.match(ISLAND, /p_guest_email: !d\.clear_guest && d\.external_guest \? d\.guest_email\.trim\(\) \|\| null : null,\s+p_clear_guest: !!d\.clear_guest, p_clear_material: !!d\.clear_material,/);
-  assert.match(ISLAND, /\{d\.external_guest && !d\.clear_guest && \(\s+<label className="block">[\s\S]{0,200}?fGuestEmail/);
+  assert.match(ISLAND, /const external = d\.external_guest && !d\.clear_guest;/);
+  assert.match(ISLAND, /\{external && \(\s+<label className="block" htmlFor=\{ids\.email\}>[\s\S]{0,200}?fGuestEmail/);
+  // remover marca a intenção; os valores ficam para o Desfazer, e quem decide é a marca no envio
+  assert.match(ISLAND, /onClick=\{\(\) => set\(\{ clear_guest: true \}\)\}/);
+  assert.match(ISLAND, /onClick=\{\(\) => set\(\{ clear_guest: false, clear_material: false \}\)\}/);
 });
 
 test('#2593 tela: a edição abre com o convidado atual do dono', () => {
@@ -125,7 +157,11 @@ test('#2593 tela: a edição abre com o convidado atual do dono', () => {
 });
 
 test('#2593 tela: a mensagem de convidado incompleto sai antes da ida ao banco, nas duas ações', () => {
-  assert.equal((ISLAND.match(/const gp = guestProblem\(d\); if \(gp\) \{ toast\(errMsg\(gp\), 'error'\); return; \}/g) || []).length, 2);
+  assert.match(ISLAND, /const gp = guestProblem\(d\); if \(gp\) \{ setDraft\(eventId, \{ attempted: true \}\); toast\(errMsg\(gp\), 'error'\); return; \}/);
+  assert.match(ISLAND, /const gp = guestProblem\(d\); if \(gp\) \{ setEdit\(blockId, \{ attempted: true \}\); toast\(errMsg\(gp\), 'error'\); return; \}/);
+  // e o erro aparece no campo, ligado por aria
+  assert.match(ISLAND, /aria-invalid=\{nameErr \|\| undefined\}\s+aria-describedby=\{nameErr \? ids\.nameErr : undefined\}/);
+  assert.match(ISLAND, /aria-invalid=\{emailErr \|\| undefined\}\s+aria-describedby=\{emailErr \? `\$\{ids\.emailErr\} \$\{ids\.hint\}` : ids\.hint\}/);
   assert.match(ISLAND, /guest_name_required: 'errGuestNameRequired', guest_email_required: 'errGuestEmailRequired',\s+invalid_guest_email: 'errInvalidGuestEmail',/);
 });
 
@@ -137,7 +173,8 @@ test('#2593 tela: a agenda pública mostra só o nome público; o admin vê o e-
 
 test('#2593 i18n: as chaves novas existem nos três dicionários', () => {
   const keys = ['fGuestEmail', 'fGuestEmailPlaceholder', 'fGuestEmailHint', 'errGuestNameRequired', 'errGuestEmailRequired',
-    'errInvalidGuestEmail', 'removeGuest', 'removeMaterial', 'removalPending', 'withGuest'];
+    'errInvalidGuestEmail', 'removeGuest', 'removeMaterial', 'withGuest', 'fGuestLegend', 'fGuestExternalName',
+    'removalGuestPending', 'removalMaterialPending', 'undoRemoval'];
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
     for (const k of keys) assert.match(dict, new RegExp(`'comp\\.agendaViva\\.${k}': '`), `${lang} sem ${k}`);
