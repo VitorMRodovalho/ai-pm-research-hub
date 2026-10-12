@@ -239,6 +239,19 @@ Todos são **consultivos** (não modificam código). PM/main loop decide ação.
 - Tier 1 (`platform-guardian`/`code-reviewer`) e o agente de domínio (Tier 2) cobrem ~95% dos casos. Tier 3 é exceção, não rotina.
 - Agentes são lazy-loaded (custo ~0 em contexto fixo); o custo é **por spawn** — cada invocação extra é um context window inteiro. Trate convocação como gasto, não como hábito.
 
+## Onde nasce a issue: tracker público × privado (MANDATÓRIO, ADR-0002 emenda A2, GP 11/10/2026)
+
+**IMPORTANT — YOU MUST:** este repositório é **público**, e o tracker dele é um vetor que nenhuma reescrita de git
+alcança. Issue, comentário ou corpo de PR que cite **pessoa identificável** (candidato, membro, convidado, parceiro),
+**jurídico, contrato, seleção, finanças ou estratégia** nasce em **`VitorMRodovalho/ai-pm-research-hub-private`**
+(privado, só issues). **Na dúvida, nasce no privado.**
+
+- No público, referencie o privado só por **identificador opaco** ("item interno N"), ou abra uma issue pública técnica
+  que descreva apenas o código. O gate de referência a issue continua satisfeito pela issue pública técnica.
+- `gh issue create -R VitorMRodovalho/ai-pm-research-hub-private` para o privado. Acesso: GP e Fabricio.
+- A varredura diária de PII (`.github/workflows/tracker-pii-scan.yml`) é **rede de segurança**, não o controle: ela
+  avisa em até 24 h, mas a limpeza do histórico de edição é manual, item a item. Medido em 10/10/2026: 50 itens.
+
 ## Portfolio PMO (knowledge loop)
 
 - This repo lives under Vitor's portfolio PMO at `~/projects` (the parent
