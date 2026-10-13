@@ -28,8 +28,8 @@ const SUBJECT = 'fix: algo no codigo (#1)\n\nCorpo.\n\n';
 
 test('recusa Co-Authored-By de assistente de IA', () => {
   assert.equal(runHook(SUBJECT + 'Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\n'), 1);
-  assert.equal(runHook(SUBJECT + 'co-authored-by: GitHub Copilot <copilot@github.com>\n'), 1);
-  assert.equal(runHook(SUBJECT + '  Co-authored-by: ChatGPT <x@openai.com>\n'), 1);
+  assert.equal(runHook(SUBJECT + 'co-authored-by: GitHub Copilot <noreply@example.org>\n'), 1);
+  assert.equal(runHook(SUBJECT + '  Co-authored-by: ChatGPT <noreply@example.org>\n'), 1);
 });
 
 test('aceita Assisted-By, que e a atribuicao correta', () => {
