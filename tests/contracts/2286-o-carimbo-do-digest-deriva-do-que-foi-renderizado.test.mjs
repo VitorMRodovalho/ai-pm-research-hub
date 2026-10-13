@@ -172,6 +172,8 @@ test('#2286 db: nos digests ja gerados pela versao nova, o carimbo é subconjunt
       const s = payload.sections ?? {};
       colher(s.cards?.new_assignments); colher(s.engagements_new); colher(s.attendance_reminders_pending);
       colher(s.broadcasts); colher(s.governance_pending); colher(s.other_notifications);
+      // #2580: o resumo de lider entra no de membro como secao `leadership` e e carimbado junto.
+      colher(s.leadership);
 
       const carimbados = payload.consumed_notification_ids ?? [];
       const foraDoMontado = carimbados.filter((id) => !montados.has(id));

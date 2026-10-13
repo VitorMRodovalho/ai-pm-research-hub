@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# commit-msg hook — AI attribution trailer (#2687).
+#
+# Install once per clone (same as pre-commit):
+#   git config core.hooksPath .githooks
+#
+# BLOCKS a commit whose message carries a Co-Authored-By trailer naming an AI
+# assistant. Co-Authored-By is a Git-recognised trailer that GitHub surfaces as
+# a co-author; the human is the sole author of record. Use instead, as the LAST
+# line of the body:
+#   Assisted-By: Claude (Anthropic) <noreply@anthropic.com>
+#
+# Co-Authored-By naming a human is left alone.
+# core.hooksPath takes precedence over any global hook, so the gate lives here.
+#
+# Bypass (emergency only, document WHY in commit body):
+#   git commit --no-verify
+
+set -u
+
+msg_file="${1:?usage: commit-msg <message-file>}"
+
+AI_PATTERN='claude|anthropic|openai|chatgpt|gpt-[0-9]|copilot|codex|gemini|cursor|devin|aider|windsurf'
+
+# The anchored match skips '#' lines, which git strips before recording.
+offending=$(grep -iE '^[[:space:]]*co-authored-by:' "$msg_file" \
+  | grep -iE "$AI_PATTERN" || true)
+
+if [ -n "$offending" ]; then
+  printf '\033[0;31m✗ commit-msg: Co-Authored-By naming an AI assistant is refused (#2687)\033[0m\n' >&2
+  printf '%s\n' "$offending" | sed 's/^/    /' >&2
+  printf '  Use the informational trailer instead, last line of the body:\n' >&2
+  printf '    Assisted-By: Claude (Anthropic) <noreply@anthropic.com>\n' >&2
+  exit 1
+fi
+
+exit 0
