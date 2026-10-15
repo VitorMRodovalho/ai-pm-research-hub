@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 interface Notification {
   id: string;
@@ -107,7 +108,9 @@ export default function NotificationBell() {
   const markRead = async (id: string) => {
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('mark_notification_read', { p_notification_id: id });
+    // #2704: sem a gravação, o sino não pode fingir que leu (o contador voltaria no próximo load).
+    try { await rpcChecked(sb, 'mark_notification_read', { p_notification_id: id }); }
+    catch (e) { console.error('[notif] marcar lida falhou', e); return; }
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
@@ -115,7 +118,8 @@ export default function NotificationBell() {
   const markAllRead = async () => {
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('mark_all_notifications_read');
+    try { await rpcChecked(sb, 'mark_all_notifications_read'); }
+    catch (e) { console.error('[notif] marcar todas falhou', e); return; }
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
     setUnreadCount(0);
   };

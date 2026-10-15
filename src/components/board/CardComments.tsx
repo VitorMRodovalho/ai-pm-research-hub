@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getSb } from '../../hooks/useBoard';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 interface Comment {
   id: string;
@@ -82,7 +83,7 @@ export default function CardComments({ boardItemId, currentMemberId, currentMemb
     if (!sb) return;
     try {
       const mentioned = parseMentions(text, members);
-      await sb.rpc('create_card_comment', {
+      await rpcChecked(sb, 'create_card_comment', {
         p_board_item_id: boardItemId,
         p_body: text.trim(),
         p_parent_comment_id: parent,
@@ -95,6 +96,8 @@ export default function CardComments({ boardItemId, currentMemberId, currentMemb
       } else {
         setBody('');
       }
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro ao comentar', 'error');
     } finally {
       setPosting(false);
     }
@@ -104,7 +107,12 @@ export default function CardComments({ boardItemId, currentMemberId, currentMemb
     if (!editingBody.trim()) return;
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('update_card_comment', { p_comment_id: id, p_new_body: editingBody.trim() });
+    try {
+      await rpcChecked(sb, 'update_card_comment', { p_comment_id: id, p_new_body: editingBody.trim() });
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro ao editar', 'error');
+      return;
+    }
     setEditingId(null);
     setEditingBody('');
     await refresh();
@@ -114,7 +122,12 @@ export default function CardComments({ boardItemId, currentMemberId, currentMemb
     if (!confirm('Excluir este comentário?')) return;
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('delete_card_comment', { p_comment_id: id });
+    try {
+      await rpcChecked(sb, 'delete_card_comment', { p_comment_id: id });
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro ao excluir', 'error');
+      return;
+    }
     await refresh();
   }, [refresh]);
 

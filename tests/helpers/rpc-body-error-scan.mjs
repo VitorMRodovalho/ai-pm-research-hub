@@ -36,6 +36,9 @@ export function bodyErrorWriters(root, migrationsDir = join(root, 'supabase/migr
   const out = new Set();
   const cache = new Map();
   for (const [name, { file }] of newest) {
+    // `get_*` é leitura para quem chama, mesmo quando semeia linhas na primeira vez
+    // (get_my_onboarding); a tela que não recebe nada simplesmente não mostra nada.
+    if (name.startsWith('get_')) continue;
     if (!cache.has(file)) cache.set(file, maskLineComments(readFileSync(join(migrationsDir, file), 'utf8')));
     const blk = functionBlock(cache.get(file), name);
     if (!blk) continue;

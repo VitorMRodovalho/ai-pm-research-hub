@@ -6,8 +6,8 @@
  * A #2699 achou três telas assim; esta varredura cobre o front inteiro.
  *
  * Regra: toda chamada a uma dessas funções passa por `rpcChecked`, ou lê o erro do corpo amarrado
- * à variável que recebeu o resultado. A lista de exceções só DIMINUI: chamada nova fora da regra
- * reprova, e exceção que deixou de ser necessária também reprova até sair da lista.
+ * à variável que recebeu o resultado. A lista de exceções está vazia desde a PR-B e só diminui:
+ * chamada nova fora da regra reprova, e exceção que deixou de ser necessária também.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,29 +19,9 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 
-// Telas do membro, migradas na PR-B da #2704. Uma linha por chamada: `arquivo|função#ordem`.
-const EXCECOES = [
-  'src/components/board/CardComments.tsx|create_card_comment#1',
-  'src/components/board/CardComments.tsx|update_card_comment#1',
-  'src/components/board/CardComments.tsx|delete_card_comment#1',
-  'src/components/milestones/MilestoneCelebration.tsx|acknowledge_milestone#1',
-  'src/components/notifications/NotificationBell.tsx|mark_notification_read#1',
-  'src/components/notifications/NotificationBell.tsx|mark_all_notifications_read#1',
-  'src/components/onboarding/OnboardingChecklist.tsx|get_my_onboarding#1',
-  'src/components/onboarding/OnboardingChecklist.tsx|complete_onboarding_step#1',
-  'src/components/onboarding/OnboardingChecklist.tsx|acknowledge_milestone#1',
-  'src/components/onboarding/PostPromotionJourney.tsx|get_my_onboarding#1',
-  'src/components/privacy/PrivacyGateModal.tsx|mark_my_data_reviewed#1',
-  'src/pages/blog/[slug].astro|toggle_blog_like#1',
-  'src/pages/notifications.astro|mark_notification_read#1',
-  'src/pages/notifications.astro|mark_all_notifications_read#1',
-  'src/pages/profile.astro|update_my_profile#1',
-  'src/pages/profile.astro|update_my_profile#2',
-  'src/pages/profile.astro|update_my_profile#3',
-  'src/pages/profile.astro|update_my_profile#4',
-  'src/pages/profile.astro|update_notification_preferences#1',
-  'src/pages/tribe/[id].astro|complete_onboarding_step#1',
-];
+// Zerada na PR-B da #2704. Exceção nova precisa de motivo escrito ao lado; uma linha por chamada,
+// `arquivo|função#ordem`. A lista só diminui.
+const EXCECOES = [];
 
 const TARGETS = bodyErrorWriters(ROOT);
 

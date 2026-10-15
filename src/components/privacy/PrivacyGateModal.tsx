@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 /**
  * PrivacyGateModal — runs on every authenticated page load.
@@ -78,10 +79,12 @@ export default function PrivacyGateModal({ lang = 'pt-BR' }: { lang?: string }) 
     if (!sb) return;
     setSubmitting(true);
     try {
-      await sb.rpc('mark_my_data_reviewed');
+      await rpcChecked(sb, 'mark_my_data_reviewed');
       sessionStorage.setItem(SESSION_KEY_REVAL_SHOWN, '1');
       (window as any).toast?.('Dados confirmados ✓', 'success');
       setShow(null);
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro ao confirmar', 'error');
     } finally {
       setSubmitting(false);
     }
