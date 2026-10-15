@@ -367,9 +367,9 @@ export const POST: APIRoute = async ({ request }) => {
       p_ok: s.ok,
       p_error: s.error,
     });
-    if (error) {
+    if (error || data?.error) {
       // Mensagem de erro do Postgres nomeia tabela, coluna e constraint. Fica no log.
-      console.error('[agenda-probe] gravação falhou', { url: s.booking_url, erro: error.message });
+      console.error('[agenda-probe] gravação falhou', { url: s.booking_url, erro: error?.message || data?.error });
       gravadas.push({ booking_url: s.booking_url, escrita: 'falhou' });
     } else {
       gravadas.push(data);

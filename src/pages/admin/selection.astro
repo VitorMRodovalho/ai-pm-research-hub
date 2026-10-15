@@ -5527,6 +5527,7 @@ const SEL_I18N = {
           try {
             const { data, error } = await sb.rpc('mark_interview_status', { p_interview_id: intvId, p_status: status });
             if (error) throw error;
+            if (data?.error || data?.success === false) throw new Error(data?.error || 'Erro');
             const successMsg = status === 'noshow' ? (data?.email_dispatched ? 'No-Show marcado + email enviado ao candidato' : 'No-Show marcado (email falhou — ver logs)')
               : status === 'cancelled' ? 'Entrevista cancelada'
               : status === 'rescheduled' ? 'Marcada como remarcada'
