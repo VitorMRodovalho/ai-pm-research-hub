@@ -30738,6 +30738,10 @@ export type Database = {
           drive_file_url: string
         }[]
       }
+      _certificate_pdf_regen_sweep_cron: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       _comms_token_expiry_scan: { Args: never; Returns: Json }
       _competition_email_payload: {
         Args: { p_registration_id: string; p_token: string }
