@@ -52,7 +52,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
-import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
+import { maskLineComments, latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import { md5, normalizeBody } from '../helpers/rpc-body-drift-parser.mjs';
 
 const ROOT = process.cwd();
@@ -117,10 +117,15 @@ test('A · o corpo VIVO é o corpo capturado pela migration (hash, não leitura 
   // que é exatamente o que o Postgres guarda em `prosrc`. A normalização (`\s+` → espaço) é a
   // mesma dos dois lados, e o CLAUDE.md exige que continue sendo: divergir aqui faria TODA função
   // parecer derivada.
-  const corpoNaMigration = migracaoDaOnda().match(/AS \$function\$([\s\S]*?)\$function\$/);
-  assert.ok(corpoNaMigration, 'não achei o corpo entre $function$ na migration de #2278');
+  // #2697: a captura VIGENTE (a migration mais nova que define a função), não a desta onda. Uma
+  // onda posterior que recrie get_event_detail não pode reprovar este guard; o que ele exige é que
+  // o vivo seja o capturado E que a captura vigente ainda carregue o conserto de #2278.
+  const cap = latestFunctionCapture(process.cwd(), 'get_event_detail');
+  assert.ok(cap?.body, 'nenhuma migration captura get_event_detail');
+  assert.match(maskLineComments(cap.body), /'present', COALESCE\(a\.present, false\)/,
+    `a captura vigente (${cap.file}) perdeu o conserto de #2278`);
 
-  const esperado = md5(normalizeBody(corpoNaMigration[1]));
+  const esperado = md5(normalizeBody(cap.body));
   assert.equal(
     vivo[0].body_md5, esperado,
     'o corpo vivo de get_event_detail DIVERGE da última captura em migration. '

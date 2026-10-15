@@ -30684,6 +30684,10 @@ export type Database = {
         Returns: boolean
       }
       _cacheable_preview_doc_types: { Args: never; Returns: string[] }
+      _caller_is_event_invitee: {
+        Args: { p_event_id: string }
+        Returns: boolean
+      }
       _campaign_email_unsubscribed: {
         Args: { p_email: string }
         Returns: boolean
@@ -35810,10 +35814,19 @@ export type Database = {
         Returns: boolean
       }
       rls_can_see_board: { Args: { p_board_id: string }; Returns: boolean }
-      rls_can_see_event_tier: {
-        Args: { p_initiative_id: string; p_visibility: string }
-        Returns: boolean
-      }
+      rls_can_see_event_tier:
+        | {
+            Args: { p_initiative_id: string; p_visibility: string }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_event_id: string
+              p_initiative_id: string
+              p_visibility: string
+            }
+            Returns: boolean
+          }
       rls_can_see_initiative: {
         Args: { p_initiative_id: string }
         Returns: boolean
