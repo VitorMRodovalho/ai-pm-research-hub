@@ -342,6 +342,11 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       if (loadingEl) loadingEl.textContent = t('admin.certificates.errorLoading', lang);
     }
 
+    const pdfFailed = (err: unknown) => {
+      console.error('[admin/certificates] PDF failed:', err);
+      (window as any).toast?.(t('certificates.downloadError', lang), 'error');
+    };
+
     // Delegation for buttons
     document.addEventListener('click', async (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -355,7 +360,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         const certId = pdfBtn.dataset.pdfCertId;
         const allCerts = (window as any).__adminSignedCerts || [];
         const cert = allCerts.find((c: any) => c.id === certId);
-        if (cert) await downloadCertificatePDF(certToData(cert), sb);
+        // #2699: falha do PDF virava rejeição solta e o botão parecia não fazer nada.
+        if (!cert) { pdfFailed(new Error('cert not in list')); return; }
+        try { await downloadCertificatePDF(certToData(cert), sb); } catch (err) { pdfFailed(err); }
         return;
       }
 
@@ -364,18 +371,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         // Pending list uses minimal data — fetch full cert
         const certId = pdfPendingBtn.dataset.pdf;
         try {
-          const { data } = await sb.from('certificates').select('*, m:members!member_id(name)').eq('id', certId).single();
-          if (data) {
-            await downloadCertificatePDF(certToData({
-              member_name: data.m?.name || '',
-              type: data.type, title: data.title,
-              period_start: data.period_start, period_end: data.period_end,
-              function_role: data.function_role, language: data.language,
-              verification_code: data.verification_code, description: data.description,
-              issued_by: data.issued_by,
-            }), sb);
-          }
-        } catch (err) { console.error('PDF pending fetch failed:', err); }
+          const { data, error } = await sb.from('certificates').select('*, m:members!member_id(name)').eq('id', certId).single();
+          if (error || !data) throw error || new Error('certificate not found');
+          await downloadCertificatePDF(certToData({
+            member_name: data.m?.name || '',
+            type: data.type, title: data.title,
+            period_start: data.period_start, period_end: data.period_end,
+            function_role: data.function_role, language: data.language,
+            verification_code: data.verification_code, description: data.description,
+            issued_by: data.issued_by,
+          }), sb);
+        } catch (err) { pdfFailed(err); }
         return;
       }
 
@@ -383,14 +389,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         const allCerts = (window as any).__adminSignedCerts || [];
         const terms = allCerts.filter((c: any) => c.type === 'volunteer_agreement');
         if (terms.length === 0) { (window as any).toast?.(t('admin.certificates.bulkNoTerms', lang), 'info'); return; }
-        await downloadBulkCertificatesPDF(terms.map(certToData), sb);
+        try { await downloadBulkCertificatesPDF(terms.map(certToData), sb); } catch (err) { pdfFailed(err); }
         return;
       }
 
       if (target.id === 'bulk-download-all') {
         const allCerts = (window as any).__adminSignedCerts || [];
         if (allCerts.length === 0) return;
-        await downloadBulkCertificatesPDF(allCerts.map(certToData), sb);
+        try { await downloadBulkCertificatesPDF(allCerts.map(certToData), sb); } catch (err) { pdfFailed(err); }
         return;
       }
     });

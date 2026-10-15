@@ -113,7 +113,7 @@ const GAM_I18N = {
   certDownloaded: t('gamification.cert.downloaded', lang) || 'Baixado',
   certFilterAll: t('gamification.cert.filterAll', lang) || 'Todos',
   certRevoke: t('gamification.cert.revoke', lang),
-  certRevokeReason: t('gamification.cert.revokeReason', lang),
+  certDownloadError: t('certificates.downloadError', lang),
   certPublish: t('gamification.cert.publish', lang),
   certVerify: t('gamification.cert.verify', lang),
   certEdit: t('gamification.cert.edit', lang) || 'Editar',
@@ -534,6 +534,7 @@ const SCORING_I18N = {
   import { buildTrailProgressByMember } from '../lib/trail-progress';
   import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
   import { hasPermission } from '../lib/permissions';
+  import { showBlockedTabNotice } from '../lib/certificates/pdf';
   import {
     getCatalog, getLevelInfo, pillarXpRange, rulesByPillar, localizeI18n,
     fetchChampionAttribution, criterionLabel, PILLAR_EMOJI,
@@ -1850,11 +1851,11 @@ const SCORING_I18N = {
     if (editingCertId) {
       // UPDATE mode
       if (!title) { toast(I.certFillFields, 'error'); return; }
-      const { error } = await sb.rpc('update_certificate', {
+      const { data: upd, error } = await sb.rpc('update_certificate', {
         p_cert_id: editingCertId,
         p_updates: { title, description: desc, type, period_start: periodStart, period_end: periodEnd, function_role: functionRole, language: certLang }
       });
-      if (error) { toast(error.message || 'Error', 'error'); return; }
+      if (error || upd?.error) { toast(upd?.error || error?.message || 'Error', 'error'); return; }
       toast(I.certUpdated, 'success');
       exitEditMode();
       loadManageCerts();
@@ -2019,22 +2020,15 @@ const SCORING_I18N = {
         break;
       case 'publish-cert': {
         const id = target.dataset.certId;
-        await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
+        const { data: pub, error: pubErr } = await sb.rpc('update_certificate', { p_cert_id: id, p_updates: { status: 'issued' } });
+        if (pubErr || pub?.error) { toast(pub?.error || pubErr?.message || 'Error', 'error'); break; }
         toast(I.certIssued || 'Publicado!', 'success');
         loadManageCerts();
         break;
       }
       case 'download-cert': {
-        try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); } catch {}
-        break;
-      }
-      case 'revoke-cert': {
-        const id = target.dataset.certId;
-        const reason = prompt(I.certRevokeReason || 'Motivo da revogação:');
-        if (!reason) return;
-        await sb.rpc('revoke_certificate', { p_cert_id: id, p_reason: reason });
-        toast('Revogado', 'success');
-        loadManageCerts();
+        try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); }
+        catch (e) { console.error('[gamification] cert PDF failed', e); toast(I.certDownloadError, 'error'); }
         break;
       }
       case 'edit-cert': {
@@ -2108,7 +2102,6 @@ const SCORING_I18N = {
         <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
         ${c.status !== 'revoked' ? `<button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="edit-cert" data-cert-id="${c.id}" data-cert-title="${(c.title||'').replace(/"/g,'&quot;')}" data-cert-desc="${(c.description||'').replace(/"/g,'&quot;').replace(/\n/g,'&#10;')}" data-cert-period-start="${c.period_start||''}" data-cert-period-end="${c.period_end||''}" data-cert-role="${c.function_role||''}" data-cert-type="${c.type||''}" data-cert-lang="${c.language||'pt-BR'}">✏️</button>` : ''}
         ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅</button>` : ''}
-        ${c.status !== 'revoked' ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}">🔴</button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
   }
@@ -2261,9 +2254,7 @@ const SCORING_I18N = {
     const period = certData.period_start && certData.period_end ? tpl.period.replace('{start}', certData.period_start).replace('{end}', certData.period_end) : '';
     const descSection = certData.description ? `<div style="margin:24px auto;max-width:420px;text-align:left"><div style="font-size:11px;font-weight:bold;color:#555;margin-bottom:6px">${tpl.contributions}</div><div style="font-size:12px;color:#666;line-height:1.6">${certData.description.replace(/\n/g, '<br>')}</div></div>` : '';
     const sigImg = certData.signature_url ? `<img src="${certData.signature_url}" style="max-width:180px;max-height:60px;margin-bottom:4px" crossorigin="anonymous">` : '';
-    const w = window.open('', '_blank');
-    if (!w) return;
-    w.document.write(`<html><head><title>${tpl.title} — ${certData.member_name}</title><style>@page{size:A4 portrait;margin:0}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>
+    const html = `<html><head><title>${tpl.title} — ${certData.member_name}</title><style>@page{size:A4 portrait;margin:0}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;font-family:Georgia,serif}</style></head><body>
       <div style="width:595px;min-height:842px;padding:48px 40px;border:3px double #1a365d;position:relative;background:#fff;box-sizing:border-box">
         <div style="position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1px solid #cbd5e0;pointer-events:none"></div>
         <div style="text-align:center;margin-bottom:20px"><div style="font-size:13px;color:#666;letter-spacing:2px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div><div style="font-size:9px;color:#999;margin-top:3px">The AI & PM Study and Research Hub</div></div>
@@ -2279,7 +2270,11 @@ const SCORING_I18N = {
         <div style="text-align:center;margin-top:16px;font-size:10px;color:#aaa">${tpl.footer}</div>
         <div style="text-align:center;margin-top:8px;font-size:8px;color:#ccc">${tpl.disclaimer}</div>
       </div>
-    </body></html>`);
+    </body></html>`;
+    // #2699: a aba abre depois de `await`s e pode cair no bloqueador; antes saía em silêncio.
+    const w = window.open('', '_blank');
+    if (!w) { showBlockedTabNotice(URL.createObjectURL(new Blob([html], { type: 'text/html' }))); return; }
+    w.document.write(html);
     w.document.close();
     setTimeout(() => w.print(), 500);
   };

@@ -1010,7 +1010,7 @@ function saveBlob(blob: Blob, filename: string): void {
  * fazer nada. O aviso traz um LINK para o mesmo documento: clicar nele é um gesto novo, que o
  * bloqueador deixa passar. A URL do blob só é liberada quando o aviso some.
  */
-function showBlockedTabNotice(url: string): void {
+export function showBlockedTabNotice(url: string): void {
   const lang = uiLang();
   const box = document.createElement('div');
   box.setAttribute('role', 'alert');

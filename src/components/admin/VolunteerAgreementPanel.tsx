@@ -130,6 +130,7 @@ const L: Record<string, Record<string, string>> = {
     bulkButton: 'Contra-assinar selecionados',
     bulkConfirm: 'Contra-assinar {n} termo(s) selecionado(s)? Cada um será contra-assinado pela diretoria (ato bilateral) e liberado ao voluntário.',
     bulkResult: '{ok} contra-assinado(s), {failed} falha(s).',
+    bulkFailedReasons: 'Os que falharam continuam selecionados. Motivo: {reasons}.',
     selectAllPending: 'Selecionar pendentes na visão',
     downloadPdf: 'Baixar PDF',
     previewTerm: 'Pré-visualizar',
@@ -197,6 +198,7 @@ const L: Record<string, Record<string, string>> = {
     bulkButton: 'Counter-sign selected',
     bulkConfirm: 'Counter-sign {n} selected agreement(s)? Each is counter-signed by the board (bilateral act) and released to the volunteer.',
     bulkResult: '{ok} counter-signed, {failed} failed.',
+    bulkFailedReasons: 'The failed ones remain selected. Reason: {reasons}.',
     selectAllPending: 'Select pending in view',
     downloadPdf: 'Download PDF',
     previewTerm: 'Preview',
@@ -264,6 +266,7 @@ const L: Record<string, Record<string, string>> = {
     bulkButton: 'Contrafirmar seleccionados',
     bulkConfirm: '¿Contrafirmar {n} término(s) seleccionado(s)? Cada uno es contrafirmado por la directiva (acto bilateral) y liberado al voluntario.',
     bulkResult: '{ok} contrafirmado(s), {failed} fallo(s).',
+    bulkFailedReasons: 'Los que fallaron siguen seleccionados. Motivo: {reasons}.',
     selectAllPending: 'Seleccionar pendientes en vista',
     downloadPdf: 'Descargar PDF',
     previewTerm: 'Vista previa',
@@ -492,8 +495,13 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
       if (error || data?.error) throw new Error(data?.error || error?.message);
       const ok = data?.ok ?? 0;
       const failed = data?.failed ?? 0;
-      (window as any).toast?.(t.bulkResult.replace('{ok}', String(ok)).replace('{failed}', String(failed)), failed > 0 ? 'info' : 'success');
-      setSelectedIds(new Set());
+      // #2699: o lote devolve o motivo de cada falha em `results`; antes só a contagem chegava à
+      // tela e a seleção era limpa, então não dava para saber QUAIS termos ficaram sem assinatura.
+      const failedResults = ((data?.results ?? []) as any[]).filter((r) => !r?.result?.success);
+      const reasons = [...new Set(failedResults.map((r) => String(r?.result?.error ?? 'unknown')))];
+      const summary = t.bulkResult.replace('{ok}', String(ok)).replace('{failed}', String(failed));
+      (window as any).toast?.(failed > 0 ? `${summary} ${t.bulkFailedReasons.replace('{reasons}', reasons.join(', '))}` : summary, failed > 0 ? 'error' : 'success');
+      setSelectedIds(new Set(failedResults.map((r) => String(r.id))));
       await load();
     } catch {
       (window as any).toast?.(t.actionError, 'error');
