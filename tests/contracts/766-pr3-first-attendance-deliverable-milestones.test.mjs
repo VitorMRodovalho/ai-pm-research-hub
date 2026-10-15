@@ -104,7 +104,7 @@ test('FE: MilestoneCelebration owns first_attendance + first_deliverable (not on
 
 test('FE: reads get_my_milestones, dismiss calls acknowledge_milestone, a11y role=status', () => {
   assert.match(FE, /rpc\('get_my_milestones'\)/);
-  assert.match(FE, /rpc\('acknowledge_milestone', \{ p_milestone_key/);
+  assert.match(FE, /(?:rpc\(|rpcChecked\(sb, )'acknowledge_milestone', \{ p_milestone_key/);  // #2704: rpcChecked
   assert.match(FE, /role="status"/);
   assert.match(FE, /aria-live="polite"/);
   // bottom-left to clear the bottom-right HelpFloatingButton

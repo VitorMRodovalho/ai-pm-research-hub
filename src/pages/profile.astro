@@ -310,6 +310,7 @@ const PROFILE_I18N = {
   import { normalizeCredlyUrl } from '../lib/credly';
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
   import { formatDateOnly, parseDateOnly } from '../lib/date-only';
+  import { rpcChecked } from '../lib/rpc-checked';
   // p207 (Issue #216, 2026-05-20): import t() runtime translator. The script body
   // below calls t('profile.xp.howToEarn', lang) etc ~25 times at runtime (XP pillars
   // + champions + journey labels). Frontmatter `import { t } from '../i18n/utils'`
@@ -2157,7 +2158,7 @@ const PROFILE_I18N = {
     if (!sb || !member) return;
     try {
       const photoUrl = await uploadMemberAsset(sb, 'photo', file);
-      await sb.rpc('update_my_profile', { p_fields: { photo_url: photoUrl } });
+      await rpcChecked(sb, 'update_my_profile', { p_fields: { photo_url: photoUrl } });
       const avatarEl = document.getElementById('self-avatar');
       if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
       (window as any).toast?.('Foto atualizada!', 'success');
@@ -2199,7 +2200,7 @@ const PROFILE_I18N = {
     if (!sb || !member) return;
     try {
       const sigUrl = await uploadMemberAsset(sb, 'signature', file);
-      await sb.rpc('update_my_profile', { p_fields: { signature_url: sigUrl } });
+      await rpcChecked(sb, 'update_my_profile', { p_fields: { signature_url: sigUrl } });
       // #753 P1: bucket is private — display via a signed URL, not the raw (now non-resolving) public URL.
       setSigImg(await signOwnSig(sb, sigUrl) || '');
       (window as any).toast?.('Assinatura salva!', 'success');
@@ -2236,7 +2237,12 @@ const PROFILE_I18N = {
     // #753 Part 4: capture the object path BEFORE clearing the field, then delete the orphaned
     // storage object too (LGPD Art.16 minimization; owner-scoped DELETE policy added in mig …256).
     const curSrc = document.querySelector('#sig-preview img')?.getAttribute('src') || '';
-    await sb.rpc('update_my_profile', { p_fields: { signature_url: '' } });
+    try {
+      await rpcChecked(sb, 'update_my_profile', { p_fields: { signature_url: '' } });
+    } catch (err: any) {
+      (window as any).toast?.(err?.message || 'Erro', 'error');
+      return;
+    }
     try {
       const after = curSrc.split('/member-signatures/')[1];
       const path = after ? decodeURIComponent(after.split('?')[0]) : '';
@@ -2371,8 +2377,9 @@ const PROFILE_I18N = {
 
     let data: any;
     if (Object.keys(fields).length > 0) {
-      const res = await sb.rpc('update_my_profile', { p_fields: fields });
-      data = res.data;
+      // #2704: a falha de rede também vira o `data.error` que o fluxo abaixo já mostra.
+      try { data = await rpcChecked(sb, 'update_my_profile', { p_fields: fields }); }
+      catch (e: any) { data = { error: e?.message || 'Erro' }; }
     } else {
       // No changes, but still call old RPC for backward compat.
       // #1205: this passed `shareWa`, an identifier that never existed in this module. The
@@ -2567,10 +2574,10 @@ const PROFILE_I18N = {
     const emailDigest = (document.getElementById('pref-email-digest') as HTMLInputElement)?.checked ?? true;
     const muteIds = ['assignment', 'curation_status', 'publication', 'system', 'mention', 'attendance_reminder', 'attendance_detractor', 'cr_approved', 'certificate_issued'];
     const mutedTypes = muteIds.filter(t => (document.getElementById(`mute-${t}`) as HTMLInputElement)?.checked);
-    const { error } = await sb.rpc('update_notification_preferences', {
+    const { data: prefsData, error } = await sb.rpc('update_notification_preferences', {
       p_prefs: { in_app: inApp, email_digest: emailDigest, muted_types: mutedTypes }
     });
-    if (error) (window as any).toast?.(error.message, 'error');
+    if (error || prefsData?.error) (window as any).toast?.(error?.message || prefsData.error, 'error');
     else (window as any).toast?.(PROFILE_I18N.notifPrefsSaved, 'success');
   }
 

@@ -16,7 +16,7 @@ const MC = readFileSync('src/components/milestones/MilestoneCelebration.tsx', 'u
 const OC = readFileSync('src/components/onboarding/OnboardingChecklist.tsx', 'utf8');
 
 test('#1443 MilestoneCelebration: acknowledge is awaited (not fire-and-forget)', () => {
-  assert.match(MC, /await sb\.rpc\('acknowledge_milestone', \{ p_milestone_key/,
+  assert.match(MC, /await (?:sb\.rpc\(|rpcChecked\(sb, )'acknowledge_milestone', \{ p_milestone_key/,
     'the acknowledge rpc must be awaited');
   assert.match(MC, /const dismiss = useCallback\(async \(\)/, 'dismiss is async so it can await the ack');
 });
@@ -28,7 +28,7 @@ test('#1443 MilestoneCelebration: the CTA acknowledges before navigating', () =>
 });
 
 test('#1443 OnboardingChecklist: celebration ack is awaited on both Fechar and the CTA', () => {
-  assert.match(OC, /await sb\.rpc\('acknowledge_milestone', \{ p_milestone_key: 'onboarding_complete' \}\)/,
+  assert.match(OC, /await (?:sb\.rpc\(|rpcChecked\(sb, )'acknowledge_milestone', \{ p_milestone_key: 'onboarding_complete' \}\)/,
     'onboarding_complete ack must be awaited');
   assert.match(OC, /const dismissCelebration = async \(\)/, 'dismissCelebration is async');
   assert.match(OC, /onClick=\{async \(e\) => \{[\s\S]*?e\.preventDefault\(\); await acknowledgeOnboarding\(\); window\.location\.href = ctaHref/,

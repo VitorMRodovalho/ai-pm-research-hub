@@ -51,6 +51,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   // notificação são escolhidos por quem a cria, e a porta que cria (`create_notification`)
   // estava aberta para qualquer sessão logada. Passa a usar o SSOT.
   import { escapeHtml, safeNavigationUrl } from '../lib/escape-html';
+  import { rpcChecked } from '../lib/rpc-checked';
 
   let sb: any = null;
   let currentFilter = 'all';
@@ -134,7 +135,8 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
         el.addEventListener('click', async () => {
           const id = (el as HTMLElement).dataset.notifId!;
           const link = linkById.get(id) || null;
-          await sb.rpc('mark_notification_read', { p_notification_id: id });
+          try { await rpcChecked(sb, 'mark_notification_read', { p_notification_id: id }); }
+          catch (e) { console.error('[notif] marcar lida falhou', e); }
           if (link) window.location.href = link;
           else loadNotifications();
         });
@@ -148,7 +150,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   async function markAllRead() {
     if (!sb) return;
     try {
-      await sb.rpc('mark_all_notifications_read');
+      await rpcChecked(sb, 'mark_all_notifications_read');
       (window as any).toast?.('Todas marcadas como lidas', 'success');
       loadNotifications();
       // Update badge

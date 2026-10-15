@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 interface Props {
   lang?: string;
@@ -104,7 +105,7 @@ export default function MilestoneCelebration({ lang = 'pt-BR' }: Props) {
   const acknowledge = useCallback(async (key: string) => {
     const sb = getSb();
     if (!sb) return;
-    try { await sb.rpc('acknowledge_milestone', { p_milestone_key: key }); }
+    try { await rpcChecked(sb, 'acknowledge_milestone', { p_milestone_key: key }); }
     catch { /* best-effort; card still advances, get_my_milestones re-shows on next load if it failed */ }
   }, [getSb]);
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 interface Step {
   step_id: string;
@@ -136,7 +137,12 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   const completeStep = async (stepId: string, metadata?: any) => {
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('complete_onboarding_step', { p_step_id: stepId, p_metadata: metadata || {} });
+    try {
+      await rpcChecked(sb, 'complete_onboarding_step', { p_step_id: stepId, p_metadata: metadata || {} });
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro', 'error');
+      return;
+    }
     load();
     (window as any).toast?.(l.done + '!', 'success');
   };
@@ -157,7 +163,7 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
     const acknowledgeOnboarding = async () => {
       const sb = getSb();
       if (!sb) return;
-      try { await sb.rpc('acknowledge_milestone', { p_milestone_key: 'onboarding_complete' }); } catch { /* best-effort */ }
+      try { await rpcChecked(sb, 'acknowledge_milestone', { p_milestone_key: 'onboarding_complete' }); } catch { /* best-effort */ }
     };
     const dismissCelebration = async () => {
       // Ack FIRST, hide after — mirrors MilestoneCelebration.dismiss. Hiding first would let a

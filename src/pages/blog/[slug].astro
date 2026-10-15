@@ -154,7 +154,15 @@ const pageTitle = postTitle ? `${postTitle} | Núcleo IA & GP` : t('blog.title',
       currentCount += currentLiked ? 1 : -1;
       if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
       if (likeCount) likeCount.textContent = String(currentCount);
-      const { data: toggleData } = await sb.rpc('toggle_blog_like', { p_post_id: postId });
+      const { data: toggleData, error: toggleErr } = await sb.rpc('toggle_blog_like', { p_post_id: postId });
+      // #2704: recusa (sessão expirada) desfaz o otimista em vez de deixar o coração mentindo.
+      if (toggleErr || toggleData?.error) {
+        currentLiked = !currentLiked;
+        currentCount += currentLiked ? 1 : -1;
+        if (likeIcon) likeIcon.textContent = currentLiked ? '❤️' : '🤍';
+        if (likeCount) likeCount.textContent = String(currentCount);
+        return;
+      }
       if (toggleData) {
         currentLiked = toggleData.liked;
         currentCount = toggleData.like_count;
