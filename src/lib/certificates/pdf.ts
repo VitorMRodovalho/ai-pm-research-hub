@@ -12,6 +12,7 @@ import {
   NIA_FACE_DATA_URI,
   CHAPTERS_STRIP_DATA_URI,
 } from "./cert-assets";
+import { t, type Lang } from "../../i18n/utils";
 
 /**
  * Recognition (Ciclo 3 redesign) — the landscape, print-friendly certificate for
@@ -984,6 +985,61 @@ function buildPrintDocument(title: string, innerHtml: string, orientation: 'port
   </body></html>`;
 }
 
+function uiLang(): Lang {
+  const l = (typeof document !== 'undefined' && document.documentElement.lang) || '';
+  return l.startsWith('en') ? 'en-US' : l.startsWith('es') ? 'es-LATAM' : 'pt-BR';
+}
+
+function notify(msg: string, kind: 'success' | 'error' | 'info'): void {
+  (window as any).toast?.(msg, kind);
+}
+
+function saveBlob(blob: Blob, filename: string): void {
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 60000);
+}
+
+/**
+ * #2699 — o navegador bloqueou a aba. Antes a função saía em silêncio e o botão parecia não
+ * fazer nada. O aviso traz um LINK para o mesmo documento: clicar nele é um gesto novo, que o
+ * bloqueador deixa passar. A URL do blob só é liberada quando o aviso some.
+ */
+function showBlockedTabNotice(url: string): void {
+  const lang = uiLang();
+  const box = document.createElement('div');
+  box.setAttribute('role', 'alert');
+  box.dataset.pdfBlockedNotice = '';
+  box.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:10000;' +
+    'max-width:min(92vw,480px);background:var(--surface-card,#fff);color:var(--text-primary,#111);' +
+    'border:1px solid var(--border-default,#ccc);border-radius:12px;padding:12px 16px;' +
+    'box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap';
+  const msg = document.createElement('span');
+  msg.textContent = t('certificates.popupBlocked', lang);
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener';
+  link.textContent = t('certificates.openDocument', lang);
+  link.style.cssText = 'font-weight:600;text-decoration:underline';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.textContent = '✕';
+  close.setAttribute('aria-label', t('certificates.closeNotice', lang));
+  close.style.cssText = 'background:none;border:0;cursor:pointer;font-size:16px;color:inherit';
+  const dismiss = () => { box.remove(); URL.revokeObjectURL(url); };
+  close.addEventListener('click', dismiss);
+  link.addEventListener('click', () => setTimeout(dismiss, 1000));
+  box.append(msg, link, close);
+  document.body.appendChild(box);
+  setTimeout(() => { if (box.isConnected) dismiss(); }, 120000);
+}
+
 /**
  * Open a new window with a single certificate PDF (ready to print).
  * Automatically hydrates template data for volunteer_agreements.
@@ -991,6 +1047,7 @@ function buildPrintDocument(title: string, innerHtml: string, orientation: 'port
  * instead of "about:blank".
  */
 export async function downloadCertificatePDF(certData: CertificateData, sb?: any): Promise<void> {
+  let frozenFailed = false;
   // #648 Camada 3 — for a SIGNED volunteer agreement, serve the FROZEN immutable PDF
   // (rendered at signing time into the private 'certificates' bucket) instead of
   // rebuilding it live. This is the byte-exact legal artifact; the rebuild below is the
@@ -1004,13 +1061,22 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
         : q.eq('id', (certData as any).id);
       const { data: row } = await q.maybeSingle();
       if (row?.pdf_url) {
-        const { data: signed } = await sb.storage.from('certificates').createSignedUrl(row.pdf_url, 300);
-        if (signed?.signedUrl) { window.open(signed.signedUrl, '_blank'); return; }
+        // #2699: baixa o arquivo em vez de abrir aba. A aba aberta depois de dois `await` perde o
+        // gesto do clique e cai no bloqueador de pop-up, e o retorno nulo era ignorado.
+        const { data: blob, error: dlErr } = await sb.storage.from('certificates').download(row.pdf_url);
+        if (!dlErr && blob) {
+          saveBlob(blob, `${certData.verification_code || 'termo'}.pdf`);
+          return;
+        }
+        frozenFailed = true;
       }
     } catch (e) {
       console.warn('[pdf] frozen volunteer-agreement serve failed; falling back to rebuild', e);
+      frozenFailed = true;
     }
   }
+  // O congelado existe e não veio: quem clicou recebe a reconstrução, não o artefato assinado.
+  if (frozenFailed) notify(t('certificates.frozenUnavailable', uiLang()), 'info');
 
   if (sb) await hydrateCertData(certData, sb);
 
@@ -1022,7 +1088,7 @@ export async function downloadCertificatePDF(certData: CertificateData, sb?: any
   const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
-  if (!w) { URL.revokeObjectURL(url); return; }
+  if (!w) { showBlockedTabNotice(url); return; }
 
   // Wait for content to load, then auto-open print dialog after 1.5s
   // (gives user time to see the instruction banner about "headers and footers")
@@ -1049,11 +1115,16 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
   // #648 — buildCertificateHTML now throws for a volunteer agreement whose clause
   // snapshot is unavailable (rather than emitting a blank instrument). In a bulk run,
   // skip such a cert instead of failing the whole batch.
+  let skipped = 0;
   const allHtml = hydrated.map(cd => {
     try { return buildCertificateHTML(cd); }
-    catch (e) { console.warn('[pdf] skipping cert in bulk render', (cd as any)?.verification_code, e); return ''; }
+    catch (e) { console.warn('[pdf] skipping cert in bulk render', (cd as any)?.verification_code, e); skipped++; return ''; }
   }).join('');
-  const title = `Certificados em lote (${hydrated.length})`;
+  // #2699: o título contava os pedidos, não os documentos que saíram.
+  const title = `Certificados em lote (${hydrated.length - skipped})`;
+  if (skipped > 0) {
+    notify(t('certificates.bulkSkipped', uiLang()).replace('{n}', String(skipped)), 'error');
+  }
   // A print document has ONE @page orientation. When every cert in the batch is a
   // recognition cert, render the batch landscape; otherwise keep portrait (mixed
   // batches fall back to portrait — the admin champions batch is all-excellence).
@@ -1063,7 +1134,7 @@ export async function downloadBulkCertificatesPDF(certDataList: CertificateData[
   const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const w = window.open(url, '_blank');
-  if (!w) { URL.revokeObjectURL(url); return; }
+  if (!w) { showBlockedTabNotice(url); return; }
 
   w.addEventListener('load', () => {
     setTimeout(() => w.print(), 500);
