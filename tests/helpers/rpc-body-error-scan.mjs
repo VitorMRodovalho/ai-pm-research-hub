@@ -66,8 +66,9 @@ function walk(dir, out = []) {
  */
 // A leitura só conta onde DECIDE: na condição de um `if`, num ternário, ou entregue a
 // `rpcBodyError`. Solta numa mensagem de log ela sobrevive com o desvio removido (mutação do probe).
-const readOf = (v) => {
-  const e = v.replace(/\$/g, '\\$');
+// `e` é FRAGMENTO de regex: um identificador `\w+` capturado do código, ou `R\??\.data` montado
+// aqui. Nenhum dos dois carrega metacaractere vindo de fora, então não há o que escapar.
+const readOf = (e) => {
   const read = `(?:\\b${e}|\\(\\s*${e}\\s+as\\s+any\\s*\\))\\??\\.(?:error|success|ok)\\b`;
   return new RegExp(
     `\\bif\\s*\\((?:[^()]|\\([^()]*\\))*?${read}` +
