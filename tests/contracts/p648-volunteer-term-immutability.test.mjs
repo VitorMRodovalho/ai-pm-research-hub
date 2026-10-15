@@ -66,13 +66,13 @@ describe('#648 Camada 1 — render imutável (pdf.ts)', () => {
 });
 
 describe('#648 Camada 3 — serve o PDF congelado imutável', () => {
-  it('downloadCertificatePDF serve o pdf_url congelado via signed URL antes de reconstruir', () => {
-    assert.match(PDF, /createSignedUrl/,
-      'o download de volunteer_agreement deve servir o artefato congelado via createSignedUrl');
-    assert.match(PDF, /storage\.from\(\s*['"]certificates['"]\s*\)/,
-      'deve usar o bucket privado certificates');
+  // #2699: o congelado passou a ser BAIXADO (storage.download + <a download>), não aberto numa aba
+  // via signed URL — a aba aberta depois de dois `await` caía no bloqueador de pop-up.
+  it('downloadCertificatePDF baixa o pdf_url congelado antes de reconstruir', () => {
+    assert.match(PDF, /storage\.from\(\s*['"]certificates['"]\s*\)\.download\(\s*row\.pdf_url\s*\)/,
+      'o download de volunteer_agreement deve baixar o artefato congelado do bucket privado certificates');
     // a serventia do frozen deve preceder o rebuild (hydrate) — o frozen é o artefato autoritativo.
-    const frozenIdx = PDF.indexOf('createSignedUrl');
+    const frozenIdx = PDF.indexOf('.download(row.pdf_url)');
     const hydrateIdx = PDF.indexOf('if (sb) await hydrateCertData(certData, sb);');
     assert.ok(frozenIdx > -1 && hydrateIdx > -1 && frozenIdx < hydrateIdx,
       'a tentativa de servir o frozen PDF deve vir ANTES do rebuild live');
