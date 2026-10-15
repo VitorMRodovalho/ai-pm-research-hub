@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { rpcBodyError } from '../../lib/rpc-checked';
 
 interface AnomalyItem {
   id: string;
@@ -165,8 +166,9 @@ export default function DataHealthIsland() {
     if (!sb) return;
     autoFix ? setFixing(true) : setDetecting(true);
     const { data, error } = await sb.rpc('admin_detect_data_anomalies', { p_auto_fix: autoFix });
-    if (error) {
-      toast(t('comp.dataHealth.errorProcess', 'Erro ao processar anomalias.'), 'error');
+    const refused = rpcBodyError(data);
+    if (error || refused) {
+      toast(refused || t('comp.dataHealth.errorProcess', 'Erro ao processar anomalias.'), 'error');
     } else {
       const s = data?.summary || {};
       toast(
@@ -185,8 +187,9 @@ export default function DataHealthIsland() {
     if (!resolveId) return;
     const sb = getSb();
     if (!sb) return;
-    const { error } = await sb.rpc('admin_resolve_anomaly', { p_anomaly_id: resolveId, p_notes: resolveNotes });
-    if (error) toast(t('comp.dataHealth.errorResolve', 'Erro ao resolver anomalia.'), 'error');
+    const { data, error } = await sb.rpc('admin_resolve_anomaly', { p_anomaly_id: resolveId, p_notes: resolveNotes });
+    const refused = rpcBodyError(data);
+    if (error || refused) toast(refused || t('comp.dataHealth.errorResolve', 'Erro ao resolver anomalia.'), 'error');
     else toast(t('comp.dataHealth.resolvedSuccess', 'Anomalia resolvida com sucesso.'), 'success');
     setResolveId(null);
     setResolveNotes('');

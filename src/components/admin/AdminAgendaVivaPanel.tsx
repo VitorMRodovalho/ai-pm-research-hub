@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, CalendarClock, GripVertical, Check, CheckCheck, UserX, Trash2, RefreshCw, ExternalLink } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 
@@ -81,13 +82,11 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
   };
 
   const after = async () => { await load(); window.dispatchEvent(new CustomEvent('agenda:changed')); };
-  const run = async (key: string, fn: () => Promise<any>, okMsg: string) => {
+  const run = async (key: string, fn: string, args: Record<string, unknown>, okMsg: string) => {
     const sb = getSb(); if (!sb) return;
     setBusy(key);
     try {
-      const { data, error: e } = await fn();
-      if (e) throw e;
-      if (data?.error) { toast(String(data.error), 'error'); return; }
+      await rpcChecked(sb, fn, args);
       toast(okMsg);
       await after();
     } catch (err: any) { toast(err?.message || t('comp.agendaViva.errGeneric', 'Erro'), 'error'); }
@@ -95,16 +94,16 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
   };
 
   const confirmBlock = (b: Block) =>
-    run(b.id, () => getSb().rpc('confirm_agenda_block', { p_block_id: b.id }), t('comp.agendaViva.confirmSuccess', 'Bloco confirmado.'));
+    run(b.id, 'confirm_agenda_block', { p_block_id: b.id }, t('comp.agendaViva.confirmSuccess', 'Bloco confirmado.'));
   const confirmAll = (ev: EventRow) =>
-    run(`all-${ev.id}`, () => getSb().rpc('confirm_event_blocks', { p_event_id: ev.id }), t('comp.agendaViva.confirmAllSuccess', 'Blocos confirmados.'));
+    run(`all-${ev.id}`, 'confirm_event_blocks', { p_event_id: ev.id }, t('comp.agendaViva.confirmAllSuccess', 'Blocos confirmados.'));
   const noShow = (b: Block) => {
     if (!window.confirm(t('comp.agendaViva.confirmNoShow', 'Marcar como no-show? O XP será revogado.'))) return;
-    run(b.id, () => getSb().rpc('revoke_agenda_block_xp', { p_block_id: b.id }), t('comp.agendaViva.noShowSuccess', 'Marcado como no-show.'));
+    run(b.id, 'revoke_agenda_block_xp', { p_block_id: b.id }, t('comp.agendaViva.noShowSuccess', 'Marcado como no-show.'));
   };
   const cancelBlock = (b: Block) => {
     if (!window.confirm(t('comp.agendaViva.confirmCancelBlock', 'Cancelar este bloco?'))) return;
-    run(b.id, () => getSb().rpc('cancel_agenda_block', { p_block_id: b.id }), t('comp.agendaViva.cancelBlockSuccess', 'Bloco cancelado.'));
+    run(b.id, 'cancel_agenda_block', { p_block_id: b.id }, t('comp.agendaViva.cancelBlockSuccess', 'Bloco cancelado.'));
   };
 
   // Native HTML5 drag reorder: rearrange the local block array, then persist the

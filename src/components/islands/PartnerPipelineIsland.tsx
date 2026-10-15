@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { daysUntilDateOnly, formatDateOnly } from '../../lib/date-only';
+import { rpcChecked } from '../../lib/rpc-checked';
 
 interface Partner {
   id: string;
@@ -298,11 +299,14 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     if (!confirm('Excluir anexo?')) return;
     const sb = getSb(); if (!sb) return;
     try {
-      await sb.storage.from('partner-attachments').remove([att.file_url]);
-      await sb.rpc('delete_partner_attachment', { p_attachment_id: att.id });
+      // #2704: o registro sai primeiro e só então o arquivo. Na ordem inversa, uma recusa da RPC
+      // deixava o registro apontando para um arquivo já apagado.
+      await rpcChecked(sb, 'delete_partner_attachment', { p_attachment_id: att.id });
+      const { error: rmErr } = await sb.storage.from('partner-attachments').remove([att.file_url]);
+      if (rmErr) console.error('[partner] anexo sem registro ficou no storage', rmErr);
       (window as any).toast?.('Anexo excluído', 'success');
       if (selected) loadAttachments(selected.id);
-    } catch { (window as any).toast?.('Erro ao excluir', 'error'); }
+    } catch (e: any) { (window as any).toast?.(e?.message ? `Erro ao excluir: ${e.message}` : 'Erro ao excluir', 'error'); }
   }, [selected, getSb, loadAttachments]);
 
   const handleDownloadAttachment = useCallback(async (att: Attachment) => {
