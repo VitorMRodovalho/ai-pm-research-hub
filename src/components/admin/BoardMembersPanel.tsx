@@ -121,11 +121,12 @@ export default function BoardMembersPanel() {
     if (!confirm(t('boardMembers.confirmRemove', 'Remove member from this board?'))) return;
     setSaving(true);
     const sb = getSb();
-    const { error } = await sb.rpc('admin_manage_board_member', {
+    const { data, error } = await sb.rpc('admin_manage_board_member', {
       p_board_id: selectedBoard, p_member_id: memberId, p_action: 'remove',
     });
-    if (error) {
-      (window as any).toast?.(error.message, 'error');
+    // #2699: a recusa vem em data.error com HTTP 200; a tela dizia "removido" sem remover.
+    if (error || data?.error) {
+      (window as any).toast?.(error?.message || data?.error || t('common.errorGeneric', 'Error'), 'error');
     } else {
       (window as any).toast?.(t('boardMembers.removed', 'Member removed'), 'success');
       await loadBoardMembers(selectedBoard);
@@ -137,9 +138,13 @@ export default function BoardMembersPanel() {
     if (!selectedBoard || saving) return;
     setSaving(true);
     const sb = getSb();
-    await sb.rpc('admin_manage_board_member', {
+    const { data, error } = await sb.rpc('admin_manage_board_member', {
       p_board_id: selectedBoard, p_member_id: memberId, p_board_role: newRole, p_action: 'add',
     });
+    if (error || data?.error) {
+      (window as any).toast?.(error?.message || data?.error || t('common.errorGeneric', 'Error'), 'error');
+    }
+    // recarrega nos dois casos: o seletor volta ao papel que o banco tem de fato
     await loadBoardMembers(selectedBoard);
     setSaving(false);
   };
