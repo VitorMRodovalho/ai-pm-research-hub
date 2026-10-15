@@ -36,6 +36,7 @@ const MEMBER_EDIT_I18N = {
     noTribe: t('admin.memberEdit.option.noTribe', lang),
   },
   tribePrefix: t('admin.memberEdit.tribePrefix', lang),
+  tribeReadonlyHint: t('admin.memberEdit.tribeReadonlyHint', lang),
   action: {
     inactivate: t('admin.memberEdit.action.inactivate', lang),
     reactivate: t('admin.memberEdit.action.reactivate', lang),
@@ -63,6 +64,7 @@ const MEMBER_EDIT_I18N = {
   },
   error: {
     requiredNameEmail: t('admin.memberEdit.error.requiredNameEmail', lang),
+    actionFailed: t('admin.memberEdit.error.actionFailed', lang),
   },
   toast: {
     saved: t('admin.memberEdit.toast.saved', lang),
@@ -104,11 +106,12 @@ const MEMBER_EDIT_I18N = {
     placeholder: { fullName: 'Nome completo' },
     option: { selectChapter: '— Selecionar —', noTribe: '— Nenhuma —' },
     tribePrefix: 'Tribo',
+    tribeReadonlyHint: 'Alterar na página da tribo',
     action: { inactivate: '🔴 Inativar membro', reactivate: '🟢 Reativar membro', save: '💾 Salvar', sendInvite: '✉️ Enviar convite de acesso' },
     hint: { noLogin: 'Este membro ainda não entrou na plataforma.' },
     inviteError: { already_linked: 'Este membro já tem acesso à plataforma.', inactive: 'Membro inativo: reative antes de convidar.', no_email: 'Membro sem e-mail cadastrado.', rate_limited: 'Limite de 3 convites por hora para este membro. Tente mais tarde.', generic: 'Não foi possível enviar o convite.' },
     createError: { email_exists: 'Já existe um cadastro com este e-mail. Abra o membro existente em vez de criar outro.', invalid_email: 'E-mail inválido.', invalid_chapter: 'Capítulo não reconhecido.', missing_fields: 'Nome e e-mail são obrigatórios.', generic: 'Não foi possível criar o membro.', partial: 'Membro criado, mas papel e dados extras não foram salvos. Abra a ficha e salve de novo.' },
-    error: { requiredNameEmail: 'Nome e email obrigatórios' },
+    error: { requiredNameEmail: 'Nome e email obrigatórios', actionFailed: 'Não foi possível concluir a ação.' },
     toast: { saved: 'Salvo ✅', inactivated: 'Membro inativado 🔴', reactivated: 'Membro reativado 🟢', inviteSent: 'Convite de acesso enviado para {email} ✉️' },
     prompt: { inactivateReason: 'Motivo da inativação de {name} (opcional):', sendInviteAfterCreate: 'Membro criado. Enviar agora o convite de acesso para {email}?' },
   };
@@ -220,10 +223,12 @@ const MEMBER_EDIT_I18N = {
         </div>
         <div>
           <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.tribe}</label>
-          <select id="f-tribe" class="w-full px-3 py-2.5 border-2 border-[var(--border-default)] rounded-xl text-sm bg-[var(--surface-input)] text-[var(--text-primary)] focus:outline-none focus:border-teal">
-            <option value="">${T.option.noTribe}</option>
-            ${[1,2,3,4,5,6,7,8].map(n=>`<option value="${n}" ${m?.tribe_id===n?'selected':''}>${T.tribePrefix} ${n}</option>`).join('')}
-          </select>
+          <!-- #2699: somente leitura. members.tribe_id gravado daqui não mudava o vínculo: o gatilho de
+               ponte o devolve a partir da iniciativa, e "nenhuma" virava NULL que a RPC ignora. -->
+          <div id="f-tribe-readonly" class="px-3 py-2.5 text-sm text-[var(--text-primary)]">
+            ${m?.tribe_id != null ? `<a class="underline" href="${(window as any).__LANG_PREFIX || ''}/tribe/${m.tribe_id}">${T.tribePrefix} ${m.tribe_id}</a>` : T.option.noTribe}
+            <div class="text-[.7rem] text-[var(--text-muted)]">${T.tribeReadonlyHint}</div>
+          </div>
         </div>
         <div>
           <label class="block text-[.7rem] font-bold text-[var(--text-muted)] uppercase tracking-wide mb-1">${T.label.pmiId} <span class="text-amber-500">${T.label.uniqueBadge}</span></label>
@@ -335,7 +340,7 @@ const MEMBER_EDIT_I18N = {
       p_member_id: isNew ? undefined : memberId,
       p_name: name, p_email: email,
       p_chapter: (document.getElementById('f-chapter') )?.value || null,
-      p_tribe_id: parseInt((document.getElementById('f-tribe') )?.value) || null,
+      p_tribe_id: null, // #2699: a tribo muda na página da tribo (engajamento), não aqui
       p_pmi_id:  (document.getElementById('f-pmi') )?.value.trim() || null,
       p_phone:   (document.getElementById('f-phone') )?.value.trim() || null,
       p_linkedin_url: (document.getElementById('f-li') )?.value.trim() || null,
@@ -372,7 +377,8 @@ const MEMBER_EDIT_I18N = {
       }
     } else {
       const compat = await adminUpdateMemberCompat(sb, params, opRole, roles);
-      result = compat.data;
+      // #2699: o erro de rede/PostgREST era descartado e a tela dizia "Salvo".
+      result = compat.error ? { error: compat.error.message || T.error.actionFailed } : compat.data;
     }
     if (result?.error) { (window as any).toast?.(result.error, 'error'); return; }
     (window as any).toast?.(T.toast.saved,'success');
@@ -418,14 +424,18 @@ const MEMBER_EDIT_I18N = {
     const reason = prompt(T.prompt.inactivateReason.replace('{name}', name));
     if (reason === null) return;
     const sb = (window as any).navGetSb?.();
-    await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
+    const { data: inact, error: inactErr } = await sb.rpc('admin_inactivate_member', { p_member_id: id, p_reason: reason || null });
+    if (inactErr || inact?.error) { (window as any).toast?.(inact?.error || inactErr?.message || T.error.actionFailed, 'error'); return; }
     (window as any).toast?.(T.toast.inactivated,'info');
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };
 
   const reactivateMember = async (id) => {
     const sb = (window as any).navGetSb?.();
-    await sb.rpc('admin_reactivate_member', { p_member_id: id });
+    // #2699: p_tribe_id é obrigatório na assinatura; sem ele o PostgREST não acha a função e o
+    // erro era ignorado. A tribo volta pela página da tribo, como em qualquer vínculo.
+    const { data: react, error: reactErr } = await sb.rpc('admin_reactivate_member', { p_member_id: id, p_tribe_id: null });
+    if (reactErr || react?.error) { (window as any).toast?.(react?.error || reactErr?.message || T.error.actionFailed, 'error'); return; }
     (window as any).toast?.(T.toast.reactivated,'success');
     setTimeout(() => location.href = ((typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '') + '/admin', 1200);
   };

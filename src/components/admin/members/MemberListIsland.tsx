@@ -416,17 +416,25 @@ export default function MemberListIsland() {
     const sb = getSb();
     if (!sb) return;
     setSaving(true);
-    const { error } = await sb.rpc('admin_update_member', {
+    const { data: upd, error: rpcErr } = await sb.rpc('admin_update_member', {
       p_member_id: editMember.id,
       p_operational_role: editRole,
       p_designations: editDesigs,
       p_chapter: editChapter,
       p_current_cycle_active: editActive,
     });
+    // #2699: a RPC devolve {success:false, error} com HTTP 200; só o erro de rede era lido.
+    const error = rpcErr || (upd?.error ? { message: upd.error } : null);
     if (!error) {
       // Update superadmin if changed
       if (editSuperadmin !== editMember.is_superadmin) {
-        await sb.from('members').update({ is_superadmin: editSuperadmin }).eq('id', editMember.id);
+        // #2699: UPDATE barrado pela RLS volta sem erro e com 0 linhas; conte as linhas.
+        const { data: suRows, error: suErr } = await sb.from('members').update({ is_superadmin: editSuperadmin }).eq('id', editMember.id).select('id');
+        if (suErr || !suRows?.length) {
+          (window as any).toast?.(suErr?.message || t('comp.memberList.saveError', 'Erro ao salvar'), 'error');
+          setSaving(false);
+          return;
+        }
       }
       (window as any).toast?.(t('comp.memberList.memberUpdated', 'Membro atualizado'), 'success');
       closeEdit();

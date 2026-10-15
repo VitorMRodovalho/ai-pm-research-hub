@@ -81,7 +81,6 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
   // Edit form state
   const [editRole, setEditRole] = useState('');
   const [editDesigs, setEditDesigs] = useState<string[]>([]);
-  const [editTribe, setEditTribe] = useState('');
   const [editChapter, setEditChapter] = useState('');
   const [editActive, setEditActive] = useState(true);
   const [editSuperadmin, setEditSuperadmin] = useState(false);
@@ -113,7 +112,6 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     const m = data.member;
     setEditRole(m.operational_role);
     setEditDesigs([...m.designations]);
-    setEditTribe(m.tribe_id != null ? String(m.tribe_id) : '');
     setEditChapter(m.chapter || 'PMI-GO');
     setEditActive(m.is_active);
     setEditSuperadmin(m.is_superadmin);
@@ -136,7 +134,6 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
     const changes: Record<string, any> = {};
     if (editRole !== m.operational_role) changes.operational_role = editRole;
     if (JSON.stringify(editDesigs.sort()) !== JSON.stringify([...m.designations].sort())) changes.designations = editDesigs;
-    if (editTribe !== (m.tribe_id != null ? String(m.tribe_id) : '')) changes.tribe_id = editTribe ? parseInt(editTribe) : null;
     if (editChapter !== m.chapter) changes.chapter = editChapter;
     if (editActive !== m.is_active) changes.is_active = editActive;
     if (editSuperadmin !== m.is_superadmin) changes.is_superadmin = editSuperadmin;
@@ -278,13 +275,15 @@ export default function MemberDetailIsland({ memberId }: { memberId: string }) {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="flex flex-col gap-1.5">
               <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Tribo</label>
-              <input
-                type="text"
-                value={editTribe}
-                onChange={e => setEditTribe(e.target.value)}
-                placeholder="ID da tribo"
-                className="px-2 py-1.5 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]"
-              />
+              {/* #2699: somente leitura. Gravar members.tribe_id daqui não tirava ninguém da tribo: o
+                  gatilho de ponte devolve o valor a partir da iniciativa e o engajamento seguia ativo,
+                  mas a tela dizia "Membro atualizado". O vínculo muda na página da tribo. */}
+              <div data-tribe-readonly className="px-2 py-1.5 text-sm text-[var(--text-primary)]">
+                {m.tribe_id != null
+                  ? <a href={`${lp}/tribe/${m.tribe_id}`} className="underline">{m.tribe_name || `#${m.tribe_id}`}</a>
+                  : '\u2014'}
+                <div className="text-[.65rem] text-[var(--text-muted)]">Alterar na página da tribo</div>
+              </div>
             </div>
             <div className="flex flex-col gap-1.5">
               <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase">Capitulo</label>
