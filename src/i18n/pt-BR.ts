@@ -1769,6 +1769,7 @@ const ptBR: Record<string, string> = {
   'attendance.msg.recurringError': 'Erro ao criar série',
   'attendance.msg.eventUpdated': 'Evento atualizado ✅',
   'attendance.msg.eventSaveError': 'Erro ao salvar',
+  'attendance.msg.tagsAudienceSaveError': 'O evento foi salvo, mas as tags ou o público não foram gravados. Edite o evento para tentar de novo',
   'attendance.msg.eventEditOpenError': 'Não foi possível abrir a edição deste evento',
   'attendance.msg.eventNotLoaded': 'Este evento não está carregado na tela — recarregue a página',
   'attendance.modal.selectEventType': 'Selecione o tipo do evento',
@@ -6913,6 +6914,7 @@ const ptBR: Record<string, string> = {
   // ── Attendance Dashboard/Form ──
   'comp.attendance.noData': 'Sem dados de presença disponíveis ainda.',
   'comp.attendance.registered': '{count} presenças registradas com sucesso',
+  'comp.attendance.durationSaveError': 'Presenças registradas, mas a duração não foi gravada',
   'comp.attendance.selectEvent': 'Selecionar Evento',
   'comp.attendance.searchMember': 'Buscar membro...',
   'comp.attendance.selectAll': 'Selecionar todos',

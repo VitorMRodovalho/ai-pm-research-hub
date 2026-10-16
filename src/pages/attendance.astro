@@ -230,6 +230,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
   msgEventSaveError: t('attendance.msg.eventSaveError', lang),
+  msgTagsAudienceSaveError: t('attendance.msg.tagsAudienceSaveError', lang),
   msgEventEditOpenError: t('attendance.msg.eventEditOpenError', lang),
   msgEventNotLoaded: t('attendance.msg.eventNotLoaded', lang),
   msgInvalidTimezone: t('attendance.msg.invalidTimezone', lang),
@@ -347,6 +348,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgRecurringError: 'Erro ao criar série',
     msgEventUpdated: 'Evento atualizado ✅',
     msgEventSaveError: 'Erro ao salvar',
+    msgTagsAudienceSaveError: 'O evento foi salvo, mas as tags ou o público não foram gravados. Edite o evento para tentar de novo',
     msgEventEditOpenError: 'Não foi possível abrir a edição deste evento',
     msgEventNotLoaded: 'Este evento não está carregado na tela — recarregue a página',
     msgError: 'Erro',
@@ -1655,12 +1657,21 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   }
 
   async function assignEventTagsAndAudience(eventId: string, tagIds: string[], audienceValue: string, targetTribeId?: number | null) {
-    if (tagIds.length) {
-      await sb.rpc('assign_event_tags', { p_event_id: eventId, p_tag_ids: tagIds });
-    }
-    const audienceRules = buildAudienceRules(audienceValue, targetTribeId);
-    if (audienceRules.length) {
-      await sb.rpc('set_event_audience', { p_event_id: eventId, p_rules: audienceRules });
+    // #2708: o evento já foi gravado quando isto roda. Uma recusa aqui não pode sumir (o público
+    // decide o auto check-in, #500), nem lançar para o chamador, que deixaria o modal aberto e
+    // convidaria a criar o evento de novo. Vira aviso próprio.
+    try {
+      if (tagIds.length) {
+        const { error: tagErr } = await sb.rpc('assign_event_tags', { p_event_id: eventId, p_tag_ids: tagIds });
+        if (tagErr) throw tagErr;
+      }
+      const audienceRules = buildAudienceRules(audienceValue, targetTribeId);
+      if (audienceRules.length) {
+        const { error: audErr } = await sb.rpc('set_event_audience', { p_event_id: eventId, p_rules: audienceRules });
+        if (audErr) throw audErr;
+      }
+    } catch (err: any) {
+      toast(`${I18N.msgTagsAudienceSaveError}: ${err?.message || err}`, 'error');
     }
   }
 

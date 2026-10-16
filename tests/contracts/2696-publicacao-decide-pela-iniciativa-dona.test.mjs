@@ -240,8 +240,11 @@ test('#2696 db: o exercício não deixa rastro em produção', { skip: dbGated ?
   const pubs = await c.from('public_publications').select('id', { count: 'exact', head: true }).like('title', '%__test_2696_%');
   assert.equal(pubs.error, null, pubs.error?.message);
   assert.equal(pubs.count, 0, 'o canário ficou no título de uma publicação');
+  // `eq` em action usa idx_audit_log_action; o `like('publication.%')` varria a tabela inteira (212 MB em 16/10) e
+  // estourava o tempo no CI. A única linha que o exercício grava é a edição do dono, `publication.updated`.
   const audit = await c.from('admin_audit_log').select('id', { count: 'exact', head: true })
-    .like('action', 'publication.%').filter('changes->input->>title', 'like', '%__test_2696_%');
+    .eq('action', 'publication.updated').eq('target_type', 'publication')
+    .filter('changes->input->>title', 'like', '%__test_2696_%');
   assert.equal(audit.error, null, audit.error?.message);
   assert.equal(audit.count, 0, 'o canário ficou na auditoria');
 });
