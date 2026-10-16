@@ -269,6 +269,10 @@
     "agenda_block_cancelled": {
       "delivery_mode": "suppress",
       "rationale": "#2593 C2 (GP decision 2026-10-11): the Agenda Viva block owner learns in-app (bell) when someone else cancels their block. In-app only, same reason as agenda_block_confirmed. Not fired when the owner cancels their own block."
+    },
+    "agenda_guest_attention": {
+      "delivery_mode": "suppress",
+      "rationale": "#2593 C3b (GP decision 2026-10-16): an Agenda Viva block with an external guest, in a meeting within the next 7 days, whose guest has not received the invitation yet (no e-mail on the block, block still reserved, or confirmed without a delivered invite). In-app (bell) to the block owner and to members with manage_event, repeated every 2 days while it lasts. Cataloged so it does not fall into the ELSE (digest_weekly), which would arrive after the meeting."
     }
   },
   "implementation": {

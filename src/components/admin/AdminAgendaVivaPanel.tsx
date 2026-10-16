@@ -6,7 +6,7 @@
 // no-show (revokes XP) and cancel blocks. The RPCs are the real authority gate;
 // the page-level UX gate mirrors manage_event.
 import { useState, useEffect, useCallback } from 'react';
-import { Loader2, CalendarClock, GripVertical, Check, CheckCheck, UserX, Trash2, RefreshCw, ExternalLink } from 'lucide-react';
+import { Loader2, CalendarClock, GripVertical, Check, CheckCheck, UserX, Trash2, RefreshCw, ExternalLink, Award } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { rpcChecked } from '../../lib/rpc-checked';
 
@@ -105,6 +105,9 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
     if (!window.confirm(t('comp.agendaViva.confirmCancelBlock', 'Cancelar este bloco?'))) return;
     run(b.id, 'cancel_agenda_block', { p_block_id: b.id }, t('comp.agendaViva.cancelBlockSuccess', 'Bloco cancelado.'));
   };
+  // #2593 C3b: o certificado do convidado externo sai do próprio bloco, com o e-mail do convite (sem redigitar).
+  const issueGuestCert = (b: Block) =>
+    run(`cert-${b.id}`, 'issue_agenda_guest_certificate', { p_block_id: b.id }, t('comp.agendaViva.issueGuestCertSuccess', 'Certificado do convidado emitido.'));
 
   // Native HTML5 drag reorder: rearrange the local block array, then persist the
   // full ordered id list via reorder_event_blocks.
@@ -220,6 +223,12 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        {ev.is_past && b.status === 'confirmed' && b.external_guest && (
+                          <button onClick={() => issueGuestCert(b)} disabled={busy === `cert-${b.id}`} title={t('comp.agendaViva.issueGuestCertCta', 'Emitir certificado do convidado')}
+                            className="p-1.5 rounded hover:bg-teal/10 text-teal disabled:opacity-50">
+                            {busy === `cert-${b.id}` ? <Loader2 size={15} className="animate-spin" /> : <Award size={15} />}
+                          </button>
+                        )}
                         {b.status !== 'confirmed' ? (
                           // reserved OR no_show → confirm (crediting XP if attendance present);
                           // confirming a no_show is the reversal path.

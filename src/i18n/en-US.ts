@@ -7697,6 +7697,8 @@ const enUS: Record<string, string> = {
   'comp.agendaViva.confirmAllSuccess': 'Blocks confirmed.',
   'comp.agendaViva.noShowSuccess': 'Marked as no-show.',
   'comp.agendaViva.cancelBlockSuccess': 'Block cancelled.',
+  'comp.agendaViva.issueGuestCertCta': 'Issue the guest certificate',
+  'comp.agendaViva.issueGuestCertSuccess': 'Guest certificate issued.',
   'comp.agendaViva.reorderSuccess': 'Order updated.',
   'comp.agendaViva.confirmNoShow': 'Mark this block as no-show? XP will be revoked.',
   'comp.agendaViva.confirmCancelBlock': 'Cancel this block?',

@@ -7697,6 +7697,8 @@ const esLATAM: Record<string, string> = {
   'comp.agendaViva.confirmAllSuccess': 'Bloques confirmados.',
   'comp.agendaViva.noShowSuccess': 'Marcado como no-show.',
   'comp.agendaViva.cancelBlockSuccess': 'Bloque cancelado.',
+  'comp.agendaViva.issueGuestCertCta': 'Emitir el certificado del invitado',
+  'comp.agendaViva.issueGuestCertSuccess': 'Certificado del invitado emitido.',
   'comp.agendaViva.reorderSuccess': 'Orden actualizado.',
   'comp.agendaViva.confirmNoShow': '¿Marcar este bloque como no-show? El XP será revocado.',
   'comp.agendaViva.confirmCancelBlock': '¿Cancelar este bloque?',
