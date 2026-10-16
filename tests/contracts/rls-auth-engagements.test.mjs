@@ -149,7 +149,10 @@ test('Phase 4 Migration 7: RLS policy rewrite', async (t) => {
     assert.match(section, /rls_can\('write'\)/);
   });
 
-  await t.test('public_publications: uses write OR write_board for curator', () => {
+  // Histórico: afirma o que a migration de 15/04 fez. Desde a #2696 a escrita direta exige
+  // superadmin/manage_platform e write/write_board só leem; o estado vigente está no guard
+  // tests/contracts/2696-publicacao-decide-pela-iniciativa-dona.test.mjs.
+  await t.test('public_publications (15/04, substituída na #2696): write OR write_board for curator', () => {
     const idx = sql.indexOf('pub_admin_manage_v4');
     const section = sql.substring(idx, idx + 200);
     assert.match(section, /rls_can\('write'\)/);

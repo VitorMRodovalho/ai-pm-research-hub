@@ -31114,6 +31114,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _test_2696_publication_authority_roundtrip: { Args: never; Returns: Json }
       _test_detect_inactive_with_threshold: {
         Args: { p_threshold: number }
         Returns: Json
