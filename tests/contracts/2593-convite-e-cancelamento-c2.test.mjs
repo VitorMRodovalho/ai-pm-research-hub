@@ -172,13 +172,16 @@ test('#2593 C2 EF: o aviso só é carimbado quando o provedor aceita o convite, 
 });
 
 test('#2593 C2 EF: convite de bloco que já não está confirmado não sai', () => {
-  assert.match(EF, /if \(isAgendaGuest && send\.audience_filter\?\.kind === 'invite'\) \{\s+const \{ data: blk \} = await sb\.from\('event_agenda_blocks'\)\s+\.select\('status'\)\.eq\('id', String\(send\.audience_filter\?\.block_id \?\? ''\)\)\.maybeSingle\(\)\s+if \(blk\?\.status !== 'confirmed'\) \{\s+await sb\.from\('campaign_sends'\)\.update\(\{ status: 'failed'[^}]*\}\)\.eq\('id', sendId\)\s+return json\(/);
+  // C3 (#2593): a mesma checagem vale para a atualização e o lembrete
+  assert.match(EF, /if \(isAgendaGuest && \['invite', 'update', 'reminder'\]\.includes\(agendaGuestKind\)\) \{\s+const \{ data: blk \} = await sb\.from\('event_agenda_blocks'\)\s+\.select\('status'\)\.eq\('id', String\(send\.audience_filter\?\.block_id \?\? ''\)\)\.maybeSingle\(\)\s+if \(blk\?\.status !== 'confirmed'\) \{\s+await sb\.from\('campaign_sends'\)\.update\(\{ status: 'failed'[^}]*\}\)\.eq\('id', sendId\)\s+return json\(/);
   // e a checagem vem antes de marcar o envio como em andamento
   assert.ok(EF.indexOf("blk?.status !== 'confirmed'") < EF.indexOf("update({ status: 'sending' })"));
 });
 
 test('#2593 C2 EF: o mesmo título de evento no convite e no cancelamento; tipo e descrição vêm do envio', () => {
   assert.match(EF, /summary: `\$\{String\(av\.block_title \?\? ''\)\.trim\(\)\} · Núcleo IA & GP`,/);
-  assert.match(EF, /const kind = send\.audience_filter\?\.kind === 'cancel' \? 'cancel' : 'invite'/);
+  // C3 (#2593): o tipo vem de agendaGuestKind; a atualização vira REQUEST (o mesmo ramo do convite)
+  assert.match(EF, /const agendaGuestKind = String\(send\.audience_filter\?\.kind \?\? ''\)/);
+  assert.match(EF, /const kind = agendaGuestKind === 'cancel' \? 'cancel' : 'invite'/);
   assert.match(EF, /description: text\.split\(\/\\n\\s\*--\\s\*\\n\/\)\[0\]\.trim\(\),/);
 });

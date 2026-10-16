@@ -7708,6 +7708,8 @@ const ptBR: Record<string, string> = {
   'comp.agendaViva.confirmAllSuccess': 'Blocos confirmados.',
   'comp.agendaViva.noShowSuccess': 'Marcado como no-show.',
   'comp.agendaViva.cancelBlockSuccess': 'Bloco cancelado.',
+  'comp.agendaViva.issueGuestCertCta': 'Emitir certificado do convidado',
+  'comp.agendaViva.issueGuestCertSuccess': 'Certificado do convidado emitido.',
   'comp.agendaViva.reorderSuccess': 'Ordem atualizada.',
   'comp.agendaViva.confirmNoShow': 'Marcar este bloco como no-show? O XP será revogado.',
   'comp.agendaViva.confirmCancelBlock': 'Cancelar este bloco?',

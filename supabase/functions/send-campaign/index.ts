@@ -115,8 +115,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    // #2593: convite de bloco que já não está confirmado (cancelado antes da entrega) não sai
-    if (isAgendaGuest && send.audience_filter?.kind === 'invite') {
+    // #2593: convite de bloco que já não está confirmado (cancelado antes da entrega) não sai; na C3, a atualização
+    // e o lembrete seguem a mesma regra. A atualização vira um REQUEST de mesmo UID e SEQUENCE maior (a agenda do
+    // convidado se atualiza); o lembrete não leva anexo.
+    const agendaGuestKind = String(send.audience_filter?.kind ?? '')
+    if (isAgendaGuest && ['invite', 'update', 'reminder'].includes(agendaGuestKind)) {
       const { data: blk } = await sb.from('event_agenda_blocks')
         .select('status').eq('id', String(send.audience_filter?.block_id ?? '')).maybeSingle()
       if (blk?.status !== 'confirmed') {
@@ -291,7 +294,7 @@ Deno.serve(async (req) => {
       if (isAgendaGuest) {
         const av = (send.audience_filter?.variables ?? {}) as Record<string, unknown>
         const ics = (send.audience_filter?.ics ?? {}) as Record<string, unknown>
-        const kind = send.audience_filter?.kind === 'cancel' ? 'cancel' : 'invite'
+        const kind = agendaGuestKind === 'cancel' ? 'cancel' : 'invite'
         const rendered = renderAgendaGuestMessage({
           vars: {
             recipientName: memberName,
@@ -310,27 +313,30 @@ Deno.serve(async (req) => {
         subject = rendered.subject
         html = rendered.html
         text = rendered.text
-        try {
-          const icsText = buildAgendaIcs({
-            kind,
-            uid: String(ics.uid ?? ''),
-            sequence: Number(ics.sequence ?? 0),
-            startUtc: String(av.start_utc ?? ''),
-            endUtc: String(ics.end_utc ?? ''),
-            // o mesmo título no convite e no cancelamento: a agenda reconhece o evento que está sendo cancelado
-            summary: `${String(av.block_title ?? '').trim()} · Núcleo IA & GP`,
-            description: text.split(/\n\s*--\s*\n/)[0].trim(),
-            url: String(av.link ?? ''),
-            organizerEmail: String(ics.organizer_email ?? ''),
-            organizerName: String(ics.organizer_name ?? 'Núcleo IA & GP'),
-            attendeeEmail: toEmail,
-            attendeeName: memberName,
-          })
-          attachments = [icsAttachment(icsText, kind)]
-        } catch (e: unknown) {
-          // sem ICS válido o convite não sai: um e-mail que promete "o convite em anexo" sem anexo engana
-          errors.push(`${toEmail}: ics ${e instanceof Error ? e.message : String(e)}`)
-          continue
+        // o lembrete da véspera não leva ICS: a agenda do convidado já tem o evento do convite
+        if (agendaGuestKind !== 'reminder') {
+          try {
+            const icsText = buildAgendaIcs({
+              kind,
+              uid: String(ics.uid ?? ''),
+              sequence: Number(ics.sequence ?? 0),
+              startUtc: String(av.start_utc ?? ''),
+              endUtc: String(ics.end_utc ?? ''),
+              // o mesmo título no convite e no cancelamento: a agenda reconhece o evento que está sendo cancelado
+              summary: `${String(av.block_title ?? '').trim()} · Núcleo IA & GP`,
+              description: text.split(/\n\s*--\s*\n/)[0].trim(),
+              url: String(av.link ?? ''),
+              organizerEmail: String(ics.organizer_email ?? ''),
+              organizerName: String(ics.organizer_name ?? 'Núcleo IA & GP'),
+              attendeeEmail: toEmail,
+              attendeeName: memberName,
+            })
+            attachments = [icsAttachment(icsText, kind)]
+          } catch (e: unknown) {
+            // sem ICS válido o convite não sai: um e-mail que promete "o convite em anexo" sem anexo engana
+            errors.push(`${toEmail}: ics ${e instanceof Error ? e.message : String(e)}`)
+            continue
+          }
         }
       }
 
