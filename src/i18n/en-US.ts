@@ -1763,6 +1763,7 @@ const enUS: Record<string, string> = {
   'attendance.msg.recurringError': 'Error creating series',
   'attendance.msg.eventUpdated': 'Event updated ✅',
   'attendance.msg.eventSaveError': 'Error saving',
+  'attendance.msg.tagsAudienceSaveError': 'The event was saved, but its tags or audience were not recorded. Edit the event to try again',
   'attendance.msg.eventEditOpenError': 'Could not open the editor for this event',
   'attendance.msg.eventNotLoaded': 'This event is not loaded on screen — reload the page',
   'attendance.msg.invalidTimezone': 'Invalid timezone. Pick one from the list.',
@@ -6905,6 +6906,7 @@ const enUS: Record<string, string> = {
   // ── Attendance Dashboard/Form ──
   'comp.attendance.noData': 'No attendance data available yet.',
   'comp.attendance.registered': '{count} attendances registered successfully',
+  'comp.attendance.durationSaveError': 'Attendance recorded, but the duration was not saved',
   'comp.attendance.selectEvent': 'Select Event',
   'comp.attendance.searchMember': 'Search member...',
   'comp.attendance.selectAll': 'Select all',

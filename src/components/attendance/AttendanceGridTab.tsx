@@ -358,7 +358,8 @@ export default function AttendanceGridTab() {
       if (rpcErr) throw rpcErr;
       // If going from excused to absent, also clear excused flag
       if (current === 'excused') {
-        await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        const { error: clearErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        if (clearErr) throw clearErr;
       }
 
       // Optimistic update in local data
@@ -443,7 +444,8 @@ export default function AttendanceGridTab() {
         });
         if (e1) throw e1;
         if (current === 'excused') {
-          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+          const { error: e2 } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+          if (e2) throw e2;
         }
       }
 

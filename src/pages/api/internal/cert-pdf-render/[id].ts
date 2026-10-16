@@ -6,8 +6,9 @@
 // the stored PDF and the member-print PDF.
 //
 // Auth: Bearer shared secret CERT_PDF_INTERNAL_SECRET (wrangler secret).
-// Must match the value in DB GUC app.cert_pdf_internal_secret. Missing/empty
-// secret = trigger silently skips upstream; this endpoint rejects 401 if reached.
+// Must match the vault secret `cert_pdf_internal_secret` that both autogen triggers read (#2709;
+// a GUC cannot be set on managed Postgres). Missing/empty secret = trigger silently skips
+// upstream; this endpoint rejects 401 if reached.
 //
 // CSRF: /api/internal/ is on the CSRF bypass allowlist (src/middleware.ts).
 //

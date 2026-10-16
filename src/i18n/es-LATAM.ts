@@ -1763,6 +1763,7 @@ const esLATAM: Record<string, string> = {
   'attendance.msg.recurringError': 'Error al crear serie',
   'attendance.msg.eventUpdated': 'Evento actualizado ✅',
   'attendance.msg.eventSaveError': 'Error al guardar',
+  'attendance.msg.tagsAudienceSaveError': 'El evento se guardó, pero las etiquetas o el público no se registraron. Edita el evento para intentarlo de nuevo',
   'attendance.msg.eventEditOpenError': 'No fue posible abrir la edición de este evento',
   'attendance.msg.eventNotLoaded': 'Este evento no está cargado en pantalla — recargue la página',
   'attendance.msg.invalidTimezone': 'Zona horaria inválida. Elige una de la lista.',
@@ -6905,6 +6906,7 @@ const esLATAM: Record<string, string> = {
   // ── Attendance Dashboard/Form ──
   'comp.attendance.noData': 'Sin datos de asistencia disponibles aún.',
   'comp.attendance.registered': '{count} asistencias registradas con éxito',
+  'comp.attendance.durationSaveError': 'Asistencias registradas, pero la duración no se guardó',
   'comp.attendance.selectEvent': 'Seleccionar Evento',
   'comp.attendance.searchMember': 'Buscar miembro...',
   'comp.attendance.selectAll': 'Seleccionar todos',
