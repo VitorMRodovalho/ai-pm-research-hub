@@ -6557,6 +6557,7 @@ const esLATAM: Record<string, string> = {
   'admin.initiatives.invalidJson': 'Metadata: JSON inválido.',
   'admin.initiatives.created': 'Iniciativa creada.',
   'admin.initiatives.updated': 'Iniciativa actualizada.',
+  'admin.initiatives.statusNotApplied': 'Iniciativa creada como borrador; no se aplicó el estado elegido',
   'admin.initiatives.members': 'Miembros',
   'admin.initiatives.membersLink': 'Gestionar miembros',
   'admin.initiatives.membersHint': 'La adición/eliminación de miembros se hace en la página de detalles de la iniciativa.',

@@ -167,6 +167,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { rpcChecked } from '../../lib/rpc-checked';
 
   let pilotsBootRetries = 0;
 
@@ -288,17 +289,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       };
 
       try {
-        let result;
+        // #2708: rpcChecked lança na falha de rede e na recusa do corpo; o catch abaixo avisa.
         if (id) {
           payload.p_id = id;
-          result = await sb.rpc('update_pilot', payload);
+          await rpcChecked(sb, 'update_pilot', payload);
         } else {
-          result = await sb.rpc('create_pilot', payload);
+          await rpcChecked(sb, 'create_pilot', payload);
         }
-
-        if (result.error) throw result.error;
-        const data = result.data;
-        if (data && data.success === false) throw new Error(data.error || 'Unknown error');
 
         (window as any).toast?.(i('i18n-pilots-saveSuccess'), 'success');
         closeModal();

@@ -6556,6 +6556,7 @@ const enUS: Record<string, string> = {
   'admin.initiatives.invalidJson': 'Metadata: invalid JSON.',
   'admin.initiatives.created': 'Initiative created.',
   'admin.initiatives.updated': 'Initiative updated.',
+  'admin.initiatives.statusNotApplied': 'Initiative created as a draft; the chosen status was not applied',
   'admin.initiatives.members': 'Members',
   'admin.initiatives.membersLink': 'Manage members',
   'admin.initiatives.membersHint': 'Adding/removing members happens on the initiative detail page.',

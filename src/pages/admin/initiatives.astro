@@ -36,6 +36,7 @@ const INIT_I18N = {
   invalidJson: t('admin.initiatives.invalidJson', lang),
   created: t('admin.initiatives.created', lang),
   updated: t('admin.initiatives.updated', lang),
+  statusNotApplied: t('admin.initiatives.statusNotApplied', lang),
   errorPrefix: t('common.errorPrefix', lang),
   membersLink: t('admin.initiatives.membersLink', lang),
   membersHint: t('admin.initiatives.membersHint', lang),
@@ -347,20 +348,17 @@ const INIT_I18N = {
           p_kind: kind, p_title: title, p_description: description, p_metadata: metadata,
         });
         if (error) throw error;
-        // set status if not active default
-        if (status !== 'active' && status !== 'draft' && newId) {
-          await sb.rpc('update_initiative', {
+        (window as any).toast?.(T.created, 'success');
+        // create_initiative starts in 'draft' by default — apply any other status requested.
+        // #2708: a recusa vira aviso próprio; a iniciativa já existe, então o modal fecha igual
+        // (lançar deixaria o modal aberto e um segundo clique criaria outra).
+        if (status !== 'draft' && newId) {
+          const { error: statusErr } = await sb.rpc('update_initiative', {
             p_initiative_id: newId, p_title: null, p_description: null,
             p_status: status, p_metadata: null,
           });
-        } else if (status === 'active' && newId) {
-          // create_initiative starts in 'draft' by default — explicitly activate if requested
-          await sb.rpc('update_initiative', {
-            p_initiative_id: newId, p_title: null, p_description: null,
-            p_status: 'active', p_metadata: null,
-          });
+          if (statusErr) (window as any).toast?.(`${T.statusNotApplied}: ${statusErr.message}`, 'error');
         }
-        (window as any).toast?.(T.created, 'success');
       }
       closeModal();
       await loadInitiatives();

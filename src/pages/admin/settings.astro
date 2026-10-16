@@ -225,6 +225,7 @@ const SETTINGS_I18N = {
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { rpcChecked } from '../../lib/rpc-checked';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__SETTINGS_I18N) || {
@@ -301,9 +302,10 @@ const SETTINGS_I18N = {
       const cycleDefault = (document.getElementById('cfg-cycle-default') as HTMLInputElement).value.trim();
       const webhookUrl = (document.getElementById('cfg-webhook-url') as HTMLInputElement).value.trim();
 
-      await sb.rpc('set_site_config', { p_key: 'group_term', p_value: groupTerm });
-      await sb.rpc('set_site_config', { p_key: 'cycle_default', p_value: cycleDefault || null });
-      await sb.rpc('set_site_config', { p_key: 'webhook_url', p_value: webhookUrl || null });
+      // #2708: a recusa lança e o catch abaixo avisa; antes a tela ficava muda.
+      await rpcChecked(sb, 'set_site_config', { p_key: 'group_term', p_value: groupTerm });
+      await rpcChecked(sb, 'set_site_config', { p_key: 'cycle_default', p_value: cycleDefault || null });
+      await rpcChecked(sb, 'set_site_config', { p_key: 'webhook_url', p_value: webhookUrl || null });
     } catch (e: any) {
       console.error('Save config:', e);
       (window as any).toast?.((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (e.message || 'unknown'), 'error');
