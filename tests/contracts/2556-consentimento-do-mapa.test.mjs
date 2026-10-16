@@ -88,7 +88,8 @@ test('F. as quatro funcoes negadas a PUBLIC/anon e concedidas a authenticated', 
 
 test('G. a tela usa as RPCs e o rotulo aprovado', () => {
   const profile = read('src/pages/profile.astro');
-  assert.match(profile, /allowPreciseMap\s*\?\s*await sb\.rpc\('grant_public_map_consent'[\s\S]{0,120}?:\s*await sb\.rpc\('revoke_public_map_consent'/);
+  // #2708: as duas passam por rpcChecked, dentro do try que lê a recusa.
+  assert.match(profile, /if \(allowPreciseMap\) await rpcChecked\(sb, 'grant_public_map_consent'[\s\S]{0,120}?else await rpcChecked\(sb, 'revoke_public_map_consent'/);
   assert.doesNotMatch(profile, /fields\.allow_precise_location_in_public_map\s*=/, 'o /profile ainda manda o campo ao update_my_profile');
   for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pages/es/index.astro']) {
     assert.match(read(page), /<MapConsentNudge client:load lang=\{lang\}\s+consentText=\{t\('profile\.allowPreciseLocationMapLabel', lang\)\}/, `${page}: cartao sem o rotulo aprovado`);

@@ -179,12 +179,15 @@ export const POST: APIRoute = async ({ request }) => {
     // contador autoriza. Antes disto o Apps Script (5 em 5 min, horizonte de 90
     // dias) gravava uma linha por varredura enquanto a reserva não casasse —
     // 5.693 linhas para um único evento foi o pior caso medido em 2026-08-05.
-    const { data: attemptRows } = await sb.rpc('record_booking_attempt', {
+    const { data: attemptRows, error: attemptErr } = await sb.rpc('record_booking_attempt', {
       p_calendar_event_id: calendar_event_id,
       p_guest_email: guest_email,
       p_outcome: outcome,
       p_scheduled_at: scheduled_at,
     });
+    // #2708: a falha do contador não bloqueia (o `!== false` abaixo volta a auditar), mas o
+    // motivo vai para a linha de auditoria em vez de sumir.
+    const counterError = attemptErr ? attemptErr.message : null;
     const attempt = (Array.isArray(attemptRows) ? attemptRows[0] : attemptRows) as
       | { attempts: number; should_audit: boolean; suppressed: boolean; outcome_changed: boolean }
       | undefined;
@@ -199,7 +202,7 @@ export const POST: APIRoute = async ({ request }) => {
           action: 'calendar_booking_unmatched',
           target_type: 'system',
           changes: { guest_email, scheduled_at },
-          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, reason: 'no application resolves this guest_email' },
+          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, counter_error: counterError, reason: 'no application resolves this guest_email' },
         });
       } else {
         await sb.from('admin_audit_log').insert({
@@ -207,7 +210,7 @@ export const POST: APIRoute = async ({ request }) => {
           target_type: 'selection_application',
           target_id: matched?.application_id ?? null,
           changes: { guest_email, scheduled_at, app_status: matched?.app_status ?? null },
-          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, reason: outcome === 'status_not_allowed' ? 'application already decided — refusal is correct by design' : outcome === 'objective_phase_incomplete' ? 'objective phase not complete (objective_score_avg IS NULL) — #1613 entry gate, booking is re-bookable once the score lands' : 'application belongs to a closed cycle — refusal is correct by design' },
+          metadata: { calendar_event_id, source: 'calendar_webhook', match_outcome: outcome, attempts: attempt?.attempts ?? null, counter_error: counterError, reason: outcome === 'status_not_allowed' ? 'application already decided — refusal is correct by design' : outcome === 'objective_phase_incomplete' ? 'objective phase not complete (objective_score_avg IS NULL) — #1613 entry gate, booking is re-bookable once the score lands' : 'application belongs to a closed cycle — refusal is correct by design' },
         });
       }
     }
@@ -335,12 +338,14 @@ export const POST: APIRoute = async ({ request }) => {
   // de poder virar a próxima tempestade — hoje ele é silencioso porque o Apps
   // Script marca o evento como processado em 2xx, mas isso é uma propriedade da
   // ORIGEM, e a origem já provou que não é confiável.
-  const { data: syncRows } = await sb.rpc('record_booking_attempt', {
+  const { data: syncRows, error: syncErr } = await sb.rpc('record_booking_attempt', {
     p_calendar_event_id: calendar_event_id,
     p_guest_email: guest_email,
     p_outcome: 'matched',
     p_scheduled_at: scheduled_at,
   });
+  // #2708: idem ao caminho da recusa; o motivo da falha do contador fica na auditoria.
+  const syncCounterError = syncErr ? syncErr.message : null;
   const syncAttempt = (Array.isArray(syncRows) ? syncRows[0] : syncRows) as
     | { attempts: number; should_audit: boolean; outcome_changed: boolean }
     | undefined;
@@ -353,7 +358,7 @@ export const POST: APIRoute = async ({ request }) => {
       target_type: 'selection_interview',
       target_id: interviewId,
       changes: { application_id: app.id, guest_email, previous_app_status: app.status, status_changed: app.status !== 'interview_scheduled', landed_app_status: landedStatus },
-      metadata: { calendar_event_id, source: 'calendar_webhook', matched_by: matchedBy, interviewer_count: interviewerIds.length, attempts: syncAttempt?.attempts ?? null, recovered_after_failures: (syncAttempt?.attempts ?? 1) > 1, promotion_suppressed: promotionSuppressed },
+      metadata: { calendar_event_id, source: 'calendar_webhook', matched_by: matchedBy, interviewer_count: interviewerIds.length, attempts: syncAttempt?.attempts ?? null, counter_error: syncCounterError, recovered_after_failures: (syncAttempt?.attempts ?? 1) > 1, promotion_suppressed: promotionSuppressed },
     });
   }
 

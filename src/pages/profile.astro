@@ -2368,11 +2368,11 @@ const PROFILE_I18N = {
     // mais este campo.
     const allowPreciseMap = (document.getElementById('self-allow-precise-map') as HTMLInputElement)?.checked ?? false;
     if (allowPreciseMap !== (currentMember.allow_precise_location_in_public_map ?? false)) {
-      const { error: mapErr } = allowPreciseMap
-        ? await sb.rpc('grant_public_map_consent', { p_evidence: { surface: 'profile', lang } })
-        : await sb.rpc('revoke_public_map_consent', { p_reason: 'profile toggle' });
-      // saveSelf não tem catch: um throw aqui sairia em silêncio.
-      if (mapErr) { (window as any).toast?.(mapErr.message, 'error'); return; }
+      // saveSelf não tem catch: a recusa é lida aqui, senão um throw sairia em silêncio.
+      try {
+        if (allowPreciseMap) await rpcChecked(sb, 'grant_public_map_consent', { p_evidence: { surface: 'profile', lang } });
+        else await rpcChecked(sb, 'revoke_public_map_consent', { p_reason: 'profile toggle' });
+      } catch (e: any) { (window as any).toast?.(e?.message || 'Erro', 'error'); return; }
     }
 
     let data: any;
@@ -2386,11 +2386,13 @@ const PROFILE_I18N = {
       // <script> is a module (strict mode), so the free reference threw a ReferenceError and
       // saveSelf() has no catch: clicking "Salvar" without touching any tracked field failed
       // silently, with no toast. The checkbox value lives in shareWhatsApp (read above).
-      const res = await sb.rpc('member_self_update', {
-        p_pmi_id: pmiId, p_phone: phone, p_linkedin_url: li,
-        p_credly_url: credlyToSave, p_share_whatsapp: shareWhatsApp,
-      });
-      data = res.data;
+      // #2708: a recusa com exceção vinha em `res.error`, era descartada, e a tela dizia "Salvo".
+      try {
+        data = await rpcChecked(sb, 'member_self_update', {
+          p_pmi_id: pmiId, p_phone: phone, p_linkedin_url: li,
+          p_credly_url: credlyToSave, p_share_whatsapp: shareWhatsApp,
+        });
+      } catch (e: any) { data = { error: e?.message || 'Erro' }; }
     }
     if (data?.error) (window as any).toast?.(data.error, 'error');
     else {
@@ -2802,7 +2804,9 @@ const PROFILE_I18N = {
     if (credlyField) credlyField.value = credlyNormalized;
 
     // Persist the URL immediately so it survives page navigation
-    await sb.rpc('member_self_update', { p_credly_url: credlyNormalized });
+    // #2708: recusada a gravação, avisa e para antes de verificar uma URL que não ficou salva.
+    try { await rpcChecked(sb, 'member_self_update', { p_credly_url: credlyNormalized }); }
+    catch (e: any) { (window as any).toast?.(e?.message || PROFILE_I18N.credlyConnectError, 'error'); return; }
 
     const btn = document.getElementById('btn-credly-verify') as HTMLButtonElement;
     if (btn) { btn.disabled = true; btn.textContent = PROFILE_I18N.credlyVerifying; }
