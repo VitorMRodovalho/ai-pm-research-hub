@@ -30387,7 +30387,19 @@ export type Database = {
         Args: { p_block_id: string; p_email: string; p_name: string }
         Returns: string
       }
+      _agenda_guest_attention_cron: { Args: never; Returns: Json }
+      _agenda_guest_attention_rows: {
+        Args: never
+        Returns: {
+          block_id: string
+          event_date: string
+          motivo: string
+          owner_member_id: string
+          title: string
+        }[]
+      }
       _agenda_guest_detach: { Args: { p_block_id: string }; Returns: number }
+      _agenda_guest_reminder_cron: { Args: never; Returns: Json }
       _agenda_guest_send: {
         Args: {
           p_actor: string
@@ -34268,6 +34280,10 @@ export type Database = {
       is_selection_committee_member: {
         Args: { p_cycle_id?: string; p_member_id: string }
         Returns: boolean
+      }
+      issue_agenda_guest_certificate: {
+        Args: { p_block_id: string }
+        Returns: Json
       }
       issue_certificate: { Args: { p_data: Json }; Returns: Json }
       issue_event_guest_certificate: { Args: { p_data: Json }; Returns: Json }

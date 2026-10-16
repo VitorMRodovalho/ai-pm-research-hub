@@ -117,6 +117,7 @@ const ALLOWLIST = {
   // -- non-content helpers (return boolean/uuid/trigger/SETOF uuid, not user content)
   _can_manage_event: 'authority helper (boolean manage-event check; no content returned)',
   _manage_event_scope_ok: 'authority helper (#1383: boolean manage-event scope check; reads only events.initiative_id to pass it to can_by_member, no content returned)',
+  issue_agenda_guest_certificate: 'writer behind manage_event/manage_platform at organization scope (#2593 C3b): reads only events.date/time/timezone of the Agenda Viva block (General Meetings) to refuse issuing before the meeting starts, and returns only the certificate result, no event content',
   _can_write_board: 'authority helper (#1945: boolean write-board scope check; reads only project_boards.initiative_id to pass it to can_by_member, no content returned). Visibilidade e autoridade-de-acao sao eixos ORTOGONAIS (V4_AUTHORITY_MODEL): gatear este helper em rls_can_see_initiative confundiria os dois e poderia NEGAR quem tem a capacidade.',
   _can_write_board_item: 'authority helper (#1953: boolean write-board scope check pelo CARD; le so board_items.board_id para resolver o board e DELEGA para _can_write_board, no content returned). Mesmo eixo ortogonal do irmao: gatear em rls_can_see_initiative confundiria visibilidade com autoridade-de-acao.',
   _can_manage_publication_submission: 'authority helper (#2565: boolean manage-submission check; reads project_boards.domain_key and engagements only to resolve the P&S leadership, no content returned)',
