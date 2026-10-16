@@ -19,21 +19,9 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 
-// A corrigir nas próximas PRs da #2708 (admin; membro e páginas públicas; webhook de calendário).
+// A corrigir na próxima PR da #2708 (membro e páginas públicas; webhook de calendário).
 // `arquivo|função#ordem`. Só diminui: chamada corrigida que continuar aqui reprova.
 const EXCECOES = [
-  'src/components/board/CardDetail.tsx|assign_checklist_item#1',
-  'src/components/islands/PartnerPipelineIsland.tsx|admin_update_partner_status#2',
-  'src/pages/admin/comms.astro|comms_acknowledge_alert#1',
-  'src/pages/admin/initiatives.astro|update_initiative#2',
-  'src/pages/admin/initiatives.astro|update_initiative#3',
-  'src/pages/admin/member/[id].astro|admin_update_member#1',
-  'src/pages/admin/pilots.astro|update_pilot#1',
-  'src/pages/admin/pilots.astro|create_pilot#1',
-  'src/pages/admin/selection.astro|recalculate_cycle_rankings#1',
-  'src/pages/admin/settings.astro|set_site_config#1',
-  'src/pages/admin/settings.astro|set_site_config#2',
-  'src/pages/admin/settings.astro|set_site_config#3',
   'src/pages/api/calendar-webhook.ts|record_booking_attempt#1',
   'src/pages/api/calendar-webhook.ts|record_booking_attempt#2',
   'src/pages/help.astro|dismiss_onboarding#1',
@@ -57,8 +45,12 @@ const MELHOR_ESFORCO = {
   'src/pages/publications/[slug].astro|increment_publication_view#1': 'contador de visualização',
 };
 
-// A chamada fica numa arrow e o `error` é lido por quem a chama; a asserção própria está abaixo.
-const LIDO_NO_CHAMADOR = ['src/pages/attendance.astro|drop_event_instance#1'];
+// A chamada fica numa arrow ou num helper e o `error` é lido por quem a chama; cada uma tem
+// asserção própria abaixo.
+const LIDO_NO_CHAMADOR = [
+  'src/pages/attendance.astro|drop_event_instance#1',
+  'src/pages/admin/member/[id].astro|admin_update_member#1',
+];
 
 const TARGETS = exceptionWriters(ROOT);
 
@@ -152,4 +144,30 @@ test('#2708 presença: o desfazer da grade não engole a recusa', () => {
   assert.match(src,
     /const \{ error: undoErr \} = await sb\.rpc\('mark_member_present'[^;]+;\s+if \(undoErr\) throw undoErr;\s+await refreshGrid\(\);\s+\} catch \(e: any\) \{\s+\(window as any\)\.toast\?\.\(e\?\.message \|\| 'Erro', 'error'\);/,
     'o desfazer voltou a engolir o erro');
+});
+
+test('#2708 admin: a ficha do membro lê o error que o helper devolve antes de dizer "Salvo"', () => {
+  const src = maskJsComments(readFileSync(join(ROOT, 'src/pages/admin/member/[id].astro'), 'utf8'));
+  const i = src.indexOf('async function adminUpdateMemberCompat(');
+  assert.ok(i > 0, 'não achei o helper do formulário de edição');
+  assert.match(src.slice(i, src.indexOf('\n  }\n', i)),
+    /const res = await sb\.rpc\('admin_update_member', \{[\s\S]*?\}\);\s+return \{ mode: 'v2', data: res\.data, error: res\.error \};/,
+    'o helper deixou de devolver o error da chamada');
+  assert.match(src,
+    /const compat = await adminUpdateMemberCompat\([^)]*\);[\s\S]{0,200}?result = compat\.error \? \{ error: [^}]+\} : compat\.data;\s+\}\s+if \(result\?\.error\) \{ \(window as any\)\.toast\?\.\(result\.error, 'error'\); return; \}\s+\(window as any\)\.toast\?\.\(T\.toast\.saved,'success'\);/,
+    'o "Salvo" voltou a sair sem olhar o error do helper');
+});
+
+test('#2708 admin: o status depois de criar a iniciativa vira aviso próprio, sem lançar', () => {
+  const src = maskJsComments(readFileSync(join(ROOT, 'src/pages/admin/initiatives.astro'), 'utf8'));
+  assert.match(src,
+    /const \{ error: statusErr \} = await sb\.rpc\('update_initiative', \{[\s\S]{0,160}?\}\);\s+if \(statusErr\) \(window as any\)\.toast\?\.\(`\$\{T\.statusNotApplied\}: \$\{statusErr\.message\}`, 'error'\);/,
+    'a recusa do status tem de virar aviso, e lançar deixaria o modal aberto para criar outra');
+});
+
+test('#2708 admin: a atribuição recusada não aparece na tela', () => {
+  const src = maskJsComments(readFileSync(join(ROOT, 'src/components/board/CardDetail.tsx'), 'utf8'));
+  assert.match(src,
+    /const \{ error \} = await sb\.rpc\('assign_checklist_item', \{[\s\S]{0,200}?\}\);\s+if \(error\) \{\s+\(window as any\)\.toast\?\.\([^;]+;\s+return;[^\n]*\n\s+\}\s+setChecklist\(/,
+    'a lista local não pode mudar antes de o banco aceitar a atribuição');
 });

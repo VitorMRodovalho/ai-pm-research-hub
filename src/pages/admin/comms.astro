@@ -895,7 +895,8 @@ const COMMS_I18N = {
       container.classList.remove('hidden');
       container.querySelectorAll('[data-ack]').forEach(btn => {
         btn.addEventListener('click', async () => {
-          await sb.rpc('comms_acknowledge_alert', { p_alert_id: (btn as HTMLElement).dataset.ack });
+          const { error } = await sb.rpc('comms_acknowledge_alert', { p_alert_id: (btn as HTMLElement).dataset.ack });
+          if (error) { (window as any).toast?.(error.message || T.errorSaving, 'error'); return; }
           loadTokenAlerts();
         });
       });

@@ -6564,6 +6564,7 @@ const ptBR: Record<string, string> = {
   'admin.initiatives.invalidJson': 'Metadata: JSON inválido.',
   'admin.initiatives.created': 'Iniciativa criada.',
   'admin.initiatives.updated': 'Iniciativa atualizada.',
+  'admin.initiatives.statusNotApplied': 'Iniciativa criada como rascunho; o status escolhido não foi aplicado',
   'admin.initiatives.members': 'Membros',
   'admin.initiatives.membersLink': 'Gerenciar membros',
   'admin.initiatives.membersHint': 'Adição/remoção de membros é feita na página de detalhes da iniciativa.',

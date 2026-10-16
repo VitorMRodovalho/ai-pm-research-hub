@@ -760,11 +760,15 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   const assignCheckItem = async (checkId: string, memberId: string, targetDate?: string) => {
     const sb = getSb();
     if (!sb) return;
-    await sb.rpc('assign_checklist_item', {
+    const { error } = await sb.rpc('assign_checklist_item', {
       p_checklist_item_id: checkId,
       p_assigned_to: memberId || null,
       p_target_date: targetDate || null,
     });
+    if (error) {
+      (window as any).toast?.(error.message || i18n.error || 'Erro ao atribuir atividade', 'error');
+      return; // a tela nao pode mostrar a atribuicao que o banco recusou
+    }
     setChecklist(checklist.map(c => c.id === checkId ? { ...c, assigned_to: memberId || null, target_date: targetDate || null } : c));
   };
 

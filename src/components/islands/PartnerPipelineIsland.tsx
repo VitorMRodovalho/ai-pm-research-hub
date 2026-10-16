@@ -408,7 +408,7 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     const sb = getSb();
     if (!sb) return;
     try {
-      await sb.rpc('admin_update_partner_status', {
+      await rpcChecked(sb, 'admin_update_partner_status', {
         p_partner_id: partner.id,
         p_new_status: 'inactive',
         p_notes: 'Arquivado via pipeline',
@@ -417,7 +417,9 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
       setSelected(null);
       setLoading(true);
       await loadPipeline();
-    } catch {}
+    } catch (e: any) {
+      (window as any).toast?.(e?.message || 'Erro ao arquivar.', 'error');
+    }
   };
 
   const handleSaveEdit = async () => {
