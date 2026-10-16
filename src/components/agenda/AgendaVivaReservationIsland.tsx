@@ -27,6 +27,8 @@ interface Block {
   guest_name?: string | null;
   guest_email?: string | null;
   guest_language?: Lang | null;
+  // #2593 fatia 6: membros que apresentam junto; o dono e manage_event recebem com o id
+  copresenters?: { member_id: string; name: string }[];
 }
 interface EventRow {
   id: string;
@@ -37,6 +39,7 @@ interface EventRow {
   blocks: Block[];
 }
 interface FormatRow { slug: string; label_i18n: Record<string, string>; default_duration_min: number }
+interface MemberOption { id: string; name: string }
 
 const DURATIONS = [5, 10, 15, 20, 30];
 const LOCALE_MAP: Record<Lang, string> = { 'pt-BR': 'pt-BR', 'en-US': 'en-US', 'es-LATAM': 'es' };
@@ -51,6 +54,8 @@ interface DraftState {
   guest_email: string;
   // #2593: idioma do convite (decisão do GP: seletor, já com o idioma de quem reserva)
   guest_language: Lang;
+  // #2593 fatia 6: coapresentadores membros (até 3); o convidado de fora continua em guest_name
+  copresenter_ids: string[];
   // #2593: remover é explícito; campo vazio na edição mantém o valor atual (a RPC usa COALESCE)
   clear_guest?: boolean;
   clear_material?: boolean;
@@ -59,8 +64,9 @@ interface DraftState {
 }
 const emptyDraft = (format_slug: string, duration_min: number, lang: Lang): DraftState => ({
   format_slug, duration_min, title: '', guest_name: '', material_url: '', external_guest: false, guest_email: '',
-  guest_language: lang,
+  guest_language: lang, copresenter_ids: [],
 });
+const MAX_COPRESENTERS = 3;
 const GUEST_LANGS: Lang[] = ['pt-BR', 'en-US', 'es-LATAM'];
 const EMAIL_RE = /^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i;
 
@@ -78,6 +84,9 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
   // Per-event draft for the new-reservation form; editId tracks an in-place edit.
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
   const [editing, setEditing] = useState<Record<string, DraftState>>({});
+  // #2593 fatia 6: membros ativos para escolher quem apresenta junto, e a busca de cada formulário
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [copQuery, setCopQuery] = useState<Record<string, string>>({});
 
   const toast = (msg: string, kind: 'success' | 'error' = 'success') => (window as any).toast?.(msg, kind);
 
@@ -94,6 +103,10 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const evs: EventRow[] = (agenda?.events ?? []) as EventRow[];
     setEvents(evs);
     setLoading(false);
+    if ((window as any).navGetMember?.()) {
+      const { data: memberRows } = await sb.from('public_members').select('id, name').eq('is_active', true).order('name');
+      if (Array.isArray(memberRows)) setMembers(memberRows as MemberOption[]);
+    }
   }, [getSb, range]);
 
   useEffect(() => {
@@ -123,6 +136,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
       edit_window_closed: 'errWindowEdit', cancel_window_closed: 'errWindowEdit',
       guest_name_required: 'errGuestNameRequired', guest_email_required: 'errGuestEmailRequired',
       invalid_guest_email: 'errInvalidGuestEmail',
+      invalid_copresenter: 'errInvalidCopresenter', too_many_copresenters: 'errTooManyCopresenters',
+      guest_name_requires_external: 'errGuestNameRequiresExternal',
     };
     const key = code && map[code] ? map[code] : 'errGeneric';
     return t(`comp.agendaViva.${key}`, 'Algo deu errado. Tente novamente.');
@@ -165,9 +180,11 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     try {
       const { data, error } = await sb.rpc('reserve_agenda_block', {
         p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: d.duration_min,
-        p_guest_name: d.guest_name.trim() || null, p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
+        p_guest_name: d.external_guest ? d.guest_name.trim() || null : null,
+        p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
         p_guest_email: d.external_guest ? d.guest_email.trim() || null : null,
         p_guest_language: d.external_guest ? d.guest_language : null,
+        p_copresenter_ids: d.copresenter_ids,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -183,6 +200,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
       format_slug: b.format_slug, duration_min: b.duration_min, title: b.title,
       guest_name: b.guest_name || '', material_url: b.material_url || '', external_guest: b.external_guest,
       guest_email: b.guest_email || '', guest_language: b.guest_language || lang,
+      copresenter_ids: (b.copresenters || []).map((c) => c.member_id),
     },
   }));
   const cancelEdit = (blockId: string) => setEditing((p) => { const n = { ...p }; delete n[blockId]; return n; });
@@ -196,12 +214,13 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     try {
       const { data, error } = await sb.rpc('update_agenda_block', {
         p_block_id: blockId, p_title: d.title.trim(), p_format_slug: d.format_slug, p_duration_min: d.duration_min,
-        p_guest_name: d.clear_guest ? null : d.guest_name.trim() || null,
+        p_guest_name: d.clear_guest || !d.external_guest ? null : d.guest_name.trim() || null,
         p_material_url: d.clear_material ? null : d.material_url.trim() || null,
         p_external_guest: d.clear_guest ? false : d.external_guest,
         p_guest_email: !d.clear_guest && d.external_guest ? d.guest_email.trim() || null : null,
         p_guest_language: !d.clear_guest && d.external_guest ? d.guest_language : null,
         p_clear_guest: !!d.clear_guest, p_clear_material: !!d.clear_material,
+        p_copresenter_ids: d.copresenter_ids,
       });
       if (error) throw error;
       if (data?.error) { toast(errMsg(data.error), 'error'); return; }
@@ -238,6 +257,13 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const inputCls = 'mt-1 w-full rounded-lg border border-[var(--border)] bg-transparent px-3 py-2 text-sm';
 
+  // #2593 fatia 6: nome de quem coapresenta, da lista de membros ou do que a agenda já devolveu
+  const nameOf = (id: string): string =>
+    members.find((m) => m.id === id)?.name
+    || events.flatMap((ev) => ev.blocks).flatMap((b) => b.copresenters || []).find((c) => c.member_id === id)?.name
+    || id;
+  const fold = (v: string) => v.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
   // `key` separa os ids de cada formulário (um por reunião e um por edição)
   const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void,
     key: string, isEdit = false) => {
@@ -245,9 +271,14 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const nameErr = problem === 'guest_name_required';
     const emailErr = problem === 'guest_email_required' || problem === 'invalid_guest_email';
     const ids = { name: `agenda-guest-name-${key}`, email: `agenda-guest-email-${key}`, hint: `agenda-guest-hint-${key}`,
-      lang: `agenda-guest-lang-${key}`,
+      lang: `agenda-guest-lang-${key}`, cop: `agenda-cop-${key}`, copHint: `agenda-cop-hint-${key}`,
       nameErr: `agenda-guest-name-err-${key}`, emailErr: `agenda-guest-email-err-${key}`, status: `agenda-removal-${key}` };
     const external = d.external_guest && !d.clear_guest;
+    const selfId: string | undefined = (window as any).navGetMember?.()?.id;
+    const q = copQuery[key] || '';
+    const matches = q.trim().length >= 2
+      ? members.filter((m) => m.id !== selfId && !d.copresenter_ids.includes(m.id) && fold(m.name).includes(fold(q.trim()))).slice(0, 6)
+      : [];
     return (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -269,23 +300,64 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         <input value={d.title} onChange={(e) => set({ title: e.target.value })}
           placeholder={t('comp.agendaViva.fTitlePlaceholder', '')} className={inputCls} maxLength={140} />
       </label>
-      {/* #2593: nome, marca de externo e e-mail são uma coisa só, o convidado */}
+      {/* #2593 fatia 6: quem apresenta junto é membro, escolhido da lista; o convidado de fora fica no quadro seguinte */}
+      <fieldset className="rounded-xl border border-[var(--border)] p-3 space-y-2">
+        <legend className="px-1 text-xs font-semibold text-[var(--text-muted)]">{t('comp.agendaViva.fCopresenterLegend', 'Quem apresenta com você (membros)')}</legend>
+        {d.copresenter_ids.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5">
+            {d.copresenter_ids.map((id) => (
+              <li key={id} className="inline-flex items-center gap-1 rounded-full bg-teal/10 text-teal pl-2 pr-0.5 py-0.5 text-xs">
+                {nameOf(id)}
+                <button type="button" onClick={() => set({ copresenter_ids: d.copresenter_ids.filter((x) => x !== id) })}
+                  aria-label={`${t('comp.agendaViva.removeCopresenter', 'Remover coapresentador')}: ${nameOf(id)}`}
+                  className="min-h-[28px] min-w-[28px] inline-flex items-center justify-center rounded-full hover:bg-teal/20">
+                  <X size={12} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {d.copresenter_ids.length < MAX_COPRESENTERS && (
+          <label className="block" htmlFor={ids.cop}>
+            <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fCopresenterSearch', 'Buscar membro pelo nome')}</span>
+            <input id={ids.cop} type="search" autoComplete="off" value={q} maxLength={80} className={inputCls}
+              onChange={(e) => setCopQuery((p) => ({ ...p, [key]: e.target.value }))} aria-describedby={ids.copHint} />
+          </label>
+        )}
+        {matches.length > 0 && (
+          <ul className="space-y-1" aria-label={t('comp.agendaViva.fCopresenterResults', 'Membros encontrados')}>
+            {matches.map((m) => (
+              <li key={m.id}>
+                <button type="button"
+                  onClick={() => { set({ copresenter_ids: [...d.copresenter_ids, m.id] }); setCopQuery((p) => ({ ...p, [key]: '' })); }}
+                  className="w-full text-left min-h-[44px] sm:min-h-0 px-3 py-1.5 rounded-lg text-sm hover:bg-[var(--bg-subtle)]">
+                  {m.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <span id={ids.copHint} className="block text-[12px] text-[var(--text-muted)]">
+          {t('comp.agendaViva.fCopresenterHint', 'Até 3 membros. Cada um recebe o XP de protagonismo quando o bloco for confirmado, se estiver presente na reunião.')}
+        </span>
+      </fieldset>
+      {/* #2593: nome, marca de externo e e-mail são uma coisa só, o convidado de fora do Núcleo */}
       <fieldset className="rounded-xl border border-[var(--border)] p-3 space-y-2">
         <legend className="px-1 text-xs font-semibold text-[var(--text-muted)]">{t('comp.agendaViva.fGuestLegend', 'Convidado')}</legend>
-        <label className="block" htmlFor={ids.name}>
-          <span className="text-xs text-[var(--text-muted)]">
-            {external ? t('comp.agendaViva.fGuestExternalName', 'Nome do convidado externo') : t('comp.agendaViva.fGuest', 'Convidado (opcional)')}
-          </span>
-          <input id={ids.name} value={d.guest_name} onChange={(e) => set({ guest_name: e.target.value })}
-            placeholder={t('comp.agendaViva.fGuestPlaceholder', '')} className={inputCls} maxLength={120}
-            required={external} aria-required={external} aria-invalid={nameErr || undefined}
-            aria-describedby={nameErr ? ids.nameErr : undefined} />
-          {nameErr && <span id={ids.nameErr} role="alert" className="mt-1 block text-[12px] text-rose-600">{errMsg('guest_name_required')}</span>}
-        </label>
         <label className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
           <input type="checkbox" checked={d.external_guest} onChange={(e) => set({ external_guest: e.target.checked, clear_guest: false })} className="rounded" />
           <span>{t('comp.agendaViva.fExternalGuest', 'Convidado externo ao núcleo')}</span>
         </label>
+        {external && (
+          <label className="block" htmlFor={ids.name}>
+            <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestExternalName', 'Nome do convidado externo')}</span>
+            <input id={ids.name} value={d.guest_name} onChange={(e) => set({ guest_name: e.target.value })}
+              placeholder={t('comp.agendaViva.fGuestPlaceholder', '')} className={inputCls} maxLength={120}
+              required aria-required aria-invalid={nameErr || undefined}
+              aria-describedby={nameErr ? ids.nameErr : undefined} />
+            {nameErr && <span id={ids.nameErr} role="alert" className="mt-1 block text-[12px] text-rose-600">{errMsg('guest_name_required')}</span>}
+          </label>
+        )}
         {external && (
           <label className="block" htmlFor={ids.email}>
             <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fGuestEmail', 'E-mail do convidado')}</span>
@@ -400,6 +472,11 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
                     <div className="min-w-0">
                       <div className="font-semibold text-[var(--text-primary)] truncate">{myBlock.title}</div>
                       <div className="text-xs text-[var(--text-muted)]">{fmtLabel(myBlock.format_slug)} · {myBlock.duration_min} {t('comp.agendaViva.min', 'min')}</div>
+                      {(myBlock.copresenters?.length ?? 0) > 0 && (
+                        <div className="text-xs text-[var(--text-muted)] truncate">
+                          {t('comp.agendaViva.withGuest', 'com')} {myBlock.copresenters!.map((c) => c.name).join(', ')}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button onClick={() => startEdit(myBlock)} title={t('comp.agendaViva.editCta', 'Editar')}

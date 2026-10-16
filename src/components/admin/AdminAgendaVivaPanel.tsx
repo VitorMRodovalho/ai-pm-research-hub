@@ -25,6 +25,8 @@ interface Block {
   guest_name?: string | null;
   guest_email?: string | null;
   material_url?: string | null;
+  // #2593 fatia 6: membros que coapresentam (manage_event recebe com o nome completo)
+  copresenters?: { member_id: string; name: string }[];
 }
 interface EventRow {
   id: string;
@@ -213,6 +215,7 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
                         </div>
                         <div className="text-xs text-[var(--text-muted)]">
                           {fmtLabel(b.format_slug)} · {b.owner_full_name || b.owner_first_name}
+                          {b.copresenters?.length ? ` + ${b.copresenters.map((c) => c.name).join(', ')}` : ''}
                           {b.guest_name ? ` · ${b.guest_name}` : ''}
                           {b.guest_email ? ` (${b.guest_email})` : ''}
                           {b.material_url && (

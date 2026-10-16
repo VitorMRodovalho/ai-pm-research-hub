@@ -18,8 +18,11 @@
  *   (b) Phase C (rpc-migration-coverage.test.mjs) pins live prosrc md5 == latest
  *       capture, so (a) extends to the live DB — a live redefinition adding a DELETE
  *       would surface as NEW drift and go red;
- *   (c) DB-gated here: the three converted functions' live body hashes equal the
- *       mig-333 capture directly (no reliance on the Phase C allowlist for them).
+ *   (c) DB-gated here: the three converted functions' live body hashes equal their
+ *       LATEST capture directly (no reliance on the Phase C allowlist for them). It
+ *       pinned mig 333 until #2593 fatia 6 (16/10/2026) legitimately redefined
+ *       revoke_agenda_block_xp (co-presenters reversed too, still by estorno): what (c)
+ *       protects is "live == captured", and (a) already scans that same latest capture.
  *
  * Companion live parity: p277-419-m7-champions-parity.test.mjs (repinned: revoked
  * champions keep original + estorno rows, netting to zero).
@@ -190,19 +193,19 @@ test('wave3 offline: nenhuma Edge Function NOVA apaga do ledger (catraca, nao ve
     `catraca destrava e o proximo DELETE volta a passar despercebido: ${reduzidos.join(', ')}`);
 });
 
-// ── DB-gated: the three converted functions are live exactly as captured in mig 333 ──
-test('wave3 live: converted RPCs live bodies == mig-333 capture (no drift loophole)', { skip: dbGated ? false : skipMsg }, async () => {
+// ── DB-gated: the three converted functions are live exactly as their latest capture ──
+test('wave3 live: converted RPCs live bodies == latest capture (no drift loophole)', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
   assert.ifError(error);
 
-  const captures = parseMigration('20260805000333', wave3);
+  const latest = [...loadLatestBodies().values()];
   for (const fn of CONVERTED) {
-    const cap = captures.find((b) => b.name === fn);
-    assert.ok(cap, `${fn} captured in mig 333`);
+    const caps = latest.filter((b) => b.name === fn);
+    assert.equal(caps.length, 1, `${fn} has exactly one captured overload`);
     const liveRows = (data || []).filter((r) => r.proname === fn);
     assert.equal(liveRows.length, 1, `${fn} has exactly one live overload`);
-    assert.equal(liveRows[0].body_md5, cap.bodyHash,
-      `${fn}: live body must match the mig-333 capture (apply_migration byte-fidelity)`);
+    assert.equal(liveRows[0].body_md5, caps[0].bodyHash,
+      `${fn}: live body must match its latest capture (apply_migration byte-fidelity)`);
   }
 });

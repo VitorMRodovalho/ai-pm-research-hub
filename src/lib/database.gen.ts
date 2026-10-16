@@ -11087,6 +11087,175 @@ export type Database = {
         }
         Relationships: []
       }
+      event_agenda_block_copresenters: {
+        Row: {
+          added_by: string | null
+          block_id: string
+          created_at: string
+          member_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          block_id: string
+          created_at?: string
+          member_id: string
+        }
+        Update: {
+          added_by?: string | null
+          block_id?: string
+          created_at?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "event_agenda_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_agenda_block_copresenters_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       event_agenda_blocks: {
         Row: {
           cancelled_by: string | null
@@ -30366,6 +30535,10 @@ export type Database = {
         Args: { p_chain_id: string }
         Returns: undefined
       }
+      _agenda_block_copresenters_json: {
+        Args: { p_block_id: string; p_detail: boolean }
+        Returns: Json
+      }
       _agenda_block_owner_notice: {
         Args: { p_block_id: string; p_type: string }
         Returns: undefined
@@ -30382,6 +30555,10 @@ export type Database = {
           pending: number
           title: string
         }[]
+      }
+      _agenda_copresenter_ids_problem: {
+        Args: { p_ids: string[]; p_owner: string }
+        Returns: string
       }
       _agenda_guest_attach: {
         Args: { p_block_id: string; p_email: string; p_name: string }
@@ -30889,6 +31066,14 @@ export type Database = {
         }[]
       }
       _get_vault_secret: { Args: { p_name: string }; Returns: string }
+      _grant_agenda_block_copresenters_xp: {
+        Args: { p_block_id: string }
+        Returns: undefined
+      }
+      _grant_agenda_block_member_xp: {
+        Args: { p_block_id: string; p_member_id: string }
+        Returns: undefined
+      }
       _grant_agenda_block_xp: {
         Args: { p_block_id: string }
         Returns: undefined
@@ -31080,6 +31265,15 @@ export type Database = {
         Returns: Json
       }
       _request_is_rest_caller: { Args: never; Returns: boolean }
+      _reverse_agenda_block_member_xp: {
+        Args: {
+          p_actor: string
+          p_block_id: string
+          p_member_id: string
+          p_reason: string
+        }
+        Returns: undefined
+      }
       _roster_seal_marker: { Args: never; Returns: string }
       _seal_event_attendance_apply: {
         Args: { p_actor_id: string; p_dry_run?: boolean; p_event_id: string }
@@ -35717,6 +35911,7 @@ export type Database = {
       }
       reserve_agenda_block: {
         Args: {
+          p_copresenter_ids?: string[]
           p_duration_min: number
           p_event_id: string
           p_external_guest?: boolean
@@ -36332,6 +36527,7 @@ export type Database = {
           p_block_id: string
           p_clear_guest?: boolean
           p_clear_material?: boolean
+          p_copresenter_ids?: string[]
           p_duration_min?: number
           p_external_guest?: boolean
           p_format_slug?: string
