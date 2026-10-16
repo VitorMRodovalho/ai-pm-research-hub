@@ -16,7 +16,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { latestFunctionCapture, buildNewestDefinitions, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 import { functionBlock } from '../helpers/rpc-body-error-scan.mjs';
@@ -87,12 +86,14 @@ test('#2709 static: reprova — vault fora do search_path', () => {
 });
 
 test('#2709 db: corpo VIVO bate com a captura', { skip: dbGated ? false : skipMsg }, async () => {
+  // Compara o texto normalizado, sem hash: o CodeQL (js/weak-cryptographic-algorithm) trata como sensível o corpo
+  // de uma função que lê segredo, e o md5 aqui era só comparação.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.rpc('_audit_list_public_function_bodies');
+  const { data, error } = await sb.rpc('_audit_function_source', { p_proname: FN });
   assert.ifError(error);
-  const c = latestFunctionCapture(ROOT, FN);
-  const md5 = createHash('md5').update(c.body.replace(/\s+/g, ' ')).digest('hex');
-  const vivas = (data ?? []).filter((f) => f.proname === FN);
+  const vivas = data ?? [];
   assert.equal(vivas.length, 1, `esperava 1 viva, achei ${vivas.length}`);
-  assert.equal(vivas[0].body_md5, md5, `corpo vivo divergiu de ${c.file}`);
+  const c = latestFunctionCapture(ROOT, FN);
+  const norm = (s) => s.replace(/\s+/g, ' ');
+  assert.equal(norm(vivas[0].prosrc), norm(c.body), `corpo vivo divergiu de ${c.file}`);
 });
