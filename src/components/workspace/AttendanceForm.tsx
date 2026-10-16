@@ -149,12 +149,17 @@ export default function AttendanceForm() {
       if (error) throw error;
 
       // Update duration if changed
+      // #2708: as presenças já foram gravadas aqui; uma recusa na duração vira aviso próprio, sem
+      // desfazer o toast das presenças nem sumir em silêncio.
       if (duration && Number(duration) !== selectedEvent.duration_actual) {
-        await sb.rpc('update_event_duration', {
+        const { error: durErr } = await sb.rpc('update_event_duration', {
           p_event_id: selectedEvent.id,
           p_duration_actual: Number(duration),
           p_updated_by: member.id,
         });
+        if (durErr) {
+          (window as any).toast?.(`${t('comp.attendance.durationSaveError', 'Presenças registradas, mas a duração não foi gravada')}: ${durErr.message || ''}`, 'error');
+        }
       }
 
       (window as any).toast?.(t('comp.attendance.registered', '{count} attendances registered').replace('{count}', String(data)), 'success');

@@ -175,9 +175,12 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     // Cycle: present → absent, absent/excused → present
     const newPresent = currentStatus !== 'present';
     try {
-      await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
+      // #2708: o supabase-js não lança na recusa do banco; sem ler o `error`, o toast de sucesso saía.
+      const { error: presErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
+      if (presErr) throw presErr;
       if (currentStatus === 'excused') {
-        await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        const { error: excErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+        if (excErr) throw excErr;
         setExcuseReasons(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
       }
       await refreshGrid();
@@ -186,9 +189,12 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
         msg,
         undo: async () => {
           try {
-            await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !newPresent });
+            const { error: undoErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !newPresent });
+            if (undoErr) throw undoErr;
             await refreshGrid();
-          } catch {}
+          } catch (e: any) {
+            (window as any).toast?.(e?.message || 'Erro', 'error');
+          }
           setUndoToast(null);
         },
       });
@@ -259,15 +265,18 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     setExcusedModal(null);
     try {
       if (state === 'excused') {
-        await sb.rpc('mark_member_excused', {
+        const { error: excErr } = await sb.rpc('mark_member_excused', {
           p_event_id: eventId, p_member_id: memberId, p_excused: true, p_reason: reason || null,
         });
+        if (excErr) throw excErr;
       } else {
-        await sb.rpc('mark_member_present', {
+        const { error: presErr } = await sb.rpc('mark_member_present', {
           p_event_id: eventId, p_member_id: memberId, p_present: state === 'present',
         });
+        if (presErr) throw presErr;
         if (current === 'excused') {
-          await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+          const { error: clearErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
+          if (clearErr) throw clearErr;
         }
       }
       await refreshGrid();
@@ -319,7 +328,8 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     const sb = getSb();
     if (!sb) return;
     try {
-      const { data: res } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+      const { data: res, error } = await sb.rpc('register_own_presence', { p_event_id: eventId });
+      if (error) throw error;
       if (res?.success) {
         (window as any).toast?.(t('comp.attendance.selfCheckedIn', '✅ Presença registrada!'), 'success');
         await refreshGrid();

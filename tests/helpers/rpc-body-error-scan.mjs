@@ -122,3 +122,81 @@ export function scanUncheckedCalls(root, targets, srcDir = join(root, 'src')) {
   }
   return { offenders, checked };
 }
+
+/**
+ * #2708 — a outra classe: funções que GRAVAM e recusam com EXCEÇÃO (RAISE). O supabase-js não
+ * lança; devolve `{ data: null, error }`. A tela que não lê `error` segue em frente e mostra
+ * sucesso, inclusive dentro de `try/catch`, que nunca recebe nada.
+ *
+ * Classe = grava (INSERT/UPDATE/DELETE no corpo vigente), não é `get_*` e não está entre as que
+ * recusam no corpo (essas são da #2704 e já exigem a leitura do corpo).
+ */
+export function exceptionWriters(root, migrationsDir = join(root, 'supabase/migrations')) {
+  const { newest } = buildNewestDefinitions(migrationsDir);
+  const bodyErr = bodyErrorWriters(root, migrationsDir);
+  const out = new Set();
+  const cache = new Map();
+  for (const [name, { file }] of newest) {
+    if (name.startsWith('get_') || bodyErr.has(name)) continue;
+    if (!cache.has(file)) cache.set(file, maskLineComments(readFileSync(join(migrationsDir, file), 'utf8')));
+    const blk = functionBlock(cache.get(file), name);
+    if (blk && WRITE_RE.test(blk.body)) out.add(name);
+  }
+  return out;
+}
+
+// A leitura do `error` só conta onde DECIDE: condição de `if`, `throw`, ternário, `&&`, `||` ou
+// negação. Mesmo cuidado de `readOf`: `e` é fragmento montado aqui a partir de `\w+`.
+// A variável não pode vir depois de `.`, `?.` ou aspas: `res?.error || 'Erro'` numa mensagem e
+// `toast(x, 'error')` não são leitura do `error` da chamada (a mutação do auto check-in passava
+// por isso).
+// Limite conhecido: `if (error) console.error(error)` seguido do toast de sucesso passa, porque
+// a decisão existe na sintaxe; a varredura não segue o fluxo depois dela.
+const errReadOf = (e) => {
+  const v = `(?<![\\w.$'"\`])${e}\\b`;
+  return new RegExp(
+    `\\bif\\s*\\((?:[^()]|\\([^()]*\\))*?${v}` +
+      `|\\bthrow\\s+${v}|${v}\\s*\\?(?!\\.)|${v}\\s*&&|!\\s*${v}|${v}\\s*\\|\\|`,
+  );
+};
+
+export function readsError(src, callIndex) {
+  const before = src.slice(Math.max(0, callIndex - 220), callIndex);
+  const rest = src.slice(callIndex + 5);
+  const next = rest.search(/\.rpc\(/);
+  const win = next < 0 ? rest : rest.slice(0, next);
+  if (/^[^;]*?\.throwOnError\(\)/.test(win)) return true;
+
+  const destr = before.match(/(?:const|let)\s*\{([^}]*)\}\s*=\s*await\s+[\w.()?!]*$/);
+  if (destr) {
+    const em = destr[1].match(/\berror\s*(?::\s*(\w+))?/);
+    return !!em && errReadOf(em[1] || 'error').test(win);
+  }
+  const whole = before.match(/(?:const|let)\s+(\w+)\s*=\s*await\s+[\w.()?!]*$/);
+  if (whole) return errReadOf(`${whole[1]}\\??\\.error`).test(win);
+  // `await sb.rpc(...)` solto, `.then(...)`, `Promise.all`: ninguém recebe o `error`.
+  return false;
+}
+
+/** Chamadas do front a `targets` que NÃO leem o `error`, como `arquivo|função#ordem`. */
+export function scanUncheckedErrorCalls(root, targets, srcDir = join(root, 'src')) {
+  const offenders = [];
+  let checked = 0;
+  for (const f of walk(srcDir).sort()) {
+    if (f.endsWith('database.gen.ts')) continue;
+    const src = maskJsComments(readFileSync(f, 'utf8'));
+    const rel = relative(root, f);
+    const seen = new Map();
+    const re = /\.rpc\(\s*(['"`])([A-Za-z0-9_]+)\1/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const fn = m[2];
+      if (!targets.has(fn)) continue;
+      const n = (seen.get(fn) || 0) + 1;
+      seen.set(fn, n);
+      if (readsError(src, m.index)) checked++;
+      else offenders.push(`${rel}|${fn}#${n}`);
+    }
+  }
+  return { offenders, checked };
+}
