@@ -19,21 +19,9 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 
-// A corrigir na próxima PR da #2708 (membro e páginas públicas; webhook de calendário).
-// `arquivo|função#ordem`. Só diminui: chamada corrigida que continuar aqui reprova.
-const EXCECOES = [
-  'src/pages/api/calendar-webhook.ts|record_booking_attempt#1',
-  'src/pages/api/calendar-webhook.ts|record_booking_attempt#2',
-  'src/pages/help.astro|dismiss_onboarding#1',
-  'src/pages/profile.astro|grant_public_map_consent#1',
-  'src/pages/profile.astro|revoke_public_map_consent#1',
-  'src/pages/profile.astro|member_self_update#1',
-  'src/pages/profile.astro|member_self_update#2',
-  'src/pages/publications/submissions/[id].astro|update_publication_submission_status#1',
-  'src/pages/publications/submissions/[id].astro|update_publication_submission#1',
-  'src/pages/publications/submissions/[id].astro|add_publication_submission_author#1',
-  'src/pages/publications/submissions/[id].astro|remove_publication_submission_author#1',
-];
+// Vazia desde a PR-C da #2708: as três levas (presença, admin, membro e webhook) foram corrigidas.
+// `arquivo|função#ordem`. Só diminui: entrada nova aqui precisa de issue que a justifique.
+const EXCECOES = [];
 
 // Melhor-esforço por desenho: nenhuma tela afirma sucesso sobre estas chamadas.
 const MELHOR_ESFORCO = {
@@ -41,6 +29,7 @@ const MELHOR_ESFORCO = {
   'src/components/nav/Nav.astro|try_auto_link_ghost#2': 'idem, no caminho do evento de sessão',
   'src/layouts/BaseLayout.astro|record_member_activity#1': 'telemetria de página, disparada sem esperar',
   'src/pages/blog/[slug].astro|increment_blog_view#1': 'contador de visualização',
+  'src/pages/help.astro|dismiss_onboarding#1': 'o aviso de boas-vindas some na hora; se a gravação falhar, ele volta na próxima visita',
   'src/pages/publications.astro|increment_publication_view#1': 'contador de visualização',
   'src/pages/publications/[slug].astro|increment_publication_view#1': 'contador de visualização',
 };
@@ -170,4 +159,18 @@ test('#2708 admin: a atribuição recusada não aparece na tela', () => {
   assert.match(src,
     /const \{ error \} = await sb\.rpc\('assign_checklist_item', \{[\s\S]{0,200}?\}\);\s+if \(error\) \{\s+\(window as any\)\.toast\?\.\([^;]+;\s+return;[^\n]*\n\s+\}\s+setChecklist\(/,
     'a lista local não pode mudar antes de o banco aceitar a atribuição');
+});
+
+test('#2708 webhook: a falha do contador vai para a auditoria, sem bloquear a reserva', () => {
+  const src = maskJsComments(readFileSync(join(ROOT, 'src/pages/api/calendar-webhook.ts'), 'utf8'));
+  assert.match(src,
+    /const \{ data: attemptRows, error: attemptErr \} = await sb\.rpc\('record_booking_attempt', \{[\s\S]{0,200}?\}\);\s+const counterError = attemptErr \? attemptErr\.message : null;/,
+    'o caminho da recusa deixou de ler o error do contador');
+  assert.equal((src.match(/attempts: attempt\?\.attempts \?\? null, counter_error: counterError,/g) || []).length, 2,
+    'as duas linhas de auditoria do caminho da recusa têm de levar o motivo');
+  assert.match(src, /if \(attempt\?\.should_audit !== false\) \{/, 'a falha do contador tem de continuar auditando');
+  assert.match(src,
+    /const \{ data: syncRows, error: syncErr \} = await sb\.rpc\('record_booking_attempt', \{[\s\S]{0,200}?\}\);\s+[^\n]*\n\s+const syncCounterError = syncErr \? syncErr\.message : null;/,
+    'o caminho do sucesso deixou de ler o error do contador');
+  assert.match(src, /attempts: syncAttempt\?\.attempts \?\? null, counter_error: syncCounterError,/);
 });
