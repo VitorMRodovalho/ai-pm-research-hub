@@ -1389,6 +1389,7 @@ const ptBR: Record<string, string> = {
   'gamification.cert.statusRevoked': 'Revogado',
   'gamification.cert.revoke': 'Revogar',
   'gamification.cert.revokeReason': 'Motivo da revogação',
+  'gamification.cert.revokePrompt': 'Revogar este certificado? Informe o motivo. O membro recebe um aviso com ele, e a verificação pública passa a dizer que o certificado não é válido.',
   'gamification.cert.publish': 'Publicar',
   'gamification.cert.saveDraft': 'Salvar Rascunho',
   'gamification.cert.verify': 'Verificar',

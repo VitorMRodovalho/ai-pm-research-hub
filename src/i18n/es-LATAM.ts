@@ -1386,6 +1386,7 @@ const esLATAM: Record<string, string> = {
   'gamification.cert.statusRevoked': 'Revocado',
   'gamification.cert.revoke': 'Revocar',
   'gamification.cert.revokeReason': 'Motivo de revocación',
+  'gamification.cert.revokePrompt': '¿Revocar este certificado? Indica el motivo. El miembro recibe un aviso con él, y la verificación pública dirá que el certificado no es válido.',
   'gamification.cert.publish': 'Publicar',
   'gamification.cert.saveDraft': 'Guardar Borrador',
   'gamification.cert.verify': 'Verificar',

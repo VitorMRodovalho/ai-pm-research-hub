@@ -113,6 +113,7 @@ const GAM_I18N = {
   certDownloaded: t('gamification.cert.downloaded', lang) || 'Baixado',
   certFilterAll: t('gamification.cert.filterAll', lang) || 'Todos',
   certRevoke: t('gamification.cert.revoke', lang),
+  certRevokePrompt: t('gamification.cert.revokePrompt', lang),
   certDownloadError: t('certificates.downloadError', lang),
   certPublish: t('gamification.cert.publish', lang),
   certVerify: t('gamification.cert.verify', lang),
@@ -533,7 +534,7 @@ const SCORING_I18N = {
   import { aggregateCredlyByMember } from '../lib/gamification';
   import { buildTrailProgressByMember } from '../lib/trail-progress';
   import { buildTribeLabel, getTribeColor } from '../lib/tribes/catalog';
-  import { hasPermission } from '../lib/permissions';
+  import { hasPermission, canFor } from '../lib/permissions';
   import { showBlockedTabNotice } from '../lib/certificates/pdf';
   import {
     getCatalog, getLevelInfo, pillarXpRange, rulesByPillar, localizeI18n,
@@ -2026,6 +2027,17 @@ const SCORING_I18N = {
         loadManageCerts();
         break;
       }
+      case 'revoke-cert': {
+        // #2701: revogação de verdade (manage_member no banco); o motivo vai para o aviso ao membro e para a auditoria
+        const id = target.dataset.certId;
+        const reason = prompt(I.certRevokePrompt);
+        if (!reason || !reason.trim()) break;
+        const { data: rev, error: revErr } = await sb.rpc('revoke_certificate', { p_certificate_id: id, p_reason: reason.trim() });
+        if (revErr || rev?.error) { toast(rev?.error || revErr?.message || 'Error', 'error'); break; }
+        toast(I.certStatusRevoked, 'success');
+        loadManageCerts();
+        break;
+      }
       case 'download-cert': {
         try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); }
         catch (e) { console.error('[gamification] cert PDF failed', e); toast(I.certDownloadError, 'error'); }
@@ -2102,6 +2114,7 @@ const SCORING_I18N = {
         <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${c.verification_code}" target="_blank" class="text-blue-500 hover:underline text-[10px] no-underline mr-1">🔗</a>
         ${c.status !== 'revoked' ? `<button class="text-navy hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="edit-cert" data-cert-id="${c.id}" data-cert-title="${(c.title||'').replace(/"/g,'&quot;')}" data-cert-desc="${(c.description||'').replace(/"/g,'&quot;').replace(/\n/g,'&#10;')}" data-cert-period-start="${c.period_start||''}" data-cert-period-end="${c.period_end||''}" data-cert-role="${c.function_role||''}" data-cert-type="${c.type||''}" data-cert-lang="${c.language||'pt-BR'}">✏️</button>` : ''}
         ${c.status === 'draft' ? `<button class="text-emerald-600 hover:underline cursor-pointer bg-transparent border-0 text-[10px] mr-1" data-action="publish-cert" data-cert-id="${c.id}">✅</button>` : ''}
+        ${c.status === 'issued' && c.type !== 'volunteer_agreement' && canFor('manage_member') ? `<button class="text-red-500 hover:underline cursor-pointer bg-transparent border-0 text-[10px]" data-action="revoke-cert" data-cert-id="${c.id}" title="${I.certRevoke}" aria-label="${I.certRevoke}">🔴</button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table></div>`;
   }

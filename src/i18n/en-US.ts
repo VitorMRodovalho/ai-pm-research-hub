@@ -1386,6 +1386,7 @@ const enUS: Record<string, string> = {
   'gamification.cert.statusRevoked': 'Revoked',
   'gamification.cert.revoke': 'Revoke',
   'gamification.cert.revokeReason': 'Reason for revocation',
+  'gamification.cert.revokePrompt': 'Revoke this certificate? Enter the reason. The member gets a notice with it, and the public verification will say the certificate is not valid.',
   'gamification.cert.publish': 'Publish',
   'gamification.cert.saveDraft': 'Save Draft',
   'gamification.cert.verify': 'Verify',

@@ -35998,6 +35998,10 @@ export type Database = {
         Returns: Json
       }
       revoke_buddy_offer: { Args: { p_pairing_id: string }; Returns: Json }
+      revoke_certificate: {
+        Args: { p_certificate_id: string; p_reason: string }
+        Returns: Json
+      }
       revoke_champion: {
         Args: { p_champion_id: string; p_reason: string }
         Returns: Json

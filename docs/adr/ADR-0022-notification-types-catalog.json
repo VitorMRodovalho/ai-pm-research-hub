@@ -273,6 +273,10 @@
     "agenda_guest_attention": {
       "delivery_mode": "suppress",
       "rationale": "#2593 C3b (GP decision 2026-10-16): an Agenda Viva block with an external guest, in a meeting within the next 7 days, whose guest has not received the invitation yet (no e-mail on the block, block still reserved, or confirmed without a delivered invite). In-app (bell) to the block owner and to members with manage_event, repeated every 2 days while it lasts. Cataloged so it does not fall into the ELSE (digest_weekly), which would arrive after the meeting."
+    },
+    "certificate_revoked": {
+      "delivery_mode": "suppress",
+      "rationale": "#2701 (GP decision 2026-10-16): a member's certificate was revoked through revoke_certificate (manage_member). The member learns in-app (bell), with the reason; no e-mail. Cataloged so it does not fall into the ELSE (digest_weekly)."
     }
   },
   "implementation": {

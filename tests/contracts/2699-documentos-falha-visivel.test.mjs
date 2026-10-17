@@ -16,7 +16,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => maskJsComments(readFileSync(join(ROOT, p), 'utf8'));
@@ -29,10 +29,14 @@ function caseBlock(src, name) {
   return m ? m[1] : '';
 }
 
-test('#2699 gamification: nenhum caminho chama a revogação inexistente', () => {
-  assert.doesNotMatch(GAM, /revoke_certificate/, 'revoke_certificate não existe no banco');
-  assert.doesNotMatch(GAM, /data-action="revoke-cert"/, 'o botão que não revoga nada voltou');
-  assert.doesNotMatch(GAM, /case 'revoke-cert'/, 'o handler que dizia "Revogado" voltou');
+// #2701 (16/10/2026): a revogação de verdade passou a existir e o botão voltou. O que este teste protegia
+// continua: a tela não pode chamar uma revogação que o banco não tem. O comportamento do botão novo (motivo,
+// erro lido antes do sucesso, portão) está em 2701-revogar-certificado.test.mjs.
+test('#2699 gamification: a revogação que a tela chama existe no banco', () => {
+  if (/revoke_certificate/.test(GAM)) {
+    assert.ok(latestFunctionCapture(ROOT, 'revoke_certificate'),
+      'a tela chama revoke_certificate, mas nenhuma migration cria essa função');
+  }
 });
 
 test('#2699 gamification: publicar só diz "publicado" se o RPC não devolveu erro', () => {
