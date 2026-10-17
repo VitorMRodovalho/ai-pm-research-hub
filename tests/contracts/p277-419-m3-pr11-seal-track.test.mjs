@@ -35,6 +35,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const SPEC = resolve(ROOT, 'docs/specs/SPEC_419_M3_ATTENDANCE_TWO_METRIC.md');
@@ -118,10 +119,13 @@ test('PR11 static: auto_complete_first_meeting fires only on the first PRESENT r
 });
 
 test('PR11 static: auto_detect_onboarding_completions batch twin guards first_meeting with present=true', () => {
-  assert.match(mig, /CREATE OR REPLACE FUNCTION public\.auto_detect_onboarding_completions\(\)/,
+  // #1932: the batch was recreated after PR11 (#2718 added its fact-based blocks), so the twin guard
+  // reads the LATEST capture, not the PR11 file.
+  const detect = latestFunctionCapture(ROOT, 'auto_detect_onboarding_completions').block.replace(/^\s*--.*$/gm, '');
+  assert.match(detect, /CREATE OR REPLACE FUNCTION public\.auto_detect_onboarding_completions\(\)/,
     'recreates the batch onboarding-completion function');
   // the first_meeting batch INSERT must be present-guarded (the twin of the trigger fix)
-  assert.match(mig, /'first_meeting'[\s\S]*?FROM attendance a\s+WHERE a\.present = true/,
+  assert.match(detect, /'first_meeting'[\s\S]*?FROM attendance a\s+WHERE a\.present = true/,
     "batch first_meeting completion requires a present=true row");
 });
 

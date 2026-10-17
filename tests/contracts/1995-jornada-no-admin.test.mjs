@@ -29,7 +29,8 @@ test('#1995 f1 a fila continua atrás do mesmo portão', () => {
 });
 
 test('#1995 f1 a jornada é da pessoa, com o Y real dela e só passos do catálogo', () => {
-  assert.match(Q, /FROM public\.onboarding_progress op\s+JOIN public\.onboarding_steps s ON s\.id = op\.step_key\s+WHERE op\.member_id = m\.id\s+\) ob ON true/);
+  // #2718 acrescentou o predicado de papel: a jornada só conta etapa que vale para a pessoa
+  assert.match(Q, /FROM public\.onboarding_progress op\s+JOIN public\.onboarding_steps s ON s\.id = op\.step_key\s+WHERE op\.member_id = m\.id\s+AND public\.onboarding_step_applies\(s\.applies_to_role, m\.operational_role\)\s+\) ob ON true/);
   assert.match(Q, /SELECT CASE WHEN count\(\*\) = 0 THEN NULL ELSE jsonb_build_object\(\s+'total', count\(\*\),/, 'o denominador é a contagem da pessoa, nunca uma constante');
   assert.match(Q, /'pending', count\(\*\) FILTER \(WHERE op\.status IN \('pending', 'overdue'\)\),/);
   assert.match(Q, /'stage', \(array_agg\(op\.step_key ORDER BY s\.step_order\) FILTER \(WHERE op\.status IN \('pending', 'overdue'\)\)\)\[1\],/);
@@ -39,7 +40,8 @@ test('#1995 f1 a jornada é da pessoa, com o Y real dela e só passos do catálo
 
 test('#1995 f1 cada sinal sai só da condição que o define', () => {
   assert.match(Q, /bool_or\(op\.step_key = 'meet_tribe' AND op\.status IN \('pending', 'overdue'\)\) AND m\.tribe_id IS NULL\s+THEN 'tribe_blocked_no_tribe'/);
-  assert.match(Q, /bool_or\(op\.step_key = 'meet_tribe' AND op\.status IN \('pending', 'overdue'\)\) AND m\.tribe_id IS NOT NULL\s+AND EXISTS \(SELECT 1 FROM public\.attendance a WHERE a\.member_id = m\.id AND a\.present\)\s+THEN 'tribe_pending_but_attended'/);
+  // #2718: a presença na própria tribo já fecha a etapa, então o sinal exige que nenhuma presença seja dela
+  assert.match(Q, /bool_or\(op\.step_key = 'meet_tribe' AND op\.status IN \('pending', 'overdue'\)\) AND m\.tribe_id IS NOT NULL\s+AND EXISTS \(SELECT 1 FROM public\.attendance a WHERE a\.member_id = m\.id AND a\.present\)\s+AND NOT EXISTS \([^)]*legacy_tribe_id = m\.tribe_id\)\s+THEN 'tribe_pending_but_attended'/);
   assert.match(Q, /bool_or\(op\.step_key = 'start_trail' AND op\.status IN \('pending', 'overdue'\)\)\s+AND NULLIF\(btrim\(COALESCE\(m\.credly_url, ''\)\), ''\) IS NULL\s+THEN 'trail_without_credly'/);
   assert.match(Q, /bool_or\(op\.step_key = 'code_of_conduct' AND op\.status IN \('pending', 'overdue'\)\)\s+AND bool_or\(op\.step_key = 'volunteer_term' AND op\.status = 'completed'\)\s+THEN 'conduct_pending_term_signed'/);
   assert.match(Q, /bool_or\(op\.step_key = 'first_meeting' AND op\.status IN \('pending', 'overdue'\)\)\s+AND NOT EXISTS \(SELECT 1 FROM public\.attendance a WHERE a\.member_id = m\.id AND a\.present\)\s+THEN 'never_present'/);

@@ -187,6 +187,7 @@ const ALLOWLIST = {
   list_curation_board: 'gated (curate_content/write_board) reads hub_resources only; confidential has 0 hub_resources',
   verify_certificate: 'public verification by unguessable code (rate-limited); no enumeration of confidential events',
   webinars_pending_comms: 'comms-analytics gated; reads webinars (not events); confidential has 0 webinars',
+  get_affiliation_verification_queue: 'filiacao_director OR manage_member gate; reads only initiatives.legacy_tribe_id (via events.initiative_id) to tell whether a presence was in the person\'s OWN tribe (#2718 signal), and returns no initiative content. Gating it by rls_can_see_initiative would make that signal change with who is looking.',
 };
 
 test('#785 guard: no ungated SECDEF reader over initiative tables outside the allowlist', {
