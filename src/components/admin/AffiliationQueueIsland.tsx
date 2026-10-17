@@ -217,7 +217,7 @@ function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { e
   };
   // term status keys (expired/expiring/valid/none) are validity-farol keys.
   const f = validityFarol(status);
-  return { emoji: f.emoji, label: labels[status], cls: f.cls };
+  return { emoji: f.emoji, label: labels[status] ?? status, cls: f.cls }; // #2720: status desconhecido mostra a chave crua
 }
 
 // #1192 — chapter-filter option row read straight from chapter_registry (the SSOT).

@@ -107,7 +107,10 @@ export const VALIDITY_FAROL: Record<ValidityKey, { emoji: string; tone: StatusTo
 
 /** `{ emoji, cls }` for a validity key, colour + emoji from the single source. */
 export function validityFarol(key: ValidityKey): { emoji: string; cls: string } {
-  const f = VALIDITY_FAROL[key];
+  // #2720: chave que esta versão da tela não conhece cai no neutro em vez de derrubar a ilha. O banco pode
+  // passar a devolver um status novo antes de o bundle que o conhece estar publicado (17/10/2026: a fila caiu
+  // por 6 minutos assim).
+  const f = VALIDITY_FAROL[key] ?? VALIDITY_FAROL.none;
   return { emoji: f.emoji, cls: toneClasses(f.tone) };
 }
 
