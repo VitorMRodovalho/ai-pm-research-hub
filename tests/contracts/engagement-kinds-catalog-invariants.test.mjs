@@ -109,7 +109,13 @@ test('engagement_kinds catalog invariant: no migration re-flips ambassador.requi
   const insertReflipPattern = /VALUES\s*\([^)]*'ambassador'[^)]*,\s*true[^)]*\)/i;
   // ON CONFLICT DO UPDATE upsert form (per code-reviewer LOW in PR #250 — also
   // bypasses the UPDATE pattern since ON CONFLICT has no WHERE clause).
-  const onConflictReflipPattern = /ON\s+CONFLICT[\s\S]*?DO\s+UPDATE\s+SET[\s\S]*?requires_agreement\s*=\s*true/i;
+  // #2718: scoped to ONE statement that writes engagement_kinds. The old [\s\S]*? form joined an unrelated
+  // `ON CONFLICT ... DO UPDATE` (an onboarding_progress upsert) to a `requires_agreement = true` read much later in
+  // the same file (a WHERE in a function body) and flagged a migration that never touches engagement_kinds.
+  const onConflictReflipPattern = /INSERT\s+INTO\s+(?:public\.)?engagement_kinds\b[^;]*?ON\s+CONFLICT[^;]*?DO\s+UPDATE\s+SET[^;]*?requires_agreement\s*=\s*true/i;
+  // Control: the scoped pattern still catches a real upsert re-flip, and no longer joins separate statements.
+  assert.match("INSERT INTO public.engagement_kinds (slug, requires_agreement) VALUES ('ambassador', false)\n  ON CONFLICT (slug) DO UPDATE SET requires_agreement = true;", onConflictReflipPattern);
+  assert.doesNotMatch("INSERT INTO onboarding_progress (a) VALUES (1) ON CONFLICT (a) DO UPDATE SET b = 1;\n  SELECT 1 FROM public.engagement_kinds ek WHERE ek.requires_agreement = true;", onConflictReflipPattern);
   // Note: MERGE statement (Postgres 15+) is not covered. Codebase has zero
   // MERGE usage; revisit if a future migration adopts MERGE patterns.
 

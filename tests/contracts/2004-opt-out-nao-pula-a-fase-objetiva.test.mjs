@@ -105,7 +105,7 @@ test('#2004 estático: a ESCOLHA do candidato continua registrada em qualquer st
 });
 
 test('#2004 vivo: ninguém NOVO chega a interview_pending sem avaliação (ratchet)',
-  { skip: dbGated ? false : skipMsg }, async () => {
+  { skip: dbGated ? false : skipMsg }, async (t) => {
   const s = sb();
   const { data: cycles } = await s.from('selection_cycles').select('id').eq('status', 'open');
   const ids = (cycles ?? []).map((c) => c.id);
@@ -114,7 +114,17 @@ test('#2004 vivo: ninguém NOVO chega a interview_pending sem avaliação (ratch
   const { data: apps, error } = await s
     .from('selection_applications').select('id').eq('status', 'interview_pending').in('cycle_id', ids);
   assert.ok(!error, error?.message);
-  assert.ok((apps ?? []).length > 0, 'ninguém em interview_pending — o guard não mediria nada');
+  if ((apps ?? []).length === 0) {
+    // A fase esvazia quando o ciclo é decidido (17/10/2026: 75 aprovadas, 20 recusadas, 1 desistência, ninguém em
+    // interview_pending), e reprovar ali bloqueava toda PR sem nada errado. Vazio continua NÃO sendo verde: o teste
+    // fica PULADO, e só depois de provar que a leitura enxerga o ciclo, para um filtro quebrado não passar por fase vazia.
+    const { count, error: e2 } = await s
+      .from('selection_applications').select('id', { count: 'exact', head: true }).in('cycle_id', ids);
+    assert.ok(!e2, e2?.message);
+    assert.ok((count ?? 0) > 0, 'o ciclo aberto não mostra candidatura nenhuma: a leitura não está medindo');
+    t.skip('ninguém em interview_pending no ciclo aberto: a fase esvaziou, não há o que medir');
+    return;
+  }
 
   const { data: evals } = await s
     .from('selection_evaluations').select('application_id').in('application_id', (apps ?? []).map((a) => a.id));
