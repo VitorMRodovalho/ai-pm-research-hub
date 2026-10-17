@@ -11890,9 +11890,9 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // ── W5 · certificate_manage (R/W) — certificate issuance/verification (NO countersign) ──
   mcp.tool(
     "certificate_manage",
-    "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
+    "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'revoke' (#2701: cert_id + reason — manage_member; status passa a revoked, a verificacao publica responde invalido, o membro recebe aviso no sino com o motivo e a auditoria registra; o Termo de Voluntariado NAO e revogado aqui, e sim pelo distrato — DESTRUCTIVE→confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
     {
-      action: z.enum(["issue", "update", "verify", "list", "my", "timeline"]).describe("Certificate operation."),
+      action: z.enum(["issue", "update", "revoke", "verify", "list", "my", "timeline"]).describe("Certificate operation."),
       member_id: z.string().optional().describe("issue — recipient members UUID."),
       title: z.string().optional().describe("issue — certificate title (required for issue)."),
       type: z.enum(["participation", "completion", "contribution", "excellence", "volunteer_agreement", "institutional_declaration", "ip_ratification", "alumni_recognition"]).optional().describe("issue — certificate type (default participation)."),
@@ -11902,13 +11902,14 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
       period_end: z.string().optional().describe("issue / update — period end."),
       function_role: z.string().optional().describe("issue / update — function/role label."),
       description: z.string().optional().describe("issue / update — description."),
-      cert_id: z.string().optional().describe("update — certificate UUID."),
+      cert_id: z.string().optional().describe("update / revoke — certificate UUID."),
+      reason: z.string().optional().describe("revoke — #2701: motivo da revogacao (obrigatorio, ate 500 caracteres). Vai para o aviso ao membro e para a auditoria."),
       code: z.string().optional().describe("verify — verification code."),
       status: z.string().optional().describe("list — status filter."),
       search: z.string().optional().describe("list — search term."),
       include_volunteer_agreements: z.boolean().optional().describe("list / my — include volunteer agreements (default false)."),
       months: z.number().optional().describe("timeline — months back (default 12)."),
-      confirm: z.boolean().optional().describe("issue / update — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
+      confirm: z.boolean().optional().describe("issue / update / revoke — pass confirm=true to execute; otherwise a preview (ADR-0018)."),
     },
     async (params: any) => {
       const start = Date.now();
@@ -11923,16 +11924,20 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         return invalid("action='issue' requires member_id (UUID) + a non-empty title.", "The certificate title is NOT NULL; supply it explicitly.");
       }
       if (params.action === "update" && !isUUID(params.cert_id)) return invalid("action='update' requires cert_id.");
+      if (params.action === "revoke" && !isUUID(params.cert_id)) return invalid("action='revoke' requires cert_id.");
+      if (params.action === "revoke" && (!params.reason || !String(params.reason).trim())) return invalid("action='revoke' requires reason.", "O motivo vai para o aviso ao membro e para a auditoria.");
 
       // ADR-0018 confirm-gate for the state-changing certificate actions.
-      if ((params.action === "issue" || params.action === "update") && params.confirm !== true) {
+      if ((params.action === "issue" || params.action === "update" || params.action === "revoke") && params.confirm !== true) {
         await logUsage(sb, member.id, "certificate_manage", true, undefined, start, "preview");
         return semanticOk({
           data: { action: params.action, preview: true, next_call: { ...params, confirm: true } },
           summary: `PREVIEW: certificate_manage action='${params.action}'. Reenvie com confirm=true.`,
-          warnings: [params.action === "issue" ? "Issues a permanent certificate record for the member." : "Updates an existing certificate (audit-logged)."],
+          warnings: [params.action === "issue" ? "Issues a permanent certificate record for the member."
+            : params.action === "revoke" ? "Revokes the certificate: public verification answers invalid, the member is notified in-app with the reason, audit-logged. Not reversible by this tool."
+            : "Updates an existing certificate (audit-logged)."],
           next_actions: [`certificate_manage action='${params.action}' confirm=true`],
-          audit: { tool: "certificate_manage", semantic_domain: dom, pii_level: "low", permission: "curate_content", source_tools: [], caller_member_id: member.id, gate_checked: "RPC internal (curate_content/manager/superadmin) (preview, not executed)", resource_id: params.cert_id ?? params.member_id ?? null, extra: { action: params.action, preview: true } },
+          audit: { tool: "certificate_manage", semantic_domain: dom, pii_level: "low", permission: params.action === "revoke" ? "manage_member" : "curate_content", source_tools: [], caller_member_id: member.id, gate_checked: params.action === "revoke" ? "RPC internal (manage_member) (preview, not executed)" : "RPC internal (curate_content/manager/superadmin) (preview, not executed)", resource_id: params.cert_id ?? params.member_id ?? null, extra: { action: params.action, preview: true } },
         });
       }
 
@@ -11952,6 +11957,8 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
           if (params.cycle != null) p_updates.cycle = params.cycle;
           ({ data, error } = await sb.rpc("update_certificate", { p_cert_id: params.cert_id, p_updates })); source = "update_certificate"; break;
         }
+        case "revoke":
+          ({ data, error } = await sb.rpc("revoke_certificate", { p_certificate_id: params.cert_id, p_reason: String(params.reason).trim() })); source = "revoke_certificate"; break;
         case "verify":
           if (!params.code) return invalid("action='verify' requires code.");
           ({ data, error } = await sb.rpc("verify_certificate", { p_code: params.code })); source = "verify_certificate"; break;

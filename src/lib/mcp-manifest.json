@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-16T22:50:25.476Z",
+  "generated_at": "2026-10-17T00:01:55.727Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
   "total": 394,
   "by_domain": {
@@ -1803,7 +1803,7 @@
     },
     {
       "name": "certificate_manage",
-      "description": "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
+      "description": "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'revoke' (#2701: cert_id + reason — manage_member; status passa a revoked, a verificacao publica responde invalido, o membro recebe aviso no sino com o motivo e a auditoria registra; o Termo de Voluntariado NAO e revogado aqui, e sim pelo distrato — DESTRUCTIVE→confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
       "domain": "governance",
       "permission": "read",
       "is_sensitive": false
