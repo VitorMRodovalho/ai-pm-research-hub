@@ -62,7 +62,32 @@ interface QueueRow {
   cohort_role: string | null;
   term_end_date: string | null;
   term_status: TermStatus;
+  // #1995 (fatia 1) — jornada de onboarding, derivada no servidor; null = a pessoa não tem jornada
+  onboarding: OnboardingSummary | null;
 }
+
+// #1995 (fatia 1) — sinais de trava: dizem quando a etapa está pendente por dependência ou porque só fecha
+// por clique, e não porque a pessoa deixou de fazer. Medidos em 16/10/2026; a regra vive no servidor.
+type OnboardingSignal = 'tribe_blocked_no_tribe' | 'tribe_pending_but_attended' | 'trail_without_credly'
+  | 'conduct_pending_term_signed' | 'never_present';
+interface OnboardingSummary {
+  total: number;
+  done: number;
+  pending: number;
+  stage: string | null;
+  stage_label: Record<string, string> | null;
+  started_at: string | null;
+  last_progress_at: string | null;
+  stalled_days: number | null;
+  last_sign_in_at: string | null;
+  signals: OnboardingSignal[];
+}
+const STALLED_DAYS = 30;
+const uiLang = (): string => {
+  if (typeof document === 'undefined') return 'pt-BR';
+  const l = document.documentElement.lang;
+  return l === 'en' ? 'en-US' : l === 'es' ? 'es-LATAM' : 'pt-BR';
+};
 
 /* "31 Jul 2026" (VEP) -> "2026-07-31" for the <input type=date>; '' if unparseable. */
 function toDateInput(raw: string | null | undefined): string {
@@ -243,6 +268,7 @@ export default function AffiliationQueueIsland() {
   const [vepFilter, setVepFilter] = useState<string>('all');
   const [cohortFilter, setCohortFilter] = useState<'all' | CohortClass>('all'); // #1129
   const [termFilter, setTermFilter] = useState<'all' | TermStatus>('all');       // #1129
+  const [obFilter, setObFilter] = useState<'all' | 'pending' | 'stalled' | 'done' | 'none'>('all'); // #1995
   const [search, setSearch] = useState('');
   const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
   const [rollup, setRollup] = useState<ChapterRollupEntry[]>([]);                // #1364
@@ -457,6 +483,11 @@ export default function AffiliationQueueIsland() {
     else if (statusFilter === 'unverified') list = list.filter(r => farol(r, t).key === 'unverified');
     if (cohortFilter !== 'all') list = list.filter(r => r.cohort_class === cohortFilter);   // #1129
     if (termFilter !== 'all') list = list.filter(r => r.term_status === termFilter);         // #1129
+    // #1995 (fatia 1) — jornada de onboarding
+    if (obFilter === 'pending') list = list.filter(r => (r.onboarding?.pending ?? 0) > 0);
+    else if (obFilter === 'stalled') list = list.filter(r => (r.onboarding?.pending ?? 0) > 0 && (r.onboarding?.stalled_days ?? -1) >= STALLED_DAYS);
+    else if (obFilter === 'done') list = list.filter(r => !!r.onboarding && r.onboarding.pending === 0);
+    else if (obFilter === 'none') list = list.filter(r => !r.onboarding);
     // #1192 — chapter filter matches on the registry chapter_code delivered by the SSOT read-through.
     if (chapterFilter !== 'all') list = list.filter(r => unifiedBrChapters(r.chapter_affiliations, r.pmi_memberships).some(c => c.code === chapterFilter));
     if (vepFilter !== 'all') list = list.filter(r => (r.vep_status_raw || '—') === vepFilter);
@@ -479,7 +510,7 @@ export default function AffiliationQueueIsland() {
       return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
     });
     return list;
-  }, [rows, allRows, tab, statusFilter, cohortFilter, termFilter, chapterFilter, vepFilter, search, sortKey, t]);
+  }, [rows, allRows, tab, statusFilter, cohortFilter, termFilter, obFilter, chapterFilter, vepFilter, search, sortKey, t]);
 
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
@@ -561,6 +592,16 @@ export default function AffiliationQueueIsland() {
           <option value="expiring">{t('comp.affiliationQueue.term_expiring', 'Vencendo')}</option>
           <option value="valid">{t('comp.affiliationQueue.term_valid', 'Vigente')}</option>
           <option value="none">{t('comp.affiliationQueue.term_none', 'Sem termo')}</option>
+        </select>
+        {/* #1995 (fatia 1) — jornada de onboarding */}
+        <select value={obFilter} onChange={e => setObFilter(e.target.value as 'all' | 'pending' | 'stalled' | 'done' | 'none')}
+          aria-label={t('comp.affiliationQueue.thJourney', 'Jornada')}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterObAll', 'Todas as jornadas')}</option>
+          <option value="pending">{t('comp.affiliationQueue.obFilterPending', 'Com pendência')}</option>
+          <option value="stalled">{t('comp.affiliationQueue.obFilterStalled', 'Parados há 30 dias ou mais')}</option>
+          <option value="done">{t('comp.affiliationQueue.obDone', 'Concluída')}</option>
+          <option value="none">{t('comp.affiliationQueue.obNone', 'Sem jornada')}</option>
         </select>
         {/* VEP status filter */}
         <select value={vepFilter} onChange={e => setVepFilter(e.target.value)}
@@ -647,6 +688,7 @@ export default function AffiliationQueueIsland() {
                   </button>
                 </th>
                 <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thTerm', 'Termo de voluntariado')}</th>
+                <th className="px-3 py-2 text-left">{t('comp.affiliationQueue.thJourney', 'Jornada')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thVep', 'VEP')}</th>
                 <th className="px-3 py-2 text-center">{t('comp.affiliationQueue.thStatus', 'Status')}</th>
                 <th className="px-3 py-2 text-center w-24">{t('comp.affiliationQueue.thActions', 'Ações')}</th>
@@ -750,6 +792,41 @@ export default function AffiliationQueueIsland() {
                         );
                       })()}
                     </td>
+                    {/* #1995 (fatia 1) — jornada: X/Y real, etapa atual, dias sem avançar, último login e sinais de trava */}
+                    <td className="px-3 py-2">
+                      {(() => {
+                        const ob = r.onboarding;
+                        if (!ob) return <span className="text-[10px] text-[var(--text-muted)]">{t('comp.affiliationQueue.obNone', 'Sem jornada')}</span>;
+                        const stalled = ob.pending > 0 && (ob.stalled_days ?? -1) >= STALLED_DAYS;
+                        const stageLabel = ob.stage_label?.[uiLang()] || ob.stage_label?.['pt-BR'] || ob.stage || '';
+                        return (
+                          <div className="space-y-0.5">
+                            <div className="text-[11px] font-semibold tabular-nums">{ob.done}/{ob.total}</div>
+                            {ob.pending === 0
+                              ? <span className="inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-700">{t('comp.affiliationQueue.obDone', 'Concluída')}</span>
+                              : <div className="text-[10px] text-[var(--text-secondary)]">{stageLabel}</div>}
+                            {ob.pending > 0 && ob.stalled_days != null && (
+                              <div className={`text-[10px] ${stalled ? 'text-rose-600 font-semibold' : 'text-[var(--text-muted)]'}`}>
+                                {ob.stalled_days} {t('comp.affiliationQueue.obDaysStalled', 'dias sem avançar')}
+                              </div>
+                            )}
+                            <div className="text-[9px] text-[var(--text-muted)]">
+                              {t('comp.affiliationQueue.obLastLogin', 'Último login')}: {ob.last_sign_in_at ? fmtDate(ob.last_sign_in_at) : t('comp.affiliationQueue.obNever', 'nunca')}
+                            </div>
+                            {ob.signals.length > 0 && (
+                              <div className="flex flex-wrap gap-1 pt-0.5">
+                                {ob.signals.map(sig => (
+                                  <span key={sig} title={t(`comp.affiliationQueue.obSigLong.${sig}`, '')}
+                                    className={`text-[9px] px-1.5 py-0.5 rounded-full ${sig === 'never_present' ? 'bg-rose-100 text-rose-700' : 'bg-amber-50 text-amber-800'}`}>
+                                    {t(`comp.affiliationQueue.obSig.${sig}`, sig)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </td>
                     <td className="px-3 py-2 text-center">
                       {r.vep_status_raw
                         ? <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${VEP_CLS[r.vep_status_raw] || 'bg-slate-100 text-slate-600'}`}>{r.vep_status_raw}</span>
@@ -782,7 +859,7 @@ export default function AffiliationQueueIsland() {
                   {expanded && (
                     <tr className="border-t border-[var(--border-default)] bg-[var(--surface-section-cool)]">
                       <td></td>
-                      <td colSpan={8} className="px-3 py-3">
+                      <td colSpan={9} className="px-3 py-3">
                         {p ? (
                           <>
                           {/* #1862 — o bloco acima e SERVICO voluntario. A ausencia de evidencia de

@@ -23,6 +23,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..', '..');
@@ -77,12 +78,15 @@ test('scope migration adds p_scope via DROP+CREATE without losing the queue shap
   // arg count changed -> must DROP then re-CREATE (GC-097), not a bare CREATE OR REPLACE of the 0-arg
   assert.match(src, /DROP FUNCTION IF EXISTS public\.get_affiliation_verification_queue\(\);/,
     'must DROP the 0-arg function before recreating with the new signature');
-  assert.match(src, /CREATE OR REPLACE FUNCTION public\.get_affiliation_verification_queue\(p_scope text DEFAULT 'queue'\)/,
+  // #1932: o que precisa CONTINUAR valendo é lido da captura mais nova (a #1995 fatia 1 redefiniu a função em
+  // 16/10/2026); o arquivo desta migration segue servindo só para o que ELA fez (DROP e permissões, abaixo).
+  const cur = latestFunctionCapture(REPO_ROOT, 'get_affiliation_verification_queue').block;
+  assert.match(cur, /CREATE OR REPLACE FUNCTION public\.get_affiliation_verification_queue\(p_scope text DEFAULT 'queue'(?:::text)?\)/,
     'must recreate with p_scope defaulting to queue (back-compatible)');
   // p_scope='all' relaxes the cohort; the rich per-row shape is preserved (single source, not duplicated)
-  assert.match(src, /p_scope = 'all'/, "p_scope='all' must relax the cohort WHERE");
-  assert.match(src, /chapter_affiliations/, 'the SSOT chapter read-through shape must be preserved');
-  assert.match(src, /PERFORM public\.log_pii_access_batch/, 'nominal PII read logging must be preserved');
+  assert.match(cur, /p_scope = 'all'/, "p_scope='all' must relax the cohort WHERE");
+  assert.match(cur, /chapter_affiliations/, 'the SSOT chapter read-through shape must be preserved');
+  assert.match(cur, /PERFORM public\.log_pii_access_batch/, 'nominal PII read logging must be preserved');
   // grants re-applied on the NEW (text) signature
   assert.match(src, /REVOKE ALL ON FUNCTION public\.get_affiliation_verification_queue\(text\) FROM public, anon;/,
     'must revoke the new (text) signature from public, anon');
