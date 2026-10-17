@@ -91,7 +91,7 @@ export const VEP_STATUS_TONE: Record<string, StatusTone> = {
 
 // ── Validity farol (filiação / termo de voluntário) ──────────────────────────
 /** The 🔴🟡🟢⚪ traffic light. `expiring`/`valid` alias `soon`/`ok` for the term badge. */
-export type ValidityKey = 'expired' | 'soon' | 'expiring' | 'ok' | 'valid' | 'unverified' | 'none';
+export type ValidityKey = 'expired' | 'soon' | 'expiring' | 'ok' | 'valid' | 'unverified' | 'none' | 'unsigned';
 
 export const VALIDITY_FAROL: Record<ValidityKey, { emoji: string; tone: StatusTone }> = {
   expired:    { emoji: '🔴', tone: 'negative' },
@@ -101,6 +101,8 @@ export const VALIDITY_FAROL: Record<ValidityKey, { emoji: string; tone: StatusTo
   valid:      { emoji: '🟢', tone: 'positive' },
   unverified: { emoji: '⚪', tone: 'muted' },
   none:       { emoji: '⚪', tone: 'muted' },
+  // #2720: termo que existe e espera assinatura; pede um passo da pessoa, não é validade
+  unsigned:   { emoji: '✍️', tone: 'attention' },
 };
 
 /** `{ emoji, cls }` for a validity key, colour + emoji from the single source. */

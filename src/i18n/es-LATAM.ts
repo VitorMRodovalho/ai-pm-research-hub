@@ -7807,6 +7807,7 @@ const esLATAM: Record<string, string> = {
   'comp.affiliationQueue.term_expiring': 'Por vencer',
   'comp.affiliationQueue.term_expired': 'Vencido',
   'comp.affiliationQueue.term_none': 'Sin término',
+  'comp.affiliationQueue.term_unsigned': 'Esperando firma',
   'comp.affiliationQueue.thJourney': 'Recorrido',
   'comp.affiliationQueue.filterObAll': 'Todos los recorridos',
   'comp.affiliationQueue.obFilterPending': 'Con pendientes',

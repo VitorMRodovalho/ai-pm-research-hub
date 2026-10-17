@@ -7816,6 +7816,7 @@ const ptBR: Record<string, string> = {
   'comp.affiliationQueue.term_expiring': 'Vencendo',
   'comp.affiliationQueue.term_expired': 'Vencido',
   'comp.affiliationQueue.term_none': 'Sem termo',
+  'comp.affiliationQueue.term_unsigned': 'Aguardando assinatura',
   'comp.affiliationQueue.thJourney': 'Jornada',
   'comp.affiliationQueue.filterObAll': 'Todas as jornadas',
   'comp.affiliationQueue.obFilterPending': 'Com pendência',

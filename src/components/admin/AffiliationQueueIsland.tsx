@@ -39,7 +39,7 @@ interface PmiProfile {
 // #1129 — cohort derived reliably from engagement/selection → cycle (never members.cycles).
 type CohortClass = 'current_selection' | 'carryover' | 'non_selection';
 // #1129 — volunteer-term validity vs CURRENT_DATE (server-side, 180d "expiring" window).
-type TermStatus = 'valid' | 'expiring' | 'expired' | 'none';
+type TermStatus = 'valid' | 'expiring' | 'expired' | 'none' | 'unsigned';
 
 interface QueueRow {
   member_id: string;
@@ -213,6 +213,7 @@ function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { e
     expiring: t('comp.affiliationQueue.term_expiring', 'Vencendo'),
     valid:    t('comp.affiliationQueue.term_valid', 'Vigente'),
     none:     t('comp.affiliationQueue.term_none', 'Sem termo'),
+    unsigned: t('comp.affiliationQueue.term_unsigned', 'Aguardando assinatura'), // #2720
   };
   // term status keys (expired/expiring/valid/none) are validity-farol keys.
   const f = validityFarol(status);
@@ -597,6 +598,7 @@ export default function AffiliationQueueIsland() {
           <option value="expiring">{t('comp.affiliationQueue.term_expiring', 'Vencendo')}</option>
           <option value="valid">{t('comp.affiliationQueue.term_valid', 'Vigente')}</option>
           <option value="none">{t('comp.affiliationQueue.term_none', 'Sem termo')}</option>
+          <option value="unsigned">{t('comp.affiliationQueue.term_unsigned', 'Aguardando assinatura')}</option>
         </select>
         {/* #1995 (fatia 1b) — tribo, combinável com o filtro de termo */}
         <select value={tribeFilter} onChange={e => setTribeFilter(e.target.value as 'all' | 'with' | 'without')}
