@@ -33,9 +33,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones' },
+  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', credlyMissing: 'Seu perfil não tem Credly: a plataforma só vê o curso pelo badge do Credly.', connectCredly: 'Conectar Credly no perfil' },
+  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', credlyMissing: 'Your profile has no Credly: the platform only sees the course through the Credly badge.', connectCredly: 'Connect Credly on your profile' },
+  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', credlyMissing: 'Su perfil no tiene Credly: la plataforma solo ve el curso por la insignia de Credly.', connectCredly: 'Conectar Credly en el perfil' },
 };
 
 // Steps that carry a bespoke CTA below. Any other step (e.g. the #1103 role-scoped
@@ -261,6 +261,15 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                       <a href={`${lp}/gamification`} className="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-700 text-[10px] font-semibold no-underline hover:bg-amber-200">
                         🎓 {l.viewTrail}
                       </a>
+                    )}
+                    {/* #2718 regra 2: a trilha fecha pelo badge do Credly; sem Credly no perfil a plataforma nunca vê o curso */}
+                    {s.step_id === 'start_trail' && !member?.credly_url && (
+                      <>
+                        <p className="w-full text-[10px] text-amber-700 dark:text-amber-300">{l.credlyMissing}</p>
+                        <a href={`${lp}/profile`} className="px-2.5 py-1 rounded-lg border border-amber-300 text-amber-800 dark:text-amber-200 text-[10px] font-semibold no-underline hover:bg-amber-50">
+                          🔗 {l.connectCredly}
+                        </a>
+                      </>
                     )}
                     {s.step_id === 'volunteer_term' && (
                       <a href={`${lp}/volunteer-agreement`} className="px-2.5 py-1 rounded-lg bg-navy text-white text-[10px] font-semibold no-underline hover:opacity-90">
