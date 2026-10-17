@@ -7807,6 +7807,7 @@ const enUS: Record<string, string> = {
   'comp.affiliationQueue.term_expiring': 'Expiring',
   'comp.affiliationQueue.term_expired': 'Expired',
   'comp.affiliationQueue.term_none': 'No term',
+  'comp.affiliationQueue.term_unsigned': 'Awaiting signature',
   'comp.affiliationQueue.thJourney': 'Journey',
   'comp.affiliationQueue.filterObAll': 'All journeys',
   'comp.affiliationQueue.obFilterPending': 'With pending steps',

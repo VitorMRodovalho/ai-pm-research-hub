@@ -91,7 +91,7 @@ export const VEP_STATUS_TONE: Record<string, StatusTone> = {
 
 // ── Validity farol (filiação / termo de voluntário) ──────────────────────────
 /** The 🔴🟡🟢⚪ traffic light. `expiring`/`valid` alias `soon`/`ok` for the term badge. */
-export type ValidityKey = 'expired' | 'soon' | 'expiring' | 'ok' | 'valid' | 'unverified' | 'none';
+export type ValidityKey = 'expired' | 'soon' | 'expiring' | 'ok' | 'valid' | 'unverified' | 'none' | 'unsigned';
 
 export const VALIDITY_FAROL: Record<ValidityKey, { emoji: string; tone: StatusTone }> = {
   expired:    { emoji: '🔴', tone: 'negative' },
@@ -101,11 +101,16 @@ export const VALIDITY_FAROL: Record<ValidityKey, { emoji: string; tone: StatusTo
   valid:      { emoji: '🟢', tone: 'positive' },
   unverified: { emoji: '⚪', tone: 'muted' },
   none:       { emoji: '⚪', tone: 'muted' },
+  // #2720: termo que existe e espera assinatura; pede um passo da pessoa, não é validade
+  unsigned:   { emoji: '✍️', tone: 'attention' },
 };
 
 /** `{ emoji, cls }` for a validity key, colour + emoji from the single source. */
 export function validityFarol(key: ValidityKey): { emoji: string; cls: string } {
-  const f = VALIDITY_FAROL[key];
+  // #2720: chave que esta versão da tela não conhece cai no neutro em vez de derrubar a ilha. O banco pode
+  // passar a devolver um status novo antes de o bundle que o conhece estar publicado (17/10/2026: a fila caiu
+  // por 6 minutos assim).
+  const f = VALIDITY_FAROL[key] ?? VALIDITY_FAROL.none;
   return { emoji: f.emoji, cls: toneClasses(f.tone) };
 }
 
