@@ -64,6 +64,8 @@ interface QueueRow {
   term_status: TermStatus;
   // #1995 (fatia 1) — jornada de onboarding, derivada no servidor; null = a pessoa não tem jornada
   onboarding: OnboardingSummary | null;
+  // #1995 (fatia 1b) — tribo pela coluna members.tribe_id; null = sem tribo
+  tribe: { id: number; name: string } | null;
 }
 
 // #1995 (fatia 1) — sinais de trava: dizem quando a etapa está pendente por dependência ou porque só fecha
@@ -269,6 +271,7 @@ export default function AffiliationQueueIsland() {
   const [cohortFilter, setCohortFilter] = useState<'all' | CohortClass>('all'); // #1129
   const [termFilter, setTermFilter] = useState<'all' | TermStatus>('all');       // #1129
   const [obFilter, setObFilter] = useState<'all' | 'pending' | 'stalled' | 'done' | 'none'>('all'); // #1995
+  const [tribeFilter, setTribeFilter] = useState<'all' | 'with' | 'without'>('all'); // #1995 fatia 1b
   const [search, setSearch] = useState('');
   const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
   const [rollup, setRollup] = useState<ChapterRollupEntry[]>([]);                // #1364
@@ -488,6 +491,8 @@ export default function AffiliationQueueIsland() {
     else if (obFilter === 'stalled') list = list.filter(r => (r.onboarding?.pending ?? 0) > 0 && (r.onboarding?.stalled_days ?? -1) >= STALLED_DAYS);
     else if (obFilter === 'done') list = list.filter(r => !!r.onboarding && r.onboarding.pending === 0);
     else if (obFilter === 'none') list = list.filter(r => !r.onboarding);
+    if (tribeFilter === 'without') list = list.filter(r => !r.tribe);   // #1995 fatia 1b
+    else if (tribeFilter === 'with') list = list.filter(r => !!r.tribe);
     // #1192 — chapter filter matches on the registry chapter_code delivered by the SSOT read-through.
     if (chapterFilter !== 'all') list = list.filter(r => unifiedBrChapters(r.chapter_affiliations, r.pmi_memberships).some(c => c.code === chapterFilter));
     if (vepFilter !== 'all') list = list.filter(r => (r.vep_status_raw || '—') === vepFilter);
@@ -510,7 +515,7 @@ export default function AffiliationQueueIsland() {
       return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
     });
     return list;
-  }, [rows, allRows, tab, statusFilter, cohortFilter, termFilter, obFilter, chapterFilter, vepFilter, search, sortKey, t]);
+  }, [rows, allRows, tab, statusFilter, cohortFilter, termFilter, obFilter, tribeFilter, chapterFilter, vepFilter, search, sortKey, t]);
 
   const allVisibleSelected = visible.length > 0 && visible.every(r => selectedIds.has(r.member_id));
   const toggleAll = () =>
@@ -592,6 +597,14 @@ export default function AffiliationQueueIsland() {
           <option value="expiring">{t('comp.affiliationQueue.term_expiring', 'Vencendo')}</option>
           <option value="valid">{t('comp.affiliationQueue.term_valid', 'Vigente')}</option>
           <option value="none">{t('comp.affiliationQueue.term_none', 'Sem termo')}</option>
+        </select>
+        {/* #1995 (fatia 1b) — tribo, combinável com o filtro de termo */}
+        <select value={tribeFilter} onChange={e => setTribeFilter(e.target.value as 'all' | 'with' | 'without')}
+          aria-label={t('comp.affiliationQueue.tribeLabel', 'Tribo')}
+          className="px-2.5 py-1.5 text-[13px] rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] cursor-pointer">
+          <option value="all">{t('comp.affiliationQueue.filterTribeAll', 'Todas as tribos')}</option>
+          <option value="with">{t('comp.affiliationQueue.tribeWith', 'Com tribo')}</option>
+          <option value="without">{t('comp.affiliationQueue.tribeNone', 'Sem tribo')}</option>
         </select>
         {/* #1995 (fatia 1) — jornada de onboarding */}
         <select value={obFilter} onChange={e => setObFilter(e.target.value as 'all' | 'pending' | 'stalled' | 'done' | 'none')}
@@ -735,6 +748,8 @@ export default function AffiliationQueueIsland() {
                                 {r.cohort_cycle_code || ''}{r.cohort_cycle_code && roleLabel ? ' · ' : ''}{roleLabel || ''}
                               </div>
                             )}
+                            {/* #1995 (fatia 1b) */}
+                            <div className="text-[10px] text-[var(--text-muted)]">{r.tribe ? r.tribe.name : t('comp.affiliationQueue.tribeNone', 'Sem tribo')}</div>
                           </div>
                         );
                       })()}
