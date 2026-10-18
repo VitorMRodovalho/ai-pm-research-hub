@@ -39,6 +39,10 @@ interface MemberRow {
   // cache of the ratified version_label, stamped by activate_volunteer_term_version (#1187).
   agreement_template_id: string | null;
   agreement_version: string | null;
+  // #2726: can THIS caller counter-sign THIS row's term? Same predicate as counter_sign_certificate
+  // (#2104: volunteer-director route, president escalation, no self counter-signature). Optional:
+  // until the function ships it, the row falls back to the global can_counter_sign.
+  can_counter_sign?: boolean;
 }
 
 interface TemplateData {
@@ -372,8 +376,11 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
 
   // A row is eligible for BULK counter-sign only where the single-cert gate would also pass:
   // caller can counter-sign, volunteer already signed, not yet counter-signed, term still issued.
+  // #2726: authority is per row (the route depends on whose term it is); the global flag is only the
+  // fallback for a function that does not send the per-row one yet.
+  const rowCanCounterSign = (m: MemberRow): boolean => m.can_counter_sign ?? canCounterSign;
   const canBulkSelect = (m: MemberRow): boolean =>
-    canCounterSign && m.signed && !m.counter_signed && m.agreement_status === 'issued' && !!m.agreement_cert_id;
+    rowCanCounterSign(m) && m.signed && !m.counter_signed && m.agreement_status === 'issued' && !!m.agreement_cert_id;
   const bulkEligibleInView = filtered.filter(canBulkSelect);
   const selectedInView = bulkEligibleInView.filter(m => selectedIds.has(m.agreement_cert_id!));
   const allInViewSelected = bulkEligibleInView.length > 0 && selectedInView.length === bulkEligibleInView.length;
@@ -457,9 +464,9 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   };
 
   // Counter-sign a member's issued term (board signature, 2nd wave). Authority is enforced by
-  // counter_sign_certificate (manage_member OR chapter_board of the contracting chapter); the
-  // button only renders when get_volunteer_agreement_status returned can_counter_sign=true, so
-  // the two stay in lock-step. Mirrors the working call in admin/certificates.astro (omits p_signed_ip).
+  // counter_sign_certificate (#2104: volunteer-director route, president escalation, no self
+  // counter-signature); the button only renders where get_volunteer_agreement_status says this
+  // caller can counter-sign this row (#2726), so the two stay in lock-step. Mirrors the working call in admin/certificates.astro (omits p_signed_ip).
   const counterSignAgreement = async (m: MemberRow) => {
     if (!m.agreement_cert_id) return;
     if (!window.confirm(t.counterSignConfirm.replace('{name}', m.name))) return;
@@ -1050,7 +1057,7 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
                       )}
                       {m.agreement_status === 'issued' && (
                         <>
-                          {canCounterSign && m.signed && !m.counter_signed && (
+                          {rowCanCounterSign(m) && m.signed && !m.counter_signed && (
                             <button
                               onClick={() => counterSignAgreement(m)}
                               disabled={acting === m.id}
