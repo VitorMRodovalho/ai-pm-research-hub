@@ -50,8 +50,8 @@ Candidatos aprovados no processo seletivo (8 pendentes hoje, mais esperados pos-
 | **PMBOK 8th Ed. Advisor** | Voluntariado e um projeto — o candidato e um stakeholder em fase de engajamento. Pre-onboarding e "planning" do ciclo de vida do voluntario. Medir readiness antes da execucao. |
 | **PMI Global Volunteer Consultant** | Framework PMI de voluntariado enfatiza: expectativas claras, desenvolvimento de competencias (mini-certs), reconhecimento (Credly), e construcao de comunidade. A trilha de mini-certificacoes e KPI anual. |
 | **Gamification Designer** | Nao burocratizar. Usar: checklist visual com progress bar, XP por step, social proof ("veja quem mais esta se preparando"). Maximo 6-8 steps. Tempo total: ~2h espalhadas em 1-2 semanas. |
-| **Tribe Leader (Jefferson)** | "Quero que o candidato ja chegue sabendo o que a tribo faz e com Credly preenchido" |
-| **Candidato (Joao Uzejka — balizador QA/QC)** | Ja ativo, pode validar se a jornada e realista e motivadora |
+| **Tribe Leader** | "Quero que o candidato ja chegue sabendo o que a tribo faz e com Credly preenchido" |
+| **Candidato (balizador QA/QC)** | Ja ativo, pode validar se a jornada e realista e motivadora |
 
 ### Trilha Proposta: 6 Steps
 
@@ -154,9 +154,9 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 │                                                         │
 │  ┌──────────────────────────────┐                       │
 │  │ 🏆 Ranking Pre-Onboarding   │                       │
-│  │ 1. Joao Uzejka — 450 XP ✅  │                       │
+│  │ 1. Candidato A — 450 XP ✅  │                       │
 │  │ 2. Voce — 300 XP            │                       │
-│  │ 3. Blenda Amorim — 125 XP   │                       │
+│  │ 3. Candidato B — 125 XP     │                       │
 │  └──────────────────────────────┘                       │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -168,9 +168,9 @@ Adicionar coluna "Onboarding %" na tabela de `/admin/selection`:
 ```
 | Candidato          | Status    | Onboarding | SLA      |
 |--------------------|-----------|------------|----------|
-| Joao Uzejka        | Approved  | 6/6 (100%) | ✅ OK    |
-| Blenda Amorim      | Approved  | 2/6 (33%)  | ⚠️ 5d    |
-| Andre Abreu        | Pending   | —          | —        |
+| Candidato A        | Approved  | 6/6 (100%) | ✅ OK    |
+| Candidato B        | Approved  | 2/6 (33%)  | ⚠️ 5d    |
+| Candidato C        | Pending   | —          | —        |
 ```
 
 ### 4.5 Metricas de Dropout
@@ -196,7 +196,7 @@ FROM selection_applications_with_onboarding;
 - [ ] RPC `check_onboarding_auto_steps`
 - [ ] RPC `get_candidate_onboarding_progress` (retorna steps + % + XP)
 - [ ] Seed dos 6 steps para os 8 candidatos pendentes
-- [ ] Seed para Joao Uzejka (balizador QA/QC — deve aparecer 100%)
+- [ ] Seed para Candidato A (balizador QA/QC — deve aparecer 100%)
 
 ### Sprint 2 — Frontend Candidate Dashboard (1 sessao)
 - [ ] Secao pre-onboarding no `/onboarding` ou landing page dedicada
@@ -222,9 +222,9 @@ FROM selection_applications_with_onboarding;
 
 ---
 
-## 7. VALIDACAO (QA/QC com Joao Uzejka)
+## 7. VALIDACAO (QA/QC com Candidato A)
 
-Joao Uzejka ja e membro ativo. Usar como baseline:
+Candidato A ja e membro ativo. Usar como baseline:
 1. Seed os 6 steps para ele
 2. Verificar que auto-detection completa todos (ele ja tem conta, perfil, Credly)
 3. Confirmar que ele aparece como 100% no ranking
@@ -232,4 +232,4 @@ Joao Uzejka ja e membro ativo. Usar como baseline:
 
 ---
 
-*Spec construida com advisory panel: PMBOK 8ed (lifecycle), PMI Global (volunteer framework), Gamification Designer (engagement), Tribe Leader (practical needs), Candidato balizador (Joao Uzejka).*
+*Spec construida com advisory panel: PMBOK 8ed (lifecycle), PMI Global (volunteer framework), Gamification Designer (engagement), Tribe Leader (practical needs), Candidato balizador (Candidato A).*
