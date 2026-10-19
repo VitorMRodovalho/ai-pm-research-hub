@@ -1002,7 +1002,7 @@ const enUS: Record<string, string> = {
   'cpmai.viewBadge': 'View badge →',
   'cpmai.certifiedIn': 'Certified in',
   'cpmai.announce.title': 'CPMAI now available in Portuguese',
-  'cpmai.announce.body': 'Great opportunity to lead AI projects with more confidence, in your own language. Núcleo study group forming — announcement coming soon.',
+  'cpmai.announce.body': 'Great opportunity to lead AI projects with more confidence, in your own language.',
   'cpmai.announce.link': 'Learn more about PMI-CPMAI',
   'cpmai_showcase.title': 'PMI-CPMAI Certification Wall',
   'cpmai_showcase.subtitle': 'Celebrating our PMI-CPMAI™ certified researchers during the cycle. Each badge earned contributes to the Núcleo\'s annual certification goal.',

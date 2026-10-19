@@ -1002,7 +1002,7 @@ const esLATAM: Record<string, string> = {
   'cpmai.viewBadge': 'Ver badge →',
   'cpmai.certifiedIn': 'Certificado en',
   'cpmai.announce.title': 'CPMAI ahora disponible en portugués',
-  'cpmai.announce.body': 'Gran oportunidad para liderar proyectos de IA con más confianza, en tu propia lengua. Grupo de estudio del Núcleo en formación — anuncio próximamente.',
+  'cpmai.announce.body': 'Gran oportunidad para liderar proyectos de IA con más confianza, en tu propia lengua.',
   'cpmai.announce.link': 'Más sobre el PMI-CPMAI',
   'cpmai_showcase.title': 'Muro de Certificados PMI-CPMAI',
   'cpmai_showcase.subtitle': 'Celebramos a nuestros investigadores certificados PMI-CPMAI™ durante el ciclo. Cada insignia obtenida contribuye a la meta anual de certificaciones del Núcleo.',

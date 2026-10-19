@@ -12,6 +12,8 @@
  *      leva às Reuniões Gerais na língua da página, o link leva a #join.
  *   C. O texto pt-BR é o aprovado, palavra por palavra; as cinco chaves existem nas três línguas.
  *   D. A data de saída aparece uma vez só no código.
+ *   E. O anúncio antigo do CPMAI perdeu a frase "grupo de estudos em formação — anúncio em breve", que o
+ *      aviso deixou repetida (pedido do GP); o resto do anúncio continua.
  */
 
 import test from 'node:test';
@@ -66,6 +68,21 @@ test('C: o texto pt-BR é o aprovado e as chaves existem nas três línguas', ()
     const src = read(`src/i18n/${dict}.ts`);
     for (const k of Object.keys(approved)) assert.match(src, new RegExp(`'cpmaiStudyGroup\\.${k}': '[^']+',`), `${dict} ${k}`);
   }
+});
+
+test('E: o anúncio antigo do CPMAI não promete mais "anúncio em breve" do grupo', () => {
+  // Pedido do GP (19/10/2026): com o aviso próprio do grupo, a frase do anúncio antigo ficou repetida.
+  const gone = {
+    'pt-BR': /em formação\s*—\s*anúncio em breve/i,
+    'en-US': /study group forming\s*—\s*announcement coming soon/i,
+    'es-LATAM': /en formación\s*—\s*anuncio próximamente/i,
+  };
+  for (const [dict, re] of Object.entries(gone)) {
+    const src = read(`src/i18n/${dict}.ts`);
+    assert.doesNotMatch(src, re, dict);
+    assert.match(src, /'cpmai\.announce\.body': '[^']+\.',/, `${dict}: o resto do anúncio continua`);
+  }
+  assert.match(maskAstro(read('src/components/sections/LadderSection.astro')), /\{t\('cpmai\.announce\.body', lang\)\}/);
 });
 
 test('D: entre os arquivos do aviso, só o módulo da regra tem data', () => {
