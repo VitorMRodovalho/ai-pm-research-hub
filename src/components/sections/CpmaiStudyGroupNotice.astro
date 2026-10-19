@@ -1,0 +1,30 @@
+---
+// #2738: aviso "Em breve" do Grupo de Estudos PMI-CPMAI, perto da escada (#trail). Texto aprovado pelo GP
+// em 19/10/2026; some sozinho depois de 05/11 (a data mora em src/lib/cpmaiStudyGroupNotice.ts).
+import { t, type Lang } from '../../i18n/utils';
+import { isCpmaiStudyGroupNoticeVisible } from '../../lib/cpmaiStudyGroupNotice';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const visible = isCpmaiStudyGroupNoticeVisible(new Date());
+---
+
+{visible && (
+  <aside id="cpmai-study-group-notice" class="mb-10 max-w-[800px] rounded-2xl border border-orange/30 bg-orange/5 p-5">
+    <span class="inline-block text-[.62rem] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full border bg-orange/10 text-orange border-orange/30 mb-2">
+      {t('cpmaiStudyGroup.badge', lang)}
+    </span>
+    <h3 class="font-bold text-lg text-[var(--text-primary)] mb-1">{t('cpmaiStudyGroup.title', lang)}</h3>
+    <p class="text-[.9rem] text-[var(--text-secondary)] leading-relaxed mb-4">{t('cpmaiStudyGroup.body', lang)}</p>
+    <div class="flex flex-wrap items-center gap-x-5 gap-y-3">
+      <a href={`${langPrefix}/reunioes-gerais`}
+        class="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white no-underline bg-[var(--color-orange-deep)] hover:opacity-90">
+        {t('cpmaiStudyGroup.cta', lang)} →
+      </a>
+      <a href="#join" class="text-[.85rem] font-semibold text-teal no-underline hover:underline">
+        {t('cpmaiStudyGroup.join', lang)} →
+      </a>
+    </div>
+  </aside>
+)}
