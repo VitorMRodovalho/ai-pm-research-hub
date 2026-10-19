@@ -7,6 +7,10 @@
  * "A escada" section (LadderSection) so the ladder stays a clean tier progression;
  * R5 demotes this component to the member zone at the end of the home. Anchor
  * id="trail-ranking" (distinct from the ladder's #trail).
+ *
+ * #2738 (decisão do GP, 19/10/2026): o painel expõe nome, foto e % de cada participante, então só
+ * quem entrou o vê. Não há bloqueio de rota no servidor (ADR-0106): a seção nasce escondida e a
+ * leitura de get_public_trail_ranking só acontece quando o Nav resolve uma sessão.
  */
 import { t, type Lang } from '../../i18n/utils';
 
@@ -22,7 +26,7 @@ for (let id = 1; id <= 30; id++) {
 }
 ---
 
-<section class="py-16 px-6" id="trail-ranking">
+<section class="py-16 px-6 hidden" id="trail-ranking">
   <div class="max-w-[1200px] mx-auto">
     <!-- Ranking panel (mini-certs only — 6 trail badges) -->
     <div class="bg-navy rounded-3xl p-8 text-white">
@@ -156,5 +160,14 @@ for (let id = 1; id <= 30; id++) {
     renderRanking(null);
   }
 
-  bootTrail();
+  // #2738: sem sessão, a seção fica escondida e o ranking não é lido. nav:member dispara quando o Nav
+  // resolve a sessão (e de novo no logout); o anônimo nunca o recebe.
+  let trailBooted = false;
+  function syncTrailRanking() {
+    const signedIn = !!(window as any).navGetUser?.();
+    document.getElementById('trail-ranking')?.classList.toggle('hidden', !signedIn);
+    if (signedIn && !trailBooted) { trailBooted = true; bootTrail(); }
+  }
+  window.addEventListener('nav:member', syncTrailRanking);
+  syncTrailRanking();
 </script>
