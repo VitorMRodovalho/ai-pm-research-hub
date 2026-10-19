@@ -314,8 +314,11 @@ const globalI18nBundle = buildPageI18n(['comp.globalSearch', 'comp.common'], lan
       </a>
     </nav>
     <!-- R5 (Ciclo 4): links públicos demovidos da ResourcesSection da home para o rodapé real -->
+    <!-- #2738: Publicações e Podcast no lugar da Biblioteca, que o anônimo vê vazia desde a #2555 (o membro a acha na gaveta) -->
     <nav aria-label={t('footer.resourcesTitle', lang)} class="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-4 text-[.72rem]">
-      <a href={localePath('/library', lang)} class="text-white/55 no-underline hover:text-[#05BFE0] hover:underline">{t('nav.library', lang)}</a>
+      <a href={localePath('/publications', lang)} class="text-white/55 no-underline hover:text-[#05BFE0] hover:underline">{t('footer.publications', lang)}</a>
+      <span class="text-white/20" aria-hidden="true">·</span>
+      <a href={localePath('/podcast', lang)} class="text-white/55 no-underline hover:text-[#05BFE0] hover:underline">{t('footer.podcast', lang)}</a>
       <span class="text-white/20" aria-hidden="true">·</span>
       <a href={localePath('/blog', lang)} class="text-white/55 no-underline hover:text-[#05BFE0] hover:underline">{t('nav.blog', lang)}</a>
       <span class="text-white/20" aria-hidden="true">·</span>

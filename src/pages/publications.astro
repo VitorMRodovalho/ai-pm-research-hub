@@ -249,7 +249,8 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     grid.innerHTML = pubs.map((p: any) => {
       const icon = TYPE_ICONS[p.publication_type] || '\u{1F4C4}';
       const typeLabel = TYPE_LABELS[p.publication_type] || p.publication_type;
-      const dateStr = formatDateOnly(p.publication_date, { month: 'short', year: 'numeric' });
+      // #2738: sem o locale, a página EN/ES mostrava a data em pt-BR ("out. de 2026").
+      const dateStr = formatDateOnly(p.publication_date, { month: 'short', year: 'numeric' }, document.documentElement.lang || 'pt-BR');
       const authors = (p.authors || []).join(', ');
       const abstractShort = p.abstract ? (p.abstract.length > 120 ? p.abstract.substring(0, 120) + '...' : p.abstract) : '';
       const keywords = (p.keywords || []).slice(0, 4);
