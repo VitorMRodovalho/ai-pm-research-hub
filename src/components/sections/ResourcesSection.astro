@@ -1,8 +1,14 @@
 ---
 import { t, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+import ApplyInterest from './InterestForm.tsx';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+// #2738: os dois cards de candidatura abrem o formulário de interesse (o mesmo dos cards de vertical),
+// não mais as vagas do VEP, cujos prazos venceram em 31/07 e 13/09/2026.
+const interestFormLabels: Record<string, string> = JSON.parse(buildPageI18n(['comp.interestForm'], lang));
 
 // R5 (Ciclo 4): seção demovida para a ZONA DE MEMBRO no fim da home.
 // Links públicos (playlist/biblioteca/cursos/contato) migraram para o rodapé (BaseLayout)
@@ -38,7 +44,7 @@ const resources = [
     iconBg: 'rgba(79,23,168,.1)',
     title: t('resources.volunteerResearcher.title', lang),
     text: t('resources.volunteerResearcher.text', lang),
-    url: 'https://volunteer.pmi.org/opportunities/64967',
+    applyRole: 'researcher' as const,
     linkText: t('resources.volunteerResearcher.linkText', lang),
   },
   {
@@ -46,7 +52,7 @@ const resources = [
     iconBg: 'rgba(255,97,15,.1)',
     title: t('resources.volunteerLeader.title', lang),
     text: t('resources.volunteerLeader.text', lang),
-    url: 'https://volunteer.pmi.org/opportunities/64966',
+    applyRole: 'leader' as const,
     linkText: t('resources.volunteerLeader.linkText', lang),
   },
 ];
@@ -71,10 +77,15 @@ const resources = [
           <div>
             <h4 class="text-[.9rem] font-bold mb-0.5">{r.title}</h4>
             <p class="text-[.78rem] text-[var(--text-secondary)]">{r.text}</p>
-            <a href={r.url} target="_blank" rel="noopener"
-               class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
-              {r.linkText}
-            </a>
+            {r.applyRole ? (
+              <ApplyInterest client:visible roleInterest={r.applyRole} source="apply-resources"
+                linkText={r.linkText} labels={interestFormLabels} lp={langPrefix} />
+            ) : (
+              <a href={r.url} target="_blank" rel="noopener"
+                 class="text-teal text-[.78rem] font-semibold no-underline hover:underline">
+                {r.linkText}
+              </a>
+            )}
           </div>
         </div>
       ))}

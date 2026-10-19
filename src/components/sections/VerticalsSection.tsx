@@ -5,21 +5,17 @@
  * spokes = the verticals (each spoke a community/credential), the Champion → CPMAI ladder is
  * the common spine. Reads community_vertical initiatives LIVE via get_public_verticals() (B1,
  * anon-safe) — nothing is hardcoded; the diagram renders whatever verticals exist. Forming
- * verticals surface a founder CTA → capture_visitor_lead(target_vertical) (brief §4).
+ * verticals surface researcher/leader CTAs → InterestForm → capture_visitor_lead(target_vertical) (#2738).
  *
  * R3 change: this component no longer owns a <section>/header (the parent ModelSection.astro
  * does, fusing it with the quadrants axis). It exposes only the radial + ladder + cards block.
  * No rebrand: reuses existing palette tokens; the orange accent marks the protagonista CTA.
  */
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
+import { InterestForm, type InterestRole } from './InterestForm';
 
-// Inscrição oficial de voluntário = via VEP (plataforma de voluntários do PMI). Dois cadastros
-// DISTINTOS: pesquisador (Pesquisador Nível 4) e líder (Líder de Iniciativa). Mesmas vagas do
-// rodapé (ResourcesSection.astro) — manter sincronizado se a vaga mudar.
-const VEP = {
-  researcher: 'https://volunteer.pmi.org/opportunities/64967',
-  leader: 'https://volunteer.pmi.org/opportunities/64966',
-};
+// #2738: os botões de pesquisador e líder abriam duas vagas do VEP com prazo vencido (31/07 e
+// 13/09/2026). Agora abrem o formulário de interesse (InterestForm), o mesmo da ResourcesSection.
 
 // #2738: canal de contato para propor uma vertical nova (o mesmo do rodapé e da seção de capítulos).
 const CONTACT_EMAIL = 'nucleoia@pmigo.org.br';
@@ -52,7 +48,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     ctaProtagonist: 'Seja protagonista',
     ctaResearcher: 'Candidatar-se como pesquisador',
     ctaLeader: 'Candidatar-se como líder',
-    ctaSub: 'A inscrição é feita na plataforma de voluntários do PMI (VEP) — pesquisador e líder são cadastros distintos.',
     hubAria: 'Núcleo + IA, a comunidade no centro das verticais',
     radialAria: 'Diagrama radial: Núcleo + IA no centro, cada raio é uma vertical de comunidade',
     empty: 'As verticais do Ciclo 4 estão sendo formadas. Em breve aqui.',
@@ -60,18 +55,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     moreLink: 'Linhas de Pesquisa',
     moreMid: ' abaixo. Sua área não está aqui? Novas verticais abrem quando profissionais as propõem: escreva para ',
     moreEnd: '.',
-    formName: 'Nome',
-    formEmail: 'E-mail',
-    formMessage: 'O que te move nesta vertical? (opcional)',
-    formConsent:
-      'Autorizo o contato do Núcleo IA & GP sobre esta vertical, conforme a',
-    formConsentLink: 'Política de Privacidade',
-    formConsentRequired: 'O consentimento é obrigatório.',
-    formSubmit: 'Quero fundar',
-    formSubmitting: 'Enviando…',
-    formSuccess: 'Recebemos seu interesse. A liderança da vertical vai te chamar.',
-    formError: 'Erro ao enviar. Tente novamente.',
-    cancel: 'Cancelar',
   },
   'en-US': {
     hubLine1: 'AI & PM',
@@ -86,7 +69,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     ctaProtagonist: 'Be a protagonist',
     ctaResearcher: 'Apply as researcher',
     ctaLeader: 'Apply as leader',
-    ctaSub: 'Enrollment is on the PMI volunteer platform (VEP) — researcher and leader are distinct registrations.',
     hubAria: 'Núcleo + AI, the community at the center of the verticals',
     radialAria: 'Radial diagram: Núcleo + AI at the center, each spoke is a community vertical',
     empty: 'The Cycle 4 verticals are being formed. Coming soon.',
@@ -94,17 +76,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     moreLink: 'Research Streams',
     moreMid: " below. Don't see your field? New verticals open when practitioners propose them: write to ",
     moreEnd: '.',
-    formName: 'Name',
-    formEmail: 'Email',
-    formMessage: 'What draws you to this vertical? (optional)',
-    formConsent: 'I authorize Núcleo IA & GP to contact me about this vertical, per the',
-    formConsentLink: 'Privacy Policy',
-    formConsentRequired: 'Consent is required.',
-    formSubmit: 'I want to found it',
-    formSubmitting: 'Sending…',
-    formSuccess: 'We got your interest. The vertical leadership will reach out.',
-    formError: 'Failed to send. Please try again.',
-    cancel: 'Cancel',
   },
   'es-LATAM': {
     hubLine1: 'Núcleo',
@@ -119,7 +90,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     ctaProtagonist: 'Sé protagonista',
     ctaResearcher: 'Postularse como investigador',
     ctaLeader: 'Postularse como líder',
-    ctaSub: 'La inscripción se hace en la plataforma de voluntarios del PMI (VEP) — investigador y líder son registros distintos.',
     hubAria: 'Núcleo + IA, la comunidad en el centro de las verticales',
     radialAria: 'Diagrama radial: Núcleo + IA en el centro, cada radio es una vertical de comunidad',
     empty: 'Las verticales del Ciclo 4 se están formando. Pronto aquí.',
@@ -127,17 +97,6 @@ const LABELS: Record<Lang, Record<string, string>> = {
     moreLink: 'Líneas de Investigación',
     moreMid: ' abajo. ¿No ves tu área? Se abren nuevas verticales cuando profesionales las proponen: escribe a ',
     moreEnd: '.',
-    formName: 'Nombre',
-    formEmail: 'Correo',
-    formMessage: '¿Qué te mueve en esta vertical? (opcional)',
-    formConsent: 'Autorizo el contacto de Núcleo IA & GP sobre esta vertical, según la',
-    formConsentLink: 'Política de Privacidad',
-    formConsentRequired: 'El consentimiento es obligatorio.',
-    formSubmit: 'Quiero fundarla',
-    formSubmitting: 'Enviando…',
-    formSuccess: 'Recibimos tu interés. El liderazgo de la vertical te contactará.',
-    formError: 'Error al enviar. Inténtalo de nuevo.',
-    cancel: 'Cancelar',
   },
 };
 
@@ -195,7 +154,7 @@ function statusLabel(l: Record<string, string>, s: string | null): string {
 
 /**
  * Radial hub-and-spoke (§5a) — center = Núcleo + IA, spokes radiate to live vertical nodes.
- * Read-only pitch visual; the actionable layer (CTA/founder form) is the cards below. Nodes are
+ * Read-only pitch visual; the actionable layer (CTA/interest form) is the cards below. Nodes are
  * placed by trig around a circle (first node at top, -90°); SVG lines draw the spokes behind.
  * Desktop only — on mobile the diagram collapses to the center node + stacked cards (the spokes
  * read poorly on narrow screens). 1 vertical today renders as center + 1 node (honest, grows).
@@ -266,99 +225,10 @@ function Radial({ verticals, l }: { verticals: Vertical[]; l: Record<string, str
   );
 }
 
-function FounderForm({ vertical, l, lp, onClose }: { vertical: Vertical; l: Record<string, string>; lp: string; onClose: () => void }) {
-  const [form, setForm] = useState({ name: '', email: '', message: '', lgpd_consent: false });
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [consentError, setConsentError] = useState(false);
-  const nameRef = useRef<HTMLInputElement>(null);
-
-  // a11y: move focus into the form when it expands (keyboard users skip the whole card).
-  useEffect(() => { nameRef.current?.focus(); }, []);
-
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.lgpd_consent) { setConsentError(true); return; }
-    setConsentError(false);
-    setStatus('submitting');
-    try {
-      const sb = (window as any).navGetSb?.();
-      if (!sb) throw new Error('No client');
-      const params = new URLSearchParams(window.location.search);
-      const utm: Record<string, string> = {};
-      for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
-        const v = params.get(k); if (v) utm[k] = v;
-      }
-      const refMember = params.get('ref') || params.get('referrer');
-      const payload: Record<string, unknown> = {
-        name: form.name,
-        email: form.email,
-        message: form.message || null,
-        role_interest: 'founder',
-        target_vertical: vertical.id,
-        lgpd_consent: true,
-        source: utm.utm_source ? `vertical:${utm.utm_source}` : 'vertical-cta',
-      };
-      if (Object.keys(utm).length > 0) payload.utm_data = utm;
-      if (refMember) payload.referrer_member_id = refMember;
-      const { data, error } = await sb.rpc('capture_visitor_lead', { p_payload: payload });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setStatus('success');
-      try { (window as any).__nucleoTrack?.('vertical_founder_interest', { vertical: vertical.title }); } catch { /* noop */ }
-    } catch {
-      setStatus('error');
-    }
-  }, [form, vertical]);
-
-  if (status === 'success') {
-    return (
-      <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-center">
-        <div className="text-2xl mb-1">✅</div>
-        <p className="text-sm font-semibold text-emerald-700">{l.formSuccess}</p>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <input ref={nameRef} type="text" required placeholder={l.formName} value={form.name}
-          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]" />
-        <input type="email" required placeholder={l.formEmail} value={form.email}
-          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-          className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)]" />
-      </div>
-      <textarea rows={2} placeholder={l.formMessage} value={form.message}
-        onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-        className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] text-sm text-[var(--text-primary)] resize-y" />
-      <label className={`flex items-start gap-2 cursor-pointer ${consentError ? 'text-red-600' : ''}`}>
-        <input type="checkbox" checked={form.lgpd_consent}
-          onChange={e => { setForm(f => ({ ...f, lgpd_consent: e.target.checked })); setConsentError(false); }}
-          className="mt-0.5 flex-shrink-0" />
-        <span className="text-xs text-[var(--text-secondary)]">
-          {l.formConsent}{' '}
-          <a href={`${lp}/privacy`} target="_blank" rel="noopener" className="text-teal underline">{l.formConsentLink}</a>.
-        </span>
-      </label>
-      {consentError && <p className="text-xs text-red-600">{l.formConsentRequired}</p>}
-      <div className="flex items-center gap-2">
-        <button type="submit" disabled={status === 'submitting'}
-          className="px-5 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer disabled:opacity-50 bg-[var(--color-orange-deep)]">
-          {status === 'submitting' ? l.formSubmitting : l.formSubmit}
-        </button>
-        <button type="button" onClick={onClose}
-          className="px-3 py-2 rounded-xl text-sm text-[var(--text-secondary)] bg-transparent border border-[var(--border-default)] cursor-pointer">
-          {l.cancel}
-        </button>
-      </div>
-      {status === 'error' && <p className="text-xs text-red-600">{l.formError}</p>}
-    </form>
-  );
-}
-
-function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; lang: Lang }) {
+function VerticalCard({ v, l, lang, formLabels }: { v: Vertical; l: Record<string, string>; lang: Lang; formLabels: Record<string, string> }) {
   const isForming = v.vertical_status === 'forming';
+  const [applyRole, setApplyRole] = useState<InterestRole | null>(null);
+  const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const sStyle = STATUS_STYLE[v.vertical_status || 'forming'] || STATUS_STYLE.forming;
 
   return (
@@ -378,28 +248,30 @@ function VerticalCard({ v, l, lang }: { v: Vertical; l: Record<string, string>; 
           signed agreement is an unsubstantiated partnership claim (same paper-trail rule as
           co-branding). Members may individually be ambassadors, but the org has no formal accord.
           Re-enable per-vertical only when backed by a signed instrument. DB scrub: DONE (mig 229). */}
-      {/* CTA → VEP (inscrição oficial). Dois cadastros distintos: pesquisador + líder. Substitui o
-          antigo formulário de lead (FounderForm dead-code abaixo — limpeza trivial pendente). */}
+      {/* #2738: os dois botões abrem o formulário de interesse com o papel do botão e o id do card. */}
       {isForming && (
         <div className="mt-3 flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
-            <a href={VEP.researcher} target="_blank" rel="noopener"
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white no-underline cursor-pointer bg-[var(--color-orange-deep)]">
+            <button type="button" onClick={() => setApplyRole('researcher')} aria-expanded={applyRole === 'researcher'} data-apply-role="researcher"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white border-0 cursor-pointer bg-[var(--color-orange-deep)]">
               {l.ctaResearcher} →
-            </a>
-            <a href={VEP.leader} target="_blank" rel="noopener"
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-teal no-underline cursor-pointer border border-teal/40 hover:bg-teal/5 transition-colors">
+            </button>
+            <button type="button" onClick={() => setApplyRole('leader')} aria-expanded={applyRole === 'leader'} data-apply-role="leader"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-teal bg-transparent cursor-pointer border border-teal/40 hover:bg-teal/5 transition-colors">
               {l.ctaLeader} →
-            </a>
+            </button>
           </div>
-          <p className="text-xs text-[var(--text-secondary)]">{l.ctaSub}</p>
+          {applyRole && (
+            <InterestForm key={applyRole} roleInterest={applyRole} source="apply-vertical" targetVertical={v.id}
+              labels={formLabels} messageKey="messageVertical" lp={lp} onClose={() => setApplyRole(null)} />
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export default function VerticalsSection({ lang = 'pt-BR', titles = {} }: { lang?: Lang; titles?: Record<string, string> }) {
+export default function VerticalsSection({ lang = 'pt-BR', titles = {}, formLabels = {} }: { lang?: Lang; titles?: Record<string, string>; formLabels?: Record<string, string> }) {
   const l = LABELS[lang] || LABELS['pt-BR'];
   const [verticals, setVerticals] = useState<Vertical[] | null>(null);
 
@@ -470,7 +342,7 @@ export default function VerticalsSection({ lang = 'pt-BR', titles = {} }: { lang
 
           {/* actionable layer: the cards with the protagonista CTA */}
           <div className="flex flex-wrap justify-center gap-5">
-            {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lang={lang} />)}
+            {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lang={lang} formLabels={formLabels} />)}
           </div>
 
           {/* #2738: quem chega por uma área (construção, PMO, ágil) precisa saber que já existe linha de
