@@ -188,7 +188,8 @@ function flagEmoji(code: string): string {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(upgradeCtaToWhatsapp, 300); return; }
       try {
-        const { data } = await sb.from('site_config').select('value').eq('key', 'whatsapp_gp').single();
+        // #2738: maybeSingle, porque o anônimo lê 0 linhas de site_config e .single() vira 406 no console.
+        const { data } = await sb.from('site_config').select('value').eq('key', 'whatsapp_gp').maybeSingle();
         if (!data?.value) return;
         const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
         if (!config.phone) return;
