@@ -48,9 +48,11 @@ const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang
     </div>
 
     <!-- Tribe Meetings by Day (public reference cadence — no login wall) -->
-    <h3 class="text-sm font-bold text-[var(--text-secondary)] mt-12 mb-3 uppercase tracking-wider">
+    <h3 class="text-sm font-bold text-[var(--text-secondary)] mt-12 mb-1 uppercase tracking-wider">
       {t('schedule.tribeMeetings', lang)}
     </h3>
+    <!-- #2738: os horários são de Brasília; o visitante de fora não tinha como saber. -->
+    <p id="schedule-timezone" class="text-xs text-[var(--text-muted)] mb-3">{t('schedule.timezone', lang)}</p>
     <div id="schedule-tribe-grid" class="space-y-2">
       <div class="text-sm text-[var(--text-muted)] py-4 text-center">{t('common.loading', lang)}</div>
     </div>
@@ -127,11 +129,11 @@ const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang
             if (isAuth && entry.meeting_link) {
               html += `<a href="${escHtml(entry.meeting_link)}" target="_blank" rel="noopener"
                 class="text-[.82rem] ${highlight} no-underline hover:underline">
-                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${entry.time_start})${badge}
+                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${String(entry.time_start).slice(0, 5)})${badge}
               </a>`;
             } else {
               html += `<span class="text-[.82rem] ${highlight}">
-                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${entry.time_start})${badge}
+                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${String(entry.time_start).slice(0, 5)})${badge}
               </span>`;
             }
           }

@@ -15,6 +15,7 @@
  *   B. O nome vem da mesma fonte dos cards (resolveTribes, no SSR), não da tabela tribes; tribes é lida
  *      só pelo meeting_link, que é de membro.
  *   C. A grade não desiste quando tribes volta vazia (o caso do anônimo).
+ *   D. A hora sai como HH:MM (a RPC devolve "19:30:00") e a grade diz que é horário de Brasília.
  */
 
 import test from 'node:test';
@@ -41,6 +42,17 @@ test('B: o nome vem de resolveTribes (fonte dos cards); tribes só dá o meeting
   assert.match(LOAD, /tribe_name: tribeNames\[String\(tribeId\)\]/);
   assert.match(LOAD, /from\('tribes'\)\.select\('id, meeting_link'\)/);
   assert.doesNotMatch(LOAD, /name_i18n/);
+});
+
+test('D: a hora sai como HH:MM e a grade diz o fuso', () => {
+  // A RPC devolve "19:30:00". Sem o corte, o visitante lia os segundos, e sem o rótulo não sabia o fuso.
+  const entries = LOAD.match(/T\$\{entry\.tribe_id\}: \$\{escHtml\(entry\.tribe_name\)\} \(.*?\)\$\{badge\}/g) || [];
+  assert.equal(entries.length, 2, 'os dois ramos (com e sem link) montam a entrada');
+  for (const e of entries) assert.match(e, /\(\$\{String\(entry\.time_start\)\.slice\(0, 5\)\}\)/);
+  assert.match(SRC, /<p id="schedule-timezone"[^>]*>\{t\('schedule\.timezone', lang\)\}<\/p>\s*<div id="schedule-tribe-grid"/);
+  for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
+    assert.match(readFileSync(join(ROOT, `src/i18n/${dict}.ts`), 'utf8'), /'schedule\.timezone': '[^']*UTC−3\)',/, dict);
+  }
 });
 
 test('C: a grade não desiste quando tribes volta vazia', () => {

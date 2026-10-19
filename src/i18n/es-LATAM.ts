@@ -748,6 +748,7 @@ const esLATAM: Record<string, string> = {
   'schedule.generalSchedule': 'Quincenal, los jueves · 19:00–20:30 BRT',
   'schedule.loginHint': 'Inicie sesión para ver el enlace de la reunión',
   'schedule.tribeMeetings': 'Reuniones de Tribu',
+  'schedule.timezone': 'Hora de Brasilia (UTC−3)',
   'schedule.yourTribe': 'tu tribu',
   'schedule.noMeetings': 'No hay reuniones programadas.',
   'schedule.publicTitle': 'Donde sucede el protagonismo',
