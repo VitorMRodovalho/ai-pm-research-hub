@@ -21,6 +21,9 @@ const VEP = {
   leader: 'https://volunteer.pmi.org/opportunities/64966',
 };
 
+// #2738: canal de contato para propor uma vertical nova (o mesmo do rodapé e da seção de capítulos).
+const CONTACT_EMAIL = 'nucleoia@pmigo.org.br';
+
 type Vertical = {
   id: string;
   // Raw DB title (pt-BR). Stays the lookup key for VERTICAL_DESC and analytics.
@@ -53,6 +56,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubAria: 'Núcleo + IA, a comunidade no centro das verticais',
     radialAria: 'Diagrama radial: Núcleo + IA no centro, cada raio é uma vertical de comunidade',
     empty: 'As verticais do Ciclo 4 estão sendo formadas. Em breve aqui.',
+    morePre: 'Algumas verticais já têm linha de pesquisa ativa: veja ',
+    moreLink: 'Linhas de Pesquisa',
+    moreMid: ' abaixo. Sua área não está aqui? Novas verticais abrem quando profissionais as propõem: escreva para ',
+    moreEnd: '.',
     formName: 'Nome',
     formEmail: 'E-mail',
     formMessage: 'O que te move nesta vertical? (opcional)',
@@ -83,6 +90,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubAria: 'Núcleo + AI, the community at the center of the verticals',
     radialAria: 'Radial diagram: Núcleo + AI at the center, each spoke is a community vertical',
     empty: 'The Cycle 4 verticals are being formed. Coming soon.',
+    morePre: 'Some verticals already have an active research stream: see ',
+    moreLink: 'Research Streams',
+    moreMid: " below. Don't see your field? New verticals open when practitioners propose them: write to ",
+    moreEnd: '.',
     formName: 'Name',
     formEmail: 'Email',
     formMessage: 'What draws you to this vertical? (optional)',
@@ -112,6 +123,10 @@ const LABELS: Record<Lang, Record<string, string>> = {
     hubAria: 'Núcleo + IA, la comunidad en el centro de las verticales',
     radialAria: 'Diagrama radial: Núcleo + IA en el centro, cada radio es una vertical de comunidad',
     empty: 'Las verticales del Ciclo 4 se están formando. Pronto aquí.',
+    morePre: 'Algunas verticales ya tienen una línea de investigación activa: mira ',
+    moreLink: 'Líneas de Investigación',
+    moreMid: ' abajo. ¿No ves tu área? Se abren nuevas verticales cuando profesionales las proponen: escribe a ',
+    moreEnd: '.',
     formName: 'Nombre',
     formEmail: 'Correo',
     formMessage: '¿Qué te mueve en esta vertical? (opcional)',
@@ -457,6 +472,12 @@ export default function VerticalsSection({ lang = 'pt-BR', titles = {} }: { lang
           <div className="flex flex-wrap justify-center gap-5">
             {verticals.map(v => <VerticalCard key={v.id} v={v} l={l} lang={lang} />)}
           </div>
+
+          {/* #2738: quem chega por uma área (construção, PMO, ágil) precisa saber que já existe linha de
+              pesquisa ativa e que outras podem abrir. Texto aprovado pelo GP em 19/10/2026. */}
+          <p className="text-sm text-[var(--text-secondary)] text-center max-w-[620px] mx-auto mt-8">
+            {l.morePre}<a href="#tribes" className="text-teal font-semibold underline">{l.moreLink}</a>{l.moreMid}<a href={`mailto:${CONTACT_EMAIL}`} className="text-teal font-semibold underline">{CONTACT_EMAIL}</a>{l.moreEnd}
+          </p>
         </>
       )}
     </div>
