@@ -8,11 +8,14 @@
 import { t, type Lang } from '../../i18n/utils';
 import AgendaVivaPublic from '../agenda/AgendaVivaPublic.tsx';
 import { buildPageI18n } from '../../i18n/pageI18n';
+import { resolveTribes } from '../../data/tribes';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const agendaLabels: Record<string, string> = JSON.parse(buildPageI18n(['comp.agendaViva'], lang));
+// #2738: o nome vem da mesma fonte dos cards de Research Streams; a tabela tribes não é legível pelo anônimo.
+const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang).map((tr) => [tr.id, tr.name]));
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="agenda">
@@ -56,6 +59,7 @@ const agendaLabels: Record<string, string> = JSON.parse(buildPageI18n(['comp.age
 
 <span id="schedule-i18n-yourTribe" class="hidden">{t('schedule.yourTribe', lang)}</span>
 <span id="schedule-i18n-noMeetings" class="hidden">{t('schedule.noMeetings', lang)}</span>
+<script id="schedule-tribe-names" type="application/json" set:html={JSON.stringify(tribeNames)}></script>
 
 <script>
   (() => {
@@ -69,36 +73,35 @@ const agendaLabels: Record<string, string> = JSON.parse(buildPageI18n(['comp.age
     const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
     const i18nYourTribe = document.getElementById('schedule-i18n-yourTribe')?.textContent || 'sua tribo';
     const i18nNoMeetings = document.getElementById('schedule-i18n-noMeetings')?.textContent || 'Nenhuma reunião agendada.';
+    let tribeNames: Record<string, string> = {};
+    try { tribeNames = JSON.parse(document.getElementById('schedule-tribe-names')?.textContent || '{}'); } catch {}
 
     async function loadSchedule() {
       const sb = (window as any).navGetSb?.();
       if (!sb) { setTimeout(loadSchedule, 300); return; }
 
       try {
+        // #2738: horários pela mesma RPC pública dos cards (tribo ativa e visível, slot ativo). Ler
+        // `tribes` direto devolvia 0 linhas ao anônimo, e a grade dizia que não havia reunião.
+        // `tribes` segue lida só pelo meeting_link, que é de membro.
+        const [{ data: profiles }, { data: tribes }] = await Promise.all([
+          sb.rpc('get_tribe_public_profiles'),
+          sb.from('tribes').select('id, meeting_link').eq('is_active', true),
+        ]);
 
-        const { data: slots } = await sb
-          .from('tribe_meeting_slots')
-          .select('tribe_id, day_of_week, time_start, time_end')
-          .eq('is_active', true)
-          .order('time_start');
+        if (!Array.isArray(profiles)) return;
 
-        const { data: tribes } = await sb
-          .from('tribes')
-          .select('id, name, name_i18n, meeting_link')
-          .eq('is_active', true);
-
-        if (!slots || !tribes) return;
-
-        const tribeMap = new Map<number, any>();
-        tribes.forEach((t: any) => tribeMap.set(t.id, t));
+        const linkById = new Map<number, string | null>((tribes || []).map((t: any) => [t.id, t.meeting_link]));
 
         const byDay = new Map<number, any[]>();
-        for (const slot of slots) {
-          const tribe = tribeMap.get(slot.tribe_id);
-          if (!tribe) continue;
-          if (!byDay.has(slot.day_of_week)) byDay.set(slot.day_of_week, []);
-          byDay.get(slot.day_of_week)!.push({ ...slot, tribe_name: tribe.name_i18n?.[_locale] || tribe.name, meeting_link: tribe.meeting_link });
+        for (const p of profiles) {
+          const tribeId = Number(p.tribe_id);
+          for (const slot of (p.slots || [])) {
+            if (!byDay.has(slot.day_of_week)) byDay.set(slot.day_of_week, []);
+            byDay.get(slot.day_of_week)!.push({ ...slot, tribe_id: tribeId, tribe_name: tribeNames[String(tribeId)] || `T${tribeId}`, meeting_link: linkById.get(tribeId) });
+          }
         }
+        for (const entries of byDay.values()) entries.sort((a: any, b: any) => String(a.time_start).localeCompare(String(b.time_start)));
 
         const member = (window as any).navGetMember?.();
         const myTribeId = member?.tribe_id;
