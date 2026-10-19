@@ -67,7 +67,8 @@
       "Write",
       "Glob",
       "Grep",
-      "Agent"
+      "Agent",
+      "mcp__supabase__apply_migration"
     ],
     "deny": [
       "Bash(rm -rf /)",
