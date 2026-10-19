@@ -19,6 +19,13 @@
 #
 # ⚠️ De proposito, mexe em UM fator so: instrumentacao. O cooldown de 5s segue como estava — mudar
 # retry e medicao juntos impediria atribuir a melhora (ou a piora) a qualquer um dos dois.
+#
+# FASE 2 (26/09/2026): o retry passa a partir do estado de um JOB NOVO. Medido em dois runs da main
+# (36194865818 e 36191415317): a tentativa 2 subia em ~5,5 s contra ~11 s da 1, SEM nenhuma linha do
+# otimizador de dependencias do Vite, e falhava com a MESMA assinatura. Um re-run do job, que parte
+# de `npm ci` sem esses diretorios, passava. A 2 herdava o estado de runtime que a 1 deixou:
+# `node_modules/.vite` (deps, deps_ssr, deps_astro) e `.wrangler` (state e tmp do workerd). Um fator
+# so, de novo: apagar esse estado antes do retry. A instrumentacao da fase 1 fica como estava.
 set -uo pipefail
 
 attempt=1
@@ -39,6 +46,15 @@ classificar() {
   printf '%s' "$achou"
 }
 
+# Estado de runtime que a tentativa anterior deixa e que um job novo nao tem (ambos no .gitignore).
+limpar_estado_de_runtime() {
+  local vite wrangler
+  vite=$(find node_modules/.vite -type f 2>/dev/null | wc -l)
+  wrangler=$(find .wrangler -type f 2>/dev/null | wc -l)
+  rm -rf node_modules/.vite .wrangler
+  echo "[browser-guards] estado de runtime apagado antes do retry: node_modules/.vite=${vite} arquivos, .wrangler=${wrangler} arquivos"
+}
+
 paginas_citadas() {
   grep -oE '/[a-z0-9-]+ [0-9]+ms' "$1" 2>/dev/null | awk '{print $1}' | sort -u | tr '\n' ' '
 }
@@ -52,7 +68,7 @@ while [ "$attempt" -le "$max_attempts" ]; do
     if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
       {
         echo "### browser_guards: verde na tentativa ${attempt} de ${max_attempts}"
-        [ "$attempt" -gt 1 ] && echo "⚠️ Precisou de retry — a tentativa 1 falhou com: \`$(classificar "${log_dir}/browser-guards-attempt-1.log")\`. Conta para a estatistica do #2343."
+        [ "$attempt" -gt 1 ] && echo "⚠️ Precisou de retry — a tentativa 1 falhou com: \`$(classificar "${log_dir}/browser-guards-attempt-1.log")\`, e a ${attempt} passou partindo de estado limpo (fase 2). Conta para a estatistica do #2343."
       } >> "$GITHUB_STEP_SUMMARY"
     fi
     exit 0
@@ -63,6 +79,7 @@ while [ "$attempt" -le "$max_attempts" ]; do
   if [ "$attempt" -lt "$max_attempts" ]; then
     echo "[browser-guards] retrying after short cooldown..."
     sleep 5
+    limpar_estado_de_runtime
   fi
   attempt=$((attempt + 1))
 done
