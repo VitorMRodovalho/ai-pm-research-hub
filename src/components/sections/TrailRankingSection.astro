@@ -7,14 +7,26 @@
  * "A escada" section (LadderSection) so the ladder stays a clean tier progression;
  * R5 demotes this component to the member zone at the end of the home. Anchor
  * id="trail-ranking" (distinct from the ladder's #trail).
+ *
+ * #2738 (decisão do GP, 19/10/2026): o painel expõe nome, foto e % de cada participante, então só
+ * quem entrou o vê. Não há bloqueio de rota no servidor (ADR-0106): a seção nasce escondida e a
+ * leitura de get_public_trail_ranking só acontece quando o Nav resolve uma sessão.
  */
 import { t, type Lang } from '../../i18n/utils';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
+
+// #2738: o filtro mostrava o nome da tribo como vem do banco (pt-BR) também na página EN/ES.
+const tribeNames: Record<number, string> = {};
+for (let id = 1; id <= 30; id++) {
+  const key = `data.tribe${id}.name`;
+  const name = t(key, lang);
+  if (name !== key) tribeNames[id] = name;
+}
 ---
 
-<section class="py-16 px-6" id="trail-ranking">
+<section class="py-16 px-6 hidden" id="trail-ranking">
   <div class="max-w-[1200px] mx-auto">
     <!-- Ranking panel (mini-certs only — 6 trail badges) -->
     <div class="bg-navy rounded-3xl p-8 text-white">
@@ -23,8 +35,9 @@ const { lang = 'pt-BR' } = Astro.props;
           <div class="text-[1.1rem] font-extrabold">{t('trail.ranking.title', lang)}</div>
           <div class="text-[.82rem] text-white/50">{t('trail.ranking.sub', lang)}</div>
         </div>
-        <div class="flex items-center gap-3">
-          <select id="trailTribeFilter" class="bg-white/10 border border-white/20 text-white text-[.75rem] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#05BFE0]">
+        <!-- #2738: flex-wrap + max-w-full, senão o select (largo como a opção mais longa) empurra a home 78px para fora no celular -->
+        <div class="flex items-center gap-3 flex-wrap max-w-full">
+          <select id="trailTribeFilter" class="max-w-full bg-white/10 border border-white/20 text-white text-[.75rem] rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-[#05BFE0]">
             <option value="">{t('trail.ranking.allTribes', lang) || 'Todas as Tribos'}</option>
           </select>
           <div id="trailKPI" class="text-center">
@@ -46,6 +59,7 @@ const { lang = 'pt-BR' } = Astro.props;
 <span id="trail-i18n-completed" class="hidden">{t('trail.completed', lang)}</span>
 <span id="trail-i18n-inprogress" class="hidden">{t('trail.inProgress', lang)}</span>
 <span id="trail-i18n-noMembers" class="hidden">{t('trail.ranking.noMembers', lang)}</span>
+<script id="trail-i18n-tribe-names" type="application/json" set:html={JSON.stringify(tribeNames)}></script>
 
 <script>
   import { TOTAL_COURSES as TOTAL } from '../../data/trail';
@@ -53,6 +67,8 @@ const { lang = 'pt-BR' } = Astro.props;
   const trailCompleted = document.getElementById('trail-i18n-completed')?.textContent || 'completed';
   const trailInProgress = document.getElementById('trail-i18n-inprogress')?.textContent || 'in progress';
   const trailNoMembers = document.getElementById('trail-i18n-noMembers')?.textContent || 'No members in this tribe';
+  let trailTribeNames: Record<string, string> = {};
+  try { trailTribeNames = JSON.parse(document.getElementById('trail-i18n-tribe-names')?.textContent || '{}'); } catch {}
 
   async function bootTrail() {
     const sb = (window as any).navGetSb?.();
@@ -80,7 +96,7 @@ const { lang = 'pt-BR' } = Astro.props;
       tribes.forEach((name, id) => {
         const opt = document.createElement('option');
         opt.value = String(id);
-        opt.textContent = `T${id} — ${name}`;
+        opt.textContent = `T${id} — ${trailTribeNames[String(id)] || name}`;
         tribeFilter.appendChild(opt);
       });
       tribeFilter.addEventListener('change', () => renderRanking(tribeFilter.value ? parseInt(tribeFilter.value) : null));
@@ -144,5 +160,14 @@ const { lang = 'pt-BR' } = Astro.props;
     renderRanking(null);
   }
 
-  bootTrail();
+  // #2738: sem sessão, a seção fica escondida e o ranking não é lido. nav:member dispara quando o Nav
+  // resolve a sessão (e de novo no logout); o anônimo nunca o recebe.
+  let trailBooted = false;
+  function syncTrailRanking() {
+    const signedIn = !!(window as any).navGetUser?.();
+    document.getElementById('trail-ranking')?.classList.toggle('hidden', !signedIn);
+    if (signedIn && !trailBooted) { trailBooted = true; bootTrail(); }
+  }
+  window.addEventListener('nav:member', syncTrailRanking);
+  syncTrailRanking();
 </script>
