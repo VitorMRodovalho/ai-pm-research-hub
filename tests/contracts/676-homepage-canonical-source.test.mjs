@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture, maskJsComments, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 // #676 Slice 5 lock — the homepage agenda must read from the canonical source, not a
 // hardcoded cadence or a divergent slots table:
@@ -9,6 +10,11 @@ import { createClient } from '@supabase/supabase-js';
 //   - tribe weekly schedule: tribe_meeting_slots, which #676 made a DERIVED CACHE of the
 //     canonical recurring_meeting_rules (kept in sync by reconcile/update).
 // This test locks both paths so a future refactor can't regress to a hardcoded cadence.
+//
+// #2738: the section no longer reads tribe_meeting_slots directly (anon reading `tribes` got 0 rows,
+// so the grid said there were no meetings). It reads the slots returned by the public
+// get_tribe_public_profiles RPC, so the lock covers both hops: the section builds the grid from
+// those slots, and the RPC's newest capture builds them from the ACTIVE rows of the derived cache.
 const SECTION = 'src/components/sections/WeeklyScheduleSection.astro';
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
@@ -27,7 +33,27 @@ test('#676 slice5 static: homepage reads canonical sources (events RPC + derived
   assert.match(body, /AgendaVivaPublic/, 'general meeting surfaced via the public Agenda Viva island');
   const agenda = read('src/components/agenda/AgendaVivaPublic.tsx');
   assert.match(agenda, /rpc\('get_geral_agenda_viva'/, 'Agenda Viva reads the events-derived canonical RPC');
-  assert.match(body, /from\('tribe_meeting_slots'\)/, 'tribe schedule reads the derived slots cache');
+
+  const script = maskJsComments(body);
+  assert.match(
+    script,
+    /const \[\{ data: profiles \}[^\]]*\] = await Promise\.all\(\[\s*sb\.rpc\('get_tribe_public_profiles'\),/,
+    'tribe schedule calls the public profiles RPC',
+  );
+  assert.match(
+    script,
+    /for \(const p of profiles\) \{[^}]*?for \(const slot of \(p\.slots \|\| \[\]\)\) \{\s*if \(!byDay\.has\(slot\.day_of_week\)\)/,
+    'the grid is built from the slots that RPC returns',
+  );
+
+  const { block } = latestFunctionCapture(process.cwd(), 'get_tribe_public_profiles');
+  const fn = maskLineComments(block);
+  assert.match(fn, /RETURNS TABLE\([^)]*,\s*slots jsonb\)/, 'slots is the last column the RPC returns');
+  assert.match(
+    fn,
+    /COALESCE\(\(\s*SELECT\s+jsonb_agg\(jsonb_build_object\('day_of_week',\s*s\.day_of_week,\s*'time_start',\s*s\.time_start[^()]*\)\s*ORDER BY[^()]*\)\s*FROM\s+public\.tribe_meeting_slots\s+s\s+WHERE\s+s\.tribe_id\s*=\s*t\.id\s+AND\s+s\.is_active\s*=\s*true\s*\),\s*'\[\]'::jsonb\)\s*FROM\s+public\.tribes\s+t\b/,
+    'the RPC builds that last column from the active rows of the derived slots cache',
+  );
 });
 
 test('#676 slice5 live: get_next_general_meeting is derived from a real geral event', { skip: sb ? false : 'Supabase env required' }, async () => {
