@@ -1,4 +1,4 @@
-// ─── Trilha PMI AI — 4 tiers: 4 core mini-certs + 2 specialty + 3 complementary + 1 master cert ───
+// ─── Trilha PMI AI — 4 tiers: 4 core mini-certs + 2 specialty + 5 complementary + 1 master cert ───
 // PM-confirmed 2026-05-16 (p169) — synced with DB courses.tier column.
 //
 // CONTRACT (p169): This file MUST stay in sync with public.courses DB rows.
@@ -92,6 +92,23 @@ export const COURSES: Course[] = [
     isTrail: false,
     hasCredly: false,
     url: 'https://www.pmi.org/shop/p-/elearning/pmi-citizen-developer-business-architect-cdba-introduction/el058',
+  },
+  // #2741: dois opcionais de IA agêntica (pedido do GP, 19/10/2026), fora dos 6 obrigatórios: is_trail false.
+  {
+    code: 'AGENTIC_FOUNDATIONS',
+    name: 'PMI Foundations: Agentic AI for Project Managers',
+    tier: 'complementary',
+    isTrail: false,
+    hasCredly: false,
+    url: 'https://www.pmi.org/shop/p-/elearning/pmi-foundations-agentic-ai-for-project-managers/el405',
+  },
+  {
+    code: 'AGENTIC_BUILD_LAB',
+    name: 'PMI Essentials: Agentic AI Build Lab for Project Managers',
+    tier: 'complementary',
+    isTrail: false,
+    hasCredly: false,
+    url: 'https://www.pmi.org/shop/p-/elearning/pmi-essentials-agentic-ai-build-lab-for-project-managers-/el406',
   },
   {
     code: 'PMI_CPMAI_MASTER',
