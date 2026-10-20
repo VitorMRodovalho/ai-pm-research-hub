@@ -167,7 +167,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         </button>
         <div id="sections-dropdown" class="hidden absolute top-full left-0 mt-1 w-48 bg-[var(--surface-elevated)] rounded-xl shadow-xl border border-[var(--border-default)] py-1.5 z-[300]">
           {homeAnchorItems.map(item => (
-            <a href={resolveHref(item)} class="block px-3 py-1.5 text-[.78rem] text-[var(--text-primary)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all">
+            <a href={resolveHref(item)} class="block px-3 py-1.5 text-[.78rem] text-[var(--text-primary)] font-medium hover:bg-[var(--surface-hover)] no-underline transition-all"
+               data-session-anchor={item.requiresAuth ? '' : undefined} style={item.requiresAuth ? 'display:none' : undefined}>
               {resolveLabel(item)}
             </a>
           ))}
@@ -244,6 +245,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         {homeAnchorItems.map(item => (
           <a href={resolveHref(item)}
              data-action="close-mobile"
+             data-session-anchor={item.requiresAuth ? '' : undefined} style={item.requiresAuth ? 'display:none' : undefined}
              class="text-white/80 no-underline text-sm font-medium px-3 py-2.5 rounded-lg
                     hover:text-white hover:bg-white/10 transition-all block">
             {resolveLabel(item)}
@@ -1271,6 +1273,15 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       }
     });
   }
+
+  // #2738: âncoras da home que exigem sessão (o ranking da trilha) só aparecem para quem entrou.
+  // nav:member dispara ao resolver a sessão e de novo no logout; sem sessão, nunca dispara.
+  function syncSessionAnchors() {
+    document.querySelectorAll<HTMLElement>('[data-session-anchor]').forEach((el) => {
+      el.style.display = _user ? '' : 'none';
+    });
+  }
+  window.addEventListener('nav:member', syncSessionAnchors);
 
   applyTheme(getTheme());
   bootNav();
