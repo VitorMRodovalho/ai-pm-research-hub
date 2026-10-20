@@ -965,6 +965,12 @@ const esLATAM: Record<string, string> = {
 
   // ── La escalera (R4 — fusión trail+cpmai como progresión por tier) ──
   'ladder.label': 'La escalera',
+  // #2738: aviso do Grupo de Estudos PMI-CPMAI (some depois de 05/11; data em src/lib/cpmaiStudyGroupNotice.ts).
+  'cpmaiStudyGroup.badge': 'Próximamente',
+  'cpmaiStudyGroup.title': 'Grupo de Estudio PMI-CPMAI',
+  'cpmaiStudyGroup.body': 'Estudio crítico y aplicado de la metodología CPMAI, a la luz de los estándares del PMI y de casos reales, para miembros del Núcleo. No es un curso preparatorio para el examen. Abre el 5 de noviembre, con prelanzamiento en la Reunión General, abierta al público.',
+  'cpmaiStudyGroup.cta': 'Saber más',
+  'cpmaiStudyGroup.join': '¿Aún no eres miembro? Únete a una línea',
   'ladder.title': 'Una escalera de maestría, por tier',
   'ladder.subtitle': 'De la Ruta PMI AI al grupo de estudio CPMAI hasta la certificación PMI-CPMAI™ (emitidas por PMI) — una progresión por mérito y protagonismo. Cada peldaño suma a tu portafolio de investigación y a la meta anual del Núcleo.',
   // ── Trail ──
@@ -997,7 +1003,7 @@ const esLATAM: Record<string, string> = {
   'cpmai.viewBadge': 'Ver badge →',
   'cpmai.certifiedIn': 'Certificado en',
   'cpmai.announce.title': 'CPMAI ahora disponible en portugués',
-  'cpmai.announce.body': 'Gran oportunidad para liderar proyectos de IA con más confianza, en tu propia lengua. Grupo de estudio del Núcleo en formación — anuncio próximamente.',
+  'cpmai.announce.body': 'Gran oportunidad para liderar proyectos de IA con más confianza, en tu propia lengua.',
   'cpmai.announce.link': 'Más sobre el PMI-CPMAI',
   'cpmai_showcase.title': 'Muro de Certificados PMI-CPMAI',
   'cpmai_showcase.subtitle': 'Celebramos a nuestros investigadores certificados PMI-CPMAI™ durante el ciclo. Cada insignia obtenida contribuye a la meta anual de certificaciones del Núcleo.',
