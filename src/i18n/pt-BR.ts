@@ -969,9 +969,8 @@ const ptBR: Record<string, string> = {
   // #2738: aviso do Grupo de Estudos PMI-CPMAI (some depois de 05/11; data em src/lib/cpmaiStudyGroupNotice.ts).
   'cpmaiStudyGroup.badge': 'Em breve',
   'cpmaiStudyGroup.title': 'Grupo de Estudos PMI-CPMAI',
-  'cpmaiStudyGroup.body': 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais, para membros do Núcleo. Não é curso preparatório para a prova. Abre em 05/11, com pré-lançamento na Reunião Geral, aberta ao público.',
+  'cpmaiStudyGroup.body': 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais. Não é curso preparatório para a prova. O grupo é pago, com valor diferenciado para filiados ao PMI. Abre em 05/11, com pré-lançamento na Reunião Geral, aberta ao público.',
   'cpmaiStudyGroup.cta': 'Saiba mais',
-  'cpmaiStudyGroup.join': 'Ainda não é membro? Entre numa linha',
   'ladder.title': 'Uma escada de maestria, por tier',
   'ladder.subtitle': 'Da Trilha PMI AI ao grupo de estudos CPMAI até a certificação PMI-CPMAI™ (emitidas pelo PMI) — uma progressão por mérito e protagonismo. Cada degrau soma ao seu portfólio de pesquisa e à meta anual do Núcleo.',
   // ── Trail PMI AI (p169 — canonical naming "Trilha PMI AI" + 4 tiers) ──
