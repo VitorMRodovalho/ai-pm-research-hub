@@ -1572,6 +1572,8 @@ const ptBR: Record<string, string> = {
   'footer.trademarks': 'PMI®, PMBOK®, PMP® e PMI-CPMAI™ são marcas registradas do PMI, Inc.',
   'footer.gp': 'GP: Vitor Maia Rodovalho',
   'footer.resourcesTitle': 'Recursos públicos',
+  'footer.publications': 'Publicações',
+  'footer.podcast': 'Podcast',
   'footer.webinars': 'Webinars',
   'footer.meetings': 'Reuniões Gerais',
   'footer.courses': 'Cursos IA — PMI',
