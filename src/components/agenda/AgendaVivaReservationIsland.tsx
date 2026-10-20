@@ -41,7 +41,13 @@ interface EventRow {
 interface FormatRow { slug: string; label_i18n: Record<string, string>; default_duration_min: number }
 interface MemberOption { id: string; name: string }
 
-const DURATIONS = [5, 10, 15, 20, 30];
+const DURATIONS = [5, 10, 15, 20, 25, 30];
+// o menu só oferece o que cabe no que sobra da reunião; o servidor recusa o resto com capacity_exceeded
+const fitDurations = (cap: number) => DURATIONS.filter((m) => m <= cap);
+const fitDuration = (want: number, cap: number) => {
+  const opts = fitDurations(cap);
+  return opts.includes(want) ? want : opts.length ? opts[opts.length - 1] : want;
+};
 const LOCALE_MAP: Record<Lang, string> = { 'pt-BR': 'pt-BR', 'en-US': 'en-US', 'es-LATAM': 'es' };
 
 interface DraftState {
@@ -162,6 +168,14 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   const afterChange = async () => { await load(); window.dispatchEvent(new CustomEvent('agenda:changed')); };
 
+  // quanto cabe: na reserva nova, o que sobra; na edição, o que sobra mais o próprio bloco (a RPC o exclui da soma)
+  const capFor = (eventId: string): number => events.find((ev) => ev.id === eventId)?.capacity_remaining_min ?? 0;
+  const editCapFor = (blockId: string): number => {
+    const ev = events.find((e) => e.blocks.some((b) => b.id === blockId));
+    const own = ev?.blocks.find((b) => b.id === blockId)?.duration_min ?? 0;
+    return (ev?.capacity_remaining_min ?? 0) + own;
+  };
+
   // o servidor recusa do mesmo jeito; aqui é só para a mensagem sair antes da ida ao banco
   const guestProblem = (d: DraftState): string | null => {
     if (!d.external_guest || d.clear_guest) return null;
@@ -176,10 +190,11 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const d = ensureDraft(eventId);
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
     const gp = guestProblem(d); if (gp) { setDraft(eventId, { attempted: true }); toast(errMsg(gp), 'error'); return; }
+    const dur = fitDuration(d.duration_min, capFor(eventId));
     setBusy(eventId);
     try {
       const { data, error } = await sb.rpc('reserve_agenda_block', {
-        p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: d.duration_min,
+        p_event_id: eventId, p_format_slug: d.format_slug, p_title: d.title.trim(), p_duration_min: dur,
         p_guest_name: d.external_guest ? d.guest_name.trim() || null : null,
         p_material_url: d.material_url.trim() || null, p_external_guest: d.external_guest,
         p_guest_email: d.external_guest ? d.guest_email.trim() || null : null,
@@ -210,10 +225,11 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
     const d = editing[blockId]; if (!d) return;
     if (!d.title.trim()) { toast(t('comp.agendaViva.errTitleRequired', 'Informe um título.'), 'error'); return; }
     const gp = guestProblem(d); if (gp) { setEdit(blockId, { attempted: true }); toast(errMsg(gp), 'error'); return; }
+    const dur = fitDuration(d.duration_min, editCapFor(blockId));
     setBusy(blockId);
     try {
       const { data, error } = await sb.rpc('update_agenda_block', {
-        p_block_id: blockId, p_title: d.title.trim(), p_format_slug: d.format_slug, p_duration_min: d.duration_min,
+        p_block_id: blockId, p_title: d.title.trim(), p_format_slug: d.format_slug, p_duration_min: dur,
         p_guest_name: d.clear_guest || !d.external_guest ? null : d.guest_name.trim() || null,
         p_material_url: d.clear_material ? null : d.material_url.trim() || null,
         p_external_guest: d.clear_guest ? false : d.external_guest,
@@ -266,7 +282,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
 
   // `key` separa os ids de cada formulário (um por reunião e um por edição)
   const renderFields = (d: DraftState, set: (patch: Partial<DraftState>) => void, onFmt: (slug: string) => void,
-    key: string, isEdit = false) => {
+    key: string, cap: number, isEdit = false) => {
     const problem = d.attempted ? guestProblem(d) : null;
     const nameErr = problem === 'guest_name_required';
     const emailErr = problem === 'guest_email_required' || problem === 'invalid_guest_email';
@@ -290,8 +306,8 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
         </label>
         <label className="block">
           <span className="text-xs text-[var(--text-muted)]">{t('comp.agendaViva.fDuration', 'Duração')}</span>
-          <select value={d.duration_min} onChange={(e) => set({ duration_min: Number(e.target.value) })} className={inputCls}>
-            {DURATIONS.map((m) => <option key={m} value={m}>{m} {t('comp.agendaViva.min', 'min')}</option>)}
+          <select value={fitDuration(d.duration_min, cap)} onChange={(e) => set({ duration_min: Number(e.target.value) })} className={inputCls}>
+            {fitDurations(cap).map((m) => <option key={m} value={m}>{m} {t('comp.agendaViva.min', 'min')}</option>)}
           </select>
         </label>
       </div>
@@ -456,7 +472,7 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
                   <>
                     {renderFields(editing[myBlock.id], (p) => setEdit(myBlock.id, p),
                       (slug) => { const f = formats.find((x) => x.slug === slug); setEdit(myBlock.id, { format_slug: slug, duration_min: f?.default_duration_min ?? editing[myBlock.id].duration_min }); },
-                      `edit-${myBlock.id}`, true)}
+                      `edit-${myBlock.id}`, editCapFor(myBlock.id), true)}
                     <div className="mt-3 flex justify-end gap-2">
                       <button onClick={() => cancelEdit(myBlock.id)} className="px-3 py-1.5 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]">
                         {t('comp.agendaViva.cancel', 'Cancelar')}
@@ -492,9 +508,11 @@ export default function AgendaVivaReservationIsland({ lang = 'pt-BR', range = 'u
                   </div>
                 )}
               </div>
+            ) : !ev.is_past && allowed && draft && fitDurations(ev.capacity_remaining_min).length === 0 ? (
+              <p className="text-sm text-[var(--text-muted)]">{t('comp.agendaViva.errCapacity', 'Capacidade esgotada para esta reunião.')}</p>
             ) : !ev.is_past && allowed && draft ? (
               <>
-                {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug), `new-${ev.id}`)}
+                {renderFields(drafts[ev.id] || draft, (p) => setDraft(ev.id, p), (slug) => onFormatChange(ev.id, slug), `new-${ev.id}`, ev.capacity_remaining_min)}
                 <div className="mt-3 flex justify-end">
                   <button onClick={() => reserve(ev.id)} disabled={busy === ev.id}
                     className="px-4 py-2 rounded-lg text-sm bg-orange text-white hover:opacity-90 inline-flex items-center gap-1.5 disabled:opacity-60">
