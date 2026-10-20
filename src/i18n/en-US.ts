@@ -688,7 +688,7 @@ const enUS: Record<string, string> = {
   'hero.title.line1': 'Study and Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
-  'hero.subtitle': 'The AI & PM Study and Research Hub — A Joint Initiative of the PMI Brazilian Chapters',
+  'hero.subtitle': 'A volunteer cooperation initiative among PMI chapters in Brazil, hosted by PMI Goiás, with which participating chapters sign their agreements. It is not a program of PMI, Inc.',
   'hero.date': 'Kick-off schedule published in the current cycle agenda',
   'hero.countdown.days': 'Days',
   'hero.countdown.hours': 'Hours',
