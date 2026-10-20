@@ -35,7 +35,8 @@ const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
 
 // og:image precisa de URL ABSOLUTA (WhatsApp/Telegram não resolvem path
 // relativo); Astro.url carrega o host canônico em runtime.
-const ogImage = new URL('/assets/og-image.png', Astro.url).href;
+// #2553: a página em inglês tem imagem própria; pt-BR e es-LATAM seguem com a original.
+const ogImage = new URL(lang === 'en-US' ? '/assets/og-image-en.png' : '/assets/og-image.png', Astro.url).href;
 
 // #2471: the same page answers on several hosts; search engines and link previews
 // must see ONE address. canonical and og:url point at the SEO host (+ this path,
