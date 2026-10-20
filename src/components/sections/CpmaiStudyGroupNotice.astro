@@ -1,6 +1,7 @@
 ---
 // #2738: aviso "Em breve" do Grupo de Estudos PMI-CPMAI, perto da escada (#trail). Texto aprovado pelo GP
-// em 19/10/2026; some sozinho depois de 05/11 (a data mora em src/lib/cpmaiStudyGroupNotice.ts).
+// em 19/10/2026 e corrigido em 20/10 (grupo pago, preço diferenciado para filiados ao PMI, sem link de entrada
+// no Núcleo); some sozinho depois de 05/11 (a data mora em src/lib/cpmaiStudyGroupNotice.ts).
 import { t, type Lang } from '../../i18n/utils';
 import { isCpmaiStudyGroupNoticeVisible } from '../../lib/cpmaiStudyGroupNotice';
 
@@ -21,9 +22,6 @@ const visible = isCpmaiStudyGroupNoticeVisible(new Date());
       <a href={`${langPrefix}/reunioes-gerais`}
         class="inline-flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm text-white no-underline bg-[var(--color-orange-deep)] hover:opacity-90">
         {t('cpmaiStudyGroup.cta', lang)} →
-      </a>
-      <a href="#join" class="text-[.85rem] font-semibold text-teal no-underline hover:underline">
-        {t('cpmaiStudyGroup.join', lang)} →
       </a>
     </div>
   </aside>

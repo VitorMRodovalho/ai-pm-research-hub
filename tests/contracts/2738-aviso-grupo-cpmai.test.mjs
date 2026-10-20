@@ -2,15 +2,19 @@
  * Contract #2738 (parte F): aviso "Em breve" do Grupo de Estudos PMI-CPMAI na home, até 05/11/2026.
  *
  * DECISÃO DO GP (19/10/2026): perto da escada (#trail), um aviso só de texto (a iniciativa é confidencial,
- * nada dela é lido do banco), para membros, com o grupo abrindo em 05/11. O aviso some depois desse dia,
- * no fim do dia pelo horário de Brasília (UTC−3), e a data mora numa constante só.
+ * nada dela é lido do banco), com o grupo abrindo em 05/11. O aviso some depois desse dia, no fim do dia pelo
+ * horário de Brasília (UTC−3), e a data mora numa constante só.
+ * CORREÇÃO DO GP (20/10/2026): o grupo é pago, com preço diferenciado para filiados ao PMI (não para membros
+ * do Núcleo; TAP M05: ingresso de filiado, não filiado e voluntário do PMI-GO). O texto não diz mais "para
+ * membros do Núcleo", e o link "Ainda não é membro? Entre numa linha" saiu, porque sugeria que entrar no
+ * Núcleo dava acesso ao grupo.
  *
  * O QUE ESTE GUARD AFIRMA
  *   A. A regra de saída, exercida nos dois lados do limite: aparece em 05/11 às 23:59:59 de Brasília e
  *      some às 00:00:00 de 06/11 (03:00:00Z).
  *   B. O componente só renderiza quando a regra diz que sim, e a home o renderiza dentro da escada; o botão
- *      leva às Reuniões Gerais na língua da página, o link leva a #join.
- *   C. O texto pt-BR é o aprovado, palavra por palavra; as cinco chaves existem nas três línguas.
+ *      leva às Reuniões Gerais na língua da página, e não há link para entrar no Núcleo.
+ *   C. O texto é o aprovado, palavra por palavra, nas três línguas; a chave do link de entrada não existe.
  *   D. A data de saída aparece uma vez só no código.
  *   E. O anúncio antigo do CPMAI perdeu a frase "grupo de estudos em formação — anúncio em breve", que o
  *      aviso deixou repetida (pedido do GP); o resto do anúncio continua.
@@ -46,27 +50,35 @@ test('B: o componente só renderiza quando a regra deixa, e a escada o renderiza
   const body = src.split(/^---$/m)[2] || '';
   assert.match(body, /^\s*\{visible && \(\s*<aside id="cpmai-study-group-notice"[\s\S]*<\/aside>\s*\)\}\s*$/, 'todo o markup fica dentro de {visible && (...)}');
   assert.match(body, /<a href=\{`\$\{langPrefix\}\/reunioes-gerais`\}[^>]*>\s*\{t\('cpmaiStudyGroup\.cta', lang\)\} →\s*<\/a>/);
-  assert.match(body, /<a href="#join"[^>]*>\s*\{t\('cpmaiStudyGroup\.join', lang\)\} →\s*<\/a>/);
+  assert.doesNotMatch(body, /href="#join"|cpmaiStudyGroup\.join/, 'o aviso não leva a entrar no Núcleo (correção de 20/10)');
+  assert.equal((body.match(/<a\b/g) || []).length, 1, 'um link só: o botão das Reuniões Gerais');
   const ladder = maskAstro(read('src/components/sections/LadderSection.astro'));
   assert.match(ladder, /import CpmaiStudyGroupNotice from '\.\/CpmaiStudyGroupNotice\.astro';/);
   assert.match(ladder, /<section class="[^"]*" id="trail">[\s\S]*?<CpmaiStudyGroupNotice lang=\{lang\} \/>/);
 });
 
-test('C: o texto pt-BR é o aprovado e as chaves existem nas três línguas', () => {
-  const pt = read('src/i18n/pt-BR.ts');
+test('C: o texto é o aprovado nas três línguas e o link de entrada não existe', () => {
   const approved = {
-    badge: 'Em breve',
-    title: 'Grupo de Estudos PMI-CPMAI',
-    body: 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais, para membros do Núcleo. Não é curso preparatório para a prova. Abre em 05/11, com pré-lançamento na Reunião Geral, aberta ao público.',
-    cta: 'Saiba mais',
-    join: 'Ainda não é membro? Entre numa linha',
+    'pt-BR': {
+      badge: 'Em breve',
+      title: 'Grupo de Estudos PMI-CPMAI',
+      body: 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais. Não é curso preparatório para a prova. O grupo é pago, com valor diferenciado para filiados ao PMI. Abre em 05/11, com pré-lançamento na Reunião Geral, aberta ao público.',
+      cta: 'Saiba mais',
+    },
+    'en-US': {
+      body: 'A critical, applied study of the CPMAI methodology, in light of PMI standards and real cases. It is not an exam prep course. The group is paid, with a special price for PMI members. Opens on November 5, with a pre-launch at the General Meeting, open to the public.',
+    },
+    'es-LATAM': {
+      body: 'Estudio crítico y aplicado de la metodología CPMAI, a la luz de los estándares del PMI y de casos reales. No es un curso preparatorio para el examen. El grupo es de pago, con un valor diferenciado para miembros del PMI. Abre el 5 de noviembre, con prelanzamiento en la Reunión General, abierta al público.',
+    },
   };
-  for (const [k, v] of Object.entries(approved)) {
-    assert.ok(pt.includes(`  'cpmaiStudyGroup.${k}': '${v}',\n`), `pt-BR cpmaiStudyGroup.${k}`);
-  }
-  for (const dict of ['en-US', 'es-LATAM']) {
+  for (const [dict, keys] of Object.entries(approved)) {
     const src = read(`src/i18n/${dict}.ts`);
-    for (const k of Object.keys(approved)) assert.match(src, new RegExp(`'cpmaiStudyGroup\\.${k}': '[^']+',`), `${dict} ${k}`);
+    for (const [k, v] of Object.entries(keys)) {
+      assert.ok(src.includes(`  'cpmaiStudyGroup.${k}': '${v}',\n`), `${dict} cpmaiStudyGroup.${k}`);
+    }
+    for (const k of ['badge', 'title', 'body', 'cta']) assert.match(src, new RegExp(`'cpmaiStudyGroup\\.${k}': '[^']+',`), `${dict} ${k}`);
+    assert.doesNotMatch(src, /'cpmaiStudyGroup\.join'/, `${dict}: a chave do link de entrada saiu`);
   }
 });
 
