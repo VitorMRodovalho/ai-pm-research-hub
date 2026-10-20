@@ -748,6 +748,7 @@ const ptBR: Record<string, string> = {
   'schedule.generalSchedule': 'Quinzenalmente às quintas · 19:00–20:30 BRT',
   'schedule.loginHint': 'Faça login para ver o link da reunião',
   'schedule.tribeMeetings': 'Reuniões de Tribo',
+  'schedule.timezone': 'Horário de Brasília (UTC−3)',
   'schedule.yourTribe': 'sua tribo',
   'schedule.noMeetings': 'Nenhuma reunião agendada.',
   'schedule.publicTitle': 'Onde o protagonismo acontece',

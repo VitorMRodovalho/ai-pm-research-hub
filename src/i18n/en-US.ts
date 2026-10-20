@@ -748,6 +748,7 @@ const enUS: Record<string, string> = {
   'schedule.generalSchedule': 'Biweekly on Thursdays · 7:00–8:30 PM BRT',
   'schedule.loginHint': 'Log in to see the meeting link',
   'schedule.tribeMeetings': 'Tribe Meetings',
+  'schedule.timezone': 'Brasília time (UTC−3)',
   'schedule.yourTribe': 'your tribe',
   'schedule.noMeetings': 'No meetings scheduled.',
   'schedule.publicTitle': 'Where protagonism happens',
