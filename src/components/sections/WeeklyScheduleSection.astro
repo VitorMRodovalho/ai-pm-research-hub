@@ -32,8 +32,10 @@ const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang
 
     <!-- Public protagonism agenda (anon-safe). Replaces the login-walled general-meeting card.
          #812: range="both" surfaces the last concluded meeting + the next ones (past→future
-         columns-by-date timeline), the "pós-evento" state the PM asked for. -->
-    <AgendaVivaPublic client:visible lang={lang} range="both" labels={agendaLabels} />
+         columns-by-date timeline), the "pós-evento" state the PM asked for.
+         #2738: client:load, não client:visible. Hidratando só ao ficar visível, a agenda cresce ~1.000px
+         no meio da rolagem até uma âncora, e o menu (Team, Research Streams, Rules…) parava antes do alvo. -->
+    <AgendaVivaPublic client:load lang={lang} range="both" labels={agendaLabels} />
 
     <!-- Funnel CTA tie-in: 4th touch of the repeated primary "Seja protagonista" → #join -->
     <div class="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">

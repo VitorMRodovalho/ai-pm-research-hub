@@ -87,7 +87,9 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'tribes',         labelKey: 'nav.tribes',        href: '/#tribes',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'rules',          labelKey: 'nav.rules',         href: '/#rules',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'kpis',           labelKey: 'nav.kpis',          href: '/#kpis',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'trail-ranking',  labelKey: 'nav.trailRanking',  href: '/#trail-ranking',  minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  // #2738 (decisão do GP, 19/10/2026): o ranking da trilha expõe nome, foto e % de cada participante;
+  // só quem entrou o vê. A âncora fica no grupo, mas o Nav só a mostra com sessão (data-session-anchor).
+  { key: 'trail-ranking',  labelKey: 'nav.trailRanking',  href: '/#trail-ranking',  minTier: 'visitor', requiresAuth: true, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'visitor', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (page self-gates own data; RLS/SECDEF is the boundary, not nav)
