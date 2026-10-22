@@ -921,8 +921,11 @@ const esLATAM: Record<string, string> = {
 
   // ── KPIs ──
   'kpis.label': '¿Qué es el Éxito?',
-  'kpis.title': 'Metas 2026',
-  'kpis.subtitle': '1-2 artefactos de calidad por línea de investigación.',
+  'kpis.title': 'Metas {year}',
+  'kpis.subtitle': 'Las metas pactadas para el año, con el valor de hoy y el objetivo de cada una.',
+  'kpis.ofTarget': '{current} de {target}',
+  'kpis.met': 'meta alcanzada',
+  'kpis.surpassed': 'meta superada',
   'kpis.chapters': 'Capítulos',
   'kpis.articles': 'Artículos',
   'kpis.webinars': 'Webinars',
@@ -982,6 +985,8 @@ const esLATAM: Record<string, string> = {
   'trail.complementary': 'Complementarios (cursos PMI relacionados)',
   'trail.master': 'Cert. Master (PMI-CPMAI)',
   'trail.masterDesc': 'Próximo nivel: certificación top de IA del PMI — paga, sucesora de CPMAI v7.',
+  'trail.free': 'gratuito',
+  'trail.freeForPmiMembers': 'gratuito para miembros del PMI',
   'trail.master.recommendedPrep': 'Preparación recomendada antes',
   'trail.master.prepHint': 'Estos 2 cursos gratuitos cubren los fundamentos de la metodología PMI-CPMAI (7 patrones + intro).',
   'trail.ranking.title': 'Ranking del Equipo',
@@ -998,14 +1003,15 @@ const esLATAM: Record<string, string> = {
   // NO confundir con cpmai.title/subtitle (página del curso preparatorio, GC-120)
   'cpmai.label': 'Certificación PMI-CPMAI',
   'cpmai.badge': 'Verificado vía Credly',
-  'cpmai.noCerts': 'Próximamente — las primeras certificaciones del ciclo actual se mostrarán aquí.',
+  'cpmai.noCerts': 'Por ahora, ningún miembro activo tiene la insignia de la certificación PMI-CPMAI en su perfil.',
+  'cpmai.viewOnCredly': 'Ver en Credly',
   'cpmai.viewBadge': 'Ver badge →',
   'cpmai.certifiedIn': 'Certificado en',
   'cpmai.announce.title': 'CPMAI ahora disponible en portugués',
   'cpmai.announce.body': 'Gran oportunidad para liderar proyectos de IA con más confianza, en tu propia lengua.',
   'cpmai.announce.link': 'Más sobre el PMI-CPMAI',
   'cpmai_showcase.title': 'Muro de Certificados PMI-CPMAI',
-  'cpmai_showcase.subtitle': 'Celebramos a nuestros investigadores certificados PMI-CPMAI™ durante el ciclo. Cada insignia obtenida contribuye a la meta anual de certificaciones del Núcleo.',
+  'cpmai_showcase.subtitle': 'Los miembros activos con la certificación PMI-CPMAI™, por la insignia que cada persona vinculó a su propio perfil de Credly. El mural muestra a todos los certificados; la meta del año cuenta solo las certificaciones obtenidas en el año.',
   'profile.cpmaiCertifiedIn': 'Certificado en',
 
   // ── Projects (IA Pilots) ──
@@ -4000,6 +4006,7 @@ const esLATAM: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (procesador): monitoreo de errores con remoción de PII',
   'privacy.s4.resend': 'Resend (procesador): envío de emails transaccionales y campañas, rastreo de entrega/apertura/clics',
   'privacy.s4.credly': 'Credly/Pearson VUE (fuente): verificación de badges y certificaciones PMI via API pública',
+  'privacy.s4.cpmaiWall': 'Mural PMI-CPMAI en la página de inicio: nombre, año de la certificación y enlace al perfil de Credly de los miembros activos que tienen la insignia de la certificación PMI-CPMAI en el perfil que ellos mismos vincularon. Para salir del mural, basta con quitar el enlace de Credly de su perfil en la plataforma',
   'privacy.s4.googleAi': 'Google (Gemini, subprocesador, EE.UU.): generación de una sugerencia inicial sobre candidaturas al proceso de selección voluntario. Base legal exclusiva de esta operación: consentimiento del titular (LGPD Art. 7º, I), registrado en consent_ai_analysis_at. Es opcional y revocable en cualquier momento, y el hecho de no concederlo o de revocarlo no tiene ningún efecto sobre el proceso de selección, que corre por base legal autónoma (ver la tabla de finalidades arriba). Ninguna decisión se toma exclusivamente por la IA: el comité humano evalúa y decide (Art. 20). Divulgación a terceros conforme Art. 9º, I.',
   'privacy.s4.anthropicAi': 'Anthropic (Claude, subprocesador, EE.UU.): triaje inicial, resumen de candidatura para el comité y análisis de videos de respuesta, en el mismo proceso de selección voluntario. Base legal exclusiva de esta operación: el mismo consentimiento del ítem anterior (LGPD Art. 7º, I, registrado en consent_ai_analysis_at), igualmente opcional, revocable y sin efecto sobre el proceso de selección. El análisis de video exige, además, el consentimiento destacado de voz (Art. 11, §1º, I). Ninguna decisión se toma exclusivamente por la IA: el comité humano evalúa y decide (Art. 20).',
   'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocesador, EE.UU.): transcripción automatizada de videos de respuestas de candidatos en el screening selectivo — solo tras consentimiento destacado para tratamiento de dato personal sensible biométrico de voz (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audios y transcripciones alimentan sugerencias iniciales revisadas por evaluadores humanos. Revocación inmediata vía portal del candidato; ventana de eliminación de 30 días para transcripciones y archivos de audio (LGPD Art. 18, §IV).',

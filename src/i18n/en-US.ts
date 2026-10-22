@@ -921,8 +921,11 @@ const enUS: Record<string, string> = {
 
   // ── KPIs ──
   'kpis.label': 'What Does Success Look Like?',
-  'kpis.title': '2026 Goals',
-  'kpis.subtitle': '1-2 quality artifacts per research stream.',
+  'kpis.title': '{year} Goals',
+  'kpis.subtitle': 'The goals agreed for the year, with where each one stands today and its target.',
+  'kpis.ofTarget': '{current} of {target}',
+  'kpis.met': 'goal met',
+  'kpis.surpassed': 'goal exceeded',
   'kpis.chapters': 'Chapters',
   'kpis.articles': 'Articles',
   'kpis.webinars': 'Webinars',
@@ -982,6 +985,8 @@ const enUS: Record<string, string> = {
   'trail.complementary': 'Complementary (related PMI courses)',
   'trail.master': 'Master Cert (PMI-CPMAI)',
   'trail.masterDesc': "Next level: PMI's top AI certification — paid, successor to CPMAI v7.",
+  'trail.free': 'free',
+  'trail.freeForPmiMembers': 'free for PMI members',
   'trail.master.recommendedPrep': 'Recommended prep before',
   'trail.master.prepHint': "These 2 free courses cover PMI-CPMAI methodology foundations (7 patterns + intro).",
   'trail.ranking.title': 'Team Ranking',
@@ -998,14 +1003,15 @@ const enUS: Record<string, string> = {
   // Do NOT confuse with cpmai.title/subtitle (preparatory course page, GC-120)
   'cpmai.label': 'PMI-CPMAI Certification',
   'cpmai.badge': 'Verified via Credly',
-  'cpmai.noCerts': 'Coming soon — the first certifications of the current cycle will be displayed here.',
+  'cpmai.noCerts': 'No active member has the PMI-CPMAI certification badge on their profile yet.',
+  'cpmai.viewOnCredly': 'View on Credly',
   'cpmai.viewBadge': 'View badge →',
   'cpmai.certifiedIn': 'Certified in',
   'cpmai.announce.title': 'CPMAI now available in Portuguese',
   'cpmai.announce.body': 'Great opportunity to lead AI projects with more confidence, in your own language.',
   'cpmai.announce.link': 'Learn more about PMI-CPMAI',
   'cpmai_showcase.title': 'PMI-CPMAI Certification Wall',
-  'cpmai_showcase.subtitle': 'Celebrating our PMI-CPMAI™ certified researchers during the cycle. Each badge earned contributes to the Núcleo\'s annual certification goal.',
+  'cpmai_showcase.subtitle': 'Active members who hold the PMI-CPMAI™ certification, from the badge each person linked to their own Credly profile. The wall shows every certified member; the yearly goal counts only certifications earned this year.',
   'profile.cpmaiCertifiedIn': 'Certified in',
 
   // ── Projects (IA Pilots) ──
@@ -4000,6 +4006,7 @@ const enUS: Record<string, string> = {
   'privacy.s4.sentry': 'Sentry (processor): error monitoring with PII stripping',
   'privacy.s4.resend': 'Resend (processor): transactional and campaign email delivery, delivery/open/click tracking',
   'privacy.s4.credly': 'Credly/Pearson VUE (source): PMI badge and certification verification via public API',
+  'privacy.s4.cpmaiWall': 'PMI-CPMAI wall on the home page: name, certification year and a link to the Credly profile of active members who have the PMI-CPMAI certification badge on the profile they linked themselves. To leave the wall, remove the Credly link from your profile on the platform',
   'privacy.s4.googleAi': 'Google (Gemini, subprocessor, USA): generation of an initial suggestion about applications to the volunteer selection process. Sole legal basis for this operation: data subject consent (LGPD Art. 7, I), recorded in consent_ai_analysis_at. It is optional and revocable at any time, and neither withholding nor revoking it has any effect on the selection process, which runs on its own independent legal basis (see the purposes table above). No decision is made exclusively by the AI: the human committee evaluates and decides (Art. 20). Third-party disclosure pursuant to Art. 9, I.',
   'privacy.s4.anthropicAi': 'Anthropic (Claude, subprocessor, USA): initial triage, application briefing for the committee and analysis of video responses, within the same volunteer selection process. Sole legal basis for this operation: the same consent as the previous item (LGPD Art. 7, I, recorded in consent_ai_analysis_at), equally optional, revocable and without effect on the selection process. Video analysis additionally requires the highlighted voice consent (Art. 11, §1, I). No decision is made exclusively by the AI: the human committee evaluates and decides (Art. 20).',
   'privacy.s4.openaiWhisper': 'OpenAI Whisper (subprocessor, USA): automated transcription of candidate video responses during selection screening — only after highlighted consent for processing sensitive personal biometric voice data (consent_voice_biometric_at — LGPD Art. 11, §1, I). Audio and transcriptions feed initial suggestions reviewed by human evaluators. Immediate revocation via candidate portal; 30-day deletion window for transcriptions and audio files (LGPD Art. 18, §IV).',

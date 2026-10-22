@@ -2,7 +2,9 @@
  * Contract: p277 — gamification/global-goal KPI quick wins
  * (metric-disparity gamification probe, 2026-05-29).
  *
- * GI-5: src/data/kpis.ts chapters card carried a FALSE "Superada" (surpassedFromGoal:'8')
+ * GI-5: src/data/kpis.ts chapters card carried a FALSE "Superada" (surpassedFromGoal:'8'); #2553 D9 retired the
+ *   file (the home derives the state from exec_portfolio_health), and the guard now locks that derivation.
+ *   Original finding:
  *   while the live distinct-chapter count is 7 (< target 8). Removed the false claim and
  *   aligned the headline to the target (8), matching the target-as-headline convention used
  *   by every other card.
@@ -32,26 +34,22 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
 const mig = existsSync(MIGRATION_FILE) ? readFileSync(MIGRATION_FILE, 'utf8') : '';
-const kpis = existsSync(KPIS_FILE) ? readFileSync(KPIS_FILE, 'utf8') : '';
 
 // ===================================================================
 // GI-5 — kpis.ts false "Superada"
 // ===================================================================
 
-test('p277 GI-5: chapters KPI no longer claims a false "Superada"', () => {
-  // pick the KPIS[] array entry (has both value: and the label), not the interface comment line
-  const chaptersLine = kpis.split('\n').find((l) => l.includes('data.kpi.chapters') && l.includes('value:')) || '';
-  assert.ok(chaptersLine, 'chapters KPI entry must exist');
-  assert.ok(!/surpassedFromGoal/.test(chaptersLine), 'chapters must NOT carry surpassedFromGoal (live 7 < target 8 — not surpassed)');
-  assert.match(chaptersLine, /value:\s*'8'/, 'chapters headline must align to the target (8), matching the target-as-headline convention');
+test('p277 GI-5: no static KPI headline survives (#2553 D9 retired src/data/kpis.ts)', () => {
+  assert.ok(!existsSync(KPIS_FILE), 'src/data/kpis.ts is back: its static values were where the false "Superada" lived');
 });
 
-test('p277 GI-5 forward-defense: no KPI claims surpassed below its goal (chapters specifically)', () => {
-  // The only surpassedFromGoal that existed was the false chapters one. Lock it out.
-  assert.ok(
-    !/data\.kpi\.chapters[^\n]*surpassedFromGoal/.test(kpis) && !/surpassedFromGoal[^\n]*data\.kpi\.chapters/.test(kpis),
-    'chapters must never re-introduce a surpassedFromGoal while live < target'
-  );
+test('p277 GI-5 forward-defense: "surpassed" is derived from live current > target, never declared', () => {
+  // #2553: the home reads current and target from exec_portfolio_health and derives the state; nothing declares it.
+  const homeData = readFileSync(resolve(ROOT, 'src/lib/publicHomeData.ts'), 'utf8');
+  assert.match(homeData, /return g\.current > g\.target \? 'surpassed' : g\.current === g\.target \? 'met' : 'behind';/);
+  const section = readFileSync(resolve(ROOT, 'src/components/sections/KpiSection.astro'), 'utf8');
+  assert.match(section, /const state = goalState\(g\);/);
+  assert.ok(!/surpassedFromGoal/.test(section), 'a declared surpassed flag must not come back');
 });
 
 // ===================================================================
