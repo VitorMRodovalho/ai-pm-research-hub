@@ -133,6 +133,15 @@ describe('#2553 DB-1, estático', () => {
     assert.match(SQL, /COMMENT ON COLUMN public\.partner_chapters\.partnership_start IS\s+'#2553/);
   });
 
+  it('metas: o rótulo de CPMAI e o de webinars dizem a janela do ano, e só trocam o rótulo de hoje', () => {
+    for (const [key, today] of [['cpmai_certified', 'Certificados CPMAI'], ['webinars_completed', 'Webinares/Talks']]) {
+      assert.match(SQL, new RegExp(`UPDATE public\\.portfolio_kpi_targets SET metric_label = v_\\w+_new\\s+WHERE cycle_code = 'cycle3-2026' AND metric_key = '${key}' AND metric_label->>'pt' = '${today.replace('/', '\\/')}';\\s+GET DIAGNOSTICS v_rows = ROW_COUNT;\\s+IF v_rows <> 1 THEN\\s+RAISE EXCEPTION`), key);
+    }
+    assert.match(SQL, /v_cpmai_new  jsonb := jsonb_build_object\(\s+'pt', 'Certificações PMI-CPMAI conquistadas no ano',/);
+    assert.match(SQL, /v_web_new    jsonb := jsonb_build_object\(\s+'pt', 'Webinars realizados no ano',/);
+    assert.match(SQL, /'kpi\.label_set', 'portfolio_kpi_targets'/);
+  });
+
   it('canais: o Instagram ganha profile_url sem apagar as outras chaves', () => {
     assert.match(SQL, /SET config = coalesce\(config, '\{\}'::jsonb\) \|\| jsonb_build_object\('profile_url', 'https:\/\/www\.instagram\.com\/nucleo\.ia\.gp'\)\s+WHERE channel = 'instagram' AND NOT \(coalesce\(config, '\{\}'::jsonb\) \? 'profile_url'\);/);
   });
@@ -209,6 +218,12 @@ describe('#2553 DB-1, efeito como anon', { skip }, () => {
   it('vínculo de campo: as chaves que a home lê, e nenhuma outra', async () => {
     const pairs = await call('get_public_line_fields');
     for (const r of pairs) assert.deepEqual(keysOf(r), ['tribe_id', 'vertical_id', 'vertical_title']);
+  });
+
+  it('metas: os 2 rótulos novos saem pela fonte que a home lê', async () => {
+    const rows = await call('exec_portfolio_health');
+    assert.equal(rows.find((r) => r.metric_key === 'cpmai_certified')?.label?.pt, 'Certificações PMI-CPMAI conquistadas no ano');
+    assert.equal(rows.find((r) => r.metric_key === 'webinars_completed')?.label?.pt, 'Webinars realizados no ano');
   });
 
   it('cursos: os 3 gratuitos só para membro PMI saem com esse rótulo', async () => {

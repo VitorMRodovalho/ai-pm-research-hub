@@ -28,6 +28,7 @@
 -- (9)  courses.free_for + get_trail_courses com a coluna nova (DROP + CREATE, porque é RETURNS TABLE)
 -- (10) partner_chapters.partnership_start: os 10 capítulos anunciados e a sede + COMMENT com o significado novo
 -- (11) comms_channel_config: a URL pública do Instagram de volta ao config
+-- (12) portfolio_kpi_targets: o rótulo de 2 metas diz a janela do ano (D9)
 --
 -- Fora deste pacote, de propósito: a vaga VEP com link (D1, opção a). vep_opportunities não guarda a URL pública
 -- da vaga nem o prazo de inscrição (vep_url aponta para o painel do recrutador, e end_date é o fim do mandato), então
@@ -37,7 +38,8 @@
 --   20260673500000_p169_get_trail_courses_public_rpc.sql (DROP + CREATE + o mesmo GRANT);
 --   ALTER TABLE courses DROP CONSTRAINT courses_free_for_matches_is_free, DROP COLUMN free_for; is_free = true nos 3
 --   códigos; partnership_start = NULL nos 10 com partnership_status = 'announced_at_risk' e 2025-07-01 no PMI-GO (a
---   linha de auditoria desta migration lista os códigos e o antes do GO); config do instagram sem a chave profile_url.
+--   linha de auditoria desta migration lista os códigos e o antes do GO); config do instagram sem a chave profile_url;
+--   metric_label de cpmai_certified e webinars_completed pelo "antes" da linha de auditoria kpi.label_set.
 
 -- ── (1) campo -> linha ────────────────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.research_line_fields (
@@ -458,6 +460,54 @@ BEGIN
   IF v_rows <> 1 THEN
     RAISE EXCEPTION '#2553 canais: esperava 1 linha do instagram sem profile_url, achei %', v_rows;
   END IF;
+END;
+$do$;
+
+-- ── (12) o rótulo das metas diz o que contam ──────────────────────────────────────────────────────────────────
+-- D9 (GP 20/10/2026): a meta de CPMAI conta as certificações conquistadas no ano (get_cpmai_certified_goal_count do
+-- ano corrente), e a de webinars os realizados desde 1º de janeiro (get_webinars_count). O rótulo passa a dizer isso;
+-- o ano em si fica fora do banco, no título da seção. Medido pela orquestradora em 21/10/2026: portfolio_kpi_targets
+-- tem só o ciclo cycle3-2026, uma linha por métrica, e o único leitor de metric_label é exec_portfolio_health. A
+-- troca exige o rótulo de hoje: se alguém o mudou antes, a migration para em vez de sobrescrever.
+DO $do$
+DECLARE
+  v_rows       integer;
+  v_cpmai_old  jsonb;
+  v_web_old    jsonb;
+  v_cpmai_new  jsonb := jsonb_build_object(
+    'pt', 'Certificações PMI-CPMAI conquistadas no ano',
+    'en', 'PMI-CPMAI certifications earned this year',
+    'es', 'Certificaciones PMI-CPMAI obtenidas en el año');
+  v_web_new    jsonb := jsonb_build_object(
+    'pt', 'Webinars realizados no ano',
+    'en', 'Webinars held this year',
+    'es', 'Webinars realizados en el año');
+BEGIN
+  SELECT metric_label INTO v_cpmai_old FROM public.portfolio_kpi_targets
+  WHERE cycle_code = 'cycle3-2026' AND metric_key = 'cpmai_certified';
+  UPDATE public.portfolio_kpi_targets SET metric_label = v_cpmai_new
+  WHERE cycle_code = 'cycle3-2026' AND metric_key = 'cpmai_certified' AND metric_label->>'pt' = 'Certificados CPMAI';
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION '#2553 metas: esperava 1 linha de cpmai_certified com o rótulo "Certificados CPMAI", achei % (rótulo atual %)', v_rows, v_cpmai_old;
+  END IF;
+
+  SELECT metric_label INTO v_web_old FROM public.portfolio_kpi_targets
+  WHERE cycle_code = 'cycle3-2026' AND metric_key = 'webinars_completed';
+  UPDATE public.portfolio_kpi_targets SET metric_label = v_web_new
+  WHERE cycle_code = 'cycle3-2026' AND metric_key = 'webinars_completed' AND metric_label->>'pt' = 'Webinares/Talks';
+  GET DIAGNOSTICS v_rows = ROW_COUNT;
+  IF v_rows <> 1 THEN
+    RAISE EXCEPTION '#2553 metas: esperava 1 linha de webinars_completed com o rótulo "Webinares/Talks", achei % (rótulo atual %)', v_rows, v_web_old;
+  END IF;
+
+  INSERT INTO public.admin_audit_log (actor_id, action, target_type, changes, metadata)
+  VALUES (NULL, 'kpi.label_set', 'portfolio_kpi_targets',
+          jsonb_build_object(
+            'cpmai_certified', jsonb_build_object('before', v_cpmai_old, 'after', v_cpmai_new),
+            'webinars_completed', jsonb_build_object('before', v_web_old, 'after', v_web_new)),
+          jsonb_build_object('issue', '#2553', 'source', 'migration', 'cycle_code', 'cycle3-2026',
+                             'decision', 'GP 20/10/2026 (D9): o rótulo diz a janela de cada meta'));
 END;
 $do$;
 
