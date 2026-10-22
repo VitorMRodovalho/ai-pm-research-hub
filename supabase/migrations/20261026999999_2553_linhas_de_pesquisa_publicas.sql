@@ -11,8 +11,9 @@
 --
 -- (1) name_i18n das linhas 9 a 15. Medido pela orquestradora em 22/10/2026: as 7 estão com tribes.name_i18n nulo, e
 --     os nomes em en e es moravam só nos dicionários (data.tribeN.name). Os textos abaixo são os dos 3 dicionários
---     nessa data, os mesmos que a home mostra hoje. Aborta se não forem exatamente 7 linhas nulas; a auditoria guarda
---     o tribes.name de cada uma, para comparar com o pt.
+--     nessa data, os mesmos que a home mostra hoje, e o pt de cada um é o tribes.name da linha (conferido pela
+--     orquestradora letra por letra em 22/10/2026). Aborta se não forem exatamente 7 linhas nulas com o nome de hoje:
+--     uma linha renomeada até o apply para a migration em vez de gravar um pt antigo. A auditoria guarda o tribes.name.
 -- (2) get_public_research_lines().
 --
 -- Rollback: DROP FUNCTION public.get_public_research_lines(); name_i18n = NULL nas linhas da auditoria
@@ -37,10 +38,10 @@ BEGIN
       (14, 'Fluência em IA', 'AI Literacy', 'Fluidez en IA'),
       (15, 'Segundo Cérebro & Comunicação de Times', 'Second Brain & Team Communication', 'Segundo Cerebro & Comunicación de Equipos')
   ) AS n(id, pt, en, es)
-  WHERE t.id = n.id AND t.name_i18n IS NULL;
+  WHERE t.id = n.id AND t.name_i18n IS NULL AND t.name = n.pt;
   GET DIAGNOSTICS v_rows = ROW_COUNT;
   IF v_rows <> 7 THEN
-    RAISE EXCEPTION '#2553 linhas: esperava 7 linhas (9 a 15) com name_i18n nulo, achei %', v_rows;
+    RAISE EXCEPTION '#2553 linhas: esperava 7 linhas (9 a 15) com name_i18n nulo e o nome de hoje, achei %', v_rows;
   END IF;
 
   INSERT INTO public.admin_audit_log (actor_id, action, target_type, changes, metadata)

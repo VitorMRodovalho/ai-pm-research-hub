@@ -34,7 +34,7 @@ describe('#2553 DB-3 linhas de pesquisa, estático', () => {
   });
 
   it('as 7 linhas sem name_i18n ganham os 3 idiomas, e a migration aborta se o banco não for o medido', () => {
-    assert.match(SQL, /UPDATE public\.tribes t SET name_i18n = jsonb_build_object\('pt', n\.pt, 'en', n\.en, 'es', n\.es\)[\s\S]*?WHERE t\.id = n\.id AND t\.name_i18n IS NULL;\s+GET DIAGNOSTICS v_rows = ROW_COUNT;\s+IF v_rows <> 7 THEN\s+RAISE EXCEPTION/);
+    assert.match(SQL, /UPDATE public\.tribes t SET name_i18n = jsonb_build_object\('pt', n\.pt, 'en', n\.en, 'es', n\.es\)[\s\S]*?WHERE t\.id = n\.id AND t\.name_i18n IS NULL AND t\.name = n\.pt;\s+GET DIAGNOSTICS v_rows = ROW_COUNT;\s+IF v_rows <> 7 THEN\s+RAISE EXCEPTION/);
     const rows = [...SQL.matchAll(/^\s+\((\d+), '([^']+)', '([^']+)', '([^']+)'\)/gm)];
     assert.deepEqual(rows.map((r) => Number(r[1])), [9, 10, 11, 12, 13, 14, 15]);
     for (const r of rows) assert.ok(r[2].trim() && r[3].trim() && r[4].trim(), `linha ${r[1]} com idioma vazio`);
