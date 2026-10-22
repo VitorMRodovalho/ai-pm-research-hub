@@ -18,9 +18,12 @@ describe('#2553 canais de uma fonte', () => {
     assert.doesNotMatch(LAYOUT, CHANNEL_URLS);
   });
 
-  it('A2: o rodapé renderiza um link por canal devolvido, com o href vindo da fonte', () => {
-    assert.match(LAYOUT, /const channels = await loadPublicChannels\(\);/);
-    assert.match(LAYOUT, /\{channels\.map\(\(c\) => \(\s*<a href=\{c\.url\}[^>]*aria-label=\{CHANNEL_ICON\[c\.channel\]\.label\}/);
+  it('A2: o rodapé renderiza um link por canal devolvido, com o href vindo da fonte, sem segurar o primeiro byte', () => {
+    // a leitura começa no frontmatter e só é esperada no rodapé (promessa no template): um await no frontmatter do
+    // layout seguraria o primeiro byte de toda página do site até o banco responder
+    assert.match(LAYOUT, /const channelsPromise = loadPublicChannels\(\);/);
+    assert.doesNotMatch(LAYOUT, /await loadPublicChannels\(/);
+    assert.match(LAYOUT, /\{channelsPromise\.then\(\(channels\) => channels\.map\(\(c\) => \(\s*<a href=\{c\.url\}[^>]*aria-label=\{CHANNEL_ICON\[c\.channel\]\.label\}/);
   });
 
   it('B1: o loader lê get_public_channels com prazo e cache, e não tem URL de reserva', () => {
