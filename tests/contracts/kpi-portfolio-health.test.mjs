@@ -76,7 +76,7 @@ test('src/data/kpis.ts no longer exists: the home has no static goal value', () 
 test('the goal block reads exec_portfolio_health on the server, with the label from the database', () => {
   const homeData = readFileSync(HOME_DATA, 'utf8');
   assert.match(homeData, /const rows = await rpc<unknown\[\]>\('exec_portfolio_health'\);/);
-  assert.match(homeData, /label: String\(r\.label\?\.\[l\] \?\? r\.label\?\.pt \?\? r\.metric_key\),\s+current: r\.current as number,\s+target: r\.target as number,/);
+  assert.match(homeData, /label: String\(r\.label\?\.\[l\] \?\? r\.label\?\.pt \?\? r\.metric_key \?\? ''\),\s+current: isNum\(r\.current\) \? r\.current : null,\s+target: isNum\(r\.target\) && r\.target > 0 \? r\.target : null,/);
   const section = readFileSync(KPI_SECTION, 'utf8');
   assert.match(section, /const goals = await loadHomeGoals\(lang\);/);
   assert.match(section, /\{goals\.map\(\(g\) => \{/);
@@ -135,7 +135,10 @@ test('the goal block renders every row exec_portfolio_health returns, without a 
   for (const key of EXPECTED_METRICS) {
     assert.ok(!section.includes(key), `KpiSection.astro names '${key}': goals must come from the RPC, not a map`);
   }
-  assert.match(homeData, /\.filter\(\(r\) => typeof r\.metric_key === 'string' && isNum\(r\.current\) && isNum\(r\.target\) && r\.target > 0\)/);
+  // #2553 D9: no value filter either; a goal whose computation fails stays on screen as "data unavailable"
+  const loader = homeData.match(/export async function loadHomeGoals[\s\S]*?return goals\.length \? goals : null;/)?.[0] ?? '';
+  assert.ok(loader, 'loadHomeGoals not found');
+  assert.doesNotMatch(loader, /\.filter\(/, 'a filter in loadHomeGoals would silently drop a goal');
 });
 
 // ─── Test 9: Color thresholds use green/yellow/red status ───

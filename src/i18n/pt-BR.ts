@@ -925,6 +925,7 @@ const ptBR: Record<string, string> = {
   'kpis.title': 'Metas {year}',
   'kpis.subtitle': 'As metas pactuadas para o ano, com o valor de hoje e o alvo de cada uma.',
   'kpis.ofTarget': '{current} de {target}',
+  'kpis.goalUnavailable': 'dado indisponível',
   'kpis.met': 'meta atingida',
   'kpis.surpassed': 'meta superada',
   'kpis.chapters': 'Capítulos',

@@ -33,31 +33,34 @@ export type GoalUnit = 'count' | 'percent' | 'hours';
 export interface HomeGoal {
   key: string;
   label: string;
-  current: number;
-  target: number;
+  /** null quando o cálculo não devolveu número: a meta continua na tela, como "dado indisponível". */
+  current: number | null;
+  target: number | null;
   unit: GoalUnit;
 }
 
+// D9: nenhuma meta sai da tela. Toda linha que a RPC devolve vira um item, sem filtro por valor: um filtro
+// aqui seria exatamente o que esconderia uma meta atrasada no dia em que o cálculo dela quebrasse.
 export async function loadHomeGoals(lang: Lang): Promise<HomeGoal[] | null> {
   const rows = await rpc<unknown[]>('exec_portfolio_health');
   if (!Array.isArray(rows)) return null;
   const l = shortLang(lang);
   const goals = rows
-    .map((r) => r as Record<string, any>)
-    .filter((r) => typeof r.metric_key === 'string' && isNum(r.current) && isNum(r.target) && r.target > 0)
+    .map((r) => (r ?? {}) as Record<string, any>)
     .sort((a, b) => (Number(a.display_order) || 0) - (Number(b.display_order) || 0))
-    .map((r) => ({
-      key: r.metric_key as string,
-      label: String(r.label?.[l] ?? r.label?.pt ?? r.metric_key),
-      current: r.current as number,
-      target: r.target as number,
+    .map((r, i) => ({
+      key: String(r.metric_key ?? `meta-${i + 1}`),
+      label: String(r.label?.[l] ?? r.label?.pt ?? r.metric_key ?? ''),
+      current: isNum(r.current) ? r.current : null,
+      target: isNum(r.target) && r.target > 0 ? r.target : null,
       unit: (['percent', 'hours'].includes(r.unit) ? r.unit : 'count') as GoalUnit,
     }));
   return goals.length ? goals : null;
 }
 
-/** atingida = igual ao alvo; superada = acima; atrás = abaixo (a barra mostra o real). */
-export function goalState(g: Pick<HomeGoal, 'current' | 'target'>): 'surpassed' | 'met' | 'behind' {
+/** atingida = igual ao alvo; superada = acima; atrás = abaixo (a barra mostra o real); sem número = indisponível. */
+export function goalState(g: Pick<HomeGoal, 'current' | 'target'>): 'surpassed' | 'met' | 'behind' | 'unavailable' {
+  if (g.current === null || g.target === null) return 'unavailable';
   return g.current > g.target ? 'surpassed' : g.current === g.target ? 'met' : 'behind';
 }
 

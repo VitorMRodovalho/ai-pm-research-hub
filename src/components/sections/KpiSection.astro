@@ -18,7 +18,7 @@ const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
 const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 const withUnit = (g: HomeGoal, v: number) =>
   g.unit === 'percent' ? `${nf.format(v)}%` : g.unit === 'hours' ? `${nf.format(v)} h` : nf.format(v);
-const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', lang), behind: '' };
+const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', lang), behind: '', unavailable: '' };
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-card)]" id="kpis">
@@ -37,8 +37,10 @@ const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', la
       <ul class="list-none m-0 p-0 grid gap-4 max-w-[760px]" id="kpi-list">
         {goals.map((g) => {
           const state = goalState(g);
-          const pct = Math.min(100, Math.round((g.current / g.target) * 100));
-          const text = t('kpis.ofTarget', lang).replace('{current}', withUnit(g, g.current)).replace('{target}', withUnit(g, g.target));
+          const pct = g.current !== null && g.target !== null ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+          const text = g.current !== null && g.target !== null
+            ? t('kpis.ofTarget', lang).replace('{current}', withUnit(g, g.current)).replace('{target}', withUnit(g, g.target))
+            : t('kpis.goalUnavailable', lang);
           return (
             <li class="grid gap-1.5" data-kpi={g.key} data-state={state}>
               <div class="flex justify-between gap-3 text-[.95rem]">
@@ -46,7 +48,7 @@ const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', la
                 <b class="tabular-nums text-right">{text}{stateLabel[state] && <span class="text-emerald-700 dark:text-emerald-400"> · {stateLabel[state]}</span>}</b>
               </div>
               <div class="h-2.5 rounded-full bg-[var(--surface-section-cool)] overflow-hidden" role="img" aria-label={`${g.label}: ${text}`}>
-                <div class={`h-full rounded-full ${state === 'behind' ? 'bg-teal' : 'bg-emerald-600'}`} style={`width:${pct}%`}></div>
+                {state !== 'unavailable' && <div class={`h-full rounded-full ${state === 'behind' ? 'bg-teal' : 'bg-emerald-600'}`} style={`width:${pct}%`}></div>}
               </div>
             </li>
           );

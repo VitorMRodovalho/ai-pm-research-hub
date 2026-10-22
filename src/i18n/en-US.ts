@@ -924,6 +924,7 @@ const enUS: Record<string, string> = {
   'kpis.title': '{year} Goals',
   'kpis.subtitle': 'The goals agreed for the year, with where each one stands today and its target.',
   'kpis.ofTarget': '{current} of {target}',
+  'kpis.goalUnavailable': 'data unavailable',
   'kpis.met': 'goal met',
   'kpis.surpassed': 'goal exceeded',
   'kpis.chapters': 'Chapters',

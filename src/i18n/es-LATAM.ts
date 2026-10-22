@@ -924,6 +924,7 @@ const esLATAM: Record<string, string> = {
   'kpis.title': 'Metas {year}',
   'kpis.subtitle': 'Las metas pactadas para el año, con el valor de hoy y el objetivo de cada una.',
   'kpis.ofTarget': '{current} de {target}',
+  'kpis.goalUnavailable': 'dato no disponible',
   'kpis.met': 'meta alcanzada',
   'kpis.surpassed': 'meta superada',
   'kpis.chapters': 'Capítulos',
