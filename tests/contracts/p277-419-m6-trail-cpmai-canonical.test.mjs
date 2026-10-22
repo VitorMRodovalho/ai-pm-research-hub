@@ -84,6 +84,8 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   // 54.64). Whether the HOME headline should also exclude pre-onboarding members is a product decision
   // tracked on #1180; this test now verifies the function against a live re-derivation of its OWN
   // contract: partial-credit AVG of per-member completed/trail_total over the operational cohort.
+  // #2553 (GP 22/10/2026, opção a): the cohort is now v_operational_members (the hero's researchers:
+  // manager, deputy_manager, tribe_leader, researcher), and each completed course counts once per person.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: home, error: e1 } = await sb.rpc('calc_trail_completion_pct');
   assert.ifError(e1);
@@ -96,7 +98,7 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   const { data: cohort, error: e3 } = await sb
     .from('members').select('id')
     .eq('is_active', true).eq('current_cycle_active', true)
-    .not('operational_role', 'in', '("sponsor","chapter_liaison","observer","candidate","visitor","guest")');
+    .in('operational_role', ['manager', 'deputy_manager', 'tribe_leader', 'researcher']);
   assert.ifError(e3);
   assert.ok(cohort.length > 0, 'trail cohort non-empty');
 
@@ -106,9 +108,10 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   assert.ifError(e4);
   const completedByMember = new Map();
   for (const p of progress || []) {
-    completedByMember.set(p.member_id, (completedByMember.get(p.member_id) || 0) + 1);
+    if (!completedByMember.has(p.member_id)) completedByMember.set(p.member_id, new Set());
+    completedByMember.get(p.member_id).add(p.course_id);
   }
-  const avg = cohort.reduce((s, m) => s + (completedByMember.get(m.id) || 0) / trailIds.size, 0) / cohort.length;
+  const avg = cohort.reduce((s, m) => s + (completedByMember.get(m.id)?.size || 0) / trailIds.size, 0) / cohort.length;
   const expected = Math.round(avg * 100);
   // ±1 tolerance: the RPC and the re-derivation read the DB at slightly different instants.
   assert.ok(Math.abs(Number(home) - expected) <= 1,

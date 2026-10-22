@@ -142,6 +142,20 @@ describe('#2553 DB-1, estático', () => {
     assert.match(SQL, /'kpi\.label_set', 'portfolio_kpi_targets'/);
   });
 
+  it('trilha: a meta e a summary contam a mesma população e a mesma conta, e a troca não pode mudar o número', () => {
+    const calc = fn('calc_trail_completion_pct');
+    const summary = fn('get_public_trail_summary');
+    assert.ok(calc, 'calc_trail_completion_pct não está redefinida nesta migration');
+    for (const [name, body] of [['calc', calc], ['summary', summary]]) {
+      assert.match(body, /FROM public\.v_operational_members om\s+LEFT JOIN public\.course_progress cp/, `${name} fora de v_operational_members`);
+      assert.match(body, /count\(DISTINCT cp\.course_id\) FILTER \(WHERE cp\.status = 'completed'\)/i, `${name} sem curso contado uma vez`);
+    }
+    assert.doesNotMatch(calc, /operational_role\s+NOT\s+IN/i, 'a lista de exclusão de papéis voltou');
+    assert.match(calc, /SELECT ROUND\(COALESCE\(AVG\(per\.done::numeric \/ NULLIF\(tot\.n, 0\)\) \* 100, 0\)\)/);
+    assert.match(SQL, /CREATE TEMP TABLE _2553_trail_antes ON COMMIT DROP AS\s+SELECT public\.calc_trail_completion_pct\(\) AS calc,[\s\S]*?public\.get_annual_kpis\(\) AS annual;\s+CREATE OR REPLACE FUNCTION public\.calc_trail_completion_pct\(\)/);
+    assert.match(SQL, /IF v_calc IS DISTINCT FROM v_before\.calc OR v_health IS DISTINCT FROM v_before\.health\s+OR v_annual IS DISTINCT FROM v_before\.annual THEN\s+RAISE EXCEPTION/);
+  });
+
   it('canais: o Instagram ganha profile_url sem apagar as outras chaves', () => {
     assert.match(SQL, /SET config = coalesce\(config, '\{\}'::jsonb\) \|\| jsonb_build_object\('profile_url', 'https:\/\/www\.instagram\.com\/nucleo\.ia\.gp'\)\s+WHERE channel = 'instagram' AND NOT \(coalesce\(config, '\{\}'::jsonb\) \? 'profile_url'\);/);
   });
@@ -218,6 +232,14 @@ describe('#2553 DB-1, efeito como anon', { skip }, () => {
   it('vínculo de campo: as chaves que a home lê, e nenhuma outra', async () => {
     const pairs = await call('get_public_line_fields');
     for (const r of pairs) assert.deepEqual(keysOf(r), ['tribe_id', 'vertical_id', 'vertical_title']);
+  });
+
+  it('trilha: a meta do painel é a média da summary, sobre a mesma população do hero', async () => {
+    const [rows, trail, stats] = [await call('exec_portfolio_health'), await call('get_public_trail_summary'), await call('get_homepage_stats')];
+    const goal = rows.find((r) => r.metric_key === 'certification_trail');
+    assert.ok(goal, 'certification_trail ausente de exec_portfolio_health');
+    assert.equal(Number(goal.current), Number(trail.avg_pct));
+    assert.equal(trail.population, stats.members);
   });
 
   it('metas: os 2 rótulos novos saem pela fonte que a home lê', async () => {

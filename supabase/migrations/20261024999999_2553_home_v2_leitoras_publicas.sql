@@ -29,6 +29,7 @@
 -- (10) partner_chapters.partnership_start: os 10 capítulos anunciados e a sede + COMMENT com o significado novo
 -- (11) comms_channel_config: a URL pública do Instagram de volta ao config
 -- (12) portfolio_kpi_targets: o rótulo de 2 metas diz a janela do ano (D9)
+-- (13) calc_trail_completion_pct: a meta da trilha conta a equipe de pesquisa, a mesma população do hero
 --
 -- Fora deste pacote, de propósito: a vaga VEP com link (D1, opção a). vep_opportunities não guarda a URL pública
 -- da vaga nem o prazo de inscrição (vep_url aponta para o painel do recrutador, e end_date é o fim do mandato), então
@@ -39,7 +40,8 @@
 --   ALTER TABLE courses DROP CONSTRAINT courses_free_for_matches_is_free, DROP COLUMN free_for; is_free = true nos 3
 --   códigos; partnership_start = NULL nos 10 com partnership_status = 'announced_at_risk' e 2025-07-01 no PMI-GO (a
 --   linha de auditoria desta migration lista os códigos e o antes do GO); config do instagram sem a chave profile_url;
---   metric_label de cpmai_certified e webinars_completed pelo "antes" da linha de auditoria kpi.label_set.
+--   metric_label de cpmai_certified e webinars_completed pelo "antes" da linha de auditoria kpi.label_set;
+--   calc_trail_completion_pct pela captura de 20260805000081_p277_419_m6_trail_cpmai_canonical.sql.
 
 -- ── (1) campo -> linha ────────────────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.research_line_fields (
@@ -508,6 +510,68 @@ BEGIN
             'webinars_completed', jsonb_build_object('before', v_web_old, 'after', v_web_new)),
           jsonb_build_object('issue', '#2553', 'source', 'migration', 'cycle_code', 'cycle3-2026',
                              'decision', 'GP 20/10/2026 (D9): o rótulo diz a janela de cada meta'));
+END;
+$do$;
+
+-- ── (13) a meta da trilha conta a equipe de pesquisa ─────────────────────────────────────────────────────────
+-- GP 22/10/2026 (opção a): a meta da trilha conta a mesma população dos pesquisadores do hero. A coorte deixa de ser
+-- uma lista de exclusão de papéis e passa a ser v_operational_members (ADR-0126), a mesma de get_homepage_stats.members
+-- e de get_public_trail_summary; cada curso concluído conta uma vez por pessoa, como na summary. Medido pela
+-- orquestradora em 22/10/2026: as duas populações têm as mesmas 84 pessoas, nenhum membro ativo tem papel fora das duas
+-- listas, e a meta vale 47. A troca não pode mudar o número de hoje: se mudar, a migration para.
+-- Leitores no prosrc (orquestradora, 21/10/2026): exec_portfolio_health, get_annual_kpis e um comentário em
+-- get_public_trail_ranking.
+CREATE TEMP TABLE _2553_trail_antes ON COMMIT DROP AS
+  SELECT public.calc_trail_completion_pct() AS calc,
+         (SELECT (e->>'current')::numeric FROM jsonb_array_elements(public.exec_portfolio_health()) e
+          WHERE e->>'metric_key' = 'certification_trail') AS health,
+         public.get_annual_kpis() AS annual;
+
+CREATE OR REPLACE FUNCTION public.calc_trail_completion_pct()
+ RETURNS numeric
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+  -- #2553 (GP 22/10/2026, opção a): a meta da trilha conta a mesma população dos pesquisadores do hero
+  -- (v_operational_members). Crédito parcial: média, por pessoa, dos cursos is_trail concluídos (cada curso uma vez)
+  -- sobre o total de cursos is_trail, que segue dinâmico. É a conta de get_public_trail_summary.avg_pct.
+  SELECT ROUND(COALESCE(AVG(per.done::numeric / NULLIF(tot.n, 0)) * 100, 0))
+  FROM (
+    SELECT om.id,
+           COUNT(DISTINCT cp.course_id) FILTER (WHERE cp.status = 'completed') AS done
+    FROM public.v_operational_members om
+    LEFT JOIN public.course_progress cp
+      ON cp.member_id = om.id AND cp.course_id IN (SELECT c.id FROM public.courses c WHERE c.is_trail = true)
+    GROUP BY om.id
+  ) per
+  CROSS JOIN (SELECT COUNT(*) AS n FROM public.courses WHERE is_trail = true) tot;
+$function$;
+
+DO $do$
+DECLARE
+  v_before record;
+  v_calc   numeric;
+  v_health numeric;
+  v_annual jsonb;
+BEGIN
+  SELECT * INTO v_before FROM _2553_trail_antes;
+  v_calc := public.calc_trail_completion_pct();
+  SELECT (e->>'current')::numeric INTO v_health FROM jsonb_array_elements(public.exec_portfolio_health()) e
+  WHERE e->>'metric_key' = 'certification_trail';
+  v_annual := public.get_annual_kpis();
+
+  IF v_calc IS DISTINCT FROM v_before.calc OR v_health IS DISTINCT FROM v_before.health
+     OR v_annual IS DISTINCT FROM v_before.annual THEN
+    RAISE EXCEPTION '#2553 trilha: a troca de população mudou o número de hoje (calc % -> %, meta % -> %, get_annual_kpis igual: %)',
+      v_before.calc, v_calc, v_before.health, v_health, v_annual IS NOT DISTINCT FROM v_before.annual;
+  END IF;
+
+  INSERT INTO public.admin_audit_log (actor_id, action, target_type, changes, metadata)
+  VALUES (NULL, 'kpi.trail_cohort_aligned', 'calc_trail_completion_pct',
+          jsonb_build_object('before', v_before.calc, 'after', v_calc, 'cohort', 'v_operational_members'),
+          jsonb_build_object('issue', '#2553', 'source', 'migration',
+                             'decision', 'GP 22/10/2026 (opção a): a meta da trilha conta a mesma população dos pesquisadores do hero'));
 END;
 $do$;
 
