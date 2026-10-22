@@ -27,6 +27,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000081_p277_419_m6_trail_cpmai_canonical.sql');
@@ -39,19 +40,22 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
 // ── STATIC: trail canonical ─────────────────────────────────────────────────────
+// #2553 (GP 22/10/2026, opção a): a coorte mudou numa migration posterior, então estas duas afirmações leem a captura
+// VIGENTE de calc_trail_completion_pct (latestFunctionCapture), não mais o arquivo da M6, que segue sendo a história.
 test('M6 static: calc_trail_completion_pct uses a dynamic is_trail total (no hardcoded 6)', () => {
-  assert.ok(existsSync(MIG), 'M6 migration 20260805000081 exists');
-  const fn = mig.match(/CREATE OR REPLACE FUNCTION public\.calc_trail_completion_pct[\s\S]*?\$function\$;/);
-  assert.ok(fn, 'calc_trail_completion_pct block parses');
-  assert.match(fn[0], /NULLIF\(\(SELECT COUNT\(\*\) FROM courses WHERE is_trail = true\), 0\)/,
+  const { body } = latestFunctionCapture(ROOT, 'calc_trail_completion_pct');
+  const code = body.replace(/--[^\n]*/g, '');
+  assert.match(code, /NULLIF\(tot\.n, 0\)[\s\S]*CROSS JOIN \(SELECT COUNT\(\*\) AS n FROM public\.courses WHERE is_trail = true\) tot/,
     'denominator is the dynamic is_trail course count');
-  assert.doesNotMatch(fn[0], /\/\s*6\.0/, 'no hardcoded /6.0');
+  assert.doesNotMatch(code, /\/\s*6\.0/, 'no hardcoded /6.0');
 });
 
-test('M6 static: trail cohort excludes guests (aligns to get_public_trail_ranking)', () => {
-  const fn = mig.match(/CREATE OR REPLACE FUNCTION public\.calc_trail_completion_pct[\s\S]*?\$function\$;/);
-  assert.match(fn[0], /operational_role NOT IN \('sponsor', 'chapter_liaison', 'observer', 'candidate', 'visitor', 'guest'\)/,
-    "the blocklist now includes 'guest'");
+test('M6 static: the trail cohort is the research team (v_operational_members), not a role blocklist', () => {
+  const { body } = latestFunctionCapture(ROOT, 'calc_trail_completion_pct');
+  const code = body.replace(/--[^\n]*/g, '');
+  assert.match(code, /FROM public\.v_operational_members om\s+LEFT JOIN public\.course_progress cp/,
+    'the cohort is the same population as the hero researchers (#2553)');
+  assert.doesNotMatch(code, /operational_role\s+NOT\s+IN/i, 'no role blocklist');
 });
 
 // ── STATIC: cpmai goal-metric helper + repoints ─────────────────────────────────
