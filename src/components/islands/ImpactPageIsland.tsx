@@ -424,7 +424,8 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
         <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-6">{l.tribesSection}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {(data.tribes_summary || []).map((tribe, i) => (
-            <a key={tribe.id} href={`/tribe/${tribe.id}`} className="block no-underline group">
+            // #2553 D7: /tribe/<id> nega o visitante; o card leva à lista de linhas da home, que abre o detalhe ali
+            <a key={tribe.id} href={`${lp}/#tribes`} className="block no-underline group">
               <div className="bg-[var(--surface-card)] border-2 rounded-xl p-4 transition-all hover:shadow-lg group-hover:scale-[1.02]"
                    style={{ borderColor: TRIBE_COLORS[i % 8] }}>
                 <div className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: TRIBE_COLORS[i % 8] }}>
@@ -449,8 +450,12 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
         <section>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-6">{l.publications}</h2>
           <div className="space-y-3 max-w-2xl mx-auto">
-            {data.recent_publications.map((pub, i) => (
-              <a key={i} href={pub.external_url || '#'} target="_blank" rel="noopener noreferrer"
+            {data.recent_publications.map((pub, i) => {
+              // #2553 D7: sem URL, o item fica sem link (antes virava href="#", que não leva a lugar nenhum)
+              const Tag = pub.external_url ? 'a' : 'div';
+              const link = pub.external_url ? { href: pub.external_url, target: '_blank', rel: 'noopener noreferrer' } : {};
+              return (
+              <Tag key={i} {...link}
                  className="block bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 hover:shadow-md transition-all no-underline">
                 <div className="font-semibold text-sm text-[var(--text-primary)]">{pub.title}</div>
                 <div className="flex items-center gap-2 mt-2 text-xs text-[var(--text-secondary)]">
@@ -458,8 +463,9 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
                   {pub.publication_date && <span>{pub.publication_date}</span>}
                 </div>
                 {pub.authors?.length > 0 && <div className="text-xs text-[var(--text-muted)] mt-1">{pub.authors.join(', ')}</div>}
-              </a>
-            ))}
+              </Tag>
+              );
+            })}
           </div>
           <div className="text-center mt-4">
             <a href={`${lp}/publications`} className="text-sm font-semibold text-teal hover:underline">{l.viewAll} &rarr;</a>
@@ -530,7 +536,8 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
       <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center">
         <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-6">{l.cta}</h2>
         <div className="flex flex-wrap justify-center gap-4">
-          <a href={`${lp}/admin/selection`} className="px-6 py-3 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaSelection}</a>
+          {/* #2553 D7: o visitante ia para uma tela de admin; agora vai às portas de entrada da home */}
+          <a href={`${lp}/#join`} className="px-6 py-3 bg-teal text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaSelection}</a>
           <a href={`${lp}/publications`} className="px-6 py-3 bg-navy text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all no-underline">{l.ctaArticles}</a>
           <a href="mailto:nucleoia@pmigo.org.br" className="px-6 py-3 border-2 border-navy text-navy rounded-xl font-semibold text-sm hover:bg-navy hover:text-white transition-all no-underline">{l.ctaContact}</a>
         </div>
