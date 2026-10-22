@@ -1011,7 +1011,7 @@ const ptBR: Record<string, string> = {
   'homeV2.team.initiativeLeaders': 'lideranças de outras iniciativas',
   'homeV2.team.curators': 'na curadoria',
   'homeV2.team.hubs': 'nos hubs do Núcleo',
-  'homeV2.team.focalPoints': 'patrocinadores e pontos focais dos capítulos',
+  'homeV2.team.focalPoints': 'presidências e pontos focais dos capítulos',
   'homeV2.team.trailCount': '{done} de {of}',
   'homeV2.team.trail': 'já concluíram os {courses} cursos da trilha PMI de IA',
   'homeV2.team.cpmai': 'membros com a certificação PMI-CPMAI',

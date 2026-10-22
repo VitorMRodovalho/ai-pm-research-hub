@@ -1010,7 +1010,7 @@ const esLATAM: Record<string, string> = {
   'homeV2.team.initiativeLeaders': 'liderazgos de otras iniciativas',
   'homeV2.team.curators': 'en la curaduría',
   'homeV2.team.hubs': 'en los hubs del Núcleo',
-  'homeV2.team.focalPoints': 'patrocinadores y puntos focales de los capítulos',
+  'homeV2.team.focalPoints': 'presidencias y puntos focales de los capítulos',
   'homeV2.team.trailCount': '{done} de {of}',
   'homeV2.team.trail': 'ya concluyeron los {courses} cursos de la ruta PMI de IA',
   'homeV2.team.cpmai': 'miembros con la certificación PMI-CPMAI',

@@ -77,8 +77,10 @@ describe('#2553 a virada da home', () => {
     assert.match(join, /<article id="join-institutions"[^>]*data-door="chapter">/);
     assert.doesNotMatch(join, /volunteer\.pmi\.org/);
     assert.match(read('src/lib/interestPayload.ts'), /export type InterestRole = 'researcher' \| 'leader' \| 'chapter' \| 'partner';/);
+    // D2: o mesmo status nos 3 idiomas (en revisado pela orquestradora em 22/10: "Rolling admission")
+    const CONTINUOUS = { 'pt-BR': /^Entrada contínua:/, 'en-US': /^Rolling admission:/, 'es-LATAM': /^Entrada continua:/ };
     for (const [lang, dict] of Object.entries(DICTS)) {
-      assert.match(value(dict, 'homeV2.join.subtitle') ?? '', /cont[ií]nu/i, `${lang}: "entrada contínua" ausente`);
+      assert.match(value(dict, 'homeV2.join.subtitle') ?? '', CONTINUOUS[lang], `${lang}: status de entrada contínua ausente`);
     }
   });
 
