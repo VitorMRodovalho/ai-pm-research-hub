@@ -25,7 +25,7 @@ describe('#2553 movimento', () => {
   });
 
   it('cada número do hero sai no HTML com o valor final da fonte única', () => {
-    for (const [id, field, suffix] of [['stat-members', 'members', ''], ['stat-tribes', 'tribes', ''], ['stat-initiatives', 'initiatives', ''], ['stat-hours', 'impactHours', ", 'h'"]]) {
+    for (const [id, field, suffix] of [['stat-members', 'members', ''], ['stat-tribes', 'tribes', ''], ['stat-chapters', 'chapters', ''], ['stat-hours', 'impactHours', ", 'h'"]]) {
       assert.match(HERO, new RegExp(`id="${id}" data-target=\\{stats\\?\\.${field} \\?\\? undefined\\}(?: data-suffix="h")?>\\{statText\\(stats\\?\\.${field}${suffix}\\)\\}</div>`), id);
     }
     assert.match(HERO, /const statText = \(n: number \| null \| undefined, suffix = ''\) => \(typeof n === 'number' \? `\$\{n\}\$\{suffix\}` : '--'\);/);

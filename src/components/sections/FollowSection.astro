@@ -1,0 +1,33 @@
+---
+/**
+ * #2553 PR 2: "Acompanhe". As duas portas de novo e os canais oficiais com o nome escrito (não só ícone), da mesma
+ * fonte do rodapé (get_public_channels). Sem leitura, a fileira de canais some; o e-mail continua.
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { loadPublicChannels, type ChannelKey } from '../../lib/publicChannels';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const channels = await loadPublicChannels();
+const NAME: Record<ChannelKey, string> = { linkedin: 'LinkedIn', instagram: 'Instagram', youtube: 'YouTube', spotify: t('homeV2.follow.spotify', lang) };
+const chip = 'inline-flex items-center min-h-[44px] px-4 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] text-[var(--text-primary)] font-semibold text-sm no-underline hover:border-teal';
+---
+
+<section class="py-16 px-6 bg-[var(--surface-card)]" id="follow">
+  <div class="max-w-[1200px] mx-auto grid gap-6">
+    <div>
+      <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.follow.label', lang)}</div>
+      <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight text-navy">{t('homeV2.follow.title', lang)}</h2>
+    </div>
+    <div class="flex flex-wrap gap-3">
+      <a href="#join" class="inline-flex items-center min-h-[44px] px-6 rounded-xl bg-[var(--color-orange-deep)] text-white font-bold no-underline hover:opacity-90">{t('homeV2.hero.ctaResearch', lang)}</a>
+      <a href="#join-institutions" class="inline-flex items-center min-h-[44px] px-6 rounded-xl border border-[var(--border-strong)] text-[var(--text-primary)] font-semibold no-underline">{t('homeV2.hero.ctaInstitutions', lang)}</a>
+    </div>
+    <nav aria-label={t('homeV2.follow.channelsAria', lang)} class="flex flex-wrap gap-2.5">
+      {channels.map((c) => (
+        <a href={c.url} target="_blank" rel="noopener noreferrer" class={chip} data-channel={c.channel}>{NAME[c.channel]}</a>
+      ))}
+      <a href="mailto:nucleoia@pmigo.org.br" class={chip}>nucleoia@pmigo.org.br</a>
+    </nav>
+  </div>
+</section>

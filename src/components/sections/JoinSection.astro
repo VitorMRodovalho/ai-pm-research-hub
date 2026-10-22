@@ -1,0 +1,70 @@
+---
+/**
+ * #2553 PR 2: "Participe", três portas: pesquisador, capítulo do PMI, organização ou comunidade.
+ *
+ * D1 (GP 20/10/2026): "Candidatar-me" abre o formulário de interesse (capture_visitor_lead), com entrada contínua e
+ * resposta em até 5 dias úteis. A vaga VEP com link fica para quando vep_opportunities guardar a URL pública e o prazo
+ * de inscrição (pacote próprio). D2: "entrada contínua" em todo lugar. D11: PDUs sem número, com link para o manual
+ * de requisitos de certificação da PMI (CCR Handbook). As três portas usam o mesmo formulário, com o papel de cada uma.
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+import ApplyInterest from './InterestForm.tsx';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const labels: Record<string, string> = JSON.parse(buildPageI18n(['comp.interestForm'], lang));
+// edição atual do manual (abril de 2026, conferida em 22/10/2026); a frase da home não leva número
+const CCR_HANDBOOK = 'https://www.pmi.org/-/media/pmi/documents/public/pdf/certifications/ccr-certification-requirements-handbook.pdf';
+const primary = 'inline-flex items-center justify-center min-h-[44px] px-5 rounded-xl font-bold text-[15px] text-white bg-[var(--color-orange-deep)] border-0 cursor-pointer hover:opacity-90';
+---
+
+<section class="py-16 px-6 bg-[var(--surface-card)]" id="join">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.join.label', lang)}</div>
+    <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight mb-3 text-navy">{t('homeV2.join.title', lang)}</h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">{t('homeV2.join.subtitle', lang)}</p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <article class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-3 content-start min-w-0" data-door="researcher">
+        <span class="text-[.7rem] font-bold uppercase tracking-wider text-teal">{t('homeV2.join.researcher.kicker', lang)}</span>
+        <h3 class="text-lg font-bold text-[var(--text-primary)]">{t('homeV2.join.researcher.title', lang)}</h3>
+        <ul class="m-0 pl-5 grid gap-1 text-[15px] text-[var(--text-secondary)]">
+          <li>{t('homeV2.join.researcher.time', lang)}</li>
+          <li>{t('homeV2.join.researcher.credit', lang)}</li>
+          <li>{t('homeV2.join.researcher.trail', lang)}</li>
+          <li>{t('homeV2.join.researcher.pdus', lang)} <a href={CCR_HANDBOOK} target="_blank" rel="noopener noreferrer" class="text-teal font-semibold">{t('homeV2.join.researcher.pdusLink', lang)}</a></li>
+        </ul>
+        <ApplyInterest client:visible roleInterest="researcher" source="home-join" linkText={t('homeV2.join.researcher.cta', lang)}
+          labels={labels} lp={langPrefix} buttonClassName={primary} />
+        <a href={`${langPrefix}/guia-pre-onboarding`} class="inline-flex items-center min-h-[44px] text-sm font-bold text-teal no-underline hover:underline">{t('homeV2.join.researcher.guide', lang)} →</a>
+      </article>
+
+      <article id="join-institutions" class="scroll-mt-24 bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-3 content-start min-w-0" data-door="chapter">
+        <span class="text-[.7rem] font-bold uppercase tracking-wider text-teal">{t('homeV2.join.chapter.kicker', lang)}</span>
+        <h3 class="text-lg font-bold text-[var(--text-primary)]">{t('homeV2.join.chapter.title', lang)}</h3>
+        <ul class="m-0 pl-5 grid gap-1 text-[15px] text-[var(--text-secondary)]">
+          <li>{t('homeV2.join.chapter.noFee', lang)}</li>
+          <li>{t('homeV2.join.chapter.agreement', lang)}</li>
+          <li>{t('homeV2.join.chapter.volunteers', lang)}</li>
+          <li>{t('homeV2.join.reply', lang)}</li>
+        </ul>
+        <ApplyInterest client:visible roleInterest="chapter" source="home-join" linkText={t('homeV2.join.chapter.cta', lang)}
+          labels={labels} lp={langPrefix} messageKey="messageChapter" buttonClassName={primary} />
+      </article>
+
+      <article class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-3 content-start min-w-0" data-door="partner">
+        <span class="text-[.7rem] font-bold uppercase tracking-wider text-teal">{t('homeV2.join.partner.kicker', lang)}</span>
+        <h3 class="text-lg font-bold text-[var(--text-primary)]">{t('homeV2.join.partner.title', lang)}</h3>
+        <ul class="m-0 pl-5 grid gap-1 text-[15px] text-[var(--text-secondary)]">
+          <li>{t('homeV2.join.partner.offer', lang)}</li>
+          <li>{t('homeV2.join.partner.newLine', lang)}</li>
+          <li>{t('homeV2.join.reply', lang)}</li>
+        </ul>
+        <ApplyInterest client:visible roleInterest="partner" source="home-join" linkText={t('homeV2.join.partner.cta', lang)}
+          labels={labels} lp={langPrefix} messageKey="messagePartner" buttonClassName={primary} />
+      </article>
+    </div>
+  </div>
+</section>

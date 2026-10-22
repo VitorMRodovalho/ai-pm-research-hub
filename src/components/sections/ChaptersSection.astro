@@ -5,6 +5,7 @@ import { loadChapters } from '../../lib/chapters';
 import { CONTINENT_NAMES } from '../../lib/worldMap';
 import WorldReachMap from './WorldReachMap.astro';
 import type { HomeStats } from '../../lib/homeStats';
+import { loadChapterEntries } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; stats?: HomeStats | null; }
 const { lang = 'pt-BR', stats = null } = Astro.props;
@@ -15,6 +16,8 @@ const sbAnon = createClient(
 );
 // A lista de selos (nome e logo) vem do chapter_registry. A CONTAGEM não: ela é a do hero.
 const chapters = await loadChapters(sbAnon);
+// #2553 D11 (GP 20/10/2026): desde quando cada capítulo participa, só o ano e a sede, sem situação jurídica.
+const entryYear = new Map((await loadChapterEntries()).map((e) => [e.code, e.entryYear]));
 
 // #2553: o título conta pela fonte única da home (get_homepage_stats.chapters, assinados + em
 // negociação, decisão do GP de 03/10/2026), não por chapters.length. Duas contagens de capítulos na
@@ -82,14 +85,15 @@ function flagEmoji(code: string): string {
 <section class="py-16 px-6 bg-[var(--surface-section-cool)]" id="capitulos">
   <div class="max-w-[900px] mx-auto text-center">
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-purple mb-2">
-      {t('chapters.label', lang)}
+      {t('homeV2.chapters.label', lang)}
     </div>
     <h2 class="text-[clamp(1.5rem,3.5vw,2.2rem)] font-extrabold text-[var(--text-primary)] leading-tight mb-8">
-      {chapterCount !== null ? `${chapterCount} ` : ''}{t('chapters.title', lang)}
+      {chapterCount !== null ? `${chapterCount} ` : ''}{t('homeV2.chapters.title', lang)}
     </h2>
 
-    <!-- PD-MAP-WORLD — mapa-mundi: pins por país (k-anon) + estados BR/EUA de quem consentiu (k≥3) -->
-    <div class="mb-10">
+    <!-- PD-MAP-WORLD — mapa-mundi: pins por país (k-anon) + estados BR/EUA de quem consentiu (k≥3).
+         #2553: só no computador; no celular ficam os nomes e os países, logo abaixo. -->
+    <div class="mb-10 hidden md:block">
       <WorldReachMap
         countryReach={countryReach}
         stateReach={stateReach}
@@ -125,19 +129,21 @@ function flagEmoji(code: string): string {
     </div>
 
     <div class="flex flex-wrap justify-center gap-4 mb-8">
-      {chapters.map((c) => (
-        <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 flex items-center gap-3">
-          <span class="w-3 h-3 rounded-full bg-green-500"></span>
-          {c.is_contracting ? (
+      {chapters.map((c) => {
+        const year = entryYear.get(c.display_code) ?? null;
+        return (
+          <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-5 py-3 flex items-center gap-3" data-chapter={c.display_code}>
             <div class="text-left">
               <div class="text-sm font-bold text-[var(--text-primary)]">PMI {c.state}</div>
-              <div class="text-[.65rem] text-[var(--text-muted)] uppercase tracking-wider">{t('chapters.founder', lang)}</div>
+              {(c.is_contracting || year !== null) && (
+                <div class="text-[.68rem] text-[var(--text-muted)] tracking-wide">
+                  {[c.is_contracting ? t('homeV2.chapters.host', lang) : '', year !== null ? t('homeV2.chapters.since', lang).replace('{year}', String(year)) : ''].filter(Boolean).join(' · ')}
+                </div>
+              )}
             </div>
-          ) : (
-            <span class="text-sm font-bold text-[var(--text-primary)]">PMI {c.state}</span>
-          )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
 
     {reachCountries > 0 && (
@@ -168,38 +174,12 @@ function flagEmoji(code: string): string {
       </div>
     )}
 
-    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-4 inline-block">
-      <p class="text-sm text-[var(--text-secondary)] mb-2">
-        <strong>{t('chapters.goal', lang)}</strong>
-      </p>
-      <a id="chapters-cta-link" href="mailto:nucleoia@pmigo.org.br"
-        class="text-sm font-bold text-teal no-underline hover:underline">
-        {t('chapters.cta', lang)}
+    <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-6 py-3 inline-block">
+      <a id="chapters-cta-link" href="#join-institutions"
+        class="inline-flex items-center min-h-[44px] text-sm font-bold text-teal no-underline hover:underline">
+        {t('homeV2.chapters.cta', lang)} →
       </a>
     </div>
   </div>
 </section>
 
-<script>
-  (() => {
-    // Upgrade email mailto → WhatsApp if site_config provides whatsapp_gp.
-    // Initial href is mailto:nucleoia@pmigo.org.br so the link always works.
-    async function upgradeCtaToWhatsapp() {
-      const sb = (window as any).navGetSb?.();
-      if (!sb) { setTimeout(upgradeCtaToWhatsapp, 300); return; }
-      try {
-        // #2738: maybeSingle, porque o anônimo lê 0 linhas de site_config e .single() vira 406 no console.
-        const { data } = await sb.from('site_config').select('value').eq('key', 'whatsapp_gp').maybeSingle();
-        if (!data?.value) return;
-        const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
-        if (!config.phone) return;
-        const link = document.getElementById('chapters-cta-link') as HTMLAnchorElement;
-        if (!link) return;
-        link.href = `https://wa.me/${config.phone}`;
-        link.target = '_blank';
-        link.rel = 'noopener';
-      } catch {}
-    }
-    upgradeCtaToWhatsapp();
-  })();
-</script>

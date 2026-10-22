@@ -60,9 +60,9 @@ test('B: o parágrafo liga o trecho do meio a #tribes e o e-mail ao mailto, ness
   );
 });
 
-test('C: #tribes existe e as três home pages renderizam a TribesSection', () => {
-  assert.match(maskJsComments(read('src/components/sections/TribesSection.astro')), /<section [^>]*id="tribes"/);
+test('C: #tribes existe e as três home pages renderizam a seção de linhas (#2553 PR 2: ResearchLinesSection)', () => {
+  assert.match(maskJsComments(read('src/components/sections/ResearchLinesSection.astro')), /<section [^>]*id="tribes"/);
   for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pages/es/index.astro']) {
-    assert.match(maskJsComments(read(page)), /^\s*<TribesSection [^>]*\/>/m, `${page} renderiza a TribesSection`);
+    assert.match(maskJsComments(read(page)), /^\s*<ResearchLinesSection [^>]*\/>/m, `${page} renderiza a ResearchLinesSection`);
   }
 });

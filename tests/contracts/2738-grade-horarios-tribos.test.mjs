@@ -12,7 +12,7 @@
  * O QUE ESTE GUARD AFIRMA
  *   A. Os horários vêm de get_tribe_public_profiles (tribo ativa e visível, slot ativo), e a grade não lê
  *      mais tribe_meeting_slots direto.
- *   B. O nome vem da mesma fonte dos cards (resolveTribes, no SSR), não da tabela tribes; tribes é lida
+ *   B. O nome vem da mesma fonte da lista de linhas (#2553: get_public_research_lines, no SSR), não da tabela tribes; tribes é lida
  *      só pelo meeting_link, que é de membro.
  *   C. A grade não desiste quando tribes volta vazia (o caso do anônimo).
  *   D. A hora sai como HH:MM (a RPC devolve "19:30:00") e a grade diz que é horário de Brasília.
@@ -36,8 +36,8 @@ test('A: os horários vêm da RPC pública dos cards, não da tabela de slots', 
   assert.doesNotMatch(LOAD, /from\('tribe_meeting_slots'\)/);
 });
 
-test('B: o nome vem de resolveTribes (fonte dos cards); tribes só dá o meeting_link', () => {
-  assert.match(SRC, /const tribeNames: Record<number, string> = Object\.fromEntries\(resolveTribes\(lang\)\.map\(\(tr\) => \[tr\.id, tr\.name\]\)\);/);
+test('B: o nome vem da lista de linhas (get_public_research_lines); tribes só dá o meeting_link', () => {
+  assert.match(SRC, /const tribeNames: Record<number, string> = Object\.fromEntries\(\(\(await loadResearchLines\(lang\)\) \?\? \[\]\)\.map\(\(l\) => \[l\.id, l\.name\]\)\);/);
   assert.match(SRC, /<script id="schedule-tribe-names" type="application\/json" set:html=\{JSON\.stringify\(tribeNames\)\}><\/script>/);
   assert.match(LOAD, /tribe_name: tribeNames\[String\(tribeId\)\]/);
   assert.match(LOAD, /from\('tribes'\)\.select\('id, meeting_link'\)/);
@@ -46,7 +46,8 @@ test('B: o nome vem de resolveTribes (fonte dos cards); tribes só dá o meeting
 
 test('D: a hora sai como HH:MM e a grade diz o fuso', () => {
   // A RPC devolve "19:30:00". Sem o corte, o visitante lia os segundos, e sem o rótulo não sabia o fuso.
-  const entries = LOAD.match(/T\$\{entry\.tribe_id\}: \$\{escHtml\(entry\.tribe_name\)\} \(.*?\)\$\{badge\}/g) || [];
+  // #2553 PR 2: sem nome (leitura das linhas falhou) a entrada fica só "T05 (19:00)", nunca "T05: T05"
+  const entries = LOAD.match(/T\$\{entry\.tribe_id\}\$\{entry\.tribe_name \? ': ' \+ escHtml\(entry\.tribe_name\) : ''\} \(.*?\)\$\{badge\}/g) || [];
   assert.equal(entries.length, 2, 'os dois ramos (com e sem link) montam a entrada');
   for (const e of entries) assert.match(e, /\(\$\{String\(entry\.time_start\)\.slice\(0, 5\)\}\)/);
   assert.match(SRC, /<p id="schedule-timezone"[^>]*>\{t\('schedule\.timezone', lang\)\}<\/p>\s*<div id="schedule-tribe-grid"/);

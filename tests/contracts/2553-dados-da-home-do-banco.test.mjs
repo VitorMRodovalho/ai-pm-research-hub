@@ -21,7 +21,10 @@ const NEW_KEYS = ['kpis.ofTarget', 'kpis.goalUnavailable', 'kpis.met', 'kpis.sur
 
 describe('#2553 dados da home do banco', () => {
   it('A1: os loaders leem a RPC pública e devolvem null na falha, sem reserva', () => {
-    assert.match(DATA, /async function rpc<T>\(name: string\): Promise<T \| null> \{\s+try \{\s+const \{ data, error \} = await anonClient\(\)\.rpc\(name\)\.abortSignal\(AbortSignal\.timeout\(TIMEOUT_MS\)\);\s+return error \|\| data === null \|\| data === undefined \? null : \(data as T\);\s+\} catch \{\s+return null;/);
+    assert.match(DATA, /async function rpcOnce<T>\(name: string\): Promise<T \| null> \{\s+try \{\s+const \{ data, error \} = await anonClient\(\)\.rpc\(name\)\.abortSignal\(AbortSignal\.timeout\(TIMEOUT_MS\)\);\s+return error \|\| data === null \|\| data === undefined \? null : \(data as T\);\s+\} catch \{\s+return null;/);
+    // o cache curto (60 s) guarda só leitura boa: a falha sai do cache e a próxima requisição tenta de novo
+    assert.match(DATA, /const CACHE_MS = 60 \* 1000;/);
+    assert.match(DATA, /const result = await value;\s+if \(result === null\) cache\.delete\(name\);\s+return result;/);
     for (const name of ['exec_portfolio_health', 'get_trail_courses', 'get_public_cpmai_wall']) {
       assert.match(DATA, new RegExp(`const rows = await rpc<unknown\\[\\]>\\('${name}'\\);\\s+if \\(!Array\\.isArray\\(rows\\)\\) return null;`), name);
     }

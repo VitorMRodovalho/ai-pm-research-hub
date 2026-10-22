@@ -69,27 +69,18 @@ export const TIER_RANK: Record<AccessTier, number> = {
 
 export const NAV_ITEMS: NavItem[] = [
   // ─── Home anchor links (always visible) ───
-  // Polish C4 (Ciclo 4, 2026-06-21): menu curado ao funil anon, em ORDEM de página (PD-NAV).
-  // Removidos: #quadrants (âncora interna redundante de #verticals), #breakout/networking (seção
-  // não renderizada na home = link morto), #resources (zona de membro, fim da home). Adicionados:
-  // #platform-stats, #capitulos, #join, #agenda. #trail usa ladder.label ("A escada"), não nav.trail.
-  // #1136: +tribes/rules/kpis/trail-ranking (member-zone, R5-demoted mas renderizadas no home público).
-  { key: 'verticals',      labelKey: 'nav.verticals',     href: '/#verticals',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'platform-stats', labelKey: 'nav.platformStats', href: '/#platform-stats', minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'trail',          labelKey: 'ladder.label',      href: '/#trail',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  // #2553 PR 2 (home v2, GP 19 e 20/10/2026): as seções da home nova, em ordem de página. Saíram com as seções:
+  // verticals (vira o filtro por campo em #tribes), platform-stats (números no hero), partners (porta em #join),
+  // rules e resources (guia de pré-onboarding), trail-ranking (/gamification). As âncoras antigas levam ao destino
+  // novo (LegacyHomeAnchors.astro).
+  { key: 'outputs',        labelKey: 'nav.v2.outputs',    href: '/#outputs',        minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'tribes',         labelKey: 'nav.v2.lines',      href: '/#tribes',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'chapters',       labelKey: 'nav.chapters',      href: '/#capitulos',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'join',           labelKey: 'nav.join',          href: '/#join',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'partners',       labelKey: 'nav.partners',      href: '/#partners',       minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
   { key: 'agenda',         labelKey: 'nav.agenda',        href: '/#agenda',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'team',           labelKey: 'nav.team',          href: '/#team',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  // #1136: member-zone anchors (rendered on the public home, R5 demoted) were drifting out of the
-  // curated nav — registered here in page order. #resources stays excluded on purpose (line ~53).
-  { key: 'tribes',         labelKey: 'nav.tribes',        href: '/#tribes',         minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'rules',          labelKey: 'nav.rules',         href: '/#rules',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  { key: 'kpis',           labelKey: 'nav.kpis',          href: '/#kpis',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
-  // #2738 (decisão do GP, 19/10/2026): o ranking da trilha expõe nome, foto e % de cada participante;
-  // só quem entrou o vê. A âncora fica no grupo, mas o Nav só a mostra com sessão (data-session-anchor).
-  { key: 'trail-ranking',  labelKey: 'nav.trailRanking',  href: '/#trail-ranking',  minTier: 'visitor', requiresAuth: true, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'team',           labelKey: 'nav.v2.team',       href: '/#team',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'trail',          labelKey: 'ladder.label',      href: '/#trail',          minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
+  { key: 'kpis',           labelKey: 'nav.v2.goals',      href: '/#kpis',           minTier: 'visitor', requiresAuth: false, section: 'main', group: 'home-anchors', navSlot: 'home-sections-dropdown' },
 
   // ─── Workspace ───
   { key: 'workspace', labelKey: 'nav.workspace', href: '/workspace', minTier: 'visitor', requiresAuth: true, section: 'both', group: 'member', navSlot: 'primary', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (page self-gates own data; RLS/SECDEF is the boundary, not nav)

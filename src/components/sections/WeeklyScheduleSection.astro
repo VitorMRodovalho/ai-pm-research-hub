@@ -8,14 +8,15 @@
 import { t, type Lang } from '../../i18n/utils';
 import AgendaVivaPublic from '../agenda/AgendaVivaPublic.tsx';
 import { buildPageI18n } from '../../i18n/pageI18n';
-import { resolveTribes } from '../../data/tribes';
+import { loadResearchLines } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const agendaLabels: Record<string, string> = JSON.parse(buildPageI18n(['comp.agendaViva'], lang));
-// #2738: o nome vem da mesma fonte dos cards de Research Streams; a tabela tribes não é legível pelo anônimo.
-const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang).map((tr) => [tr.id, tr.name]));
+// #2738: o nome vem da mesma fonte da lista de linhas da home; a tabela tribes não é legível pelo anônimo.
+// #2553: essa fonte agora é o banco (get_public_research_lines, name_i18n), não src/data/tribes.ts.
+const tribeNames: Record<number, string> = Object.fromEntries(((await loadResearchLines(lang)) ?? []).map((l) => [l.id, l.name]));
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="agenda">
@@ -102,7 +103,7 @@ const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang
           const tribeId = Number(p.tribe_id);
           for (const slot of (p.slots || [])) {
             if (!byDay.has(slot.day_of_week)) byDay.set(slot.day_of_week, []);
-            byDay.get(slot.day_of_week)!.push({ ...slot, tribe_id: tribeId, tribe_name: tribeNames[String(tribeId)] || `T${tribeId}`, meeting_link: linkById.get(tribeId) });
+            byDay.get(slot.day_of_week)!.push({ ...slot, tribe_id: tribeId, tribe_name: tribeNames[String(tribeId)] || '', meeting_link: linkById.get(tribeId) });
           }
         }
         for (const entries of byDay.values()) entries.sort((a: any, b: any) => String(a.time_start).localeCompare(String(b.time_start)));
@@ -131,11 +132,11 @@ const tribeNames: Record<number, string> = Object.fromEntries(resolveTribes(lang
             if (isAuth && entry.meeting_link) {
               html += `<a href="${escHtml(entry.meeting_link)}" target="_blank" rel="noopener"
                 class="text-[.82rem] ${highlight} no-underline hover:underline">
-                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${String(entry.time_start).slice(0, 5)})${badge}
+                T${entry.tribe_id}${entry.tribe_name ? ': ' + escHtml(entry.tribe_name) : ''} (${String(entry.time_start).slice(0, 5)})${badge}
               </a>`;
             } else {
               html += `<span class="text-[.82rem] ${highlight}">
-                T${entry.tribe_id}: ${escHtml(entry.tribe_name)} (${String(entry.time_start).slice(0, 5)})${badge}
+                T${entry.tribe_id}${entry.tribe_name ? ': ' + escHtml(entry.tribe_name) : ''} (${String(entry.time_start).slice(0, 5)})${badge}
               </span>`;
             }
           }

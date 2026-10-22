@@ -279,8 +279,10 @@ test('#1997 static: /workspace e a home ainda TÊM um botão de login', () => {
   const ws = readFileSync(join(SRC, 'pages/workspace.astro'), 'utf8');
   assert.match(ws, /id="wk-login-btn"/, '/workspace perdeu o botão de login');
   assert.match(ws, /getElementById\('wk-login-btn'\)\?\.addEventListener\('click'/, 'o botão de /workspace perdeu o handler');
-  const hero = readFileSync(join(SRC, 'components/sections/HomepageHero.astro'), 'utf8');
-  assert.match(hero, /id="hero-auth-btn"/, 'a home perdeu o botão de login');
+  // #2553 PR 2: o "Entrar" da home mora no menu (o hero v2 tem só as duas portas); o Nav renderiza em toda página.
+  const nav = readFileSync(join(SRC, 'components/nav/Nav.astro'), 'utf8');
+  assert.match(nav, /<button data-action="open-auth"[\s\S]{0,300}?id="nav-login-btn"/, 'a home perdeu o botão de login do menu');
+  assert.match(nav, /if \(action === 'open-auth'\) \{\s*document\.dispatchEvent\(new CustomEvent\('open-auth'\)\);/, 'o botão do menu perdeu o despacho');
 });
 
 // ── (E) i18n: paridade nos 3 dicionários ──────────────────────────────────────

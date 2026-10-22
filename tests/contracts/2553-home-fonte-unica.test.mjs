@@ -49,25 +49,23 @@ for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pa
   test(`A2: ${page} busca uma vez e passa o mesmo objeto ao hero e aos capítulos`, () => {
     const src = maskAstro(read(page));
     assert.equal((src.match(/loadHomeStats\(\)/g) || []).length, 1, 'uma busca por requisição');
-    assert.match(src, /\[homeSchedule, homeStats\] = await Promise\.all\(\[getHomeSchedule\(\), loadHomeStats\(\)\]\)/, 'homeStats é o resultado dessa busca');
+    // #2553 PR 2: a home v2 não lê mais o prazo de seleção (entrada contínua, D2), então a busca é só a dos números
+    assert.match(src, /const homeStats = await loadHomeStats\(\);/, 'homeStats é o resultado dessa busca');
     assert.match(src, /<HomepageHero lang=\{lang\} stats=\{homeStats\} \/>/, 'o hero recebe o objeto');
     assert.match(src, /<ChaptersSection lang=\{lang\} stats=\{homeStats\} \/>/, 'a seção de capítulos recebe o mesmo objeto');
   });
 }
 
-test('A3: o selo do hero interpola a contagem de capítulos, e some sem ela', () => {
+test('A3: o hero mostra a contagem de capítulos da fonte única, e o "--" sem ela', () => {
+  // #2553 PR 2: o selo "15 Capítulos PMI" virou um dos quatro números do hero (pesquisadores, linhas, capítulos, horas)
   const src = maskAstro(read('src/components/sections/HomepageHero.astro'));
-  assert.match(src, /const chaptersCount = stats\?\.chapters \?\? null;/, 'chaptersCount vem de stats.chapters');
-  assert.match(
-    src,
-    /\{chaptersCount !== null && \([\s\S]{0,400}?t\('hero\.chaptersAnnounce', lang\)\.replace\('\{n\}', String\(chaptersCount\)\)/,
-    'o {n} do selo é a contagem, dentro do bloco que só renderiza quando ela existe',
-  );
+  assert.match(src, /id="stat-chapters" data-target=\{stats\?\.chapters \?\? undefined\}>\{statText\(stats\?\.chapters\)\}<\/div>/, 'o número de capítulos vem de stats.chapters');
+  assert.match(src, /const statText = \(n: number \| null \| undefined, suffix = ''\) => \(typeof n === 'number' \? `\$\{n\}\$\{suffix\}` : '--'\);/, 'sem número, "--", nunca um valor inventado');
 });
 
 test('A4: os números do hero chegam no HTML; o script não busca de novo', () => {
   const src = maskAstro(read('src/components/sections/HomepageHero.astro'));
-  for (const [id, field] of [['stat-members', 'members'], ['stat-tribes', 'tribes'], ['stat-initiatives', 'initiatives'], ['stat-hours', 'impactHours']]) {
+  for (const [id, field] of [['stat-members', 'members'], ['stat-tribes', 'tribes'], ['stat-chapters', 'chapters'], ['stat-hours', 'impactHours']]) {
     assert.match(src, new RegExp(`id="${id}" data-target=\\{stats\\?\\.${field} \\?\\? undefined\\}`), `${id} <- stats.${field}`);
   }
   assert.match(src, /animateCounter\(id, target, el\.dataset\.suffix \?\? ''\)/, 'o contador anima o valor que veio no HTML');
@@ -88,7 +86,7 @@ test('A6: a seção de capítulos conta pela fonte única, não pela lista de se
   assert.match(src, /const chapterCount = stats\?\.chapters \?\? null;/, 'chapterCount vem de stats.chapters');
   assert.match(
     src,
-    /\{chapterCount !== null \? `\$\{chapterCount\} ` : ''\}\{t\('chapters\.title', lang\)\}/,
+    /\{chapterCount !== null \? `\$\{chapterCount\} ` : ''\}\{t\('homeV2\.chapters\.title', lang\)\}/,
     'o título usa chapterCount',
   );
   assert.doesNotMatch(src, /chapters\.length/, 'contar a lista de selos seria a segunda fonte');
