@@ -45,7 +45,7 @@ describe('#2553 ranking do visitante em agregado', () => {
   it('A4: as 4 chaves novas existem nos 3 dicionários', () => {
     for (const dict of DICTS) {
       const src = readFileSync(dict, 'utf8');
-      for (const key of KEYS) assert.match(src, new RegExp(`'${key.replace(/\./g, '\\.')}': '`), `${key} ausente em ${dict}`);
+      for (const key of KEYS) assert.match(src, new RegExp(`'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '`), `${key} ausente em ${dict}`);
     }
   });
 
