@@ -10,6 +10,8 @@ const { lang = 'pt-BR', stats = null } = Astro.props;
 // a mesma que alimenta a seção de capítulos. O "15" do selo era texto fixo no i18n.
 const chaptersCount = stats?.chapters ?? null;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+// #2553: o número final já sai no HTML; a contagem é só enfeite, e só para quem não pediu menos movimento.
+const statText = (n: number | null | undefined, suffix = '') => (typeof n === 'number' ? `${n}${suffix}` : '--');
 
 // #1239: derive the hero cycle badge + status from the CURRENT cycle (was hardcoded 'CICLO 3 · 2026').
 // Mirrors ChaptersSection's anon RPC fetch; get_current_cycle is anon-EXECUTE granted.
@@ -57,19 +59,19 @@ const heroCycleActive = cycleNum
     <!-- Stats counters -->
     <div class="flex flex-wrap justify-center gap-6 sm:gap-10 mb-8">
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members" data-target={stats?.members ?? undefined}>--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-members" data-target={stats?.members ?? undefined}>{statText(stats?.members)}</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.members', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes" data-target={stats?.tribes ?? undefined}>--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-tribes" data-target={stats?.tribes ?? undefined}>{statText(stats?.tribes)}</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.tribes', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives" data-target={stats?.initiatives ?? undefined}>--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-initiatives" data-target={stats?.initiatives ?? undefined}>{statText(stats?.initiatives)}</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.initiatives', lang)}</div>
       </div>
       <div class="text-center">
-        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours" data-target={stats?.impactHours ?? undefined} data-suffix="h">--</div>
+        <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0]" id="stat-hours" data-target={stats?.impactHours ?? undefined} data-suffix="h">{statText(stats?.impactHours, 'h')}</div>
         <div class="text-[.7rem] text-white/50 uppercase tracking-wider mt-1">{t('hero.stat.hours', lang)}</div>
       </div>
     </div>
@@ -87,7 +89,7 @@ const heroCycleActive = cycleNum
 
     <!-- Cycle status -->
     <div class="inline-flex items-center gap-2 text-[.82rem] text-white/60">
-      <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+      <span class="w-2 h-2 rounded-full bg-green-400" aria-hidden="true"></span>
       {heroCycleActive}
     </div>
 
@@ -161,13 +163,13 @@ const heroCycleActive = cycleNum
     <!-- Cycle badge -->
     <div class="text-center mt-5">
       <div class="inline-flex items-center gap-2 text-[.82rem] text-white/60">
-        <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+        <span class="w-2 h-2 rounded-full bg-green-400" aria-hidden="true"></span>
         {t('hero.cycleActive', lang)}
       </div>
     </div>
   </div>
 
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-[.75rem] animate-bounce">
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/30 text-[.75rem]">
     {t('hero.scroll', lang)}
   </div>
 </section>
@@ -220,12 +222,14 @@ const heroCycleActive = cycleNum
     }
 
     // ── Homepage stats ──
-    // #2553: os valores chegam no HTML (data-target), da busca única da página. Uma segunda
-    // chamada aqui seria outra fonte para os mesmos números. Sem data-target, fica o "--".
+    // #2553: os valores chegam no HTML (data-target e o texto final), da busca única da página. Uma
+    // segunda chamada aqui seria outra fonte para os mesmos números. Sem data-target, fica o "--".
+    // A contagem só roda para quem não pediu menos movimento; para os outros o número já está lá.
+    const motionOk = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
     for (const id of ['stat-members', 'stat-tribes', 'stat-initiatives', 'stat-hours']) {
       const el = document.getElementById(id);
       const target = Number(el?.dataset.target);
-      if (el?.dataset.target !== undefined && Number.isFinite(target)) {
+      if (motionOk && el?.dataset.target !== undefined && Number.isFinite(target)) {
         animateCounter(id, target, el.dataset.suffix ?? '');
       }
     }
