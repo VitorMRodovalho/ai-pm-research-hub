@@ -451,6 +451,8 @@ COMMENT ON COLUMN public.partner_chapters.partnership_start IS
 -- ── (11) a URL pública do Instagram volta ao config ───────────────────────────────────────────────────────────
 -- Medido pela orquestradora em 21/10/2026: o config do instagram perdeu a chave profile_url do seed (W94) e hoje só
 -- tem chaves de integração. O valor é o que o rodapé publica hoje. As outras chaves ficam como estão.
+-- Re-medido no dia do apply (24/10/2026): a chave já tinha voltado com este mesmo valor, gravada por outra escrita no
+-- config em 23/10. Por isso a trava confere o estado final (a URL pública presente), não quantas linhas mudaram.
 DO $do$
 DECLARE
   v_rows integer;
@@ -459,8 +461,9 @@ BEGIN
   SET config = coalesce(config, '{}'::jsonb) || jsonb_build_object('profile_url', 'https://www.instagram.com/nucleo.ia.gp')
   WHERE channel = 'instagram' AND NOT (coalesce(config, '{}'::jsonb) ? 'profile_url');
   GET DIAGNOSTICS v_rows = ROW_COUNT;
-  IF v_rows <> 1 THEN
-    RAISE EXCEPTION '#2553 canais: esperava 1 linha do instagram sem profile_url, achei %', v_rows;
+  IF NOT EXISTS (SELECT 1 FROM public.comms_channel_config
+                 WHERE channel = 'instagram' AND config->>'profile_url' = 'https://www.instagram.com/nucleo.ia.gp') THEN
+    RAISE EXCEPTION '#2553 canais: o instagram ficou sem a profile_url pública (linhas atualizadas: %)', v_rows;
   END IF;
 END;
 $do$;
@@ -521,6 +524,25 @@ $do$;
 -- listas, e a meta vale 47. A troca não pode mudar o número de hoje: se mudar, a migration para.
 -- Leitores no prosrc (orquestradora, 21/10/2026): exec_portfolio_health, get_annual_kpis e um comentário em
 -- get_public_trail_ranking.
+-- get_annual_kpis só responde a quem tem a capacidade de analytics (#1877), e a migration roda sem sessão. A trava
+-- lê como um membro ativo que tem a capacidade, achado aqui e não escrito (sem id fixo), só nesta transação; a
+-- sessão é desfeita antes da linha de auditoria. Sem esse membro a migration para.
+DO $do$
+DECLARE
+  v_auth uuid;
+BEGIN
+  SELECT m.auth_id INTO v_auth FROM public.members m
+  WHERE m.is_active = true AND m.auth_id IS NOT NULL
+    AND public.can_by_member(m.id, 'view_internal_analytics')
+  ORDER BY m.created_at, m.id
+  LIMIT 1;
+  IF v_auth IS NULL THEN
+    RAISE EXCEPTION '#2553 trilha: nenhum membro ativo com view_internal_analytics para ler get_annual_kpis';
+  END IF;
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', v_auth, 'role', 'authenticated')::text, true);
+END;
+$do$;
+
 CREATE TEMP TABLE _2553_trail_antes ON COMMIT DROP AS
   SELECT public.calc_trail_completion_pct() AS calc,
          (SELECT (e->>'current')::numeric FROM jsonb_array_elements(public.exec_portfolio_health()) e
@@ -560,6 +582,7 @@ BEGIN
   SELECT (e->>'current')::numeric INTO v_health FROM jsonb_array_elements(public.exec_portfolio_health()) e
   WHERE e->>'metric_key' = 'certification_trail';
   v_annual := public.get_annual_kpis();
+  PERFORM set_config('request.jwt.claims', '', true);
 
   IF v_calc IS DISTINCT FROM v_before.calc OR v_health IS DISTINCT FROM v_before.health
      OR v_annual IS DISTINCT FROM v_before.annual THEN

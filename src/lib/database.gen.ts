@@ -7860,6 +7860,7 @@ export type Database = {
           category: string | null
           code: string
           credly_badge_name: string | null
+          free_for: string | null
           id: number
           is_free: boolean | null
           is_trail: boolean | null
@@ -7873,6 +7874,7 @@ export type Database = {
           category?: string | null
           code: string
           credly_badge_name?: string | null
+          free_for?: string | null
           id?: number
           is_free?: boolean | null
           is_trail?: boolean | null
@@ -7886,6 +7888,7 @@ export type Database = {
           category?: string | null
           code?: string
           credly_badge_name?: string | null
+          free_for?: string | null
           id?: number
           is_free?: boolean | null
           is_trail?: boolean | null
@@ -23120,6 +23123,53 @@ export type Database = {
           },
         ]
       }
+      research_line_fields: {
+        Row: {
+          created_at: string
+          line_initiative_id: string
+          vertical_initiative_id: string
+        }
+        Insert: {
+          created_at?: string
+          line_initiative_id: string
+          vertical_initiative_id: string
+        }
+        Update: {
+          created_at?: string
+          line_initiative_id?: string
+          vertical_initiative_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_line_fields_line_initiative_id_fkey"
+            columns: ["line_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_line_fields_line_initiative_id_fkey"
+            columns: ["line_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["initiative_id"]
+          },
+          {
+            foreignKeyName: "research_line_fields_vertical_initiative_id_fkey"
+            columns: ["vertical_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_line_fields_vertical_initiative_id_fkey"
+            columns: ["vertical_initiative_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["initiative_id"]
+          },
+        ]
+      }
       responsibility_handoffs: {
         Row: {
           created_at: string
@@ -34005,6 +34055,21 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: Json
       }
+      get_public_channels: {
+        Args: never
+        Returns: {
+          channel: string
+          url: string
+        }[]
+      }
+      get_public_chapter_entries: {
+        Args: never
+        Returns: {
+          display_code: string
+          entry_year: number
+          is_host: boolean
+        }[]
+      }
       get_public_continent_reach: {
         Args: never
         Returns: {
@@ -34020,6 +34085,16 @@ export type Database = {
         }[]
       }
       get_public_cpmai_course: { Args: never; Returns: Json }
+      get_public_cpmai_wall: {
+        Args: never
+        Returns: {
+          certified_year: number
+          credly_url: string
+          name: string
+        }[]
+      }
+      get_public_gamification_summary: { Args: never; Returns: Json }
+      get_public_home_team: { Args: never; Returns: Json }
       get_public_impact_data: { Args: never; Returns: Json }
       get_public_leaderboard: {
         Args: { p_limit?: number }
@@ -34030,6 +34105,14 @@ export type Database = {
           rank_position: number
           tribe_name: string
           xp_total: number
+        }[]
+      }
+      get_public_line_fields: {
+        Args: never
+        Returns: {
+          tribe_id: number
+          vertical_id: string
+          vertical_title: string
         }[]
       }
       get_public_platform_stats: { Args: never; Returns: Json }
@@ -34091,6 +34174,7 @@ export type Database = {
           tribe_name: string
         }[]
       }
+      get_public_trail_summary: { Args: never; Returns: Json }
       get_public_verticals: { Args: never; Returns: Json }
       get_public_webinars: { Args: never; Returns: Json }
       get_publication_detail: { Args: { p_id: string }; Returns: Json }
@@ -34304,6 +34388,7 @@ export type Database = {
         Returns: {
           code: string
           credly_badge_name: string
+          free_for: string
           has_credly: boolean
           is_trail: boolean
           name: string
