@@ -1,0 +1,172 @@
+name: Node next canary (report only)
+
+# #2774: mede o PROXIMO major par do Node (o do `.nvmrc` + 2) contra o build, o smoke de rotas e
+# as suites offline, uma vez por semana e sob demanda. So REPORTA. Nao roda em push nem em
+# pull_request, entao nunca segura merge; nao recebe secret nenhum e nao chama `wait-for-db-lane`,
+# entao nao toca o banco nem ocupa a faixa dele (sem a service key o `with-db-lease` do balde
+# comportamental nao faz nada, e os testes de banco pulam).
+#
+# O major vem do `.nvmrc`, nunca de um literal aqui: no dia da troca so o `.nvmrc` muda, e este
+# canario passa sozinho a medir o major seguinte. Enquanto esse major nao tiver release no
+# nodejs.org, a rodada diz "nao medido" e sai verde.
+#
+# Runbook do dia da troca: docs/runbooks/RUNBOOK_NODE_MAJOR.md.
+# Guard: tests/contracts/2774-setup-node-le-o-nvmrc.test.mjs.
+
+on:
+  schedule:
+    - cron: '41 7 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: node-next-canary
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+# `shell: bash` explicito vira `bash -eo pipefail`: sem ele o `| tee` dos passos abaixo devolveria
+# o codigo do tee, e um build quebrado sairia verde.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Resolve the canary major from .nvmrc
+        id: next
+        run: |
+          current=$(tr -d '[:space:]' < .nvmrc)
+          if ! [[ "$current" =~ ^[0-9]+$ ]]; then
+            echo "::error::.nvmrc nao e um major puro: '$current'"
+            exit 1
+          fi
+          next=$((current + 2))
+          if ! released=$(curl -fsSL --max-time 30 https://nodejs.org/dist/index.json \
+              | jq --arg p "v${next}." '[.[] | select(.version | startswith($p))] | length'); then
+            echo "::error::nodejs.org/dist/index.json nao respondeu: nao medido"
+            exit 1
+          fi
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "major=$next" >> "$GITHUB_OUTPUT"
+          echo "released=$released" >> "$GITHUB_OUTPUT"
+          echo "CI: Node $current (.nvmrc). Canario: Node $next, $released release(s) no nodejs.org."
+
+      - name: Nothing to measure yet
+        if: steps.next.outputs.released == '0'
+        run: |
+          {
+            echo "## Canario Node ${{ steps.next.outputs.major }}: nao medido"
+            echo ""
+            echo "O Node ${{ steps.next.outputs.major }} ainda nao tem release no nodejs.org. A CI segue no Node ${{ steps.next.outputs.current }} do \`.nvmrc\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/setup-node@v6
+        if: steps.next.outputs.released != '0'
+        with:
+          node-version: ${{ steps.next.outputs.major }}
+          check-latest: true
+          cache: 'npm'
+
+      # O contexto e afirmado DENTRO da medicao: se o runner nao estiver no major pedido, nada
+      # abaixo mede o que o resumo diria que mediu.
+      - name: Confirm the runner is on the canary major
+        id: context
+        if: steps.next.outputs.released != '0'
+        run: |
+          v=$(node -v)
+          echo "node $v, npm $(npm -v)"
+          case "$v" in
+            "v${{ steps.next.outputs.major }}."*) ;;
+            *) echo "::error::esperava Node ${{ steps.next.outputs.major }}.x e o runner tem $v: nao medido"; exit 1 ;;
+          esac
+
+      - name: npm ci
+        id: install
+        if: steps.context.outcome == 'success'
+        continue-on-error: true
+        run: npm ci 2>&1 | tee /tmp/canary-npm-ci.log
+
+      - name: Build
+        id: build
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        env:
+          PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
+          PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
+        run: npm run build 2>&1 | tee /tmp/canary-build.log
+
+      - name: Smoke routes (astro dev)
+        id: smoke
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        timeout-minutes: 6
+        env:
+          PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
+          PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
+        run: npm run smoke:routes 2>&1 | tee /tmp/canary-smoke.log
+
+      # Os tres baldes rodam sempre, mesmo que um reprove: saber que o segundo tambem quebrou vale
+      # mais que os minutos dele. Sem credencial de banco no ambiente, os testes de banco pulam.
+      - name: Offline suites (structural, contracts, behavioural)
+        id: suites
+        if: steps.install.outcome == 'success'
+        continue-on-error: true
+        env:
+          NODE_OPTIONS: --trace-deprecation
+        run: |
+          rc=0
+          for b in structural contracts behavioural; do
+            node scripts/run-suite.mjs "$b" > "/tmp/canary-$b.log" 2>&1 || rc=1
+          done
+          exit "$rc"
+
+      - name: Report and verdict
+        if: always() && steps.context.outcome == 'success'
+        run: |
+          # Tres estados por arquivo: nao medido (o passo nao rodou), sem sumario (rodou e nao
+          # reportou) e o sumario lido. Ausencia de sumario nao e aprovacao.
+          conta() { if [ -f "$2" ]; then grep -c -- "$1" "$2" || true; else echo "nao medido"; fi; }
+          sumario() {
+            [ -f "$1" ] || { echo "nao medido"; return; }
+            local s
+            s=$(grep -E '^ℹ (tests|pass|fail|skipped) [0-9]+$' "$1" | tail -n 4 | tr '\n' ' ' || true)
+            echo "${s:-sem sumario: o balde nao reportou}"
+          }
+          # Unidade: PACOTE distinto. O npm repete o bloco EBADENGINE para o mesmo pacote (medido no
+          # npm 11.19.1: 2 blocos de 5 linhas para 1 pacote), entao contar linha ou bloco infla.
+          engines() {
+            [ -f "$1" ] || { echo "nao medido"; return; }
+            local ps
+            ps=$(grep -oE "EBADENGINE +package: '[^']+'" "$1" | sed -E "s/.*package: '([^']+)'/\1/" | sort -u | paste -sd ' ' - || true)
+            echo "$(printf '%s' "$ps" | wc -w) ${ps:+($ps)}"
+          }
+          {
+            echo "## Canario $(node -v) (a CI roda o Node ${{ steps.next.outputs.current }} do \`.nvmrc\`)"
+            echo ""
+            echo "| passo | resultado |"
+            echo "|---|---|"
+            echo "| npm ci | ${{ steps.install.outcome }} |"
+            echo "| build | ${{ steps.build.outcome }} |"
+            echo "| smoke:routes | ${{ steps.smoke.outcome }} |"
+            echo "| suites offline | ${{ steps.suites.outcome }} |"
+            echo ""
+            echo "- pacotes com engine que recusa este Node (\`EBADENGINE\` no npm ci): $(engines /tmp/canary-npm-ci.log)"
+            for b in structural contracts behavioural; do
+              echo "- $b: $(sumario /tmp/canary-$b.log); \`DeprecationWarning\`: $(conta DeprecationWarning /tmp/canary-$b.log)"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          falhas=0
+          for o in "${{ steps.install.outcome }}" "${{ steps.build.outcome }}" "${{ steps.smoke.outcome }}" "${{ steps.suites.outcome }}"; do
+            [ "$o" = success ] || falhas=$((falhas + 1))
+          done
+          echo "$falhas de 4 passos do canario nao passaram em $(node -v)"
+          [ "$falhas" -eq 0 ]

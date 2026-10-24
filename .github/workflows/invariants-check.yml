@@ -46,7 +46,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
+          check-latest: true
           cache: 'npm'
 
       - name: Install dependencies
@@ -131,6 +132,8 @@ jobs:
             # rodar Node 24 (reporter `spec` SEMPRE, com marcador `x`). Medido em 29/08: v22.23.2
             # na CI, v24.15.0 local. Um padrao que so casa um dos dois sai MUDO no outro, que
             # e exatamente o defeito de #1910 numa roupa nova. Aceito OS DOIS marcadores.
+            # Desde #2774 a CI roda o major do `.nvmrc` (24), e o caminho vivo dela passou a ser o
+            # `✖`; o TAP continua aceito porque e o que sai de quem roda Node 22 local.
             # ⚠️ `grep ... | head ... || echo fallback` NAO funciona: o `||` le o status do `head`,
             # que e 0 mesmo quando o grep nao achou nada nem o arquivo existe. O fallback nunca
             # dispararia e a secao sairia como um bloco VAZIO, que e o mesmo silencio que #1910

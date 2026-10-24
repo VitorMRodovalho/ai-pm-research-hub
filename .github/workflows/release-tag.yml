@@ -26,6 +26,13 @@ jobs:
         with:
           fetch-depth: 0
 
+      # #2774: os dois passos `node scripts/register-release-provenance.mjs` abaixo rodavam o Node
+      # que viesse na imagem do runner, que o `.nvmrc` nao governa.
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          check-latest: true
+
       - name: Validate version format
         run: |
           V="${{ inputs.version }}"

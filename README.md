@@ -226,7 +226,7 @@ npm run dev -- --host 0.0.0.0 --port 4321
 npm test
 ```
 
-**Prerequisites:** Node.js 24+ (nvm), Supabase CLI (**≥ 2.100.1** — earlier versions fork-bomb on `migration repair`, see issue #155 / `docs/RUNBOOK.md`), Wrangler CLI. See `.env.example` for variables.
+**Prerequisites:** Node.js at the major in `.nvmrc` (`nvm install && nvm use`; CI reads the same file), Supabase CLI (**≥ 2.100.1** — earlier versions fork-bomb on `migration repair`, see issue #155 / `docs/RUNBOOK.md`), Wrangler CLI. See `.env.example` for variables.
 
 ---
 
