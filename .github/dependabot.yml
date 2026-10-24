@@ -41,3 +41,28 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "chore(deps)"
+
+  # Mesma política (#611) para os outros dois ecossistemas do repositório: o worker
+  # pmi-vep-sync tem lockfile próprio, e os workflows usam actions de terceiros.
+  # Limite 0 aqui também: o feed de alertas aponta o trabalho, o PR de higiene é local.
+  - package-ecosystem: "npm"
+    directory: "/cloudflare-workers/pmi-vep-sync"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 0
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
