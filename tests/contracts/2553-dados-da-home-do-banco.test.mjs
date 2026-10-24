@@ -63,7 +63,7 @@ describe('#2553 dados da home do banco', () => {
 
   it('C1: as chaves novas existem nos 3 dicionários, e o título das metas não carrega ano escrito', () => {
     for (const [path, src] of DICTS) {
-      for (const key of NEW_KEYS) assert.match(src, new RegExp(`'${key.replace(/\./g, '\\.')}': `), `${key} ausente em ${path}`);
+      for (const key of NEW_KEYS) assert.match(src, new RegExp(`'${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': `), `${key} ausente em ${path}`);
       const title = src.match(/'kpis\.title': '([^']*)'/)?.[1] ?? '';
       assert.match(title, /\{year\}/, `${path}: kpis.title sem {year}`);
       assert.doesNotMatch(title, /\b20\d\d\b/, `${path}: kpis.title com ano escrito`);
