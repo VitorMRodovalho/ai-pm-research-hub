@@ -27,8 +27,8 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
@@ -85,10 +85,13 @@ test('#1962 vivo: o caminho CANÔNICO continua de pé', { skip: dbGated ? false 
 test('#1962 vivo: o front não voltou a chamar as legadas', () => {
   // O #1247 já tinha migrado a UI. Se alguém reintroduzir a chamada, o REVOKE faz o botão falhar
   // em produção — e é melhor descobrir aqui.
-  const alvos = [
-    'src/components/tribe/TribeRequestBlock.tsx',
-    'src/components/sections/TribesSection.astro',
-  ];
+  // #2553 PR-7: a lista fixa (TribeRequestBlock + TribesSection) virou varredura do src inteiro: a TribesSection saiu
+  // da home, e a chamada que volta pode voltar em qualquer arquivo.
+  const alvos = readdirSync(resolve(ROOT, 'src'), { recursive: true })
+    .filter((f) => /\.(astro|tsx?|jsx?|mjs)$/.test(f))
+    .map((f) => join('src', f));
+  assert.ok(alvos.includes(join('src', 'components', 'tribe', 'TribeRequestBlock.tsx')),
+    'a varredura alcança o bloco de pedido de tribo (controle do alcance)');
   for (const f of alvos) {
     const src = readFileSync(resolve(ROOT, f), 'utf8');
     assert.doesNotMatch(src, /\.rpc\(\s*['"]select_tribe['"]/,

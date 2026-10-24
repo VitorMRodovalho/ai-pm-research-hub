@@ -5,9 +5,9 @@
 // (select_tribe via tribe_capacity_limit()) usavam 7.
 //
 // Contrato:
-//   Parte 1 (estática): TribesSection deriva maxSlots de get_homepage_stats
-//     (max_researchers_per_tribe) com MAX_SLOTS como fallback, usa maxSlots no template
-//     (dots + contador) e injeta o valor resolvido no client script via define:vars.
+//   Parte 1 (estática): a seção de linhas da home (ResearchLinesSection, #2553) mostra as vagas com a
+//     capacidade que get_public_research_lines devolve (tribe_capacity_limit(), afirmado no guard
+//     2553-linhas-de-pesquisa-publicas), nunca com a constante MAX_SLOTS.
 //   Parte 2 (DB-aware, skip sem creds): o fallback MAX_SLOTS do frontend, o RPC
 //     get_homepage_stats e o helper tribe_capacity_limit() batem com o SSOT
 //     platform_settings.max_researchers_per_tribe.
@@ -16,42 +16,29 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => readFileSync(join(root, p), 'utf8');
 
 const tribesData = read('src/data/tribes.ts');
-const tribesSection = read('src/components/sections/TribesSection.astro');
+// comentários mascarados: a asserção mede o código, não a explicação dele
+const linesSection = maskJsComments(read('src/components/sections/ResearchLinesSection.astro'));
+const homeData = maskJsComments(read('src/lib/publicHomeData.ts'));
 
 const maxSlotsMatch = tribesData.match(/export const MAX_SLOTS = (\d+);/);
 
 // ── Parte 1 — estática ───────────────────────────────────────────────────────
-test('P1: TribesSection deriva maxSlots de get_homepage_stats com fallback MAX_SLOTS', () => {
-  assert.match(tribesSection, /let maxSlots = MAX_SLOTS;/,
-    'maxSlots deve inicializar no fallback MAX_SLOTS');
-  // #1950: a chave virou `max_members_per_tribe` porque o valor SEMPRE contou o líder
-  // (8 = 1 líder + 7 pesquisadores). O nome antigo segue aceito na janela entre os dois deploys,
-  // e a asserção exige os DOIS: sem o novo o rename não chegou, sem o antigo a janela quebra.
-  assert.match(tribesSection,
-    /typeof data\?\.max_members_per_tribe === 'number' && data\.max_members_per_tribe > 0/,
-    'maxSlots deve ler get_homepage_stats.max_members_per_tribe (com type-guard)');
-  assert.match(tribesSection,
-    /typeof data\?\.max_researchers_per_tribe === 'number'/,
-    'o nome antigo deve seguir aceito enquanto a migration nao estiver na main');
-});
-
-test('P1: template usa maxSlots (não a constante) para dots e contador', () => {
-  assert.match(tribesSection, /Array\.from\(\{ length: maxSlots \}\)/,
-    'dots de slot devem usar maxSlots');
-  assert.doesNotMatch(tribesSection, /Array\.from\(\{ length: MAX_SLOTS \}\)/,
-    'dots não podem usar a constante MAX_SLOTS diretamente');
-  assert.match(tribesSection, /\{initialCounts\[tr\.id\] \|\| 0\}\/\{maxSlots\}/,
-    'contador X/max deve usar maxSlots');
-});
-
-test('P1: client script recebe o valor resolvido via define:vars', () => {
-  assert.match(tribesSection, /define:vars=\{\{[^}]*MAX_SLOTS: maxSlots/,
-    'define:vars deve injetar MAX_SLOTS: maxSlots (gate client de tribo-cheia usa o SSOT resolvido)');
+test('P1: a home mostra as vagas com a capacidade que a RPC devolve, não com a constante', () => {
+  // #2553 PR-7: a TribesSection, que resolvia maxSlots de get_homepage_stats, saiu da home. A seção de linhas lê
+  // members e capacity de get_public_research_lines, e a capacidade da RPC é tribe_capacity_limit().
+  assert.match(homeData, /capacity: isNum\(r\.capacity\) \? r\.capacity : 0,/,
+    'o loader deve ler capacity da linha da RPC');
+  assert.match(linesSection, /const full = l\.capacity > 0 && l\.members >= l\.capacity;/,
+    'linha cheia deve comparar com a capacidade da RPC');
+  assert.match(linesSection, /t\('homeV2\.lines\.seats', lang\)\.replace\('\{n\}', String\(l\.members\)\)\.replace\('\{max\}', String\(l\.capacity\)\)/,
+    'o contador X/max deve usar a capacidade da RPC');
+  assert.doesNotMatch(linesSection, /\bMAX_SLOTS\b/, 'a seção não pode usar a constante MAX_SLOTS');
 });
 
 test('P1: MAX_SLOTS em data/tribes existe e está documentado como fallback', () => {

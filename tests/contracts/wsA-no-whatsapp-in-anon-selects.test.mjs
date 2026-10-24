@@ -9,10 +9,12 @@ import { existsSync, readFileSync } from 'node:fs';
 //
 // Scope: the public surfaces (PR-A0) plus the tribe page (PR-A1), which was rewired
 // from select('*') to explicit columns and serves the group link via the gated RPC.
+// #2553 PR-7: TribesSection left the home. The home's research lines read no table: they come from
+// get_public_research_lines, whose returned keys are pinned (no whatsapp_url) in
+// 2553-linhas-de-pesquisa-publicas.test.mjs.
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
 const ANON_SURFACES = [
-  'src/components/sections/TribesSection.astro',
   'src/components/nav/Nav.astro',
   'src/pages/tribe/[id].astro',
 ];

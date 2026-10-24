@@ -12,9 +12,9 @@
  *   A. Toda âncora interna (href="#x") de um componente que a página RENDERIZA tem um id="x" em algum
  *      componente que a mesma página renderiza. Ler os imports em vez das tags deixaria o defeito 1 verde,
  *      porque a seção que tinha o id ainda é importada. A leitura desce pelos .astro renderizados, porque
- *      parte da home é renderizada por uma seção e não pela página (o VerticalsSection, pelo ModelSection).
- *   B. A linha que contém o filtro do ranking quebra e se limita à largura do pai, e o select também.
- *      É conteúdo, não efeito: a prova de efeito foi a medição no navegador descrita na PR.
+ *      parte da home é renderizada por uma seção e não pela página (o aviso do Grupo de Estudos, pela LadderSection).
+ *   B. (retirado na #2553 PR-7) A linha do filtro do ranking de trilha quebrava e se limitava à largura do pai. O
+ *      ranking saiu da home com a v2 (ver 2738-ranking-trilha-so-com-sessao, item A), e o componente foi apagado.
  *   C. A leitura de whatsapp_gp em site_config usa maybeSingle.
  *   D. A agenda pública (acima de Team, Research Streams, Rules, KPIs e Ranking) hidrata no carregamento.
  *      Com client:visible ela crescia 1084px durante a rolagem até a âncora, e o menu parava antes do
@@ -83,17 +83,6 @@ for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pa
     assert.deepEqual(dead, [], `âncora sem alvo renderizado: ${dead.join(', ')}`);
   });
 }
-
-test('B: a linha do filtro do ranking quebra e o select se limita à largura do pai', () => {
-  const src = maskAstro(read('src/components/sections/TrailRankingSection.astro'));
-  const row = src.match(/<div class="([^"]*)">\s*<select id="trailTribeFilter" class="([^"]*)"/);
-  assert.ok(row, 'a div que contém o select do filtro foi encontrada');
-  const rowClasses = row[1].split(/\s+/);
-  const selectClasses = row[2].split(/\s+/);
-  assert.ok(rowClasses.includes('flex-wrap'), 'a linha do filtro quebra');
-  assert.ok(rowClasses.includes('max-w-full'), 'a linha do filtro não passa da largura do pai');
-  assert.ok(selectClasses.includes('max-w-full'), 'o select não passa da largura da linha');
-});
 
 test('D: a agenda da home hidrata no carregamento, não ao ficar visível', () => {
   // Medido em 19/10/2026: com client:visible a agenda crescia 1084px no meio da rolagem até uma âncora,

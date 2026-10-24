@@ -14,7 +14,9 @@
  * O QUE ESTE GUARD AFIRMA
  *   A. #2553 PR 2 (home v2): o ranking saiu da home; nenhum item de menu nem página da home o renderiza.
  *   B. O Nav renderiza âncora que exige sessão escondida, no desktop e no celular, e só a mostra com _user.
- *   C. A seção nasce escondida, e a leitura do ranking só parte de dentro do caminho com sessão.
+ *   C. (retirado na #2553 PR-7) A seção nascia escondida e só lia o ranking com sessão. O componente saiu da home
+ *      com a v2 e foi apagado; o ranking com nomes vive em /gamification, e get_public_trail_ranking perdeu o EXECUTE
+ *      do anon na #2749.
  */
 
 import test from 'node:test';
@@ -47,15 +49,4 @@ test('B: o Nav esconde a âncora que exige sessão e só a mostra com _user', ()
   assert.match(mobile[0], hidden, 'celular');
   assert.match(src, /function syncSessionAnchors\(\) \{\s*document\.querySelectorAll<HTMLElement>\('\[data-session-anchor\]'\)\.forEach\(\(el\) => \{\s*el\.style\.display = _user \? '' : 'none';/);
   assert.match(src, /window\.addEventListener\('nav:member', syncSessionAnchors\);/);
-});
-
-test('C: a seção nasce escondida e o ranking só é lido com sessão', () => {
-  const src = maskAstro(read('src/components/sections/TrailRankingSection.astro'));
-  assert.match(src, /<section class="[^"]*\bhidden\b[^"]*" id="trail-ranking">/);
-  assert.match(src, /function syncTrailRanking\(\) \{\s*const signedIn = !!\(window as any\)\.navGetUser\?\.\(\);\s*document\.getElementById\('trail-ranking'\)\?\.classList\.toggle\('hidden', !signedIn\);\s*if \(signedIn && !trailBooted\) \{ trailBooted = true; bootTrail\(\); \}/);
-  assert.match(src, /window\.addEventListener\('nav:member', syncTrailRanking\);/);
-  // A única chamada de bootTrail() fora da própria definição é a de dentro do caminho com sessão.
-  const calls = src.match(/(?<!function )\bbootTrail\(\)/g) || [];
-  assert.equal(calls.length, 1, 'bootTrail() é chamada num lugar só');
-  assert.match(src, /async function bootTrail\(\) \{[\s\S]*?sb\.rpc\('get_public_trail_ranking'\)/);
 });

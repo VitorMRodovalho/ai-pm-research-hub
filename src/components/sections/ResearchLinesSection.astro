@@ -15,7 +15,17 @@ import { formatMeetingSlots } from '../../lib/tribes/public-profile';
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-const [lines, pairs, verticals] = await Promise.all([loadResearchLines(lang), loadLineFields(), loadVerticals()]);
+// O banco guarda o título do campo em português: cada título conhecido vira a chave do dicionário, e um título
+// desconhecido aparece como veio.
+const FIELD_TITLE_KEYS: Record<string, string> = {
+  'Ágil': 'model.vertical.agile',
+  'Construção': 'model.vertical.construction',
+  'ESG': 'model.vertical.esg',
+  'Negócio': 'model.vertical.business',
+  'PMO': 'model.vertical.pmo',
+};
+const [lines, pairs, dbVerticals] = await Promise.all([loadResearchLines(lang), loadLineFields(), loadVerticals()]);
+const verticals = dbVerticals.map((v) => ({ ...v, title: FIELD_TITLE_KEYS[v.title] ? t(FIELD_TITLE_KEYS[v.title], lang) : v.title }));
 const quadrants = lines
   ? [...new Map(lines.filter((l) => l.quadrant).map((l) => [l.quadrant, l.quadrantName || l.quadrant])).entries()].sort((a, b) => a[0].localeCompare(b[0]))
   : [];
