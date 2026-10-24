@@ -1,5 +1,5 @@
 /**
- * public_members não carrega localização, e get_public_impact_data nomeia só o líder atual.
+ * public_members não carrega localização, e get_public_impact_data não nomeia liderança de linha.
  *
  * Por quê (04/10/2026):
  *   - public_members é legível por anon (SECURITY DEFINER aceito na ADR-0024). A /privacy diz que o
@@ -7,17 +7,18 @@
  *     ninguém recebe pin individual de estado nem de país. Quem aplica essas regras são as RPCs do
  *     mapa. Toda coluna da view fica visível para anon, então a lista é FECHADA: coluna nova só entra
  *     acrescentada a COLUNAS_PERMITIDAS, com a base da D1 da #2553 (LIA por finalidade).
- *   - get_public_impact_data é chamável por anon e devolve tribes_summary[].leader_name. Pela D1 da
- *     #2553 (emenda 1), o nome de quem ocupa papel institucional sai só enquanto a pessoa está no
- *     papel: tribo ativa e pessoa ativa no ciclo corrente.
+ *   - get_public_impact_data é chamável por anon. Até 24/10/2026 devolvia tribes_summary[].leader_name
+ *     só enquanto a pessoa estava no papel (D1 da #2553, emenda 1). Pela decisão 4a do GP (24/10/2026,
+ *     DB-4 da #2553) o /about mostra pessoas só em número: o nome da liderança saiu da resposta, e o
+ *     guard 2553-about-sem-nome-de-pessoa cobre as outras chaves com nome.
  *
  * Camadas:
  *   1. estática: a migration mais nova que cria a view, e a captura mais nova da função, cada uma
- *      afirmada dentro do bloco que decide (a lista de colunas; o subselect do leader_name);
+ *      afirmada dentro do bloco que decide (a lista de colunas; o tribes_summary sem leader_name);
  *   2. viva, como ANON (a credencial de quem consome a vitrine; o papel da chave é conferido), com
  *      controle positivo na mesma medição e recusas calibradas pelo código (42703, 42501);
- *   3. viva, população inteira: cada tribo do payload contra o estado de tribo e pessoa no banco, nos
- *      dois sentidos, com braço negativo obrigatório.
+ *   3. viva, população inteira: nenhuma tribo do payload traz o nome da liderança, e o nome de nenhuma
+ *      pessoa apontada como liderança de linha (no papel ou fora dele) aparece no payload.
  */
 
 import test from 'node:test';
@@ -74,21 +75,6 @@ function listaDaView() {
   return ultimo;
 }
 
-/** Fatia do parêntese em `inicio` até o que o fecha, pulando literais entre aspas simples. */
-function parenteseBalanceado(s, inicio) {
-  assert.equal(s[inicio], '(', 'esperava um parêntese de abertura');
-  let nivel = 0;
-  let aspas = false;
-  for (let i = inicio; i < s.length; i++) {
-    const c = s[i];
-    if (c === "'") aspas = !aspas;
-    if (aspas) continue;
-    if (c === '(') nivel++;
-    if (c === ')' && --nivel === 0) return s.slice(inicio, i + 1);
-  }
-  throw new Error('parêntese sem fechamento');
-}
-
 test('view: toda coluna de public_members está na lista permitida, e nenhuma é localização', () => {
   const { file, lista } = listaDaView();
   const itens = lista.split(',').map((c) => c.trim());
@@ -106,24 +92,16 @@ test('view: toda coluna de public_members está na lista permitida, e nenhuma é
   }
 });
 
-test('função: leader_name só sai com tribo ativa e pessoa ativa no ciclo', () => {
+test('função: tribes_summary não leva o nome da liderança nem lê o ponteiro dela', () => {
   const cap = latestFunctionCapture(ROOT, 'get_public_impact_data');
   const corpo = semComentarios(cap.body);
-  const chaves = corpo.match(/'leader_name'/g) || [];
-  assert.equal(chaves.length, 1, `${cap.file}: esperava exatamente 1 'leader_name', achei ${chaves.length}`);
-  const ponteiros = corpo.match(/\bleader_member_id\b/g) || [];
-  assert.equal(ponteiros.length, 1,
-    `${cap.file}: leader_member_id aparece ${ponteiros.length} vezes. Outra chave que leia o ponteiro precisa do mesmo filtro; ensine este guard.`);
-  const sub = parenteseBalanceado(corpo, corpo.indexOf('(', corpo.indexOf("'leader_name'")));
-  assert.match(sub, /\bFROM\s+members\s+(?:AS\s+)?m\b[\s\S]*\bm\.id\s*=\s*t\.leader_member_id\b/i,
-    `${cap.file}: o subselect do leader_name não lê a pessoa referenciada pela tribo`);
-  // Predicado nu, ancorado no AND seguinte ou no fecha-parêntese: `IS NOT NULL`, `= false` e afins não passam.
-  const fim = String.raw`(?=\s+AND\b|\s*\))`;
-  assert.match(sub, new RegExp(String.raw`\bAND\s+m\.is_active${fim}`, 'i'), `${cap.file}: leader_name sem a condição de pessoa ativa`);
-  assert.match(sub, new RegExp(String.raw`\bAND\s+m\.current_cycle_active${fim}`, 'i'), `${cap.file}: leader_name sem a condição de ciclo corrente`);
-  assert.match(sub, new RegExp(String.raw`\bAND\s+m\.member_status\s*=\s*'active'${fim}`, 'i'), `${cap.file}: leader_name sem a condição de status ativo`);
-  assert.match(sub, new RegExp(String.raw`\bAND\s+t\.is_active${fim}`, 'i'), `${cap.file}: leader_name sem a condição de tribo ativa`);
-  assert.doesNotMatch(sub, /\bOR\b/i, `${cap.file}: um OR no subselect do leader_name reabre o nome de quem saiu`);
+  const resumo = corpo.match(/'tribes_summary', COALESCE\(\([\s\S]*?\) ORDER BY t\.id\)\s+FROM tribes t\s+WHERE t\.is_active\s+\), '\[\]'::jsonb\)/);
+  assert.ok(resumo, `${cap.file}: o bloco do tribes_summary não foi recortado`);
+  assert.match(resumo[0], /'member_count', \(SELECT COUNT\(\*\) FROM members m WHERE m\.tribe_id = t\.id AND m\.is_active\)/,
+    `${cap.file}: o controle (a contagem por linha) sumiu do recorte`);
+  assert.equal((corpo.match(/'leader_name'/g) || []).length, 0, `${cap.file}: a chave leader_name voltou`);
+  assert.equal((corpo.match(/\bleader_member_id\b/g) || []).length, 0,
+    `${cap.file}: a função voltou a ler o ponteiro da liderança`);
 });
 
 const anonHeaders = () => ({ apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` });
@@ -174,7 +152,7 @@ test('DB como anon: public_members recusa localização e escrita, e serve o res
   }
 });
 
-test('DB: cada tribo do payload público nomeia só líder ativo de tribo ativa (população inteira)', { skip: dbGated ? false : skipMsg }, async (t) => {
+test('DB: nenhuma tribo do payload público traz o nome da liderança, no papel ou fora dele (população inteira)', { skip: dbGated ? false : skipMsg }, async () => {
   assertChaveAnon();
   const r = await dbFetch(`${BASE_URL}/rest/v1/rpc/get_public_impact_data`, {
     method: 'POST',
@@ -188,40 +166,22 @@ test('DB: cada tribo do payload público nomeia só líder ativo de tribo ativa 
   const rt = await dbFetch(`${BASE_URL}/rest/v1/tribes?select=id,is_active,leader_member_id`, { headers: serviceHeaders() });
   assert.equal(rt.status, 200, `leitura de tribes voltou ${rt.status}`);
   const tribos = await rt.json();
-  const ids = [...new Set(tribos.map((tr) => tr.leader_member_id).filter(Boolean))];
-  let pessoas = [];
-  if (ids.length) {
-    const rp = await dbFetch(`${BASE_URL}/rest/v1/members?select=id,name,is_active,current_cycle_active,member_status&id=in.(${ids.join(',')})`, { headers: serviceHeaders() });
-    assert.equal(rp.status, 200, `leitura de members voltou ${rp.status}`);
-    pessoas = await rp.json();
-  }
-  const porId = new Map(pessoas.map((p) => [p.id, p]));
-  const esperado = new Map(tribos.map((tr) => {
-    const p = porId.get(tr.leader_member_id);
-    const atual = !!(tr.is_active && p && p.is_active && p.current_cycle_active && p.member_status === 'active');
-    return [tr.id, atual ? p.name : null];
-  }));
 
   // #2365: tribes_summary lista só as tribos ativas, como o contador `tribes`.
   const ativas = tribos.filter((tr) => tr.is_active);
   assert.equal(resumo.length, ativas.length, 'tribes_summary não cobre exatamente as tribos ativas');
-  // Só ids na mensagem: o nome é justamente o dado que este guard protege.
-  const divergentes = resumo
-    .filter((linha) => (linha.leader_name ?? null) !== esperado.get(linha.id))
-    .map((linha) => `tribo ${linha.id}: nome ${linha.leader_name != null ? 'presente' : 'ausente'}, esperado ${esperado.get(linha.id) != null ? 'o líder atual' : 'ausente'}`);
-  assert.deepEqual(divergentes, [], divergentes.join('; '));
-  assert.ok([...esperado.values()].some((v) => v != null), 'nenhuma tribo com líder atual: o braço positivo não disparou');
+  const comNome = resumo.filter((linha) => 'leader_name' in linha).map((linha) => linha.id);
+  assert.deepEqual(comNome, [], `tribos com a chave leader_name: ${comNome.join(', ')}`);
 
-  // Braço negativo: precisa existir quem saiu, senão a regra removida passaria aqui.
-  const excluidos = tribos
-    .filter((tr) => tr.leader_member_id && esperado.get(tr.id) == null)
-    .map((tr) => porId.get(tr.leader_member_id)?.name)
-    .filter(Boolean);
-  if (excluidos.length === 0) return t.skip('nenhum ponteiro de líder aponta para quem saiu hoje: o braço negativo não tem caso');
-  // O nome de quem saiu não pode aparecer em lugar nenhum do payload, sob outra chave inclusive.
-  // Autoria de obra publicada fica fora da varredura: pela D1 ela permanece depois da saída.
-  const { recent_publications: _autoria, ...semAutoria } = payload;
-  const texto = JSON.stringify(semAutoria);
-  const achados = excluidos.filter((nome) => texto.includes(JSON.stringify(nome).slice(1, -1))).length;
-  assert.equal(achados, 0, `${achados} nome(s) de quem saiu do papel ainda aparece(m) no payload público`);
+  // Nenhum nome de quem é ou foi apontado como liderança de linha aparece no payload, sob chave nenhuma.
+  const ids = [...new Set(tribos.map((tr) => tr.leader_member_id).filter(Boolean))];
+  assert.ok(ids.length > 0, 'nenhum ponteiro de liderança: a varredura não tem o que procurar');
+  const rp = await dbFetch(`${BASE_URL}/rest/v1/members?select=id,name&id=in.(${ids.join(',')})`, { headers: serviceHeaders() });
+  assert.equal(rp.status, 200, `leitura de members voltou ${rp.status}`);
+  const nomes = (await rp.json()).map((p) => p.name).filter(Boolean);
+  assert.ok(nomes.length > 0, 'nenhum nome de liderança lido: a varredura não discrimina');
+  const texto = JSON.stringify(payload);
+  // Só a contagem na mensagem: o nome é justamente o dado que este guard protege.
+  const achados = nomes.filter((nome) => texto.includes(JSON.stringify(nome).slice(1, -1))).length;
+  assert.equal(achados, 0, `${achados} nome(s) de liderança de linha no payload público`);
 });

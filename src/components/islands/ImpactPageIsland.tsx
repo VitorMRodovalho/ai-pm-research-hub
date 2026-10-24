@@ -11,11 +11,11 @@ interface ImpactData {
   impact_hours_since: number | null;
   webinars: number;
   partner_count: number;
-  recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string; authors: string[] }>;
-  tribes_summary: Array<{ id: number; name: string; quadrant_name: string; member_count: number; leader_name: string }>;
-  chapters_summary: Array<{ chapter: string; member_count: number; sponsor: string | null }>;
-  partners: Array<{ name: string; type: string }>;
-  recognitions: Array<{ title: string; organization: string; recipient: string; date: string; category: string; description: string }>;
+  // #2553 D7 (GP 24/10/2026): o /about mostra pessoas só em número; autores, liderança, presidência de capítulo,
+  // a lista de parceiros e o prêmio individual saíram da RPC (DB-4) e da página.
+  recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string }>;
+  tribes_summary: Array<{ id: number; name: string; quadrant_name: string; member_count: number }>;
+  chapters_summary: Array<{ chapter: string; member_count: number }>;
   timeline: Array<{ year: string; title: string; description: string }>;
 }
 
@@ -76,14 +76,10 @@ const LABELS: Record<string, Record<string, string>> = {
     publications: 'Publicações Recentes',
     viewAll: 'Ver todas as publicações',
     chaptersSection: 'Capítulos Patrocinadores',
-    partnersSection: 'Parceiros',
-    recognitionsSection: 'Reconhecimentos',
-    finalist: 'Finalista',
     cta: 'Interessado em participar?',
     ctaSelection: 'Processo Seletivo',
     ctaArticles: 'Nossos Artigos',
     ctaContact: 'Contato',
-    sponsor: 'Sponsor',
     membersCount: 'membros',
     loading: 'Carregando dados de impacto...',
     leadTitle: 'Interessado em participar?',
@@ -127,14 +123,10 @@ const LABELS: Record<string, Record<string, string>> = {
     publications: 'Recent Publications',
     viewAll: 'View all publications',
     chaptersSection: 'Sponsoring Chapters',
-    partnersSection: 'Partners',
-    recognitionsSection: 'Recognitions',
-    finalist: 'Finalist',
     cta: 'Interested in participating?',
     ctaSelection: 'Selection Process',
     ctaArticles: 'Our Articles',
     ctaContact: 'Contact',
-    sponsor: 'Sponsor',
     membersCount: 'members',
     loading: 'Loading impact data...',
     leadTitle: 'Interested in joining?',
@@ -178,14 +170,10 @@ const LABELS: Record<string, Record<string, string>> = {
     publications: 'Publicaciones Recientes',
     viewAll: 'Ver todas las publicaciones',
     chaptersSection: 'Capítulos Patrocinadores',
-    partnersSection: 'Socios',
-    recognitionsSection: 'Reconocimientos',
-    finalist: 'Finalista',
     cta: '¿Interesado en participar?',
     ctaSelection: 'Proceso de Selección',
     ctaArticles: 'Nuestros Artículos',
     ctaContact: 'Contacto',
-    sponsor: 'Sponsor',
     membersCount: 'miembros',
     loading: 'Cargando datos de impacto...',
     leadTitle: '¿Interesado en participar?',
@@ -438,7 +426,6 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
                     {tribe.member_count} {l.membersCount}
                   </span>
                 </div>
-                {tribe.leader_name && <div className="text-[11px] text-[var(--text-muted)] mt-2 truncate">{tribe.leader_name}</div>}
               </div>
             </a>
           ))}
@@ -462,7 +449,6 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
                   {pub.platform && <span className="px-2 py-0.5 bg-[var(--surface-hover)] rounded">{pub.platform}</span>}
                   {pub.publication_date && <span>{pub.publication_date}</span>}
                 </div>
-                {pub.authors?.length > 0 && <div className="text-xs text-[var(--text-muted)] mt-1">{pub.authors.join(', ')}</div>}
               </Tag>
               );
             })}
@@ -483,46 +469,6 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
                 <div className="font-bold text-sm text-[var(--text-primary)]">{ch.chapter}</div>
                 <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
                 <div className="text-xs text-[var(--text-secondary)]">{l.membersCount}</div>
-                {ch.sponsor && <div className="text-[11px] text-[var(--text-muted)] mt-2">{l.sponsor}: {ch.sponsor}</div>}
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Partners */}
-      {data.partners?.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-6">{l.partnersSection}</h2>
-          <div className="flex flex-wrap justify-center gap-4">
-            {data.partners.map((p, i) => (
-              <div key={i} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl px-5 py-3">
-                <div className="font-semibold text-sm text-[var(--text-primary)]">{p.name}</div>
-                <div className="text-xs text-[var(--text-muted)] capitalize">{p.type}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Recognitions */}
-      {data.recognitions?.length > 0 && (
-        <section>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] text-center mb-6">{l.recognitionsSection}</h2>
-          <div className="max-w-2xl mx-auto space-y-3">
-            {data.recognitions.map((rec, i) => (
-              <div key={i} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-5 flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg">🏅</div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm text-[var(--text-primary)]">{rec.title}</div>
-                  <div className="text-xs text-[var(--text-secondary)] mt-1">{rec.organization}</div>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold">{l.finalist}</span>
-                    <span className="text-[10px] text-[var(--text-muted)]">{rec.category}</span>
-                    <span className="text-[10px] text-[var(--text-muted)]">{rec.date}</span>
-                  </div>
-                  <div className="text-xs text-[var(--text-muted)] mt-2">{rec.recipient} — {rec.description}</div>
-                </div>
               </div>
             ))}
           </div>
