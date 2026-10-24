@@ -49,7 +49,8 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
+          check-latest: true
           cache: 'npm'
       - run: npm ci --ignore-scripts
       - name: Varredura do tracker com controle positivo

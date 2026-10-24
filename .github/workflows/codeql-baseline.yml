@@ -50,7 +50,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version-file: '.nvmrc'
+          check-latest: true
 
       # Sem `--ref`: compara o conjunto INTEIRO de alertas abertos do repo contra a base
       # versionada. O script recusa rodar sem token — skip aqui seria verde por vacuidade,

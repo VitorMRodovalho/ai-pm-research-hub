@@ -54,7 +54,8 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.ref }}
       - uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version-file: '.nvmrc'
+          check-latest: true
       - run: npm ci
       # #2255 — o carimbo de proveniencia. Sem ele nao ha como perguntar a producao qual commit ela
       # roda, e o `skipped` silencioso deste portao (ver o cabecalho) fica invisivel nas duas pontas.

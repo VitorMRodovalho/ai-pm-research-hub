@@ -21,19 +21,21 @@
  */
 const SEM_EXTENSAO = /\.[mc]?[jt]sx?$/;
 
-export async function resolve(specifier, context, nextResolve) {
+// Síncrono: é o contrato de `module.registerHooks` (ver register-ts-resolve.mjs), onde
+// `nextResolve` devolve o resultado ou lança, sem Promise.
+export function resolve(specifier, context, nextResolve) {
   const relativo = specifier.startsWith('./') || specifier.startsWith('../');
   if (!relativo || SEM_EXTENSAO.test(specifier)) {
     return nextResolve(specifier, context);
   }
 
   try {
-    return await nextResolve(specifier, context);
+    return nextResolve(specifier, context);
   } catch (err) {
     if (err?.code !== 'ERR_MODULE_NOT_FOUND') throw err;
     for (const candidato of [`${specifier}.ts`, `${specifier}.tsx`, `${specifier}/index.ts`]) {
       try {
-        return await nextResolve(candidato, context);
+        return nextResolve(candidato, context);
       } catch (e) {
         if (e?.code !== 'ERR_MODULE_NOT_FOUND') throw e;
       }
