@@ -75,7 +75,7 @@ test('#2553: a descrição em inglês não carrega contagem fixa de pesquisadore
 test('#2553 D7: as descrições de busca da home e do /about são os textos aprovados, sem contagem escrita à mão', () => {
   for (const [key, byLang] of Object.entries(APPROVED)) {
     for (const [lang, text] of Object.entries(byLang)) {
-      const m = DICTS[lang].match(new RegExp(`^  '${key.replace(/\./g, '\\.')}': '([^']*)',$`, 'm'));
+      const m = DICTS[lang].match(new RegExp(`^  '${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '([^']*)',$`, 'm'));
       assert.ok(m, `${key} ausente em ${lang}`);
       assert.doesNotMatch(m[1].replace('{tribeCount}', ''), /\d/, `${lang}: ${key} com número escrito`);
       assert.equal(m[1], text, `${lang}: ${key}`);
