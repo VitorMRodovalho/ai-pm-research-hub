@@ -8,7 +8,7 @@ const enUS: Record<string, string> = {
   'meta.description': 'AI & PM Study and Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. {tribeCount} thematic tribes. Open-source trilingual platform.',
   'meta.ogImageAlt': 'AI & PM Research Hub: Study and Research Hub on Artificial Intelligence and Project Management. Hosted by PMI Goiás, cooperation among PMI chapters in Brazil',
   'about.meta.title': 'About — AI & Project Management Research Hub',
-  'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil. 51+ researchers, 8 research tribes, custom digital platform.',
+  'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil, hosted by PMI Goiás: applied research lines on AI and project management, with open outputs and its own digital platform.',
   'meetings.meta.title': 'Meeting Minutes — AI & PM Research Hub',
   'meetings.meta.description': 'Searchable archive of all Hub meeting minutes. Full-text search, filters by tribe and type, cross-tribe view.',
 

@@ -64,8 +64,10 @@ test('get_public_impact_data is granted to anon', () => {
 test('get_public_impact_data returns all required fields', () => {
   const body = findFunctionBody('get_public_impact_data');
   assert.ok(body);
+  // #2553 DB-4 (GP 2026-10-24): 'partners' (a list of names, one of them a person) left the response;
+  // partner_count stays. See 2553-about-sem-nome-de-pessoa.
   const fields = ['chapters', 'active_members', 'tribes', 'articles_published', 'impact_hours',
-                   'webinars', 'recent_publications', 'tribes_summary', 'chapters_summary', 'partners', 'timeline'];
+                   'webinars', 'recent_publications', 'tribes_summary', 'chapters_summary', 'partner_count', 'timeline'];
   for (const f of fields) {
     assert.ok(body.includes(`'${f}'`), `get_public_impact_data must include ${f}`);
   }

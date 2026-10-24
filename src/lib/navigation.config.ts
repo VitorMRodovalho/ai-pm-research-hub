@@ -109,6 +109,8 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'board-publications', labelKey: 'nav.boardPublications', href: '/initiative/e885525e-a0f1-4e16-813c-497047209047', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'subprojects', drawerSection: 'producao', allowedDesignations: ['comms_leader', 'comms_member', 'curator', 'co_gp'] },
   { key: 'ia-pilots',    labelKey: 'nav.projects',     href: '/projects',      minTier: 'visitor', requiresAuth: false, section: 'main', group: 'subprojects', navSlot: 'none' },
   { key: 'blog',         labelKey: 'nav.blog',         href: '/blog',          minTier: 'visitor', requiresAuth: false, section: 'main',   group: 'tools', navSlot: 'primary' },
+  // #2553 D7 (GP 24/10/2026): o /about entra no menu de quem visita
+  { key: 'about',        labelKey: 'nav.about',        href: '/about',         minTier: 'visitor', requiresAuth: false, section: 'main',   group: 'tools', navSlot: 'primary' },
 
   // ─── Profile drawer only ───
   { key: 'profile', labelKey: 'nav.profile', href: '/profile', minTier: 'visitor', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco' }, // #867 pre-term journey — guest-reachable (profile.astro self-gates via isRegisteredMember; own-row SECDEF)
