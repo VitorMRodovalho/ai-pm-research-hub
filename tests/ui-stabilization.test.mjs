@@ -886,10 +886,11 @@ test('navigation home anchors curated to the funnel (C4 polish, PD-NAV)', () => 
   // (redundant) and #breakout/networking is not rendered on the home (dead link).
   assert.equal(navConfig.includes("key: 'quadrants'"), false, 'redundant #quadrants removed');
   assert.equal(navConfig.includes("key: 'networking'"), false, 'dead #breakout/networking removed');
-  // Real funnel anchors present (in page order): verticals → platform-stats → trail → chapters →
-  // join → partners → agenda → team. #agenda now points to the public Agenda Viva (R8), not a stub.
-  for (const k of ['platform-stats', 'chapters', 'join', 'agenda']) {
-    assert.equal(navConfig.includes(`key: '${k}'`), true, `home anchor '${k}' present`);
+  // Real funnel anchors present (in page order). #2553 PR 2 (home v2): outputs → tribes (research lines) →
+  // chapters → join → agenda → team → trail → kpis; the stats band and the verticals left the home.
+  // #agenda points to the public Agenda Viva (R8), not a stub.
+  for (const k of ['outputs', 'tribes', 'chapters', 'join', 'agenda', 'team', 'trail', 'kpis']) {
+    assert.match(navConfig, new RegExp(`\\{ key: '${k}',[^\\n]*group: 'home-anchors'`), `home anchor '${k}' present`);
   }
   assert.equal(nav.includes('item.disabled ? ('), true, 'disabled items still render as span when present');
 });
@@ -1026,19 +1027,19 @@ test('admin tribe catalog UI helpers are extracted to dedicated module', () => {
   assert.equal(helpers.includes('export function buildAdminTribeFilterHtml('), true);
 });
 
-test('home pages resolve shared home schedule instead of fetching only the deadline', () => {
+test('home pages no longer fetch the deadline on its own, and carry no selection deadline', () => {
   const pt = read('src/pages/index.astro');
   const en = read('src/pages/en/index.astro');
   const es = read('src/pages/es/index.astro');
   for (const content of [pt, en, es]) {
-    assert.equal(content.includes('getHomeSchedule'), true);
-    // R5 (Ciclo 4): deadline migrou da ResourcesSection (playlist foi p/ o rodapé) e
-    // segue cabeada do schedule compartilhado para a TribesSection (consumidor real).
-    assert.equal(content.includes('TribesSection deadline={deadlineIso}'), true);
+    assert.equal(content.includes('getSelectionDeadlineIso'), false);
+    // #2553 PR 2 (home v2): entrada contínua (D2). A TribesSection, único consumidor do prazo, saiu da home,
+    // e nenhuma seção recebe prazo de seleção.
+    assert.doesNotMatch(content, /\bdeadline=\{/);
   }
   // All locales now use HomepageHero (unified in CBGPL prep)
   for (const content of [pt, en, es]) {
-    assert.equal(content.includes('HomepageHero'), true);
+    assert.match(content, /^\s*<HomepageHero\b/m);
   }
 });
 
