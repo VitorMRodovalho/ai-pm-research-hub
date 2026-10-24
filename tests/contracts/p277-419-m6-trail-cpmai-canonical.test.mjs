@@ -27,6 +27,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000081_p277_419_m6_trail_cpmai_canonical.sql');
@@ -39,19 +40,22 @@ const dbGated = !!(SUPABASE_URL && SUPABASE_KEY);
 const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 
 // ── STATIC: trail canonical ─────────────────────────────────────────────────────
+// #2553 (GP 22/10/2026, opção a): a coorte mudou numa migration posterior, então estas duas afirmações leem a captura
+// VIGENTE de calc_trail_completion_pct (latestFunctionCapture), não mais o arquivo da M6, que segue sendo a história.
 test('M6 static: calc_trail_completion_pct uses a dynamic is_trail total (no hardcoded 6)', () => {
-  assert.ok(existsSync(MIG), 'M6 migration 20260805000081 exists');
-  const fn = mig.match(/CREATE OR REPLACE FUNCTION public\.calc_trail_completion_pct[\s\S]*?\$function\$;/);
-  assert.ok(fn, 'calc_trail_completion_pct block parses');
-  assert.match(fn[0], /NULLIF\(\(SELECT COUNT\(\*\) FROM courses WHERE is_trail = true\), 0\)/,
+  const { body } = latestFunctionCapture(ROOT, 'calc_trail_completion_pct');
+  const code = body.replace(/--[^\n]*/g, '');
+  assert.match(code, /NULLIF\(tot\.n, 0\)[\s\S]*CROSS JOIN \(SELECT COUNT\(\*\) AS n FROM public\.courses WHERE is_trail = true\) tot/,
     'denominator is the dynamic is_trail course count');
-  assert.doesNotMatch(fn[0], /\/\s*6\.0/, 'no hardcoded /6.0');
+  assert.doesNotMatch(code, /\/\s*6\.0/, 'no hardcoded /6.0');
 });
 
-test('M6 static: trail cohort excludes guests (aligns to get_public_trail_ranking)', () => {
-  const fn = mig.match(/CREATE OR REPLACE FUNCTION public\.calc_trail_completion_pct[\s\S]*?\$function\$;/);
-  assert.match(fn[0], /operational_role NOT IN \('sponsor', 'chapter_liaison', 'observer', 'candidate', 'visitor', 'guest'\)/,
-    "the blocklist now includes 'guest'");
+test('M6 static: the trail cohort is the research team (v_operational_members), not a role blocklist', () => {
+  const { body } = latestFunctionCapture(ROOT, 'calc_trail_completion_pct');
+  const code = body.replace(/--[^\n]*/g, '');
+  assert.match(code, /FROM public\.v_operational_members om\s+LEFT JOIN public\.course_progress cp/,
+    'the cohort is the same population as the hero researchers (#2553)');
+  assert.doesNotMatch(code, /operational_role\s+NOT\s+IN/i, 'no role blocklist');
 });
 
 // ── STATIC: cpmai goal-metric helper + repoints ─────────────────────────────────
@@ -84,6 +88,8 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   // 54.64). Whether the HOME headline should also exclude pre-onboarding members is a product decision
   // tracked on #1180; this test now verifies the function against a live re-derivation of its OWN
   // contract: partial-credit AVG of per-member completed/trail_total over the operational cohort.
+  // #2553 (GP 22/10/2026, opção a): the cohort is now v_operational_members (the hero's researchers:
+  // manager, deputy_manager, tribe_leader, researcher), and each completed course counts once per person.
   const sb = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
   const { data: home, error: e1 } = await sb.rpc('calc_trail_completion_pct');
   assert.ifError(e1);
@@ -96,7 +102,7 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   const { data: cohort, error: e3 } = await sb
     .from('members').select('id')
     .eq('is_active', true).eq('current_cycle_active', true)
-    .not('operational_role', 'in', '("sponsor","chapter_liaison","observer","candidate","visitor","guest")');
+    .in('operational_role', ['manager', 'deputy_manager', 'tribe_leader', 'researcher']);
   assert.ifError(e3);
   assert.ok(cohort.length > 0, 'trail cohort non-empty');
 
@@ -106,9 +112,10 @@ test('M6 behavioural: calc_trail_completion_pct == live re-derivation of its own
   assert.ifError(e4);
   const completedByMember = new Map();
   for (const p of progress || []) {
-    completedByMember.set(p.member_id, (completedByMember.get(p.member_id) || 0) + 1);
+    if (!completedByMember.has(p.member_id)) completedByMember.set(p.member_id, new Set());
+    completedByMember.get(p.member_id).add(p.course_id);
   }
-  const avg = cohort.reduce((s, m) => s + (completedByMember.get(m.id) || 0) / trailIds.size, 0) / cohort.length;
+  const avg = cohort.reduce((s, m) => s + (completedByMember.get(m.id)?.size || 0) / trailIds.size, 0) / cohort.length;
   const expected = Math.round(avg * 100);
   // ±1 tolerance: the RPC and the re-derivation read the DB at slightly different instants.
   assert.ok(Math.abs(Number(home) - expected) <= 1,
