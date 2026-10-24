@@ -968,7 +968,7 @@ const enUS: Record<string, string> = {
   // #2738: aviso do Grupo de Estudos PMI-CPMAI (some depois de 05/11; data em src/lib/cpmaiStudyGroupNotice.ts).
   'cpmaiStudyGroup.badge': 'Coming soon',
   'cpmaiStudyGroup.title': 'PMI-CPMAI Study Group',
-  'cpmaiStudyGroup.body': 'A critical, applied study of the CPMAI methodology, in light of PMI standards and real cases. It is not an exam prep course. The group is paid, with a special price for PMI members. Opens on November 5, with a pre-launch at the General Meeting, open to the public.',
+  'cpmaiStudyGroup.body': 'A critical, applied study of the CPMAI methodology, in light of PMI standards and real cases. It is not an exam prep course. The group is paid, with a special price for PMI members. Pre-launch at the November 5 General Meeting, open to the public.',
   'cpmaiStudyGroup.cta': 'Learn more',
   'ladder.title': 'A mastery ladder, by tier',
   'ladder.subtitle': 'From the PMI AI Trail to the CPMAI study group to the PMI-CPMAI™ certification (issued by PMI) — a progression by merit and protagonism. Every rung adds to your research portfolio and to the Núcleo\'s annual goal.',
