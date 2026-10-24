@@ -131,16 +131,17 @@ await test('nucleo-mcp/health → ok + version + 52 tools', async () => {
 // ═══ GROUP 6: Public RPCs ═══
 console.log('\n── Public RPCs ──');
 
-await test('get_public_leaderboard → returns rows', async () => {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_leaderboard`, {
+// #2553 D4: o visitante recebe o agregado; o leaderboard com nomes deixa de responder ao anon.
+await test('get_public_gamification_summary → aggregate, no names', async () => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_gamification_summary`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'apikey': ANON_KEY, 'Authorization': `Bearer ${ANON_KEY}` },
-    body: '{"p_limit": 3}',
+    body: '{}',
   });
   assert.equal(res.status, 200);
   const data = await res.json();
-  assert.ok(Array.isArray(data), 'Response is array');
-  assert.ok(data.length > 0, 'Has leaderboard entries');
+  assert.deepEqual(Object.keys(data).sort(), ['levels', 'participants', 'total_points', 'with_points']);
+  assert.ok(data.participants > 0, 'Has participants');
 });
 
 await test('get_public_platform_stats → returns stats', async () => {

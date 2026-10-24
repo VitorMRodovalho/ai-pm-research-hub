@@ -38,6 +38,10 @@ const GAM_I18N = {
   lbEmpty: t('gamification.lb.empty', lang),
   lbEmptySync: t('gamification.lb.emptySync', lang),
   lbErrorLoad: t('gamification.lb.errorLoad', lang),
+  lbPublicSummary: t('gamification.lb.publicSummary', lang),
+  lbPublicLevels: t('gamification.lb.publicLevels', lang),
+  lbPublicNamesNote: t('gamification.lb.publicNamesNote', lang),
+  lbPublicLogin: t('gamification.lb.publicLogin', lang),
   lbYou: t('gamification.lb.you', lang),
   lbBreakdownCycle: t('gamification.lb.breakdownCycle', lang),
   lbBreakdownLifetime: t('gamification.lb.breakdownLifetime', lang),
@@ -827,8 +831,8 @@ const SCORING_I18N = {
     const el = document.getElementById('leaderboard-layers');
     if (!el) return;
     const layers = deriveLayers(allRows);
-    // Anon/ghost usa `get_public_leaderboard`, que nao devolve `operational_role`: sem camada
-    // alguma, a faixa inteira desaparece em vez de virar um "Todas" solitario.
+    // Anon/ghost ve so o agregado (#2553), sem linha por pessoa: sem camada alguma, a faixa
+    // inteira desaparece em vez de virar um "Todas" solitario.
     if (layers.length < 2) { el.innerHTML = ''; return; }
 
     const chip = (key: string, rotulo: string, n: number) => {
@@ -1193,26 +1197,11 @@ const SCORING_I18N = {
   async function loadLeaderboard() {
     setPanelMessage('leaderboard-list', I.loading, 'loading');
     try {
-      // Anon/Ghost: use public leaderboard RPC (no PII, LGPD-safe)
+      // #2553 D4 (GP 20/10/2026): quem não entrou vê o time em agregado, sem nome. O ranking com nome é de membro.
       if (!MEMBER) {
-        // Public view: top 10 with XP > 0 only (protects low-engagement members)
-        const { data: pubData, error: pubError } = await sb.rpc('get_public_leaderboard', { p_limit: 50 });
-        if (pubError) throw pubError;
-        const rows = (Array.isArray(pubData) ? pubData : []).filter((r: any) => r.xp_total > 0).slice(0, 10);
-        if (!rows.length) { setPanelMessage('leaderboard-list', I.lbEmpty, 'empty'); return; }
-        leaderboardData = rows.map((r: any, i: number) => ({
-          member_id: null,
-          name: r.member_name,
-          chapter: r.chapter,
-          tribe_name: r.tribe_name,
-          cycle_points: r.xp_total,
-          lifetime_points: r.xp_total,
-          level_name: r.level_name,
-        }));
-        credlyByMember = {};
-        trailProgressByMember = new Map();
-        lifetimePointsByMember = {};
-        renderLeaderboard();
+        const { data: summary, error: summaryError } = await sb.rpc('get_public_gamification_summary');
+        if (summaryError) throw summaryError;
+        renderPublicSummary(summary);
         return;
       }
 
@@ -1241,6 +1230,37 @@ const SCORING_I18N = {
       console.error('gamification.loadLeaderboard failed', e);
       setPanelMessage('leaderboard-list', `${I.lbErrorLoad}${e?.message || I.msgFailUnexpected}`, 'error');
     }
+  }
+
+  // Visitante: quantas pessoas há no ranking e como se distribuem pelos níveis. Nenhum nome, nenhuma linha por pessoa.
+  function renderPublicSummary(summary: any) {
+    const el = document.getElementById('leaderboard-list');
+    if (!el) return;
+    const levels: any[] = Array.isArray(summary?.levels) ? summary.levels : [];
+    const participants = Number(summary?.participants ?? 0);
+    if (!participants || !levels.length) { setPanelMessage('leaderboard-list', I.lbEmpty, 'empty'); return; }
+    const widest = Math.max(1, ...levels.map((l) => Number(l.members) || 0));
+    const names = I.levelNames || {};
+    const head = String(I.lbPublicSummary || '')
+      .replace('{participants}', String(participants))
+      .replace('{withPoints}', String(Number(summary?.with_points ?? 0)));
+    el.innerHTML = `
+      <p class="text-sm text-[var(--text-primary)] mb-3">${escapeHtml(head)}</p>
+      <div class="text-[10px] font-bold uppercase tracking-wide text-[var(--text-muted)] mb-2">${escapeHtml(I.lbPublicLevels || '')}</div>
+      <ul class="list-none p-0 m-0 grid gap-2">
+        ${levels.map((l) => {
+          const n = Number(l.members) || 0;
+          return `<li class="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_3rem] items-center gap-3 text-[13px]">
+            <span>${escapeHtml(l.emoji || '')} ${escapeHtml(names[l.slug] || l.slug)}</span>
+            <span class="h-2 rounded-full bg-[var(--surface-base)] overflow-hidden" aria-hidden="true"><span class="block h-full rounded-full bg-teal" style="width:${Math.round((n / widest) * 100)}%"></span></span>
+            <span class="text-right font-bold tabular-nums">${n}</span>
+          </li>`;
+        }).join('')}
+      </ul>
+      <div class="text-center mt-5">
+        <p class="text-[12px] text-[var(--text-muted)]">${escapeHtml(I.lbPublicNamesNote || '')}</p>
+        <button type="button" class="mt-3 px-4 py-2 bg-teal text-white rounded-xl text-sm font-semibold cursor-pointer border-0 hover:opacity-90 transition-all" data-action="open-auth">${escapeHtml(I.lbPublicLogin || '')}</button>
+      </div>`;
   }
 
   // ── TRIBE RANKING ──
@@ -1970,6 +1990,9 @@ const SCORING_I18N = {
     switch (target.dataset.action) {
       case 'sync-points':
         syncPoints();
+        break;
+      case 'open-auth':
+        document.dispatchEvent(new CustomEvent('open-auth'));
         break;
       case 'switch-tab': {
         const tab = target.dataset.tab;
