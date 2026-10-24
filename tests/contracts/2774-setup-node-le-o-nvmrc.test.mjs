@@ -26,6 +26,12 @@
  * `.nvmrc`, e mantem o `check-latest`. Isencao para arquivo que nao existe, ou para arquivo que
  * passou a ler o `.nvmrc` como os outros, tambem reprova: ficou sem objeto.
  *
+ * `CI` e `GITHUB_ACTIONS`: tres sentinelas (`rpc-migration-coverage`, `ef-smoke`, `1619`) reprovam a
+ * falta de credencial de banco quando se sabem na CI, para a CI nunca pular calada. Apagar uma das
+ * duas variaveis desliga essas sentinelas. So o canario isento pode, porque nao tem banco por
+ * desenho, e ele PRECISA, senao reprova por construcao: foi o que a primeira rodada dele mostrou em
+ * 24/10/2026 (run 40119188841). Qualquer outro workflow que as apague reprova aqui.
+ *
  * Cross-ref: #2774, `.nvmrc`, `.github/workflows/node-next-canary.yml`,
  * `docs/runbooks/RUNBOOK_NODE_MAJOR.md`.
  */
@@ -48,6 +54,8 @@ const GATILHOS_SEM_MERGE = new Set(['schedule', 'workflow_dispatch']);
 const SETUP_NODE = /^actions\/setup-node@/;
 /** `node`, `npm` ou `npx` em posicao de comando: inicio de linha, depois de `;`, `&`, `|`, `(` ou `$(`. */
 const CHAMA_NODE = /(^|[;&|(]|\$\()\s*(node|npm|npx)(\s|$)/m;
+/** Tira `CI` ou `GITHUB_ACTIONS` do ambiente: `env -u`, `unset`, chave de `env:` ou atribuicao. */
+const APAGA_CI = /(^|\s)-u\s+(CI|GITHUB_ACTIONS)\b|\bunset\b[^\n]*\b(CI|GITHUB_ACTIONS)\b|^\s*(CI|GITHUB_ACTIONS):|(^|[^\w$])(CI|GITHUB_ACTIONS)=/m;
 
 /** Remove comentarios YAML (mesma forma do guard do #1509), para nao asserir sobre prosa. */
 function semComentarios(src) {
@@ -196,7 +204,17 @@ export function avaliar(workflows, isencoes = ISENCOES) {
       v.push(`${arquivo}: ${ocorrencias} ocorrencia(s) de actions/setup-node@ no texto e ${achados} passo(s) ` +
         'recortado(s); o recorte perdeu um passo, e o que ele perdeu nao foi julgado');
     }
+    if (!isencao && APAGA_CI.test(src)) {
+      v.push(`${arquivo}: tira CI ou GITHUB_ACTIONS do ambiente, e isso desliga as sentinelas de credencial ` +
+        'de banco; so o canario isento pode');
+    }
     if (isencao) {
+      for (const linha of src.split('\n').filter((l) => /run-suite\.mjs/.test(l))) {
+        if (!/-u\s+CI\b/.test(linha) || !/-u\s+GITHUB_ACTIONS\b/.test(linha)) {
+          v.push(`${arquivo}: isento, mas roda as suites com o CI do runner, e as sentinelas de credencial ` +
+            `reprovam por construcao (use \`env -u CI -u GITHUB_ACTIONS\`): ${linha.trim()}`);
+        }
+      }
       const fora = gatilhos(src).filter((g) => !GATILHOS_SEM_MERGE.has(g));
       if (fora.length) v.push(`${arquivo}: isento, mas dispara em ${fora.join(', ')}, que segura merge`);
       if (/\bsecrets\./.test(src)) v.push(`${arquivo}: isento, mas cita secret; o canario nao fala com o banco`);
@@ -280,6 +298,7 @@ jobs:
           node-version: \${{ steps.next.outputs.major }}
           check-latest: true
       - run: npm ci
+      - run: env -u CI -u GITHUB_ACTIONS node scripts/run-suite.mjs structural
 `;
 
 const ISENTO = [{ arquivo: 'canario.yml', motivo: 'fixture' }];
@@ -341,6 +360,27 @@ test('#2774 mutacao: a isencao do canario vale so com as condicoes dela', () => 
     /isencao para canario\.yml, que nao existe/, 'mutacao 14: isencao para arquivo que sumiu');
   assert.match(julga(CANARIO, { arquivo: 'canario.yml' }), /em vez do \.nvmrc/,
     'mutacao 15: sem a isencao declarada, o mesmo canario reprova (a isencao e o que libera)');
+  assert.equal(comoCanario(CANARIO), '', 'controle final sem mutacao');
+});
+
+test('#2774 mutacao: CI e GITHUB_ACTIONS so saem do ambiente no canario', () => {
+  const comoCanario = (corpo) => julga(corpo, { arquivo: 'canario.yml', isencoes: ISENTO });
+  assert.equal(julga(OK), '', 'controle sem mutacao: o workflow comum nao mexe no CI');
+  assert.equal(comoCanario(CANARIO), '', 'controle sem mutacao: o canario tira os dois e passa');
+
+  assert.match(julga(muta(OK, '      - run: npm ci\n', '      - run: env -u CI npm ci\n')),
+    /tira CI ou GITHUB_ACTIONS do ambiente/, 'mutacao 19: workflow comum com `env -u CI`');
+  assert.match(julga(muta(OK, '      - run: npm ci\n', "      - run: npm ci\n        env:\n          CI: 'false'\n")),
+    /tira CI ou GITHUB_ACTIONS do ambiente/, 'mutacao 20: workflow comum com CI no `env:` do passo');
+  assert.match(julga(muta(OK, '      - run: npm ci\n', '      - run: unset GITHUB_ACTIONS; npm ci\n')),
+    /tira CI ou GITHUB_ACTIONS do ambiente/, 'mutacao 21: workflow comum com `unset`');
+  assert.equal(julga(muta(OK, '      - run: npm ci\n', '      - run: npm ci # nunca env -u CI aqui\n')), '',
+    'controle: o comentario que cita a forma proibida nao conta');
+  assert.match(comoCanario(muta(CANARIO, 'env -u CI -u GITHUB_ACTIONS node', 'env -u CI node')),
+    /roda as suites com o CI do runner/,
+    'mutacao 22: canario que so tira o CI (o GITHUB_ACTIONS sozinho tambem liga as sentinelas)');
+  assert.match(comoCanario(muta(CANARIO, 'env -u CI -u GITHUB_ACTIONS node', 'node')),
+    /roda as suites com o CI do runner/, 'mutacao 23: canario com o ambiente do runner, como na primeira rodada');
   assert.equal(comoCanario(CANARIO), '', 'controle final sem mutacao');
 });
 
