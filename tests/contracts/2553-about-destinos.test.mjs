@@ -3,7 +3,9 @@
 //   B. os cards de linha levam à lista de linhas da home (#tribes), porque /tribe/<id> nega o visitante;
 //   C. publicação sem URL fica sem link (antes, href="#");
 //   D. o JSON-LD não declara o PMI como organização-mãe (D11: "Não é um programa do PMI, Inc.") e conta os
-//      pesquisadores pela fonte única da home, sem número escrito.
+//      pesquisadores pela fonte única da home, sem número escrito;
+//   E. (GP 24/10/2026) o /about entra no menu de quem visita: item público na barra de cima, com rótulo nas 3 línguas,
+//      e o Nav entrega ao visitante os itens dessa barra.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -33,5 +35,17 @@ describe('#2553 D7 /about, destinos', () => {
     assert.match(PAGE, /const researchers = \(await loadHomeStats\(\)\)\?\.members \?\? null;/);
     assert.match(PAGE, /\.\.\.\(researchers !== null \? \{ "numberOfEmployees": \{ "@type": "QuantitativeValue", "value": researchers \} \} : \{\}\)/);
     assert.doesNotMatch(PAGE, /"value": \d+/);
+  });
+
+  it('E: o /about está no menu de quem visita, com rótulo nas 3 línguas', () => {
+    const NAV = maskJsComments(readFileSync('src/lib/navigation.config.ts', 'utf8'));
+    assert.match(NAV, /\{ key: 'about',\s+labelKey: 'nav\.about',\s+href: '\/about',\s+minTier: 'visitor', requiresAuth: false, section: 'main',\s+group: 'tools', navSlot: 'primary' \},/);
+    for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
+      assert.match(readFileSync(`src/i18n/${lang}.ts`, 'utf8'), /^  'nav\.about': '[^']+',$/m, `${lang}: nav.about`);
+    }
+    const COMP = maskJsComments(readFileSync('src/components/nav/Nav.astro', 'utf8'));
+    assert.match(COMP, /const publicMainItems = mainItems\.filter\(i => !i\.requiresAuth\);/);
+    assert.match(COMP, /const primaryPublicItems = publicMainItems\.filter\(i => \(i as any\)\.navSlot === 'primary'\);/);
+    assert.match(COMP, /const visitorNavItems = isHomePage\s+\? primaryPublicItems\s+: \[\.\.\.homeAnchorItems\.filter\([^\n]*\), \.\.\.primaryPublicItems\];/);
   });
 });
