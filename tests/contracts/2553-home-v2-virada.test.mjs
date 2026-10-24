@@ -48,7 +48,7 @@ const APPROVED_RELATION = {
   'en-US': 'A volunteer cooperation initiative among PMI chapters in Brazil, hosted by PMI Goiás, with which participating chapters sign their agreements. It is not a program of PMI, Inc.',
   'es-LATAM': 'Iniciativa voluntaria de cooperación entre capítulos del PMI en Brasil, con sede en PMI Goiás, con el cual los capítulos firman sus acuerdos. No es un programa del PMI, Inc.',
 };
-const value = (dict, key) => dict.match(new RegExp(`^  '${key.replace(/\./g, '\\.')}': '((?:[^'\\\\]|\\\\.)*)',$`, 'm'))?.[1];
+const value = (dict, key) => dict.match(new RegExp(`^  '${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '((?:[^'\\\\]|\\\\.)*)',$`, 'm'))?.[1];
 
 describe('#2553 a virada da home', () => {
   for (const page of PAGES) {
@@ -124,7 +124,7 @@ describe('#2553 a virada da home', () => {
     for (const m of read('src/lib/navigation.config.ts').matchAll(/labelKey: '(nav\.v2\.\w+)'/g)) keys.add(m[1]);
     assert.ok([...keys].filter((k) => k.startsWith('homeV2.')).length >= 60, 'chaves homeV2 não lidas');
     for (const [lang, dict] of Object.entries(DICTS)) {
-      const missing = [...keys].filter((k) => !new RegExp(`^  '${k.replace(/\./g, '\\.')}': `, 'm').test(dict));
+      const missing = [...keys].filter((k) => !new RegExp(`^  '${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': `, 'm').test(dict));
       assert.deepEqual(missing, [], `${lang}: chaves ausentes`);
     }
   });
