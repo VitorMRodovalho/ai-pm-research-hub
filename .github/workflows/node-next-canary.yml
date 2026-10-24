@@ -190,25 +190,37 @@ jobs:
             log=/tmp/canary-$b.log
             echo "::group::$b: $(sumario "$log")"
             if [ -f "$log" ]; then
+              mapfile -t achadas < <(falhas_do_balde "$log")
               # Contagem cruzada: o recorte tem de achar tantas falhas quantas o reporter declarou.
               # Se nao achar (balde que morreu sem sumario, ou formato novo), o fim do log vai junto.
               declarado=$(grep -E '^ℹ fail [0-9]+$' "$log" | tail -n 1 | grep -oE '[0-9]+' || true)
-              achadas=0
-              while IFS=$'\t' read -r f l t e; do
-                achadas=$((achadas + 1))
+              # Os comandos que NOS montamos ficam fora do bloco abaixo. O nome e o erro do teste vao
+              # so no dado do comando, com `%` escapado, e por isso nao viram comando.
+              for i in "${!achadas[@]}"; do
+                [ "$i" -lt 10 ] || break
+                IFS=$'\t' read -r f l t e <<< "${achadas[$i]}"
+                echo "::error file=$f,line=$l,title=canario $b::$(printf '%s: %s' "$t" "$e" | sed 's/%/%25/g')"
+              done
+              diverge=0
+              if [ -z "$declarado" ] || [ "${#achadas[@]}" -ne "$declarado" ]; then
+                diverge=1
+                echo "::warning title=canario $b::o reporter declarou ${declarado:-nenhum} fail e o recorte achou ${#achadas[@]}; segue o fim do log"
+              fi
+              # Daqui ate o token, a saida e do TESTE: o runner apara o espaco do comeco e le `::cmd::`
+              # como comando (e `##[cmd]` em qualquer ponto da linha). Com o `stop-commands`, uma linha
+              # de teste nao vira anotacao, mascara nem variavel. Token aleatorio por rodada.
+              fim=$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')
+              echo "::stop-commands::$fim"
+              for a in "${achadas[@]}"; do
+                IFS=$'\t' read -r f l t e <<< "$a"
                 echo "$f:$l  $t"
                 echo "    $e"
-                if [ "$achadas" -le 10 ]; then
-                  echo "::error file=$f,line=$l,title=canario $b::$(printf '%s: %s' "$t" "$e" | sed 's/%/%25/g')"
-                fi
-              done < <(falhas_do_balde "$log")
-              if [ -z "$declarado" ] || [ "$achadas" -ne "$declarado" ]; then
-                echo "::warning title=canario $b::o reporter declarou ${declarado:-nenhum} fail e o recorte achou $achadas; segue o fim do log"
-                tail -n 40 "$log"
-              fi
+              done
+              [ "$diverge" -eq 0 ] || tail -n 40 "$log"
               if [ "$(conta DeprecationWarning "$log")" != 0 ]; then
                 grep -m 5 -A 4 DeprecationWarning "$log" || true
               fi
+              echo "::$fim::"
             fi
             echo "::endgroup::"
           done
