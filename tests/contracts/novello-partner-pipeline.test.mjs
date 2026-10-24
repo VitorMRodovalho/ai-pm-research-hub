@@ -1,6 +1,9 @@
 /**
  * W122 + W123 Contract Tests: Novello Recognition + Partner Pipeline
  * Static analysis — reads migration files, UI files, and verifies structure.
+ *
+ * W122 retired in #2553 (DB-4): the GP decided on 2026-10-24 that the individual award leaves
+ * get_public_impact_data and the /about page. Its absence is guarded in 2553-about-sem-nome-de-pessoa.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -31,45 +34,6 @@ function findFunctionBody(funcName) {
   if (matches.length === 0) return null;
   return matches[matches.length - 1][2];
 }
-
-// ═══════════════════════════════════════════════════
-// W122: Carlos Novello Recognition
-// ═══════════════════════════════════════════════════
-
-test('get_public_impact_data includes recognitions array', () => {
-  const body = findFunctionBody('get_public_impact_data');
-  assert.ok(body, 'get_public_impact_data not found');
-  assert.ok(body.includes("'recognitions'"), 'Must include recognitions key');
-});
-
-test('recognitions has Carlos Novello entry', () => {
-  const body = findFunctionBody('get_public_impact_data');
-  assert.ok(body);
-  assert.ok(body.includes('Carlos Novello'), 'Must include Carlos Novello in recognitions');
-  assert.ok(body.includes('Finalista'), 'Must include Finalista designation');
-  assert.ok(body.includes('PMI LATAM'), 'Must reference PMI LATAM');
-  assert.ok(body.includes('2026-02-26'), 'Must include ceremony date');
-});
-
-test('ImpactPageIsland has recognitions section', () => {
-  const path = resolve(ROOT, 'src/components/islands/ImpactPageIsland.tsx');
-  assert.ok(existsSync(path));
-  const content = readFileSync(path, 'utf8');
-  assert.ok(content.includes('recognitions'), 'Must reference recognitions data');
-  assert.ok(content.includes('recognitionsSection'), 'Must have recognitionsSection label');
-});
-
-test('ImpactPageIsland recognitions i18n (pt-BR, en-US, es-LATAM)', () => {
-  const content = readFileSync(resolve(ROOT, 'src/components/islands/ImpactPageIsland.tsx'), 'utf8');
-  assert.ok(content.includes('Reconhecimentos'), 'pt-BR label');
-  assert.ok(content.includes('Recognitions'), 'en-US label');
-  assert.ok(content.includes('Reconocimientos'), 'es-LATAM label');
-});
-
-test('ImpactData interface includes recognitions', () => {
-  const content = readFileSync(resolve(ROOT, 'src/components/islands/ImpactPageIsland.tsx'), 'utf8');
-  assert.ok(content.includes('recognitions:'), 'ImpactData must have recognitions field');
-});
 
 // ═══════════════════════════════════════════════════
 // W123: Partner Pipeline RPCs
