@@ -34139,6 +34139,20 @@ export type Database = {
         }
         Returns: Json
       }
+      get_public_research_lines: {
+        Args: never
+        Returns: {
+          capacity: number
+          deliverables_i18n: Json
+          description_i18n: Json
+          members: number
+          name_i18n: Json
+          quadrant: string
+          quadrant_name_i18n: Json
+          slots: Json
+          tribe_id: number
+        }[]
+      }
       get_public_state_reach: {
         Args: never
         Returns: {
