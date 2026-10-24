@@ -57,19 +57,19 @@ test('B: o componente só renderiza quando a regra deixa, e a escada o renderiza
   assert.match(ladder, /<section class="[^"]*" id="trail">[\s\S]*?<CpmaiStudyGroupNotice lang=\{lang\} \/>/);
 });
 
-test('C: o texto é o aprovado nas três línguas e o link de entrada não existe', () => {
+test('C: o texto é o aprovado nas três línguas, não promete abertura, e o link de entrada não existe', () => {
   const approved = {
     'pt-BR': {
       badge: 'Em breve',
       title: 'Grupo de Estudos PMI-CPMAI',
-      body: 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais. Não é curso preparatório para a prova. O grupo é pago, com valor diferenciado para filiados ao PMI. Abre em 05/11, com pré-lançamento na Reunião Geral, aberta ao público.',
+      body: 'Estudo crítico e aplicado da metodologia CPMAI, à luz dos padrões do PMI e de casos reais. Não é curso preparatório para a prova. O grupo é pago, com valor diferenciado para filiados ao PMI. Pré-lançamento na Reunião Geral de 05/11, aberta ao público.',
       cta: 'Saiba mais',
     },
     'en-US': {
-      body: 'A critical, applied study of the CPMAI methodology, in light of PMI standards and real cases. It is not an exam prep course. The group is paid, with a special price for PMI members. Opens on November 5, with a pre-launch at the General Meeting, open to the public.',
+      body: 'A critical, applied study of the CPMAI methodology, in light of PMI standards and real cases. It is not an exam prep course. The group is paid, with a special price for PMI members. Pre-launch at the November 5 General Meeting, open to the public.',
     },
     'es-LATAM': {
-      body: 'Estudio crítico y aplicado de la metodología CPMAI, a la luz de los estándares del PMI y de casos reales. No es un curso preparatorio para el examen. El grupo es de pago, con un valor diferenciado para miembros del PMI. Abre el 5 de noviembre, con prelanzamiento en la Reunión General, abierta al público.',
+      body: 'Estudio crítico y aplicado de la metodología CPMAI, a la luz de los estándares del PMI y de casos reales. No es un curso preparatorio para el examen. El grupo es de pago, con un valor diferenciado para miembros del PMI. Prelanzamiento en la Reunión General del 5 de noviembre, abierta al público.',
     },
   };
   for (const [dict, keys] of Object.entries(approved)) {
@@ -78,6 +78,11 @@ test('C: o texto é o aprovado nas três línguas e o link de entrada não exist
       assert.ok(src.includes(`  'cpmaiStudyGroup.${k}': '${v}',\n`), `${dict} cpmaiStudyGroup.${k}`);
     }
     for (const k of ['badge', 'title', 'body', 'cta']) assert.match(src, new RegExp(`'cpmaiStudyGroup\\.${k}': '[^']+',`), `${dict} ${k}`);
+    // #2553 (GP 22/10/2026): a inscrição não está aberta e o site nunca anuncia antes da coordenação do grupo.
+    // Nenhuma das línguas pode dizer que o grupo "abre" ou que a inscrição está aberta ("aberta ao público" é a
+    // Reunião Geral, e continua).
+    const notice = [...src.matchAll(/'cpmaiStudyGroup\.\w+': '([^']+)',/g)].map((m) => m[1]).join(' ');
+    assert.doesNotMatch(notice, /\babre\b|\bopens\b|inscri[çc][õo](?:es|n)\s+abiert|inscri[çc][õo]es\s+abertas|enrol+ment\s+(?:is\s+)?open|registration\s+(?:is\s+)?open/i, `${dict}: o aviso promete abertura`);
     assert.doesNotMatch(src, /'cpmaiStudyGroup\.join'/, `${dict}: a chave do link de entrada saiu`);
   }
 });
