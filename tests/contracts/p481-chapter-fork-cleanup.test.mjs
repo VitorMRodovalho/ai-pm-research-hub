@@ -137,10 +137,9 @@ test('#481 behavioural: chapters_summary length == signed; every row is an activ
   for (const row of summary) {
     assert.ok(signedNames.has(row.chapter), `${row.chapter} is a signed chapter`);
     assert.ok(Number.isInteger(row.member_count) && row.member_count >= 0, `${row.chapter} has integer member_count`);
-    // LGPD trip-wire (security review): sponsor is the only member-PII-adjacent field on this anon-callable
-    // public RPC. It must be a name (or null) — never an email or other identifier substituted by accident.
-    assert.ok(row.sponsor === null || typeof row.sponsor === 'string', `${row.chapter} sponsor is null or a string name`);
-    assert.doesNotMatch(row.sponsor ?? '', /@/, `${row.chapter} sponsor must not be an email address`);
+    // LGPD trip-wire (security review): sponsor was the only member-PII-adjacent field on this anon-callable
+    // public RPC. #2553 DB-4 (GP 2026-10-24) removed it: no name, email or other identifier comes back under it.
+    assert.equal('sponsor' in row, false, `${row.chapter} still carries a sponsor key`);
   }
 });
 
