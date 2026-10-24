@@ -16,7 +16,8 @@ import {
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const read = (rel) => readFileSync(path.join(root, rel), 'utf8');
-const COMPONENTS = ['src/layouts/BaseLayout.astro', 'src/components/sections/TribesSection.astro', 'src/pages/podcast.astro'];
+// #2553 PR-7: TribesSection left the home; the home's playlist link is now in OutputsSection.
+const COMPONENTS = ['src/layouts/BaseLayout.astro', 'src/components/sections/OutputsSection.astro', 'src/pages/podcast.astro'];
 
 test('components resolve playlist links via getPlaylistUrl(), no hardcoded playlist id', () => {
   for (const f of COMPONENTS) {

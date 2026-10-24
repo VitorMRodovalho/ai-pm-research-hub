@@ -1,7 +1,7 @@
 // tests/contracts/public-site-es-visitor-fixes.test.mjs
 // Registered in BOTH the "test:structural" and "test:contracts" whitelists in package.json.
 /**
- * Public site, non-pt-BR visitor: four display-layer fixes, guarded offline (no DB).
+ * Public site, non-pt-BR visitor: display-layer fixes, guarded offline (no DB).
  *
  * 1. /about blanked with `ReferenceError: lp is not defined`: LeadCaptureForm used `lp`, which
  *    only existed in the scope of ImpactPageIsland. The guard binds the declaration to the
@@ -10,17 +10,17 @@
  *    an effect). The guard binds: the island's `t` reads the `labels` prop first, AND every
  *    Astro caller passes `labels=`.
  * 3. Vertical titles come from the DB in pt-BR. The guard binds: keys exist in the 3
- *    dictionaries, ModelSection resolves them and passes `titles=`, and the island renders
- *    `label` (not the raw `title`) in both places it shows a title.
- * 4. members.linkedin_url values without a scheme became relative hrefs. The guard exercises
- *    withScheme() and binds every public-section LinkedIn href to it.
+ *    dictionaries, and the home's research lines section (#2553 PR-7: the verticals cards left the
+ *    home) maps each DB title to its key before any chip, line badge or empty-field message reads it.
+ * 4. (retired in #2553 PR-7) members.linkedin_url hrefs went through withScheme(). The sections that
+ *    rendered them (team, operational arms, tribes) left the home, and D3 keeps person names off it
+ *    (2553-home-v2-virada, item B), so the helper and its checks left with them.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
-import { withScheme } from '../../src/lib/external-url.ts';
 
 const root = resolve(import.meta.dirname, '../..');
 const read = (p) => readFileSync(resolve(root, p), 'utf8');
@@ -62,41 +62,11 @@ test('3. vertical titles: keys in all 3 dictionaries, resolved server side, rend
   assert.match(es, /'model\.vertical\.construction': 'Construcción'/);
   assert.match(es, /'model\.vertical\.business': 'Negocio'/);
 
-  const model = code('src/components/sections/ModelSection.astro');
-  assert.match(model, /'Construção': 'model\.vertical\.construction'/);
-  assert.match(model, /'Negócio': 'model\.vertical\.business'/);
-  assert.match(model, /\[title, t\(key, lang\)\]/);
-  assert.match(model, /<VerticalsSection\b[^>]*\btitles=\{verticalTitles\}/);
-
-  const island = code('src/components/sections/VerticalsSection.tsx');
-  assert.match(island, /setVerticals\(data\.map\(\(v: Vertical\) => \(\{ \.\.\.v, label: titles\[v\.title\] \|\| v\.title \}\)\)\)/);
-  assert.match(island, /\{nd\.v\.label \|\| nd\.v\.title\}<\/div>/);
-  assert.match(island, /<h3[^>]*>\{v\.label \|\| v\.title\}<\/h3>/);
-});
-
-test('4a. withScheme makes scheme-less profile URLs absolute', () => {
-  assert.equal(withScheme('www.linkedin.com/in/x'), 'https://www.linkedin.com/in/x');
-  assert.equal(withScheme('  linkedin.com/in/x '), 'https://linkedin.com/in/x');
-  assert.equal(withScheme('https://www.linkedin.com/in/x'), 'https://www.linkedin.com/in/x');
-  assert.equal(withScheme('HTTP://x.com'), 'HTTP://x.com');
-  assert.equal(withScheme('//www.linkedin.com/in/x'), 'https://www.linkedin.com/in/x');
-  assert.equal(withScheme('www.x.com:443/in/x'), 'https://www.x.com:443/in/x');
-  assert.equal(withScheme('javascript:alert(1)'), 'https://javascript:alert(1)');
-  assert.equal(withScheme(''), '');
-  assert.equal(withScheme('   '), '');
-  assert.equal(withScheme(null), '');
-  assert.equal(withScheme(undefined), '');
-});
-
-test('4b. every public-section LinkedIn href goes through withScheme', () => {
-  const team = code('src/components/sections/TeamSection.astro');
-  assert.match(team, /href="\$\{withScheme\(m\.linkedin_url\)\}"/);
-  assert.doesNotMatch(team, /href="\$\{m\.linkedin_url\}"/);
-  const arms = code('src/components/sections/OperationalArmsSection.astro');
-  assert.match(arms, /href=\{withScheme\(arm\.leader\.linkedin_url\)\}/);
-  assert.match(arms, /href=\{withScheme\(tm\.linkedin_url\)\}/);
-  assert.doesNotMatch(arms, /href=\{(arm\.leader|tm)\.linkedin_url\}/);
-  const tribes = code('src/components/sections/TribesSection.astro');
-  assert.match(tribes, /href=\{withScheme\(tr\.leaderLinkedIn\)\}/);
-  assert.doesNotMatch(tribes, /href=\{tr\.leaderLinkedIn\}/);
+  const lines = code('src/components/sections/ResearchLinesSection.astro');
+  assert.match(lines, /'Construção': 'model\.vertical\.construction'/);
+  assert.match(lines, /'Negócio': 'model\.vertical\.business'/);
+  // the mapped list replaces the DB list: every later reader (chips, line badges, empty-field title) sees the label
+  assert.match(lines, /const \[lines, pairs, dbVerticals\] = await Promise\.all\(\[loadResearchLines\(lang\), loadLineFields\(\), loadVerticals\(\)\]\);/);
+  assert.match(lines, /const verticals = dbVerticals\.map\(\(v\) => \(\{ \.\.\.v, title: FIELD_TITLE_KEYS\[v\.title\] \? t\(FIELD_TITLE_KEYS\[v\.title\], lang\) : v\.title \}\)\);/);
+  assert.equal((lines.match(/\bdbVerticals\b/g) || []).length, 2, 'the raw DB list is read once, to build the mapped one');
 });

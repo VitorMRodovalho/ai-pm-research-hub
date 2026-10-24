@@ -14,7 +14,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 import {
   formatMeetingSlots, profileDescription, profileDeliverables,
 } from '../../src/lib/tribes/public-profile.ts';
@@ -75,22 +75,31 @@ test('#2609 seed: as 13 tribos ativas, sem sobrescrever o que a liderança já e
   assert.equal(seeds.length, 13);
 });
 
-const HOME = maskJsComments(read('src/components/sections/TribesSection.astro'));
+// #2553 PR-7: a TribesSection (que lia get_tribe_public_profiles) saiu da home. A seção de linhas lê
+// get_public_research_lines, que tira descrição, entregáveis e horário das mesmas colunas e da mesma regra.
+const HOME = maskJsComments(read('src/components/sections/ResearchLinesSection.astro'));
+const HOME_DATA = maskJsComments(read('src/lib/publicHomeData.ts'));
+const LINES_RPC = (() => {
+  const cap = latestFunctionCapture(ROOT, 'get_public_research_lines');
+  assert.ok(cap, 'get_public_research_lines não foi capturada');
+  return maskLineComments(cap.body);
+})();
 const PAGE = maskJsComments(read('src/pages/tribe/[id].astro'));
 
-test('#2609 home: descrição e entregáveis do banco, dicionário só como fallback', () => {
-  assert.match(HOME, /const profilesRequest = sbAnonForStats\.rpc\('get_tribe_public_profiles'\);/);
-  assert.match(HOME, /const \{ data: profiles \} = await profilesRequest;/);
-  assert.match(HOME, /description: profileDescription\(p, lang\) \|\| tr\.description,/);
-  // com linha no banco, os entregáveis dele valem mesmo vazios (quem apagou não vê o dicionário voltar)
-  assert.match(HOME, /deliverables: profileDeliverables\(p, lang\),/);
+test('#2609 home: descrição e entregáveis das mesmas colunas da página da tribo', () => {
+  assert.match(LINES_RPC, /\bi\.description_i18n,\s+i\.deliverables_i18n,/);
+  assert.match(LINES_RPC, /JOIN public\.initiatives i ON i\.legacy_tribe_id = t\.id AND i\.kind = 'research_tribe'/);
+  assert.match(HOME_DATA, /description: pickText\(r\.description_i18n, l\),\s+deliverables: pickList\(r\.deliverables_i18n, l\),/);
+  assert.match(HOME, /\{l\.description && <p>\{l\.description\}<\/p>\}/);
 });
 
 test('#2609 home: horário da regra, "a definir" sem regra, e nunca tribes.notes', () => {
-  assert.match(HOME, /scheduleByTribe\.set\(tr\.id, formatMeetingSlots\(p\.slots, lang\)\);/);
-  assert.match(HOME, /\{scheduleByTribe\.get\(tr\.id\)\s+\? <span>\{scheduleByTribe\.get\(tr\.id\)\}<\/span>\s+: profilesLoaded\s+\? <span[^>]*>\{t\('tribes\.scheduleTbd', lang\)\}<\/span>\s+: <span[^>]*>—<\/span>\}/);
-  assert.match(HOME, /if \(Array\.isArray\(profiles\)\) \{\s+profilesLoaded = true;/);
-  assert.doesNotMatch(HOME, /notesMap|tr\.meetingSchedule|\.select\([^)]*\bnotes\b/);
+  assert.match(LINES_RPC, /FROM public\.tribe_meeting_slots s\s+WHERE s\.tribe_id = t\.id AND s\.is_active = true/);
+  assert.match(HOME, /const when = formatMeetingSlots\(l\.slots, lang\);/);
+  assert.match(HOME, /\{when \? `\$\{when\} \(\$\{t\('homeV2\.lines\.brt', lang\)\}\)` : t\('homeV2\.lines\.noSchedule', lang\)\}/);
+  for (const [name, src] of [['seção', HOME], ['loader', HOME_DATA], ['RPC', LINES_RPC]]) {
+    assert.doesNotMatch(src, /\bnotes\b|meeting_schedule|meetingSchedule/, `${name} lê o texto livre de horário ou a nota interna`);
+  }
 });
 
 test('#2609 página da tribo: descrição do perfil, nunca tribes.notes', () => {
@@ -119,7 +128,6 @@ test('#2609 editor: valida o português antes de enviar e separa recusa de permi
 
 test('#2609 catálogo estático e dicionários sem horário de tribo', () => {
   assert.doesNotMatch(read('src/data/tribes.ts'), /meetingSchedule/);
-  assert.doesNotMatch(read('src/data/tribesViewModel.ts'), /meetingSchedule/);
   for (const f of ['pt-BR', 'en-US', 'es-LATAM']) {
     assert.doesNotMatch(read(`src/i18n/${f}.ts`), /'data\.tribe\d+\.meetings'/, f);
   }

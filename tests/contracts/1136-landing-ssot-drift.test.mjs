@@ -2,8 +2,8 @@
 //
 // Parte 1: toda seção renderizada no home público está registrada no home-anchors do nav
 //          (#2553 PR 2: derivado do que index.astro renderiza, não mais uma lista fixa).
-// Parte 2: os 3 números de tribo não vivem hardcoded na copy — derivam do SSOT
-//          (MIN_SLOTS/MAX_SLOTS e ACTIVE_TRIBE_COUNT em src/data/tribes.ts) via interpolação.
+// Parte 2: os números de tribo não vivem hardcoded na copy — derivam do SSOT via interpolação
+//          (ACTIVE_TRIBE_COUNT em src/data/tribes.ts; na home, membros e vagas de cada linha vêm da RPC).
 // Parte 3 (DB-aware, skip sem creds): quadrant_name / quadrant_name_i18n são consistentes
 //          por quadrante (um único nome canônico + um único jsonb i18n, zero nulls).
 import { test } from 'node:test';
@@ -11,13 +11,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const read = (p) => readFileSync(join(root, p), 'utf8');
 
 const nav = read('src/lib/navigation.config.ts');
 const tribesData = read('src/data/tribes.ts');
-const tribesSection = read('src/components/sections/TribesSection.astro');
+const linesSection = maskJsComments(read('src/components/sections/ResearchLinesSection.astro'));
 const baseLayout = read('src/layouts/BaseLayout.astro');
 const dicts = {
   'pt-BR': read('src/i18n/pt-BR.ts'),
@@ -48,18 +49,18 @@ test('P1: nav.trailRanking existe nos 3 dicionários', () => {
 });
 
 // ── Parte 2 — números de tribo derivam do SSOT ───────────────────────────────
-test('P2: tribes.slots interpola {min}/{max} e não carrega o cap hardcoded', () => {
+test('P2: as vagas da linha interpolam {n}/{max} e não carregam número no texto', () => {
+  // #2553 PR-7: a TribesSection (tribes.slots com {min}/{max}) saiu da home. As vagas da seção de linhas usam
+  // homeV2.lines.seats, com membros e capacidade da linha lidos de get_public_research_lines (ver 1214).
   for (const [lang, src] of Object.entries(dicts)) {
-    const m = src.match(/'tribes\.slots':\s*'([^']*)'/);
-    assert.ok(m, `tribes.slots ausente em ${lang}`);
-    assert.ok(m[1].includes('{min}') && m[1].includes('{max}'),
-      `tribes.slots em ${lang} deve usar {min}/{max}, tem: "${m[1]}"`);
-    assert.doesNotMatch(m[1], /\b(7|10|6|3)\b/, `tribes.slots em ${lang} tem número hardcoded: "${m[1]}"`);
+    const m = src.match(/^  'homeV2\.lines\.seats': '([^']*)',$/m);
+    assert.ok(m, `homeV2.lines.seats ausente em ${lang}`);
+    assert.ok(m[1].includes('{n}') && m[1].includes('{max}'),
+      `homeV2.lines.seats em ${lang} deve usar {n}/{max}, tem: "${m[1]}"`);
+    assert.doesNotMatch(m[1], /\d/, `homeV2.lines.seats em ${lang} tem número hardcoded: "${m[1]}"`);
   }
-  // #1214: {max} passou a interpolar maxSlots (resolvido do SSOT via get_homepage_stats
-  // no SSR, com MAX_SLOTS de data/tribes como fallback) — ver 1214-tribe-capacity-ssot.
-  assert.match(tribesSection, /t\('tribes\.slots'[^)]*\)[\s\S]{0,80}?\.replace\('\{min\}',\s*String\(MIN_SLOTS\)\)[\s\S]{0,60}?\.replace\('\{max\}',\s*String\(maxSlots\)\)/,
-    'TribesSection deve interpolar tribes.slots com MIN_SLOTS/maxSlots (SSOT #1214)');
+  assert.match(linesSection, /t\('homeV2\.lines\.seats', lang\)\.replace\('\{n\}', String\(l\.members\)\)\.replace\('\{max\}', String\(l\.capacity\)\)/,
+    'a seção de linhas deve interpolar homeV2.lines.seats com os números da RPC');
 });
 
 test('P2: meta.description interpola {tribeCount} derivado do SSOT', () => {

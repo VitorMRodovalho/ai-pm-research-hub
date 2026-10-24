@@ -283,7 +283,6 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   const artifacts = read('src/pages/artifacts.astro');
   const gamification = read('src/pages/gamification.astro');
   const hero = read('src/components/sections/HeroSection.astro');
-  const tribesSection = read('src/components/sections/TribesSection.astro');
   const catalog = read('src/lib/tribes/catalog.ts');
   const migration = read('supabase/migrations/20260312050000_dynamic_tribe_catalog_and_status.sql');
   const lineageMigration = read('supabase/migrations/20260312150000_tribe_lineage_and_legacy_links.sql');
@@ -306,11 +305,9 @@ test('tribe catalog supports dynamic runtime entries and explicit active status'
   assert.equal(gamification.includes("sb.from('tribes').select('id, name, name_i18n, quadrant').eq('is_active', true).order('id')"), true);
   assert.equal(hero.includes(".eq('is_active', true)"), true);
   // WS-A governance: whatsapp_url removed from the anon-key tribes select (served only via gated RPC).
-  // #2609: tribes.notes is an internal note and no longer feeds the public tribe card; the description comes from get_tribe_public_profiles.
-  assert.equal(tribesSection.includes(".select('id, name, name_i18n, is_active')"), true);
-  assert.equal(tribesSection.includes("name_i18n, notes, is_active"), false);
-  assert.equal(tribesSection.includes("if (card && activeMap[tid] === false)"), true);
-  assert.equal(tribesSection.includes("if (title && nameMap[tid]) title.textContent = String(nameMap[tid]);"), true);
+  // #2553 PR-7: the home's TribesSection (tribes select, active map, name map) was deleted. The home's research lines
+  // come from get_public_research_lines: active lines only and names in 3 languages are pinned in
+  // 2553-linhas-de-pesquisa-publicas, and "never tribes.notes" in 2609-tribo-descricao-e-horario-com-uma-fonte.
   assert.equal(catalog.includes('export function getTribeColor'), true);
   assert.equal(catalog.includes('export function isRuntimeTribeActive'), true);
   assert.equal(migration.includes('add column if not exists is_active boolean not null default true'), true);
@@ -822,19 +819,18 @@ test('tribe kanban preserves checklist state and validates attachment urls', () 
 });
 
 test('schedule flow no longer depends on far-future deadline sentinel', () => {
+  // #2553 PR-7: TribesSection (and its selectionUnavailable state) was deleted with the home v2 (continuous entry, D2).
   const scheduleContent = read('src/lib/schedule.ts');
-  const tribesContent = read('src/components/sections/TribesSection.astro');
   const heroContent = read('src/components/sections/HeroSection.astro');
   assert.equal(scheduleContent.includes('2030-12-31T23:59:59Z'), false);
-  assert.equal(tribesContent.includes('2030-12-31T23:59:59Z'), false);
   assert.equal(heroContent.includes('2030-12-31T23:59:59Z'), false);
-  assert.equal(tribesContent.includes('selectionUnavailable'), true);
 });
 
-test('tribes section touched links no longer use inline onclick handlers', () => {
-  const content = read('src/components/sections/TribesSection.astro');
-  assert.equal(content.includes('onclick='), false);
-  assert.equal(content.includes('data-stop-propagation'), true);
+test('research lines section uses no inline onclick handlers', () => {
+  // #2553 PR-7: carried over from the deleted TribesSection to its successor on the home.
+  const content = read('src/components/sections/ResearchLinesSection.astro');
+  assert.equal(/\bonclick=/i.test(content), false);
+  assert.equal(content.includes("chip.addEventListener('click',"), true);
 });
 
 test('ci browser guards use retry wrapper and playwright cache', () => {
@@ -1059,18 +1055,12 @@ test('home fallback copy no longer hardcodes kickoff dates or recurring meeting 
   assert.equal(hero.includes("hi18n.recurringMeeting || 'Reunião Recorrente · Quintas 19:30 BRT'"), false);
 });
 
-test('R5: public playlist moved to footer; ResourcesSection holds no deadline copy', () => {
+test('R5: public playlist lives in the footer', () => {
   // R5 (Ciclo 4): a playlist pública e a copy de deadline saíram da ResourcesSection
   // (demovida para zona de membro). O link público de webinars vive agora no rodapé (BaseLayout).
-  const resources = read('src/components/sections/ResourcesSection.astro');
+  // #2553 PR-7: a ResourcesSection foi apagada; fica a metade do rodapé.
   const footer = read('src/layouts/BaseLayout.astro');
 
-  // Sem copy de deadline de sábado hardcoded em lugar nenhum da seção
-  assert.equal(resources.includes('8 vídeos. Escolha até Sáb 12h.'), false);
-  assert.equal(resources.includes("title: 'Playlist YouTube'"), false);
-  // A playlist inteira deixou a seção (nada de descPrefix/deadline aqui)
-  assert.equal(resources.includes("resources.playlist"), false);
-  assert.equal(resources.includes('formatPlaylistDeadline'), false);
   // O link público de webinars (playlist do YouTube) está no rodapé
   assert.equal(footer.includes("t('footer.webinars', lang)"), true);
   assert.equal(footer.includes("getPlaylistUrl('webinars')"), true); // link de webinars resolvido via SSOT src/data/youtube-playlists.ts (guard: youtube-playlists-ssot.test.mjs)
@@ -1108,15 +1098,12 @@ test('hero post-kickoff state now uses runtime kickoff metadata before optional 
   assert.equal(hero.includes("eventArea.innerHTML = kickoffFallbackHtml(dateStr);"), true);
 });
 
-test('tribes deadline formatting no longer relies on manual UTC math or stale fixed fallback copy', () => {
-  const tribes = read('src/components/sections/TribesSection.astro');
+test('tribes deadline copy carries no stale fixed fallback', () => {
+  // #2553 PR-7: the deadline formatting lived in the deleted TribesSection; the stale dictionary copy stays out.
   const pt = read('src/i18n/pt-BR.ts');
   const en = read('src/i18n/en-US.ts');
   const es = read('src/i18n/es-LATAM.ts');
 
-  assert.equal(tribes.includes("const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];"), false);
-  assert.equal(tribes.includes("d.getUTCHours() - 3"), false);
-  assert.equal(tribes.includes("new Intl.DateTimeFormat(currentLang"), true);
   assert.equal(pt.includes("'tribes.deadline': 'Encerra Sáb 08/Mar 12h BRT'"), false);
   assert.equal(en.includes("'tribes.deadline': 'Closes Sat 03/08 12PM BRT'"), false);
   assert.equal(es.includes("'tribes.deadline': 'Cierra Sáb 08/Mar 12h BRT'"), false);

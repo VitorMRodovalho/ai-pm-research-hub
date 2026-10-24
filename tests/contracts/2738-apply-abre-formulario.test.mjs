@@ -10,11 +10,14 @@
  * pesquisador abre o formulário com researcher, o de líder com leader; sem consentimento, 0 chamadas; o card
  * de Construction manda o id da vertical Construção; a seção de recursos manda apply-resources sem vertical.
  *
+ * #2553 PR-7: os cards de vertical e a seção de recursos saíram da home com a v2 e foram apagados. As portas de
+ * entrada da v2 ficam na seção "Participe" (JoinSection), cada uma com o seu papel (2553-home-v2-virada, item C).
+ *
  * O QUE ESTE GUARD AFIRMA
  *   A. O payload leva o papel, a origem e a vertical que o botão passou (função pura, exercida).
- *   B. Cada botão do card liga o papel certo ao formulário, e o formulário manda esse papel à RPC.
- *   C. Os dois cards de candidatura da seção de recursos abrem o mesmo formulário, com o papel certo.
- *   D. Nenhum desses botões aponta para uma vaga do volunteer.pmi.org.
+ *   B. O botão do formulário leva o papel que recebeu, e o formulário manda esse papel à RPC.
+ *   C. As portas da seção "Participe" abrem esse mesmo formulário.
+ *   D. Nenhuma dessas portas aponta para uma vaga do volunteer.pmi.org.
  *   E. A mensagem de sucesso é o texto aprovado pelo GP (pt-BR), e existe nas três línguas.
  */
 
@@ -28,9 +31,8 @@ import { buildInterestPayload } from '../../src/lib/interestPayload.ts';
 const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const maskAstro = (src) => maskJsComments(src).replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
-const VERT = maskJsComments(read('src/components/sections/VerticalsSection.tsx'));
 const FORM = maskJsComments(read('src/components/sections/InterestForm.tsx'));
-const RES = maskAstro(read('src/components/sections/ResourcesSection.astro'));
+const JOIN = maskAstro(read('src/components/sections/JoinSection.astro'));
 const input = { name: 'Fulano', email: 'fulano@example.com', message: '' };
 
 test('A: o payload leva o papel, a origem e a vertical que o botão passou', () => {
@@ -48,24 +50,21 @@ test('A: o payload leva o papel, a origem e a vertical que o botão passou', () 
   assert.equal('target_vertical' in r, false);
 });
 
-test('B: cada botão do card liga o papel certo ao formulário, que o manda à RPC', () => {
-  for (const [role, label] of [['researcher', 'ctaResearcher'], ['leader', 'ctaLeader']]) {
-    assert.match(VERT, new RegExp(`<button type="button" onClick=\\{\\(\\) => setApplyRole\\('${role}'\\)\\}[^>]*data-apply-role="${role}"[^>]*>\\s*\\{l\\.${label}\\} →\\s*</button>`), `${role}`);
-  }
-  assert.match(VERT, /\{applyRole && \(\s*<InterestForm key=\{applyRole\} roleInterest=\{applyRole\} source="apply-vertical" targetVertical=\{v\.id\}/);
+test('B: o botão do formulário leva o papel que recebeu, e o formulário o manda à RPC', () => {
+  assert.match(FORM, /<button type="button" onClick=\{\(\) => setOpen\(true\)\} aria-expanded=\{open\} data-apply-role=\{roleInterest\}/);
+  assert.match(FORM, /\{open && <InterestForm roleInterest=\{roleInterest\} source=\{source\}/);
   assert.match(FORM, /const payload = buildInterestPayload\(form, \{ roleInterest, source, targetVertical \}, window\.location\.search\);\s*const \{ data, error \} = await sb\.rpc\('capture_visitor_lead', \{ p_payload: payload \}\);/);
 });
 
-test('C: os cards de candidatura da seção de recursos abrem o mesmo formulário', () => {
-  assert.match(RES, /import ApplyInterest from '\.\/InterestForm\.tsx';/);
-  assert.match(RES, /t\('resources\.volunteerResearcher\.text', lang\),\s*applyRole: 'researcher' as const,/);
-  assert.match(RES, /t\('resources\.volunteerLeader\.text', lang\),\s*applyRole: 'leader' as const,/);
-  assert.match(RES, /\{r\.applyRole \? \(\s*<ApplyInterest client:visible roleInterest=\{r\.applyRole\} source="apply-resources"/);
-  assert.match(FORM, /export default function ApplyInterest\([\s\S]*?onClick=\{\(\) => setOpen\(true\)\}[\s\S]*?\{open && <InterestForm roleInterest=\{roleInterest\} source=\{source\}/);
+test('C: as portas da seção "Participe" abrem esse mesmo formulário', () => {
+  assert.match(JOIN, /import ApplyInterest from '\.\/InterestForm\.tsx';/);
+  assert.match(FORM, /export default function ApplyInterest\(/);
+  const doors = [...JOIN.matchAll(/<ApplyInterest client:visible roleInterest="(\w+)" source="home-join"/g)].map((m) => m[1]);
+  assert.deepEqual(doors, ['researcher', 'chapter', 'partner']);
 });
 
-test('D: nenhum desses botões aponta para uma vaga do volunteer.pmi.org', () => {
-  for (const [name, src] of [['VerticalsSection', VERT], ['InterestForm', FORM], ['ResourcesSection', RES]]) {
+test('D: nenhuma dessas portas aponta para uma vaga do volunteer.pmi.org', () => {
+  for (const [name, src] of [['InterestForm', FORM], ['JoinSection', JOIN]]) {
     assert.doesNotMatch(src, /volunteer\.pmi\.org\/opportunities/, name);
   }
 });

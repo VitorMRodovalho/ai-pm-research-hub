@@ -6,11 +6,14 @@
  * "Forming" e levava à vaga no VEP, mas não levava às linhas de pesquisa que já existem para essas áreas
  * (ficam mais abaixo, em Research Streams), e nada dizia que uma área nova pode ser proposta.
  *
+ * #2553 PR-7: os cards de vertical (VerticalsSection) saíram da home com a v2, e com eles a frase aprovada em
+ * 19/10/2026. Na v2 a mesma promessa mora na seção de linhas: o filtro por campo leva às linhas que já existem, e a
+ * frase "novos campos e novas linhas podem abrir" com a porta "Propor uma linha" fica sempre visível.
+ *
  * O QUE ESTE GUARD AFIRMA
- *   A. A frase montada pelo componente é, nas três línguas, o texto que o GP aprovou em 19/10/2026,
- *      palavra por palavra. Mudar o texto é mudar este guard, de propósito.
- *   B. A frase liga o trecho do meio a #tribes e o e-mail a um mailto, dentro do mesmo parágrafo.
- *   C. #tribes é um id da TribesSection, e as três home pages renderizam a TribesSection.
+ *   B. A seção de linhas termina, fora do bloco que depende da lista carregar, com a frase de novas linhas e a porta
+ *      para propor uma linha (#join-institutions); o campo sem linha ativa leva à mesma porta.
+ *   C. #tribes é um id da seção de linhas, e as três home pages renderizam essa seção.
  */
 
 import test from 'node:test';
@@ -21,42 +24,17 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
-const SRC = maskJsComments(read('src/components/sections/VerticalsSection.tsx'));
+const LINES = maskJsComments(read('src/components/sections/ResearchLinesSection.astro'));
 
-const APPROVED = {
-  'pt-BR': 'Algumas verticais já têm linha de pesquisa ativa: veja Linhas de Pesquisa abaixo. Sua área não está aqui? Novas verticais abrem quando profissionais as propõem: escreva para nucleoia@pmigo.org.br.',
-  'en-US': "Some verticals already have an active research stream: see Research Streams below. Don't see your field? New verticals open when practitioners propose them: write to nucleoia@pmigo.org.br.",
-  'es-LATAM': 'Algunas verticales ya tienen una línea de investigación activa: mira Líneas de Investigación abajo. ¿No ves tu área? Se abren nuevas verticales cuando profesionales las proponen: escribe a nucleoia@pmigo.org.br.',
-};
-
-/** O bloco de rótulos de uma língua, dentro de LABELS. */
-function labelBlock(lang) {
-  const m = SRC.match(new RegExp(`^  '${lang}': \\{\\n([\\s\\S]*?)^  \\},`, 'm'));
-  assert.ok(m, `bloco de rótulos ${lang} encontrado`);
-  return m[1];
-}
-
-/** Valor de uma chave de rótulo, entre aspas simples ou duplas. */
-function label(block, key) {
-  const m = block.match(new RegExp(`^\\s+${key}: (?:'([^']*)'|"([^"]*)"),$`, 'm'));
-  assert.ok(m, `rótulo ${key} presente`);
-  return m[1] ?? m[2];
-}
-
-for (const lang of Object.keys(APPROVED)) {
-  test(`A: ${lang}: a frase montada é o texto aprovado`, () => {
-    const block = labelBlock(lang);
-    const email = SRC.match(/^const CONTACT_EMAIL = '([^']+)';$/m);
-    assert.ok(email, 'CONTACT_EMAIL definido');
-    const sentence = label(block, 'morePre') + label(block, 'moreLink') + label(block, 'moreMid') + email[1] + label(block, 'moreEnd');
-    assert.equal(sentence, APPROVED[lang]);
-  });
-}
-
-test('B: o parágrafo liga o trecho do meio a #tribes e o e-mail ao mailto, nessa ordem', () => {
+test('B: a frase de novas linhas e a porta para propor ficam fora do bloco da lista, e o campo vazio leva à mesma porta', () => {
+  // a lista fecha com `)}`; o parágrafo vem depois, e só ele fecha a seção
   assert.match(
-    SRC,
-    /<p [^>]*>\s*\{l\.morePre\}<a href="#tribes"[^>]*>\{l\.moreLink\}<\/a>\{l\.moreMid\}<a href=\{`mailto:\$\{CONTACT_EMAIL\}`\}[^>]*>\{CONTACT_EMAIL\}<\/a>\{l\.moreEnd\}\s*<\/p>/,
+    LINES,
+    /\)\}\s*<p [^>]*>\s*\{t\('homeV2\.lines\.newLines', lang\)\}\s*<a href="#join-institutions"[^>]*>\{t\('homeV2\.lines\.proposeLine', lang\)\} →<\/a>\s*<\/p>\s*<\/div>\s*<\/section>/,
+  );
+  assert.match(
+    LINES,
+    /<p id="lines-empty-field"[^>]*>[\s\S]*?\{t\('homeV2\.lines\.emptyField', lang\)\}\s*<a href="#join-institutions"[^>]*>\{t\('homeV2\.lines\.proposeLine', lang\)\} →<\/a>\s*<\/p>/,
   );
 });
 
