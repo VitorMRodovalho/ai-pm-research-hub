@@ -5,10 +5,10 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const ptBR: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Pesquisa Aplicada em IA e Gestão de Projetos',
-  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos — 50+ pesquisadores, capítulos PMI Brasil, {tribeCount} tribos temáticas. Plataforma open-source trilingue.',
+  'meta.description': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI no Brasil sediada pelo PMI Goiás. {tribeCount} tribos temáticas. Plataforma open-source trilíngue.',
   'meta.ogImageAlt': 'Núcleo IA & GP — Núcleo de Estudos e Pesquisa em Inteligência Artificial e Gestão de Projetos, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'Sobre o Núcleo — IA & Gerenciamento de Projetos',
-  'about.meta.description': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil. 51+ pesquisadores, 8 tribos de pesquisa, plataforma digital própria.',
+  'about.meta.description': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil, sediada pelo PMI Goiás: linhas de pesquisa aplicada em IA e gerenciamento de projetos, com produção aberta e plataforma digital própria.',
   'meetings.meta.title': 'Atas de Reunião — Núcleo IA & GP',
   'meetings.meta.description': 'Arquivo pesquisável de todas as atas de reunião do Núcleo. Busca full-text, filtros por tribo e tipo, visão cross-tribo.',
 

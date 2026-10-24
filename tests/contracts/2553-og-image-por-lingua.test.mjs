@@ -9,6 +9,11 @@
  *
  * O guard amarra a CONDIÇÃO (lang === 'en-US') ao RESULTADO (o caminho da imagem), com comentários
  * mascarados, e confere que as duas imagens existem com o tamanho que as meta tags declaram.
+ *
+ * #2553 D7 (GP 24/10/2026): as descrições de busca da home e do /about (as da prévia de link) ainda diziam
+ * "50+ pesquisadores" em pt e es e "51+ pesquisadores, 8 tribos" nas 3 línguas, número escrito à mão. Os textos
+ * aprovados ficam fixados aqui: mudar o texto é mudar este guard, de propósito. Na home, a contagem de tribos
+ * continua vindo de {tribeCount} (guard 1136).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -19,6 +24,19 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 const ROOT = process.cwd();
 const LAYOUT = maskJsComments(readFileSync(resolve(ROOT, 'src/layouts/BaseLayout.astro'), 'utf8'));
 const EN = readFileSync(resolve(ROOT, 'src/i18n/en-US.ts'), 'utf8');
+const DICTS = Object.fromEntries(['pt-BR', 'en-US', 'es-LATAM'].map((l) => [l, readFileSync(resolve(ROOT, `src/i18n/${l}.ts`), 'utf8')]));
+const APPROVED = {
+  'meta.description': {
+    'pt-BR': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI no Brasil sediada pelo PMI Goiás. {tribeCount} tribos temáticas. Plataforma open-source trilíngue.',
+    'en-US': 'AI & PM Study and Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. {tribeCount} thematic tribes. Open-source trilingual platform.',
+    'es-LATAM': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. {tribeCount} tribus temáticas. Plataforma open-source trilingüe.',
+  },
+  'about.meta.description': {
+    'pt-BR': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil, sediada pelo PMI Goiás: linhas de pesquisa aplicada em IA e gerenciamento de projetos, com produção aberta e plataforma digital própria.',
+    'en-US': 'Collaborative initiative across PMI® chapters in Brazil, hosted by PMI Goiás: applied research lines on AI and project management, with open outputs and its own digital platform.',
+    'es-LATAM': 'Iniciativa colaborativa entre capítulos del PMI® en Brasil, con sede en PMI Goiás: líneas de investigación aplicada en IA y gestión de proyectos, con producción abierta y plataforma digital propia.',
+  },
+};
 
 function pngSize(rel) {
   const buf = readFileSync(resolve(ROOT, 'public', rel));
@@ -52,4 +70,15 @@ test('#2553: a descrição em inglês não carrega contagem fixa de pesquisadore
   const m = EN.match(/'meta\.description':\s*'([^']+)'/);
   assert.ok(m, 'meta.description ausente em en-US');
   assert.doesNotMatch(m[1], /\d+\+?\s*researchers/i, `contagem fixa na descrição: "${m[1]}"`);
+});
+
+test('#2553 D7: as descrições de busca da home e do /about são os textos aprovados, sem contagem escrita à mão', () => {
+  for (const [key, byLang] of Object.entries(APPROVED)) {
+    for (const [lang, text] of Object.entries(byLang)) {
+      const m = DICTS[lang].match(new RegExp(`^  '${key.replace(/\./g, '\\.')}': '([^']*)',$`, 'm'));
+      assert.ok(m, `${key} ausente em ${lang}`);
+      assert.doesNotMatch(m[1].replace('{tribeCount}', ''), /\d/, `${lang}: ${key} com número escrito`);
+      assert.equal(m[1], text, `${lang}: ${key}`);
+    }
+  }
 });
