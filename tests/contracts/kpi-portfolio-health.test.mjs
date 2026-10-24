@@ -1,7 +1,8 @@
 /**
  * W110 Contract Test: KPI Portfolio Health
- * Validates that exec_portfolio_health RPC and KPI static data are aligned.
- * - 9 KPIs must be defined in src/data/kpis.ts
+ * Validates that exec_portfolio_health RPC and the home's goal block are aligned.
+ * - #2553 (D9, GP 20/10/2026): the home renders the goals from exec_portfolio_health on the server;
+ *   src/data/kpis.ts (static headline values) is gone, so no target can disagree with the database
  * - exec_portfolio_health must return all 9 metric_keys
  * - portfolio_kpi_targets must have targets for all 9 metrics
  * - Quarterly decomposition must exist
@@ -9,13 +10,14 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 const KPI_FILE = resolve(ROOT, 'src/data/kpis.ts');
 const KPI_SECTION = resolve(ROOT, 'src/components/sections/KpiSection.astro');
+const HOME_DATA = resolve(ROOT, 'src/lib/publicHomeData.ts');
 
 // ─── Helpers ───
 
@@ -35,7 +37,6 @@ const migrations = loadAllMigrations();
 // de RPC diferente. Mesmo padrão de role-ladder-parity.test.mjs (sediment p165).
 const stripSqlLineComments = (sql) => sql.replace(/--[^\n]*/g, '');
 const allSQL = migrations.map(m => stripSqlLineComments(m.content)).join('\n');
-const kpiSource = readFileSync(KPI_FILE, 'utf8');
 
 // p171 TIER C — Helper to find FUNCTION body by name, ignoring DO blocks.
 // Pattern: CREATE OR REPLACE FUNCTION X(args) ... AS $TAG$ body $TAG$
@@ -51,10 +52,6 @@ function findFunctionBody(funcName, sql) {
   return matches[matches.length - 1][2];
 }
 
-// Extract KPIS array entries from kpis.ts
-const KPI_ENTRIES = [...kpiSource.matchAll(/\{\s*value:\s*'([^']+)',\s*labelKey:\s*'([^']+)'/g)]
-  .map(m => ({ value: m[1], labelKey: m[2] }));
-
 // Expected 9 metric_keys in exec_portfolio_health (from GP-Sponsor agreement)
 const EXPECTED_METRICS = [
   'chapters_participating',
@@ -68,18 +65,21 @@ const EXPECTED_METRICS = [
   'impact_hours',
 ];
 
-// ─── Test 1: Exactly 9 KPIs in static data ───
+// ─── Test 1: no static KPI list (#2553 D9) ───
 
-test('src/data/kpis.ts defines exactly 9 KPIs', () => {
-  assert.equal(KPI_ENTRIES.length, 9, `Expected 9 KPIs, found ${KPI_ENTRIES.length}`);
+test('src/data/kpis.ts no longer exists: the home has no static goal value', () => {
+  assert.ok(!existsSync(KPI_FILE), 'src/data/kpis.ts is back: a static target can disagree with exec_portfolio_health again');
 });
 
-// ─── Test 2: All 9 KPIs have i18n label keys ───
+// ─── Test 2: the home's goals come from exec_portfolio_health, label included ───
 
-test('all 9 KPIs have data.kpi.* labelKey format', () => {
-  for (const kpi of KPI_ENTRIES) {
-    assert.match(kpi.labelKey, /^data\.kpi\.\w+$/, `KPI labelKey "${kpi.labelKey}" does not match data.kpi.* pattern`);
-  }
+test('the goal block reads exec_portfolio_health on the server, with the label from the database', () => {
+  const homeData = readFileSync(HOME_DATA, 'utf8');
+  assert.match(homeData, /const rows = await rpc<unknown\[\]>\('exec_portfolio_health'\);/);
+  assert.match(homeData, /label: String\(r\.label\?\.\[l\] \?\? r\.label\?\.pt \?\? r\.metric_key \?\? ''\),\s+current: isNum\(r\.current\) \? r\.current : null,\s+target: isNum\(r\.target\) && r\.target > 0 \? r\.target : null,/);
+  const section = readFileSync(KPI_SECTION, 'utf8');
+  assert.match(section, /const goals = await loadHomeGoals\(lang\);/);
+  assert.match(section, /\{goals\.map\(\(g\) => \{/);
 });
 
 // ─── Test 3: exec_portfolio_health function exists ───
@@ -126,14 +126,19 @@ test('portfolio_kpi_quarterly_targets table is created in migrations', () => {
   assert.ok(exists, 'portfolio_kpi_quarterly_targets table not found in migrations');
 });
 
-// ─── Test 8: KpiSection maps all 9 metric_keys to labels ───
+// ─── Test 8: no metric is dropped or hand-mapped on the way to the screen ───
 
-test('KpiSection.astro has METRIC_TO_LABEL mapping for all 9 metrics', () => {
-  const sectionContent = readFileSync(KPI_SECTION, 'utf8');
+test('the goal block renders every row exec_portfolio_health returns, without a per-metric map', () => {
+  const homeData = readFileSync(HOME_DATA, 'utf8');
+  const section = readFileSync(KPI_SECTION, 'utf8');
+  // a hand-written metric -> label map is how a metric silently disappeared before (static list of 9)
   for (const key of EXPECTED_METRICS) {
-    const found = sectionContent.includes(key);
-    assert.ok(found, `KpiSection.astro missing METRIC_TO_LABEL mapping for '${key}'`);
+    assert.ok(!section.includes(key), `KpiSection.astro names '${key}': goals must come from the RPC, not a map`);
   }
+  // #2553 D9: no value filter either; a goal whose computation fails stays on screen as "data unavailable"
+  const loader = homeData.match(/export async function loadHomeGoals[\s\S]*?return goals\.length \? goals : null;/)?.[0] ?? '';
+  assert.ok(loader, 'loadHomeGoals not found');
+  assert.doesNotMatch(loader, /\.filter\(/, 'a filter in loadHomeGoals would silently drop a goal');
 });
 
 // ─── Test 9: Color thresholds use green/yellow/red status ───

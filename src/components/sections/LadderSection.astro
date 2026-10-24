@@ -12,33 +12,27 @@
  * the member zone in R5). Anchor id="trail" preserved (nav.trail + profile.astro link).
  * No rebrand — reuses palette tokens.
  */
-import {
-  coreCourses,
-  specialtyCourses,
-  complementaryCourses,
-  masterCertCourses,
-} from '../../data/trail';
 import { t, type Lang } from '../../i18n/utils';
 import CpmaiStudyGroupNotice from './CpmaiStudyGroupNotice.astro';
+import { loadTrailCourses, loadCpmaiWall, type PublicCourse } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-let core = [] as ReturnType<typeof coreCourses>;
-let specialty = [] as ReturnType<typeof specialtyCourses>;
-let complementary = [] as ReturnType<typeof complementaryCourses>;
-let master = [] as ReturnType<typeof masterCertCourses>;
-let masterPrep = [] as ReturnType<typeof complementaryCourses>;
-try {
-  core = Array.isArray(coreCourses()) ? coreCourses() : [];
-  specialty = Array.isArray(specialtyCourses()) ? specialtyCourses() : [];
-  complementary = Array.isArray(complementaryCourses()) ? complementaryCourses() : [];
-  master = Array.isArray(masterCertCourses()) ? masterCertCourses() : [];
-  // Bridge: complementary courses that are recommended prep for PMI-CPMAI Master Cert
-  masterPrep = complementary.filter((c) => c.code === 'CPMAI_INTRO' || c.code === 'AI_PATTERNS');
-} catch {
-  core = []; specialty = []; complementary = []; master = []; masterPrep = [];
-}
+// #2553 PR 2: a escada sai de get_trail_courses (substitui src/data/trail.ts na home) e o mural de
+// get_public_cpmai_wall, os dois no servidor. Sem leitura, cada tier mostra o aviso de indisponível.
+const courses = (await loadTrailCourses()) ?? [];
+const byTier = (tier: PublicCourse['tier']) => courses.filter((c) => c.tier === tier);
+const core = byTier('core');
+const specialty = byTier('specialty');
+const complementary = byTier('complementary');
+const master = byTier('master');
+// Bridge: complementary courses that are recommended prep for PMI-CPMAI Master Cert
+const masterPrep = complementary.filter((c) => c.code === 'CPMAI_INTRO' || c.code === 'AI_PATTERNS');
+// D3: nome, ano e o Credly da pessoa; quem tira o link do perfil sai na hora (a regra mora na RPC)
+const wall = await loadCpmaiWall();
+const freeLabel = (c: PublicCourse) =>
+  c.freeFor === 'pmi_members' ? t('trail.freeForPmiMembers', lang) : c.freeFor === 'everyone' ? t('trail.free', lang) : '';
 ---
 
 <section class="py-16 px-6" id="trail">
@@ -72,7 +66,7 @@ try {
                          text-[.65rem] font-bold flex-shrink-0">
               {i + 1}
             </span>
-            <span class="text-[.82rem] font-medium">{c.name}</span>
+            <span class="text-[.82rem] font-medium">{c.name}{freeLabel(c) && <span class="ml-1.5 text-[.68rem] font-semibold text-[var(--text-muted)] whitespace-nowrap">· {freeLabel(c)}</span>}</span>
           </a>
         ))}
         {!core.length && (
@@ -92,7 +86,7 @@ try {
                          text-[.65rem] font-bold flex-shrink-0">
               {core.length + i + 1}
             </span>
-            <span class="text-[.82rem] font-medium">{c.name}</span>
+            <span class="text-[.82rem] font-medium">{c.name}{freeLabel(c) && <span class="ml-1.5 text-[.68rem] font-semibold text-[var(--text-muted)] whitespace-nowrap">· {freeLabel(c)}</span>}</span>
           </a>
         ))}
         {!specialty.length && (
@@ -110,7 +104,7 @@ try {
                              text-[.65rem] font-bold flex-shrink-0">
                   {core.length + specialty.length + i + 1}
                 </span>
-                <span class="text-[.82rem] font-medium">{c.name}</span>
+                <span class="text-[.82rem] font-medium">{c.name}{freeLabel(c) && <span class="ml-1.5 text-[.68rem] font-semibold text-[var(--text-muted)] whitespace-nowrap">· {freeLabel(c)}</span>}</span>
               </a>
             ))}
           </div>
@@ -187,107 +181,25 @@ try {
         </div>
       </div>
 
-      <!-- Loading state -->
-      <div id="cpmai-loading" class="text-[var(--text-muted)] text-sm py-8 text-center">
-        {t('common.loading', lang)}
-      </div>
-
-      <!-- Empty state -->
-      <div id="cpmai-empty" class="hidden">
-        <div class="bg-amber/5 border border-amber/20 rounded-2xl p-8 text-center max-w-[600px] mx-auto">
-          <div class="text-4xl mb-3">🎓</div>
-          <p class="text-[var(--text-secondary)] text-sm">
-            {t('cpmai.noCerts', lang)}
-          </p>
+      {wall && wall.length > 0 ? (
+        <ul id="cpmai-grid" class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {wall.map((w) => (
+            <li class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-5 text-center">
+              <div class="font-bold text-sm text-navy">{w.name}</div>
+              <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">PMI-CPMAI™</div>
+              {w.certifiedYear && <div class="text-[.7rem] text-[var(--text-muted)] mt-1">{t('cpmai.certifiedIn', lang)} {w.certifiedYear}</div>}
+              <div class="mt-2">
+                <a href={w.credlyUrl} target="_blank" rel="noopener noreferrer" class="inline-flex items-center min-h-[44px] text-[.75rem] text-teal hover:underline no-underline">{t('cpmai.viewOnCredly', lang)}</a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div id="cpmai-empty" class="bg-amber/5 border border-amber/20 rounded-2xl p-8 text-center max-w-[600px] mx-auto">
+          <p class="text-[var(--text-secondary)] text-sm">{t('cpmai.noCerts', lang)}</p>
         </div>
-      </div>
-
-      <!-- Certified members grid (populated by client script) -->
-      <div id="cpmai-grid" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      </div>
+      )}
     </div>
   </div>
 </section>
 
-<!-- Hidden text for the CPMAI mural client script to read translated strings -->
-<span id="cpmai-view-text" class="hidden">{t('cpmai.viewBadge', lang)}</span>
-<span id="cpmai-certified-in-text" class="hidden">{t('cpmai.certifiedIn', lang)}</span>
-
-<script>
-  // ── Load CPMAI-certified members from Supabase (apex of the ladder) ──
-  async function loadCpmaiMembers() {
-    const loading = document.getElementById('cpmai-loading');
-    const empty = document.getElementById('cpmai-empty');
-    const grid = document.getElementById('cpmai-grid');
-    if (!loading || !empty || !grid) return;
-
-    try {
-      const sb = (window as any).navGetSb?.();
-      if (!sb) {
-        // Supabase not ready yet, wait for nav boot
-        window.addEventListener('nav:member', () => loadCpmaiMembers(), { once: true });
-        // Also try after a short delay as fallback
-        setTimeout(loadCpmaiMembers, 2000);
-        return;
-      }
-
-      // Query members with cpmai_certified = true OR who have CPMAI badges in credly_badges
-      const { data: members, error } = await sb
-        .from('public_members')
-        .select('id, name, photo_url, chapter, credly_badges, credly_url, cpmai_certified_at')
-        .eq('current_cycle_active', true)
-        .or('cpmai_certified.eq.true,credly_badges.cs.[{"category":"cpmai"}]')
-        .order('cpmai_certified_at', { ascending: true, nullsFirst: false });
-
-      loading.classList.add('hidden');
-
-      if (error || !members || members.length === 0) {
-        empty.classList.remove('hidden');
-        return;
-      }
-
-      // Build cards
-      grid.innerHTML = members.map((m: any) => {
-        const safeName = String(m?.name || 'Membro sem nome');
-        const photoUrl = m.photo_url || '';
-        const initials = safeName.split(' ').map((w: string) => w[0]).join('').substring(0, 2).toUpperCase();
-        const cpmaiBadge = m.credly_badges?.find?.((b: any) => b.category === 'cpmai');
-        const badgeUrl = cpmaiBadge?.badge_url || m.credly_url || '';
-        const rawBadgeName = cpmaiBadge?.name || '';
-        const certType = rawBadgeName.includes('CPMAI') ? 'PMI-CPMAI™' : (rawBadgeName || 'PMI-CPMAI');
-        const certDate = m.cpmai_certified_at || cpmaiBadge?.issued_at || null;
-        const certDateStr = certDate ? new Date(certDate).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-US' : document.documentElement.lang === 'es' ? 'es' : 'pt-BR', { month: 'short', year: 'numeric' }) : '';
-
-        return `
-          <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-5 text-center hover:-translate-y-px hover:shadow-md transition-all duration-200">
-            ${photoUrl
-              ? `<img src="${photoUrl}" alt="${safeName}" class="w-16 h-16 rounded-full object-cover mx-auto mb-3 border-2 border-amber/30">`
-              : `<div class="w-16 h-16 rounded-full bg-amber/10 flex items-center justify-center text-amber font-bold text-lg mx-auto mb-3 border-2 border-amber/30">${initials}</div>`
-            }
-            <div class="font-bold text-sm text-navy">${safeName}</div>
-            <div class="text-[.68rem] text-[var(--text-muted)] mt-0.5">${m.chapter || ''}</div>
-            <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[.65rem] font-bold bg-amber/10 text-amber">
-              🎓 ${certType}
-            </div>
-            ${certDateStr ? `<div class="text-[.6rem] text-[var(--text-muted)] mt-1">${document.getElementById('cpmai-certified-in-text')?.textContent || 'Certificado em'} ${certDateStr}</div>` : ''}
-            ${badgeUrl ? `<div class="mt-2"><a href="${badgeUrl}" target="_blank" rel="noopener" class="text-[.7rem] text-teal hover:underline no-underline">${document.getElementById('cpmai-view-text')?.textContent || 'View badge →'}</a></div>` : ''}
-          </div>
-        `;
-      }).join('');
-
-      grid.classList.remove('hidden');
-      grid.classList.add('grid');
-    } catch (err) {
-      console.warn('CPMAI mural load error:', err);
-      loading.classList.add('hidden');
-      empty.classList.remove('hidden');
-    }
-  }
-
-  // Boot after DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(loadCpmaiMembers, 500));
-  } else {
-    setTimeout(loadCpmaiMembers, 500);
-  }
-</script>

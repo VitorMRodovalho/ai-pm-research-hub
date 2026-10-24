@@ -1,131 +1,61 @@
 ---
-import { KPIS } from '../../data/kpis';
+/**
+ * #2553 PR 2 (D9, GP 20/10/2026): as metas pactuadas do ano, todas, com atual e alvo lidos no servidor de
+ * exec_portfolio_health. Antes o alvo vinha de src/data/kpis.ts (texto fixo) e só a barra vinha do banco, no
+ * navegador; um alvo de 8 capítulos convivia com 15 no ar.
+ *
+ * Meta acima do alvo aparece como "superada", igual ao alvo como "atingida", e abaixo dele com a barra real.
+ * Nenhuma meta sai da tela. Sem leitura, o bloco diz que as metas estão indisponíveis, sem número de reserva.
+ */
 import { t, type Lang } from '../../i18n/utils';
+import { loadHomeGoals, goalState, currentYearBrt, type HomeGoal } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-const safeKpis = Array.isArray(KPIS) ? KPIS : [];
+const goals = await loadHomeGoals(lang);
+const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
+const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+const withUnit = (g: HomeGoal, v: number) =>
+  g.unit === 'percent' ? `${nf.format(v)}%` : g.unit === 'hours' ? `${nf.format(v)} h` : nf.format(v);
+const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', lang), behind: '', unavailable: '' };
 ---
 
-<section class="py-16 px-6 bg-[var(--surface-section-dark)] text-white" id="kpis">
+<section class="py-16 px-6 bg-[var(--surface-card)]" id="kpis">
   <div class="max-w-[1200px] mx-auto">
-    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-[#05BFE0] mb-2">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">
       {t('kpis.label', lang)}
     </div>
-    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3 text-white">
-      {t('kpis.title', lang)}
+    <h2 class="text-[clamp(1.7rem,4vw,2.5rem)] font-extrabold leading-tight mb-3 text-navy">
+      {t('kpis.title', lang).replace('{year}', currentYearBrt())}
     </h2>
-    <p class="text-base text-white/60 max-w-[700px] mb-10">
+    <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">
       {t('kpis.subtitle', lang)}
     </p>
-    <div id="kpi-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
-      {safeKpis.map((k) => (
-        <div class="bg-white/6 border border-white/10 rounded-2xl p-5 text-center" data-kpi-key={k.labelKey} data-surpassed={k.surpassedFromGoal ? '1' : undefined}>
-          <div class="text-[clamp(1.5rem,4vw,2.2rem)] font-extrabold leading-none bg-gradient-to-br from-[#05BFE0] to-[#ED7D31] bg-clip-text text-transparent">
-            {k.value}
-          </div>
-          <div class="text-[.78rem] text-white/60 mt-1.5">{t(k.labelKey, lang)}</div>
-          {k.surpassedFromGoal ? (
-            <div class="text-[10px] mt-2 text-emerald-400 font-semibold">
-              {t('data.kpi.surpassedTemplate', lang).replace('{goal}', k.surpassedFromGoal)}
-            </div>
-          ) : (
-            <div class="kpi-health-bar hidden mt-2">
-              <div class="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div class="kpi-health-fill h-full rounded-full transition-all duration-700" style="width:0%"></div>
+
+    {goals ? (
+      <ul class="list-none m-0 p-0 grid gap-4 max-w-[760px]" id="kpi-list">
+        {goals.map((g) => {
+          const state = goalState(g);
+          const pct = g.current !== null && g.target !== null ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
+          const text = g.current !== null && g.target !== null
+            ? t('kpis.ofTarget', lang).replace('{current}', withUnit(g, g.current)).replace('{target}', withUnit(g, g.target))
+            : t('kpis.goalUnavailable', lang);
+          return (
+            <li class="grid gap-1.5" data-kpi={g.key} data-state={state}>
+              <div class="flex justify-between gap-3 text-[.95rem]">
+                <span>{g.label}</span>
+                <b class="tabular-nums text-right">{text}{stateLabel[state] && <span class="text-emerald-700 dark:text-emerald-400"> · {stateLabel[state]}</span>}</b>
               </div>
-              <div class="kpi-health-label text-[9px] mt-1 font-semibold"></div>
-              <div class="kpi-quarter-label hidden text-[9px] mt-0.5 text-white/60 font-medium"></div>
-            </div>
-          )}
-        </div>
-      ))}
-      {!safeKpis.length && (
-        <div class="col-span-full bg-white/6 border border-white/10 rounded-2xl p-5 text-center text-sm text-white/70">
-          {t('kpis.unavailable', lang)}
-        </div>
-      )}
-    </div>
+              <div class="h-2.5 rounded-full bg-[var(--surface-section-cool)] overflow-hidden" role="img" aria-label={`${g.label}: ${text}`}>
+                {state !== 'unavailable' && <div class={`h-full rounded-full ${state === 'behind' ? 'bg-teal' : 'bg-emerald-600'}`} style={`width:${pct}%`}></div>}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <p class="text-sm text-[var(--text-secondary)]" id="kpi-unavailable">{t('kpis.unavailable', lang)}</p>
+    )}
   </div>
 </section>
-
-<script>
-  // Hydrate KPI cards with live cycle-filtered data from exec_portfolio_health
-  import { getSupabase } from '../../lib/supabase';
-
-  (async () => {
-    // Wait for Nav to set runtime config (window.__PUBLIC_SUPABASE_URL/KEY)
-    await new Promise<void>((resolve) => {
-      if ((window as any).__PUBLIC_SUPABASE_URL) { resolve(); return; }
-      const observer = new MutationObserver(() => {
-        if ((window as any).__PUBLIC_SUPABASE_URL) { observer.disconnect(); resolve(); }
-      });
-      observer.observe(document.documentElement, { childList: true, subtree: true });
-      setTimeout(() => { observer.disconnect(); resolve(); }, 3000);
-    });
-
-    let sb: ReturnType<typeof getSupabase>;
-    try { sb = getSupabase(); } catch { return; }
-
-    const METRIC_TO_LABEL: Record<string, string> = {
-      chapters_participating: 'data.kpi.chapters',
-      partner_entities: 'data.kpi.partners',
-      certification_trail: 'data.kpi.certTrail',
-      cpmai_certified: 'data.kpi.cpmai',
-      articles_published: 'data.kpi.articles',
-      webinars_completed: 'data.kpi.webinars',
-      ia_pilots: 'data.kpi.pilots',
-      meeting_hours: 'data.kpi.meetings',
-      impact_hours: 'data.kpi.impact',
-    };
-
-    const STATUS_COLORS: Record<string, string> = {
-      green: '#10B981',
-      yellow: '#D97706',
-      red: '#BE2027',
-    };
-
-    try {
-      const { data, error } = await sb.rpc('exec_portfolio_health');
-      if (error || !data) return;
-
-      const healthItems = Array.isArray(data) ? data : [];
-      healthItems.forEach((item: any) => {
-        const labelKey = METRIC_TO_LABEL[item.metric_key];
-        if (!labelKey) return;
-        const card = document.querySelector<HTMLElement>(`#kpi-grid [data-kpi-key="${labelKey}"]`);
-        if (!card) return;
-        if (card.dataset.surpassed === '1') return;
-
-        const barContainer = card.querySelector<HTMLElement>('.kpi-health-bar');
-        const fill = card.querySelector<HTMLElement>('.kpi-health-fill');
-        const label = card.querySelector<HTMLElement>('.kpi-health-label');
-        if (!barContainer || !fill || !label) return;
-
-        const pct = Math.min(Number(item.progress_pct) || 0, 100);
-        const color = pct >= 70 ? STATUS_COLORS.green : pct >= 40 ? STATUS_COLORS.yellow : STATUS_COLORS.red;
-
-        fill.style.width = `${pct}%`;
-        fill.style.backgroundColor = color;
-        label.style.color = color;
-        const suffix = item.unit === 'percent' ? '%' : '';
-        const unitLabel = item.unit === 'hours' ? 'h' : '';
-        const cur = Math.round(Number(item.current) || 0);
-        const tgt = Math.round(Number(item.target) || 0);
-        label.textContent = `${cur}${suffix}${unitLabel} / ${tgt}${suffix}${unitLabel}`;
-        label.title = `${cur}${suffix}${unitLabel} de ${tgt}${suffix}${unitLabel} — progresso: ${pct}%`;
-        barContainer.classList.remove('hidden');
-
-        // Quarterly label
-        const qLabel = card.querySelector<HTMLElement>('.kpi-quarter-label');
-        if (qLabel && item.quarter && item.quarter_cumulative > 0) {
-          const qCur = cur;
-          const qTgt = Math.round(Number(item.quarter_cumulative) || 0);
-          qLabel.textContent = `Q${item.quarter}: ${qCur}${suffix}${unitLabel} / ${qTgt}${suffix}${unitLabel}`;
-          qLabel.classList.remove('hidden');
-        }
-      });
-    } catch { /* RPC may not exist — keep static fallbacks */ }
-  })();
-</script>
