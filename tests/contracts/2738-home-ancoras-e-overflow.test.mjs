@@ -67,7 +67,8 @@ for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pa
   test(`A: ${page}: toda âncora interna dos componentes renderizados tem alvo renderizado`, () => {
     const rendered = renderedTree(page);
     assert.ok(rendered.some((c) => c.name === 'HomepageHero'), 'o hero está entre os renderizados');
-    assert.ok(rendered.some((c) => c.name === 'VerticalsSection'), 'a descida alcança o que o ModelSection renderiza');
+    // #2553 PR 2: controle da descida: o aviso do Grupo de Estudos só é renderizado DENTRO da LadderSection
+    assert.ok(rendered.some((c) => c.name === 'CpmaiStudyGroupNotice'), 'a descida alcança o que a LadderSection renderiza');
 
     const ids = new Set([...maskAstro(read(page)).matchAll(/\bid="([\w-]+)"/g)].map((m) => m[1]));
     const anchors = [];
@@ -102,7 +103,10 @@ test('D: a agenda da home hidrata no carregamento, não ao ficar visível', () =
   assert.doesNotMatch(src, /<AgendaVivaPublic client:visible\b/);
 });
 
-test('C: a leitura de whatsapp_gp não usa .single() (406 para o anônimo)', () => {
+test('C: a seção de capítulos não lê site_config (o anônimo lê 0 linhas) e leva à porta dos capítulos', () => {
+  // #2553 PR 2: a chamada "contate o GP" (mailto, trocada por WhatsApp lendo site_config) virou a porta dos capítulos,
+  // com o formulário de interesse e prazo de resposta.
   const src = maskAstro(read('src/components/sections/ChaptersSection.astro'));
-  assert.match(src, /from\('site_config'\)\.select\('value'\)\.eq\('key', 'whatsapp_gp'\)\.maybeSingle\(\)/);
+  assert.doesNotMatch(src, /from\('site_config'\)/);
+  assert.match(src, /<a id="chapters-cta-link" href="#join-institutions"/);
 });

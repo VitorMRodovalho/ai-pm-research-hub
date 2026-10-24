@@ -1,0 +1,137 @@
+---
+/**
+ * #2553 PR 2: as linhas de pesquisa, compactas, com filtro por quadrante e por campo de atuação.
+ *
+ * D5 (GP 20/10/2026): o detalhe de cada linha abre aqui mesmo enquanto a camada pública de /tribe/[id] não existe.
+ * D8: o filtro por campo lê research_line_fields (get_public_line_fields); com a tabela vazia, o filtro por campo
+ * não aparece e nada quebra. A porta "proponha uma linha" e a frase "novas linhas podem abrir" ficam sempre.
+ * D3: sem nome de liderança (lideranças só em contagem, na seção "Quem faz").
+ * Tudo vem de get_public_research_lines (DB-3): nome, quadrante, texto, entregas, horário e vagas.
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { loadResearchLines, loadLineFields, loadVerticals } from '../../lib/publicHomeData';
+import { formatMeetingSlots } from '../../lib/tribes/public-profile';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+
+const [lines, pairs, verticals] = await Promise.all([loadResearchLines(lang), loadLineFields(), loadVerticals()]);
+const quadrants = lines
+  ? [...new Map(lines.filter((l) => l.quadrant).map((l) => [l.quadrant, l.quadrantName || l.quadrant])).entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  : [];
+const fieldsByLine = new Map<number, string[]>();
+for (const p of pairs) fieldsByLine.set(p.tribeId, [...(fieldsByLine.get(p.tribeId) ?? []), p.verticalId]);
+// os campos só aparecem quando existe ao menos um vínculo; todos os campos ativos entram, com ou sem linha
+const fields = pairs.length > 0 ? verticals : [];
+const fieldTitle = new Map(verticals.map((v) => [v.id, v.title]));
+const code = (id: number) => `T${String(id).padStart(2, '0')}`;
+---
+
+<section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="tribes">
+  <div class="max-w-[1100px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.lines.label', lang)}</div>
+    <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight mb-3 text-navy">
+      {lines ? t('homeV2.lines.title', lang).replace('{n}', String(lines.length)).replace('{q}', String(quadrants.length)) : t('homeV2.lines.titleNoCount', lang)}
+    </h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[720px] mb-6">{t('homeV2.lines.subtitle', lang)}</p>
+
+    {lines && lines.length > 0 ? (
+      <>
+        <div class="flex flex-wrap gap-2 mb-5" role="group" aria-label={t('homeV2.lines.filterAria', lang)} id="lines-filter">
+          <button type="button" class="lines-chip min-h-[40px] px-3 rounded-full text-[13px] font-semibold border border-[var(--border-default)] cursor-pointer" aria-pressed="true" data-f="all">{t('homeV2.lines.all', lang)}</button>
+          {quadrants.map(([key, name]) => (
+            <button type="button" class="lines-chip min-h-[40px] px-3 rounded-full text-[13px] font-semibold border border-[var(--border-default)] cursor-pointer" aria-pressed="false" data-f={`q:${key}`}>{name}</button>
+          ))}
+          {fields.length > 0 && <span class="w-px bg-[var(--border-strong)] mx-1" aria-hidden="true"></span>}
+          {fields.map((f) => (
+            <button type="button" class="lines-chip min-h-[40px] px-3 rounded-full text-[13px] font-semibold border border-[var(--border-default)] cursor-pointer" aria-pressed="false" data-f={`f:${f.id}`} data-field-title={f.title}>{f.title}</button>
+          ))}
+        </div>
+
+        <ul class="list-none m-0 p-0 grid gap-2" id="lines-list">
+          {lines.map((l) => {
+            const when = formatMeetingSlots(l.slots, lang);
+            const full = l.capacity > 0 && l.members >= l.capacity;
+            const lineFields = fieldsByLine.get(l.id) ?? [];
+            return (
+              <li data-q={l.quadrant} data-f={lineFields.join(' ')} data-line={l.id}>
+                <details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl">
+                  <summary class="cursor-pointer list-none grid grid-cols-[3rem_minmax(0,1fr)] sm:grid-cols-[3.5rem_minmax(0,1fr)_auto] gap-x-4 gap-y-1 items-center px-4 py-3 min-h-[44px]">
+                    <span class="font-mono text-sm text-teal">{code(l.id)}</span>
+                    <span class="font-bold text-[var(--text-primary)]">{l.name}</span>
+                    <span class="col-start-2 sm:col-start-3 sm:row-start-1 sm:row-span-2 flex flex-wrap sm:flex-col sm:items-end gap-1.5">
+                      {lineFields.map((id) => <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-orange/10 text-[var(--color-orange-deep)]">{fieldTitle.get(id)}</span>)}
+                      {l.capacity > 0 && (
+                        <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-primary)] whitespace-nowrap">
+                          {full ? t('homeV2.lines.full', lang) : t('homeV2.lines.seats', lang).replace('{n}', String(l.members)).replace('{max}', String(l.capacity))}
+                        </span>
+                      )}
+                    </span>
+                    <span class="col-start-2 text-sm text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-0.5">
+                      <span>{l.quadrantName}</span>
+                      <span>{when ? `${when} (${t('homeV2.lines.brt', lang)})` : t('homeV2.lines.noSchedule', lang)}</span>
+                    </span>
+                  </summary>
+                  <div class="px-4 pb-4 sm:pl-[5.5rem] grid gap-2 text-sm text-[var(--text-secondary)]">
+                    {l.description && <p>{l.description}</p>}
+                    {l.deliverables.length > 0 && (
+                      <>
+                        <p class="font-semibold text-[var(--text-primary)]">{t('homeV2.lines.deliverables', lang)}</p>
+                        <ul class="list-disc pl-5 m-0 grid gap-1">{l.deliverables.map((d) => <li>{d}</li>)}</ul>
+                      </>
+                    )}
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ul>
+        <p id="lines-empty-field" class="hidden mt-3 border border-dashed border-[var(--border-strong)] rounded-xl px-4 py-3 text-sm text-[var(--text-secondary)]">
+          <b class="text-[var(--text-primary)]" data-empty-title></b> {t('homeV2.lines.emptyField', lang)}
+          <a href="#join-institutions" class="font-bold text-teal no-underline hover:underline">{t('homeV2.lines.proposeLine', lang)} →</a>
+        </p>
+      </>
+    ) : (
+      <p class="text-sm text-[var(--text-secondary)]">{t('homeV2.lines.unavailable', lang)}</p>
+    )}
+
+    <p class="mt-6 text-sm text-[var(--text-secondary)]">
+      {t('homeV2.lines.newLines', lang)}
+      <a href="#join-institutions" class="font-bold text-teal no-underline hover:underline">{t('homeV2.lines.proposeLine', lang)} →</a>
+    </p>
+  </div>
+</section>
+
+<style>
+  .lines-chip { background: var(--surface-card); color: var(--text-primary); }
+  .lines-chip[aria-pressed='true'] { background: var(--color-navy); color: #fff; border-color: var(--color-navy); }
+  #lines-list summary::-webkit-details-marker { display: none; }
+</style>
+
+<script>
+  // Filtro da lista: quadrante (q:) ou campo (f:). Sem JavaScript, a lista inteira fica visível.
+  const group = document.getElementById('lines-filter');
+  const list = document.getElementById('lines-list');
+  const empty = document.getElementById('lines-empty-field');
+  if (group && list) {
+    const chips = [...group.querySelectorAll<HTMLButtonElement>('button[data-f]')];
+    chips.forEach((chip) => chip.addEventListener('click', () => {
+      chips.forEach((c) => c.setAttribute('aria-pressed', c === chip ? 'true' : 'false'));
+      const f = chip.dataset.f ?? 'all';
+      let shown = 0;
+      list.querySelectorAll<HTMLElement>('li[data-line]').forEach((li) => {
+        const ok = f === 'all'
+          || (f.startsWith('q:') && li.dataset.q === f.slice(2))
+          || (f.startsWith('f:') && (li.dataset.f ?? '').split(' ').includes(f.slice(2)));
+        li.hidden = !ok;
+        if (ok) shown++;
+      });
+      if (empty) {
+        const isField = f.startsWith('f:') && shown === 0;
+        empty.classList.toggle('hidden', !isField);
+        const title = empty.querySelector('[data-empty-title]');
+        if (title) title.textContent = isField ? `${chip.dataset.fieldTitle ?? ''}:` : '';
+      }
+    }));
+  }
+</script>

@@ -12,7 +12,7 @@
  * seção visível com os cards, item à mostra, 1 chamada.
  *
  * O QUE ESTE GUARD AFIRMA
- *   A. O item trail-ranking exige sessão e continua no grupo home-anchors (o contrato 1136 segue valendo).
+ *   A. #2553 PR 2 (home v2): o ranking saiu da home; nenhum item de menu nem página da home o renderiza.
  *   B. O Nav renderiza âncora que exige sessão escondida, no desktop e no celular, e só a mostra com _user.
  *   C. A seção nasce escondida, e a leitura do ranking só parte de dentro do caminho com sessão.
  */
@@ -27,12 +27,13 @@ const ROOT = process.cwd();
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 const maskAstro = (src) => maskJsComments(src).replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
 
-test('A: o item trail-ranking exige sessão e segue no grupo home-anchors', () => {
-  const nav = maskJsComments(read('src/lib/navigation.config.ts'));
-  const line = nav.match(/^.*key: 'trail-ranking'.*$/m);
-  assert.ok(line, 'item trail-ranking presente');
-  assert.match(line[0], /requiresAuth: true/);
-  assert.match(line[0], /group: 'home-anchors'/);
+test('A: o ranking da trilha saiu da home: nenhum item de menu e nenhuma página da home o renderiza', () => {
+  // #2553 PR 2 (home v2): o ranking com nomes foi para /gamification (D3/D4); a home mostra a trilha em agregado.
+  const navNow = readFileSync(join(ROOT, 'src/lib/navigation.config.ts'), 'utf8');
+  assert.doesNotMatch(navNow, /key: 'trail-ranking'/);
+  for (const page of ['src/pages/index.astro', 'src/pages/en/index.astro', 'src/pages/es/index.astro']) {
+    assert.doesNotMatch(readFileSync(join(ROOT, page), 'utf8'), /<TrailRankingSection\b/, page);
+  }
 });
 
 test('B: o Nav esconde a âncora que exige sessão e só a mostra com _user', () => {

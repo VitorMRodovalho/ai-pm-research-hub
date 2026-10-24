@@ -1,0 +1,59 @@
+---
+/**
+ * #2553 PR 2: "Quem faz", por função e em contagem (D3, GP 21/10/2026: gestão e lideranças só em contagem na virada;
+ * os nomes dos papéis da D1 entram depois, numa PR própria). Pesquisadores contam a equipe de pesquisa, a mesma do hero;
+ * a trilha conta a mesma população (D9); o número de certificados é o do mural, logo abaixo, na escada.
+ * Fontes: get_public_home_team, get_public_trail_summary, get_public_cpmai_wall, get_homepage_stats (capítulos).
+ */
+import { t, type Lang } from '../../i18n/utils';
+import type { HomeStats } from '../../lib/homeStats';
+import { loadHomeTeam, loadTrailSummary, loadCpmaiWall } from '../../lib/publicHomeData';
+
+interface Props { lang?: Lang; stats?: HomeStats | null; }
+const { lang = 'pt-BR', stats = null } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+
+const [team, trail, wall] = await Promise.all([loadHomeTeam(), loadTrailSummary(), loadCpmaiWall()]);
+type Tile = { n: string; label: string; id: string };
+const tiles: Tile[] = [];
+if (team) {
+  tiles.push({ id: 'researchers', n: String(team.researchers), label: stats?.chapters != null
+    ? t('homeV2.team.researchersIn', lang).replace('{chapters}', String(stats.chapters))
+    : t('homeV2.team.researchers', lang) });
+  tiles.push({ id: 'management', n: String(team.management), label: t('homeV2.team.management', lang) });
+  tiles.push({ id: 'line_leaders', n: String(team.line_leaders), label: t('homeV2.team.lineLeaders', lang) });
+  tiles.push({ id: 'initiative_leaders', n: String(team.initiative_leaders), label: t('homeV2.team.initiativeLeaders', lang) });
+  if (team.curators > 0) tiles.push({ id: 'curators', n: String(team.curators), label: t('homeV2.team.curators', lang) });
+  tiles.push({ id: 'hub_members', n: String(team.hub_members), label: t('homeV2.team.hubs', lang) });
+  tiles.push({ id: 'chapter_focal_points', n: String(team.chapter_focal_points), label: t('homeV2.team.focalPoints', lang) });
+}
+if (trail) tiles.push({ id: 'trail', n: t('homeV2.team.trailCount', lang).replace('{done}', String(trail.completedAll)).replace('{of}', String(trail.population)),
+  label: t('homeV2.team.trail', lang).replace('{courses}', String(trail.trailCourses)) });
+if (wall) tiles.push({ id: 'cpmai', n: String(wall.length), label: t('homeV2.team.cpmai', lang) });
+---
+
+<section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="team">
+  <div class="max-w-[1200px] mx-auto">
+    <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.team.label', lang)}</div>
+    <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight mb-3 text-navy">{t('homeV2.team.title', lang)}</h2>
+    <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">{t('homeV2.team.subtitle', lang)}</p>
+
+    {tiles.length > 0 ? (
+      <ul class="list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {tiles.map((tile) => (
+          <li class="border-l-[3px] border-[#05BFE0] pl-3 py-1 grid gap-0.5" data-team={tile.id}>
+            <b class="text-[22px] tabular-nums text-[var(--text-primary)]">{tile.n}</b>
+            <span class="text-sm text-[var(--text-secondary)]">{tile.label}</span>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="text-sm text-[var(--text-secondary)]">{t('homeV2.team.unavailable', lang)}</p>
+    )}
+
+    <p class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+      <a href="#trail" class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.team.toTrail', lang)} →</a>
+      <a href={`${langPrefix}/gamification`} class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.team.toRanking', lang)} →</a>
+    </p>
+  </div>
+</section>

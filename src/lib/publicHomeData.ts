@@ -16,13 +16,28 @@ function anonClient(): SupabaseClient {
   });
 }
 
-async function rpc<T>(name: string): Promise<T | null> {
+async function rpcOnce<T>(name: string): Promise<T | null> {
   try {
     const { data, error } = await anonClient().rpc(name).abortSignal(AbortSignal.timeout(TIMEOUT_MS));
     return error || data === null || data === undefined ? null : (data as T);
   } catch {
     return null;
   }
+}
+
+// Duas seções da home leem a mesma RPC (as linhas, na lista e na agenda). Uma leitura boa vale 60 s no módulo, e uma
+// leitura em voo é compartilhada; falha não fica guardada, para a próxima requisição tentar de novo.
+const CACHE_MS = 60 * 1000;
+const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+
+async function rpc<T>(name: string): Promise<T | null> {
+  const hit = cache.get(name);
+  if (hit && Date.now() - hit.at < CACHE_MS) return hit.value as Promise<T | null>;
+  const value = rpcOnce<T>(name);
+  cache.set(name, { at: Date.now(), value });
+  const result = await value;
+  if (result === null) cache.delete(name);
+  return result;
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
@@ -116,4 +131,143 @@ export async function loadCpmaiWall(): Promise<CpmaiWallEntry[] | null> {
 /** O ano corrente em Brasília, o mesmo que as metas usam como janela. */
 export function currentYearBrt(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', year: 'numeric' }).format(now);
+}
+
+// ── Linhas de pesquisa (get_public_research_lines, DB-3) ─────────────────────────────────────────────────────────
+export interface ResearchLineSlot { day_of_week: number; time_start: string; time_end: string | null }
+export interface ResearchLine {
+  id: number;
+  name: string;
+  quadrant: string;
+  quadrantName: string;
+  description: string;
+  deliverables: string[];
+  slots: ResearchLineSlot[];
+  members: number;
+  capacity: number;
+}
+
+const pickText = (v: unknown, l: string): string => {
+  const o = v as Record<string, unknown> | null;
+  const own = o?.[l];
+  const pt = o?.pt;
+  return typeof own === 'string' && own.trim() ? own.trim() : typeof pt === 'string' ? pt.trim() : '';
+};
+const pickList = (v: unknown, l: string): string[] => {
+  const o = v as Record<string, unknown> | null;
+  const own = o?.[l];
+  const list = Array.isArray(own) && own.length ? own : o?.pt;
+  return (Array.isArray(list) ? list : []).filter((x): x is string => typeof x === 'string' && x.trim() !== '');
+};
+
+export async function loadResearchLines(lang: Lang): Promise<ResearchLine[] | null> {
+  const rows = await rpc<unknown[]>('get_public_research_lines');
+  if (!Array.isArray(rows)) return null;
+  const l = shortLang(lang);
+  return rows
+    .map((r) => (r ?? {}) as Record<string, any>)
+    .filter((r) => Number.isInteger(r.tribe_id))
+    .map((r) => ({
+      id: r.tribe_id as number,
+      name: pickText(r.name_i18n, l),
+      quadrant: String(r.quadrant ?? ''),
+      quadrantName: pickText(r.quadrant_name_i18n, l),
+      description: pickText(r.description_i18n, l),
+      deliverables: pickList(r.deliverables_i18n, l),
+      slots: Array.isArray(r.slots) ? (r.slots as ResearchLineSlot[]) : [],
+      members: isNum(r.members) ? r.members : 0,
+      capacity: isNum(r.capacity) ? r.capacity : 0,
+    }))
+    .sort((a, b) => a.id - b.id);
+}
+
+// ── Campo de atuação de cada linha (get_public_line_fields; vazio = sem filtro por campo) ─────────────────────────
+export interface LineField { tribeId: number; verticalId: string; verticalTitle: string }
+
+export async function loadLineFields(): Promise<LineField[]> {
+  const rows = await rpc<unknown[]>('get_public_line_fields');
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((r) => (r ?? {}) as Record<string, any>)
+    .filter((r) => Number.isInteger(r.tribe_id) && typeof r.vertical_id === 'string' && typeof r.vertical_title === 'string')
+    .map((r) => ({ tribeId: r.tribe_id, verticalId: r.vertical_id, verticalTitle: r.vertical_title }));
+}
+
+/** Os campos de atuação (verticais ativas), para o filtro mostrar também campo ainda sem linha. */
+export async function loadVerticals(): Promise<{ id: string; title: string }[]> {
+  const rows = await rpc<unknown[]>('get_public_verticals');
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((r) => (r ?? {}) as Record<string, any>)
+    .filter((r) => typeof r.id === 'string' && typeof r.title === 'string')
+    .map((r) => ({ id: r.id, title: r.title }));
+}
+
+// ── Quem faz, em contagem (get_public_home_team) e trilha (get_public_trail_summary) ─────────────────────────────
+export type HomeTeam = Record<'management' | 'line_leaders' | 'initiative_leaders' | 'curators' | 'hub_members' | 'chapter_focal_points' | 'researchers', number>;
+const TEAM_KEYS = ['management', 'line_leaders', 'initiative_leaders', 'curators', 'hub_members', 'chapter_focal_points', 'researchers'] as const;
+
+export async function loadHomeTeam(): Promise<HomeTeam | null> {
+  const data = await rpc<Record<string, unknown>>('get_public_home_team');
+  if (!data || typeof data !== 'object') return null;
+  if (!TEAM_KEYS.every((k) => isNum(data[k]))) return null;
+  return Object.fromEntries(TEAM_KEYS.map((k) => [k, data[k] as number])) as HomeTeam;
+}
+
+export interface TrailSummary { population: number; trailCourses: number; completedAll: number; avgPct: number }
+
+export async function loadTrailSummary(): Promise<TrailSummary | null> {
+  const d = await rpc<Record<string, unknown>>('get_public_trail_summary');
+  if (!d || ![d.population, d.trail_courses, d.completed_all, d.avg_pct].every(isNum)) return null;
+  return { population: d.population as number, trailCourses: d.trail_courses as number, completedAll: d.completed_all as number, avgPct: d.avg_pct as number };
+}
+
+// ── Capítulos: ano de entrada e sede (get_public_chapter_entries) ────────────────────────────────────────────────
+export interface ChapterEntry { code: string; entryYear: number | null; isHost: boolean }
+
+export async function loadChapterEntries(): Promise<ChapterEntry[]> {
+  const rows = await rpc<unknown[]>('get_public_chapter_entries');
+  if (!Array.isArray(rows)) return [];
+  return rows
+    .map((r) => (r ?? {}) as Record<string, any>)
+    .filter((r) => typeof r.display_code === 'string')
+    .map((r) => ({ code: r.display_code, entryYear: isNum(r.entry_year) ? r.entry_year : null, isHost: r.is_host === true }));
+}
+
+// ── Produção: o item mais recente de cada formato ────────────────────────────────────────────────────────────────
+export interface LatestOutput { title: string; date: string; context: string; href: string; external: boolean; count: number }
+
+export async function loadLatestWebinar(): Promise<LatestOutput | null> {
+  const rows = await rpc<unknown[]>('get_public_webinars');
+  if (!Array.isArray(rows)) return null;
+  const done = rows
+    .map((r) => (r ?? {}) as Record<string, any>)
+    .filter((r) => r.status === 'completed' && typeof r.title === 'string' && /^https:\/\//.test(String(r.youtube_url ?? '')))
+    .sort((a, b) => String(b.scheduled_at).localeCompare(String(a.scheduled_at)));
+  const w = done[0];
+  return w ? { title: w.title, date: String(w.scheduled_at), context: String(w.tribe_name ?? ''), href: w.youtube_url, external: true, count: done.length } : null;
+}
+
+export async function loadLatestEpisode(): Promise<LatestOutput | null> {
+  const d = await rpc<Record<string, any>>('get_public_podcast_episodes');
+  const eps = Array.isArray(d?.episodes) ? (d!.episodes as Record<string, any>[]) : [];
+  const e = eps.filter((x) => typeof x?.title === 'string').sort((a, b) => String(b.published_at).localeCompare(String(a.published_at)))[0];
+  return e ? { title: e.title, date: String(e.published_at), context: String(e.series ?? ''), href: '/podcast', external: false, count: isNum(d?.total) ? d!.total : eps.length } : null;
+}
+
+export async function loadLatestPost(lang: Lang): Promise<LatestOutput | null> {
+  try {
+    const { data, error } = await anonClient().from('blog_posts')
+      .select('slug, title, published_at')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+      .limit(1)
+      .abortSignal(AbortSignal.timeout(TIMEOUT_MS));
+    const p = !error && Array.isArray(data) ? (data[0] as Record<string, any> | undefined) : undefined;
+    if (!p || typeof p.slug !== 'string') return null;
+    const title = typeof p.title === 'string' ? p.title : String(p.title?.[lang] ?? p.title?.['pt-BR'] ?? '');
+    return title ? { title, date: String(p.published_at), context: '', href: `/blog/${p.slug}`, external: false, count: 0 } : null;
+  } catch {
+    return null;
+  }
 }

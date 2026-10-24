@@ -21,7 +21,7 @@ export function InterestForm({ roleInterest, source, targetVertical = null, labe
   source: InterestSource;
   targetVertical?: string | null;
   labels: Record<string, string>;
-  messageKey?: 'message' | 'messageVertical';
+  messageKey?: 'message' | 'messageVertical' | 'messageChapter' | 'messagePartner';
   lp: string;
   onClose: () => void;
 }) {
@@ -101,22 +101,24 @@ export function InterestForm({ roleInterest, source, targetVertical = null, labe
   );
 }
 
-/** A single "Apply" button that opens the form below it (resources section). */
-export default function ApplyInterest({ roleInterest, source, linkText, labels, lp }: {
+/** A single "Apply" button that opens the form below it (resources section, and the three doors of the home). */
+export default function ApplyInterest({ roleInterest, source, linkText, labels, lp, messageKey = 'message', buttonClassName }: {
   roleInterest: InterestRole;
   source: InterestSource;
   linkText: string;
   labels: Record<string, string>;
   lp: string;
+  messageKey?: 'message' | 'messageVertical' | 'messageChapter' | 'messagePartner';
+  buttonClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div>
       <button type="button" onClick={() => setOpen(true)} aria-expanded={open} data-apply-role={roleInterest}
-        className="text-teal text-[.78rem] font-semibold bg-transparent border-0 p-0 cursor-pointer hover:underline">
+        className={buttonClassName ?? 'text-teal text-[.78rem] font-semibold bg-transparent border-0 p-0 cursor-pointer hover:underline'}>
         {linkText}
       </button>
-      {open && <InterestForm roleInterest={roleInterest} source={source} labels={labels} lp={lp} onClose={() => setOpen(false)} />}
+      {open && <InterestForm roleInterest={roleInterest} source={source} labels={labels} lp={lp} messageKey={messageKey} onClose={() => setOpen(false)} />}
     </div>
   );
 }

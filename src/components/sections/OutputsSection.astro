@@ -1,0 +1,74 @@
+---
+/**
+ * #2553 PR 2: "Nossa produção". O item mais recente de cada formato, com data, lido no servidor:
+ * webinar concluído com gravação (get_public_webinars), episódio do podcast (get_public_podcast_episodes) e post
+ * do blog (blog_posts publicados). Formato sem item some; sem nenhum, ficam os links das páginas. Artigos ficam fora
+ * até a curadoria confirmar o que foi publicado (D9 da vitrine, 04/10/2026).
+ */
+import { t, type Lang } from '../../i18n/utils';
+import { getPlaylistUrl } from '../../data/youtube-playlists';
+import { loadLatestWebinar, loadLatestEpisode, loadLatestPost, type LatestOutput } from '../../lib/publicHomeData';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
+
+const [webinar, episode, post] = await Promise.all([loadLatestWebinar(), loadLatestEpisode(), loadLatestPost(lang)]);
+const fmtDate = (iso: string) => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' }).format(d);
+};
+
+type Card = { kind: string; item: LatestOutput; count: string; more: string; moreHref: string; moreExternal: boolean };
+const cards: Card[] = [];
+if (webinar) cards.push({
+  kind: t('homeV2.outputs.webinar', lang), item: webinar,
+  count: t('homeV2.outputs.webinarCount', lang).replace('{n}', String(webinar.count)),
+  more: t('homeV2.outputs.webinarMore', lang), moreHref: `${langPrefix}/webinars`, moreExternal: false,
+});
+if (episode) cards.push({
+  kind: t('homeV2.outputs.podcast', lang), item: { ...episode, href: `${langPrefix}${episode.href}` },
+  count: t('homeV2.outputs.podcastCount', lang).replace('{n}', String(episode.count)),
+  more: t('homeV2.outputs.podcastMore', lang), moreHref: `${langPrefix}/podcast`, moreExternal: false,
+});
+if (post) cards.push({
+  kind: t('homeV2.outputs.blog', lang), item: { ...post, href: `${langPrefix}${post.href}` },
+  count: '',
+  more: t('homeV2.outputs.blogMore', lang), moreHref: `${langPrefix}/blog`, moreExternal: false,
+});
+const playlist = getPlaylistUrl('webinars');
+---
+
+<section class="py-16 px-6 bg-[var(--surface-card)]" id="outputs">
+    <div class="max-w-[1200px] mx-auto">
+      <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.outputs.label', lang)}</div>
+      <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight mb-3 text-navy">{t('homeV2.outputs.title', lang)}</h2>
+      <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">{t('homeV2.outputs.subtitle', lang)}</p>
+      {cards.length === 0 && (
+        <p class="text-sm text-[var(--text-secondary)]">
+          <a href={`${langPrefix}/webinars`} class="text-teal font-semibold no-underline hover:underline">{t('homeV2.outputs.webinarMore', lang)} →</a>
+          {' · '}
+          <a href={`${langPrefix}/podcast`} class="text-teal font-semibold no-underline hover:underline">{t('homeV2.outputs.podcastMore', lang)} →</a>
+        </p>
+      )}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {cards.map((c) => (
+          <article class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-2 content-start min-w-0">
+            <span class="text-[.7rem] font-bold uppercase tracking-wider text-teal">{c.kind}</span>
+            <h3 class="text-[1.05rem] font-bold leading-snug text-[var(--text-primary)]">
+              <a href={c.item.href} {...(c.item.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})} class="text-inherit no-underline hover:underline">{c.item.title}</a>
+            </h3>
+            <p class="text-sm text-[var(--text-secondary)]">{[fmtDate(c.item.date), c.item.context].filter(Boolean).join(' · ')}</p>
+            {c.count && <p class="text-xs text-[var(--text-muted)]">{c.count}</p>}
+            <a href={c.moreHref} class="inline-flex items-center min-h-[44px] text-sm font-bold text-teal no-underline hover:underline">{c.more} →</a>
+          </article>
+        ))}
+      </div>
+      {webinar && playlist && (
+        <p class="mt-4 text-sm text-[var(--text-secondary)]">
+          <a href={playlist} target="_blank" rel="noopener noreferrer" class="text-teal font-semibold no-underline hover:underline">{t('homeV2.outputs.playlist', lang)} →</a>
+        </p>
+      )}
+    </div>
+  </section>

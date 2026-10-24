@@ -342,30 +342,35 @@ async function run() {
     assert.equal(await page.locator('#analytics-panel').isVisible(), false);
 
     await page.goto(`${base}/`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(1800);
-    // Homepage data sections depend on live Supabase — only assert when data loaded
-    const heroLoaded = await page.locator('#hero-cycle-status').isVisible();
-    if (heroLoaded) {
-      assert.equal(await page.locator('#hero-countdown-area').isVisible(), false);
-      assert.match(await page.locator('#hero-event-area').textContent() || '', /Kick-off|Gravação|Recording|Google Meet|Meet/i);
-      const tribesState = page.locator('#tribes-selection-state');
-      const tribesDeadline = page.locator('#tribes-deadline-badge');
-      const tribesNotice = page.locator('#tribes-selection-notice');
-      await tribesState.waitFor({ state: 'visible' });
-      await tribesDeadline.waitFor({ state: 'visible' });
-      await tribesNotice.waitFor({ state: 'visible' });
-      assert.match(await tribesState.textContent() || '', /SELEÇÃO ABERTA|SELEÇÃO ENCERRADA|CRONOGRAMA PENDENTE/);
-      assert.equal(((await tribesDeadline.textContent()) || '').trim().length > 0, true);
-      assert.equal(((await tribesNotice.textContent()) || '').trim().length > 0, true);
-      assert.equal(((await tribesDeadline.textContent()) || '').includes('Encerra Sáb 08/Mar 12h BRT'), false);
-      const firstTribeHeader = page.locator('[data-tribe-header]').first();
-      await firstTribeHeader.click();
-      const expandedBody = page.locator('[id^="tb-"]').first();
-      await page.waitForTimeout(120);
-      const expandedHeight = await expandedBody.evaluate((el) => el.scrollHeight);
-      assert.equal(expandedHeight > 0, true);
+    // #2553 PR 2 (home v2): the visitor's way in is a door to the interest form (continuous entry), not a login
+    // prompt. The hero shows the visitor half, and the researcher door opens the form in place.
+    await page.locator('#hero-visitor').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#hero-member').isVisible(), false, 'an anonymous visitor must not see the member hero');
+    const researcherDoor = page.locator('[data-door="researcher"]');
+    await researcherDoor.scrollIntoViewIfNeeded();
+    // client:visible: the click only works once the island has hydrated, and Astro drops `ssr` when it has
+    await researcherDoor.locator('astro-island:not([ssr])').waitFor({ state: 'attached' });
+    await researcherDoor.locator('[data-apply-role="researcher"]').click();
+    const interestForm = researcherDoor.locator('form[data-role-interest="researcher"]');
+    await interestForm.waitFor({ state: 'visible' });
+    assert.equal(await interestForm.locator('input[type="email"]').isVisible(), true, 'the door must open the interest form');
+    // The research lines come from the database on the server. With them, a line's detail opens in place and has
+    // height; without them (CI runs with a mock database), the section says the list is unavailable. Both arms
+    // assert, and the log says which one ran.
+    const linesSection = page.locator('#tribes');
+    const lineCount = await linesSection.locator('#lines-list li[data-line]').count();
+    if (lineCount > 0) {
+      const firstLine = linesSection.locator('#lines-list li[data-line] details').first();
+      assert.equal(await firstLine.evaluate((el) => el.open), false, 'a line starts closed');
+      await firstLine.locator('summary').click();
+      assert.equal(await firstLine.evaluate((el) => el.open), true, 'the line detail opens in place');
+      const detailHeight = await firstLine.locator(':scope > div').evaluate((el) => el.getBoundingClientRect().height);
+      assert.equal(detailHeight > 0, true, 'the opened detail has height');
+      console.log(`[browser-guards] home: ${lineCount} research lines, the first detail opened at ${Math.round(detailHeight)}px`);
+    } else {
+      assert.match(await linesSection.textContent() || '', /A lista de linhas está indisponível agora/, 'with no lines, the section must say so');
+      console.log('[browser-guards] home: no research lines (no database), the section says the list is unavailable');
     }
-    assert.equal(await page.locator('#loginPrompt').isVisible(), true);
 
     await page.goto(`${base}/tribe/1`, { waitUntil: 'networkidle' });
     const tribeDenied = page.locator('#tribe-denied');

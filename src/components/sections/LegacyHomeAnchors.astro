@@ -1,0 +1,39 @@
+---
+/**
+ * #2553 PR 2: as âncoras da home antiga continuam levando a algum lugar. Link já compartilhado (/#rules, /#partners,
+ * /#trail-ranking...) cai no destino novo da mesma informação, em vez de parar no topo da página.
+ * As âncoras que seguiram com o mesmo id (hero, tribes, capitulos, join, agenda, team, trail, cpmai, kpis) não estão aqui.
+ */
+import type { Lang } from '../../i18n/utils';
+
+interface Props { lang?: Lang; }
+const { lang = 'pt-BR' } = Astro.props;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const LEGACY: Record<string, string> = {
+  '#verticals': '#tribes',
+  '#nucleo': '#tribes',
+  '#platform-stats': '#hero',
+  '#partners': '#join-institutions',
+  '#operational-arms': '#team',
+  '#rules': `${langPrefix}/guia-pre-onboarding`,
+  '#resources': `${langPrefix}/guia-pre-onboarding`,
+  '#trail-ranking': `${langPrefix}/gamification`,
+};
+---
+
+<script is:inline type="application/json" id="legacy-home-anchors" set:html={JSON.stringify(LEGACY)}></script>
+<script>
+  const map: Record<string, string> = JSON.parse(document.getElementById('legacy-home-anchors')?.textContent || '{}');
+  function follow() {
+    const to = map[location.hash];
+    if (!to) return;
+    if (to.startsWith('#')) {
+      history.replaceState(null, '', to);
+      document.getElementById(to.slice(1))?.scrollIntoView();
+    } else {
+      location.replace(to);
+    }
+  }
+  follow();
+  window.addEventListener('hashchange', follow);
+</script>

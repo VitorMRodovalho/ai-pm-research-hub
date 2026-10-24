@@ -1,7 +1,7 @@
 // #1136 — Landing SSOT drift guard (static + DB-aware).
 //
-// Parte 1: as 4 seções que existem no home público mas sumiram do nav curado
-//          (#tribes/#rules/#kpis/#trail-ranking) estão registradas no home-anchors.
+// Parte 1: toda seção renderizada no home público está registrada no home-anchors do nav
+//          (#2553 PR 2: derivado do que index.astro renderiza, não mais uma lista fixa).
 // Parte 2: os 3 números de tribo não vivem hardcoded na copy — derivam do SSOT
 //          (MIN_SLOTS/MAX_SLOTS e ACTIVE_TRIBE_COUNT em src/data/tribes.ts) via interpolação.
 // Parte 3 (DB-aware, skip sem creds): quadrant_name / quadrant_name_i18n são consistentes
@@ -26,10 +26,18 @@ const dicts = {
 };
 
 // ── Parte 1 — nav SSOT ───────────────────────────────────────────────────────
-test('P1: as 4 seções antes em drift estão no home-anchors do nav', () => {
-  for (const key of ['tribes', 'rules', 'kpis', 'trail-ranking']) {
-    const re = new RegExp(`key:\\s*'${key}'[^\\n]*group:\\s*'home-anchors'`);
-    assert.match(nav, re, `nav item '${key}' ausente do grupo home-anchors (drift de SSOT do nav)`);
+test('P1: toda seção que a home renderiza está no home-anchors do nav (sem drift)', () => {
+  // #2553 PR 2 (home v2): a lista deixou de ser fixa (#tribes/#rules/#kpis/#trail-ranking da home antiga) e passou a
+  // ser derivada do que a home renderiza: cada <section id> de um componente importado por index.astro tem item no menu.
+  // O hero (topo) e o fechamento (#follow) não entram: não são destino de menu.
+  const index = read('src/pages/index.astro');
+  const files = [...index.matchAll(/^import \w+ from '\.\.\/components\/sections\/([\w.]+\.astro)';$/gm)].map((m) => `src/components/sections/${m[1]}`);
+  const ids = files.flatMap((f) => [...read(f).matchAll(/<section [^>]*id="([\w-]+)"/g)].map((m) => m[1]))
+    .filter((id) => !['hero', 'follow'].includes(id));
+  assert.ok(ids.length >= 6, `seções da home não lidas (${ids.join(', ')})`);
+  for (const id of ids) {
+    const re = new RegExp(`href: '/#${id}'[^\\n]*group: 'home-anchors'`);
+    assert.match(nav, re, `seção #${id} renderizada na home sem item no grupo home-anchors (drift de SSOT do nav)`);
   }
 });
 

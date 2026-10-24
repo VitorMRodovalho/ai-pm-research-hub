@@ -2,8 +2,9 @@
  * #2738: the capture_visitor_lead payload of the interest form (InterestForm.tsx), kept pure and free of
  * JSX so the contract test exercises it without a DOM or a database.
  */
-export type InterestRole = 'researcher' | 'leader';
-export type InterestSource = 'apply-vertical' | 'apply-resources';
+// #2553 PR 2: as três portas da home passam a usar o mesmo formulário: pesquisador, capítulo PMI e organização.
+export type InterestRole = 'researcher' | 'leader' | 'chapter' | 'partner';
+export type InterestSource = 'apply-vertical' | 'apply-resources' | 'home-join';
 
 export function buildInterestPayload(
   input: { name: string; email: string; message: string },

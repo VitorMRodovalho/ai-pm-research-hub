@@ -4,31 +4,24 @@ import Toast from '../../components/ui/Toast.astro';
 import OnboardingCockpitNudge from '../../components/onboarding/OnboardingCockpitNudge';
 import MapConsentNudge from '../../components/onboarding/MapConsentNudge';
 import HomepageHero from '../../components/sections/HomepageHero.astro';
-import NucleoSection from '../../components/sections/NucleoSection.astro';
-import { getHomeSchedule } from '../../lib/schedule';
+import OutputsSection from '../../components/sections/OutputsSection.astro';
+import ResearchLinesSection from '../../components/sections/ResearchLinesSection.astro';
+import JoinSection from '../../components/sections/JoinSection.astro';
+import TeamSummarySection from '../../components/sections/TeamSummarySection.astro';
+import FollowSection from '../../components/sections/FollowSection.astro';
+import LegacyHomeAnchors from '../../components/sections/LegacyHomeAnchors.astro';
 import { loadHomeStats } from '../../lib/homeStats';
-import ModelSection from '../../components/sections/ModelSection.astro';
-import PartnersSection from '../../components/sections/PartnersSection.tsx';
-import TribesSection from '../../components/sections/TribesSection.astro';
-import OperationalArmsSection from '../../components/sections/OperationalArmsSection.astro';
 import KpiSection from '../../components/sections/KpiSection.astro';
 import WeeklyScheduleSection from '../../components/sections/WeeklyScheduleSection.astro';
-import RulesSection from '../../components/sections/RulesSection.astro';
 import LadderSection from '../../components/sections/LadderSection.astro';
-import TrailRankingSection from '../../components/sections/TrailRankingSection.astro';
 import ChaptersSection from '../../components/sections/ChaptersSection.astro';
-import RouterSection from '../../components/sections/RouterSection.astro';
-import TeamSection from '../../components/sections/TeamSection.astro';
-import ResourcesSection from '../../components/sections/ResourcesSection.astro';
 import { t } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 import PresentationLayer from '../../components/ui/PresentationLayer.astro';
-import PlatformStatsSection from '../../components/homepage/PlatformStatsSection.astro';
 
 const lang = 'es-LATAM' as const;
 // #2553: uma busca só dos números da home, passada aos blocos que os mostram.
-const [homeSchedule, homeStats] = await Promise.all([getHomeSchedule(), loadHomeStats()]);
-const deadlineIso = homeSchedule?.selectionDeadlineAt ?? null;
+const homeStats = await loadHomeStats();
 // R8: localizes the public AgendaVivaPublic island in the reframed agenda section.
 const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
 ---
@@ -40,22 +33,19 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
     consentText={t('profile.allowPreciseLocationMapLabel', lang)}
     title={t('mapConsent.title', lang)} accept={t('mapConsent.accept', lang)} later={t('mapConsent.later', lang)}
     legacyNote={t('mapConsent.legacyNote', lang)} done={t('mapConsent.done', lang)} error={t('mapConsent.error', lang)} />
-  {/* ── Zona ANON (arriba — el embudo): valor → modelo → prueba → escalera → cobertura → conversión → agenda → equipo ── */}
+  {/* #2553 PR 2 (home v2): a ordem da maquete aprovada pelo GP em 19 e 20/10/2026. Hero → produção → linhas →
+       capítulos → portas → agenda → quem faz → escada e mural → metas → acompanhe. As seções de membro saíram da
+       home (ranking, regras, recursos, mosaico, braços); as âncoras antigas levam ao destino novo (script abaixo). */}
   <HomepageHero lang={lang} stats={homeStats} />
-  <ModelSection lang={lang} />
-  <PlatformStatsSection lang={lang} />
-  <LadderSection lang={lang} />
+  <OutputsSection lang={lang} />
+  <ResearchLinesSection lang={lang} />
   <ChaptersSection lang={lang} stats={homeStats} />
-  <RouterSection lang={lang} />
-  <PartnersSection client:load lang={lang} />
+  <JoinSection lang={lang} />
   <WeeklyScheduleSection lang={lang} />
-  <TeamSection lang={lang} />
-  {/* ── Zona MIEMBRO (abajo — degradada, mantenida): tribus → reglas → panel KPI → leaderboard + enlaces de miembro ── */}
-  <TribesSection deadline={deadlineIso} lang={lang} />
-  <OperationalArmsSection lang={lang} />
-  <RulesSection lang={lang} />
+  <TeamSummarySection lang={lang} stats={homeStats} />
+  <LadderSection lang={lang} />
   <KpiSection lang={lang} />
-  <TrailRankingSection lang={lang} />
-  <ResourcesSection lang={lang} />
+  <FollowSection lang={lang} />
+  <LegacyHomeAnchors lang={lang} />
   <PresentationLayer context="home" lang={lang} />
 </BaseLayout>
