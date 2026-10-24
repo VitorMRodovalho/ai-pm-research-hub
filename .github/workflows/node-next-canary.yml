@@ -116,6 +116,14 @@ jobs:
 
       # Os tres baldes rodam sempre, mesmo que um reprove: saber que o segundo tambem quebrou vale
       # mais que os minutos dele. Sem credencial de banco no ambiente, os testes de banco pulam.
+      #
+      # `env -u CI -u GITHUB_ACTIONS`: o runner exporta os dois como `true`, e tres sentinelas
+      # (`rpc-migration-coverage`, `ef-smoke`, `1619`) reprovam DE PROPOSITO quando estao na CI sem
+      # credencial de banco, para a CI de verdade nunca pular calada. O canario nao tem banco por
+      # desenho, entao as suites rodam aqui como num checkout local. Medido em 24/10/2026, reproduzindo
+      # a primeira rodada (40119188841) com o ambiente do runner: as 3 sentinelas eram as unicas falhas,
+      # no Node 26 e tambem no 24. No `env:` do passo nao daria: o GitHub nao deixa sobrescrever
+      # `GITHUB_*`. O guard #2774 so aceita isto no canario.
       - name: Offline suites (structural, contracts, behavioural)
         id: suites
         if: steps.install.outcome == 'success'
@@ -125,7 +133,7 @@ jobs:
         run: |
           rc=0
           for b in structural contracts behavioural; do
-            node scripts/run-suite.mjs "$b" > "/tmp/canary-$b.log" 2>&1 || rc=1
+            env -u CI -u GITHUB_ACTIONS node scripts/run-suite.mjs "$b" > "/tmp/canary-$b.log" 2>&1 || rc=1
           done
           exit "$rc"
 
@@ -164,6 +172,46 @@ jobs:
               echo "- $b: $(sumario /tmp/canary-$b.log); \`DeprecationWarning\`: $(conta DeprecationWarning /tmp/canary-$b.log)"
             done
           } >> "$GITHUB_STEP_SUMMARY"
+          # O resumo acima so aparece na pagina da rodada; a API nao o devolve. Por isso cada balde vai
+          # TAMBEM para o log do job (`gh run view --log`), e cada teste que falhou vira uma anotacao
+          # `::error`, que a API de check-runs devolve com arquivo e linha.
+          # Le a secao "✖ failing tests:" do reporter spec: "arquivo<TAB>linha<TAB>teste<TAB>erro".
+          falhas_do_balde() {
+            [ -f "$1" ] || return 0
+            awk '
+              /^✖ failing tests:/ { s = 1; next }
+              !s { next }
+              /^test at / { x = $0; sub(/^test at /, "", x); split(x, p, ":"); f = p[1]; l = p[2]; t = ""; next }
+              /^✖ / && f != "" { t = $0; sub(/^✖ /, "", t); sub(/ \([0-9.]+m?s\)$/, "", t); next }
+              t != "" && /^  [^ ]/ { e = $0; sub(/^  /, "", e); print f "\t" l "\t" t "\t" e; f = ""; t = "" }
+            ' "$1"
+          }
+          for b in structural contracts behavioural; do
+            log=/tmp/canary-$b.log
+            echo "::group::$b: $(sumario "$log")"
+            if [ -f "$log" ]; then
+              # Contagem cruzada: o recorte tem de achar tantas falhas quantas o reporter declarou.
+              # Se nao achar (balde que morreu sem sumario, ou formato novo), o fim do log vai junto.
+              declarado=$(grep -E '^ℹ fail [0-9]+$' "$log" | tail -n 1 | grep -oE '[0-9]+' || true)
+              achadas=0
+              while IFS=$'\t' read -r f l t e; do
+                achadas=$((achadas + 1))
+                echo "$f:$l  $t"
+                echo "    $e"
+                if [ "$achadas" -le 10 ]; then
+                  echo "::error file=$f,line=$l,title=canario $b::$(printf '%s: %s' "$t" "$e" | sed 's/%/%25/g')"
+                fi
+              done < <(falhas_do_balde "$log")
+              if [ -z "$declarado" ] || [ "$achadas" -ne "$declarado" ]; then
+                echo "::warning title=canario $b::o reporter declarou ${declarado:-nenhum} fail e o recorte achou $achadas; segue o fim do log"
+                tail -n 40 "$log"
+              fi
+              if [ "$(conta DeprecationWarning "$log")" != 0 ]; then
+                grep -m 5 -A 4 DeprecationWarning "$log" || true
+              fi
+            fi
+            echo "::endgroup::"
+          done
           falhas=0
           for o in "${{ steps.install.outcome }}" "${{ steps.build.outcome }}" "${{ steps.smoke.outcome }}" "${{ steps.suites.outcome }}"; do
             [ "$o" = success ] || falhas=$((falhas + 1))

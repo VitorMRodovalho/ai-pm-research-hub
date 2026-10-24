@@ -25,7 +25,10 @@ Tudo abaixo é leitura; nada muda o repositório.
 
 1. **O major de destino é LTS.** Ler `https://raw.githubusercontent.com/nodejs/Release/main/schedule.json`
    e conferir a data `lts` do major. O 26 vira LTS em 2026-10-28.
-2. **O canário está verde nas duas últimas rodadas**, lendo o resumo da rodada e não só a cor:
+2. **O canário está verde nas duas últimas rodadas**, lendo o resumo da rodada e não só a cor. O
+   resumo só aparece na página da rodada; pela API, o log do job (`gh run view <id> --log`) traz o
+   sumário de cada balde e cada teste que falhou, que também vira anotação `::error` com arquivo e
+   linha. Confira:
    - `EBADENGINE`: 0 pacotes (o resumo lista o nome de cada um quando não for 0);
    - `structural`, `contracts` e `behavioural` com sumário lido (não "sem sumario" nem "nao medido"),
      0 falhas, e 0 `DeprecationWarning`;
@@ -109,6 +112,13 @@ nodejs.org, a rodada diz "nao medido" e sai verde.
   `esbuild` e `workerd` são ELF; com `--ignore-scripts` ficam como shim JS. Mesmo bloqueados,
   `esbuild`, `workerd` e `wrangler` respondem `--version` pelo shim. Se uma versão do npm passar a
   bloquear por padrão, o build não depende desses scripts.
+- **Sentinelas de credencial e o canário.** O runner exporta `CI=true` e `GITHUB_ACTIONS=true`, e
+  três sentinelas (`rpc-migration-coverage`, `ef-smoke`, `1619`) reprovam quando estão na CI sem
+  credencial de banco, para a CI nunca pular calada. O canário não tem banco, então chama as suítes
+  com `env -u CI -u GITHUB_ACTIONS`; no `env:` do passo não serve, porque o GitHub não deixa
+  sobrescrever `GITHUB_*`. A primeira rodada (2026-10-24, run 40119188841) reprovou só por isso, no
+  26 e, reproduzida, também no 24. Para reproduzir o canário local, exporte `CI=true` como o runner e
+  use o mesmo `env -u`. O guard reprova esse `env -u` em qualquer outro workflow.
 - **APIs que o 24 e o 26 depreciaram ou removeram** (`url.parse`, `SlowBuffer`,
   `tls.createSecurePair`, `http.Server.prototype.writeHeader`, `_stream_*`): 0 usos no nosso código
   em 2026-10-24.
