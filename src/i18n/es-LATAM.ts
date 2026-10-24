@@ -975,6 +975,7 @@ const esLATAM: Record<string, string> = {
   'homeV2.chapters.label': 'Capítulos',
   'homeV2.chapters.title': 'capítulos del PMI en Brasil',
   'homeV2.chapters.host': 'sede',
+  'homeV2.chapters.founder': 'capítulo fundador',
   'homeV2.chapters.cta': 'Mi capítulo quiere participar',
   'homeV2.join.label': 'Participa',
   'homeV2.join.title': 'Tres puertas de entrada',

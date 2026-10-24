@@ -976,6 +976,7 @@ const ptBR: Record<string, string> = {
   'homeV2.chapters.label': 'Capítulos',
   'homeV2.chapters.title': 'capítulos do PMI no Brasil',
   'homeV2.chapters.host': 'sede',
+  'homeV2.chapters.founder': 'capítulo fundador',
   'homeV2.chapters.cta': 'O meu capítulo quer participar',
   'homeV2.join.label': 'Participe',
   'homeV2.join.title': 'Três portas de entrada',

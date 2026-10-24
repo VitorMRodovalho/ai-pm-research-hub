@@ -134,4 +134,10 @@ describe('#2553 a virada da home', () => {
     assert.deepEqual(files.filter((f) => /jYWuKBh0Bpg|sestec/i.test(readFileSync(f, 'utf8'))).map((f) => f.replace(`${ROOT}/`, '')), []);
     assert.match(read('src/lib/publicHomeData.ts'), /\.filter\(\(r\) => r\.status === 'completed' && typeof r\.title === 'string' && \/\^https:\\\/\\\/\/\.test\(String\(r\.youtube_url \?\? ''\)\)\)/);
   });
+
+  it('I: o capítulo-sede leva os dois rótulos, fundador e sede, e o selo mostra a lista inteira (GP 23/10/2026)', () => {
+    const chap = S('ChaptersSection.astro');
+    assert.match(chap, /const labels = \[\s*\.\.\.\(c\.is_contracting \? \[t\('homeV2\.chapters\.founder', lang\), t\('homeV2\.chapters\.host', lang\)\] : \[\]\),/);
+    assert.match(chap, /\{labels\.length > 0 && \(\s*<div[^>]*>\{labels\.join\(' · '\)\}<\/div>/);
+  });
 });

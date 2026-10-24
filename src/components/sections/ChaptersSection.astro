@@ -131,14 +131,17 @@ function flagEmoji(code: string): string {
     <div class="flex flex-wrap justify-center gap-4 mb-8">
       {chapters.map((c) => {
         const year = entryYear.get(c.display_code) ?? null;
+        // #2553 (GP 23/10/2026): o capítulo-sede leva os dois rótulos, fundador e sede.
+        const labels = [
+          ...(c.is_contracting ? [t('homeV2.chapters.founder', lang), t('homeV2.chapters.host', lang)] : []),
+          ...(year !== null ? [t('homeV2.chapters.since', lang).replace('{year}', String(year))] : []),
+        ];
         return (
           <div class="bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl px-5 py-3 flex items-center gap-3" data-chapter={c.display_code}>
             <div class="text-left">
               <div class="text-sm font-bold text-[var(--text-primary)]">PMI {c.state}</div>
-              {(c.is_contracting || year !== null) && (
-                <div class="text-[.68rem] text-[var(--text-muted)] tracking-wide">
-                  {[c.is_contracting ? t('homeV2.chapters.host', lang) : '', year !== null ? t('homeV2.chapters.since', lang).replace('{year}', String(year)) : ''].filter(Boolean).join(' · ')}
-                </div>
+              {labels.length > 0 && (
+                <div class="text-[.68rem] text-[var(--text-muted)] tracking-wide">{labels.join(' · ')}</div>
               )}
             </div>
           </div>

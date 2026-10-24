@@ -975,6 +975,7 @@ const enUS: Record<string, string> = {
   'homeV2.chapters.label': 'Chapters',
   'homeV2.chapters.title': 'PMI chapters in Brazil',
   'homeV2.chapters.host': 'host',
+  'homeV2.chapters.founder': 'founding chapter',
   'homeV2.chapters.cta': 'My chapter wants to take part',
   'homeV2.join.label': 'Take part',
   'homeV2.join.title': 'Three ways in',
