@@ -277,6 +277,10 @@
     "certificate_revoked": {
       "delivery_mode": "suppress",
       "rationale": "#2701 (GP decision 2026-10-16): a member's certificate was revoked through revoke_certificate (manage_member). The member learns in-app (bell), with the reason; no e-mail. Cataloged so it does not fall into the ELSE (digest_weekly)."
+    },
+    "partner_lead_received": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2782 (GP decision, cataloged 2026-10-24): a chapter or organization request arrived through the home interest form (role_interest 'chapter' or 'partner'). capture_visitor_lead puts it in the partner CRM as a prospect (the requester's contact goes only to the interaction history) and notifies active members with a login and manage_platform, with a link to /admin/partnerships; no repeat while the previous notice about the same entity is unread. Immediate because the home promises a reply within 5 business days, and the ELSE (digest_weekly) would only arrive on Saturday. Title and body carry no name, e-mail, phone or message of the requester."
     }
   },
   "implementation": {

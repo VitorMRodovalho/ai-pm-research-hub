@@ -701,6 +701,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
                           {ix.actor_name && <span className="text-[var(--text-secondary)] font-semibold text-[10px]">{ix.actor_name}</span>}
                         </div>
                         <p className="text-[var(--text-primary)] font-medium">{ix.summary}</p>
+                        {/* #2782: a mensagem do formulário público do site chega em details */}
+                        {ix.details && <p className="text-[var(--text-secondary)] mt-0.5 whitespace-pre-wrap break-words">{ix.details}</p>}
                         {ix.outcome && <p className="text-[var(--text-secondary)] text-[10px] mt-0.5">{l.outcome}: {ix.outcome}</p>}
                         {ix.next_action && <p className="text-blue-600 text-[10px] mt-0.5">→ {ix.next_action}</p>}
                         {ix.follow_up_date && <p className="text-amber-600 text-[10px] mt-0.5">📅 {formatDateOnly(ix.follow_up_date)}</p>}

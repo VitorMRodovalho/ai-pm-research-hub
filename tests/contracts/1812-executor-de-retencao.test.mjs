@@ -155,7 +155,8 @@ test('#1812 DB: as politicas de delete estao cobertas de ponta a ponta', { skip:
     cobertas.map(r => r.politica).sort(),
     // #2586/#2593: as duas politicas do executor external-contact-retention-daily
     // #905: a anonimizacao de candidaturas entra com o executor ligado
-    ['campaign_recipients/anonymize', 'competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'person_external_links/delete', 'selection_applications/anonymize', 'visitor_leads/delete'],
+    // #2782: o pedido de capitulo ou de organizacao pelo formulario do site (nota anonimizada, casca apagada)
+    ['campaign_recipients/anonymize', 'competition.registrations/anonymize', 'competition.registrations/delete', 'data_anomaly_log/delete', 'notifications/delete', 'partner_entities/delete', 'partner_interactions/anonymize', 'person_external_links/delete', 'selection_applications/anonymize', 'visitor_leads/delete'],
   );
   // coberta exige as quatro condicoes, nao so job registrado
   for (const r of cobertas) {
@@ -195,8 +196,8 @@ test('#1812 DB: a varredura seca conta sem apagar, e nao finge executar o que na
   assert.equal(data.dry_run, true);
 
   const politicas = Object.fromEntries(data.policies.map(p => [`${p.table}/${p.type}`, p]));
-  // as tres da varredura executam e reportam numero
-  for (const p of ['notifications/delete', 'data_anomaly_log/delete', 'visitor_leads/delete']) {
+  // as da varredura executam e reportam numero (#2782: mais as duas do formulario do site)
+  for (const p of ['notifications/delete', 'data_anomaly_log/delete', 'visitor_leads/delete', 'partner_entities/delete', 'partner_interactions/anonymize']) {
     assert.equal(politicas[p].handled, true, p);
     assert.equal(typeof politicas[p].affected, 'number', p);
   }
