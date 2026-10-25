@@ -31216,6 +31216,10 @@ export type Database = {
         }
         Returns: string
       }
+      _notify_partner_lead_received: {
+        Args: { p_created: boolean; p_door: string; p_partner_id: string }
+        Returns: number
+      }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
       _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
