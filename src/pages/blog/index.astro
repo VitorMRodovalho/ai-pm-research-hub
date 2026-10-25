@@ -32,7 +32,7 @@ const catStyles: Record<string, string> = {
 };
 ---
 
-<BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang}>
+<BaseLayout activePage="blog" title={t('blog.title', lang)} lang={lang} alternates="query">
   <meta slot="head" property="og:title" content={t('blog.title', lang)} />
   <meta slot="head" property="og:description" content={t('blog.subtitle', lang)} />
   <meta slot="head" property="og:type" content="website" />

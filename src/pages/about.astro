@@ -1,9 +1,10 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
-import ImpactPageIsland from '../components/islands/ImpactPageIsland';
+import ImpactPageIsland, { type LineNames } from '../components/islands/ImpactPageIsland';
 import { SEO_CANONICAL_ORIGIN } from '../lib/canonical';
 import { loadHomeStats } from '../lib/homeStats';
+import { loadResearchLines } from '../lib/publicHomeData';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -12,9 +13,19 @@ const pageTitle = t('about.meta.title', lang);
 const pageDesc = t('about.meta.description', lang);
 // #2553 D7: o número de pesquisadores sai da fonte única da home (era 51 escrito); sem número, o campo some.
 const researchers = (await loadHomeStats())?.members ?? null;
+// #2783: nome e quadrante das linhas na língua da página, pela mesma fonte da lista de linhas da home.
+const lineNames: LineNames = Object.fromEntries(
+  ((await loadResearchLines(lang)) ?? []).map((line) => [line.id, { name: line.name, quadrantName: line.quadrantName }]),
+);
+// #2783: textos que já existem nos dicionários; a descrição institucional é a da home, palavra por palavra.
+const text = {
+  relation: t('homeV2.hero.relation', lang),
+  privacy: t('nav.privacy', lang),
+  memberOne: t('about.memberCountOne', lang),
+};
 ---
 
-<BaseLayout title={pageTitle} description={pageDesc} activePage="about" lang={lang}>
+<BaseLayout title={pageTitle} description={pageDesc} activePage="about" lang={lang} alternates="query">
   <meta slot="head" property="og:title" content={pageTitle} />
   <meta slot="head" property="og:description" content={pageDesc} />
   <meta slot="head" property="og:type" content="website" />
@@ -30,6 +41,6 @@ const researchers = (await loadHomeStats())?.members ?? null;
   })} />
 
   <div class="max-w-[1100px] mx-auto px-4 py-8">
-    <ImpactPageIsland client:load lang={lang} />
+    <ImpactPageIsland client:load lang={lang} lineNames={lineNames} text={text} />
   </div>
 </BaseLayout>

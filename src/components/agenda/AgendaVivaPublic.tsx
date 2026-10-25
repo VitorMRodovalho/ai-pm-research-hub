@@ -14,10 +14,12 @@
 // never exposes the owner's name to the public/ordinary member (owner_first_name comes back null);
 // the FE shows a NEUTRAL chip ("Bloco não realizado"), never "did not show up".
 //
-// Format labels come from the anon-readable agenda_block_formats catalog (label_i18n).
+// Format labels come from the anon-readable agenda_block_formats catalog (label_i18n); until it loads, the
+// comp.agendaViva.format.<slug> dictionary keys (#2783).
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, CalendarDays, ExternalLink, Star, UserPlus, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { resolveFormatLabel, safeRecordingUrl } from '../../lib/agendaViva';
 
 type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 type Range = 'upcoming' | 'both';
@@ -71,6 +73,8 @@ export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', l
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
   const [data, setData] = useState<AgendaPayload | null>(null);
   const [formats, setFormats] = useState<Record<string, Record<string, string>>>({});
+  // #2783: evento concluído → link do vídeo publicado (events.youtube_url, leitura pública por desenho)
+  const [recordings, setRecordings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -85,17 +89,45 @@ export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', l
   }, [getSb, range]);
 
   // Format catalog (slug → label_i18n) — anon-readable reference data.
+  // #2783: espera o cliente como o load() espera. Sem a nova tentativa, a ilha que montava antes do cliente
+  // existir nunca lia o catálogo, e a tela mostrava o código cru (prompt_semana) no lugar do rótulo.
   useEffect(() => {
-    const sb = getSb();
-    if (!sb) return;
-    sb.from('agenda_block_formats').select('slug, label_i18n').eq('active', true)
-      .then(({ data: rows }: any) => {
-        if (!Array.isArray(rows)) return;
-        const map: Record<string, Record<string, string>> = {};
-        for (const r of rows) map[r.slug] = r.label_i18n || {};
-        setFormats(map);
-      }).catch(() => {});
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const loadFormats = () => {
+      const sb = getSb();
+      if (!sb) { timer = setTimeout(loadFormats, 300); return; }
+      sb.from('agenda_block_formats').select('slug, label_i18n').eq('active', true)
+        .then(({ data: rows }: any) => {
+          if (cancelled || !Array.isArray(rows)) return;
+          const map: Record<string, Record<string, string>> = {};
+          for (const r of rows) map[r.slug] = r.label_i18n || {};
+          setFormats(map);
+        }, () => {});
+    };
+    loadFormats();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
   }, [getSb]);
+
+  // #2783: a RPC da agenda não traz o vídeo; a coluna youtube_url de evento 'geral' é pública por desenho
+  // (events_read_anon, a mesma leitura do hero da home). Só a reunião concluída pede, e só link https do YouTube entra.
+  useEffect(() => {
+    const pastIds = (data?.events ?? []).filter((e) => e.is_past).map((e) => e.id);
+    const sb = getSb();
+    if (pastIds.length === 0 || !sb) return;
+    let cancelled = false;
+    sb.from('events').select('id, youtube_url').eq('type', 'geral').in('id', pastIds)
+      .then(({ data: rows }: any) => {
+        if (cancelled || !Array.isArray(rows)) return;
+        const map: Record<string, string> = {};
+        for (const r of rows) {
+          const url = safeRecordingUrl(r.youtube_url);
+          if (url) map[r.id] = url;
+        }
+        setRecordings(map);
+      }, () => {});
+    return () => { cancelled = true; };
+  }, [data, getSb]);
 
   useEffect(() => {
     load();
@@ -110,8 +142,12 @@ export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', l
     };
   }, [load]);
 
+  // #2783: catálogo → dicionário → código. `t` devolve a própria chave quando ela falta; isso vira "sem rótulo".
   const formatLabel = (slug: string): string =>
-    formats[slug]?.[lang] || formats[slug]?.['pt-BR'] || slug;
+    resolveFormatLabel(slug, lang, formats, (key) => {
+      const v = t(key, '');
+      return v && v !== key ? v : null;
+    });
 
   const fmtColumnDate = (iso: string): string => {
     const d = new Date(`${iso}T12:00:00Z`);
@@ -214,6 +250,12 @@ export default function AgendaVivaPublic({ lang = 'pt-BR', range = 'upcoming', l
                     return parts.join(' · ') || null;
                   })()}
                 </div>
+                {ev.is_past && recordings[ev.id] && (
+                  <a href={recordings[ev.id]} target="_blank" rel="noopener noreferrer"
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent)] hover:underline">
+                    <ExternalLink size={12} /> {t('comp.agendaViva.watchRecording', 'Assistir gravação')}
+                  </a>
+                )}
               </header>
 
               {!ev.is_past && (

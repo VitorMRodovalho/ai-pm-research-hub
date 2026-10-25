@@ -19,8 +19,15 @@ interface ImpactData {
   timeline: Array<{ year: string; title: string; description: string }>;
 }
 
+/** #2783: nome e quadrante de cada linha na língua da página, da mesma fonte da home (get_public_research_lines). */
+export type LineNames = Record<number, { name: string; quadrantName: string }>;
+/** #2783: textos dos dicionários, resolvidos no servidor pelo about.astro. */
+export interface ImpactPageText { relation: string; privacy: string; memberOne: string }
+
 interface ImpactPageProps {
   lang?: string;
+  lineNames?: LineNames;
+  text?: ImpactPageText;
 }
 
 // ── Animated Counter ──
@@ -57,7 +64,6 @@ function AnimatedCounter({ target, suffix = '', prefix = '' }: { target: number;
 const LABELS: Record<string, Record<string, string>> = {
   'pt-BR': {
     hero: 'Transformando o Gerenciamento de Projetos na Era da Inteligência Artificial',
-    heroSub: 'Uma iniciativa colaborativa entre capítulos do PMI® no Brasil',
     chapters: 'Capítulos PMI engajados',
     chaptersHint: 'assinados + em negociação',
     members: 'Colaboradores Ativos',
@@ -104,7 +110,6 @@ const LABELS: Record<string, Record<string, string>> = {
   },
   'en-US': {
     hero: 'Transforming Project Management in the Age of Artificial Intelligence',
-    heroSub: 'A collaborative initiative among PMI® chapters in Brazil',
     chapters: 'Engaged PMI Chapters',
     chaptersHint: 'signed + in negotiation',
     members: 'Active Contributors',
@@ -151,7 +156,6 @@ const LABELS: Record<string, Record<string, string>> = {
   },
   'es-LATAM': {
     hero: 'Transformando la Gestión de Proyectos en la Era de la Inteligencia Artificial',
-    heroSub: 'Una iniciativa colaborativa entre capítulos del PMI® en Brasil',
     chapters: 'Capítulos PMI comprometidos',
     chaptersHint: 'firmados + en negociación',
     members: 'Colaboradores Activos',
@@ -200,7 +204,7 @@ const LABELS: Record<string, Record<string, string>> = {
 
 const TRIBE_COLORS = ['#0d9488', '#2563eb', '#7c3aed', '#dc2626', '#ea580c', '#0891b2', '#4f46e5', '#059669'];
 
-function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string }) {
+function LeadCaptureForm({ l, lang, privacyLabel }: { l: Record<string, string>; lang: string; privacyLabel: string }) {
   // Locale prefix for the privacy link. Declared here because `lp` in ImpactPageIsland is out of
   // scope for this component; referencing it threw ReferenceError and blanked /about.
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -314,7 +318,8 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
             <input type="checkbox" checked={form.lgpd_consent} onChange={e => { setForm(f => ({ ...f, lgpd_consent: e.target.checked })); setConsentError(false); }}
               className="mt-1 flex-shrink-0" />
             <span className="text-xs text-[var(--text-secondary)]">
-              {l.leadConsent} <a href={`${lp}/privacy`} target="_blank" className="text-teal underline">Privacy</a>
+              {/* #2783: o rótulo do link vem do dicionário (nav.privacy); era "Privacy" fixo nas 3 línguas */}
+              {l.leadConsent} <a href={`${lp}/privacy`} target="_blank" className="text-teal underline">{privacyLabel}</a>
             </span>
           </label>
           {consentError && <p className="text-xs text-red-600 mt-1">{l.leadConsentRequired}</p>}
@@ -329,12 +334,14 @@ function LeadCaptureForm({ l, lang }: { l: Record<string, string>; lang: string 
   );
 }
 
-export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
+export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: ImpactPageProps) {
   // p123 i18n nav: prefix preserves /en /es when navigating between sections
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const [data, setData] = useState<ImpactData | null>(null);
   const [loading, setLoading] = useState(true);
   const l = LABELS[lang] || LABELS['pt-BR'];
+  // #2783: "1 membros" / "1 members". O singular vem do dicionário (about.memberCountOne), resolvido no servidor.
+  const membersLabel = (n: number) => (n === 1 && text?.memberOne ? text.memberOne : l.membersCount);
 
   useEffect(() => {
     let cancelled = false;
@@ -359,7 +366,8 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
       {/* Hero */}
       <section className="text-center py-12">
         <h1 className="text-3xl md:text-4xl font-black text-[var(--text-primary)] max-w-3xl mx-auto leading-tight">{l.hero}</h1>
-        <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">{l.heroSub}</p>
+        {/* #2783: a mesma descrição institucional da home (homeV2.hero.relation), sem texto novo */}
+        {text?.relation && <p className="text-lg text-[var(--text-secondary)] mt-4 max-w-2xl mx-auto">{text.relation}</p>}
       </section>
 
       {/* Impact Counters */}
@@ -419,11 +427,12 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
                 <div className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: TRIBE_COLORS[i % 8] }}>
                   T{String(tribe.id).padStart(2, '0')}
                 </div>
-                <div className="font-bold text-sm text-[var(--text-primary)] mb-2">{tribe.name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || tribe.name}</div>
-                <div className="text-xs text-[var(--text-secondary)]">{tribe.quadrant_name_i18n?.[typeof window !== 'undefined' ? (window.location.pathname.startsWith('/en') ? 'en' : window.location.pathname.startsWith('/es') ? 'es' : 'pt') : 'pt'] || tribe.quadrant_name}</div>
+                {/* #2783: a RPC devolve o nome em português e o quadrante em inglês; a língua da página vem de lineNames */}
+                <div className="font-bold text-sm text-[var(--text-primary)] mb-2">{lineNames?.[tribe.id]?.name || tribe.name}</div>
+                <div className="text-xs text-[var(--text-secondary)]">{lineNames?.[tribe.id]?.quadrantName || tribe.quadrant_name}</div>
                 <div className="flex items-center justify-between mt-3">
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-white" style={{ background: TRIBE_COLORS[i % 8] }}>
-                    {tribe.member_count} {l.membersCount}
+                    {tribe.member_count} {membersLabel(tribe.member_count)}
                   </span>
                 </div>
               </div>
@@ -468,7 +477,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
               <div key={ch.chapter} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
                 <div className="font-bold text-sm text-[var(--text-primary)]">{ch.chapter}</div>
                 <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
-                <div className="text-xs text-[var(--text-secondary)]">{l.membersCount}</div>
+                <div className="text-xs text-[var(--text-secondary)]">{membersLabel(ch.member_count)}</div>
               </div>
             ))}
           </div>
@@ -476,7 +485,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR' }: any) {
       )}
 
       {/* Lead Capture Form */}
-      <LeadCaptureForm l={l} lang={lang} />
+      <LeadCaptureForm l={l} lang={lang} privacyLabel={text?.privacy ?? ''} />
 
       {/* CTA */}
       <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center">
