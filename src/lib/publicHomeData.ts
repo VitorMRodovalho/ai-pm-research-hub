@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Lang } from '../i18n/utils';
+import type { ImpactData } from '../components/islands/ImpactPageIsland';
 
 /**
  * #2553 PR 2: as leituras públicas da home, no servidor, com a chave anônima (o que o visitante pode ver).
@@ -270,4 +271,42 @@ export async function loadLatestPost(lang: Lang): Promise<LatestOutput | null> {
   } catch {
     return null;
   }
+}
+
+// ── Impacto do /about (get_public_impact_data), no servidor (PR4 A6, GP 25/10/2026) ──────────────────────────────
+// O /about chega com os números no HTML, como a home: quem lê sem JavaScript (buscador, prévia de link) vê a página.
+// O HTML leva só o que a página mostra: cada campo é copiado pelo nome, e uma chave nova da RPC só chega à página
+// passando por aqui. Resposta fora do formato devolve null, e a página busca no navegador, como fazia antes.
+const IMPACT_COUNTERS = ['chapters', 'active_members', 'tribes', 'articles_published', 'impact_hours'] as const;
+
+const isText = (v: unknown): v is string => typeof v === 'string';
+const optText = (v: unknown): string => (isText(v) ? v : '');
+const rowsOf = (v: unknown): Record<string, any>[] | null =>
+  Array.isArray(v) && v.every((x) => x !== null && typeof x === 'object') ? (v as Record<string, any>[]) : null;
+
+export async function loadImpactData(): Promise<ImpactData | null> {
+  const d = await rpc<Record<string, any>>('get_public_impact_data');
+  if (!d || typeof d !== 'object' || !IMPACT_COUNTERS.every((k) => isNum(d[k]))) return null;
+  const pubs = rowsOf(d.recent_publications);
+  const tribes = rowsOf(d.tribes_summary);
+  const chapters = rowsOf(d.chapters_summary);
+  const timeline = rowsOf(d.timeline);
+  if (!pubs || !tribes || !chapters || !timeline) return null;
+  if (!tribes.every((t) => Number.isInteger(t.id) && isText(t.name) && isNum(t.member_count))) return null;
+  if (!chapters.every((c) => isText(c.chapter) && (c.member_count === null || isNum(c.member_count)))) return null;
+  if (!timeline.every((t) => isText(t.year) && isText(t.title)) || !pubs.every((p) => isText(p.title))) return null;
+  return {
+    chapters: d.chapters,
+    active_members: d.active_members,
+    tribes: d.tribes,
+    articles_published: d.articles_published,
+    impact_hours: d.impact_hours,
+    impact_hours_since: isNum(d.impact_hours_since) ? d.impact_hours_since : null,
+    recent_publications: pubs.map((p) => ({
+      title: p.title, platform: optText(p.platform), publication_date: optText(p.publication_date), external_url: optText(p.external_url),
+    })),
+    tribes_summary: tribes.map((t) => ({ id: t.id, name: t.name, quadrant_name: optText(t.quadrant_name), member_count: t.member_count })),
+    chapters_summary: chapters.map((c) => ({ chapter: c.chapter, member_count: c.member_count })),
+    timeline: timeline.map((t) => ({ year: t.year, title: t.title, description: optText(t.description) })),
+  };
 }

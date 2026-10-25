@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { loadChapters, type Chapter } from '../../lib/chapters';
 
-interface ImpactData {
+/** PR4 A6: o que a página mostra. O servidor (loadImpactData) copia para o HTML só estes campos. */
+export interface ImpactData {
   chapters: number;
   active_members: number;
   tribes: number;
@@ -9,8 +10,7 @@ interface ImpactData {
   impact_hours: number;
   /** #2365: ano do primeiro registro contado em impact_hours (acumulado). */
   impact_hours_since: number | null;
-  webinars: number;
-  partner_count: number;
+  // PR4 A6: webinars e partner_count saíram do tipo; a RPC segue devolvendo, mas a página nunca os mostrou.
   // #2553 D7 (GP 24/10/2026): o /about mostra pessoas só em número; autores, liderança, presidência de capítulo,
   // a lista de parceiros e o prêmio individual saíram da RPC (DB-4) e da página.
   recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string }>;
@@ -29,16 +29,24 @@ interface ImpactPageProps {
   lang?: string;
   lineNames?: LineNames;
   text?: ImpactPageText;
+  /** PR4 A6: os dados lidos no servidor pelo about.astro; null quando a leitura falhou, e a página busca no navegador. */
+  initialData?: ImpactData | null;
 }
 
 // ── Animated Counter ──
+// PR4 A6: o contador nasce no número real, que é o que o HTML do servidor leva. A contagem a partir de 0 só roda para
+// o contador que ainda está fora da tela na montagem: o que já está à vista nunca volta a 0 diante de quem lê.
 function AnimatedCounter({ target, suffix = '', prefix = '' }: { target: number; suffix?: string; prefix?: string }) {
-  const [count, setCount] = useState(0);
+  const [count, setCount] = useState(target);
   const ref = useRef<HTMLDivElement>(null);
   const animated = useRef(false);
 
   useEffect(() => {
-    if (!ref.current || animated.current) return;
+    if (!ref.current) return;
+    if (animated.current) { setCount(target); return; }
+    const box = ref.current.getBoundingClientRect();
+    if (box.top < window.innerHeight && box.bottom > 0) { animated.current = true; setCount(target); return; }
+    setCount(0);
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !animated.current) {
         animated.current = true;
@@ -332,16 +340,34 @@ function LeadCaptureForm({ l, lang, privacyLabel }: { l: Record<string, string>;
   );
 }
 
-export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: ImpactPageProps) {
+export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text, initialData = null }: ImpactPageProps) {
   // p123 i18n nav: prefix preserves /en /es when navigating between sections
   const lp = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
-  const [data, setData] = useState<ImpactData | null>(null);
-  const [loading, setLoading] = useState(true);
+  // PR4 A6: com os dados do servidor, a primeira pintura já é a página inteira, e o navegador não busca de novo
+  const [data, setData] = useState<ImpactData | null>(initialData);
+  const [loading, setLoading] = useState(!initialData);
+  // PR4 A6: o formulário de interesse depende do cliente do navegador (lista de capítulos e envio), então só aparece
+  // quando ele existe. Antes ele vinha depois da busca, que já esperava o cliente; montado antes, a lista de capítulos
+  // caía na reserva fixa.
+  const [clientReady, setClientReady] = useState(false);
   const l = LABELS[lang] || LABELS['pt-BR'];
   // #2783: "1 membros" / "1 members". O singular vem do dicionário (about.memberCountOne), resolvido no servidor.
   const membersLabel = (n: number) => (n === 1 && text?.memberOne ? text.memberOne : l.membersCount);
 
   useEffect(() => {
+    let cancelled = false;
+    const wait = () => {
+      if (cancelled) return;
+      if ((window as any).navGetSb?.()) setClientReady(true);
+      else setTimeout(wait, 300);
+    };
+    wait();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    // PR4 A6: a busca no navegador fica só como reserva, quando a leitura do servidor falhou
+    if (initialData) return;
     let cancelled = false;
     const load = async () => {
       const sb = (window as any).navGetSb?.();
@@ -488,7 +514,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: Im
       )}
 
       {/* Lead Capture Form */}
-      <LeadCaptureForm l={l} lang={lang} privacyLabel={text?.privacy ?? ''} />
+      {clientReady && <LeadCaptureForm l={l} lang={lang} privacyLabel={text?.privacy ?? ''} />}
 
       {/* CTA */}
       <section className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-2xl p-8 text-center">
