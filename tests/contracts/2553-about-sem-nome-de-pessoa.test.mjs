@@ -59,8 +59,11 @@ describe('#2553 DB-4: o /about sem nome de pessoa', () => {
   it('A: a função não devolve nem lê nome de pessoa, e a timeline não nomeia o patrocinador', () => {
     assert.ok(cap, 'get_public_impact_data não foi capturada');
     for (const k of SAIRAM) assert.doesNotMatch(CORPO, new RegExp(`'${k}'\\s*,`), `${cap.file}: a chave ${k} voltou`);
-    const aliases = [...CORPO.matchAll(/\b(?:FROM|JOIN)\s+(?:public\.)?members\s+(?:AS\s+)?(\w+)/gi)].map((m) => m[1]);
-    assert.ok(aliases.length >= 2, `${cap.file}: as contagens de members não foram achadas (${aliases.length})`);
+    // PR3 A1 (GP 25/10/2026): a contagem dos capítulos passou de members para v_operational_members (a base do
+    // cabeçalho). A view também é de pessoas, então o alias dela entra na mesma verificação de .name/.designations,
+    // e o piso de 2 contagens continua (linha em members, capítulo na view).
+    const aliases = [...CORPO.matchAll(/\b(?:FROM|JOIN)\s+(?:public\.)?(?:v_operational_)?members\s+(?:AS\s+)?(\w+)/gi)].map((m) => m[1]);
+    assert.ok(aliases.length >= 2, `${cap.file}: as contagens de pessoas não foram achadas (${aliases.length})`);
     for (const a of new Set(aliases)) {
       assert.doesNotMatch(CORPO, new RegExp(`\\b${a}\\.(name|designations)\\b`), `${cap.file}: lê ${a}.name ou ${a}.designations`);
     }

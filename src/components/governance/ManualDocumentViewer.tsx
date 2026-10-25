@@ -164,7 +164,7 @@ export default function ManualDocumentViewer({ lang: langProp }: Props) {
       <article className="flex-1 min-w-0">
         {/* Header */}
         <div className="text-center mb-6 pb-5 border-b border-[var(--border-default)]">
-          <div className="text-[10px] font-bold uppercase tracking-[.2em] text-[var(--text-muted)] mb-1">{t('manual.institution', 'AI & PM Study and Research Hub')}</div>
+          <div className="text-[10px] font-bold uppercase tracking-[.2em] text-[var(--text-muted)] mb-1">{t('manual.institution', 'AI & PM Research Hub')}</div>
           <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">{t('manual.title', 'Governance and Operations Manual')}</h1>
 
           {/* Version toggle */}

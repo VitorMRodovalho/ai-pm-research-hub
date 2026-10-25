@@ -20,7 +20,7 @@ const FAQ_ITEMS: FaqItem[] = [
     question: { 'pt-BR': 'O que é o Hub?', 'en-US': 'What is the Hub?', 'es-LATAM': '¿Qué es el Hub?' },
     answer: {
       'pt-BR': 'O AI & PM Research Hub é a plataforma digital do Núcleo de Estudos e Pesquisa em IA e GP. Centraliza boards de entregáveis, gamificação, eventos, presença, publicações e metas do ciclo em um único lugar. Após login, acesse seu Workspace para ver tudo relevante ao seu papel.',
-      'en-US': 'The AI & PM Research Hub is the digital platform for the AI & PM Study and Research Group. It centralizes deliverable boards, gamification, events, attendance, publications, and cycle goals in one place. After logging in, visit your Workspace to see everything relevant to your role.',
+      'en-US': 'This is the digital platform of the AI & PM Research Hub. It centralizes deliverable boards, gamification, events, attendance, publications, and cycle goals in one place. After logging in, visit your Workspace to see everything relevant to your role.',
       'es-LATAM': 'El AI & PM Research Hub es la plataforma digital del Núcleo de Estudios e Investigación en IA y GP. Centraliza tableros de entregables, gamificación, eventos, asistencia, publicaciones y metas del ciclo en un solo lugar. Después de iniciar sesión, acceda a su Workspace.',
     },
   },

@@ -5,9 +5,9 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const enUS: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'AI & PM Research Hub — Applied Research in AI and Project Management',
-  'meta.description': 'AI & PM Study and Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. {tribeCount} thematic tribes. Open-source trilingual platform.',
-  'meta.ogImageAlt': 'AI & PM Research Hub: Study and Research Hub on Artificial Intelligence and Project Management. Hosted by PMI Goiás, cooperation among PMI chapters in Brazil',
-  'about.meta.title': 'About — AI & Project Management Research Hub',
+  'meta.description': 'AI & PM Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. Open-source trilingual platform.',
+  'meta.ogImageAlt': 'AI & PM Research Hub: Research on Artificial Intelligence and Project Management. Hosted by PMI Goiás, cooperation among PMI chapters in Brazil',
+  'about.meta.title': 'About the AI & PM Research Hub',
   'about.meta.description': 'Collaborative initiative across PMI® chapters in Brazil, hosted by PMI Goiás: applied research lines on AI and project management, with open outputs and its own digital platform.',
   'about.memberCountOne': 'member',
   'meetings.meta.title': 'Meeting Minutes — AI & PM Research Hub',
@@ -461,7 +461,7 @@ const enUS: Record<string, string> = {
   'cycleReport.engagementTitle': 'Engagement',
   'cycleReport.curationTitle': 'Curation',
   // ── Cycle Report — Ω-B+.6.b p143 (additions) ──
-  'cycleReport.printOrgName': 'AI & Project Management Study and Research Hub',
+  'cycleReport.printOrgName': 'AI & PM Research Hub',
   'cycleReport.printDocTitle': 'Evolution Report — Cycle 4 (2026/2)',
   'cycleReport.printIssuedBy': 'Issued by',
   'cycleReport.printIssuedRole': 'Project Manager',
@@ -686,7 +686,7 @@ const enUS: Record<string, string> = {
   // ── Hero ──
   'hero.badge': 'CYCLE {n} · {year}',
   'hero.badgeFallback': 'CURRENT CYCLE',
-  'hero.title.line1': 'Study and Research Hub in',
+  'hero.title.line1': 'Research Hub in',
   'hero.title.accent': 'Artificial Intelligence',
   'hero.title.line3': 'and Project Management',
   'hero.subtitle': 'A volunteer cooperation initiative among PMI chapters in Brazil, hosted by PMI Goiás, with which participating chapters sign their agreements. It is not a program of PMI, Inc.',
@@ -1667,7 +1667,7 @@ const enUS: Record<string, string> = {
   'resources.volunteerLeader.linkText': 'Apply →',
 
   // ── Footer ──
-  'footer.line1': 'AI & PM Study and Research Hub · Núcleo de Estudos e Pesquisa em IA e GP',
+  'footer.line1': 'AI & PM Research Hub · Núcleo de Estudos e Pesquisa em IA e GP',
   // p83: rendered dynamically by BaseLayout from chapter_registry; key kept for legacy/admin-config defaults.
   'footer.chapters': 'PMI Brazil partner chapters',
   'footer.trademarks': 'PMI®, PMBOK®, PMP®, and PMI-CPMAI™ are registered trademarks of PMI, Inc.',
@@ -3072,7 +3072,7 @@ const enUS: Record<string, string> = {
   'page404.heading': 'Page not found',
   'page404.description': 'Looks like the autonomous agent hasn\'t mapped this route yet. Check the URL or go back to the home page.',
   'page404.viewTribes': 'View Tribes',
-  'page404.footer': 'AI & Project Management Research Hub',
+  'page404.footer': 'AI & PM Research Hub',
 
   // ── OAuth Consent ──
   'oauth.title': 'Authorize Application',
@@ -3651,7 +3651,7 @@ const enUS: Record<string, string> = {
   'tribe.accessRestricted': 'Access restricted to active platform members.',
   'tribe.crossManagementMode': 'Cross-management mode: you are viewing another stream with coordination permissions. Edits remain restricted to management and leadership controls.',
   'tribe.explorationMode': 'Exploration mode: you can browse active members, resources and board of this stream, but actions remain restricted to local leadership and management.',
-  'tribe.highlights': 'Research Center Highlights',
+  'tribe.highlights': 'Research Hub Highlights',
   'tribe.highlightsDesc': 'Official artifacts, webinars and publications approved by curation.',
   'tribe.sharedRefs': 'Shared References',
   'tribe.showcase': 'Publication Showcase',
@@ -4007,7 +4007,7 @@ const enUS: Record<string, string> = {
 
   // S1 — Data Controller
   'privacy.s1.title': 'Data Controller Identification',
-  'privacy.s1.org': 'AI & Project Management Study and Research Hub',
+  'privacy.s1.org': 'AI & PM Research Hub',
   'privacy.s1.chapters': 'Collaborative initiative of PMI Brazil chapters: {list}',
   'privacy.s1.cnpj': 'CNPJ: 06.065.645/0001-99 (PMI Goiás)',
   'privacy.s1.contact': 'Contact',
@@ -4445,7 +4445,7 @@ const enUS: Record<string, string> = {
 
   // ── Blog ──
   'blog.title': 'Blog',
-  'blog.subtitle': 'Articles and news from the AI & PM Study and Research Hub',
+  'blog.subtitle': 'Articles and news from the AI & PM Research Hub',
   'blog.adminTitle': 'Manage Blog',
   'blog.adminSubtitle': 'Create, edit, and publish articles.',
   'blog.newPost': 'New Post',
@@ -4460,7 +4460,7 @@ const enUS: Record<string, string> = {
   'blog.featured': 'Featured',
   'blog.noPosts': 'No articles published yet.',
   'podcast.meta.title': 'Vozes do Núcleo IA podcast | AI & PM Hub',
-  'podcast.meta.description': 'Podcast episodes from the AI & Project Management Study and Research Hub: short takes and conversations from our research tribes.',
+  'podcast.meta.description': 'Podcast episodes from the AI & PM Research Hub: short takes and conversations from our research tribes.',
   'podcast.kicker': 'Podcast',
   'podcast.title': 'Vozes do Núcleo IA',
   'podcast.subtitle': 'Short takes and conversations from the Hub research tribes on AI and project management. Listen here or on Spotify.',
@@ -6124,7 +6124,7 @@ const enUS: Record<string, string> = {
   // ── Manual Document Viewer ──
   'manual.noSections': 'No sections found.',
   'manual.toc': 'Table of Contents',
-  'manual.institution': 'AI & PM Study and Research Hub',
+  'manual.institution': 'AI & PM Research Hub',
   'manual.title': 'Governance and Operations Manual',
   'manual.r2Approved': 'Version R2 · DocuSign B2AFB185 · Approved Sep 22, 2025',
   'manual.r3Warning': '⚠ SIMULATION — Preview of the next revision. This document is NOT approved.',
@@ -7526,7 +7526,7 @@ const enUS: Record<string, string> = {
   // ── Glossario (Política IP §13 mirror) ──
   'glossario.metaTitle': 'Glossary — Núcleo IA & GP',
   'glossario.title': 'Canonical Glossary',
-  'glossario.subtitle': 'AI & Project Management Study and Research Hub',
+  'glossario.subtitle': 'AI & PM Research Hub',
   'glossario.banner': '📖 Dynamic mirror of Clause 13 of the Publication & Intellectual Property Policy. This page updates automatically when a new version of the Policy is locked. In case of interpretive divergence, the official Policy text prevails (Clause 13.5).',
   'glossario.notYetLocked': 'The glossary will be published from the next locked version of the Policy. Currently under curator review.',
   'glossario.versionLabel': 'Version',

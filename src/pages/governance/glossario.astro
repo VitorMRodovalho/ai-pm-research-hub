@@ -59,9 +59,12 @@ const displayHtml = sanitizeUserHtml(currentGlossaryHtml || latestGlossaryHtml);
       <p class="text-sm text-[var(--text-muted)]">
         {t('glossario.subtitle', lang)}
       </p>
-      <p class="text-xs text-[var(--text-muted)] italic">
-        AI &amp; PM Study and Research Hub
-      </p>
+      {/* PR3 A5: o nome curto em inglês; em inglês o subtítulo já é ele, e a linha não se repete */}
+      {lang !== 'en-US' && (
+        <p class="text-xs text-[var(--text-muted)] italic">
+          AI &amp; PM Research Hub
+        </p>
+      )}
     </header>
 
     <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-900">

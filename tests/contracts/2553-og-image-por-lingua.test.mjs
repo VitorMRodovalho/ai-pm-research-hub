@@ -12,8 +12,12 @@
  *
  * #2553 D7 (GP 24/10/2026): as descrições de busca da home e do /about (as da prévia de link) ainda diziam
  * "50+ pesquisadores" em pt e es e "51+ pesquisadores, 8 tribos" nas 3 línguas, número escrito à mão. Os textos
- * aprovados ficam fixados aqui: mudar o texto é mudar este guard, de propósito. Na home, a contagem de tribos
- * continua vindo de {tribeCount} (guard 1136).
+ * aprovados ficam fixados aqui: mudar o texto é mudar este guard, de propósito.
+ *
+ * PR3 (GP 25/10/2026): C3 tirou a contagem de tribos da descrição da home nas 3 línguas (nem número, nem
+ * {tribeCount}); A5 trocou o nome longo em inglês pelo curto, "AI & PM Research Hub", na descrição e no texto
+ * alternativo da prévia, e a linha de baixo da imagem em inglês passou de "Study and Research Hub on ..." para
+ * "Research on ...", para o texto alternativo continuar descrevendo a imagem.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -27,9 +31,9 @@ const EN = readFileSync(resolve(ROOT, 'src/i18n/en-US.ts'), 'utf8');
 const DICTS = Object.fromEntries(['pt-BR', 'en-US', 'es-LATAM'].map((l) => [l, readFileSync(resolve(ROOT, `src/i18n/${l}.ts`), 'utf8')]));
 const APPROVED = {
   'meta.description': {
-    'pt-BR': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI no Brasil sediada pelo PMI Goiás. {tribeCount} tribos temáticas. Plataforma open-source trilíngue.',
-    'en-US': 'AI & PM Study and Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. {tribeCount} thematic tribes. Open-source trilingual platform.',
-    'es-LATAM': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. {tribeCount} tribus temáticas. Plataforma open-source trilingüe.',
+    'pt-BR': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI no Brasil sediada pelo PMI Goiás. Plataforma open-source trilíngue.',
+    'en-US': 'AI & PM Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. Open-source trilingual platform.',
+    'es-LATAM': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. Plataforma open-source trilingüe.',
   },
   'about.meta.description': {
     'pt-BR': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil, sediada pelo PMI Goiás: linhas de pesquisa aplicada em IA e gerenciamento de projetos, com produção aberta e plataforma digital própria.',
@@ -77,7 +81,7 @@ test('#2553 D7: as descrições de busca da home e do /about são os textos apro
     for (const [lang, text] of Object.entries(byLang)) {
       const m = DICTS[lang].match(new RegExp(`^  '${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '([^']*)',$`, 'm'));
       assert.ok(m, `${key} ausente em ${lang}`);
-      assert.doesNotMatch(m[1].replace('{tribeCount}', ''), /\d/, `${lang}: ${key} com número escrito`);
+      assert.doesNotMatch(m[1], /\d|\{tribeCount\}/, `${lang}: ${key} com número escrito ou interpolado`);
       assert.equal(m[1], text, `${lang}: ${key}`);
     }
   }

@@ -15,7 +15,8 @@ interface ImpactData {
   // a lista de parceiros e o prêmio individual saíram da RPC (DB-4) e da página.
   recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string }>;
   tribes_summary: Array<{ id: number; name: string; quadrant_name: string; member_count: number }>;
-  chapters_summary: Array<{ chapter: string; member_count: number }>;
+  // PR3 A1 (GP 25/10/2026): os capítulos engajados, sem status; member_count é null abaixo de 3 pessoas (o k do mapa).
+  chapters_summary: Array<{ chapter: string; member_count: number | null }>;
   timeline: Array<{ year: string; title: string; description: string }>;
 }
 
@@ -81,7 +82,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Tribos de Pesquisa',
     publications: 'Publicações Recentes',
     viewAll: 'Ver todas as publicações',
-    chaptersSection: 'Capítulos Patrocinadores',
+    chaptersSection: 'Capítulos participantes',
     cta: 'Interessado em participar?',
     ctaSelection: 'Processo Seletivo',
     ctaArticles: 'Nossos Artigos',
@@ -127,7 +128,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Research Tribes',
     publications: 'Recent Publications',
     viewAll: 'View all publications',
-    chaptersSection: 'Sponsoring Chapters',
+    chaptersSection: 'Participating chapters',
     cta: 'Interested in participating?',
     ctaSelection: 'Selection Process',
     ctaArticles: 'Our Articles',
@@ -173,7 +174,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Tribus de Investigación',
     publications: 'Publicaciones Recientes',
     viewAll: 'Ver todas las publicaciones',
-    chaptersSection: 'Capítulos Patrocinadores',
+    chaptersSection: 'Capítulos participantes',
     cta: '¿Interesado en participar?',
     ctaSelection: 'Proceso de Selección',
     ctaArticles: 'Nuestros Artículos',
@@ -476,8 +477,13 @@ export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: Im
             {data.chapters_summary.map((ch) => (
               <div key={ch.chapter} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
                 <div className="font-bold text-sm text-[var(--text-primary)]">{ch.chapter}</div>
-                <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
-                <div className="text-xs text-[var(--text-secondary)]">{membersLabel(ch.member_count)}</div>
+                {/* PR3 A1: abaixo de 3 pessoas a RPC devolve null e o card mostra só o capítulo */}
+                {typeof ch.member_count === 'number' && (
+                  <>
+                    <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{membersLabel(ch.member_count)}</div>
+                  </>
+                )}
               </div>
             ))}
           </div>

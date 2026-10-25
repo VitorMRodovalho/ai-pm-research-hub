@@ -17,6 +17,12 @@
  * RPCs (get_homepage_stats, get_public_platform_stats) now read 'engaged', by owner decision; the
  * behavioural check below asserts that, and get_executive_kpis stays on 'signed'.
  *
+ * PR3 A1 (GP 25/10/2026): the live chapters_summary moved from the SIGNED chapters to the ENGAGED ones
+ * (signed + in negotiation, with no flag saying which), and member_count is null below 3 people. The
+ * behavioural check of item 3 follows the decision: length == engaged, every row an engaged domestic
+ * pmi_chapter, member_count null or >= 3. Still no members.chapter noise (Outro), still no sponsor key.
+ * The static item 3 keeps describing migration 094; the current body is locked by pr3-decisoes-site.
+ *
  * Cross-ref: #481 (follow-up to #479); ADR-0100.
  */
 
@@ -120,23 +126,26 @@ test('#481 behavioural: is_international flag set on the international chapter; 
   assert.equal(Number(m.in_negotiation), Number(domesticNeg), 'in_negotiation == domestic (non-international) negotiation rows');
 });
 
-test('#481 behavioural: chapters_summary length == signed; every row is an active pmi_chapter', { skip: dbGated ? false : skipMsg }, async () => {
+test('#481/PR3 behavioural: chapters_summary length == engaged; every row is an engaged domestic pmi_chapter', { skip: dbGated ? false : skipMsg }, async () => {
   const sb = client();
   const { data: impact, error } = await sb.rpc('get_public_impact_data');
   assert.ifError(error);
   const { data: m, error: e1 } = await sb.rpc('get_chapter_metrics');
   assert.ifError(e1);
   const summary = impact.chapters_summary || [];
-  assert.equal(summary.length, Number(m.signed), 'chapters_summary length == signed (no members.chapter noise)');
+  // PR3 A1 (GP 25/10/2026): engaged, not signed. Control: the two differ today, so this cannot pass on the old body.
+  assert.notEqual(Number(m.signed), Number(m.engaged), 'control: signed == engaged, the length check would not discriminate');
+  assert.equal(summary.length, Number(m.engaged), 'chapters_summary length == engaged (no members.chapter noise)');
 
-  const { data: signedRows, error: e2 } = await sb
+  const { data: engagedRows, error: e2 } = await sb
     .from('partner_entities').select('name')
-    .eq('entity_type', 'pmi_chapter').eq('status', 'active');
+    .eq('entity_type', 'pmi_chapter').in('status', ['active', 'negotiation']).eq('is_international', false);
   assert.ifError(e2);
-  const signedNames = new Set(signedRows.map((r) => r.name));
+  const engagedNames = new Set(engagedRows.map((r) => r.name));
   for (const row of summary) {
-    assert.ok(signedNames.has(row.chapter), `${row.chapter} is a signed chapter`);
-    assert.ok(Number.isInteger(row.member_count) && row.member_count >= 0, `${row.chapter} has integer member_count`);
+    assert.ok(engagedNames.has(row.chapter), `${row.chapter} is an engaged domestic chapter`);
+    assert.ok(row.member_count === null || (Number.isInteger(row.member_count) && row.member_count >= 3),
+      `${row.chapter}: member_count must be null or an integer >= 3 (the k of the home map)`);
     // LGPD trip-wire (security review): sponsor was the only member-PII-adjacent field on this anon-callable
     // public RPC. #2553 DB-4 (GP 2026-10-24) removed it: no name, email or other identifier comes back under it.
     assert.equal('sponsor' in row, false, `${row.chapter} still carries a sponsor key`);

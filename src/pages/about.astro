@@ -32,7 +32,8 @@ const text = {
   <script slot="head" type="application/ld+json" set:html={JSON.stringify({
     "@context": "https://schema.org",
     "@type": "ResearchOrganization",
-    "name": "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
+    // PR3 A5 (GP 25/10/2026): em inglês, o nome curto; português e espanhol seguem com o nome de sempre
+    "name": lang === 'en-US' ? 'AI & PM Research Hub' : "Núcleo de Estudos e Pesquisa em IA & Gerenciamento de Projetos",
     "description": pageDesc,
     "url": SEO_CANONICAL_ORIGIN,
     // #2553 D11: iniciativa de capítulos, sediada no PMI Goiás; "Não é um programa do PMI, Inc."
