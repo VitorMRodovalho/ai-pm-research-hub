@@ -66,10 +66,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'pt-BR': {
     hero: 'Transformando o Gerenciamento de Projetos na Era da Inteligência Artificial',
     chapters: 'Capítulos PMI engajados',
-    chaptersHint: 'assinados + em negociação',
     members: 'Colaboradores Ativos',
     tribesLabel: 'Tribos de Pesquisa',
-    articles: 'Artigos Publicados',
+    articles: 'Publicações',
     hours: 'Horas de Impacto',
     hoursSince: 'desde',
     timeline: 'Nossa História',
@@ -112,10 +111,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'en-US': {
     hero: 'Transforming Project Management in the Age of Artificial Intelligence',
     chapters: 'Engaged PMI Chapters',
-    chaptersHint: 'signed + in negotiation',
     members: 'Active Contributors',
     tribesLabel: 'Research Tribes',
-    articles: 'Published Articles',
+    articles: 'Publications',
     hours: 'Impact Hours',
     hoursSince: 'since',
     timeline: 'Our Story',
@@ -158,10 +156,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'es-LATAM': {
     hero: 'Transformando la Gestión de Proyectos en la Era de la Inteligencia Artificial',
     chapters: 'Capítulos PMI comprometidos',
-    chaptersHint: 'firmados + en negociación',
     members: 'Colaboradores Activos',
     tribesLabel: 'Tribus de Investigación',
-    articles: 'Artículos Publicados',
+    articles: 'Publicaciones',
     hours: 'Horas de Impacto',
     hoursSince: 'desde',
     timeline: 'Nuestra Historia',
@@ -373,7 +370,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: Im
 
       {/* Impact Counters */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
-        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div><div className="text-xs text-[var(--text-muted)]">{l.chaptersHint}</div></div>
+        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div></div>
         <div><AnimatedCounter target={data.active_members} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.members}</div></div>
         <div><AnimatedCounter target={data.tribes} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.tribesLabel}</div></div>
         <div><AnimatedCounter target={data.articles_published} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.articles}</div></div>

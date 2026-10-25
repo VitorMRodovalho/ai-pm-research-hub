@@ -224,6 +224,22 @@ const svc = async (path, init = {}) => {
   return r.json();
 };
 
+describe('PR3 legenda e A2, estático', () => {
+  // GP 25/10: o total de capítulos não diz quantos assinaram (decisão de 20/10: sem situação jurídica no site)
+  it('o contador de capítulos do /about não traz legenda de assinados e em negociação', () => {
+    assert.match(ISLAND, /<AnimatedCounter target=\{data\.chapters\} \/><div[^>]*>\{l\.chapters\}<\/div><\/div>/);
+    assert.doesNotMatch(ISLAND, /assinados \+ em negocia|signed \+ in negotiation|firmados \+ en negociaci/);
+  });
+  // A2 (GP 25/10): o contador do /about mostra publicações, não "artigos publicados"
+  it('o contador de publicações do /about usa o rótulo novo nas 3 línguas', () => {
+    assert.match(ISLAND, /<AnimatedCounter target=\{data\.articles_published\} suffix="\+" \/><div[^>]*>\{l\.articles\}<\/div>/);
+    for (const [lang, label] of [['pt-BR', 'Publicações'], ['en-US', 'Publications'], ['es-LATAM', 'Publicaciones']]) {
+      const block = ISLAND.split(`'${lang}': {`)[1]?.split(/\n  '[a-z]{2}-[A-Z]{2,5}': \{/)[0] ?? '';
+      assert.match(block, new RegExp(`\\barticles: '${label}',`), `${lang} sem o rótulo de publicações`);
+    }
+  });
+});
+
 describe('PR3, efeito no banco', { skip }, () => {
   it('A1: como anon, os cards são os engajados, sem número abaixo de 3, e somam a base filtrada pelo k', async () => {
     const partes = ANON_KEY.split('.');
