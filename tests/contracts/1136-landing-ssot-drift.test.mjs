@@ -3,7 +3,8 @@
 // Parte 1: toda seção renderizada no home público está registrada no home-anchors do nav
 //          (#2553 PR 2: derivado do que index.astro renderiza, não mais uma lista fixa).
 // Parte 2: os números de tribo não vivem hardcoded na copy — derivam do SSOT via interpolação
-//          (ACTIVE_TRIBE_COUNT em src/data/tribes.ts; na home, membros e vagas de cada linha vêm da RPC).
+//          (na home, membros e vagas de cada linha vêm da RPC). PR3 C3 (GP 25/10/2026): a descrição de busca
+//          da home deixou de levar a contagem de tribos, então não há mais o que interpolar nela.
 // Parte 3 (DB-aware, skip sem creds): quadrant_name / quadrant_name_i18n são consistentes
 //          por quadrante (um único nome canônico + um único jsonb i18n, zero nulls).
 import { test } from 'node:test';
@@ -63,17 +64,18 @@ test('P2: as vagas da linha interpolam {n}/{max} e não carregam número no text
     'a seção de linhas deve interpolar homeV2.lines.seats com os números da RPC');
 });
 
-test('P2: meta.description interpola {tribeCount} derivado do SSOT', () => {
+test('P2: meta.description não leva contagem de tribos, nem escrita nem interpolada (PR3 C3)', () => {
+  // PR3 C3 (GP 25/10/2026): a mesma regra do /about, nenhum número na descrição de busca. O número de tribos não
+  // fica nem como {tribeCount}: o texto não fala em quantidade de tribos.
   for (const [lang, src] of Object.entries(dicts)) {
-    const m = src.match(/'meta\.description':\s*'([^']*)'/);
+    const m = src.match(/^  'meta\.description': '([^']*)',$/m);
     assert.ok(m, `meta.description ausente em ${lang}`);
-    assert.ok(m[1].includes('{tribeCount}'), `meta.description em ${lang} deve usar {tribeCount}, tem: "${m[1]}"`);
-    assert.doesNotMatch(m[1], /\b7\s+(tribos|tribes|tribus)/i, `meta.description em ${lang} tem contagem hardcoded`);
+    assert.doesNotMatch(m[1], /\{tribeCount\}|\d/, `meta.description em ${lang} leva contagem: "${m[1]}"`);
   }
-  assert.match(tribesData, /export const ACTIVE_TRIBE_COUNT = TRIBES\.length;/,
-    'tribes.ts deve exportar ACTIVE_TRIBE_COUNT derivado de TRIBES.length');
-  assert.match(baseLayout, /\.replace\('\{tribeCount\}',\s*String\(ACTIVE_TRIBE_COUNT\)\)/,
-    'BaseLayout deve interpolar meta.description com ACTIVE_TRIBE_COUNT');
+  // o layout entrega o texto como está: sem placeholder para trocar, e sem a constante que o alimentava
+  assert.match(baseLayout, /description = t\('meta\.description', lang\),/, 'BaseLayout deve usar meta.description sem interpolação');
+  assert.doesNotMatch(baseLayout, /tribeCount|ACTIVE_TRIBE_COUNT/, 'BaseLayout ainda interpola contagem de tribos');
+  assert.doesNotMatch(tribesData, /ACTIVE_TRIBE_COUNT/, 'tribes.ts ainda exporta a contagem que só a descrição lia');
 });
 
 // ── Parte 3 — quadrant_name data-hygiene (DB-aware) ──────────────────────────

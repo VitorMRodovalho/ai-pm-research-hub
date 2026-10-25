@@ -15,7 +15,8 @@ interface ImpactData {
   // a lista de parceiros e o prêmio individual saíram da RPC (DB-4) e da página.
   recent_publications: Array<{ title: string; platform: string; publication_date: string; external_url: string }>;
   tribes_summary: Array<{ id: number; name: string; quadrant_name: string; member_count: number }>;
-  chapters_summary: Array<{ chapter: string; member_count: number }>;
+  // PR3 A1 (GP 25/10/2026): os capítulos engajados, sem status; member_count é null abaixo de 3 pessoas (o k do mapa).
+  chapters_summary: Array<{ chapter: string; member_count: number | null }>;
   timeline: Array<{ year: string; title: string; description: string }>;
 }
 
@@ -65,10 +66,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'pt-BR': {
     hero: 'Transformando o Gerenciamento de Projetos na Era da Inteligência Artificial',
     chapters: 'Capítulos PMI engajados',
-    chaptersHint: 'assinados + em negociação',
     members: 'Colaboradores Ativos',
     tribesLabel: 'Tribos de Pesquisa',
-    articles: 'Artigos Publicados',
+    articles: 'Publicações',
     hours: 'Horas de Impacto',
     hoursSince: 'desde',
     timeline: 'Nossa História',
@@ -81,7 +81,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Tribos de Pesquisa',
     publications: 'Publicações Recentes',
     viewAll: 'Ver todas as publicações',
-    chaptersSection: 'Capítulos Patrocinadores',
+    chaptersSection: 'Capítulos participantes',
     cta: 'Interessado em participar?',
     ctaSelection: 'Processo Seletivo',
     ctaArticles: 'Nossos Artigos',
@@ -111,10 +111,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'en-US': {
     hero: 'Transforming Project Management in the Age of Artificial Intelligence',
     chapters: 'Engaged PMI Chapters',
-    chaptersHint: 'signed + in negotiation',
     members: 'Active Contributors',
     tribesLabel: 'Research Tribes',
-    articles: 'Published Articles',
+    articles: 'Publications',
     hours: 'Impact Hours',
     hoursSince: 'since',
     timeline: 'Our Story',
@@ -127,7 +126,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Research Tribes',
     publications: 'Recent Publications',
     viewAll: 'View all publications',
-    chaptersSection: 'Sponsoring Chapters',
+    chaptersSection: 'Participating chapters',
     cta: 'Interested in participating?',
     ctaSelection: 'Selection Process',
     ctaArticles: 'Our Articles',
@@ -157,10 +156,9 @@ const LABELS: Record<string, Record<string, string>> = {
   'es-LATAM': {
     hero: 'Transformando la Gestión de Proyectos en la Era de la Inteligencia Artificial',
     chapters: 'Capítulos PMI comprometidos',
-    chaptersHint: 'firmados + en negociación',
     members: 'Colaboradores Activos',
     tribesLabel: 'Tribus de Investigación',
-    articles: 'Artículos Publicados',
+    articles: 'Publicaciones',
     hours: 'Horas de Impacto',
     hoursSince: 'desde',
     timeline: 'Nuestra Historia',
@@ -173,7 +171,7 @@ const LABELS: Record<string, Record<string, string>> = {
     tribesSection: 'Tribus de Investigación',
     publications: 'Publicaciones Recientes',
     viewAll: 'Ver todas las publicaciones',
-    chaptersSection: 'Capítulos Patrocinadores',
+    chaptersSection: 'Capítulos participantes',
     cta: '¿Interesado en participar?',
     ctaSelection: 'Proceso de Selección',
     ctaArticles: 'Nuestros Artículos',
@@ -372,7 +370,7 @@ export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: Im
 
       {/* Impact Counters */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
-        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div><div className="text-xs text-[var(--text-muted)]">{l.chaptersHint}</div></div>
+        <div><AnimatedCounter target={data.chapters} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.chapters}</div></div>
         <div><AnimatedCounter target={data.active_members} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.members}</div></div>
         <div><AnimatedCounter target={data.tribes} /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.tribesLabel}</div></div>
         <div><AnimatedCounter target={data.articles_published} suffix="+" /><div className="text-sm font-semibold text-[var(--text-secondary)] mt-1">{l.articles}</div></div>
@@ -476,8 +474,13 @@ export default function ImpactPageIsland({ lang = 'pt-BR', lineNames, text }: Im
             {data.chapters_summary.map((ch) => (
               <div key={ch.chapter} className="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-4 text-center">
                 <div className="font-bold text-sm text-[var(--text-primary)]">{ch.chapter}</div>
-                <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
-                <div className="text-xs text-[var(--text-secondary)]">{membersLabel(ch.member_count)}</div>
+                {/* PR3 A1: abaixo de 3 pessoas a RPC devolve null e o card mostra só o capítulo */}
+                {typeof ch.member_count === 'number' && (
+                  <>
+                    <div className="text-2xl font-black text-teal mt-2">{ch.member_count}</div>
+                    <div className="text-xs text-[var(--text-secondary)]">{membersLabel(ch.member_count)}</div>
+                  </>
+                )}
               </div>
             ))}
           </div>

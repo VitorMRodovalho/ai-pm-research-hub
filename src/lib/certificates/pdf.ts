@@ -149,11 +149,11 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     excellence: 'This certifies that',
     volunteer_agreement: 'This declares that',
     event_participation: 'This certifies that',
-    bodyEventParticipation: 'attended {event}, hosted by the AI & PM Study and Research Hub, a collaborative initiative among PMI chapters in Brazil.',
-    bodyParticipation: 'served as a volunteer researcher at the AI & PM Study and Research Hub, a collaborative initiative among PMI chapters in Brazil.',
-    bodyContribution: 'contributed as a volunteer to the AI & PM Study and Research Hub, serving as {role}.',
+    bodyEventParticipation: 'attended {event}, hosted by the AI & PM Research Hub, a collaborative initiative among PMI chapters in Brazil.',
+    bodyParticipation: 'served as a volunteer researcher at the AI & PM Research Hub, a collaborative initiative among PMI chapters in Brazil.',
+    bodyContribution: 'contributed as a volunteer to the AI & PM Research Hub, serving as {role}.',
     bodyCompletion: 'completed the PMI AI Trail, demonstrating proficiency in AI fundamentals applied to Project Management.',
-    bodyExcellence: 'received the Excellence Award for outstanding contribution to the AI & PM Study and Research Hub.',
+    bodyExcellence: 'received the Excellence Award for outstanding contribution to the AI & PM Research Hub.',
     bodyVolunteer_agreement: 'signed the Volunteer Commitment Agreement of the AI & PM Research Hub, committing to the activities and responsibilities of PMI Goiás volunteer program.',
     title: 'CERTIFICATE',
     titleTerm: 'VOLUNTEER AGREEMENT',
@@ -172,8 +172,8 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     verifyCode: 'Verification code',
     issuedOn: 'Issued on',
     verifyAt: 'Verify at',
-    bodyExcellenceLifetime: 'received the Excellence recognition (Hall of Legends) for the accumulated trajectory of contributions to the AI & PM Study and Research Hub across cycles.',
-    bodyConclusion: 'served as a volunteer researcher at the AI & PM Study and Research Hub and completed the research cycle, contributing to the collaborative initiatives among PMI chapters in Brazil.',
+    bodyExcellenceLifetime: 'received the Excellence recognition (Hall of Legends) for the accumulated trajectory of contributions to the AI & PM Research Hub across cycles.',
+    bodyConclusion: 'served as a volunteer researcher at the AI & PM Research Hub and completed the research cycle, contributing to the collaborative initiatives among PMI chapters in Brazil.',
   },
   'es-LATAM': {
     participation: 'Se certifica que',
@@ -781,7 +781,7 @@ export function buildCertificateHTML(certData: CertificateData): string {
 
   return `<div class="cert-page" style="width:595px;min-height:842px;padding:48px 40px;border:3px double #1a365d;position:relative;background:#fff;box-sizing:border-box;page-break-after:always">
     <div style="position:absolute;top:14px;left:14px;right:14px;bottom:14px;border:1px solid #cbd5e0;pointer-events:none"></div>
-    <div style="text-align:center;margin-bottom:20px"><div style="font-size:13px;color:#666;letter-spacing:2px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div><div style="font-size:9px;color:#999;margin-top:3px">The AI & PM Study and Research Hub</div></div>
+    <div style="text-align:center;margin-bottom:20px"><div style="font-size:13px;color:#666;letter-spacing:2px;text-transform:uppercase">Núcleo de Estudos e Pesquisa em IA & GP</div><div style="font-size:9px;color:#999;margin-top:3px">The AI & PM Research Hub</div></div>
     <div style="text-align:center;font-size:11px;color:#bbb;margin-bottom:20px">─── ✦ ───</div>
     <div style="text-align:center;margin-bottom:28px"><div style="font-size:26px;font-weight:bold;color:#1a365d;letter-spacing:3px">${displayTitle}</div></div>
     <div style="text-align:center;font-size:15px;color:#555;margin-bottom:8px">${tpl[type] || tpl.participation}</div>

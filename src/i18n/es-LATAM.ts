@@ -5,7 +5,7 @@ import { CANONICAL_HOST } from '../lib/canonical';
 const esLATAM: Record<string, string> = {
   // ── Meta ──
   'meta.title': 'Núcleo IA & GP — Investigación Aplicada en IA y Gestión de Proyectos',
-  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. {tribeCount} tribus temáticas. Plataforma open-source trilingüe.',
+  'meta.description': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. Plataforma open-source trilingüe.',
   'meta.ogImageAlt': 'Núcleo IA & GP — Núcleo de Estudios e Investigación en IA y Gestión de Proyectos, PMI Brasil–Goiás Chapter',
   'about.meta.title': 'Sobre el Núcleo — IA & Gestión de Proyectos',
   'about.meta.description': 'Iniciativa colaborativa entre capítulos del PMI® en Brasil, con sede en PMI Goiás: líneas de investigación aplicada en IA y gestión de proyectos, con producción abierta y plataforma digital propia.',
@@ -1667,7 +1667,7 @@ const esLATAM: Record<string, string> = {
   'resources.volunteerLeader.linkText': 'Postularse →',
 
   // ── Footer ──
-  'footer.line1': 'Núcleo de Estudios e Investigación en IA y GP · The AI & PM Study and Research Hub',
+  'footer.line1': 'Núcleo de Estudios e Investigación en IA y GP · The AI & PM Research Hub',
   // p83: renderizado dinámicamente por BaseLayout desde chapter_registry; clave conservada para defaults legacy/admin-config.
   'footer.chapters': 'Capítulos socios PMI Brasil',
   'footer.trademarks': 'PMI®, PMBOK®, PMP® y PMI-CPMAI™ son marcas registradas de PMI, Inc.',
