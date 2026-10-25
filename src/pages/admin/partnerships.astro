@@ -208,6 +208,9 @@ const PART_I18N = {
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+  // #2782: contact_name, contact_email e a mensagem passam a vir do formulário público do site (anônimo), então
+  // todo dado de parceria e de interação interpolado em innerHTML passa por escapeHtml.
+  import { escapeHtml as E } from '../../lib/escape-html';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__PART_I18N) || {
@@ -263,16 +266,16 @@ const PART_I18N = {
       const s = STATUS_STYLES[p.status] || STATUS_STYLES.inactive;
       const typeLabel = TYPE_LABELS[p.entity_type] || p.entity_type;
       const date = p.partnership_date ? new Date(p.partnership_date + 'T00:00:00').toLocaleDateString('pt-BR') : '';
-      return `<article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4 cursor-pointer hover:border-teal/40 transition-colors" data-partner-id="${p.id}">
+      return `<article class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-base)] p-4 cursor-pointer hover:border-teal/40 transition-colors" data-partner-id="${E(p.id)}">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-sm font-bold text-[var(--text-primary)]">${p.name}</span>
-          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.badge}">${s.dot} ${STATUS_LABELS[p.status] || p.status}</span>
+          <span class="text-sm font-bold text-[var(--text-primary)]">${E(p.name)}</span>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-semibold ${s.badge}">${s.dot} ${E(STATUS_LABELS[p.status] || p.status)}</span>
         </div>
-        <div class="text-xs text-[var(--text-secondary)] mb-1">${typeLabel}</div>
-        ${p.description ? `<div class="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">${p.description}</div>` : ''}
+        <div class="text-xs text-[var(--text-secondary)] mb-1">${E(typeLabel)}</div>
+        ${p.description ? `<div class="text-xs text-[var(--text-muted)] mb-2 line-clamp-2">${E(p.description)}</div>` : ''}
         <div class="flex items-center justify-between text-[10px] text-[var(--text-muted)]">
-          <span>${date}</span>
-          ${p.contact_name ? `<span>${p.contact_name}</span>` : ''}
+          <span>${E(date)}</span>
+          ${p.contact_name ? `<span>${E(p.contact_name)}</span>` : ''}
         </div>
       </article>`;
     }).join('');
@@ -353,13 +356,14 @@ const PART_I18N = {
         <span class="text-base">${icon}</span>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-0.5">
-            <span class="text-[var(--text-muted)] text-[10px]">${d}</span>
-            ${ix.actor_name ? `<span class="text-[var(--text-secondary)] font-semibold text-[10px]">${ix.actor_name}</span>` : ''}
+            <span class="text-[var(--text-muted)] text-[10px]">${E(d)}</span>
+            ${ix.actor_name ? `<span class="text-[var(--text-secondary)] font-semibold text-[10px]">${E(ix.actor_name)}</span>` : ''}
           </div>
-          <p class="text-[var(--text-primary)] font-medium">${ix.summary}</p>
-          ${ix.outcome ? `<p class="text-[var(--text-secondary)] text-[10px] mt-0.5">${document.getElementById('ai18n-p-outcome')?.textContent || 'Resultado:'} ${ix.outcome}</p>` : ''}
-          ${ix.next_action ? `<p class="text-blue-600 text-[10px] mt-0.5">→ ${ix.next_action}</p>` : ''}
-          ${ix.follow_up_date ? `<p class="text-amber-600 text-[10px] mt-0.5">📅 Follow-up: ${new Date(ix.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR')}</p>` : ''}
+          <p class="text-[var(--text-primary)] font-medium">${E(ix.summary)}</p>
+          ${ix.details ? `<p class="text-[var(--text-secondary)] mt-0.5 whitespace-pre-wrap break-words">${E(ix.details)}</p>` : ''}
+          ${ix.outcome ? `<p class="text-[var(--text-secondary)] text-[10px] mt-0.5">${E(document.getElementById('ai18n-p-outcome')?.textContent || 'Resultado:')} ${E(ix.outcome)}</p>` : ''}
+          ${ix.next_action ? `<p class="text-blue-600 text-[10px] mt-0.5">→ ${E(ix.next_action)}</p>` : ''}
+          ${ix.follow_up_date ? `<p class="text-amber-600 text-[10px] mt-0.5">📅 Follow-up: ${E(new Date(ix.follow_up_date + 'T00:00:00').toLocaleDateString('pt-BR'))}</p>` : ''}
         </div>
       </div>`;
     }).join('');
