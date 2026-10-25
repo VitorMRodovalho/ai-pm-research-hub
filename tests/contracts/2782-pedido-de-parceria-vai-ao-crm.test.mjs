@@ -163,26 +163,55 @@ test('#2782 B4: o contato e a mensagem vão SÓ para details da nota; summary n�
   assert.match(gate[2], /RETURNING id INTO v_interaction_id;/);
 });
 
-test('#2782 B5: avisa quem tem manage_platform, sem dado de quem pediu, e só quando entrou nota nova', () => {
-  const f = fn('capture_visitor_lead');
-  const block = f.match(/IF v_interaction_id IS NOT NULL THEN([\s\S]*?)END LOOP;/);
-  assert.ok(block, 'o aviso não está condicionado a uma nota nova');
-  const loop = block[1].match(/FOR v_recipient IN([\s\S]*?)LOOP/);
+const HELPER = '_notify_partner_lead_received';
+
+test('#2782 B5: o ajudante avisa quem tem manage_platform, sem dado de quem pediu, sem repetir o não lido', () => {
+  const cap = latestFunctionCapture(ROOT, HELPER);
+  // as únicas entradas são a entidade, o "foi criada" e a porta: dado de quem pediu não tem por onde chegar ao aviso
+  assert.match(cap.block, new RegExp(`FUNCTION public\\.${HELPER}\\(p_partner_id uuid, p_created boolean, p_door text\\)`));
+  const h = fn(HELPER);
+  const loop = h.match(/FOR v_recipient IN([\s\S]*?)LOOP/);
   assert.ok(loop, 'o laço de destinatários sumiu');
   assert.match(loop[1], /m\.member_status = 'active' AND m\.auth_id IS NOT NULL/);
   assert.match(loop[1], /AND public\.can_by_member\(m\.id, 'manage_platform'\)/);
   assert.doesNotMatch(loop[1], /manage_partner/);
-  assert.match(loop[1], /AND NOT EXISTS \([\s\S]*?n\.type = 'partner_lead_received'[\s\S]*?n\.source_id = v_partner_id AND n\.is_read IS NOT TRUE\)/);
-  const call = block[1].indexOf('PERFORM public.create_notification(');
+  assert.match(loop[1], /AND NOT EXISTS \([\s\S]*?n\.type = 'partner_lead_received'[\s\S]*?n\.source_id = p_partner_id AND n\.is_read IS NOT TRUE\)/);
+  const call = h.indexOf('PERFORM public.create_notification(');
   assert.ok(call > 0, 'o aviso não usa create_notification');
-  const args = splitTop(inside(block[1], call + 'PERFORM public.create_notification'.length));
+  const args = splitTop(inside(h, call + 'PERFORM public.create_notification'.length));
   assert.equal(args.length, 7, 'create_notification(recipient, type, title, body, link, source_type, source_id)');
   assert.equal(args[0], 'v_recipient.id');
   assert.equal(args[1], "'partner_lead_received'");
-  assert.doesNotMatch(args[2], PII_VARS, 'o título leva dado de quem pediu');
-  assert.doesNotMatch(args[3], PII_VARS, 'o corpo leva dado de quem pediu (e vai por e-mail)');
+  for (const [i, what] of [[2, 'o título'], [3, 'o corpo (que vai por e-mail)']]) {
+    const vars = [...args[i].matchAll(/\b[pv]_[a-z_]+\b/g)].map((m) => m[0]);
+    assert.ok(vars.every((v) => ['p_created', 'p_door'].includes(v)), `${what} usa ${vars.join(', ')}`);
+  }
   assert.equal(args[4], "'/admin/partnerships'");
-  assert.equal(args[6], 'v_partner_id');
+  assert.equal(args[5], "'partner_entities'");
+  assert.equal(args[6], 'p_partner_id');
+
+  // a captura chama o ajudante só quando entrou nota nova, com a porta, que é texto fixo
+  const f = fn('capture_visitor_lead');
+  const block = f.match(/IF v_interaction_id IS NOT NULL THEN([\s\S]*?)END IF;/);
+  assert.ok(block, 'o aviso não está condicionado a uma nota nova');
+  assert.match(block[1], new RegExp(`PERFORM public\\.${HELPER}\\(v_partner_id, v_partner_created, v_door\\);`));
+  assert.doesNotMatch(assigned(f, 'v_door'), PII_VARS);
+});
+
+test('#2782 B8: a captura segue visível para a varredura do #965 e o ajudante não é porta de fora', () => {
+  // os termos que a varredura lê como portão saem da própria varredura (captura vigente), não de uma lista à mão
+  const sweep = latestFunctionCapture(ROOT, '_audit_secdef_public_grant_drift').body;
+  const tokens = [...sweep.matchAll(/position\('([^']+)' in p\.prosrc\) = 0/g)].map((m) => m[1]);
+  assert.ok(tokens.length >= 5 && tokens.includes('can_by_member'), `a varredura mudou de forma: ${tokens.join(', ')}`);
+  // prosrc inclui comentário: o corpo é lido CRU, como a varredura lê
+  const raw = latestFunctionCapture(ROOT, 'capture_visitor_lead').body;
+  for (const t of tokens) {
+    assert.ok(!raw.includes(t), `a captura cita '${t}' e some da varredura do #965 sem ter portão`);
+  }
+  const cap = latestFunctionCapture(ROOT, HELPER);
+  assert.match(cap.block, /\bSECURITY INVOKER\b/);
+  assert.doesNotMatch(cap.block, /\bSECURITY DEFINER\b/);
+  assert.match(MIG, new RegExp(`REVOKE ALL ON FUNCTION public\\.${HELPER}\\(uuid, boolean, text\\) FROM PUBLIC, anon, authenticated;`));
 });
 
 test('#2782 B6: o vínculo lead -> entidade -> nota fica em admin_audit_log, sem dado de quem pediu', () => {

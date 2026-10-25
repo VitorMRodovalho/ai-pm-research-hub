@@ -18,10 +18,15 @@
 --     'pmi_chapter' para capítulo e 'outro' para organização ou comunidade, que o formulário não distingue) SEM
 --     contact_name, contact_email nem nome de pessoa; registra nome, e-mail, telefone e mensagem numa nota de
 --     partner_interactions (em details, nunca em summary, que o registro de auditoria expõe); avisa os membros
---     ativos com login e manage_platform; e grava em admin_audit_log a linha 'visitor_lead.routed_to_partner_crm'
+--     ativos com login e manage_platform (pelo ajudante (2a)); e grava em admin_audit_log a linha 'visitor_lead.routed_to_partner_crm'
 --     com o lead, a entidade e a nota. Essa linha é o vínculo lead -> entidade (repetir o envio reaproveita a
 --     entidade do mesmo lead) e o MARCADOR de origem que só este caminho grava. A resposta ao chamador anônimo
 --     continua com a MESMA forma em todos os caminhos (#1050).
+-- (2a) _notify_partner_lead_received: o laço de destinatários do aviso, fora da captura. A varredura do #965
+--     (_audit_secdef_public_grant_drift) lê como portão de autoridade qualquer função SECURITY DEFINER anônima cujo
+--     corpo cite um dos termos de portão que ela procura, e a captura citava um deles só para escolher quem recebe o
+--     aviso: saía da varredura sem ter portão nenhum. O ajudante é SECURITY INVOKER e fechado a PUBLIC, anon e
+--     authenticated; a captura o chama como dona, então a chamada segue valendo.
 -- (3) auto_promote_eligible_leads_for_cycle: pula 'chapter' e 'partner' mesmo com a flag true (defesa em
 --     profundidade). Corpo = captura da #684 (20260805000169, igual ao vivo) + uma condição.
 -- (4) _data_retention_sweep: dois ramos novos, presos ao marcador. partner_interactions/anonymize tira o dado de
@@ -35,8 +40,9 @@
 -- O status do lead fica 'new' (o CHECK só admite new, contacted, promoted e dismissed; nenhum descreve "foi para o
 -- CRM"), e a varredura segue apagando o lead não convertido no prazo.
 --
--- Rollback: recriar as quatro funções pelas capturas citadas acima e apagar as duas linhas de
--- data_retention_policy por (table_name, cleanup_type).
+-- Rollback: recriar as quatro funções pelas capturas citadas acima, DROP FUNCTION
+-- public._notify_partner_lead_received(uuid, boolean, text), e apagar as duas linhas de data_retention_policy por
+-- (table_name, cleanup_type).
 
 -- ── (1) catálogo de entrega ──────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public._delivery_mode_for(p_type text)
@@ -191,6 +197,47 @@ AS $function$
   END;
 $function$;
 
+-- ── (2a) aviso a quem gere a plataforma ──────────────────────────────────────
+CREATE OR REPLACE FUNCTION public._notify_partner_lead_received(p_partner_id uuid, p_created boolean, p_door text)
+ RETURNS integer
+ LANGUAGE plpgsql
+ SECURITY INVOKER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_recipient record;
+  v_n integer := 0;
+BEGIN
+  -- o aviso não leva nome, e-mail, telefone nem a mensagem: o contato fica no histórico, atrás de manage_platform
+  FOR v_recipient IN
+    SELECT m.id FROM public.members m
+     WHERE m.member_status = 'active' AND m.auth_id IS NOT NULL
+       AND public.can_by_member(m.id, 'manage_platform')
+       AND NOT EXISTS (
+         SELECT 1 FROM public.notifications n
+          WHERE n.recipient_id = m.id AND n.type = 'partner_lead_received'
+            AND n.source_id = p_partner_id AND n.is_read IS NOT TRUE)
+  LOOP
+    PERFORM public.create_notification(
+      v_recipient.id,
+      'partner_lead_received',
+      CASE WHEN p_created THEN 'Novo pedido pelo site: ' ELSE 'Nova mensagem pelo site: ' END || p_door,
+      CASE WHEN p_created
+        THEN 'Chegou pelo formulário da home e entrou no CRM de parceiros como prospect; o contato está no histórico da entidade. A home promete resposta em até 5 dias úteis.'
+        ELSE 'Chegou pelo formulário da home uma nova mensagem sobre um pedido que já está no CRM de parceiros; o contato está no histórico da entidade. A home promete resposta em até 5 dias úteis.'
+      END,
+      '/admin/partnerships',
+      'partner_entities',
+      p_partner_id
+    );
+    v_n := v_n + 1;
+  END LOOP;
+  RETURN v_n;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public._notify_partner_lead_received(uuid, boolean, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public._notify_partner_lead_received(uuid, boolean, text) TO service_role;
+
 -- ── (2) captura do lead ──────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.capture_visitor_lead(p_payload jsonb)
  RETURNS jsonb
@@ -217,7 +264,6 @@ DECLARE
   v_partner_id uuid;
   v_interaction_id uuid;
   v_partner_created boolean := false;
-  v_recipient record;
 BEGIN
   IF NOT public.rl_check_and_bump('capture_visitor_lead', 10, 60) THEN
     RETURN jsonb_build_object('error','rate_limited');
@@ -360,29 +406,9 @@ BEGIN
     END IF;
 
     IF v_interaction_id IS NOT NULL THEN
-      -- o aviso não leva nome, e-mail, telefone nem a mensagem: o contato fica no histórico, atrás de manage_platform
-      FOR v_recipient IN
-        SELECT m.id FROM public.members m
-         WHERE m.member_status = 'active' AND m.auth_id IS NOT NULL
-           AND public.can_by_member(m.id, 'manage_platform')
-           AND NOT EXISTS (
-             SELECT 1 FROM public.notifications n
-              WHERE n.recipient_id = m.id AND n.type = 'partner_lead_received'
-                AND n.source_id = v_partner_id AND n.is_read IS NOT TRUE)
-      LOOP
-        PERFORM public.create_notification(
-          v_recipient.id,
-          'partner_lead_received',
-          CASE WHEN v_partner_created THEN 'Novo pedido pelo site: ' ELSE 'Nova mensagem pelo site: ' END || v_door,
-          CASE WHEN v_partner_created
-            THEN 'Chegou pelo formulário da home e entrou no CRM de parceiros como prospect; o contato está no histórico da entidade. A home promete resposta em até 5 dias úteis.'
-            ELSE 'Chegou pelo formulário da home uma nova mensagem sobre um pedido que já está no CRM de parceiros; o contato está no histórico da entidade. A home promete resposta em até 5 dias úteis.'
-          END,
-          '/admin/partnerships',
-          'partner_entities',
-          v_partner_id
-        );
-      END LOOP;
+      -- aviso a quem gere a plataforma, sem dado de quem pediu; o laço mora no ajudante (2a) para esta função
+      -- seguir sem termo de portão no corpo: ela é anônima por desenho e a varredura do #965 tem de enxergá-la
+      PERFORM public._notify_partner_lead_received(v_partner_id, v_partner_created, v_door);
 
       -- vínculo lead -> entidade -> nota, e marcador de origem que a retenção usa (só este caminho grava a ação)
       INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes)
@@ -721,6 +747,17 @@ BEGIN
      OR has_function_privilege('anon', 'public._data_retention_sweep(boolean)', 'EXECUTE')
      OR has_function_privilege('authenticated', 'public._data_retention_sweep(boolean)', 'EXECUTE') THEN
     RAISE EXCEPTION '#2782: privilégio fora do esperado';
+  END IF;
+  -- a captura é anônima por desenho e tem de continuar visível para a varredura do #965 (lista categorizada)
+  IF NOT EXISTS (SELECT 1 FROM public._audit_secdef_public_grant_drift() d WHERE d.proname = 'capture_visitor_lead') THEN
+    RAISE EXCEPTION '#2782: capture_visitor_lead sumiu da varredura do #965 (lida como se tivesse portão)';
+  END IF;
+  -- o ajudante do aviso não é chamável de fora nem roda como dono
+  IF has_function_privilege('anon', 'public._notify_partner_lead_received(uuid, boolean, text)', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public._notify_partner_lead_received(uuid, boolean, text)', 'EXECUTE')
+     OR (SELECT p.prosecdef FROM pg_proc p
+          WHERE p.oid = 'public._notify_partner_lead_received(uuid, boolean, text)'::regprocedure) THEN
+    RAISE EXCEPTION '#2782: o ajudante do aviso ficou exposto ou SECURITY DEFINER';
   END IF;
   IF position('NOT IN (''chapter'', ''partner'')' IN
        (SELECT prosrc FROM pg_proc WHERE oid = 'public.auto_promote_eligible_leads_for_cycle(uuid)'::regprocedure)) = 0 THEN
