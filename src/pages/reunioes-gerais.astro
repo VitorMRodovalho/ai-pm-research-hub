@@ -16,7 +16,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
 ---
 
-<BaseLayout title={t('comp.agendaViva.heading', lang)} activePage="reunioes-gerais" lang={lang}>
+<BaseLayout title={t('comp.agendaViva.heading', lang)} activePage="reunioes-gerais" lang={lang} alternates="query">
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <Toast />
   <div class="max-w-[900px] mx-auto px-4 py-10">

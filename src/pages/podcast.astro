@@ -64,7 +64,7 @@ const pageTitle = t('podcast.meta.title', lang);
 const pageDesc = t('podcast.meta.description', lang);
 ---
 
-<BaseLayout title={pageTitle} description={pageDesc} activePage="podcast" lang={lang}>
+<BaseLayout title={pageTitle} description={pageDesc} activePage="podcast" lang={lang} alternates="query">
   <meta slot="head" property="og:title" content={pageTitle} />
   <meta slot="head" property="og:description" content={pageDesc} />
   <meta slot="head" property="og:type" content="website" />
