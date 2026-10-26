@@ -204,7 +204,7 @@ test('script: output interpolates counts and fixed labels only, never a name, pa
     "e.service ? 'service_role' : e.publishable ? 'publishable' : 'none'", 'd.refuse',
     'orphans.length', 'todo.length', "URL_COLUMNS.join(', ')", 'String(err.message).slice(0, 200)',
   ]);
-  const calls = SCRIPT.match(/console\.(?:log|error)\((?:[^()]|\([^()]*(?:\([^()]*\))?[^()]*\))*\)/g) || [];
+  const calls = SCRIPT.match(/console\.(?:log|error)\((?:[^()]|\([^()]*(?:\([^()]*\)[^()]*)*\))*\)/g) || [];
   assert.ok(calls.length >= 8, `expected the script output calls, got ${calls.length}`);
   for (const call of calls) {
     for (const [, expr] of call.matchAll(/\$\{([^}]*(?:\{[^}]*\}[^}]*)?)\}/g)) {
