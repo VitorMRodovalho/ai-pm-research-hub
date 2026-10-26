@@ -17417,6 +17417,95 @@ export type Database = {
           },
         ]
       }
+      member_photo_keys: {
+        Row: {
+          created_at: string
+          member_id: string
+          object_key: string
+        }
+        Insert: {
+          created_at?: string
+          member_id: string
+          object_key?: string
+        }
+        Update: {
+          created_at?: string
+          member_id?: string
+          object_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_photo_keys_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       member_quick_start_progress: {
         Row: {
           completed_steps: number[]
@@ -31204,6 +31293,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: string
       }
+      _member_photo_swap_url: {
+        Args: { p_from_url: string; p_member_id: string; p_to_url: string }
+        Returns: Json
+      }
       _notify_drive_grant_failure: {
         Args: {
           p_api_error: Json
@@ -35452,6 +35545,7 @@ export type Database = {
           organization_id: string
         }[]
       }
+      member_photo_key_of_caller: { Args: never; Returns: string }
       member_remove_alternate_email: {
         Args: { p_email: string; p_member_id: string }
         Returns: boolean
