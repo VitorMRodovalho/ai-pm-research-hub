@@ -90,6 +90,9 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'library',      labelKey: 'nav.library',      href: '/library',      minTier: 'member', requiresAuth: true, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'onboarding',   labelKey: 'nav.onboarding',   href: '/workspace',   minTier: 'visitor', requiresAuth: true,  section: 'main', group: 'profile', navSlot: 'none' }, // #867 pre-term journey — guest-reachable
   { key: 'gamification', labelKey: 'nav.gamification',  href: '/gamification', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
+  // Pertencimento (GP 26/10/2026): a equipe por função, só para membro (get_team_by_function; anon não executa).
+  // Na gaveta, ao lado do ranking; o menu do visitante não muda.
+  { key: 'equipe',       labelKey: 'nav.equipe',        href: '/equipe',       minTier: 'member', requiresAuth: true, section: 'drawer', group: 'member', navSlot: 'none', drawerSection: 'explorar' },
   // #701 Agenda Viva — public General Meetings agenda (anon-OK; reservation gated in-page).
   { key: 'reunioes-gerais', labelKey: 'nav.reunioesGerais', href: '/reunioes-gerais', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', navSlot: 'none', drawerSection: 'explorar' },
   { key: 'presentations', labelKey: 'nav.presentations', href: '/presentations', minTier: 'member', requiresAuth: true, section: 'main', group: 'tools', navSlot: 'none' },

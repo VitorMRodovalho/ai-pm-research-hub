@@ -35,6 +35,7 @@ for (const p of pairs) fieldsByLine.set(p.tribeId, [...(fieldsByLine.get(p.tribe
 const fields = pairs.length > 0 ? verticals : [];
 const fieldTitle = new Map(verticals.map((v) => [v.id, v.title]));
 const code = (id: number) => `T${String(id).padStart(2, '0')}`;
+const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="tribes">
@@ -90,6 +91,8 @@ const code = (id: number) => `T${String(id).padStart(2, '0')}`;
                         <ul class="list-disc pl-5 m-0 grid gap-1">{l.deliverables.map((d) => <li>{d}</li>)}</ul>
                       </>
                     )}
+                    <a href={`${langPrefix}/tribe/${l.id}`} hidden data-line-page
+                       class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.lines.linePage', lang)} →</a>
                   </div>
                 </details>
               </li>
@@ -119,6 +122,12 @@ const code = (id: number) => `T${String(id).padStart(2, '0')}`;
 </style>
 
 <script>
+  import { showForMembers } from '../../lib/tribes/member-only';
+
+  // Pertencimento (GP 26/10/2026): "Página da linha" leva a /tribe/<id>, que só abre para membro. O link nasce
+  // escondido e só aparece com a sessão de quem a página deixa entrar; o visitante não vê link para página fechada.
+  showForMembers('[data-line-page]');
+
   // Filtro da lista: quadrante (q:) ou campo (f:). Sem JavaScript, a lista inteira fica visível.
   const group = document.getElementById('lines-filter');
   const list = document.getElementById('lines-list');
