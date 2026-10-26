@@ -1,0 +1,244 @@
+---
+/**
+ * Pertencimento (GP 26/10/2026): a equipe por função, na área do membro.
+ *
+ * Os grupos são os mesmos das contagens de "Quem faz" na home, e o número de cada grupo é o da home: a página lê
+ * get_team_by_function(), que devolve counts = get_public_home_team() (a mesma chamada da home) e as pessoas de cada
+ * grupo pelos mesmos predicados. Não há rota bloqueada no servidor (ADR-0106): o visitante recebe esta casca vazia,
+ * e quem decide é a função (sem EXECUTE para anon; o corpo recusa quem não tem vínculo vigente).
+ * A leitura é feita a cada visita, sem guardar nada no navegador: quem sai de uma função sai dela aqui na próxima.
+ * As frentes operacionais (o que a OperationalArmsSection mostrava na home antiga) entram no grupo dos hubs.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const GROUPS = ['management', 'line_leaders', 'initiative_leaders', 'curators', 'hub_members', 'chapter_focal_points', 'researchers'] as const;
+const ROLES = ['manager', 'deputy_manager', 'co_gp', 'tribe_leader', 'researcher', 'leader', 'co_leader', 'coordinator', 'owner',
+  'curator', 'committee', 'sponsor', 'chapter_liaison', 'other'] as const;
+
+const I18N = {
+  lang,
+  error: t('equipe.error', lang),
+  empty: t('equipe.empty', lang),
+  people: t('equipe.people', lang),
+  person: t('equipe.person', lang),
+  openings: t('arms.openings', lang),
+  frontLead: t('arms.leader', lang),
+  frontTeam: t('arms.team', lang),
+  groups: Object.fromEntries(GROUPS.map((g) => [g, t(`equipe.group.${g}`, lang)])),
+  roles: Object.fromEntries(ROLES.map((r) => [r, t(`equipe.role.${r}`, lang)])),
+};
+---
+
+<BaseLayout title={t('equipe.title', lang)} activePage="equipe" lang={lang}>
+  <div class="max-w-[1100px] mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-2xl font-extrabold text-[var(--text-primary)]">{t('equipe.title', lang)}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1 max-w-[760px]">{t('equipe.subtitle', lang)}</p>
+    </header>
+
+    <div id="equipe-loading" class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-center">
+      <p class="text-sm text-[var(--text-muted)]">{t('equipe.loading', lang)}</p>
+    </div>
+
+    <div id="equipe-gate" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-8 text-center">
+      <p class="text-sm text-[var(--text-secondary)]">{t('equipe.gate', lang)}</p>
+      <button type="button" id="equipe-sign-in"
+              class="mt-4 inline-flex items-center min-h-[44px] px-4 rounded-xl text-sm font-semibold text-white bg-navy border-0 cursor-pointer">
+        {t('equipe.signIn', lang)}
+      </button>
+    </div>
+
+    <div id="equipe-error" class="hidden rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-6 text-center">
+      <p class="text-sm text-[var(--text-secondary)]">{t('equipe.error', lang)}</p>
+    </div>
+
+    <div id="equipe-shell" class="hidden grid gap-8"></div>
+  </div>
+</BaseLayout>
+
+<script type="application/json" id="equipe-i18n" set:html={JSON.stringify(I18N)}></script>
+
+<script>
+  import { canExploreTribes } from '../lib/tribes/access';
+  import { sanitizeAvatarUrl, initialsFor } from '../lib/avatar';
+
+  type Row = { group: string; role: string; key: string; name: string; photo_url: string | null; chapter: string | null;
+    tribe_id: number | null; initiative_id: string | null };
+  type Initiative = { id: string; kind: string; name_i18n: Record<string, string> | null; front: boolean;
+    description: string | null; has_openings: boolean | null };
+  type TeamData = { counts: Record<string, number>; rows: Row[]; lines: { id: number; name_i18n: Record<string, string> | null }[];
+    initiatives: Initiative[] };
+
+  const I18N = JSON.parse(document.getElementById('equipe-i18n')?.textContent || '{}');
+  const GROUP_ORDER = ['management', 'line_leaders', 'initiative_leaders', 'curators', 'hub_members', 'chapter_focal_points', 'researchers'];
+  const ROLE_ORDER = ['manager', 'co_gp', 'deputy_manager', 'leader', 'co_leader', 'coordinator', 'owner', 'tribe_leader',
+    'committee', 'curator', 'sponsor', 'chapter_liaison', 'researcher'];
+  const short = I18N.lang === 'en-US' ? 'en' : I18N.lang === 'es-LATAM' ? 'es' : 'pt';
+  const ids = ['equipe-loading', 'equipe-gate', 'equipe-error', 'equipe-shell'];
+  const only = (id: string) => ids.forEach((x) => document.getElementById(x)?.classList.toggle('hidden', x !== id));
+
+  // Construção por nó e textContent: nome, capítulo e descrição vêm do cadastro e nunca viram HTML.
+  function el(tag: string, cls = '', text?: string): HTMLElement {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+  const pick = (o: Record<string, string> | null | undefined) => (o && (o[short] || o.pt)) || '';
+  const roleLabel = (r: string) => I18N.roles?.[r] || I18N.roles?.other || r;
+  const lineCode = (id: number) => `T${String(id).padStart(2, '0')}`;
+
+  function avatar(name: string, url: string | null, size: number): HTMLElement {
+    const fallback = el('span', 'inline-flex items-center justify-center rounded-full bg-teal text-white font-bold text-xs shrink-0', initialsFor(name));
+    fallback.style.width = fallback.style.height = `${size}px`;
+    const safe = sanitizeAvatarUrl(url);
+    if (!safe) return fallback;
+    const img = document.createElement('img');
+    img.className = 'rounded-full object-cover shrink-0 bg-[var(--surface-section-cool)]';
+    img.src = safe;
+    img.alt = '';
+    img.width = size;
+    img.height = size;
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('error', () => img.replaceWith(fallback), { once: true });
+    return img;
+  }
+
+  function countLabel(n: number): string {
+    return n === 1 ? I18N.person : String(I18N.people).replace('{n}', String(n));
+  }
+
+  function render(data: TeamData) {
+    const shell = document.getElementById('equipe-shell')!;
+    shell.replaceChildren();
+    const lines = new Map(data.lines.map((l) => [l.id, pick(l.name_i18n)]));
+    const inits = new Map(data.initiatives.map((i) => [i.id, i]));
+    const context = (r: Row): string => {
+      if (r.tribe_id != null) return [lineCode(r.tribe_id), lines.get(r.tribe_id)].filter(Boolean).join(' ');
+      if (r.initiative_id) return pick(inits.get(r.initiative_id)?.name_i18n);
+      return '';
+    };
+
+    for (const g of GROUP_ORDER) {
+      const rows = data.rows.filter((r) => r.group === g);
+      const section = el('section', 'grid gap-3');
+      section.dataset.group = g;
+      const head = el('div', 'flex flex-wrap items-baseline gap-x-3 gap-y-1');
+      head.append(el('h2', 'text-lg font-extrabold text-navy', I18N.groups?.[g] || g));
+      // o número é o da home (counts = get_public_home_team), nunca a contagem das linhas desta tela
+      const n = data.counts?.[g];
+      if (typeof n === 'number') head.append(el('span', 'text-sm text-[var(--text-secondary)] tabular-nums', countLabel(n)));
+      section.append(head);
+
+      if (rows.length === 0) {
+        section.append(el('p', 'text-sm text-[var(--text-muted)]', I18N.empty));
+      } else if (g === 'hub_members') {
+        section.append(renderFronts(rows, data.initiatives));
+      } else {
+        section.append(renderPeople(rows, context));
+      }
+      shell.append(section);
+    }
+    only('equipe-shell');
+  }
+
+  // Uma pessoa por cartão no grupo, com todos os papéis dela ali (quem lidera duas iniciativas aparece uma vez).
+  function renderPeople(rows: Row[], context: (r: Row) => string): HTMLElement {
+    const byKey = new Map<string, Row[]>();
+    for (const r of rows) byKey.set(r.key, [...(byKey.get(r.key) ?? []), r]);
+    const list = el('ul', 'list-none m-0 p-0 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3');
+    for (const roles of byKey.values()) {
+      const first = roles[0];
+      const li = el('li', 'flex items-start gap-3 rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-3');
+      li.append(avatar(first.name, first.photo_url, 48));
+      const body = el('div', 'min-w-0 grid gap-0.5');
+      body.append(el('span', 'font-semibold text-[var(--text-primary)] break-words', first.name));
+      const sorted = [...roles].sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role));
+      for (const r of sorted) {
+        const ctx = context(r);
+        body.append(el('span', 'text-[13px] text-[var(--text-secondary)]', ctx ? `${roleLabel(r.role)} · ${ctx}` : roleLabel(r.role)));
+      }
+      if (first.chapter) body.append(el('span', 'text-[12px] text-[var(--text-muted)]', first.chapter));
+      li.append(body);
+      list.append(li);
+    }
+    return list;
+  }
+
+  // As frentes operacionais: nome, primeira linha da descrição, vagas, liderança e time, como na seção antiga.
+  function renderFronts(rows: Row[], initiatives: Initiative[]): HTMLElement {
+    const grid = el('div', 'grid gap-4 md:grid-cols-2');
+    for (const front of initiatives.filter((i) => i.front)) {
+      const people = rows.filter((r) => r.initiative_id === front.id);
+      const card = el('article', 'rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 grid gap-3');
+      const top = el('div', 'flex items-start justify-between gap-3');
+      top.append(el('h3', 'text-base font-extrabold text-navy', pick(front.name_i18n)));
+      if (front.has_openings) top.append(el('span', 'shrink-0 px-2.5 py-0.5 rounded-md text-[12px] font-bold bg-green-100 text-green-700', I18N.openings));
+      card.append(top);
+      const desc = (front.description || '').split('\n')[0].trim();
+      if (desc) card.append(el('p', 'text-sm text-[var(--text-secondary)]', desc));
+      const leads = people.filter((p) => p.role === 'leader');
+      const team = people.filter((p) => p.role !== 'leader');
+      for (const [label, list] of [[I18N.frontLead, leads], [I18N.frontTeam, team]] as const) {
+        if (list.length === 0) continue;
+        const block = el('div', 'grid gap-1.5');
+        block.append(el('span', 'text-[12px] font-bold uppercase tracking-wider text-[var(--text-muted)]', label));
+        const ul = el('ul', 'list-none m-0 p-0 flex flex-wrap gap-3');
+        for (const p of list) {
+          const li = el('li', 'flex items-center gap-2');
+          li.append(avatar(p.name, p.photo_url, 32), el('span', 'text-sm text-[var(--text-primary)]', p.name));
+          ul.append(li);
+        }
+        block.append(ul);
+        card.append(block);
+      }
+      if (people.length === 0) card.append(el('p', 'text-sm text-[var(--text-muted)]', I18N.empty));
+      grid.append(card);
+    }
+    return grid;
+  }
+
+  let sb: any = null;
+  let loaded = false;
+
+  async function load() {
+    // a cada visita, sem cache: o que a função devolve agora é o que a tela mostra
+    const { data, error } = await sb.rpc('get_team_by_function');
+    if (error) {
+      if (error.code === '42501') { loaded = false; only('equipe-gate'); return; }
+      only('equipe-error');
+      return;
+    }
+    if (!data || !Array.isArray(data.rows)) { only('equipe-error'); return; }
+    render(data as TeamData);
+  }
+
+  function onMember(m: unknown) {
+    if (!canExploreTribes(m)) {
+      loaded = false;
+      document.getElementById('equipe-shell')?.replaceChildren();
+      only('equipe-gate');
+      return;
+    }
+    if (loaded) return;
+    loaded = true;
+    only('equipe-loading');
+    load().catch(() => only('equipe-error'));
+  }
+
+  async function boot() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    window.addEventListener('nav:member', ((e: CustomEvent) => onMember(e.detail)) as EventListener);
+    window.addEventListener('nav:guest-with-session', () => onMember(null));
+    document.getElementById('equipe-sign-in')?.addEventListener('click', () => document.dispatchEvent(new CustomEvent('open-auth')));
+    const current = (window as any).navGetMember?.();
+    if (current) { onMember(current); return; }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) only('equipe-gate');
+  }
+  boot();
+</script>

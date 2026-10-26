@@ -54,6 +54,15 @@ if (wall) tiles.push({ id: 'cpmai', n: String(wall.length), label: t('homeV2.tea
     <p class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm">
       <a href="#trail" class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.team.toTrail', lang)} →</a>
       <a href={`${langPrefix}/gamification`} class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.team.toRanking', lang)} →</a>
+      <a href={`${langPrefix}/equipe`} hidden data-team-page class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.team.toTeamPage', lang)} →</a>
     </p>
   </div>
 </section>
+
+<script>
+  import { showForMembers } from '../../lib/tribes/member-only';
+
+  // Pertencimento (GP 26/10/2026): a página Equipe é da área do membro; o link nasce escondido e só aparece com a
+  // sessão de quem a página deixa entrar. O visitante segue vendo só as contagens.
+  showForMembers('[data-team-page]');
+</script>
