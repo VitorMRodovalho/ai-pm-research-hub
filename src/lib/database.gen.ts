@@ -34401,6 +34401,7 @@ export type Database = {
           tier: Database["public"]["Enums"]["tag_tier"]
         }[]
       }
+      get_team_by_function: { Args: never; Returns: Json }
       get_trail_courses: {
         Args: never
         Returns: {
