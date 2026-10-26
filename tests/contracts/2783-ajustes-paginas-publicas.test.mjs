@@ -124,7 +124,8 @@ test('B: o rodapé nasce com o carimbo do build e o nome da versão não o apaga
 // ── C. /about ──────────────────────────────────────────────────────────────────────────────────────────────────
 test('C1: o /about lê nome e quadrante da linha pela fonte da home, na língua da página', () => {
   assert.match(ABOUT, /const lineNames: LineNames = Object\.fromEntries\(\s*\(\(await loadResearchLines\(lang\)\) \?\? \[\]\)\.map\(\(line\) => \[line\.id, \{ name: line\.name, quadrantName: line\.quadrantName \}\]\),\s*\);/);
-  assert.match(ABOUT, /<ImpactPageIsland client:load lang=\{lang\} lineNames=\{lineNames\} text=\{text\} \/>/);
+  // PR4 A6: a ilha passou a receber também os dados lidos no servidor (initialData), afirmado em pr4-about-ssr
+  assert.match(ABOUT, /<ImpactPageIsland client:load lang=\{lang\} lineNames=\{lineNames\} text=\{text\} initialData=\{impact\} \/>/);
   const card = between(ISLAND, '(data.tribes_summary || []).map(', '</a>');
   assert.match(card, /\{lineNames\?\.\[tribe\.id\]\?\.name \|\| tribe\.name\}/);
   assert.match(card, /\{lineNames\?\.\[tribe\.id\]\?\.quadrantName \|\| tribe\.quadrant_name\}/);
