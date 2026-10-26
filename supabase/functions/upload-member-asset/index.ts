@@ -1,5 +1,5 @@
 /**
- * upload-member-asset — authenticated storage write for a member's own photo / signature.
+ * upload-member-asset - authenticated storage write for a member's own photo / signature.
  *
  * WHY THIS EXISTS (2026-06-19):
  *   Direct browser `supabase.storage.from(bucket).upload(...)` for member-photos AND
@@ -10,14 +10,26 @@
  *   members-subquery storage RLS policy does not match the SQL-level result. Rather than
  *   depend on that fragile cross-table storage RLS, the upload is performed here with the
  *   service role (PROVEN to succeed) AFTER authenticating the caller and resolving THEIR OWN
- *   canonical path — so no user can write as another. The caller still updates members
- *   (photo_url / signature_url) via the existing `update_my_profile` RPC, which works.
+ *   canonical path - so no user can write as another.
+ *
+ * PHOTO NAME IS OPAQUE (item interno, 2026-10-26):
+ *   member-photos is a PUBLIC bucket and members.photo_url carries the object URL, so the object
+ *   name is public. It used to be the caller's e-mail; it is now `avatars/<key>.<ext>`, where
+ *   <key> is the caller's row in public.member_photo_keys (128 random bits, no personal data).
+ *   The path is still always the caller's own: the key is looked up by the caller's member id,
+ *   which comes from the caller's JWT, never from the request body.
+ *   For a photo the EF also persists the URL through the caller's OWN `update_my_profile` (same
+ *   writer as before, members + persons) and only then removes the same key under the other
+ *   extension, which is an old photo nobody references. The response says `persisted: true`, and
+ *   the page skips its own update_my_profile call when it sees that.
+ *   Signatures (PRIVATE bucket) keep the e-mail path: out of scope here.
  *
  * Auth: caller's user JWT (sent automatically by supabase-js `functions.invoke`).
  * Body: multipart/form-data with fields `kind` ("photo" | "signature") and `file`.
- * Returns: { success: true, url, path, bucket }
+ * Returns: { success: true, url, path, bucket, persisted }
  */
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { PHOTO_KEY_RE, photoObjectPath, stalePhotoPaths } from "./photo-path.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -38,6 +50,27 @@ const KINDS: Record<string, KindCfg> = {
 };
 
 const extFor = (mime: string) => (mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg");
+
+// deno-lint-ignore no-explicit-any
+type Admin = any;
+
+/** The caller's photo key, created on first use (the migration backfilled every member that existed then). */
+async function ownPhotoKey(admin: Admin, memberId: string): Promise<string> {
+  const read = () =>
+    admin.from("member_photo_keys").select("object_key").eq("member_id", memberId).maybeSingle();
+  let { data, error } = await read();
+  if (error) throw new Error(`photo key lookup failed: ${error.message}`);
+  if (!data) {
+    // object_key comes from the column default (gen_random_bytes), never from here.
+    const ins = await admin.from("member_photo_keys").insert({ member_id: memberId });
+    if (ins.error && ins.error.code !== "23505") throw new Error(`photo key create failed: ${ins.error.message}`);
+    ({ data, error } = await read());
+    if (error) throw new Error(`photo key lookup failed: ${error.message}`);
+  }
+  const key = String(data?.object_key ?? "");
+  if (!PHOTO_KEY_RE.test(key)) throw new Error("photo key missing or malformed");
+  return key;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -69,16 +102,24 @@ Deno.serve(async (req) => {
   if (file.size > cfg.maxBytes) return json({ error: "file too large", max_bytes: cfg.maxBytes }, 413);
   if (!cfg.mimes.includes(file.type)) return json({ error: "unsupported type", got: file.type, allowed: cfg.mimes }, 415);
 
-  // 3) resolve the caller's OWN member record (service role) — path is always the caller's
+  // 3) resolve the caller's OWN member record (service role) - path is always the caller's
   const admin = createClient<any, "public", any>(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: member, error: mErr } = await admin
     .from("members").select("id,email").eq("auth_id", user.id).maybeSingle();
   if (mErr) return json({ error: "member lookup failed", detail: mErr.message }, 500);
-  if (!member?.email) return json({ error: "no member record for caller" }, 403);
+  if (!member?.id) return json({ error: "no member record for caller" }, 403);
 
-  // 4) canonical path (same convention as the legacy FE: email with [@.] -> _)
-  const sanitized = String(member.email).replace(/[@.]/g, "_");
-  const path = `${cfg.prefix}${sanitized}.${extFor(file.type)}`;
+  // 4) canonical path, always derived from the caller's own record
+  let path: string;
+  if (kind === "photo") {
+    try { path = photoObjectPath(await ownPhotoKey(admin, member.id), file.type); }
+    catch (e) { return json({ error: "photo key unavailable", detail: (e as Error).message }, 500); }
+  } else {
+    // signatures: same convention as the legacy FE (email with [@.] -> _), private bucket
+    if (!member.email) return json({ error: "no member record for caller" }, 403);
+    const sanitized = String(member.email).replace(/[@.]/g, "_");
+    path = `${cfg.prefix}${sanitized}.${extFor(file.type)}`;
+  }
 
   // 5) privileged write (service role bypasses the storage RLS that rejects authed uploads)
   const bytes = new Uint8Array(await file.arrayBuffer());
@@ -86,5 +127,16 @@ Deno.serve(async (req) => {
   if (upErr) return json({ error: "upload failed", detail: upErr.message }, 500);
 
   const { data: urlData } = admin.storage.from(cfg.bucket).getPublicUrl(path);
-  return json({ success: true, url: `${urlData.publicUrl}?t=${Date.now()}`, path, bucket: cfg.bucket });
+  const url = `${urlData.publicUrl}?t=${Date.now()}`;
+
+  if (kind !== "photo") return json({ success: true, url, path, bucket: cfg.bucket, persisted: false });
+
+  // 6) photo: persist through the caller's own update_my_profile, THEN drop the stale extension.
+  //    Removing before the URL is saved would leave photo_url pointing at a deleted object.
+  const { data: saved, error: saveErr } = await userClient.rpc("update_my_profile", { p_fields: { photo_url: url } });
+  if (saveErr || (saved as { error?: string } | null)?.error) {
+    return json({ error: "photo stored but profile not updated", detail: saveErr?.message ?? (saved as { error?: string }).error }, 500);
+  }
+  const { error: rmErr } = await admin.storage.from(cfg.bucket).remove(stalePhotoPaths(path));
+  return json({ success: true, url, path, bucket: cfg.bucket, persisted: true, stale_removed: !rmErr });
 });
