@@ -2130,9 +2130,11 @@ const PROFILE_I18N = {
   // Upload a member asset (photo/signature) via the upload-member-asset Edge Function.
   // Direct browser storage uploads are rejected by storage RLS (400) for authenticated users;
   // the EF performs the write with the service role after authenticating the caller. The EF
-  // returns the public URL; the caller persists it via update_my_profile (which works). The
-  // user's JWT is attached automatically by functions.invoke.
-  async function uploadMemberAsset(sb: any, kind: 'photo' | 'signature', file: File): Promise<string> {
+  // returns the public URL. For a photo the EF itself saves it through update_my_profile and
+  // says `persisted: true` (it must save before removing the stale extension); otherwise the
+  // caller persists it via update_my_profile. The user's JWT is attached automatically by
+  // functions.invoke.
+  async function uploadMemberAsset(sb: any, kind: 'photo' | 'signature', file: File): Promise<{ url: string; persisted: boolean }> {
     const fd = new FormData();
     fd.append('kind', kind);
     fd.append('file', file);
@@ -2143,7 +2145,7 @@ const PROFILE_I18N = {
       throw new Error(msg);
     }
     if (!data?.url) throw new Error('upload failed');
-    return data.url as string;
+    return { url: data.url as string, persisted: data.persisted === true };
   }
 
   // ── Photo upload (event delegation — #self-photo-input is re-rendered by renderProfile) ──
@@ -2157,8 +2159,8 @@ const PROFILE_I18N = {
     const member = currentMember || (window as any).navGetMember?.();
     if (!sb || !member) return;
     try {
-      const photoUrl = await uploadMemberAsset(sb, 'photo', file);
-      await rpcChecked(sb, 'update_my_profile', { p_fields: { photo_url: photoUrl } });
+      const { url: photoUrl, persisted } = await uploadMemberAsset(sb, 'photo', file);
+      if (!persisted) await rpcChecked(sb, 'update_my_profile', { p_fields: { photo_url: photoUrl } });
       const avatarEl = document.getElementById('self-avatar');
       if (avatarEl) avatarEl.innerHTML = `<img src="${photoUrl}" class="w-16 h-16 rounded-full object-cover" alt="">`;
       (window as any).toast?.('Foto atualizada!', 'success');
@@ -2199,7 +2201,7 @@ const PROFILE_I18N = {
     const member = (window as any).navGetMember?.();
     if (!sb || !member) return;
     try {
-      const sigUrl = await uploadMemberAsset(sb, 'signature', file);
+      const { url: sigUrl } = await uploadMemberAsset(sb, 'signature', file);
       await rpcChecked(sb, 'update_my_profile', { p_fields: { signature_url: sigUrl } });
       // #753 P1: bucket is private — display via a signed URL, not the raw (now non-resolving) public URL.
       setSigImg(await signOwnSig(sb, sigUrl) || '');
