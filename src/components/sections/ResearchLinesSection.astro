@@ -5,11 +5,13 @@
  * D5 (GP 20/10/2026): o detalhe de cada linha abre aqui mesmo enquanto a camada pública de /tribe/[id] não existe.
  * D8: o filtro por campo lê research_line_fields (get_public_line_fields); com a tabela vazia, o filtro por campo
  * não aparece e nada quebra. A porta "proponha uma linha" e a frase "novas linhas podem abrir" ficam sempre.
- * D3: sem nome de liderança (lideranças só em contagem, na seção "Quem faz").
- * Tudo vem de get_public_research_lines (DB-3): nome, quadrante, texto, entregas, horário e vagas.
+ * Pertencimento (GP 26/10/2026, emenda à D3): a linha mostra, no resumo, a foto e o nome de quem a lidera, e no detalhe
+ * o vídeo de apresentação como link para fora, só de quem autorizou o uso da imagem na Cláusula 11 do Termo de Adesão
+ * (a regra mora em get_public_line_leaders). Sem contato e sem LinkedIn; linha sem consentimento fica sem liderança.
+ * O resto vem de get_public_research_lines (DB-3): nome, quadrante, texto, entregas, horário e vagas.
  */
 import { t, type Lang } from '../../i18n/utils';
-import { loadResearchLines, loadLineFields, loadVerticals } from '../../lib/publicHomeData';
+import { loadResearchLines, loadLineFields, loadVerticals, loadLineLeaders, FACE_PX } from '../../lib/publicHomeData';
 import { formatMeetingSlots } from '../../lib/tribes/public-profile';
 
 interface Props { lang?: Lang; }
@@ -24,7 +26,10 @@ const FIELD_TITLE_KEYS: Record<string, string> = {
   'Negócio': 'model.vertical.business',
   'PMO': 'model.vertical.pmo',
 };
+// a liderança é lida em paralelo com as linhas (a promessa nasce antes e é esperada depois)
+const leadersPending = loadLineLeaders();
 const [lines, pairs, dbVerticals] = await Promise.all([loadResearchLines(lang), loadLineFields(), loadVerticals()]);
+const leadersByLine = await leadersPending;
 const verticals = dbVerticals.map((v) => ({ ...v, title: FIELD_TITLE_KEYS[v.title] ? t(FIELD_TITLE_KEYS[v.title], lang) : v.title }));
 const quadrants = lines
   ? [...new Map(lines.filter((l) => l.quadrant).map((l) => [l.quadrant, l.quadrantName || l.quadrant])).entries()].sort((a, b) => a[0].localeCompare(b[0]))
@@ -64,6 +69,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
             const when = formatMeetingSlots(l.slots, lang);
             const full = l.capacity > 0 && l.members >= l.capacity;
             const lineFields = fieldsByLine.get(l.id) ?? [];
+            const leaders = leadersByLine.get(l.id) ?? [];
+            const pitch = leaders.find((p) => p.video)?.video ?? null;
             return (
               <li data-q={l.quadrant} data-f={lineFields.join(' ')} data-line={l.id}>
                 <details class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl">
@@ -82,6 +89,17 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                       <span>{l.quadrantName}</span>
                       <span>{when ? `${when} (${t('homeV2.lines.brt', lang)})` : t('homeV2.lines.noSchedule', lang)}</span>
                     </span>
+                    {leaders.length > 0 && (
+                      <span class="col-start-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--text-primary)]" data-line-leaders>
+                        <span class="text-[var(--text-secondary)]">{t('homeV2.lines.ledBy', lang)}</span>
+                        {leaders.map((p) => (
+                          <span class="inline-flex items-center gap-2">
+                            {p.photo && <img src={p.photo} alt="" width={FACE_PX} height={FACE_PX} loading="lazy" decoding="async" class="w-10 h-10 rounded-full object-cover bg-[var(--surface-section-cool)]" />}
+                            <b class="font-semibold">{p.name}</b>
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </summary>
                   <div class="px-4 pb-4 sm:pl-[5.5rem] grid gap-2 text-sm text-[var(--text-secondary)]">
                     {l.description && <p>{l.description}</p>}
@@ -90,6 +108,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                         <p class="font-semibold text-[var(--text-primary)]">{t('homeV2.lines.deliverables', lang)}</p>
                         <ul class="list-disc pl-5 m-0 grid gap-1">{l.deliverables.map((d) => <li>{d}</li>)}</ul>
                       </>
+                    )}
+                    {pitch && (
+                      <a href={pitch} target="_blank" rel="noopener" data-line-video
+                         class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.lines.pitchVideo', lang)} ↗</a>
                     )}
                     <a href={`${langPrefix}/tribe/${l.id}`} hidden data-line-page
                        class="inline-flex items-center min-h-[44px] font-bold text-teal no-underline hover:underline">{t('homeV2.lines.linePage', lang)} →</a>

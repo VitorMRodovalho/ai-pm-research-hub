@@ -223,6 +223,64 @@ export async function loadTrailSummary(): Promise<TrailSummary | null> {
   return { population: d.population as number, trailCourses: d.trail_courses as number, completedAll: d.completed_all as number, avgPct: d.avg_pct as number };
 }
 
+// ── Rostos: a liderança de cada linha (get_public_line_leaders) e "Quem faz" (get_public_team_faces) ──────────────
+// Pertencimento (GP 26/10/2026): só aparece quem autorizou o uso da imagem na Cláusula 11 do Termo de Adesão e não
+// revogou no perfil; a regra mora no banco (_member_has_image_consent). Aqui a foto passa por um segundo filtro: só o
+// objeto de nome opaco avatars/<32 hex>.(jpg|png) do bucket member-photos vira imagem, servida pela rendição pequena
+// do endpoint de transformação no host do próprio projeto. Qualquer outro endereço vira "sem foto".
+export const FACE_PX = 40;
+const OPAQUE_PHOTO_RE = /\/storage\/v1\/object\/public\/member-photos\/(avatars\/[0-9a-f]{32}\.(?:jpg|png))(?:\?t=(\d{1,16}))?$/;
+
+/** A rendição de 2x o tamanho exibido, ou null quando a foto não é o objeto de nome opaco. */
+export function facePhotoSrc(url: unknown): string | null {
+  const m = typeof url === 'string' ? url.match(OPAQUE_PHOTO_RE) : null;
+  if (!m) return null;
+  const size = FACE_PX * 2;
+  return `${import.meta.env.PUBLIC_SUPABASE_URL}/storage/v1/render/image/public/member-photos/${m[1]}`
+    + `?width=${size}&height=${size}&resize=cover&quality=70${m[2] ? `&t=${m[2]}` : ''}`;
+}
+
+export interface LineLeader { name: string; photo: string | null; video: string | null }
+const YOUTUBE_RE = /^https:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[A-Za-z0-9_-]{11}$/;
+
+/** Por linha, quem lidera e consentiu: nome, foto opaca e vídeo de apresentação. Linha sem ninguém fica de fora. */
+export async function loadLineLeaders(): Promise<Map<number, LineLeader[]>> {
+  const rows = await rpc<unknown[]>('get_public_line_leaders');
+  const byLine = new Map<number, LineLeader[]>();
+  if (!Array.isArray(rows)) return byLine;
+  for (const r of rows.map((x) => (x ?? {}) as Record<string, any>)) {
+    if (!Number.isInteger(r.tribe_id) || typeof r.leader_name !== 'string' || !r.leader_name.trim()) continue;
+    const entry: LineLeader = {
+      name: r.leader_name.trim(),
+      photo: facePhotoSrc(r.photo_url),
+      video: typeof r.video_url === 'string' && YOUTUBE_RE.test(r.video_url) ? r.video_url : null,
+    };
+    byLine.set(r.tribe_id, [...(byLine.get(r.tribe_id) ?? []), entry]);
+  }
+  return byLine;
+}
+
+export interface TeamFace { name: string; photo: string }
+export interface TeamFaces { faces: Partial<Record<keyof HomeTeam, TeamFace[]>>; focalChapters: string[] }
+export const FACES_PER_GROUP = 8;
+
+/** Até 8 rostos por grupo de "Quem faz", e os capítulos dos pontos focais (que não aparecem com rosto). */
+export async function loadTeamFaces(): Promise<TeamFaces> {
+  const data = await rpc<Record<string, any>>('get_public_team_faces');
+  const faces: TeamFaces['faces'] = {};
+  for (const key of TEAM_KEYS) {
+    if (key === 'chapter_focal_points') continue;
+    const list = Array.isArray(data?.faces?.[key]) ? (data!.faces[key] as unknown[]) : [];
+    faces[key] = list
+      .map((f) => (f ?? {}) as Record<string, any>)
+      .map((f) => ({ name: typeof f.name === 'string' ? f.name.trim() : '', photo: facePhotoSrc(f.photo_url) }))
+      .filter((f): f is TeamFace => f.name !== '' && f.photo !== null)
+      .slice(0, FACES_PER_GROUP);
+  }
+  const chapters = Array.isArray(data?.focal_point_chapters) ? (data!.focal_point_chapters as unknown[]) : [];
+  return { faces, focalChapters: chapters.filter((c): c is string => typeof c === 'string' && c.trim() !== '') };
+}
+
 // ── Capítulos: ano de entrada e sede (get_public_chapter_entries) ────────────────────────────────────────────────
 export interface ChapterEntry { code: string; entryYear: number | null; isHost: boolean }
 

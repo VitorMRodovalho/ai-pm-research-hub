@@ -69,3 +69,32 @@ com a emenda 2, aprovado" (D4), em mensagens do GP no mesmo dia.
   e houver consentimento do convidado externo. O autor do item no feed nao e lido.
 - O guard `tests/contracts/2553-podcast-publico.test.mjs` afirma as chaves publicas exatas do episodio e que o autor
   do item nao e lido.
+
+### Emenda 3 (2026-10-26)
+
+**Ratificacao, palavra por palavra:** "no item 1 sim, pode usar o termo" (o card de cada linha), "todos os grupos
+quem assinou a clausula", seguido de "em acordo" com os quatro ajustes da orquestradora (a fileira de rostos de "Quem
+faz"), e "segue pelo caminho A" (o consentimento de quem assinou versao anterior), em mensagens do GP no mesmo dia.
+
+- **D1:** o card de cada linha de pesquisa e a fileira de rostos de "Quem faz", na home, passam a se apoiar no
+  consentimento da Clausula 11 do Termo de Adesao ao Servico Voluntario (art. 7o, I, da LGPD), e nao no legitimo
+  interesse. O filtro e por pessoa, pela decisao explicita mais recente registrada em `consent_records`
+  (`image_voice_publicity`), o mesmo registro que a liberacao de comunicacao ja le: autorizacao ativa vale sim,
+  revogacao vale nao; sem decisao registrada, vale o termo assinado na versao que traz a clausula. A fonte unica e
+  `_member_has_image_consent`. O nome vai com a imagem, como parte da divulgacao do trabalho voluntario. Caminho A:
+  quem assinou versao anterior da o consentimento no perfil, vendo o texto da Clausula 11, pelas funcoes do registro que
+  ja existem; o termo nao e reemitido. A revogacao e feita no perfil a qualquer momento; autorizar de novo depois de
+  revogar grava uma linha nova, e o registro nunca e apagado. Como a base deixa de ser o legitimo interesse, o card e a
+  fileira saem da trava do LIA da Emenda 1. O caminho do legitimo interesse continua valendo para nome sem imagem, onde
+  se aplica (autoria de obra publicada, papel institucional sem foto), com as travas da Emenda 1.
+- **D3 da home v2** (citada no codigo como de 20 e de 21/10/2026: gestao e liderancas so em contagem na virada):
+  emendada. Em "Quem faz", cada grupo mostra ate oito rostos (foto e nome) de quem consentiu e um "+N" que e a
+  contagem da home menos os rostos mostrados. Os pesquisadores que consentiram aparecem com rosto na fileira publica;
+  os demais, so na contagem. As presidencias e os pontos focais dos capitulos nao sao voluntarios do termo: aparecem
+  pelo nome do capitulo, sem rosto. A taxonomia em quatro grupos nao esta decidida; a fileira usa os sete grupos que a
+  home ja conta.
+- **Foto:** so o objeto de nome opaco (`avatars/<32 hex>`) do bucket publico de fotos de membro; qualquer outro
+  endereco sai sem foto, seja qual for a ordem de merge com a troca para nomes opacos.
+- **Saida:** na revogacao ou ao deixar o papel, o nome, a foto e o video saem no mesmo dia (leitura ao vivo, sem cache
+  alem do minuto do servidor).
+- Os guards `pertencimento-consentimento-clausula-11` e `2553-home-v2-virada` (teste E, emendado) afirmam a regra.

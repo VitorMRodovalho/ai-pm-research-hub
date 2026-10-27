@@ -1,20 +1,23 @@
 ---
 /**
- * #2553 PR 2: "Quem faz", por função e em contagem (D3, GP 21/10/2026: gestão e lideranças só em contagem na virada;
- * os nomes dos papéis da D1 entram depois, numa PR própria). Pesquisadores contam a equipe de pesquisa, a mesma do hero;
- * a trilha conta a mesma população (D9); o número de certificados é o do mural, logo abaixo, na escada.
- * Fontes: get_public_home_team, get_public_trail_summary, get_public_cpmai_wall, get_homepage_stats (capítulos).
+ * #2553 PR 2: "Quem faz", por função e em contagem. Pesquisadores contam a equipe de pesquisa, a mesma do hero; a trilha
+ * conta a mesma população (D9); o número de certificados é o do mural, logo abaixo, na escada.
+ * Pertencimento (GP 26/10/2026, emenda à D3): cada grupo ganha até 8 rostos (foto e nome) de quem autorizou o uso da
+ * imagem na Cláusula 11 do Termo de Adesão, e um "+N" que é a contagem da home menos os rostos mostrados. Presidências
+ * e pontos focais não são voluntários do termo: aparecem pelos nomes dos capítulos, sem rosto.
+ * Fontes: get_public_home_team, get_public_team_faces, get_public_trail_summary, get_public_cpmai_wall,
+ * get_homepage_stats (capítulos).
  */
 import { t, type Lang } from '../../i18n/utils';
 import type { HomeStats } from '../../lib/homeStats';
-import { loadHomeTeam, loadTrailSummary, loadCpmaiWall } from '../../lib/publicHomeData';
+import { loadHomeTeam, loadTeamFaces, loadTrailSummary, loadCpmaiWall, FACE_PX, type TeamFace } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; stats?: HomeStats | null; }
 const { lang = 'pt-BR', stats = null } = Astro.props;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
-const [team, trail, wall] = await Promise.all([loadHomeTeam(), loadTrailSummary(), loadCpmaiWall()]);
-type Tile = { n: string; label: string; id: string };
+const [team, faces, trail, wall] = await Promise.all([loadHomeTeam(), loadTeamFaces(), loadTrailSummary(), loadCpmaiWall()]);
+type Tile = { n: string; label: string; id: string; faces?: TeamFace[]; more?: number; chapters?: string[] };
 const tiles: Tile[] = [];
 if (team) {
   tiles.push({ id: 'researchers', n: String(team.researchers), label: stats?.chapters != null
@@ -26,6 +29,13 @@ if (team) {
   if (team.curators > 0) tiles.push({ id: 'curators', n: String(team.curators), label: t('homeV2.team.curators', lang) });
   tiles.push({ id: 'hub_members', n: String(team.hub_members), label: t('homeV2.team.hubs', lang) });
   tiles.push({ id: 'chapter_focal_points', n: String(team.chapter_focal_points), label: t('homeV2.team.focalPoints', lang) });
+  // os rostos de cada grupo, e o "+N" pela contagem da home (nunca pela lista de rostos)
+  for (const tile of tiles) {
+    if (tile.id === 'chapter_focal_points') { tile.chapters = faces.focalChapters; continue; }
+    const shown = faces.faces[tile.id as keyof typeof faces.faces] ?? [];
+    tile.faces = shown;
+    tile.more = Math.max(0, team[tile.id as keyof typeof team] - shown.length);
+  }
 }
 if (trail) tiles.push({ id: 'trail', n: t('homeV2.team.trailCount', lang).replace('{done}', String(trail.completedAll)).replace('{of}', String(trail.population)),
   label: t('homeV2.team.trail', lang).replace('{courses}', String(trail.trailCourses)) });
@@ -44,6 +54,19 @@ if (wall) tiles.push({ id: 'cpmai', n: String(wall.length), label: t('homeV2.tea
           <li class="border-l-[3px] border-[#05BFE0] pl-3 py-1 grid gap-0.5" data-team={tile.id}>
             <b class="text-[22px] tabular-nums text-[var(--text-primary)]">{tile.n}</b>
             <span class="text-sm text-[var(--text-secondary)]">{tile.label}</span>
+            {tile.faces && tile.faces.length > 0 && (
+              <ul class="list-none m-0 mt-2 p-0 flex flex-wrap items-center gap-1.5" data-team-faces aria-label={t('homeV2.team.facesAria', lang)}>
+                {tile.faces.map((f) => (
+                  <li><img src={f.photo} alt={f.name} title={f.name} width={FACE_PX} height={FACE_PX} loading="lazy" decoding="async" class="w-10 h-10 rounded-full object-cover bg-[var(--surface-section-cool)] border-2 border-[var(--surface-card)]" /></li>
+                ))}
+                {(tile.more ?? 0) > 0 && (
+                  <li class="text-[13px] font-semibold text-[var(--text-secondary)] pl-1" data-team-more aria-label={t('homeV2.team.moreAria', lang).replace('{n}', String(tile.more))}>+{tile.more}</li>
+                )}
+              </ul>
+            )}
+            {tile.chapters && tile.chapters.length > 0 && (
+              <p class="m-0 mt-1 text-[13px] text-[var(--text-secondary)]" data-team-chapters>{t('homeV2.team.focalChapters', lang).replace('{list}', tile.chapters.join(', '))}</p>
+            )}
           </li>
         ))}
       </ul>

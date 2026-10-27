@@ -228,6 +228,16 @@ const PROFILE_I18N = {
   gamOptOutHint: t('profile.gamOptOutHint', lang),
   gamOptOutSaved: t('profile.gamOptOutSaved', lang),
   gamOptOutError: t('profile.gamOptOutError', lang),
+  // Pertencimento (GP 26/10/2026): uso de imagem e voz pela Cláusula 11 do Termo de Adesão
+  imageConsentLabel: t('profile.imageConsentLabel', lang),
+  imageConsentHint: t('profile.imageConsentHint', lang),
+  imageConsentGrantLabel: t('profile.imageConsentGrantLabel', lang),
+  imageConsentClauseLead: t('profile.imageConsentClauseLead', lang),
+  imageConsentOptional: t('profile.imageConsentOptional', lang),
+  imageConsentUnavailable: t('profile.imageConsentUnavailable', lang),
+  imageConsentOn: t('profile.imageConsentOn', lang),
+  imageConsentOff: t('profile.imageConsentOff', lang),
+  imageConsentError: t('profile.imageConsentError', lang),
   gpManagedFields: t('profile.gpManagedFields', lang),
   lgpdRightsTitle: t('profile.lgpdRightsTitle', lang),
   lgpdRightsSubtitle: t('profile.lgpdRightsSubtitle', lang),
@@ -1888,6 +1898,11 @@ const PROFILE_I18N = {
               <input type="checkbox" id="self-gamification-optout" class="mt-0.5" ${m.gamification_opt_out ? 'checked' : ''}>
               <span class="text-[.78rem] text-[var(--text-primary)]">${PROFILE_I18N.gamOptOutLabel} <span class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.gamOptOutHint}</span></span>
             </label>
+            <div id="self-image-consent-clause" class="hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-3 space-y-1.5 text-[.7rem] text-[var(--text-secondary)]"></div>
+            <label class="flex items-start gap-2 cursor-pointer" id="self-image-consent-row">
+              <input type="checkbox" id="self-image-consent" class="mt-0.5" disabled>
+              <span class="text-[.78rem] text-[var(--text-primary)]"><span id="self-image-consent-label">${PROFILE_I18N.imageConsentLabel}</span> <span class="text-[.65rem] text-[var(--text-muted)]">${PROFILE_I18N.imageConsentHint}</span></span>
+            </label>
             ${m.allow_state_in_public_map ? `
             <label class="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" id="self-allow-state-map" class="mt-0.5" checked>
@@ -2074,6 +2089,7 @@ const PROFILE_I18N = {
     // Load notification preferences + linked providers after render
     loadNotifPrefs();
     loadLinkedProviders();
+    loadImageConsent();
 
     // Deep-link from the /workspace entry-chapter nudge (EntryChapterNudge island):
     // scroll the entry-chapter card into view once. Affiliations are loaded by loadExtras
@@ -2488,7 +2504,69 @@ const PROFILE_I18N = {
     (window as any).toast?.(PROFILE_I18N.primaryChanged.replace('{email}', promoted), 'success');
   }
 
+  // Pertencimento (GP 26/10/2026, caminho A): o interruptor da Cláusula 11 mostra o consentimento como o banco o lê
+  // (get_my_image_consent). Quem tem a cláusula no termo assinado vê o consentimento ativo e pode revogar. Quem assinou
+  // antes da cláusula vê o texto dela (caput, § 1º e § 2º da versão atual) e autoriza aqui mesmo; sem o texto, não há
+  // como autorizar. Autorizar e revogar passam pelas funções do ledger que já existem (grant/revoke_image_voice_consent).
+  let imageClauseVersion = '';
+  async function loadImageConsent() {
+    const sb = (window as any).navGetSb?.();
+    const box = document.getElementById('self-image-consent') as HTMLInputElement | null;
+    const label = document.getElementById('self-image-consent-label');
+    const clauseBox = document.getElementById('self-image-consent-clause');
+    if (!sb || !box) return;
+    const { data, error } = await sb.rpc('get_my_image_consent');
+    if (error || !data) return;
+    const withTerm = data.term_has_clause === true;
+    const paragraphs = Array.isArray(data.clause?.paragraphs) ? data.clause.paragraphs.filter((p: unknown) => typeof p === 'string') : [];
+    imageClauseVersion = typeof data.clause?.version === 'string' ? data.clause.version : '';
+    const canGrant = withTerm || (paragraphs.length === 3 && imageClauseVersion !== '');
+    box.checked = data.active === true;
+    box.disabled = !(data.active === true || canGrant);
+    if (label) label.textContent = withTerm ? PROFILE_I18N.imageConsentLabel : PROFILE_I18N.imageConsentGrantLabel;
+    if (clauseBox) {
+      clauseBox.replaceChildren();
+      clauseBox.classList.toggle('hidden', withTerm);
+      if (!withTerm) {
+        const lead = document.createElement('p');
+        lead.className = 'font-semibold text-[var(--text-primary)]';
+        lead.textContent = PROFILE_I18N.imageConsentClauseLead;
+        clauseBox.append(lead);
+        for (const text of paragraphs.length === 3 ? paragraphs : [PROFILE_I18N.imageConsentUnavailable]) {
+          const para = document.createElement('p');
+          para.textContent = text;
+          clauseBox.append(para);
+        }
+        const optional = document.createElement('p');
+        optional.className = 'italic';
+        optional.textContent = PROFILE_I18N.imageConsentOptional;
+        clauseBox.append(optional);
+      }
+    }
+  }
+
+  document.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.id !== 'self-image-consent') return;
+    const active = !!target.checked;
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { target.checked = !active; return; }
+    target.disabled = true;
+    try {
+      // rpcChecked lança na falha de rede e na recusa do corpo (#2704, #2708)
+      if (active) await rpcChecked(sb, 'grant_image_voice_consent', { p_evidence: { displayed_version: `${imageClauseVersion || 'termo-sem-texto'}:${lang}` } });
+      else await rpcChecked(sb, 'revoke_image_voice_consent', { p_reason: 'perfil: Cláusula 11' });
+      (window as any).toast?.(active ? PROFILE_I18N.imageConsentOn : PROFILE_I18N.imageConsentOff, 'success');
+    } catch (err: any) {
+      target.checked = !active;
+      (window as any).toast?.(`${PROFILE_I18N.imageConsentError}${err?.message || ''}`, 'error');
+    } finally {
+      loadImageConsent();
+    }
+  });
+
   // ── Notification preferences ──
+
   async function loadNotifPrefs() {
     const sb = (window as any).navGetSb?.();
     if (!sb || !currentMember) return;

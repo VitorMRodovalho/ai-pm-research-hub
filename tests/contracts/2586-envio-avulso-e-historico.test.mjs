@@ -151,7 +151,9 @@ test('#2586 política v2.3: a página declara a pessoa não membro (finalidade e
     's6ret.row14.data', 's6ret.row14.retention', 's6ret.row14.after'];
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
-    assert.match(dict, /'privacy\.version': 'v2\.3'/, `${lang} sem v2.3`);
+    // a versão sobe a cada revisão da política (26/10: v2.4, liderança das linhas e rostos de "Quem faz"); o que
+    // este guard protege é não voltar para antes da v2.3, que trouxe a pessoa não membro
+    assert.match(dict, /'privacy\.version': 'v2\.([3-9]|[1-9]\d+)'/, `${lang} antes da v2.3`);
     for (const k of keys) assert.match(dict, new RegExp(`'privacy\\.${reEsc(k)}': '[^']+`), `${lang} sem ${k}`);
     // decisão do GP (10/10): a linha 10 (convidados) passa a declarar o que a varredura executa, 1 ano e
     // anonimização; a promessa antiga de 30 dias não tinha executor e não pode voltar

@@ -31122,6 +31122,7 @@ export type Database = {
         }[]
       }
       _current_affiliation_terms_version: { Args: never; Returns: string }
+      _current_term_image_clause: { Args: never; Returns: Json }
       _cycle_window: {
         Args: { p_cycle?: number }
         Returns: {
@@ -31289,6 +31290,11 @@ export type Database = {
       }
       _management_daily_digest_cron: { Args: never; Returns: Json }
       _mask_email: { Args: { p_email: string }; Returns: string }
+      _member_current_term: { Args: { p_member_id: string }; Returns: string }
+      _member_has_image_consent: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       _member_operational_since: {
         Args: { p_member_id: string }
         Returns: string
@@ -31296,6 +31302,10 @@ export type Database = {
       _member_photo_swap_url: {
         Args: { p_from_url: string; p_member_id: string; p_to_url: string }
         Returns: Json
+      }
+      _member_term_has_image_clause: {
+        Args: { p_member_id: string }
+        Returns: boolean
       }
       _notify_drive_grant_failure: {
         Args: {
@@ -31363,6 +31373,7 @@ export type Database = {
         Args: { p_chain_id: string; p_gate_kind: string }
         Returns: boolean
       }
+      _public_member_photo_url: { Args: { p_url: string }; Returns: string }
       _publication_slugify: { Args: { p_text: string }; Returns: string }
       _purge_cron_job_run_details: {
         Args: {
@@ -33965,6 +33976,7 @@ export type Database = {
       get_my_entry_chapter_diagnosis: { Args: never; Returns: Json }
       get_my_evaluation_feedback: { Args: never; Returns: Json }
       get_my_gamification_stats: { Args: never; Returns: Json }
+      get_my_image_consent: { Args: never; Returns: Json }
       get_my_meetings: {
         Args: { p_days_back?: number; p_days_forward?: number }
         Returns: {
@@ -34212,6 +34224,15 @@ export type Database = {
           vertical_title: string
         }[]
       }
+      get_public_line_leaders: {
+        Args: never
+        Returns: {
+          leader_name: string
+          photo_url: string
+          tribe_id: number
+          video_url: string
+        }[]
+      }
       get_public_platform_stats: { Args: never; Returns: Json }
       get_public_podcast_episodes: { Args: { p_limit?: number }; Returns: Json }
       get_public_precise_country_reach: {
@@ -34273,6 +34294,7 @@ export type Database = {
           region_code: string
         }[]
       }
+      get_public_team_faces: { Args: never; Returns: Json }
       get_public_trail_ranking: {
         Args: never
         Returns: {
