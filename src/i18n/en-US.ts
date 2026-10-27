@@ -1565,7 +1565,7 @@ const enUS: Record<string, string> = {
   'gamification.cert.downloaded': 'Downloaded',
   'gamification.cert.search': 'Search by name, title or code',
   'cpmai.title': "CPMAI Study Group · Pilot",
-  'cpmai.subtitle': "AI & PM Research Hub study group on the CPMAI methodology, in light of PMI standards. It is not an exam prep course.",
+  'cpmai.subtitle': "AI & PM Research Hub study group on the CPMAI methodology, in light of PMI standards. It is not an exam prep course. The pilot runs in Portuguese.",
   'cpmai.disclaimer': "This study group is an initiative of the AI & PM Research Hub and does NOT replace the official 21-hour PMI course, which is a mandatory prerequisite to schedule the PMI-CPMAI™ exam.",
   'cpmai.restricted': "This page is only for study group participants and management. Joining the group is handled by the Hub management: contact them if you want to take part.",
   'cpmai.not_found': "The study group is not available yet.",

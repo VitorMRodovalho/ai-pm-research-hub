@@ -1565,7 +1565,7 @@ const esLATAM: Record<string, string> = {
   'gamification.cert.downloaded': 'Descargado',
   'gamification.cert.search': 'Buscar por nombre, título o código',
   'cpmai.title': "Grupo de Estudio CPMAI · Piloto",
-  'cpmai.subtitle': "Grupo de estudio del Núcleo IA & GP sobre la metodología CPMAI, a la luz de los estándares del PMI. No es un curso preparatorio para el examen.",
+  'cpmai.subtitle': "Grupo de estudio del Núcleo IA & GP sobre la metodología CPMAI, a la luz de los estándares del PMI. No es un curso preparatorio para el examen. El piloto se realiza en portugués.",
   'cpmai.disclaimer': "Este grupo de estudio es una iniciativa del Núcleo IA & GP y NO reemplaza el curso oficial del PMI de 21 horas, que es un prerrequisito obligatorio para agendar el examen PMI-CPMAI™.",
   'cpmai.restricted': "Esta página es solo para participantes del grupo de estudio y para la gestión. El ingreso al grupo lo realiza la gestión del Núcleo: contáctala si quieres participar.",
   'cpmai.not_found': "El grupo de estudio aún no está disponible.",
