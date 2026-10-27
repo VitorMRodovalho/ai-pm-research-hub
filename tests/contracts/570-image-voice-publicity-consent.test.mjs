@@ -28,6 +28,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000298_570_image_voice_publicity_consent_mechanism.sql');
@@ -70,8 +71,10 @@ test('#570 static: grant_image_voice_consent is SECDEF, member-scoped, idempoten
 
 // ── STATIC: revoke_image_voice_consent — sets revoked_at, NO retroactive effect, no delete ──
 test('#570 static: revoke sets revoked_at on the active row with no retroactive effect (no delete)', () => {
-  assert.match(body, /CREATE OR REPLACE FUNCTION public\.revoke_image_voice_consent\(p_reason text DEFAULT NULL\)/);
-  const block = body.slice(body.indexOf('CREATE OR REPLACE FUNCTION public.revoke_image_voice_consent'));
+  // the CURRENT capture, not migration 298: pertencimento (GP 26/10/2026, caminho A) redefines revoke with one more
+  // branch (a row born revoked when the member has no decision yet), and every property below must still hold there
+  const block = latestFunctionCapture(ROOT, 'revoke_image_voice_consent').block;
+  assert.match(block, /CREATE OR REPLACE FUNCTION public\.revoke_image_voice_consent\(p_reason text DEFAULT NULL\)/);
   assert.match(block, /SECURITY DEFINER/);
   assert.match(block, /UPDATE public\.consent_records[\s\S]*?SET revoked_at = now\(\)/, 'revocation stamps revoked_at');
   assert.match(block, /revoked_at IS NULL/, 'only the active row is revoked');

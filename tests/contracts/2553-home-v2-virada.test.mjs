@@ -5,7 +5,8 @@
 //   B. D3: nenhuma leitura de nome de pessoa na home (public_members, leaderboard, ranking da trilha);
 //   C. D1 e D2: "Candidatar-me" abre o formulário de interesse, sem vaga do VEP, com "entrada contínua";
 //   D. D11: a frase da relação com o PMI é a versão A aprovada, nos 3 idiomas; a do problema e a de PDUs não têm número;
-//   E. D8: o filtro por campo só aparece com vínculo cadastrado; a linha cheia diz "completa";
+//   E. D8: o filtro por campo só aparece com vínculo cadastrado; a linha cheia diz "completa"; e, pela emenda à D3
+//      (GP 26/10/2026), a liderança da linha só vem da leitora com consentimento (get_public_line_leaders), sem contato;
 //   F. as âncoras da home antiga levam a um alvo que existe;
 //   G. toda chave de texto que as seções novas usam existe nos 3 dicionários.
 import { describe, it } from 'node:test';
@@ -102,7 +103,13 @@ describe('#2553 a virada da home', () => {
     assert.match(lines, /const full = l\.capacity > 0 && l\.members >= l\.capacity;/);
     assert.match(lines, /\{full \? t\('homeV2\.lines\.full', lang\) : t\('homeV2\.lines\.seats', lang\)/);
     assert.match(lines, /\{when \? `\$\{when\} \(\$\{t\('homeV2\.lines\.brt', lang\)\}\)` : t\('homeV2\.lines\.noSchedule', lang\)\}/);
-    assert.doesNotMatch(lines, /leader|linkedin|photo/i, 'D3: sem nome de liderança na lista');
+    // Emenda à D3 (GP 26/10/2026): a liderança aparece, só pela leitora com o consentimento da Cláusula 11, e o
+    // vídeo é um link para fora (clique para tocar, decisão V de 20/10), nunca um player embutido
+    assert.match(lines, /^import \{[^}]*\bloadLineLeaders\b[^}]*\} from '\.\.\/\.\.\/lib\/publicHomeData';$/m);
+    assert.match(lines, /const leadersPending = loadLineLeaders\(\);\n[^\n]*\nconst leadersByLine = await leadersPending;/);
+    assert.doesNotMatch(lines, /linkedin|e-?mail|phone|whatsapp|<iframe|navGetSb|\.rpc\(|\.from\(/i, 'D3 emendada: a liderança só vem de get_public_line_leaders');
+    assert.match(lines, /<a href=\{pitch\} target="_blank" rel="noopener" data-line-video\b/);
+    assert.match(read('src/lib/publicHomeData.ts'), /export async function loadLineLeaders\(\): Promise<Map<number, LineLeader\[\]>> \{\s+const rows = await rpc<unknown\[\]>\('get_public_line_leaders'\);/);
   });
 
   it('F: as âncoras da home antiga levam a um alvo que existe', () => {
