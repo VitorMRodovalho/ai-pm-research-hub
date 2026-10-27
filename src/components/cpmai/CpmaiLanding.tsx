@@ -72,7 +72,7 @@ export default function CpmaiLanding() {
       <div className="bg-gradient-to-br from-navy to-purple-900 rounded-2xl p-8 text-white">
         <div className="text-xs font-bold uppercase tracking-wider text-white/50 mb-2">PMI-CPMAI™</div>
         <h1 className="text-3xl font-extrabold mb-2">{t('cpmai.title', 'Grupo de Estudos CPMAI · Piloto')}</h1>
-        <p className="text-white/70 text-sm max-w-xl">{t('cpmai.subtitle', 'Grupo de estudos do Núcleo IA & GP para a certificação PMI-CPMAI™, em fase piloto.')}</p>
+        <p className="text-white/70 text-sm max-w-xl">{t('cpmai.subtitle', 'Grupo de estudos do Núcleo IA & GP sobre a metodologia CPMAI, à luz dos padrões do PMI. Não é curso preparatório para a prova.')}</p>
         {enrolled && (
           <div className="mt-4 px-4 py-2 rounded-lg bg-green-500/20 border border-green-400/30 text-green-300 text-sm font-semibold inline-block">
             ✅ {t('cpmai.enrolled', 'Participante')}

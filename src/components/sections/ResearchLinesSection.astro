@@ -9,6 +9,8 @@
  * o vídeo de apresentação como link para fora, só de quem autorizou o uso da imagem na Cláusula 11 do Termo de Adesão
  * (a regra mora em get_public_line_leaders). Sem contato e sem LinkedIn; linha sem consentimento fica sem liderança.
  * O resto vem de get_public_research_lines (DB-3): nome, quadrante, texto, entregas, horário e vagas.
+ * B3 (GP 26/10/2026): a linha que só tem a liderança aparece "em formação", sem a contagem de vagas, que soa como
+ * convite para se candidatar a uma vaga que ainda não abriu. Quando a primeira pessoa entra, a contagem volta sozinha.
  */
 import { t, type Lang } from '../../i18n/utils';
 import { loadResearchLines, loadLineFields, loadVerticals, loadLineLeaders, FACE_PX } from '../../lib/publicHomeData';
@@ -68,6 +70,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           {lines.map((l) => {
             const when = formatMeetingSlots(l.slots, lang);
             const full = l.capacity > 0 && l.members >= l.capacity;
+            const forming = l.members <= 1;
             const lineFields = fieldsByLine.get(l.id) ?? [];
             const leaders = leadersByLine.get(l.id) ?? [];
             const pitch = leaders.find((p) => p.video)?.video ?? null;
@@ -79,9 +82,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
                     <span class="font-bold text-[var(--text-primary)]">{l.name}</span>
                     <span class="col-start-2 sm:col-start-3 sm:row-start-1 sm:row-span-2 flex flex-wrap sm:flex-col sm:items-end gap-1.5">
                       {lineFields.map((id) => <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-orange/10 text-[var(--color-orange-deep)]">{fieldTitle.get(id)}</span>)}
-                      {l.capacity > 0 && (
-                        <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-primary)] whitespace-nowrap">
-                          {full ? t('homeV2.lines.full', lang) : t('homeV2.lines.seats', lang).replace('{n}', String(l.members)).replace('{max}', String(l.capacity))}
+                      {(forming || l.capacity > 0) && (
+                        <span class="text-[12px] font-semibold px-2.5 py-0.5 rounded-full bg-[var(--surface-section-cool)] text-[var(--text-primary)] whitespace-nowrap" data-line-state={forming ? 'forming' : full ? 'full' : 'seats'}>
+                          {forming ? t('homeV2.lines.forming', lang) : full ? t('homeV2.lines.full', lang) : t('homeV2.lines.seats', lang).replace('{n}', String(l.members)).replace('{max}', String(l.capacity))}
                         </span>
                       )}
                     </span>

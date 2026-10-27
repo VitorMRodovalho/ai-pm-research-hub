@@ -3,10 +3,12 @@
 // O guard afirma, no código que a home RENDERIZA (a árvore que index.astro desce, não os arquivos soltos):
 //   A. a ordem das seções e a saída das seções de membro (ranking, mosaico, regras, recursos, braços);
 //   B. D3: nenhuma leitura de nome de pessoa na home (public_members, leaderboard, ranking da trilha);
-//   C. D1 e D2: "Candidatar-me" abre o formulário de interesse, sem vaga do VEP, com "entrada contínua";
+//   C. D1 e D2: "Candidatar-me" abre o formulário de interesse, sem vaga do VEP; B4 (GP 26/10): o interesse é
+//      contínuo e a entrada é por turma, depois do workshop de onboarding;
 //   D. D11: a frase da relação com o PMI é a versão A aprovada, nos 3 idiomas; a do problema e a de PDUs não têm número;
 //   E. D8: o filtro por campo só aparece com vínculo cadastrado; a linha cheia diz "completa"; e, pela emenda à D3
 //      (GP 26/10/2026), a liderança da linha só vem da leitora com consentimento (get_public_line_leaders), sem contato;
+//      B3 (GP 26/10): a linha que só tem a liderança diz "em formação", sem contagem de vagas;
 //   F. as âncoras da home antiga levam a um alvo que existe;
 //   G. toda chave de texto que as seções novas usam existe nos 3 dicionários.
 import { describe, it } from 'node:test';
@@ -70,7 +72,7 @@ describe('#2553 a virada da home', () => {
     assert.deepEqual(offenders.map((f) => f.replace(`${ROOT}/`, '')), []);
   });
 
-  it('C: D1 e D2: as três portas abrem o formulário de interesse, cada uma com o seu papel, e a entrada é contínua', () => {
+  it('C: D1 e D2: as três portas abrem o formulário de interesse, cada uma com o seu papel; B4: entrada por turma', () => {
     const join = S('JoinSection.astro');
     for (const role of ['researcher', 'chapter', 'partner']) {
       assert.match(join, new RegExp(`<ApplyInterest client:visible roleInterest="${role}" source="home-join"`), role);
@@ -78,10 +80,15 @@ describe('#2553 a virada da home', () => {
     assert.match(join, /<article id="join-institutions"[^>]*data-door="chapter">/);
     assert.doesNotMatch(join, /volunteer\.pmi\.org/);
     assert.match(read('src/lib/interestPayload.ts'), /export type InterestRole = 'researcher' \| 'leader' \| 'chapter' \| 'partner';/);
-    // D2: o mesmo status nos 3 idiomas (en revisado pela orquestradora em 22/10: "Rolling admission")
-    const CONTINUOUS = { 'pt-BR': /^Entrada contínua:/, 'en-US': /^Rolling admission:/, 'es-LATAM': /^Entrada continua:/ };
+    // B4 (GP 26/10/2026) substitui o "Entrada contínua" de D2: não há prazo para manifestar interesse, mas a entrada
+    // é por turma, depois do workshop de onboarding (decisão da gestão de 05/10). O mesmo status nos 3 idiomas.
+    const COHORT = {
+      'pt-BR': /^Interesse contínuo: não há prazo para se candidatar\. A entrada é por turma, depois do workshop de onboarding\.$/,
+      'en-US': /^Ongoing interest: there is no deadline to apply\. People join in cohorts, after the onboarding workshop\.$/,
+      'es-LATAM': /^Interés continuo: no hay plazo para postularse\. El ingreso es por cohorte, después del taller de onboarding\.$/,
+    };
     for (const [lang, dict] of Object.entries(DICTS)) {
-      assert.match(value(dict, 'homeV2.join.subtitle') ?? '', CONTINUOUS[lang], `${lang}: status de entrada contínua ausente`);
+      assert.match(value(dict, 'homeV2.join.subtitle') ?? '', COHORT[lang], `${lang}: status de entrada por turma ausente`);
     }
   });
 
@@ -97,11 +104,13 @@ describe('#2553 a virada da home', () => {
     assert.match(S('JoinSection.astro'), /const CCR_HANDBOOK = 'https:\/\/www\.pmi\.org\/[^']+ccr-certification-requirements-handbook\.pdf';/);
   });
 
-  it('E: D8 e vagas: filtro por campo só com vínculo; linha cheia diz "completa"', () => {
+  it('E: D8 e vagas: filtro por campo só com vínculo; linha cheia diz "completa"; só a liderança diz "em formação"', () => {
     const lines = S('ResearchLinesSection.astro');
     assert.match(lines, /const fields = pairs\.length > 0 \? verticals : \[\];/);
     assert.match(lines, /const full = l\.capacity > 0 && l\.members >= l\.capacity;/);
-    assert.match(lines, /\{full \? t\('homeV2\.lines\.full', lang\) : t\('homeV2\.lines\.seats', lang\)/);
+    assert.match(lines, /const forming = l\.members <= 1;/);
+    assert.match(lines, /\{\(forming \|\| l\.capacity > 0\) && \(/, 'B3: a linha em formação mostra o selo mesmo sem capacidade');
+    assert.match(lines, /\{forming \? t\('homeV2\.lines\.forming', lang\) : full \? t\('homeV2\.lines\.full', lang\) : t\('homeV2\.lines\.seats', lang\)/);
     assert.match(lines, /\{when \? `\$\{when\} \(\$\{t\('homeV2\.lines\.brt', lang\)\}\)` : t\('homeV2\.lines\.noSchedule', lang\)\}/);
     // Emenda à D3 (GP 26/10/2026): a liderança aparece, só pela leitora com o consentimento da Cláusula 11, e o
     // vídeo é um link para fora (clique para tocar, decisão V de 20/10), nunca um player embutido
