@@ -9,7 +9,7 @@ import PrivacyGateModal from '../components/privacy/PrivacyGateModal';
 import MilestoneCelebration from '../components/milestones/MilestoneCelebration';
 import { t, getRoleLabelsMap, localePath, type Lang } from '../i18n/utils';
 import { getPlaylistUrl } from '../data/youtube-playlists';
-import { SEO_CANONICAL_ORIGIN } from '../lib/canonical';
+import { SEO_CANONICAL_HOST, SEO_CANONICAL_ORIGIN } from '../lib/canonical';
 import { loadPublicChannels, type ChannelKey } from '../lib/publicChannels';
 import { languageAlternates, type AlternatesMode } from '../lib/hreflang';
 
@@ -36,6 +36,9 @@ const {
 } = Astro.props;
 
 const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
+// #2806: o app so e instalavel no host SEO canonico. O service worker e a inscricao de push ficam presos a origem e o
+// login e por endereco; anunciar o manifest em outro host instalaria um segundo app com outra sessao.
+const isInstallHost = Astro.url.host === SEO_CANONICAL_HOST;
 
 // og:image precisa de URL ABSOLUTA (WhatsApp/Telegram não resolvem path
 // relativo); Astro.url carrega o host canônico em runtime.
@@ -96,6 +99,9 @@ const CHANNEL_ICON: Record<ChannelKey, { label: string; path: string }> = {
   <meta name="twitter:image" content={ogImage} />
   <slot name="head" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  {isInstallHost && <link rel="manifest" href="/manifest.webmanifest" />}
+  {isInstallHost && <meta name="theme-color" content="#003B5C" />}
+  {isInstallHost && <link rel="apple-touch-icon" href="/icons/app-192.png" />}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <script is:inline>

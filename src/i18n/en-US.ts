@@ -7641,6 +7641,18 @@ const enUS: Record<string, string> = {
   'settings.notifications.metricRead': 'read',
   'settings.notifications.metricUnread': 'unread',
   'settings.notifications.metricsFooter': 'Open rate / click rate via Resend webhook will be added in W4.',
+  'settings.notifications.pushSection': 'Notifications on this device',
+  'settings.notifications.pushDesc': 'Get immediate notices as phone or computer notifications. Only the title shows on screen; the full notice stays in the bell and in email.',
+  'settings.notifications.pushEnable': 'Turn on for this device',
+  'settings.notifications.pushDisable': 'Turn off for this device',
+  'settings.notifications.pushOn': 'On for this device.',
+  'settings.notifications.pushOff': 'Off for this device.',
+  'settings.notifications.pushOtherHost': 'Device notifications work at {host}. Open the same page there, sign in with your account and turn them on.',
+  'settings.notifications.pushOpenOrg': 'Open at {host}',
+  'settings.notifications.pushIosInstall': 'On iPhone and iPad, tap Share and "Add to Home Screen", open Núcleo from the icon and turn notifications on here.',
+  'settings.notifications.pushUnsupported': 'This browser does not support push notifications.',
+  'settings.notifications.pushDenied': 'Notifications for this site are blocked in your browser settings.',
+  'settings.notifications.pushDevices': 'Devices with notifications on for your account: {n}',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Tribe broadcasts',
