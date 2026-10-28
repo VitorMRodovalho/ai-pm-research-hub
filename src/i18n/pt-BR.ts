@@ -7649,6 +7649,18 @@ const ptBR: Record<string, string> = {
   'settings.notifications.metricRead': 'lidas',
   'settings.notifications.metricUnread': 'não lidas',
   'settings.notifications.metricsFooter': 'Open rate / click rate via Resend webhook serão adicionados em W4.',
+  'settings.notifications.pushSection': 'Notificações neste aparelho',
+  'settings.notifications.pushDesc': 'Receba os avisos imediatos como notificação do celular ou do computador. Na tela aparece só o título; o aviso completo continua no sino e no e-mail.',
+  'settings.notifications.pushEnable': 'Ativar neste aparelho',
+  'settings.notifications.pushDisable': 'Desativar neste aparelho',
+  'settings.notifications.pushOn': 'Ativo neste aparelho.',
+  'settings.notifications.pushOff': 'Desativado neste aparelho.',
+  'settings.notifications.pushOtherHost': 'As notificações no aparelho funcionam no endereço {host}. Abra a mesma página por lá, entre com a sua conta e ative.',
+  'settings.notifications.pushOpenOrg': 'Abrir em {host}',
+  'settings.notifications.pushIosInstall': 'No iPhone e no iPad, toque em Compartilhar e em "Adicionar à Tela de Início", abra o Núcleo pelo ícone e ative aqui.',
+  'settings.notifications.pushUnsupported': 'Este navegador não oferece notificações push.',
+  'settings.notifications.pushDenied': 'As notificações deste site estão bloqueadas nas configurações do navegador.',
+  'settings.notifications.pushDevices': 'Aparelhos com notificação ativa na sua conta: {n}',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Comunicados da tribo',

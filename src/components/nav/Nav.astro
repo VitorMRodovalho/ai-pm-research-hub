@@ -305,6 +305,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
   import { subscribeCapabilityInvalidation } from '../../lib/permissions';
+  import { unregisterThisDevice } from '../../lib/push';
 
   // Ensure runtime-injected env is available before creating the client.
   setSupabaseRuntimeConfig(
@@ -1097,6 +1098,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     (window as any).closePD?.();
   });
   (window as any).doLogout = async () => {
+    // #2806: antes do signOut, porque cancelar a inscricao de push no banco precisa da sessao
+    await unregisterThisDevice(sb);
     await sb.auth.signOut();
     location.href = '/';
   };

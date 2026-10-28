@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../../i18n/utils';
+import { SEO_CANONICAL_HOST } from '../../lib/canonical';
 
 // ADR-0022 W2: notification preferences page (4-mode + weekly digest opt-out).
 // Auth: client-side via getSupabase() factory.
@@ -23,6 +24,15 @@ const i18nClient = {
   metricRead: t('settings.notifications.metricRead', lang),
   metricUnread: t('settings.notifications.metricUnread', lang),
   metricsFooter: t('settings.notifications.metricsFooter', lang),
+  pushOn: t('settings.notifications.pushOn', lang),
+  pushOff: t('settings.notifications.pushOff', lang),
+  pushEnable: t('settings.notifications.pushEnable', lang),
+  pushDisable: t('settings.notifications.pushDisable', lang),
+  pushOtherHost: t('settings.notifications.pushOtherHost', lang).replace('{host}', SEO_CANONICAL_HOST),
+  pushIosInstall: t('settings.notifications.pushIosInstall', lang),
+  pushUnsupported: t('settings.notifications.pushUnsupported', lang),
+  pushDenied: t('settings.notifications.pushDenied', lang),
+  pushDevices: t('settings.notifications.pushDevices', lang),
   notificationTypes: {
     tribe_broadcast: t('notification.type.tribe_broadcast', lang),
     attendance_reminder: t('notification.type.attendance_reminder', lang),
@@ -83,6 +93,16 @@ const i18nClient = {
         </label>
       </div>
 
+      <div id="push-card" style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.pushSection', lang)}</h2>
+        <p style="color: #6c757d; font-size: 13px; margin: 0 0 12px 0;">{t('settings.notifications.pushDesc', lang)}</p>
+        <p id="push-state" style="color: #495057; font-size: 14px; margin: 0 0 12px 0;"></p>
+        <a id="push-open-org" hidden style="color: #003B5C; font-weight: 600; font-size: 14px;">{t('settings.notifications.pushOpenOrg', lang).replace('{host}', SEO_CANONICAL_HOST)}</a>
+        <button id="push-toggle" hidden style="background: #003B5C; color: white; padding: 8px 16px; border: 0; border-radius: 6px; font-size: 13px; cursor: pointer;"></button>
+        <span id="push-status" style="margin-left: 12px; font-size: 12px;"></span>
+        <p id="push-devices" style="color: #868e96; font-size: 12px; margin: 12px 0 0 0;"></p>
+      </div>
+
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
         <h2 style="font-size: 16px; color: #003B5C; margin: 0 0 12px 0;">{t('settings.notifications.weeklyDigestSection', lang)}</h2>
         <label style="display: flex; align-items: center; cursor: pointer;">
@@ -118,9 +138,80 @@ const i18nClient = {
 
   <script>
     import { getSupabase } from '../../lib/supabase';
+    import { SEO_CANONICAL_ORIGIN } from '../../lib/canonical';
+    import { pushSupport, registerServiceWorker, enablePush, disablePush, saveSubscription } from '../../lib/push';
 
     const i18nNode = document.getElementById('i18n-settings-notifications');
     const i18n = JSON.parse(i18nNode!.textContent || '{}');
+
+    // #2806: push web neste aparelho. So no host SEO canonico; nos outros enderecos o cartao manda para la.
+    async function setupPush(sb: any) {
+      const stateEl = document.getElementById('push-state')!;
+      const toggle = document.getElementById('push-toggle') as HTMLButtonElement;
+      const statusEl = document.getElementById('push-status')!;
+      const devicesEl = document.getElementById('push-devices')!;
+      const openOrg = document.getElementById('push-open-org') as HTMLAnchorElement;
+      const showDevices = async () => {
+        const { data, error } = await sb.rpc('list_my_push_subscriptions');
+        devicesEl.textContent = error || !Array.isArray(data) ? '' : i18n.pushDevices.replace('{n}', String(data.length));
+      };
+      const support = pushSupport(window);
+      void showDevices();
+      if (support === 'other-host') {
+        stateEl.textContent = i18n.pushOtherHost;
+        openOrg.href = SEO_CANONICAL_ORIGIN + location.pathname;
+        openOrg.hidden = false;
+        return;
+      }
+      if (support !== 'ok') {
+        stateEl.textContent = support === 'ios-not-installed' ? i18n.pushIosInstall
+          : support === 'denied' ? i18n.pushDenied : i18n.pushUnsupported;
+        return;
+      }
+      // registro pronto ANTES do clique: o subscribe() tem de sair direto do gesto do usuario (Safari)
+      const reg = await registerServiceWorker();
+      let on = false;
+      const render = () => {
+        stateEl.textContent = on ? i18n.pushOn : i18n.pushOff;
+        toggle.textContent = on ? i18n.pushDisable : i18n.pushEnable;
+        toggle.hidden = false;
+      };
+      // a inscricao que o navegador ja tem e regravada (upsert): cobre chave trocada e aparelho que mudou de dono
+      const existing = await reg.pushManager.getSubscription();
+      if (existing && Notification.permission === 'granted') {
+        try {
+          await saveSubscription(sb, existing);
+          on = true;
+        } catch (err: any) {
+          statusEl.textContent = `${i18n.errorPrefix} ${err?.message ?? err}`;
+          statusEl.style.color = '#d32f2f';
+        }
+      }
+      render();
+      toggle.addEventListener('click', async () => {
+        toggle.disabled = true;
+        statusEl.textContent = i18n.savingProgress;
+        statusEl.style.color = '#6c757d';
+        try {
+          if (on) await disablePush(sb, reg);
+          else await enablePush(sb, reg);
+          on = !on;
+          statusEl.textContent = '';
+        } catch (err: any) {
+          statusEl.textContent = `${i18n.errorPrefix} ${err?.message ?? err}`;
+          statusEl.style.color = '#d32f2f';
+          if (Notification.permission === 'denied') {
+            stateEl.textContent = i18n.pushDenied;
+            toggle.hidden = true;
+            return;
+          }
+        } finally {
+          toggle.disabled = false;
+        }
+        render();
+        void showDevices();
+      });
+    }
 
     async function load() {
       const loading = document.getElementById('loading')!;
@@ -148,6 +239,9 @@ const i18nClient = {
       if (radio) radio.checked = true;
       loading.style.display = 'none';
       form.style.display = 'block';
+      setupPush(sb).catch(() => {
+        document.getElementById('push-state')!.textContent = i18n.pushUnsupported;
+      });
 
       saveBtn.addEventListener('click', async () => {
         status.textContent = i18n.savingProgress;

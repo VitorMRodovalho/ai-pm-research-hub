@@ -7641,6 +7641,18 @@ const esLATAM: Record<string, string> = {
   'settings.notifications.metricRead': 'leídas',
   'settings.notifications.metricUnread': 'sin leer',
   'settings.notifications.metricsFooter': 'Open rate / click rate vía webhook Resend se agregarán en W4.',
+  'settings.notifications.pushSection': 'Notificaciones en este dispositivo',
+  'settings.notifications.pushDesc': 'Recibe los avisos inmediatos como notificación del celular o de la computadora. En la pantalla solo aparece el título; el aviso completo sigue en la campana y en el correo.',
+  'settings.notifications.pushEnable': 'Activar en este dispositivo',
+  'settings.notifications.pushDisable': 'Desactivar en este dispositivo',
+  'settings.notifications.pushOn': 'Activo en este dispositivo.',
+  'settings.notifications.pushOff': 'Desactivado en este dispositivo.',
+  'settings.notifications.pushOtherHost': 'Las notificaciones en el dispositivo funcionan en la dirección {host}. Abre la misma página allí, inicia sesión con tu cuenta y actívalas.',
+  'settings.notifications.pushOpenOrg': 'Abrir en {host}',
+  'settings.notifications.pushIosInstall': 'En iPhone y iPad, toca Compartir y "Agregar a pantalla de inicio", abre Núcleo desde el ícono y actívalas aquí.',
+  'settings.notifications.pushUnsupported': 'Este navegador no ofrece notificaciones push.',
+  'settings.notifications.pushDenied': 'Las notificaciones de este sitio están bloqueadas en la configuración del navegador.',
+  'settings.notifications.pushDevices': 'Dispositivos con notificaciones activas en tu cuenta: {n}',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Comunicados de tribu',
