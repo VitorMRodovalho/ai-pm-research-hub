@@ -18285,6 +18285,7 @@ export type Database = {
           id: string
           is_read: boolean | null
           link: string | null
+          push_dispatched_at: string | null
           read_at: string | null
           recipient_id: string
           resend_id: string | null
@@ -18307,6 +18308,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           link?: string | null
+          push_dispatched_at?: string | null
           read_at?: string | null
           recipient_id: string
           resend_id?: string | null
@@ -18329,6 +18331,7 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           link?: string | null
+          push_dispatched_at?: string | null
           read_at?: string | null
           recipient_id?: string
           resend_id?: string | null
@@ -22109,6 +22112,119 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "publication_ideas"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth_secret: string
+          created_at: string
+          disabled_at: string | null
+          endpoint: string
+          failure_count: number
+          id: string
+          last_success_at: string | null
+          member_id: string
+          origin: string
+          p256dh: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth_secret: string
+          created_at?: string
+          disabled_at?: string | null
+          endpoint: string
+          failure_count?: number
+          id?: string
+          last_success_at?: string | null
+          member_id: string
+          origin: string
+          p256dh: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth_secret?: string
+          created_at?: string
+          disabled_at?: string | null
+          endpoint?: string
+          failure_count?: number
+          id?: string
+          last_success_at?: string | null
+          member_id?: string
+          origin?: string
+          p256dh?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -35189,6 +35305,7 @@ export type Database = {
         }[]
       }
       list_my_exclusion_declarations: { Args: never; Returns: Json }
+      list_my_push_subscriptions: { Args: never; Returns: Json }
       list_offboarding_records: {
         Args: {
           p_limit?: number
@@ -36034,6 +36151,16 @@ export type Database = {
         Returns: Json
       }
       register_own_presence: { Args: { p_event_id: string }; Returns: Json }
+      register_push_subscription: {
+        Args: {
+          p_auth: string
+          p_endpoint: string
+          p_origin: string
+          p_p256dh: string
+          p_user_agent?: string
+        }
+        Returns: Json
+      }
       register_reacceptance_objection: {
         Args: {
           p_body: string
@@ -36743,6 +36870,10 @@ export type Database = {
       }
       unlink_partner_from_card: {
         Args: { p_board_item_id: string; p_partner_entity_id: string }
+        Returns: Json
+      }
+      unregister_push_subscription: {
+        Args: { p_endpoint: string }
         Returns: Json
       }
       unseal_event_attendance: { Args: { p_event_id: string }; Returns: Json }
