@@ -6,10 +6,11 @@
  *   2. a inscricao so nasce numa origem da lista (platform_settings), para membro ativo;
  *   3. o ciclo do art. 18 a alcanca nos tres caminhos: exportacao (sem as chaves), autoexclusao
  *      (delete_my_personal_data nao marca anonymized_at, entao o gatilho NAO a cobre) e anonimizacao
- *      ou desativacao (gatilho em members);
+ *      ou desativacao (gatilho em members, SEM lista de colunas: is_active e derivado de member_status
+ *      por um gatilho BEFORE, e gatilho com lista so ve as colunas do SET);
  *   4. a lista do proprio membro nao devolve endpoint nem chaves.
  *
- * O arquivo da migration recebe a versao no apply, por isso o guard o acha pelo sufixo.
+ * Os arquivos das migrations recebem a versao no apply, por isso o guard os acha pelo sufixo.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,15 +18,16 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const DIR = resolve(process.cwd(), 'supabase/migrations');
-const FILES = readdirSync(DIR).filter((f) => f.endsWith('_2806_push_subscriptions.sql'));
+const ALL = readdirSync(DIR).filter((f) => f.endsWith('.sql')).sort();
+const FILES = ALL.filter((f) => f.endsWith('_2806_push_subscriptions.sql'));
+const FIX = ALL.filter((f) => f.endsWith('_2806_push_purge_any_update.sql'));
 
 // Prosa sai antes do assert: os comentarios explicam o desenho, e guard que le prosa acusa a propria
 // documentacao (licao do #1801/#1805/#1809).
-const SQL = FILES.length === 1
-  ? readFileSync(resolve(DIR, FILES[0]), 'utf8')
-    .replace(/COMMENT ON [\s\S]*?';/g, '')
-    .split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
-  : '';
+const masked = (f) => readFileSync(resolve(DIR, f), 'utf8')
+  .replace(/COMMENT ON [\s\S]*?';/g, '')
+  .split('\n').filter((l) => !l.trim().startsWith('--')).join('\n');
+const SQL = FILES.length === 1 ? masked(FILES[0]) : '';
 
 function fnBody(name) {
   const head = `CREATE OR REPLACE FUNCTION public.${name}(`;
@@ -103,7 +105,16 @@ test('#2806 art. 18: autoexclusao apaga a inscricao e diz que apagou', () => {
 });
 
 test('#2806 art. 18: anonimizar ou desativar o membro apaga as inscricoes dele', () => {
-  assert.match(SQL, /CREATE TRIGGER trg_push_subscriptions_purge\s+AFTER UPDATE OF anonymized_at, is_active ON public\.members\s+FOR EACH ROW\s+WHEN \(\(OLD\.anonymized_at IS NULL AND NEW\.anonymized_at IS NOT NULL\)\s+OR \(OLD\.is_active IS TRUE AND NEW\.is_active IS NOT TRUE\)\)\s+EXECUTE FUNCTION public\._push_subscriptions_purge\(\);/);
   const b = fnBody('_push_subscriptions_purge');
   assert.match(b, /DELETE FROM public\.push_subscriptions WHERE member_id = NEW\.id;\s+RETURN NEW;/);
+});
+
+test('#2806 art. 18: o gatilho vigente dispara em QUALQUER update de members e decide pelo valor final', () => {
+  assert.equal(FIX.length, 1, `esperado 1 arquivo *_2806_push_purge_any_update.sql, achei ${FIX.length}`);
+  // vale a ULTIMA migration que cria o gatilho: uma posterior com lista de colunas traria o defeito de volta
+  const defs = ALL.filter((f) => readFileSync(resolve(DIR, f), 'utf8').includes('trg_push_subscriptions_purge')
+    && /CREATE TRIGGER trg_push_subscriptions_purge\b/.test(masked(f)));
+  assert.equal(defs.at(-1), FIX[0], `a definicao vigente do gatilho esta em ${defs.at(-1)}`);
+  // sem UPDATE OF: com lista, um UPDATE so de member_status desativa (via gatilho BEFORE) sem disparar este
+  assert.match(masked(FIX[0]), /DROP TRIGGER IF EXISTS trg_push_subscriptions_purge ON public\.members;\nCREATE TRIGGER trg_push_subscriptions_purge\s+AFTER UPDATE ON public\.members\s+FOR EACH ROW\s+WHEN \(\(OLD\.anonymized_at IS NULL AND NEW\.anonymized_at IS NOT NULL\)\s+OR \(OLD\.is_active IS TRUE AND NEW\.is_active IS NOT TRUE\)\)\s+EXECUTE FUNCTION public\._push_subscriptions_purge\(\);/);
 });
