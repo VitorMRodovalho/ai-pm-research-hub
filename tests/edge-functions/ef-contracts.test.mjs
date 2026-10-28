@@ -103,6 +103,12 @@ const EF_CONTRACTS = [
     tables: ['selection_applications', 'pmi_video_screenings', 'ai_processing_log', 'selection_evaluation_ai_suggestions'],
     imports: [],
   },
+  {
+    // #2806: push web dos avisos imediatos
+    name: 'send-push',
+    tables: ['notifications', 'push_subscriptions', 'members', 'notification_preferences', 'platform_settings'],
+    imports: ['_shared/service-auth.ts', '_shared/webpush.ts'],
+  },
 ];
 
 for (const ef of EF_CONTRACTS) {
