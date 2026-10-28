@@ -301,22 +301,39 @@ export const POST: APIRoute = async ({ params, request }) => {
 
   let pdfBytes: Uint8Array;
   let browser: any = null;
+  // #2811: requests the page started and did not finish, so a render that times out says
+  // what it was waiting for. Query strings are dropped (a signed URL carries a token).
+  const pending = new Map<any, string>();
   try {
     browser = await puppeteer.launch(browserBinding);
     const page = await browser.newPage();
-    await page.setContent(fullDoc, { waitUntil: 'networkidle0', timeout: 30000 });
+    page.on('request', (r: any) => {
+      const url = String(r.url());
+      if (!url.startsWith('data:')) pending.set(r, url.split('?')[0].slice(0, 200));
+    });
+    page.on('requestfinished', (r: any) => { pending.delete(r); });
+    page.on('requestfailed', (r: any) => { pending.delete(r); });
+    // #2811: wait for `load`, not `networkidle0`. From 2026-10-27 every render timed out
+    // on networkidle0 with a document whose images are all data URIs, so the network
+    // never went idle for a reason outside the document. `load` still waits for every
+    // <img>, and the predicate below is what proves each one decoded. The two waits
+    // stay under the 30 s that the DB trigger and the sweep give this endpoint, so a
+    // slow render answers with render_failed instead of a client timeout.
+    await page.setContent(fullDoc, { waitUntil: 'load', timeout: 15000 });
     // #1047 — fail LOUD if any image did not decode. networkidle0 does NOT reject on a
     // broken image (the 2026-05-22 root cause: a transient logo-fetch failure froze 41
     // defective term PDFs). On timeout this throws → caught below as render_failed 500,
     // the cert keeps pdf_url NULL, recoverable via backfill. The logo is now an inlined
     // data URI (always decodes); this guard covers the remaining remote issuer signature.
-    await page.waitForFunction(IMAGES_LOADED_PREDICATE, { timeout: 10000 });
+    await page.waitForFunction(IMAGES_LOADED_PREDICATE, { timeout: 8000 });
     pdfBytes = orientation === 'landscape'
       ? await page.pdf({ format: 'A4', landscape: true, margin: { top: '0', right: '0', bottom: '0', left: '0' }, printBackground: true, preferCSSPageSize: false })
       : await page.pdf({ format: 'A4', margin: { top: '15mm', right: '12mm', bottom: '18mm', left: '12mm' }, printBackground: true, preferCSSPageSize: false });
   } catch (e: any) {
+    const pendingUrls = [...pending.values()].slice(0, 10);
+    console.error('cert-pdf-render render_failed', row.id, e?.message ?? String(e), 'pending:', pendingUrls);
     return new Response(
-      JSON.stringify({ error: 'render_failed', detail: e?.message ?? String(e), cert_id: row.id }),
+      JSON.stringify({ error: 'render_failed', detail: e?.message ?? String(e), pending: pendingUrls, cert_id: row.id }),
       { status: 500, headers: { 'Content-Type': 'application/json' } },
     );
   } finally {
