@@ -16,6 +16,7 @@ project_id = "ldrfrvwhxsmgaabwmaik"
 #   - sync-credly-all     → cron trigger, service_role on writes
 #   - sync-attendance-points → cron trigger, service_role on writes
 #   - verify-credly       → cron trigger, service_role on writes
+#   - send-push           → cron trigger, isServiceRoleToken gate in the handler (#2806)
 #
 # See docs/RUNBOOK.md §5 "Functions com --no-verify-jwt" for more.
 # ────────────────────────────────────────────────────────────────────────────
@@ -30,4 +31,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.verify-credly]
+verify_jwt = false
+
+[functions.send-push]
 verify_jwt = false
