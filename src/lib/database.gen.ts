@@ -36872,6 +36872,7 @@ export type Database = {
         Args: { p_board_item_id: string; p_partner_entity_id: string }
         Returns: Json
       }
+      unregister_all_my_push_subscriptions: { Args: never; Returns: Json }
       unregister_push_subscription: {
         Args: { p_endpoint: string }
         Returns: Json
