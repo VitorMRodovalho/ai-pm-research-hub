@@ -644,6 +644,7 @@ const enUS: Record<string, string> = {
   'profile.mcpDisconnectConfirm': 'Disconnect all MCP clients? This also ends your session in this browser and you will need to sign in again.',
   'profile.toastMcpDisconnected': 'All MCP clients were disconnected. Redirecting…',
   'profile.toastMcpDisconnectError': 'Error disconnecting MCP clients',
+  'profile.toastPushUnregisterAllError': 'Could not turn off notifications on your other devices. Turn them off on each device, in Notification preferences.',
   'profile.deleteConfirmPrompt': 'WARNING: This action is IRREVERSIBLE.\n\nWill be deleted:\n• Address\n• City\n• Phone\n• Birthday\n\nWill be preserved:\n• Name, email, PMI ID\n• Contribution history, XP, certificates\n\nTo confirm, type below exactly:\nDELETE MY PERSONAL DATA',
   'profile.deleteConfirmKeyword': 'DELETE MY PERSONAL DATA',
   'profile.toastSupabaseDown': 'Supabase unavailable',

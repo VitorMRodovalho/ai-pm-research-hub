@@ -644,6 +644,7 @@ const ptBR: Record<string, string> = {
   'profile.mcpDisconnectConfirm': 'Desconectar todos os clientes MCP? Isso também encerra sua sessão neste navegador e você precisará entrar novamente.',
   'profile.toastMcpDisconnected': 'Todos os clientes MCP foram desconectados. Redirecionando…',
   'profile.toastMcpDisconnectError': 'Erro ao desconectar clientes MCP',
+  'profile.toastPushUnregisterAllError': 'Não foi possível desligar as notificações dos outros aparelhos. Desative em cada um, em Preferências de notificação.',
   'profile.deleteConfirmPrompt': 'ATENÇÃO: Esta ação é IRREVERSÍVEL.\n\nSerão apagados:\n• Endereço\n• Cidade\n• Telefone\n• Data de Aniversário\n\nSerão preservados:\n• Nome, email, PMI ID\n• Histórico de contribuições, XP, certificados\n\nPara confirmar, digite abaixo exatamente:\nDELETAR MEUS DADOS PESSOAIS',
   'profile.deleteConfirmKeyword': 'DELETAR MEUS DADOS PESSOAIS',
   'profile.toastSupabaseDown': 'Supabase indisponível',
