@@ -164,6 +164,9 @@ Deno.serve(async (req) => {
       skips,
     })
   } catch (e) {
-    return json({ error: 'send_push_failed', detail: e instanceof Error ? e.message : String(e) }, 500)
+    // O detalhe fica no log da EF; a resposta leva so o codigo (CodeQL js/stack-trace-exposure).
+    const m = e instanceof Error ? e.message : String(e)
+    console.error('[send-push] FATAL:', m)
+    return json({ error: 'send_push_failed' }, 500)
   }
 })
