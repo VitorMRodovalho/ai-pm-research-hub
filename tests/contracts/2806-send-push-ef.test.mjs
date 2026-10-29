@@ -8,7 +8,8 @@
  *   3. a reivindicacao e um UPDATE condicional (push_dispatched_at IS NULL) dos avisos imediatos, e e o RETORNO
  *      dele, nao outra leitura, que alimenta planSends: duas execucoes simultaneas nunca enviam o mesmo aviso;
  *   4. o POST para o servico de push nao segue redirecionamento (sairia da lista de hosts);
- *   5. a resposta de sucesso so tem contagens.
+ *   5. a resposta de sucesso so tem contagens;
+ *   6. a resposta 500 leva so o codigo do erro: a mensagem vai para o log (CodeQL js/stack-trace-exposure).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -56,4 +57,21 @@ test('#2806 send-push: a resposta de sucesso so tem contagens', () => {
   const block = HANDLER.slice(start, HANDLER.indexOf('\n    })', start));
   const keys = [...block.matchAll(/^\s{6}(\w+)[:,]/gm)].map((m) => m[1]).sort();
   assert.deepEqual(keys, ['bookkeeping_errors', 'claimed', 'failed', 'gone', 'sent', 'skips']);
+});
+
+test('#2806 send-push: a resposta 500 nao leva a mensagem do erro, que vai para o log', () => {
+  const start = HANDLER.lastIndexOf('} catch (e) {');
+  assert.ok(start > 0, 'catch do handler nao encontrado');
+  assert.match(HANDLER.slice(start), /^\} catch \(e\) \{\s+const m = e instanceof Error \? e\.message : String\(e\)\s+console\.error\('\[send-push\] FATAL:', m\)\s+return json\(\{ error: 'send_push_failed' \}, 500\)\s+\}\s+\}\)\s*$/);
+  // e nenhuma resposta do handler (o argumento inteiro de cada json(), fora das strings) cita o erro, a mensagem
+  // dele, o stack ou String(...)
+  const code = HANDLER.replace(/'[^'\n]*'/g, "''").replace(/`[^`]*`/g, '``');
+  const calls = [];
+  for (let i = code.indexOf('json('); i >= 0; i = code.indexOf('json(', i + 1)) {
+    let depth = 0, j = i + 4;
+    do { if (code[j] === '(') depth++; else if (code[j] === ')') depth--; j++; } while (depth > 0 && j < code.length);
+    calls.push(code.slice(i, j));
+  }
+  assert.ok(calls.length >= 5, `respostas do handler: ${calls.length}`);
+  for (const c of calls) assert.doesNotMatch(c, /\be\b|\bm\b|\.message|String\(|\.stack/, c);
 });
