@@ -14,8 +14,9 @@ Accepts ONLY when all of these hold. Otherwise it prints nothing and the normal 
   2. the message names this project ("Apply the migration to project ldrfrvwhxsmgaabwmaik?");
   3. the box asks for no field (action-only form);
   4. the session is the designated orchestrator (same file db-write-gate.py reads);
-  5. exactly one apply_migration call is pending in this session's transcript (a tool_use with no tool_result
-     yet), or the one named by tool_use_id when the event carries it;
+  5. exactly one apply_migration call of this session is pending: recorded by db-write-gate.py before the call
+     (PENDING_DIR/<session_id>.jsonl, within PENDING_TTL_SECONDS) and not yet in the transcript, where Claude
+     Code writes a call only after it returns; or the recorded one named by tool_use_id when the event carries it;
   6. that migration deletes no data at top level:
      no DELETE, TRUNCATE, UPDATE without WHERE, DROP TABLE, DROP SCHEMA, DROP DATABASE or
      ALTER TABLE ... DROP COLUMN, and no DO block doing one of those. Function bodies are definitions, not
@@ -23,9 +24,13 @@ Accepts ONLY when all of these hold. Otherwise it prints nothing and the normal 
 
 #2830: the documented Elicitation input has no tool_name nor tool_use_id (only the common fields plus
 mcp_server_name, message, mode, url, elicitation_id, requested_schema). Until 29/10/2026 this hook required
-both, so it never accepted: 55 of 55 logged decisions since 07/10 were "tool is not apply_migration". The call
-is now found as the pending apply_migration in the transcript, and the log keeps the event keys and the start
-of the message, so the next mismatch shows up in the log instead of in a box that expires.
+both, so it never accepted: 55 of 55 logged decisions since 07/10 were "tool is not apply_migration". The log
+keeps the event keys and the start of the message, so the next mismatch shows up in the log instead of in a box
+that expires.
+
+#2834: the #2830 fix looked for the pending call in the transcript, and the first real box logged "0 pending":
+the call being confirmed is not in the transcript yet (measured 29/10/2026). Its SQL now comes from the record
+db-write-gate.py leaves at PreToolUse, and the transcript only tells which recorded calls already finished.
 
 It never exits non-zero: exit 2 would decline the box. Every decision is appended to LOG_FILE.
 """
@@ -45,6 +50,12 @@ LOG_FILE = os.environ.get(
     "SUPABASE_CONFIRM_GATE_LOG",
     os.path.expanduser("~/.claude/logs/supabase-confirm-gate.log"),
 )
+# Written by db-write-gate.py (PreToolUse); same default and same TTL there.
+PENDING_DIR = os.environ.get(
+    "SUPABASE_CONFIRM_GATE_STATE",
+    os.path.expanduser("~/.claude/state/supabase-confirm-gate"),
+)
+PENDING_TTL_SECONDS = 30 * 60
 TAIL_BYTES = 16 * 1024 * 1024
 
 DOLLAR_BODY = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)?\$.*?\$\1\$", re.S)
@@ -114,49 +125,49 @@ def loses_data(sql: str) -> str:
     return ""
 
 
-def migration_sql(transcript_path: str, tool_use_id: str):
+def migration_sql(session_id: str, transcript_path: str, tool_use_id: str):
     """Returns (name, query, why) of the apply_migration call this box is about.
 
-    With tool_use_id, that call. Without it (the documented Elicitation input carries none), the only
-    apply_migration tool_use in the transcript that has no tool_result yet. Zero or several pending calls
-    return (None, None, why): the box cannot be tied to one migration, so it stays for the person."""
+    The calls come from the records db-write-gate.py wrote for this session within the TTL. With tool_use_id,
+    the record of that call. Without it (the documented Elicitation input carries none), the only record whose
+    call is not in the transcript yet, that is, has not returned. Zero or several return (None, None, why): the
+    box cannot be tied to one migration, so it stays for the person."""
+    path = os.path.join(PENDING_DIR, re.sub(r"[^A-Za-z0-9_-]", "", session_id) + ".jsonl")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return None, None, "no apply_migration recorded by db-write-gate.py for this session"
+    now = time.time()
+    records = []
+    for line in lines:
+        try:
+            rec = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(rec, dict) and now - float(rec.get("ts") or 0) <= PENDING_TTL_SECONDS:
+            records.append(rec)
+    # One call recorded twice is still one call: the user-level copy of db-write-gate.py runs on the same event.
+    records = list({rec.get("tool_use_id") or i: rec for i, rec in enumerate(records)}.values())
+    if tool_use_id:
+        named = [r for r in records if r.get("tool_use_id") == tool_use_id]
+        if len(named) != 1:
+            return None, None, "no record for the tool_use_id of the event"
+        return named[0].get("name"), named[0].get("query"), ""
     try:
         size = os.path.getsize(transcript_path)
         with open(transcript_path, "rb") as fh:
             if size > TAIL_BYTES:
                 fh.seek(size - TAIL_BYTES)
                 fh.readline()
-            lines = fh.read().decode("utf-8", "replace").splitlines()
+            finished = fh.read().decode("utf-8", "replace")
     except OSError:
         return None, None, "transcript not readable"
-    calls = {}
-    answered = set()
-    for line in lines:
-        if "tool_use" not in line and "tool_result" not in line:
-            continue
-        try:
-            entry = json.loads(line)
-        except ValueError:
-            continue
-        content = (entry.get("message") or {}).get("content")
-        if not isinstance(content, list):
-            continue
-        for part in content:
-            if not isinstance(part, dict):
-                continue
-            if part.get("type") == "tool_use" and str(part.get("name") or "").endswith("apply_migration"):
-                args = part.get("input") or {}
-                calls[part.get("id")] = (args.get("name"), args.get("query"))
-            elif part.get("type") == "tool_result":
-                answered.add(part.get("tool_use_id"))
-    if tool_use_id:
-        if tool_use_id in calls:
-            return calls[tool_use_id] + ("",)
-        return None, None, "migration SQL not found in the transcript"
-    pending = [cid for cid in calls if cid not in answered]
+    # The id as a whole JSON string: an id that is part of another one does not count as finished.
+    pending = [r for r in records if not (r.get("tool_use_id") and f'"{r["tool_use_id"]}"' in finished)]
     if len(pending) != 1:
-        return None, None, f"{len(pending)} pending apply_migration calls in the transcript"
-    return calls[pending[0]] + ("",)
+        return None, None, f"{len(pending)} pending apply_migration calls recorded"
+    return pending[0].get("name"), pending[0].get("query"), ""
 
 
 def log(event: dict, decision: str, reason: str, name=None) -> None:
@@ -197,7 +208,9 @@ def decide(event: dict):
     orch = orchestrator_id()
     if not orch or event.get("session_id") != orch:
         return False, "session is not the designated orchestrator", None
-    name, query, why = migration_sql(str(event.get("transcript_path") or ""), str(event.get("tool_use_id") or ""))
+    name, query, why = migration_sql(
+        str(event.get("session_id") or ""), str(event.get("transcript_path") or ""), str(event.get("tool_use_id") or "")
+    )
     if not query:
         return False, why or "migration SQL not found in the transcript", name
     reason = loses_data(query)
