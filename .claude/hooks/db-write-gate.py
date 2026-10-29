@@ -75,21 +75,37 @@ exit 2"). Now:
   * unreadable stdin cannot be attributed to a tool, so the RAW TEXT decides: it fails closed when the text names a
     write tool or matches a Bash write pattern, and open (with the warning) otherwise.
 
+Pending migration (#2834, 29/10/2026): the Supabase MCP opens its confirmation box DURING apply_migration, and
+Claude Code writes the call to the transcript only after it returns (measured: a call does not find its own
+tool_use in the transcript while it runs). So supabase-confirm-gate.py, which answers the box, cannot read the SQL
+there. This gate runs BEFORE the call and has it: for the orchestrator's apply_migration on this project it appends
+the call to PENDING_DIR/<session_id>.jsonl, and that hook reads it. Recording never changes an allow or ask; when it
+fails, the call is denied, because a missing record could let the box be answered with another call's SQL.
+
 Env (tests): DB_GATE_SKIP_QUEUE=1 skips the `gh` queue check; DB_GATE_QUEUE="<prs>,<jobs>" replaces
 it with fixed counts (to exercise the busy branch offline); LANE_ORCH_FILE overrides ORCH_FILE; LANE_REGISTRY overrides LANE_REGISTRY_FILE;
-DB_GATE_INJECT_ERROR=1 raises inside decide(), to exercise the failure policy above.
+DB_GATE_INJECT_ERROR=1 raises inside decide(), to exercise the failure policy above;
+SUPABASE_CONFIRM_GATE_STATE overrides PENDING_DIR.
 """
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
+import time
 
 PROJECT_REF = "ldrfrvwhxsmgaabwmaik"
 ORCH_FILE = os.environ.get(
     "LANE_ORCH_FILE",
     os.path.expanduser("~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador"),
 )
+# Same default and same TTL as supabase-confirm-gate.py, which reads these records.
+PENDING_DIR = os.environ.get(
+    "SUPABASE_CONFIRM_GATE_STATE",
+    os.path.expanduser("~/.claude/state/supabase-confirm-gate"),
+)
+PENDING_TTL_SECONDS = 30 * 60
 
 WRITE_RE = re.compile(
     r"\b(INSERT|UPDATE|DELETE|MERGE|UPSERT|TRUNCATE|CREATE|ALTER|DROP|GRANT|REVOKE|"
@@ -346,6 +362,48 @@ def orchestrator_id() -> str:
     return ""
 
 
+def remember_pending_migration(event: dict) -> str:
+    """Appends this apply_migration to the session's pending file (see #2834 above). Returns '' when recorded,
+    else the error. Records past PENDING_TTL_SECONDS are dropped on the way; the lock keeps two calls of the
+    same session from losing each other's record."""
+    session = re.sub(r"[^A-Za-z0-9_-]", "", event.get("session_id") or "")
+    if not session:
+        return "session without id"
+    tool_input = event.get("tool_input") or {}
+    record = {
+        "ts": time.time(),
+        "tool_use_id": event.get("tool_use_id"),
+        "name": tool_input.get("name"),
+        "query": tool_input.get("query"),
+        "keys": sorted(event),
+    }
+    try:
+        os.makedirs(PENDING_DIR, mode=0o700, exist_ok=True)
+        path = os.path.join(PENDING_DIR, session + ".jsonl")
+        with open(path + ".lock", "a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            kept = []
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    for line in fh:
+                        try:
+                            old = json.loads(line)
+                            if record["ts"] - float(old.get("ts") or 0) <= PENDING_TTL_SECONDS:
+                                kept.append(line.rstrip("\n"))
+                        except (ValueError, TypeError, AttributeError):
+                            continue
+            except FileNotFoundError:
+                pass
+            kept.append(json.dumps(record, ensure_ascii=False))
+            fd = os.open(path + ".tmp", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                fh.write("\n".join(kept) + "\n")
+            os.replace(path + ".tmp", path)
+    except OSError as e:
+        return f"{type(e).__name__}: {e}"
+    return ""
+
+
 def git_path(cwd: str, flag: str) -> str:
     out = subprocess.run(
         ["git", "-C", cwd, "rev-parse", "--path-format=absolute", flag],
@@ -510,6 +568,15 @@ def decide(event: dict):
 
     if not orch or session_id != orch:
         return "deny", deny_reason(session_id, orch, cwd, action if is_mutating else "")
+
+    if action == "apply_migration":
+        err = remember_pending_migration(event)
+        if err:
+            return "deny", (
+                f"NAO CONSEGUI REGISTRAR ESTA MIGRATION PARA O HOOK DA CAIXA DO SUPABASE ({err}, em {PENDING_DIR}). "
+                "Sem o registro, a caixa poderia ser respondida com o SQL de outra chamada (#2834). Corrija o "
+                "diretorio e chame de novo."
+            )
 
     if action in QUEUED_TOOLS:
         prs, jobs = queue_busy()
