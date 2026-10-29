@@ -1,6 +1,12 @@
 // PMI Volunteer Applications Extractor — Núcleo IA & GP
 // =====================================================================
-// VERSION: 2026-07-13 (#1368) — enriquecimento volunteer-first (same-origin)
+// VERSION: 2026-10-29 (#2827) — vaga 72562 só com o balde qualified
+//
+// CHANGELOG 2026-10-29 (#2827, D1 do #1175 revista):
+//   72562 (vaga do capítulo) entra na allowlist, mas NUCLEO_OPPORTUNITY_BUCKETS a
+//        restringe ao balde qualified: só quem o capítulo já colocou na função. Os
+//        baldes submitted e rejected dessa vaga nem são baixados. O worker /ingest
+//        aplica o mesmo mapa, para o caso de uma cópia antiga deste script.
 //
 // CHANGELOG 2026-07-13 (#1368):
 //   Seção 3c — enrichment via volunteer.pmi.org SAME-ORIGIN (novo), keyed por
@@ -137,12 +143,17 @@
     // Wave 4 W1 (#1175 F7) — allowlist das vagas do Núcleo. Vagas
     // auto-descobertas FORA desta lista exigem confirmação explícita no
     // modal antes de terem candidaturas baixadas (minimização LGPD:
-    // vaga de diretoria de capítulo, ex. 72562, não é do Núcleo e o
-    // worker /ingest a skiparia de qualquer forma — opportunity_not_active).
+    // vaga alheia ao Núcleo não é baixada, e o worker /ingest a pula
+    // de qualquer forma, como opportunity_not_found).
     // Se OPPORTUNITY_IDS for setado manualmente, vale como confirmação
     // explícita (sem modal), mas vagas fora da allowlist geram warning.
     // 76631 e 76661 a 76664: vagas do Grupo de Estudos CPMAI (2026/27).
-    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 76631, 76661, 76662, 76663, 76664],
+    // 72562: vaga do capítulo, restrita pelo mapa abaixo (#2827).
+    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76631, 76661, 76662, 76663, 76664],
+    // #2827 — vagas que só importam alguns baldes do VEP. Os outros baldes
+    // dessas vagas nem são baixados. O worker /ingest aplica o mesmo mapa
+    // (OPPORTUNITY_IMPORT_BUCKETS em src/index.ts).
+    NUCLEO_OPPORTUNITY_BUCKETS: { 72562: ['qualified'] },
     // #1316 — vagas HISTÓRICAS/FECHADAS do Núcleo que a auto-descoberta NÃO lista
     // (só lista as opportunities correntes do recruiter por partyID + posting date).
     // Ex.: 62106 = Ciclo 1 Goiás, porta de entrada de toda a coorte Goiás — o dado
@@ -616,7 +627,13 @@
 
   for (const oppId of opportunityIds) {
     console.log(`\n━━━ Opportunity ${oppId} ━━━`);
+    // #2827: vaga com baldes restritos não baixa os outros baldes.
+    const onlyBuckets = (CONFIG.NUCLEO_OPPORTUNITY_BUCKETS || {})[String(oppId)];
     for (const b of buckets(oppId)) {
+      if (onlyBuckets && !onlyBuckets.includes(b.name)) {
+        console.log(`  [${b.name}]: não baixado (vaga ${oppId} importa só ${onlyBuckets.join('/')})`);
+        continue;
+      }
       let page = 1, count = 0, hasMore = true;
       while (hasMore) {
         try {
