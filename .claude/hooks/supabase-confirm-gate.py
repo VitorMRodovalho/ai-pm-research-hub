@@ -9,14 +9,23 @@ approved by the GP in the chat before the call. Decision of the GP, 2026-10-06: 
 box, except when the migration itself deletes data; then the box stays for a person.
 
 Accepts ONLY when all of these hold. Otherwise it prints nothing and the normal box appears:
-  1. the server is "supabase" and the tool is apply_migration (execute_sql keeps the box);
+  1. the server is "supabase", the box is a form (mode absent or "form") and, when the event names a tool,
+     the tool is apply_migration (execute_sql keeps the box);
   2. the message names this project ("Apply the migration to project ldrfrvwhxsmgaabwmaik?");
   3. the box asks for no field (action-only form);
   4. the session is the designated orchestrator (same file db-write-gate.py reads);
-  5. the migration SQL, read from this session's transcript by tool_use_id, deletes no data at top level:
+  5. exactly one apply_migration call is pending in this session's transcript (a tool_use with no tool_result
+     yet), or the one named by tool_use_id when the event carries it;
+  6. that migration deletes no data at top level:
      no DELETE, TRUNCATE, UPDATE without WHERE, DROP TABLE, DROP SCHEMA, DROP DATABASE or
      ALTER TABLE ... DROP COLUMN, and no DO block doing one of those. Function bodies are definitions, not
      execution, so a DELETE inside CREATE FUNCTION does not count.
+
+#2830: the documented Elicitation input has no tool_name nor tool_use_id (only the common fields plus
+mcp_server_name, message, mode, url, elicitation_id, requested_schema). Until 29/10/2026 this hook required
+both, so it never accepted: 55 of 55 logged decisions since 07/10 were "tool is not apply_migration". The call
+is now found as the pending apply_migration in the transcript, and the log keeps the event keys and the start
+of the message, so the next mismatch shows up in the log instead of in a box that expires.
 
 It never exits non-zero: exit 2 would decline the box. Every decision is appended to LOG_FILE.
 """
@@ -106,7 +115,11 @@ def loses_data(sql: str) -> str:
 
 
 def migration_sql(transcript_path: str, tool_use_id: str):
-    """Returns (name, query) of the tool call in the transcript, or (None, None) when not found."""
+    """Returns (name, query, why) of the apply_migration call this box is about.
+
+    With tool_use_id, that call. Without it (the documented Elicitation input carries none), the only
+    apply_migration tool_use in the transcript that has no tool_result yet. Zero or several pending calls
+    return (None, None, why): the box cannot be tied to one migration, so it stays for the person."""
     try:
         size = os.path.getsize(transcript_path)
         with open(transcript_path, "rb") as fh:
@@ -115,9 +128,11 @@ def migration_sql(transcript_path: str, tool_use_id: str):
                 fh.readline()
             lines = fh.read().decode("utf-8", "replace").splitlines()
     except OSError:
-        return None, None
-    for line in reversed(lines):
-        if tool_use_id not in line:
+        return None, None, "transcript not readable"
+    calls = {}
+    answered = set()
+    for line in lines:
+        if "tool_use" not in line and "tool_result" not in line:
             continue
         try:
             entry = json.loads(line)
@@ -127,10 +142,21 @@ def migration_sql(transcript_path: str, tool_use_id: str):
         if not isinstance(content, list):
             continue
         for part in content:
-            if isinstance(part, dict) and part.get("type") == "tool_use" and part.get("id") == tool_use_id:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") == "tool_use" and str(part.get("name") or "").endswith("apply_migration"):
                 args = part.get("input") or {}
-                return args.get("name"), args.get("query")
-    return None, None
+                calls[part.get("id")] = (args.get("name"), args.get("query"))
+            elif part.get("type") == "tool_result":
+                answered.add(part.get("tool_use_id"))
+    if tool_use_id:
+        if tool_use_id in calls:
+            return calls[tool_use_id] + ("",)
+        return None, None, "migration SQL not found in the transcript"
+    pending = [cid for cid in calls if cid not in answered]
+    if len(pending) != 1:
+        return None, None, f"{len(pending)} pending apply_migration calls in the transcript"
+    return calls[pending[0]] + ("",)
 
 
 def log(event: dict, decision: str, reason: str, name=None) -> None:
@@ -144,6 +170,9 @@ def log(event: dict, decision: str, reason: str, name=None) -> None:
                 "migration": name,
                 "decision": decision,
                 "reason": reason,
+                "keys": sorted(event),
+                "mode": event.get("mode"),
+                "message_start": str(event.get("message") or "")[:160],
             }, ensure_ascii=False) + "\n")
     except OSError:
         pass
@@ -155,7 +184,10 @@ def decide(event: dict):
         return False, "not an Elicitation event", None
     if event.get("mcp_server_name") != SERVER:
         return False, "server is not supabase", None
-    if not str(event.get("tool_name") or "").endswith("apply_migration"):
+    if event.get("mode") not in (None, "form"):
+        return False, "the box is not a form", None
+    tool = str(event.get("tool_name") or "")
+    if tool and not tool.endswith("apply_migration"):
         return False, "tool is not apply_migration", None
     if f"Apply the migration to project {PROJECT_REF}?" not in str(event.get("message") or ""):
         return False, "message does not name this project", None
@@ -165,9 +197,9 @@ def decide(event: dict):
     orch = orchestrator_id()
     if not orch or event.get("session_id") != orch:
         return False, "session is not the designated orchestrator", None
-    name, query = migration_sql(str(event.get("transcript_path") or ""), str(event.get("tool_use_id") or ""))
+    name, query, why = migration_sql(str(event.get("transcript_path") or ""), str(event.get("tool_use_id") or ""))
     if not query:
-        return False, "migration SQL not found in the transcript", name
+        return False, why or "migration SQL not found in the transcript", name
     reason = loses_data(query)
     if reason:
         return False, "migration deletes data (" + reason + ")", name
