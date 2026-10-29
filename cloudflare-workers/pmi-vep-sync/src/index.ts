@@ -29,6 +29,7 @@
 import type {
   Env,
   CronRunMetrics,
+  ScriptApplication,
   ScriptIngestPayload,
   IngestSummary,
   VepOpportunityRow
@@ -63,6 +64,14 @@ import { timingSafeEqual } from './timing-safe-equal';
 const WORKER_NAME = 'pmi-vep-sync';
 const ALLOWED_ORIGIN = 'https://volunteer.pmi.org';
 const KV_KEY = 'pmi_oauth:tokens';
+
+// #2827 (#1175 D1 revised 2026-10-29): opportunities that import only some VEP buckets.
+// 72562 is a chapter vacancy: only the people the chapter already placed (qualified
+// bucket) come in. Mirrors NUCLEO_OPPORTUNITY_BUCKETS in scripts/extract_pmi_volunteer.js;
+// the worker enforces it too, because an older copy of the script still sends every bucket.
+const OPPORTUNITY_IMPORT_BUCKETS: Record<string, readonly string[]> = {
+  '72562': ['qualified']
+};
 
 export default {
   async fetch(req: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
@@ -288,6 +297,27 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
     }
   }
 
+  // #2827: drop applications outside their opportunity's import buckets BEFORE the
+  // resume pre-flight and both loops, so such a candidate never has a CV mirrored, a
+  // row written, a token issued or a welcome sent. A notice, not an error: it is the
+  // expected outcome of a decision, like opportunity_inactive.
+  const bucketSkipped: ScriptApplication[] = [];
+  body.applications = body.applications.filter((app) => {
+    const allowed = OPPORTUNITY_IMPORT_BUCKETS[String(app._opportunityId)];
+    if (!allowed || allowed.includes(String(app._bucket))) return true;
+    bucketSkipped.push(app);
+    return false;
+  });
+  for (const app of bucketSkipped) {
+    summary.applications_skipped++;
+    summary.notices.push({
+      scope: 'bucket_not_imported',
+      ref: String(app.applicationId),
+      message: `opp ${app._opportunityId} importa só o balde ` +
+        `${OPPORTUNITY_IMPORT_BUCKETS[String(app._opportunityId)]!.join('/')}; candidatura do balde ${app._bucket} ignorada`
+    });
+  }
+
   const allQRs = body.questionResponses ?? [];
   const allHistory = body.serviceHistory ?? [];  // p126 E2 — 1:N service history rows
 
@@ -345,7 +375,8 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
       will_insert: [],
       will_update: [],
       will_cross_cycle_refresh: [], // p153 hotfix7 — split out from will_update
-      will_skip: [],
+      // #2827: the bucket filter already ran; the preview lists those skips too.
+      will_skip: bucketSkipped.map((app) => ({ ref: String(app.applicationId), reason: 'bucket_not_imported' })),
       errors: [],
       // #1554 — load-time notices (active opportunity with empty essay_mapping)
       // are already computed above and belong in the preview too: the PM should
@@ -444,10 +475,10 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         summary.errors.push({
           scope: 'opportunity_not_found',
           ref: String(app.applicationId),
-          // Deliberately does NOT say "cadastre a oportunidade": #1175 D1 decided
-          // that a chapter-board vacancy (72562) must stay unregistered, and its
-          // candidates must never be imported. Registering it is one of the two
-          // valid answers here, not the answer.
+          // Deliberately does NOT say "cadastre a oportunidade": an unknown id may be
+          // a vacancy that is not the Nucleo's at all. Registering it is one of the
+          // two valid answers here, not the answer. (#1175 D1, revised 2026-10-29 in
+          // #2827: 72562 is registered and imports only the qualified bucket.)
           error: `opp ${oppId} não está cadastrada em vep_opportunities; cadastrar se for do Núcleo, ` +
             `ou confirmar que o allowlist do script de extração já deveria tê-la excluído (#1175 D1)`
         });
