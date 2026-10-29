@@ -28,7 +28,7 @@ const indexSrc = readFileSync(resolve(WORKER_DIR, 'src/index.ts'), 'utf8');
 const mapperSrc = readFileSync(resolve(WORKER_DIR, 'src/script-mapper.ts'), 'utf8');
 const scriptSrc = readFileSync(resolve(WORKER_DIR, 'scripts/extract_pmi_volunteer.js'), 'utf8');
 
-const NUCLEO_ALLOWLIST = ['64966', '64967', '66470'];
+const NUCLEO_ALLOWLIST = ['64966', '64967', '66470', '76631', '76661', '76662', '76663', '76664'];
 
 // ── Layer A: worker source guards ──────────────────────────────────────────────
 
@@ -74,8 +74,8 @@ test('#1175 W4: dry-run preview reports the same two skips as Apply', () => {
 // ── Layer A: canonical script copy guards (Wave 4 reform must not regress) ─────
 
 test('#1175 W4/F7: canonical script carries the Nucleo opportunity allowlist + LGPD gate', () => {
-  assert.match(scriptSrc, /NUCLEO_OPPORTUNITY_ALLOWLIST:\s*\[64966,\s*64967,\s*66470\]/,
-    'allowlist default must be the 3 Nucleo opportunities');
+  assert.match(scriptSrc, new RegExp(String.raw`NUCLEO_OPPORTUNITY_ALLOWLIST:\s*\[` + NUCLEO_ALLOWLIST.join(String.raw`,\s*`) + String.raw`\]`),
+    'the script allowlist default must be exactly the Nucleo opportunities in NUCLEO_ALLOWLIST');
   assert.match(scriptSrc, /excludedOpportunityIds/,
     'excluded opportunities must be recorded in meta (LGPD traceability)');
   assert.match(scriptSrc, /meta\.lgpd\s*=/,

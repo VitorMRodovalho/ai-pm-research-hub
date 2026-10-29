@@ -141,7 +141,8 @@
     // worker /ingest a skiparia de qualquer forma — opportunity_not_active).
     // Se OPPORTUNITY_IDS for setado manualmente, vale como confirmação
     // explícita (sem modal), mas vagas fora da allowlist geram warning.
-    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470],
+    // 76631 e 76661 a 76664: vagas do Grupo de Estudos CPMAI (2026/27).
+    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 76631, 76661, 76662, 76663, 76664],
     // #1316 — vagas HISTÓRICAS/FECHADAS do Núcleo que a auto-descoberta NÃO lista
     // (só lista as opportunities correntes do recruiter por partyID + posting date).
     // Ex.: 62106 = Ciclo 1 Goiás, porta de entrada de toda a coorte Goiás — o dado
