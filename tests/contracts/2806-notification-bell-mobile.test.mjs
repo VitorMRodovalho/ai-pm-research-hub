@@ -14,6 +14,7 @@ import { resolve } from 'node:path';
 import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const R = (p) => resolve(process.cwd(), p);
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const BELL = maskJsComments(readFileSync(R('src/components/notifications/NotificationBell.tsx'), 'utf8'));
 const LAYOUT = readFileSync(R('src/layouts/BaseLayout.astro'), 'utf8');
 
@@ -36,7 +37,7 @@ test('#2806 sino: textos do dicionario, nos tres idiomas, pelo pacote global', (
   assert.ok(keys.length >= 8, `chaves do sino achadas: ${keys.length}`);
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = readFileSync(R(`src/i18n/${lang}.ts`), 'utf8');
-    for (const k of keys) assert.match(dict, new RegExp(`\\n  '${k.replace(/\./g, '\\.')}': '[^']+',\\n`), `${lang}: ${k}`);
+    for (const k of keys) assert.match(dict, new RegExp(`\\n  '${reEsc(k)}': '[^']+',\\n`), `${lang}: ${k}`);
   }
   assert.match(LAYOUT, /const globalI18nBundle = buildPageI18n\(\[[^\]]*'comp\.notificationBell'[^\]]*\], lang\);/);
 });
