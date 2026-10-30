@@ -135,8 +135,9 @@ test('#2843: the block runs before the allowlist gate, points at the ingest work
     'the platform read must come after the discovery and before the gate builds its set');
 
   const ingest = scriptSrc.match(/NUCLEO_INGEST_URL: '(https:\/\/[^/']+)\/ingest'/);
-  assert.ok(ingest, 'the ingest URL must be findable');
-  assert.match(scriptSrc, new RegExp(String.raw`NUCLEO_OPPORTUNITIES_URL: '${ingest[1].replace(/\./g, '\\.')}/opportunities'`),
+  const opportunities = scriptSrc.match(/NUCLEO_OPPORTUNITIES_URL: '([^']+)'/);
+  assert.ok(ingest && opportunities, 'both worker URLs must be findable');
+  assert.equal(opportunities[1], `${ingest[1]}/opportunities`,
     'the opportunities URL must be the same worker as the ingest');
 
   assert.match(scriptSrc, /meta\.lgpd = \{[\s\S]{0,1500}?allowlist_source: allowlistSource,/,
