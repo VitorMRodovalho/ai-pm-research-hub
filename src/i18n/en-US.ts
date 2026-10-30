@@ -1489,6 +1489,7 @@ const enUS: Record<string, string> = {
   'notifications.title': 'Notifications',
   'notifications.markAllRead': 'Mark all as read',
   'notifications.empty': 'No notifications.',
+  'notifications.managementDigestSummary': '{open} open alert(s) · {resolved} resolved in the last 24 hours · {items} operational notice(s)',
   'notifications.cardAssigned': '{actor} assigned you to "{title}"',
   'notifications.cardMoved': '"{title}" moved to {status}',
   'notifications.reviewRequested': 'Review requested for "{title}"',
@@ -7664,6 +7665,15 @@ const enUS: Record<string, string> = {
   'settings.notifications.pushUnsupported': 'This browser does not support push notifications.',
   'settings.notifications.pushDenied': 'Notifications for this site are blocked in your browser settings.',
   'settings.notifications.pushDevices': 'Devices with notifications on for your account: {n}',
+  'settings.notifications.pushDeviceName': '{browser} on {os}',
+  'settings.notifications.pushDeviceUnknown': 'Unidentified browser',
+  'settings.notifications.pushDeviceLast': 'last notice delivered on {date}',
+  'settings.notifications.pushDeviceNever': 'no notice delivered yet',
+  'settings.notifications.pushDeviceDisabled': 'stopped receiving on {date}, after repeated failures',
+  'pushInvite.text': 'Notifications are off in this app. Turn them on to get notices right away.',
+  'pushInvite.enable': 'Turn on',
+  'pushInvite.later': 'Not now',
+  'pushInvite.error': 'Could not turn them on right now. Try again in Notification settings.',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Tribe broadcasts',

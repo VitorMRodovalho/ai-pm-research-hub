@@ -3,6 +3,7 @@ import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
 import OtherHostAppNotice from '../components/notifications/OtherHostAppNotice.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
+import PushInvite from '../components/notifications/PushInvite.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
 // TierViewerBar disabled — feature incomplete, never worked reliably
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
@@ -242,6 +243,7 @@ const CHANNEL_ICON: Record<ChannelKey, { label: string; path: string }> = {
   <Nav activePage={activePage} lang={lang} />
   {!isInstallHost && <OtherHostAppNotice lang={lang} href={seoCanonicalUrl} />}
   <AnnouncementBanner />
+  {isInstallHost && <PushInvite lang={lang} />}
   <AuthModal lang={lang} />
   <!-- Tier Viewer: disabled — never worked reliably (feature incomplete) -->
   <!-- <div id="tier-viewer-mount" class="hidden">

@@ -1,0 +1,75 @@
+---
+// #2842: convite para ativar o push DENTRO do app instalado. Instalar o app zera a permissao de notificacao e
+// derruba a inscricao do navegador, sem aviso; o app comecava mudo. O BaseLayout so renderiza isto no host
+// instalavel, e o script so mostra o convite no app aberto pelo icone, para membro logado, sem inscricao ativa.
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+---
+<div id="push-invite" hidden class="max-w-[1100px] mx-auto mt-3 px-4">
+  <div class="flex flex-wrap items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+    <span class="flex-1 min-w-[200px]">{t('pushInvite.text', lang)}</span>
+    <button id="push-invite-enable" type="button" class="px-3 py-1.5 rounded-lg bg-navy text-white text-[.78rem] font-semibold border-0 cursor-pointer hover:opacity-90">{t('pushInvite.enable', lang)}</button>
+    <button id="push-invite-later" type="button" class="px-3 py-1.5 rounded-lg bg-transparent text-blue-800 text-[.78rem] font-semibold border border-blue-200 cursor-pointer hover:bg-blue-100">{t('pushInvite.later', lang)}</button>
+    <span id="push-invite-status" class="w-full text-[.75rem] text-red-700" role="status"></span>
+  </div>
+</div>
+<span id="i18n-pushInviteError" hidden>{t('pushInvite.error', lang)}</span>
+
+<script>
+  import { isInstalledApp, pushSupport, pushInviteDismissed, dismissPushInvite, registerServiceWorker, enablePush } from '../../lib/push';
+
+  let started = false;
+
+  async function setup(sb: any) {
+    if (started) return;
+    started = true;
+    if (!isInstalledApp(window) || pushInviteDismissed() || pushSupport(window) !== 'ok') return;
+    // registro pronto ANTES do clique: o subscribe() tem de sair direto do gesto do usuario (Safari)
+    const reg = await registerServiceWorker();
+    const existing = await reg.pushManager.getSubscription();
+    if (existing && Notification.permission === 'granted') return;
+
+    const box = document.getElementById('push-invite')!;
+    const enableBtn = document.getElementById('push-invite-enable') as HTMLButtonElement;
+    const laterBtn = document.getElementById('push-invite-later') as HTMLButtonElement;
+    const statusEl = document.getElementById('push-invite-status')!;
+    box.hidden = false;
+
+    enableBtn.addEventListener('click', async () => {
+      enableBtn.disabled = true;
+      try {
+        await enablePush(sb, reg);
+        box.hidden = true;
+      } catch (err) {
+        console.error('[push-invite] ativar falhou', err);
+        if (Notification.permission === 'denied') {
+          dismissPushInvite();
+          box.hidden = true;
+          return;
+        }
+        statusEl.textContent = document.getElementById('i18n-pushInviteError')?.textContent || '';
+      } finally {
+        enableBtn.disabled = false;
+      }
+    });
+    laterBtn.addEventListener('click', () => {
+      dismissPushInvite();
+      box.hidden = true;
+    });
+  }
+
+  function boot() {
+    const sb = (window as any).navGetSb?.();
+    if (!sb) { setTimeout(boot, 200); return; }
+    if ((window as any).navGetMember?.()) { setup(sb).catch(() => undefined); return; }
+    window.addEventListener('nav:member', ((e: CustomEvent) => {
+      if (e.detail) setup(sb).catch(() => undefined);
+    }) as EventListener);
+  }
+
+  boot();
+</script>
