@@ -1489,6 +1489,7 @@ const enUS: Record<string, string> = {
   'notifications.title': 'Notifications',
   'notifications.markAllRead': 'Mark all as read',
   'notifications.empty': 'No notifications.',
+  'notifications.managementDigestSummary': '{open} open alert(s) · {resolved} resolved in the last 24 hours · {items} operational notice(s)',
   'notifications.cardAssigned': '{actor} assigned you to "{title}"',
   'notifications.cardMoved': '"{title}" moved to {status}',
   'notifications.reviewRequested': 'Review requested for "{title}"',

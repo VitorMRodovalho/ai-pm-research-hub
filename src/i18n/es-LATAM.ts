@@ -1489,6 +1489,7 @@ const esLATAM: Record<string, string> = {
   'notifications.title': 'Notificaciones',
   'notifications.markAllRead': 'Marcar todas como leídas',
   'notifications.empty': 'Sin notificaciones.',
+  'notifications.managementDigestSummary': '{open} alerta(s) abierta(s) · {resolved} resuelta(s) en las últimas 24 horas · {items} aviso(s) operativo(s)',
   'notifications.cardAssigned': '{actor} te asignó al card "{title}"',
   'notifications.cardMoved': '"{title}" movido a {status}',
   'notifications.reviewRequested': 'Revisión solicitada para "{title}"',
