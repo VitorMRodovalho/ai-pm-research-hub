@@ -44,82 +44,25 @@ gh run list --limit 30 --json name,status \
                                               # (2) zero jobs de banco em voo — SEM --branch
 ```
 
-⚠️ **Fila de PRs vazia NÃO é banco livre, e o próprio ato de esvaziá-la é o que arma o perigo.**
-Mergear **zera** `gh pr list` e, no mesmo segundo, **dispara** `CI Validate` e `Schema Invariants`
-sobre a `main`, no mesmo banco compartilhado. Medido em 18/09: `gh pr list` vazio com 2 jobs de banco
-rodando. É o instante em que a tela parece mais liberada e em que mais dá vontade de escrever.
-**Não recorte por `--branch`:** o recorte por branch zera no instante do merge, e é ele que cria o
-ponto cego. Filtre por **nome de job**, porque são esses três que disputam o banco.
-
-O resto continua valendo: `apply_migration` atinge o banco **compartilhado** na hora, e enquanto o
-`.sql` não está no ref sob teste, aquele ref **não explica o estado do banco** — o vermelho está
-CORRETO. A `main` **não é exceção**.
-
-- Quatro mordidas em 17/09/2026, todas da mesma regra:
-  1. `test:verdict` local rodando durante o CI da própria PR ⇒ fixture órfã violou invariante e
-     derrubou **15 asserções** (a suíte escreve em produção e o `cleanup()` morre com a rede);
-  2. branch criada a partir da `main` **depois** de aplicar DDL ⇒ PR de um único `.md` reprovou por
-     tabela órfã;
-  3. DDL aplicada com a `main` ainda sem o arquivo ⇒ **3 alertas do CI Monitor** e ~1h de produção
-     desalinhada;
-  4. a quarta foi **evitada** aplicando com a fila vazia — custo zero.
-- **Só a sessão ORQUESTRADORA escreve no banco (#2477, decisão do GP em 25/09/2026).** O hook
-  `.claude/hooks/db-write-gate.py` **nega** `apply_migration` e `execute_sql` com escrita neste
-  projeto a toda sessão cujo `session_id` não é o designado em
-  `~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador`, esteja ela numa lane ou no clone
-  principal; sem designação, nega a todas. Leitura passa, mas a de quem não é a orquestradora volta
-  reescrita para rodar numa transação somente leitura: o texto do SQL não diz o que uma função chamada faz,
-  e quem recusa a escrita é o Postgres. Controle de transação (`COMMIT`, `BEGIN`…) nessa leitura é negado. Uma cópia roda também como hook de
-  **usuário** (`~/.claude/settings.json`), para cobrir lanes em branch antiga. Lane prepara o pacote
-  (o `.sql` e a verificação) e manda para a orquestradora. Trocar a orquestradora é decisão do GP:
-  `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`. Origem: em 25/09 duas migrations
-  foram aplicadas por uma sessão que não era a orquestradora e rodava no **clone principal**, e por
-  isso um gate por diretório não a teria barrado.
-- **O mesmo hook cobre o Bash (pacote A, GP 25/09/2026).** O MCP não é o único caminho: o token de
-  gestão da conta roda SQL de qualquer tipo, DDL incluído, pela `api.supabase.com` ou pela CLI ligada,
-  e em todos os projetos da conta. Para quem não é a orquestradora, neste repositório (clone ou lane)
-  ou em comando que cite o ref deste projeto, o hook nega `api.supabase.com`, `supabase
-  db|migration|functions|gen|…`, `psql`, `npm run db:types`, `check_advisors` e a leitura do token.
-  O token mora em `~/.config/supabase-mgmt/token` (600, fora de todo repo), e
-  `with-supabase-token <comando>` o carrega para um comando só. Deploy de EF, `db:types` e advisors
-  ficam com a orquestradora. A chave service_role do `.env` das lanes **não** é coberta: alcança só
-  DML, e os testes com banco precisam dela.
-- **Para a orquestradora, o mesmo hook pergunta** quando o banco está ocupado (matcher `mcp__*__apply_migration`):
-  ele devolve `permissionDecision: ask` e **nomeia qual das duas condições disparou**, contando PRs
-  abertas E jobs de banco em voo. ⚠️ A primeira versão do hook (17/09) consultava **só** a fila de
-  PRs, e por isso teria liberado uma DDL em 18/09 com dois jobs de banco rodando na `main`: **o
-  mecanismo herdou o ponto cego da regra que mecanizava.** Exercitado nos dois sentidos antes de
-  subir, e a versão antiga fica silenciosa no caso exato em que a nova dispara. O hook é o mecanismo; esta seção é o porquê. Memória não intercepta — a regra já existia
-  em memória nas três primeiras mordidas e não impediu nenhuma.
-- **Aplicar e commitar são UM passo.** Depois do `apply_migration`: ler a versão registrada,
-  nomear o `.sql` com ela, conferir o md5 do corpo vivo contra o arquivo, commitar. Sem intervalo.
-- **Não rode `npm run test:verdict` enquanto o CI de qualquer PR sua estiver no ar.** Nem o
-  `with-db-lease` (local × local) nem o `wait-for-db-lane` (job × job) cobrem o eixo **local × CI**.
+- **Fila vazia NÃO é banco livre:** mergear zera `gh pr list` e, no mesmo segundo, dispara `CI Validate` e
+  `Schema Invariants` sobre a `main`, no mesmo banco. Filtre por **nome de job**, nunca por `--branch`.
+- **Só a sessão ORQUESTRADORA escreve no banco (#2477).** O hook `.claude/hooks/db-write-gate.py` nega DDL, escrita
+  via SQL e o caminho pelo Bash (token de gestão, CLI, `psql`, `db:types`) a toda outra sessão; lane prepara o
+  pacote e manda. Trocar a orquestradora é decisão do GP: `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`.
+- **Aplicar e commitar são UM passo:** ler a versão registrada, nomear o `.sql` com ela, conferir o md5 do corpo
+  vivo contra o arquivo, commitar. Sem intervalo.
+- **Não rode `npm run test:verdict` enquanto o CI de qualquer PR sua estiver no ar.**
+- Os incidentes que originaram a regra, o que o hook nega e o ritual completo estão em `.claude/rules/database.md`
+  (§Fila de apply e §DDL must go through `apply_migration`). **Leia antes do primeiro `apply_migration` da
+  sessão:** aplicar pelo MCP não toca arquivo, então a regra não carrega sozinha por caminho.
 
 ## Asserção de guard amarra CONDIÇÃO ao RESULTADO — presença de string não é prova (MANDATÓRIO)
 
-**IMPORTANT — YOU MUST:** ao escrever um guard que afirma sobre um corpo (SQL, TS, `.astro`), a
-asserção tem de casar **a condição junto com o resultado que ela produz**, dentro do bloco que
-decide. `includes('x')` ou `/x/` solto num corpo de centenas de linhas fica **verde com o
-mecanismo removido**, porque a string sobrevive em algum lugar que não decide nada.
-
-- Três incidentes em 17/09/2026, todos pegos pelo teste de mutação e **nenhum por leitura**:
-  1. `#2335`: `/is_visitor/` solto passava com o campo **removido do UNION** — a string sobrevivia
-     nos comentários.
-  2. `#2286`: `ef.includes('other_notifications')` passava com o **bloco do e-mail removido** —
-     casava o comentário que eu mesmo escrevi para explicar a seção.
-  3. `#2341`: `/retired_at IS NOT NULL/` passava com a **classificação inteira neutralizada** —
-     casava a contagem de `retired_jobs` no `RETURN`.
-- **A forma que funciona:** recortar o bloco que decide e afirmar dentro dele, ligando os dois lados
-  — `assert.match(bloco, /retired_at IS NOT NULL\s+THEN\s+'aposentado'/)`, não
-  `assert.match(corpo, /retired_at/)`. Para TS, mascarar comentários antes de medir
-  (`maskJsComments`); para SQL, `maskLineComments`.
-- **Mutação é obrigatória, e a mutação tem de MUDAR O ARQUIVO de fato** (compare o md5 antes e
-  depois; uma mutação que não aplicou lê como "guard aprovou"). Cada asserção precisa de uma
-  mutação que a faça reprovar, e o controle sem mutação precisa passar no fim.
-- **Mutar o ARQUIVO não exercita camada VIVA.** Quando o guard afirma sobre o banco, a prova é
-  evidência direta + controle positivo — exercer a função com impersonação e mostrar o estado
-  mudando nos dois sentidos, como em `#2341` (expectativa sem cron ⇒ `red`).
+**IMPORTANT — YOU MUST:** um guard que afirma sobre um corpo (SQL, TS, `.astro`) casa **a condição junto com o
+resultado**, dentro do bloco que decide: `includes('x')` solto fica verde com o mecanismo removido. Cada asserção
+tem uma mutação que a reprova, e a mutação **muda o arquivo de fato** (md5 antes e depois). Camada VIVA se prova
+com evidência direta e controle positivo, não com mutação de arquivo. Incidentes e a forma que funciona:
+`.claude/rules/guards.md`.
 
 ## Antes de propor uma DECISÃO sobre uma tabela, leia os guards dela (MANDATÓRIO)
 
@@ -151,7 +94,6 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 - **Supabase:** `ldrfrvwhxsmgaabwmaik` (sa-east-1)
 - **Stack:** Astro v7 (Cloudflare Workers) · Supabase Postgres + Edge Functions (Deno) · Cloudflare worker `pmi-vep-sync` (wrangler 4.x)
 - **MCP server:** `nucleo-mcp` em `supabase/functions/nucleo-mcp/` — OAuth 2.1 + custom domain `nucleoia.vitormr.dev/mcp` (ver `.claude/rules/mcp.md`)
-- **AI Model:** Claude Opus 4.8 (`claude-opus-4-8`) — released 2026-05-28. xhigh effort level. `/ultrareview` for code review.
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA / MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y).
 - **Current state (counts, last commits, session handoffs):** NOT pinned in CLAUDE.md (per Anthropic guidance — frequently-changing data bloats context). Use `/audit` skill, MCP tools `get_admin_dashboard` / `get_invitation_health`, or read `memory/handoff_p*.md` + `git log` when needed.
@@ -171,27 +113,9 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 
 ## GC-097: Pre-Commit Validation (MANDATORY)
 
-### If you touched SQL/RPC:
-1. Check FK constraints: `SELECT constraint_name, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'TABLE'::regclass AND contype = 'f';`
-2. Verify `auth.uid()` vs `members.id` — events.created_by FK → auth.users(id), NOT members(id)
-3. Test the RPC with real data via MCP execute_sql
-4. Check for column name mismatches: members uses `name` (not `full_name`), `credly_url` (not `credly_username`), publication_submissions uses `submission_date` (not `submitted_at`)
-5. Check array types: members.designations is `text[]` (not jsonb). Use `&&` not `?|`, use `array_length()` not `jsonb_array_length()`
-
-### If you touched i18n:
-1. Every new key MUST exist in ALL 3 dictionaries (pt-BR.ts, en-US.ts, es-LATAM.ts)
-2. Grep for raw keys in components: any `t('key.name')` must have a corresponding entry
-3. Check the key name matches exactly (e.g., `modal.advanced` vs `modal.advancedFields`)
-
-### If you created/modified routes:
-1. If a PT-BR page exists, /en/ and /es/ redirect pages must also exist
-2. Check: `ls src/pages/en/X.astro src/pages/es/X.astro`
-
-### If you modified an RPC signature:
-1. Use DROP + CREATE (not CREATE OR REPLACE) when changing parameter types or count
-2. Check for overloaded functions: `SELECT count(*) FROM pg_proc WHERE proname = 'X' AND pronamespace = 'public'::regnamespace`
-3. After applying to DB, ALWAYS run: `NOTIFY pgrst, 'reload schema'`
-4. Mark migration as applied: `supabase migration repair --status applied TIMESTAMP`
+- **SQL/RPC e mudança de assinatura de RPC:** checklist em `.claude/rules/database.md`, que carrega com arquivo
+  SQL, migration, Edge Function ou `database.gen.ts`.
+- **i18n e rotas:** checklist em `.claude/rules/i18n.md`, que carrega com `src/i18n`, `src/pages` ou `src/components`.
 
 ### ALWAYS:
 1. Run `./node_modules/.bin/astro build` — must pass with 0 new errors. Verify by the **unpiped exit code**
@@ -214,6 +138,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 ## Detailed Rules (loaded on demand)
 - Database: `.claude/rules/database.md`
 - i18n: `.claude/rules/i18n.md`
+- Guards e testes de contrato: `.claude/rules/guards.md`
 - MCP: `.claude/rules/mcp.md`
 - Deploy: `.claude/rules/deploy.md`
 - **TODA mudança entra por PR, inclusive a que só mexe em documentação** (`.md`, `CLAUDE.md`,
@@ -225,19 +150,16 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - V4 refactor invariants (historical, archived): `docs/refactor/refactor-in-progress-RULES-ARCHIVED.md`
 
 ## Council (multi-agent review structure)
-**Active since 2026-04-18.** 12 specialized sub-agents em `.claude/agents/` (product-leader, ux-leader, c-level-advisor, stakeholder-persona, senior-software-engineer, ai-engineer, data-architect, security-engineer, startup-advisor, vc-angel-lens, legal-counsel, accountability-advisor) operando em 3 tiers:
-
-- **Tier 1 (always)**: `platform-guardian` + `code-reviewer` em início/fim de sessão e mudanças estruturais
-- **Tier 2 (domain-triggered)**: invocar agent específico conforme domínio (ver `docs/council/README.md` tabela)
-- **Tier 3 (strategic)**: `/council-review [topic]` em milestones — output em `docs/council/`
-
-Todos são **consultivos** (não modificam código). PM/main loop decide ação. Decision log em `docs/council/decisions/`.
+12 agentes **consultivos** em `.claude/agents/` (não modificam código; o main loop decide), em 3 tiers: **Tier 1**
+`platform-guardian` + `code-reviewer` em início/fim de sessão e mudanças estruturais; **Tier 2** o agente do
+domínio (tabela em `docs/council/README.md`); **Tier 3** `/council-review [topic]` em milestones, com saída em
+`docs/council/`. Decision log em `docs/council/decisions/`.
 
 ### Routing discipline (MANDATORY — context-hygiene 2026-06-11)
-- **1 agente por subação.** Escolha o agente cujo domínio casa com a tarefa; não convoque mais de um "por garantia".
-- **NUNCA convocar o conselho inteiro por default.** Convocação múltipla (>1 agente) ou `/council-review` exige **justificativa explícita** (milestone, decisão estratégica de alto impacto, ou conflito de domínio real) — declare-a antes de invocar.
-- Tier 1 (`platform-guardian`/`code-reviewer`) e o agente de domínio (Tier 2) cobrem ~95% dos casos. Tier 3 é exceção, não rotina.
-- Agentes são lazy-loaded (custo ~0 em contexto fixo); o custo é **por spawn** — cada invocação extra é um context window inteiro. Trate convocação como gasto, não como hábito.
+- **1 agente por subação.** Nunca o conselho inteiro por default: mais de 1 agente, ou `/council-review`, exige
+  **justificativa explícita** (milestone, decisão estratégica de alto impacto ou conflito de domínio real),
+  declarada antes de invocar. Tier 1 e o agente de domínio cobrem ~95% dos casos.
+- O custo é **por spawn**: cada invocação é um context window inteiro. Trate convocação como gasto, não hábito.
 
 ## Onde nasce a issue: tracker público × privado (MANDATÓRIO, ADR-0002 emenda A2, GP 11/10/2026)
 

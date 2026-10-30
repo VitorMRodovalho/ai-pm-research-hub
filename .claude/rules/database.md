@@ -1,14 +1,10 @@
 ---
-description: Rules for SQL migrations, RPCs, and database changes
-globs: supabase/**/*.sql, src/lib/database.gen.ts
----
-
----
-description: Database rules — GC-097 pre-commit validation, RPC signature changes, DDL via apply_migration (not execute_sql), LGPD/RLS, V4 authority audit
+description: Database rules — GC-097 pre-commit validation, RPC signature changes, DDL via apply_migration (not execute_sql), apply queue and the orchestrator gate, LGPD/RLS, V4 authority audit
 paths:
   - "supabase/migrations/**"
   - "supabase/functions/**"
   - "**/*.sql"
+  - "src/lib/database.gen.ts"
 ---
 
 # Database Rules
@@ -79,3 +75,67 @@ Rule:
 ⚠️ **A etapa 0 é a mais nova e a que já foi esquecida uma vez** (2026-09-22, #2417): `engagement_kind_permissions` diz o que o par CONCEDE; `engagement_kinds.initiative_kinds_allowed` diz se o kind pode sequer ser **ATADO** àquela espécie de iniciativa, e `manage_initiative_engagement` valida esse segundo antes de olhar o primeiro. O par `observer × participant → write_board` (#2416) passou nas 4 etapas, foi seedado com escopo correto e guard próprio, e **alcançava 0 linhas**, porque `observer` não era admissível em `workgroup`. Um seed inalcançável fica verde em todo teste de permissão que existe — é conteúdo, não efeito. Pergunte **quantas linhas o caminho novo alcança HOJE** logo depois de aplicar, e deixe o número no registro.
 
 Anti-pattern documentado: "seed expansion como atalho" em actions destrutivas (`manage_member`, `manage_platform`) cria privilege escalation que viola invariante "member lifecycle = GP-only" (LGPD Art. 18).
+
+## Fila de apply e a sessão orquestradora (detalhe; o resumo MANDATÓRIO fica no CLAUDE.md)
+Movido verbatim do CLAUDE.md em 30/10/2026, para o CLAUDE.md caber em cada pedido.
+
+**IMPORTANT — YOU MUST:** antes de qualquer `apply_migration`, confirme **DUAS** condições, não uma:
+
+```bash
+gh pr list --state open                       # (1) zero PRs abertas
+gh run list --limit 30 --json name,status \
+  --jq '[.[]|select(.status!="completed")|select(.name|test("Validate|Invariants|DB Types"))]|length'
+                                              # (2) zero jobs de banco em voo — SEM --branch
+```
+
+⚠️ **Fila de PRs vazia NÃO é banco livre, e o próprio ato de esvaziá-la é o que arma o perigo.**
+Mergear **zera** `gh pr list` e, no mesmo segundo, **dispara** `CI Validate` e `Schema Invariants`
+sobre a `main`, no mesmo banco compartilhado. Medido em 18/09: `gh pr list` vazio com 2 jobs de banco
+rodando. É o instante em que a tela parece mais liberada e em que mais dá vontade de escrever.
+**Não recorte por `--branch`:** o recorte por branch zera no instante do merge, e é ele que cria o
+ponto cego. Filtre por **nome de job**, porque são esses três que disputam o banco.
+
+O resto continua valendo: `apply_migration` atinge o banco **compartilhado** na hora, e enquanto o
+`.sql` não está no ref sob teste, aquele ref **não explica o estado do banco** — o vermelho está
+CORRETO. A `main` **não é exceção**.
+
+- Quatro mordidas em 17/09/2026, todas da mesma regra:
+  1. `test:verdict` local rodando durante o CI da própria PR ⇒ fixture órfã violou invariante e
+     derrubou **15 asserções** (a suíte escreve em produção e o `cleanup()` morre com a rede);
+  2. branch criada a partir da `main` **depois** de aplicar DDL ⇒ PR de um único `.md` reprovou por
+     tabela órfã;
+  3. DDL aplicada com a `main` ainda sem o arquivo ⇒ **3 alertas do CI Monitor** e ~1h de produção
+     desalinhada;
+  4. a quarta foi **evitada** aplicando com a fila vazia — custo zero.
+- **Só a sessão ORQUESTRADORA escreve no banco (#2477, decisão do GP em 25/09/2026).** O hook
+  `.claude/hooks/db-write-gate.py` **nega** `apply_migration` e `execute_sql` com escrita neste
+  projeto a toda sessão cujo `session_id` não é o designado em
+  `~/projects/_pmo/lanes/ai-pm-research-hub.orquestrador`, esteja ela numa lane ou no clone
+  principal; sem designação, nega a todas. Leitura passa, mas a de quem não é a orquestradora volta
+  reescrita para rodar numa transação somente leitura: o texto do SQL não diz o que uma função chamada faz,
+  e quem recusa a escrita é o Postgres. Controle de transação (`COMMIT`, `BEGIN`…) nessa leitura é negado. Uma cópia roda também como hook de
+  **usuário** (`~/.claude/settings.json`), para cobrir lanes em branch antiga. Lane prepara o pacote
+  (o `.sql` e a verificação) e manda para a orquestradora. Trocar a orquestradora é decisão do GP:
+  `scripts/lane-registry.sh orquestrador <session_id> "<nota>"`. Origem: em 25/09 duas migrations
+  foram aplicadas por uma sessão que não era a orquestradora e rodava no **clone principal**, e por
+  isso um gate por diretório não a teria barrado.
+- **O mesmo hook cobre o Bash (pacote A, GP 25/09/2026).** O MCP não é o único caminho: o token de
+  gestão da conta roda SQL de qualquer tipo, DDL incluído, pela `api.supabase.com` ou pela CLI ligada,
+  e em todos os projetos da conta. Para quem não é a orquestradora, neste repositório (clone ou lane)
+  ou em comando que cite o ref deste projeto, o hook nega `api.supabase.com`, `supabase
+  db|migration|functions|gen|…`, `psql`, `npm run db:types`, `check_advisors` e a leitura do token.
+  O token mora em `~/.config/supabase-mgmt/token` (600, fora de todo repo), e
+  `with-supabase-token <comando>` o carrega para um comando só. Deploy de EF, `db:types` e advisors
+  ficam com a orquestradora. A chave service_role do `.env` das lanes **não** é coberta: alcança só
+  DML, e os testes com banco precisam dela.
+- **Para a orquestradora, o mesmo hook pergunta** quando o banco está ocupado (matcher `mcp__*__apply_migration`):
+  ele devolve `permissionDecision: ask` e **nomeia qual das duas condições disparou**, contando PRs
+  abertas E jobs de banco em voo. ⚠️ A primeira versão do hook (17/09) consultava **só** a fila de
+  PRs, e por isso teria liberado uma DDL em 18/09 com dois jobs de banco rodando na `main`: **o
+  mecanismo herdou o ponto cego da regra que mecanizava.** Exercitado nos dois sentidos antes de
+  subir, e a versão antiga fica silenciosa no caso exato em que a nova dispara. O hook é o mecanismo; esta seção é o porquê. Memória não intercepta — a regra já existia
+  em memória nas três primeiras mordidas e não impediu nenhuma.
+- **Aplicar e commitar são UM passo.** Depois do `apply_migration`: ler a versão registrada,
+  nomear o `.sql` com ela, conferir o md5 do corpo vivo contra o arquivo, commitar. Sem intervalo.
+- **Não rode `npm run test:verdict` enquanto o CI de qualquer PR sua estiver no ar.** Nem o
+  `with-db-lease` (local × local) nem o `wait-for-db-lane` (job × job) cobrem o eixo **local × CI**.
