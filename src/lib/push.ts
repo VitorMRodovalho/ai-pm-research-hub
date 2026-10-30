@@ -87,3 +87,25 @@ export async function unregisterThisDevice(sb: RpcClient): Promise<void> {
   })().catch(() => undefined);
   await Promise.race([work, new Promise((resolve) => setTimeout(resolve, 3000))]);
 }
+
+// Apaga a inscricao de push de TODOS os aparelhos do membro e cancela a deste navegador. Usado antes do signOut
+// global (a funcao do banco precisa da sessao). Lanca na falha e no teto de 5 s, para a tela poder avisar.
+export async function unregisterAllDevices(sb: RpcClient): Promise<void> {
+  const work = (async () => {
+    await rpcChecked(sb, 'unregister_all_my_push_subscriptions');
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration('/');
+      const sub = await reg?.pushManager.getSubscription();
+      await sub?.unsubscribe().catch(() => undefined);
+    }
+  })();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), 5000);
+  });
+  try {
+    await Promise.race([work, timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}

@@ -255,6 +255,7 @@ const PROFILE_I18N = {
   mcpDisconnectConfirm: t('profile.mcpDisconnectConfirm', lang),
   toastMcpDisconnected: t('profile.toastMcpDisconnected', lang),
   toastMcpDisconnectError: t('profile.toastMcpDisconnectError', lang),
+  toastPushUnregisterAllError: t('profile.toastPushUnregisterAllError', lang),
   deleteConfirmPrompt: t('profile.deleteConfirmPrompt', lang),
   deleteConfirmKeyword: t('profile.deleteConfirmKeyword', lang),
   toastSupabaseDown: t('profile.toastSupabaseDown', lang),
@@ -321,6 +322,7 @@ const PROFILE_I18N = {
   import { normalizeMemberCycleHistory } from '../lib/cycle-history';
   import { formatDateOnly, parseDateOnly } from '../lib/date-only';
   import { rpcChecked } from '../lib/rpc-checked';
+  import { unregisterAllDevices } from '../lib/push';
   // p207 (Issue #216, 2026-05-20): import t() runtime translator. The script body
   // below calls t('profile.xp.howToEarn', lang) etc ~25 times at runtime (XP pillars
   // + champions + journey labels). Frontmatter `import { t } from '../i18n/utils'`
@@ -2619,6 +2621,13 @@ const PROFILE_I18N = {
     const sb = (window as any).navGetSb?.();
     if (!sb) { (window as any).toast?.(PROFILE_I18N.toastSupabaseDown || 'Supabase indisponível', 'error'); return; }
     try {
+      // #2806: antes do signOut global, apaga o push de todos os aparelhos; senao o titulo dos avisos seguiria
+      // aparecendo neles. A falha nao segura a desconexao, mas avisa.
+      try {
+        await unregisterAllDevices(sb);
+      } catch {
+        (window as any).toast?.(PROFILE_I18N.toastPushUnregisterAllError || 'Não foi possível desligar as notificações dos outros aparelhos.', 'error');
+      }
       const { error } = await sb.auth.signOut({ scope: 'global' });
       if (error) throw error;
       (window as any).toast?.(PROFILE_I18N.toastMcpDisconnected || 'Clientes MCP desconectados. Redirecionando…', 'success');
