@@ -726,6 +726,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
               applicant_name: mapped.applicant_name,
               email: mapped.email,
               role_applied: mapped.role_applied,
+              opportunity_title: opp.title,
               chapter: mapped.chapter,
               token
             });
