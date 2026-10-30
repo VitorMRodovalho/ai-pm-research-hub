@@ -27897,12 +27897,15 @@ export type Database = {
         Row: {
           chapter_posted: string | null
           created_at: string | null
+          cycle_id: string | null
           eligibility: string | null
           end_date: string | null
           essay_mapping: Json
           id: string
+          initiative_id: string | null
           is_active: boolean | null
           opportunity_id: string
+          organization_id: string
           positions_available: number | null
           requirements: string | null
           role_default: string | null
@@ -27914,12 +27917,15 @@ export type Database = {
         Insert: {
           chapter_posted?: string | null
           created_at?: string | null
+          cycle_id?: string | null
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
           id?: string
+          initiative_id?: string | null
           is_active?: boolean | null
           opportunity_id: string
+          organization_id?: string
           positions_available?: number | null
           requirements?: string | null
           role_default?: string | null
@@ -27931,12 +27937,15 @@ export type Database = {
         Update: {
           chapter_posted?: string | null
           created_at?: string | null
+          cycle_id?: string | null
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
           id?: string
+          initiative_id?: string | null
           is_active?: boolean | null
           opportunity_id?: string
+          organization_id?: string
           positions_available?: number | null
           requirements?: string | null
           role_default?: string | null
@@ -27945,7 +27954,29 @@ export type Database = {
           title?: string
           vep_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "vep_opportunities_cycle_same_org_fkey"
+            columns: ["cycle_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "selection_cycles"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "vep_opportunities_initiative_same_org_fkey"
+            columns: ["initiative_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "vep_opportunities_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vep_reconciliation_baselines: {
         Row: {
@@ -31011,6 +31042,10 @@ export type Database = {
         }[]
       }
       _audit_list_schema_migrations: { Args: never; Returns: Json }
+      _audit_member_read_probe: {
+        Args: { p_member_id: string; p_relname: string }
+        Returns: Json
+      }
       _audit_merit_transfer_on_completed_cards: {
         Args: never
         Returns: {

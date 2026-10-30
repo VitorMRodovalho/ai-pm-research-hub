@@ -96,6 +96,7 @@ const SEL_I18N = {
   inlineRejectToast: t('admin.selection.inlineRejectToast', lang),
   bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
   allChaptersOption: t('admin.selection.allChapters', lang),
+  allOpportunitiesOption: t('admin.selection.allOpportunities', lang),
   pertCutoffLabel: t('admin.selection.pertCutoffLabel', lang),
   pertCutoffTooltip: t('admin.selection.pertCutoffTooltip', lang),
   pertCutoffEmpty: t('admin.selection.pertCutoffEmpty', lang),
@@ -154,6 +155,7 @@ const SEL_I18N = {
     researcher: t('admin.selection.researcher', lang),
     leader: t('admin.selection.leader', lang),
     both: t('admin.selection.statusBoth', lang),
+    manager: t('admin.selection.manager', lang),
   },
   earlyAcceptancePanel: {
     title: t('admin.selection.earlyAcceptancePanel.title', lang),
@@ -523,9 +525,15 @@ const SEL_I18N = {
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-navy text-white" data-role="all">{t('admin.selection.allOption', lang)}</button>
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="researcher">{t('admin.selection.researcher', lang)}</button>
             <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="leader">{t('admin.selection.leader', lang)}</button>
+            <button class="sel-role-btn px-3 py-1.5 text-[12px] font-semibold cursor-pointer border-0 bg-[var(--surface-card)] text-[var(--text-secondary)]" data-role="manager">{t('admin.selection.manager', lang)}</button>
           </div>
           <select id="sel-chapter" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
             <option value="all">{t('admin.selection.allChapters', lang)}</option>
+          </select>
+          <!-- ADR-0134 (#2393): a vaga do VEP de cada candidatura. Escolher uma vaga desliga "Ocultar
+               decididos" e "Ocultar shadow VEP" (showWholeFunnel), como no ciclo fechado. -->
+          <select id="sel-opportunity" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
+            <option value="all">{t('admin.selection.allOpportunities', lang)}</option>
           </select>
           <select id="sel-status" class="px-3 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-card)] text-[var(--text-primary)] focus:outline-none">
             <option value="all">{t('admin.selection.allStatusOption', lang)}</option>
@@ -564,6 +572,7 @@ const SEL_I18N = {
                   <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="role_applied">{t('admin.selection.colTrack', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="vep_opportunity_id">{t('admin.selection.colOpportunity', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="chapter">{t('admin.selection.chapter', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="objective_score">{t('admin.selection.colResearch', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="leader_score">{t('admin.selection.colLeaderShort', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
@@ -616,7 +625,7 @@ const SEL_I18N = {
             <h3 class="text-sm font-bold text-navy" id="opp-form-title">Nova Vaga VEP</h3>
             <div class="grid grid-cols-2 gap-3">
               <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Opportunity ID</label><input type="text" id="opp-id" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="64967" /></div>
-              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Papel Default</label><select id="opp-role" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]"><option value="researcher">Pesquisador</option><option value="leader">Líder</option></select></div>
+              <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">Papel Default</label><select id="opp-role" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]"><option value="researcher">Pesquisador</option><option value="leader">Líder</option><option value="manager">Gerente</option></select></div>
             </div>
             <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">{t('admin.selection.titleColumn', lang)}</label><input type="text" id="opp-title" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder={t('admin.selection.opportunityTitlePh', lang)} /></div>
             <div><label class="text-[10px] font-semibold text-[var(--text-secondary)]">URL do VEP</label><input type="text" id="opp-url" class="w-full px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)]" placeholder="https://volunteer.pmi.org/..." /></div>
@@ -920,6 +929,7 @@ const SEL_I18N = {
     noCandidates: 'Nenhum candidato', errorPrefix: 'Erro',
     detailsBtn: 'Detalhes', bulkSelectedSuffix: 'selecionados',
     allChaptersOption: 'Todos os Capítulos',
+    allOpportunitiesOption: 'Todas as vagas',
     pertCutoffLabel: 'Corte',
     pertCutoffTooltip: 'Corte = PERT (Mín+4×Méd+Máx)/8 dos aprovados ativos em ciclos anteriores. Banda ±10% é a faixa de calibração entre avaliadores.',
     pertCutoffEmpty: 'Corte não calculado (cohort < 10)',
@@ -960,7 +970,7 @@ const SEL_I18N = {
       approved: 'Aprovado', rejected: 'Rejeitado', waitlist: 'Lista de Espera',
       converted: 'Convertido', withdrawn: 'Desistiu', cancelled: 'Cancelado',
     },
-    roleLabels: { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos' },
+    roleLabels: { researcher: 'Pesquisador', leader: 'Líder', both: 'Ambos', manager: 'Gerente' },
     earlyAcceptancePanel: {
       title: 'Aprovados sem avaliação', approved: 'aprovados',
       justified: 'com justificativa', unjustified: 'sem justificativa',
@@ -1117,6 +1127,10 @@ const SEL_I18N = {
 
   let filterRole = 'all';
   let filterChapter = 'all';
+  let filterOpportunity = 'all';
+  // ADR-0134 (#2393): título de cada vaga, lido pela vep_opportunities com a sessão de quem olha.
+  // A RLS decide: vaga de iniciativa confidencial sem vínculo não volta, e a coluna mostra só o id.
+  let opportunityTitles: Record<string, string> = {};
   let filterStatus = 'all';
   let filterVideo: 'all' | 'uploaded' | 'opted_out' | 'none' = 'all';
   let filterSearch = '';
@@ -1841,7 +1855,9 @@ const SEL_I18N = {
           }
         } catch { /* optional enhancement */ }
       }
+      await loadOpportunityTitles();
       populateChapterDropdown();
+      populateOpportunityDropdown();
       applyFilters();
     } catch (e: any) {
       console.error('Selection load:', e);
@@ -1860,6 +1876,64 @@ const SEL_I18N = {
     sel.value = current;
   }
 
+  /* ADR-0134 (#2393): sem título (erro, ou vaga que a RLS não devolve a quem olha), a coluna e o
+     filtro mostram só o id. Nunca bloqueia a tela. */
+  async function loadOpportunityTitles() {
+    if (!sb) return;
+    const { data, error } = await sb.from('vep_opportunities').select('opportunity_id, title');
+    if (error || !data) return;
+    opportunityTitles = Object.fromEntries(data.map((o: any) => [String(o.opportunity_id), o.title || '']));
+  }
+
+  function opportunityLabel(id: string): string {
+    const title = opportunityTitles[id];
+    if (!title) return id;
+    return `${id} · ${title.length > 40 ? title.slice(0, 39) + '…' : title}`;
+  }
+
+  // As opções vêm das candidaturas do ciclo, como as de capítulo. Ao trocar de ciclo, uma vaga que não
+  // existe mais nele volta o filtro para "todas", em vez de deixar a tabela vazia por um valor fantasma.
+  function populateOpportunityDropdown() {
+    const sel = document.getElementById('sel-opportunity') as HTMLSelectElement | null;
+    if (!sel) return;
+    const ids = [...new Set(allRows.map(r => r.vep_opportunity_id).filter(Boolean).map(String))].sort();
+    sel.innerHTML = `<option value="all">${T.allOpportunitiesOption}</option>` +
+      ids.map(id => `<option value="${esc(id)}">${esc(opportunityLabel(id))}</option>`).join('');
+    if (!ids.includes(filterOpportunity)) filterOpportunity = 'all';
+    sel.value = filterOpportunity;
+  }
+
+  /* ADR-0134 (#2393): olhar uma vaga, ou um balde do VEP, pede o funil inteiro. Desliga "Ocultar
+     decididos" e "Ocultar shadow VEP", no mesmo molde do ciclo fechado: sem isto, quem entrou approved
+     pela importação some da vaga, e os baldes que só contam approved ou rejected ficam sempre vazios.
+     Não religa nada; a visão padrão do carregamento continua com os dois ligados. */
+  function showWholeFunnel() {
+    if (filterHideDecided) {
+      filterHideDecided = false;
+      const btn = document.getElementById('filter-hide-decided') as HTMLButtonElement | null;
+      if (btn) {
+        btn.dataset.active = 'false';
+        btn.classList.remove('bg-navy/10');
+        btn.classList.add('bg-[var(--surface-card)]');
+        btn.classList.remove('text-navy');
+        btn.classList.add('text-[var(--text-secondary)]');
+        btn.textContent = '👁‍🗨 Mostrar decididos';
+      }
+    }
+    if (filterHideShadowVep) {
+      filterHideShadowVep = false;
+      const btn = document.getElementById('filter-hide-shadow-vep') as HTMLButtonElement | null;
+      if (btn) {
+        btn.dataset.active = 'false';
+        btn.classList.remove('bg-amber-500/10');
+        btn.classList.add('bg-[var(--surface-card)]');
+        btn.classList.remove('text-amber-700');
+        btn.classList.add('text-[var(--text-secondary)]');
+        btn.textContent = T.showShadowVep;
+      }
+    }
+  }
+
   /* ── filtering + sorting ──────────────────────────── */
   function applyFilters() {
     const search = filterSearch.toLowerCase();
@@ -1876,6 +1950,8 @@ const SEL_I18N = {
           const leaderPair = allRows.find((x: any) => x.id === r.linked_application_id);
           if (leaderPair && ['approved','converted'].includes(leaderPair.status)) return false;
         }
+      } else if (filterRole === 'manager') {
+        if (r.role_applied !== 'manager') return false;
       }
       // "Todos": hide duplicates — keep only the primary row per email (prefer leader if exists)
       if (filterRole === 'all') {
@@ -1885,6 +1961,7 @@ const SEL_I18N = {
         }
       }
       if (filterChapter !== 'all' && r.chapter !== filterChapter) return false;
+      if (filterOpportunity !== 'all' && String(r.vep_opportunity_id ?? '') !== filterOpportunity) return false;
       if (filterStatus !== 'all' && r.status !== filterStatus) return false;
       // p150 B-light: video screening filter (p150 hotfix: video_agg subgroup)
       if (filterVideo !== 'all') {
@@ -2243,6 +2320,10 @@ const SEL_I18N = {
           const n = allRows.filter((r: any) => r.chapter !== filterChapter).length;
           if (n > 0) parts.push(`${n} outro capítulo`);
         }
+        if (filterOpportunity !== 'all') {
+          const n = allRows.filter((r: any) => String(r.vep_opportunity_id ?? '') !== filterOpportunity).length;
+          if (n > 0) parts.push(`${n} outra vaga`);
+        }
         if (filterStatus !== 'all') {
           const n = allRows.filter((r: any) => r.status !== filterStatus).length;
           if (n > 0) parts.push(`${n} outro status`);
@@ -2297,11 +2378,19 @@ const SEL_I18N = {
         trackBadge = r.promotion_path === 'triaged_to_leader'
           ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-700" title="Triado: aplicou como pesquisador, foi promovido para líder">👑⇡ Triado</span>'
           : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">👑 Líder</span>';
+      } else if (r.role_applied === 'manager') {
+        trackBadge = `<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">📋 ${esc(ROLE_LABELS.manager || 'Gerente')}</span>`;
       } else {
         trackBadge = r.promotion_path === 'triaged_to_leader'
           ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500" title="Pesquisador original — foi promovido; esta linha é histórica">🎓 (promovido)</span>'
           : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">🎓 Pesquisador</span>';
       }
+      // ADR-0134 (#2393): a vaga do VEP. O título vem de opportunityTitles; sem ele, só o id.
+      const oppId = r.vep_opportunity_id ? String(r.vep_opportunity_id) : '';
+      const oppTitle = oppId ? (opportunityTitles[oppId] || '') : '';
+      const oppCell = !oppId
+        ? '<span class="text-[var(--text-muted)]">—</span>'
+        : `<span class="font-mono">${esc(oppId)}</span>${oppTitle ? `<div class="text-[10px] text-[var(--text-muted)] truncate max-w-[160px]">${esc(oppTitle)}</div>` : ''}`;
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
       // Wave 3a-0 #740 — chapter SSOT. The old display preferred `chapter_canonical`,
@@ -2366,6 +2455,7 @@ const SEL_I18N = {
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
+        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(oppTitle)}">${oppCell}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.objective_score, currentCycle?.pert_cutoff))}">
           <div class="${r.objective_score != null ? `font-semibold ${bandColorClass(r.objective_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${objectiveScore}</div>
@@ -5844,6 +5934,7 @@ const SEL_I18N = {
                 badge.textContent = data.cycle.status.toUpperCase();
               }
               populateChapterDropdown();
+              populateOpportunityDropdown();
               applyFilters();
             }
           });
@@ -5868,6 +5959,11 @@ const SEL_I18N = {
 
     // Dropdowns
     document.getElementById('sel-chapter')?.addEventListener('change', (e) => { filterChapter = (e.target as HTMLSelectElement).value; applyFilters(); });
+    document.getElementById('sel-opportunity')?.addEventListener('change', (e) => {
+      filterOpportunity = (e.target as HTMLSelectElement).value;
+      if (filterOpportunity !== 'all') showWholeFunnel();
+      applyFilters();
+    });
     document.getElementById('sel-status')?.addEventListener('change', (e) => { filterStatus = (e.target as HTMLSelectElement).value; applyFilters(); });
     document.getElementById('sel-video')?.addEventListener('change', (e) => { filterVideo = (e.target as HTMLSelectElement).value as any; applyFilters(); });
 
@@ -5940,6 +6036,7 @@ const SEL_I18N = {
         const clicked = e.currentTarget as HTMLButtonElement;
         const val = (clicked.dataset.vep || 'all') as typeof filterVep;
         filterVep = filterVep === val ? 'all' : val;
+        if (filterVep !== 'all') showWholeFunnel();
         document.querySelectorAll('.filter-vep-chip').forEach((c) => {
           const el = c as HTMLButtonElement;
           const active = el.dataset.vep === filterVep;

@@ -75,7 +75,6 @@ const PODE_LER = new Map([
   ['tribe_continuity_overrides', 'linhagem historica de tribo'],
   ['tribe_lineage', 'linhagem historica de tribo'],
   ['tribe_meeting_slots', 'grade de horarios de tribo'],
-  ['vep_opportunities', 'vagas publicadas no PMI VEP'],
 ]);
 
 /** Erros conhecidos: a relacao NAO e medida por este guard enquanto o erro existir. */

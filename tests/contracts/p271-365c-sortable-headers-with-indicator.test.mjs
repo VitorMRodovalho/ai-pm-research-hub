@@ -6,14 +6,16 @@ import { readFileSync } from 'node:fs';
 // Frontend-only UX hotfix following #365 (data fix), #365b (rank dimension).
 // PM rule: sort REORDERS visible rows only — it does NOT recompute ranks.
 // objective_rank + rank_researcher + rank_leader stay canonical from backend cohort.
+// #2393 (ADR-0134 fatia 1): a coluna de vaga (vep_opportunity_id) é a 11ª ordenável.
 
 const PAGE = readFileSync('src/pages/admin/selection.astro', 'utf8');
 
 describe('p271 #365c sortable headers with sort indicator', () => {
-  describe('sortable column coverage (10 expected)', () => {
+  describe('sortable column coverage (11 expected)', () => {
     const SORTABLE_COLUMNS = [
       'applicant_name',
       'role_applied',
+      'vep_opportunity_id',
       'chapter',
       'objective_score',
       'leader_score',
@@ -54,7 +56,7 @@ describe('p271 #365c sortable headers with sort indicator', () => {
 
   describe('sort-arrow span on every sortable TH (visible direction indicator)', () => {
     const SORTABLE_COLUMNS = [
-      'applicant_name', 'role_applied', 'chapter',
+      'applicant_name', 'role_applied', 'vep_opportunity_id', 'chapter',
       'objective_score', 'leader_score', 'interview_score', 'final_score',
       'objective_rank', 'rank', 'application_date',
     ];
@@ -72,12 +74,12 @@ describe('p271 #365c sortable headers with sort indicator', () => {
       });
     }
 
-    it('all 10 sort-arrow spans are present (single global count)', () => {
+    it('all 11 sort-arrow spans are present (single global count)', () => {
       const matches = PAGE.match(/<span class="sort-arrow ml-1 text-navy"><\/span>/g) || [];
       assert.equal(
         matches.length,
-        10,
-        `exactly 10 sort-arrow spans expected (1 per sortable TH); found ${matches.length}`
+        11,
+        `exactly 11 sort-arrow spans expected (1 per sortable TH); found ${matches.length}`
       );
     });
   });
