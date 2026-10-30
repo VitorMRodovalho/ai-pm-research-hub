@@ -14,6 +14,9 @@
  *      Cron NÃO mais polleia PMI VEP API (Cloudflare Bot Management bloqueia
  *      datacenter IPs — descoberto durante p81 sessão de smoke).
  *
+ *   3. HTTP GET `/opportunities` (público, #2843) — ids das vagas ativas em
+ *      vep_opportunities + restrição de baldes; o script lê isto como allowlist.
+ *
  * Pipeline /ingest:
  *   1. Validate x-ingest-secret header
  *   2. Validate JSON shape (applications array required)
@@ -69,6 +72,8 @@ const KV_KEY = 'pmi_oauth:tokens';
 // 72562 is a chapter vacancy: only the people the chapter already placed (qualified
 // bucket) come in. Mirrors NUCLEO_OPPORTUNITY_BUCKETS in scripts/extract_pmi_volunteer.js;
 // the worker enforces it too, because an older copy of the script still sends every bucket.
+// #2843: GET /opportunities serves this map to the script, so the copy in the script is
+// only its fallback.
 const OPPORTUNITY_IMPORT_BUCKETS: Record<string, readonly string[]> = {
   '72562': ['qualified']
 };
@@ -88,6 +93,12 @@ export default {
     // Health endpoint (public, no auth)
     if (req.method === 'GET' && url.pathname === '/health') {
       return jsonResponse({ status: 'ok', worker: WORKER_NAME, mode: 'ingest+watchdog' }, 200);
+    }
+
+    // #2843 — active opportunities (public, no auth), read by the browser script so that
+    // registering a row in vep_opportunities is enough for the script to download it.
+    if (req.method === 'GET' && url.pathname === '/opportunities') {
+      return handleOpportunities(env);
     }
 
     // Ingest endpoint (POST + auth)
@@ -786,6 +797,28 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
   summary.ingest_result_warning = body.ingestResult ?? null;
 
   return jsonResponse(summary, 200);
+}
+
+// #2843 — the script's allowlist and bucket map, served from the registry the ingest
+// enforces. Only the id and the bucket restriction leave the worker: the same data the
+// script used to hard-code, nothing else from the row. The database error stays in the
+// log; the public body only says the list is unavailable, and the script falls back.
+async function handleOpportunities(env: Env): Promise<Response> {
+  let rows: VepOpportunityRow[];
+  try {
+    rows = await getAllOpportunities(createDbClient(env));
+  } catch (e: any) {
+    console.error(`[${WORKER_NAME}] /opportunities failed:`, e.message);
+    return jsonResponse({ error: 'opportunities_unavailable' }, 503);
+  }
+  const opportunities = rows
+    .filter((o) => o.is_active)
+    .map((o) => ({
+      opportunity_id: String(o.opportunity_id),
+      import_buckets: OPPORTUNITY_IMPORT_BUCKETS[String(o.opportunity_id)] ?? null
+    }))
+    .sort((a, b) => Number(a.opportunity_id) - Number(b.opportunity_id));
+  return jsonResponse({ opportunities }, 200);
 }
 
 function corsHeaders(): HeadersInit {
