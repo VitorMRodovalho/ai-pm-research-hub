@@ -69,6 +69,25 @@ Rule:
 - Ghost users (authenticated without member record) get NOTHING from PII tables
 - Public data via SECURITY DEFINER RPCs only (get_public_leaderboard, get_public_platform_stats)
 
+## New table, view or sequence in `public`: declare what each Data API role gets (#2854)
+Since 2026-10-30 Supabase no longer grants new objects in `public` to `anon`, `authenticated` and `service_role` by
+default (changelog 45329: `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE ... ON TABLES` and
+`... ON SEQUENCES`; per the Postgres docs, `ON TABLES` covers views too). Objects that already exist keep their grants.
+An object that relies on the default is born with no grant, and PostgREST answers `42501` to everyone, `service_role`
+included, before RLS is evaluated.
+
+- After each `CREATE TABLE`, `CREATE [MATERIALIZED] VIEW` and `CREATE SEQUENCE` in `public`, and for the implicit
+  sequence of a `serial` column, the SAME migration states what each of the three roles gets:
+  `GRANT ... ON public.<obj> TO <role>`, or `REVOKE ALL ON public.<obj> FROM <role>` for "this role gets nothing"
+  (reads only through a SECURITY DEFINER function, for example).
+- ⚠️ The usual pattern until October 2026 was `REVOKE ALL ... FROM anon, authenticated` and nothing about
+  `service_role`, which used to get everything by default. Under the new default it gets nothing, and an Edge Function
+  or the worker that writes through PostgREST breaks. Measured over the migrations of Aug–Oct 2026: 51 files would
+  have left at least one role on the default.
+- Only top-level statements count: a GRANT inside `DO`, a function body, a string or a comment does not run when the
+  migration runs.
+- Guard: `tests/contracts/2854-grant-explicito-em-objeto-novo.test.mjs` (migrations after `20261030181305`).
+
 ## V4 Authority audit — before proposing seed expansion
 **Sediment p122e:** auditorias mecânicas de `engagement_kind_permissions` × actions produzem false positives recorrentes porque V4 tem três caminhos paralelos de autoridade (combos seedados + designation-based gates + RPC inline scoping). Antes de declarar gap ou propor `INSERT INTO engagement_kind_permissions ...`, executar o **procedimento de 5 etapas** em `docs/reference/V4_AUTHORITY_MODEL.md` (matriz capability→path + checklist).
 
