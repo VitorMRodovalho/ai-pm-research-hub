@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import Nav from '../components/nav/Nav.astro';
+import OtherHostAppNotice from '../components/notifications/OtherHostAppNotice.astro';
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import PushInvite from '../components/notifications/PushInvite.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
@@ -37,8 +38,10 @@ const {
 } = Astro.props;
 
 const roleLabels = JSON.stringify(getRoleLabelsMap(lang));
-// #2806: o app so e instalavel no host SEO canonico. O service worker e a inscricao de push ficam presos a origem e o
-// login e por endereco; anunciar o manifest em outro host instalaria um segundo app com outra sessao.
+// #2806: o manifest so e anunciado no host SEO canonico. O service worker e a inscricao de push ficam presos a origem
+// e o login e por endereco. Nao anunciar o manifest NAO impede a instalacao (#2841): o Chrome no Android instala um app
+// sem manifest em qualquer host, sem push e com a sessao daquele endereco. Fora do host canonico, o app instalado
+// mostra OtherHostAppNotice, que manda instalar pelo host canonico.
 const isInstallHost = Astro.url.host === SEO_CANONICAL_HOST;
 
 // og:image precisa de URL ABSOLUTA (WhatsApp/Telegram não resolvem path
@@ -238,6 +241,7 @@ const CHANNEL_ICON: Record<ChannelKey, { label: string; path: string }> = {
   <script id="global-i18n" type="application/json" set:html={globalI18nBundle}></script>
   
   <Nav activePage={activePage} lang={lang} />
+  {!isInstallHost && <OtherHostAppNotice lang={lang} href={seoCanonicalUrl} />}
   <AnnouncementBanner />
   {isInstallHost && <PushInvite lang={lang} />}
   <AuthModal lang={lang} />

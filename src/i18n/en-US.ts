@@ -7659,6 +7659,8 @@ const enUS: Record<string, string> = {
   'settings.notifications.pushOff': 'Off for this device.',
   'settings.notifications.pushOtherHost': 'Device notifications work at {host}. Open the same page there, sign in with your account and turn them on.',
   'settings.notifications.pushOpenOrg': 'Open at {host}',
+  'otherHostApp.text': 'This app was installed from another address and does not receive notifications. To get them, open {host} in your browser, install the app from there and uninstall this one.',
+  'otherHostApp.link': 'Open {host}',
   'settings.notifications.pushIosInstall': 'On iPhone and iPad, tap Share and "Add to Home Screen", open Núcleo from the icon and turn notifications on here.',
   'settings.notifications.pushUnsupported': 'This browser does not support push notifications.',
   'settings.notifications.pushDenied': 'Notifications for this site are blocked in your browser settings.',
