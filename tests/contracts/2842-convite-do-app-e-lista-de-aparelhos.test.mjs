@@ -23,6 +23,7 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 import { deviceName, describePushDevice, activePushDeviceCount } from '../../src/lib/push-devices.ts';
 
 const read = (p) => readFileSync(resolve(process.cwd(), p), 'utf8');
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const PAGE = maskJsComments(read('src/pages/settings/notifications.astro'));
 const PUSH = maskJsComments(read('src/lib/push.ts'));
 const INVITE = maskJsComments(read('src/components/notifications/PushInvite.astro'));
@@ -120,7 +121,7 @@ test('#2842 (6) as chaves estao nos 3 dicionarios, com os marcadores', () => {
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const dict = read(`src/i18n/${lang}.ts`);
     for (const [key, placeholders] of Object.entries(keys)) {
-      const m = dict.match(new RegExp(`^  '${key.replace(/\./g, '\\.')}': '([^'\\n]+)',$`, 'm'));
+      const m = dict.match(new RegExp(`^  '${reEsc(key)}': '([^'\\n]+)',$`, 'm'));
       assert.ok(m, `${lang}: falta ${key}`);
       for (const ph of placeholders) assert.ok(m[1].includes(ph), `${lang}: ${key} sem ${ph}`);
     }
