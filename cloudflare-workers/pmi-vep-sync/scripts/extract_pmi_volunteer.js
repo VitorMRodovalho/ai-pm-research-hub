@@ -1,6 +1,13 @@
 // PMI Volunteer Applications Extractor — Núcleo IA & GP
 // =====================================================================
-// VERSION: 2026-10-29 (#2827) — vaga 72562 só com o balde qualified
+// VERSION: 2026-10-29 (#2843) — allowlist lida da plataforma
+//
+// CHANGELOG 2026-10-29 (#2843):
+//   A allowlist e o mapa de baldes vêm do worker (GET /opportunities), que serve as
+//        vagas ativas em vep_opportunities. Vaga nova cadastrada no banco entra sem
+//        nova cópia deste script. As listas fixas do CONFIG viram reserva: sem
+//        resposta válida do worker, valem elas, e o console avisa. A origem fica em
+//        meta.lgpd.allowlist_source ('platform' ou 'config').
 //
 // CHANGELOG 2026-10-29 (#2827, D1 do #1175 revista):
 //   72562 (vaga do capítulo) entra na allowlist, mas NUCLEO_OPPORTUNITY_BUCKETS a
@@ -149,7 +156,11 @@
     // explícita (sem modal), mas vagas fora da allowlist geram warning.
     // 76631 e 76661 a 76664: vagas do Grupo de Estudos CPMAI (2026/27).
     // 72562: vaga do capítulo, restrita pelo mapa abaixo (#2827).
-    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76631, 76661, 76662, 76663, 76664],
+    // 76080: pesquisador da linha Segundo Cérebro & Comunicação de Times (2026/27).
+    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76080, 76631, 76661, 76662, 76663, 76664],
+    // #2843 — a allowlist e o mapa de baldes abaixo são lidos daqui antes do modal.
+    // As duas listas fixas só valem quando esta leitura falha.
+    NUCLEO_OPPORTUNITIES_URL: 'https://pmi-vep-sync.ai-pm-research-hub.workers.dev/opportunities',
     // #2827 — vagas que só importam alguns baldes do VEP. Os outros baldes
     // dessas vagas nem são baixados. O worker /ingest aplica o mesmo mapa
     // (OPPORTUNITY_IMPORT_BUCKETS em src/index.ts).
@@ -495,6 +506,33 @@
     }
   }
 
+  // ===== 1a2) #2843 — ALLOWLIST LIDA DA PLATAFORMA =====
+  // As vagas ativas em vep_opportunities, e a restrição de baldes de cada uma, vêm do
+  // worker: cadastrar a vaga no banco basta. As listas fixas do CONFIG são a reserva.
+  // Lista vazia ou fora do formato conta como falha, porque allowlist vazia desligaria
+  // o portão abaixo e varreria todas as vagas do recruiter.
+  // >>> #2843 platform-allowlist
+  let allowlistSource = 'config';
+  if (CONFIG.NUCLEO_OPPORTUNITIES_URL) {
+    try {
+      const live = await fetchJson(CONFIG.NUCLEO_OPPORTUNITIES_URL);
+      const rows = Array.isArray(live?.opportunities) ? live.opportunities : [];
+      const valid = rows.length > 0 && rows.every(o =>
+        /^\d+$/.test(String(o?.opportunity_id)) &&
+        (o.import_buckets === null ||
+          (Array.isArray(o.import_buckets) && o.import_buckets.every(b => typeof b === 'string'))));
+      if (!valid) throw new Error('lista vazia ou fora do formato');
+      CONFIG.NUCLEO_OPPORTUNITY_ALLOWLIST = rows.map(o => Number(o.opportunity_id));
+      CONFIG.NUCLEO_OPPORTUNITY_BUCKETS = Object.fromEntries(
+        rows.filter(o => o.import_buckets).map(o => [String(o.opportunity_id), o.import_buckets]));
+      allowlistSource = 'platform';
+      console.log(`🗂️ [#2843] allowlist lida da plataforma: ${CONFIG.NUCLEO_OPPORTUNITY_ALLOWLIST.join(', ')}`);
+    } catch (e) {
+      console.warn(`⚠️ [#2843] não deu para ler as vagas ativas da plataforma (${e.message}). Valendo a lista fixa desta cópia: ${(CONFIG.NUCLEO_OPPORTUNITY_ALLOWLIST || []).join(', ')}.`);
+    }
+  }
+  // <<< #2843 platform-allowlist
+
   // ===== 1b) Wave 4 W1 — ALLOWLIST GATE (minimização LGPD) =====
   // Vagas fora da allowlist do Núcleo só entram com confirmação explícita.
   // Default (cancelar/fechar o modal) = varrer SÓ a allowlist.
@@ -571,6 +609,7 @@
       'LGPD art. 6º III — minimização). Não redistribuir este arquivo; importar via admin ' +
       'UI e apagar cópias locais após o import.',
     allowlist: [...allowlistSet],
+    allowlist_source: allowlistSource,
     excluded_opportunity_ids: excludedOpportunities,
   };
   console.log(`🎯 ${opportunityIds.length} opportunities a varrer`);
