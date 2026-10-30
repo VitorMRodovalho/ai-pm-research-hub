@@ -33,6 +33,13 @@ const i18nClient = {
   pushUnsupported: t('settings.notifications.pushUnsupported', lang),
   pushDenied: t('settings.notifications.pushDenied', lang),
   pushDevices: t('settings.notifications.pushDevices', lang),
+  pushDeviceLabels: {
+    device: t('settings.notifications.pushDeviceName', lang),
+    unknown: t('settings.notifications.pushDeviceUnknown', lang),
+    lastSuccess: t('settings.notifications.pushDeviceLast', lang),
+    never: t('settings.notifications.pushDeviceNever', lang),
+    disabled: t('settings.notifications.pushDeviceDisabled', lang),
+  },
   notificationTypes: {
     tribe_broadcast: t('notification.type.tribe_broadcast', lang),
     attendance_reminder: t('notification.type.attendance_reminder', lang),
@@ -101,6 +108,7 @@ const i18nClient = {
         <button id="push-toggle" hidden style="background: #003B5C; color: white; padding: 8px 16px; border: 0; border-radius: 6px; font-size: 13px; cursor: pointer;"></button>
         <span id="push-status" style="margin-left: 12px; font-size: 12px;"></span>
         <p id="push-devices" style="color: #868e96; font-size: 12px; margin: 12px 0 0 0;"></p>
+        <ul id="push-device-list" style="color: #868e96; font-size: 12px; margin: 4px 0 0 0; padding-left: 18px;"></ul>
       </div>
 
       <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
@@ -139,7 +147,8 @@ const i18nClient = {
   <script>
     import { getSupabase } from '../../lib/supabase';
     import { SEO_CANONICAL_ORIGIN } from '../../lib/canonical';
-    import { pushSupport, registerServiceWorker, enablePush, disablePush, saveSubscription } from '../../lib/push';
+    import { pushSupport, registerServiceWorker, enablePush, disablePush, saveSubscription, dismissPushInvite } from '../../lib/push';
+    import { describePushDevice, activePushDeviceCount } from '../../lib/push-devices';
 
     const i18nNode = document.getElementById('i18n-settings-notifications');
     const i18n = JSON.parse(i18nNode!.textContent || '{}');
@@ -151,9 +160,18 @@ const i18nClient = {
       const statusEl = document.getElementById('push-status')!;
       const devicesEl = document.getElementById('push-devices')!;
       const openOrg = document.getElementById('push-open-org') as HTMLAnchorElement;
+      const deviceListEl = document.getElementById('push-device-list')!;
+      const dateFmt = new Intl.DateTimeFormat(document.documentElement.lang || 'pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+      // #2842: cada aparelho com a data do ultimo aviso entregue; a contagem e so dos que o envio ainda tenta
       const showDevices = async () => {
         const { data, error } = await sb.rpc('list_my_push_subscriptions');
-        devicesEl.textContent = error || !Array.isArray(data) ? '' : i18n.pushDevices.replace('{n}', String(data.length));
+        const rows = error || !Array.isArray(data) ? [] : data;
+        devicesEl.textContent = error || !Array.isArray(data) ? '' : i18n.pushDevices.replace('{n}', String(activePushDeviceCount(rows)));
+        deviceListEl.replaceChildren(...rows.map((row: any) => {
+          const li = document.createElement('li');
+          li.textContent = describePushDevice(row, i18n.pushDeviceLabels, (iso) => dateFmt.format(new Date(iso)));
+          return li;
+        }));
       };
       const support = pushSupport(window);
       void showDevices();
@@ -195,6 +213,8 @@ const i18nClient = {
         try {
           if (on) await disablePush(sb, reg);
           else await enablePush(sb, reg);
+          // quem desliga aqui decidiu: o convite do app (#2842) nao volta a pedir neste aparelho
+          if (on) dismissPushInvite();
           on = !on;
           statusEl.textContent = '';
         } catch (err: any) {

@@ -7662,6 +7662,15 @@ const enUS: Record<string, string> = {
   'settings.notifications.pushUnsupported': 'This browser does not support push notifications.',
   'settings.notifications.pushDenied': 'Notifications for this site are blocked in your browser settings.',
   'settings.notifications.pushDevices': 'Devices with notifications on for your account: {n}',
+  'settings.notifications.pushDeviceName': '{browser} on {os}',
+  'settings.notifications.pushDeviceUnknown': 'Unidentified browser',
+  'settings.notifications.pushDeviceLast': 'last notice delivered on {date}',
+  'settings.notifications.pushDeviceNever': 'no notice delivered yet',
+  'settings.notifications.pushDeviceDisabled': 'stopped receiving on {date}, after repeated failures',
+  'pushInvite.text': 'Notifications are off in this app. Turn them on to get notices right away.',
+  'pushInvite.enable': 'Turn on',
+  'pushInvite.later': 'Not now',
+  'pushInvite.error': 'Could not turn them on right now. Try again in Notification settings.',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Tribe broadcasts',

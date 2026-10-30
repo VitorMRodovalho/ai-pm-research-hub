@@ -15,16 +15,42 @@ type RpcClient = {
 
 export type PushSupport = 'ok' | 'other-host' | 'ios-not-installed' | 'unsupported' | 'denied';
 
+// Aberto como app instalado (icone na tela de inicio), e nao numa aba do navegador.
+export function isInstalledApp(w: Window): boolean {
+  const nav = w.navigator as Navigator & { standalone?: boolean };
+  return w.matchMedia?.('(display-mode: standalone)').matches === true || nav.standalone === true;
+}
+
 export function pushSupport(w: Window): PushSupport {
   if (w.location.host !== SEO_CANONICAL_HOST) return 'other-host';
-  const nav = w.navigator as Navigator & { standalone?: boolean };
+  const nav = w.navigator;
   // iPhone e iPad so tem push no app adicionado a Tela de Inicio (documentacao da Apple, lida em 28/10/2026).
   const isIos = /iPad|iPhone|iPod/.test(nav.userAgent) || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
-  const installed = w.matchMedia?.('(display-mode: standalone)').matches === true || nav.standalone === true;
-  if (isIos && !installed) return 'ios-not-installed';
+  if (isIos && !isInstalledApp(w)) return 'ios-not-installed';
   if (!('serviceWorker' in nav) || !('PushManager' in w) || !('Notification' in w)) return 'unsupported';
   if (Notification.permission === 'denied') return 'denied';
   return 'ok';
+}
+
+// #2842: instalar o app zera a permissao e derruba a inscricao, e o app comeca mudo. O convite do app pede uma vez;
+// "Agora nao" ou desligar em /settings/notifications encerra o convite neste aparelho. localStorage pode faltar
+// (aba anonima, dado bloqueado): sem ele o convite so nao lembra.
+const PUSH_INVITE_DISMISSED_KEY = 'push_invite_dismissed';
+
+export function pushInviteDismissed(): boolean {
+  try {
+    return localStorage.getItem(PUSH_INVITE_DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function dismissPushInvite(): void {
+  try {
+    localStorage.setItem(PUSH_INVITE_DISMISSED_KEY, '1');
+  } catch {
+    // sem armazenamento, o convite volta na proxima pagina; nada a fazer
+  }
 }
 
 function b64urlToBuffer(s: string): ArrayBuffer {
