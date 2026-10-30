@@ -340,9 +340,16 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
   // Skip apps without resumeUrl (qualified bucket — VEP doesn't expose
   // resume_url after candidate enters onboarding stage). dry_run mode skips
   // the entire sync to keep preview cheap.
+  // #2845: only applications whose opportunity is registered and active reach the
+  // upsert; the loops below skip the others as opportunity_not_found or
+  // opportunity_inactive, so their CVs are not mirrored either.
   const resumeSyncResults = new Map<string, ResumeSyncResult>();
   if (body.dry_run !== true) {
-    const appsWithResume = body.applications.filter(a => a.resumeUrl && a.applicantId);
+    const hasResume = (a: ScriptApplication) => !!(a.resumeUrl && a.applicantId);
+    const appsWithResume = body.applications.filter(
+      a => hasResume(a) && oppLookup[String(a._opportunityId)]?.is_active === true
+    );
+    const appsWithoutResume = body.applications.filter(a => !hasResume(a)).length;
     if (appsWithResume.length > 0) {
       const startedAt = Date.now();
       const syncMap = await syncResumesParallel(
@@ -365,11 +372,11 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
           });
         }
       }
-      summary.resumes_skipped_no_url = body.applications.length - appsWithResume.length;
+      summary.resumes_skipped_no_url = appsWithoutResume;
       const elapsed = Date.now() - startedAt;
       console.log(`[resume-sync] ${syncMap.size} apps, ${summary.resumes_synced} ok, ${summary.resumes_failed} failed, ${elapsed}ms`);
     } else {
-      summary.resumes_skipped_no_url = body.applications.length;
+      summary.resumes_skipped_no_url = appsWithoutResume;
     }
   }
 
