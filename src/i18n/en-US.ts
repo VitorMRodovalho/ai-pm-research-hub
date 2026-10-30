@@ -5464,6 +5464,14 @@ const enUS: Record<string, string> = {
   'comp.globalSearch.searching': 'Searching...',
   'comp.globalSearch.noResults': 'No results found.',
   'comp.globalSearch.noTitle': 'Untitled',
+  'comp.notificationBell.title': 'Notifications',
+  'comp.notificationBell.markAllRead': 'Mark all as read',
+  'comp.notificationBell.empty': 'No notifications.',
+  'comp.notificationBell.seeAll': 'See all',
+  'comp.notificationBell.now': 'now',
+  'comp.notificationBell.pendingOne': '{n} pending signature',
+  'comp.notificationBell.pendingMany': '{n} pending signatures',
+  'comp.notificationBell.pendingHint': 'Governance chains are waiting for you → see list',
 
   // ── attendance.grid (AttendanceGridTab) ──
   'attendance.grid.title': 'Attendance Board',

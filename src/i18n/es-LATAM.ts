@@ -5465,6 +5465,14 @@ const esLATAM: Record<string, string> = {
   'comp.globalSearch.searching': 'Buscando...',
   'comp.globalSearch.noResults': 'Ningún resultado encontrado.',
   'comp.globalSearch.noTitle': 'Sin título',
+  'comp.notificationBell.title': 'Notificaciones',
+  'comp.notificationBell.markAllRead': 'Marcar todas como leídas',
+  'comp.notificationBell.empty': 'Sin notificaciones.',
+  'comp.notificationBell.seeAll': 'Ver todas',
+  'comp.notificationBell.now': 'ahora',
+  'comp.notificationBell.pendingOne': '{n} firma pendiente',
+  'comp.notificationBell.pendingMany': '{n} firmas pendientes',
+  'comp.notificationBell.pendingHint': 'Cadenas de gobernanza te esperan → ver lista',
 
   // ── attendance.grid (AttendanceGridTab) ──
   'attendance.grid.title': 'Cuadro de Asistencia',

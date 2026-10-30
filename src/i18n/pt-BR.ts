@@ -5472,6 +5472,14 @@ const ptBR: Record<string, string> = {
   'comp.globalSearch.searching': 'Buscando...',
   'comp.globalSearch.noResults': 'Nenhum resultado encontrado.',
   'comp.globalSearch.noTitle': 'Sem título',
+  'comp.notificationBell.title': 'Notificações',
+  'comp.notificationBell.markAllRead': 'Marcar todas como lidas',
+  'comp.notificationBell.empty': 'Nenhuma notificação.',
+  'comp.notificationBell.seeAll': 'Ver todas',
+  'comp.notificationBell.now': 'agora',
+  'comp.notificationBell.pendingOne': '{n} pendência de assinatura',
+  'comp.notificationBell.pendingMany': '{n} pendências de assinatura',
+  'comp.notificationBell.pendingHint': 'Cadeias de governança aguardam você → ver lista',
 
   // ── attendance.grid (AttendanceGridTab) ──
   'attendance.grid.title': 'Quadro de Presença',
