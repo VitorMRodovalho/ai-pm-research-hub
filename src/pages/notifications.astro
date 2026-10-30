@@ -43,6 +43,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   </div>
   <Toast />
   <span id="i18n-notifLoadError" class="hidden">{t('notifications.loadError', lang)}</span>
+  <span id="i18n-notifManagementDigest" class="hidden">{t('notifications.managementDigestSummary', lang)}</span>
 </BaseLayout>
 
 <script>
@@ -52,6 +53,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
   // estava aberta para qualquer sessão logada. Passa a usar o SSOT.
   import { escapeHtml, safeNavigationUrl } from '../lib/escape-html';
   import { rpcChecked } from '../lib/rpc-checked';
+  import { notificationBodyText } from '../lib/notification-body';
 
   let sb: any = null;
   let currentFilter = 'all';
@@ -115,7 +117,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
       empty?.classList.add('hidden');
       linkById.clear();
       for (const n of notifs) linkById.set(String(n.id), safeNavigationUrl(n.link));
-      list.innerHTML = notifs.map((n: any) => `
+      // #2840: os resumos gravam JSON no corpo; o texto exibido sai de notificationBodyText.
+      const digestTemplate = document.getElementById('i18n-notifManagementDigest')?.textContent || '';
+      list.innerHTML = notifs.map((n: any) => {
+        const bodyText = notificationBodyText(n.type, n.body, digestTemplate);
+        return `
         <div class="flex items-start gap-3 p-3 rounded-xl border ${n.is_read ? 'border-[var(--border-subtle)] bg-[var(--surface-base)]' : 'border-blue-200 bg-blue-50/30'} hover:shadow-sm transition-all cursor-pointer"
           data-notif-id="${escapeHtml(n.id)}">
           <span class="text-lg mt-0.5">${iconFor(n.type)}</span>
@@ -124,11 +130,12 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
               ${!n.is_read ? '<span class="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>' : ''}
               <span class="text-[.78rem] font-bold text-[var(--text-primary)] line-clamp-1">${escapeHtml(n.title)}</span>
             </div>
-            ${n.body ? `<p class="text-[.7rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${escapeHtml(n.body)}</p>` : ''}
+            ${bodyText ? `<p class="text-[.7rem] text-[var(--text-secondary)] mt-0.5 line-clamp-2">${escapeHtml(bodyText)}</p>` : ''}
             <span class="text-[.6rem] text-[var(--text-muted)] mt-1 block">${timeAgo(n.created_at)}</span>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
 
       // Bind click handlers
       list.querySelectorAll('[data-notif-id]').forEach((el: Element) => {

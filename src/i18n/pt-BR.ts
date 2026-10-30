@@ -1492,6 +1492,7 @@ const ptBR: Record<string, string> = {
   'notifications.title': 'Notificações',
   'notifications.markAllRead': 'Marcar todas como lidas',
   'notifications.empty': 'Nenhuma notificação.',
+  'notifications.managementDigestSummary': '{open} alerta(s) em aberto · {resolved} resolvido(s) nas últimas 24 horas · {items} aviso(s) operacional(is)',
   'notifications.cardAssigned': '{actor} atribuiu você ao card "{title}"',
   'notifications.cardMoved': '"{title}" movido para {status}',
   'notifications.reviewRequested': 'Revisão solicitada para "{title}"',
