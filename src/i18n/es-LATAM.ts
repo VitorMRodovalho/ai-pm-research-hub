@@ -7663,6 +7663,15 @@ const esLATAM: Record<string, string> = {
   'settings.notifications.pushUnsupported': 'Este navegador no ofrece notificaciones push.',
   'settings.notifications.pushDenied': 'Las notificaciones de este sitio están bloqueadas en la configuración del navegador.',
   'settings.notifications.pushDevices': 'Dispositivos con notificaciones activas en tu cuenta: {n}',
+  'settings.notifications.pushDeviceName': '{browser} en {os}',
+  'settings.notifications.pushDeviceUnknown': 'Navegador no identificado',
+  'settings.notifications.pushDeviceLast': 'último aviso entregado el {date}',
+  'settings.notifications.pushDeviceNever': 'aún no recibió avisos',
+  'settings.notifications.pushDeviceDisabled': 'dejó de recibir el {date}, tras fallas seguidas',
+  'pushInvite.text': 'Las notificaciones de esta app están apagadas. Actívalas para recibir los avisos al instante.',
+  'pushInvite.enable': 'Activar',
+  'pushInvite.later': 'Ahora no',
+  'pushInvite.error': 'No fue posible activarlas ahora. Inténtalo de nuevo en Configuración de notificaciones.',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Comunicados de tribu',

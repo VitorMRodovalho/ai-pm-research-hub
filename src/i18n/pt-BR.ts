@@ -7671,6 +7671,15 @@ const ptBR: Record<string, string> = {
   'settings.notifications.pushUnsupported': 'Este navegador não oferece notificações push.',
   'settings.notifications.pushDenied': 'As notificações deste site estão bloqueadas nas configurações do navegador.',
   'settings.notifications.pushDevices': 'Aparelhos com notificação ativa na sua conta: {n}',
+  'settings.notifications.pushDeviceName': '{browser}, {os}',
+  'settings.notifications.pushDeviceUnknown': 'Navegador não identificado',
+  'settings.notifications.pushDeviceLast': 'último aviso entregue em {date}',
+  'settings.notifications.pushDeviceNever': 'ainda não recebeu aviso',
+  'settings.notifications.pushDeviceDisabled': 'parou de receber em {date}, depois de falhas seguidas',
+  'pushInvite.text': 'As notificações deste app estão desligadas. Ative para receber os avisos na hora.',
+  'pushInvite.enable': 'Ativar',
+  'pushInvite.later': 'Agora não',
+  'pushInvite.error': 'Não foi possível ativar agora. Tente de novo em Configurações de notificação.',
 
   // ── Notification type labels (used in mute panel) ──
   'notification.type.tribe_broadcast': 'Comunicados da tribo',
