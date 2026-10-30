@@ -209,6 +209,6 @@ test('W6b: /semantic surface = 55 tools (derived, not hardcoded) + version 0.17.
   const body = SRC.slice(start, next === -1 ? undefined : next);
   const semanticToolCount = (body.match(/mcp\.tool\(/g) || []).length;
   assert.equal(semanticToolCount, 55, `registerSemanticTools must register 55 tools after Wave 6b + #1548 + #1710 + #2495 (found ${semanticToolCount})`);
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must read the version from SEMANTIC_SURFACE_VERSION');
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*(?:,\s*\{\s*maxToolInputElements:\s*MAX_TOOL_INPUT_ELEMENTS\s*\}\s*)?\)/, '/semantic McpServer must read the version from SEMANTIC_SURFACE_VERSION');
   assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "0\.17\.0";/, 'SEMANTIC_SURFACE_VERSION must be 0.17.0 after #2495');
 });

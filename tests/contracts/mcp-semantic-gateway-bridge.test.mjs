@@ -173,7 +173,7 @@ test('ef declares app.all("/semantic") route', () => {
 
 test('/semantic handler constructs McpServer "nucleo-ia-semantic" v0.12.0 (#1397 CR authority)', () => {
   const block = routeBlock('/semantic');
-  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/);
+  assert.match(block, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*(?:,\s*\{\s*maxToolInputElements:\s*MAX_TOOL_INPUT_ELEMENTS\s*\}\s*)?\)/);
 });
 
 test('/semantic handler registers ONLY registerSemanticTools (not registerTools/registerKnowledge)', () => {

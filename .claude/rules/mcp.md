@@ -138,7 +138,7 @@ Worker proxy paths (`nucleoia.vitormr.dev`): `/mcp` → EF `/nucleo-mcp/mcp`; `/
 Both shave the SDK `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See
 `docs/MCP_SETUP_GUIDE.md` for client routing.
 
-- Transport: `@modelcontextprotocol/sdk@1.30.0` `WebStandardStreamableHTTPServerTransport` (native).
+- Transport: `@modelcontextprotocol/sdk@1.32.2` `WebStandardStreamableHTTPServerTransport` (native).
 - Tool params: Zod schemas (`z.string()`, `z.number()`, …) — NOT plain JSON Schema objects.
 - Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT. All tools log to `mcp_usage_log`.
 - Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`, `get_ots_pipeline_health`.
@@ -164,7 +164,7 @@ grep 'mcp.tool(' supabase/functions/nucleo-mcp/index.ts | awk -F'"' '{print $2}'
 Must return empty. Duplicate names cause SDK boot crash → HTTP 500 on ALL requests including `initialize`. If 500 with "already registered": rename the duplicate tool.
 
 ### 2. Zod 3→4 incompatibilities (sediment p122b — silent tools/list breakage)
-The project pins `npm:zod@4.3.6`. Zod-3-style usage compiles fine but breaks tools/list at request time with `Cannot read properties of undefined (reading '_zod')` — the SDK's JSON-Schema converter reaches into a key that doesn't exist and the whole list fails. Initialize keeps working, so the breakage is invisible in basic smoke tests.
+The project pins `npm:zod@4.6.7`. Zod-3-style usage compiles fine but breaks tools/list at request time with `Cannot read properties of undefined (reading '_zod')` — the SDK's JSON-Schema converter reaches into a key that doesn't exist and the whole list fails. Initialize keeps working, so the breakage is invisible in basic smoke tests.
 ```bash
 # Single-arg z.record (Zod 3) — must be z.record(keySchema, valueSchema) in Zod 4
 grep -nE 'z\.record\([^,)]*\)' supabase/functions/nucleo-mcp/index.ts | grep -v ', '
@@ -206,10 +206,19 @@ Expected: `[runtime] clean (N runtime ≡ N static)`. If drift is reported (`dri
 Re-running the matrix is also useful after migrations that change RPC signatures — diff `mcp-tool-matrix.json` to see which tools call the changed RPC.
 
 ## SDK Compatibility
-- **SDK 1.30.0**: stable on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas. (Latest 1.x confirmed via npm `dist-tags.latest` — re-query, don't trust this line; 2.0 is a breaking alpha, do not adopt.)
-- **Zod import**: `import { z } from "npm:zod@4.3.6";` — pinned exact (MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.30.0 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
-- **`LATEST_PROTOCOL_VERSION` is `2025-11-25` in 1.29.0 AND in 1.30.0** — 1.30.0 shipped 2026-07-27, one day
-  BEFORE the 2026-07-28 spec, so it does NOT advance the spec migration (#1620). Bumping the pin is hygiene;
+- **SDK 1.32.2**: stable on Deno with native `WebStandardStreamableHTTPServerTransport`. Tool params MUST use Zod schemas. (Latest 1.x confirmed via npm `dist-tags.latest` — re-query, don't trust this line.)
+- **v1.x is the MAINTENANCE line** (its README, read 2026-10-30): bug and security fixes for at least six months after the
+  v2 release of 2026-07-27, and the 2026-07-28 spec is not planned for v1.x. v2 ships as separate packages
+  (`@modelcontextprotocol/server`, `@modelcontextprotocol/client`). Moving to v2 changes architecture decision #3
+  in CLAUDE.md, so it is a decision, never a dependency bump.
+- **1.30.1+ caps the request body at 4 MiB** (`413`, `maxRequestBodySize` on the transport) and JSON-RPC batches at 100.
+  **1.32.0 adds `maxToolInputElements`** (off by default); the EF sets it on the three surfaces.
+- **Zod import**: `import { z } from "npm:zod@4.6.7";` — pinned exact (MCP is critical infra; minor zod bumps could change validation behavior silently). SDK 1.32.2 supports `zod ^3.25 || ^4.0`. Update consciously when reading release notes.
+  The pin is also a security floor: GHSA-mrhx-c7xc-m3w5 (high) affects zod < 4.6.6, and this server validates arguments
+  sent by external MCP clients. A zod bump also changes the advertised JSON Schema: 4.5 (#6339) writes a simple
+  `anyOf` of bare types as a `type` array, which changed 2 tools per surface on the 4.3.6 → 4.6.7 bump.
+- **`LATEST_PROTOCOL_VERSION` is `2025-11-25` in 1.29.0, 1.30.0 AND 1.32.2** — 1.30.0 shipped 2026-07-27, one day
+  BEFORE the 2026-07-28 spec, so it does NOT advance the spec migration (#1620), and no 1.x will. Bumping the pin is hygiene;
   do not read a version bump as spec progress without grepping `LATEST_PROTOCOL_VERSION` in the tarball.
 - **A bump must re-measure the `execution.taskSupport` strip, not just re-read it.** The proxies strip a
   literal JSON substring; if a future SDK changes the field's shape the regex silently becomes a no-op while
@@ -219,7 +228,7 @@ Re-running the matrix is also useful after migrations that change RPC signatures
 
 ## Tool Pattern
 ```typescript
-import { z } from "npm:zod@4.3.6";
+import { z } from "npm:zod@4.6.7";
 
 // Tools with parameters — MUST use Zod schemas
 mcp.tool("tool_name", "Description.", {

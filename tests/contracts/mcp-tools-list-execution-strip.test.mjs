@@ -53,8 +53,15 @@ const EF = readFileSync(resolve(process.cwd(), 'supabase/functions/nucleo-mcp/in
  * When bumping the SDK pin: re-run the measurement against the DEPLOYED EF
  * (POST tools/list to the EF surface and to the proxy, compare the count of
  * `"execution":{"taskSupport":"forbidden"}` occurrences), then update this value.
+ *
+ * #2217, 2026-10-30 — 1.30.0 → 1.32.2, measured BEFORE deploy: the EF from main and
+ * from the branch, each run locally on Deno 2.9.5, tools/list on the three surfaces,
+ * then the two regexes copied from src/pages/mcp.ts applied to each body. Upstream
+ * literal count /mcp 339, /semantic 55, /actions 88 on both versions; 0 after the
+ * strip; tool counts preserved. The live upstream→proxy delta on the deployed EF is
+ * the post-deploy step of the same change.
  */
-const STRIP_VERIFIED_AGAINST = '1.30.0';
+const STRIP_VERIFIED_AGAINST = '1.32.2';
 
 test('mcp proxy: detects tools/list method via request body regex', () => {
   assert.match(SRC, /const\s+isToolsList\s*=\s*[\s\S]*?"method"\s*[\\]*?[\s\S]*?"tools\\?\/list"/,
