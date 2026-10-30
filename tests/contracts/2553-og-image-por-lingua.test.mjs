@@ -31,14 +31,14 @@ const EN = readFileSync(resolve(ROOT, 'src/i18n/en-US.ts'), 'utf8');
 const DICTS = Object.fromEntries(['pt-BR', 'en-US', 'es-LATAM'].map((l) => [l, readFileSync(resolve(ROOT, `src/i18n/${l}.ts`), 'utf8')]));
 const APPROVED = {
   'meta.description': {
-    'pt-BR': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI no Brasil sediada pelo PMI Goiás. Plataforma open-source trilíngue.',
-    'en-US': 'AI & PM Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters in Brazil hosted by PMI Goiás. Open-source trilingual platform.',
-    'es-LATAM': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI en Brasil con sede en PMI Goiás. Plataforma open-source trilingüe.',
+    'pt-BR': 'Núcleo de Estudos e Pesquisa em IA e Gestão de Projetos: pesquisa voluntária em IA e gerenciamento de projetos, uma cooperação entre capítulos do PMI sediada pelo PMI Goiás. Plataforma open-source trilíngue.',
+    'en-US': 'AI & PM Research Hub: volunteer research on AI and project management, a cooperation among PMI chapters hosted by PMI Goiás. Open-source trilingual platform.',
+    'es-LATAM': 'Núcleo de Estudios e Investigación en IA y Gestión de Proyectos: investigación voluntaria en IA y gestión de proyectos, una cooperación entre capítulos del PMI con sede en PMI Goiás. Plataforma open-source trilingüe.',
   },
   'about.meta.description': {
-    'pt-BR': 'Iniciativa colaborativa entre capítulos do PMI® no Brasil, sediada pelo PMI Goiás: linhas de pesquisa aplicada em IA e gerenciamento de projetos, com produção aberta e plataforma digital própria.',
-    'en-US': 'Collaborative initiative across PMI® chapters in Brazil, hosted by PMI Goiás: applied research lines on AI and project management, with open outputs and its own digital platform.',
-    'es-LATAM': 'Iniciativa colaborativa entre capítulos del PMI® en Brasil, con sede en PMI Goiás: líneas de investigación aplicada en IA y gestión de proyectos, con producción abierta y plataforma digital propia.',
+    'pt-BR': 'Iniciativa colaborativa entre capítulos do PMI®, sediada pelo PMI Goiás: linhas de pesquisa aplicada em IA e gerenciamento de projetos, com produção aberta e plataforma digital própria.',
+    'en-US': 'Collaborative initiative across PMI® chapters, hosted by PMI Goiás: applied research lines on AI and project management, with open outputs and its own digital platform.',
+    'es-LATAM': 'Iniciativa colaborativa entre capítulos del PMI®, con sede en PMI Goiás: líneas de investigación aplicada en IA y gestión de proyectos, con producción abierta y plataforma digital propia.',
   },
 };
 
