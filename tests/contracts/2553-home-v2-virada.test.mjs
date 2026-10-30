@@ -47,9 +47,9 @@ const ORDER = ['HomepageHero', 'OutputsSection', 'ResearchLinesSection', 'Chapte
 const GONE = ['ModelSection', 'VerticalsSection', 'PlatformStatsSection', 'RouterSection', 'PartnersSection', 'TeamSection', 'TribesSection',
   'OperationalArmsSection', 'RulesSection', 'TrailRankingSection', 'ResourcesSection', 'NucleoSection'];
 const APPROVED_RELATION = {
-  'pt-BR': 'Iniciativa voluntária de cooperação entre capítulos do PMI no Brasil, sediada no PMI Goiás, com o qual os capítulos firmam seus acordos. Não é um programa do PMI, Inc.',
-  'en-US': 'A volunteer cooperation initiative among PMI chapters in Brazil, hosted by PMI Goiás, with which participating chapters sign their agreements. It is not a program of PMI, Inc.',
-  'es-LATAM': 'Iniciativa voluntaria de cooperación entre capítulos del PMI en Brasil, con sede en PMI Goiás, con el cual los capítulos firman sus acuerdos. No es un programa del PMI, Inc.',
+  'pt-BR': 'Iniciativa voluntária de cooperação entre capítulos do PMI, sediada no PMI Goiás, com o qual os capítulos firmam seus acordos. Não é um programa do PMI, Inc.',
+  'en-US': 'A volunteer cooperation initiative among PMI chapters, hosted by PMI Goiás, with which participating chapters sign their agreements. It is not a program of PMI, Inc.',
+  'es-LATAM': 'Iniciativa voluntaria de cooperación entre capítulos del PMI, con sede en PMI Goiás, con el cual los capítulos firman sus acuerdos. No es un programa del PMI, Inc.',
 };
 const value = (dict, key) => dict.match(new RegExp(`^  '${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '((?:[^'\\\\]|\\\\.)*)',$`, 'm'))?.[1];
 
