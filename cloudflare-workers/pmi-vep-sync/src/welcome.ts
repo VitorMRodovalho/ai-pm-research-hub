@@ -17,22 +17,17 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Env } from './types';
 import { sha256Hex } from './onboarding-token';
+import { openingLabel } from './opening-label';
 
 export interface DispatchWelcomeOpts {
   application_id: string;
   applicant_name: string;
   email: string;
   role_applied: string;
+  opportunity_title?: string | null;  // #2847: the email names the opening
   chapter: string | null;
   token: string;
 }
-
-const ROLE_LABEL: Record<string, string> = {
-  leader: 'Líder de Tribo',
-  researcher: 'Pesquisador',
-  manager: 'Gerente de Projeto',
-  both: 'Pesquisador / Líder',
-};
 
 export async function dispatchWelcome(
   db: SupabaseClient,
@@ -44,7 +39,7 @@ export async function dispatchWelcome(
 
   const variables = {
     first_name: extractFirstName(opts.applicant_name),
-    role_label: ROLE_LABEL[opts.role_applied] ?? opts.role_applied,
+    role_label: openingLabel(opts.opportunity_title, opts.role_applied),
     chapter: opts.chapter ?? 'Núcleo IA & GP',
     onboarding_url: onboardingUrl,
     expires_in_days: ttlDays
