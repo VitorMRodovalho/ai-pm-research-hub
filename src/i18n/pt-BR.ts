@@ -7666,6 +7666,8 @@ const ptBR: Record<string, string> = {
   'settings.notifications.pushOff': 'Desativado neste aparelho.',
   'settings.notifications.pushOtherHost': 'As notificações no aparelho funcionam no endereço {host}. Abra a mesma página por lá, entre com a sua conta e ative.',
   'settings.notifications.pushOpenOrg': 'Abrir em {host}',
+  'otherHostApp.text': 'Este app foi instalado a partir de outro endereço e não recebe notificações. Para receber, abra {host} no navegador, instale o app de lá e desinstale este.',
+  'otherHostApp.link': 'Abrir {host}',
   'settings.notifications.pushIosInstall': 'No iPhone e no iPad, toque em Compartilhar e em "Adicionar à Tela de Início", abra o Núcleo pelo ícone e ative aqui.',
   'settings.notifications.pushUnsupported': 'Este navegador não oferece notificações push.',
   'settings.notifications.pushDenied': 'As notificações deste site estão bloqueadas nas configurações do navegador.',

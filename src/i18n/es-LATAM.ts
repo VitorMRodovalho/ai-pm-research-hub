@@ -7658,6 +7658,8 @@ const esLATAM: Record<string, string> = {
   'settings.notifications.pushOff': 'Desactivado en este dispositivo.',
   'settings.notifications.pushOtherHost': 'Las notificaciones en el dispositivo funcionan en la dirección {host}. Abre la misma página allí, inicia sesión con tu cuenta y actívalas.',
   'settings.notifications.pushOpenOrg': 'Abrir en {host}',
+  'otherHostApp.text': 'Esta app se instaló desde otra dirección y no recibe notificaciones. Para recibirlas, abre {host} en el navegador, instala la app desde allí y desinstala esta.',
+  'otherHostApp.link': 'Abrir {host}',
   'settings.notifications.pushIosInstall': 'En iPhone y iPad, toca Compartir y "Agregar a pantalla de inicio", abre Núcleo desde el ícono y actívalas aquí.',
   'settings.notifications.pushUnsupported': 'Este navegador no ofrece notificaciones push.',
   'settings.notifications.pushDenied': 'Las notificaciones de este sitio están bloqueadas en la configuración del navegador.',

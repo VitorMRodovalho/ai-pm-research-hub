@@ -1,0 +1,31 @@
+---
+// #2841: o Chrome no Android instala o site como app tambem nos hosts que nao anunciam manifest. Esse app abre com a
+// sessao daquele endereco e nao tem push, que so existe no host SEO canonico. O BaseLayout renderiza isto so fora do
+// host canonico, e o CSS so mostra o aviso no app aberto pelo icone (display-mode: standalone), nunca numa aba.
+import { t, type Lang } from '../../i18n/utils';
+import { SEO_CANONICAL_HOST } from '../../lib/canonical';
+
+interface Props {
+  lang: Lang;
+  /** a mesma pagina no host canonico */
+  href: string;
+}
+const { lang, href } = Astro.props;
+---
+<div class="other-host-app-notice max-w-[1100px] mx-auto mt-3 px-4" role="note">
+  <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+    <p class="m-0">{t('otherHostApp.text', lang).replace('{host}', SEO_CANONICAL_HOST)}</p>
+    <a href={href} rel="noopener" class="inline-block mt-2 font-semibold text-amber-900 underline">{t('otherHostApp.link', lang).replace('{host}', SEO_CANONICAL_HOST)}</a>
+  </div>
+</div>
+
+<style>
+  .other-host-app-notice {
+    display: none;
+  }
+  @media (display-mode: standalone) {
+    .other-host-app-notice {
+      display: block;
+    }
+  }
+</style>
