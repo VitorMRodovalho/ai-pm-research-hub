@@ -156,7 +156,8 @@
     // explícita (sem modal), mas vagas fora da allowlist geram warning.
     // 76631 e 76661 a 76664: vagas do Grupo de Estudos CPMAI (2026/27).
     // 72562: vaga do capítulo, restrita pelo mapa abaixo (#2827).
-    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76631, 76661, 76662, 76663, 76664],
+    // 76080: pesquisador da linha Segundo Cérebro & Comunicação de Times (2026/27).
+    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76080, 76631, 76661, 76662, 76663, 76664],
     // #2843 — a allowlist e o mapa de baldes abaixo são lidos daqui antes do modal.
     // As duas listas fixas só valem quando esta leitura falha.
     NUCLEO_OPPORTUNITIES_URL: 'https://pmi-vep-sync.ai-pm-research-hub.workers.dev/opportunities',
