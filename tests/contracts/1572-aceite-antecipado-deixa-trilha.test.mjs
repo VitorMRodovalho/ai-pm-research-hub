@@ -11,6 +11,11 @@
  * Decisão do PM (15/08): manter o estado válido e exigir justificativa (checkbox 1 da issue), em vez
  * de gatear por N avaliações (checkbox 2).
  *
+ * #2392 (decisão do GP, 02/10/2026) trocou a RÉGUA, não o mecanismo: a justificativa passa a ser
+ * exigida abaixo do `min_evaluators` do ciclo, em avaliadores objetivos do par, e não só com zero
+ * avaliações. A régua nova é afirmada em `2392-aprovacao-abaixo-do-minimo-exige-justificativa`; este
+ * arquivo segue afirmando a trilha (colunas, carimbo, recusa antes do UPDATE, `refused` no lote).
+ *
  * ⚠️ ESTE ARQUIVO AFIRMA A REGRA, NUNCA O INSTANTÂNEO. A população decidida-sem-avaliação é
  * recalculada contra os dados vivos a cada execução e só precisa ser NÃO VAZIA — congelar "hoje são
  * 15" mataria o teste amanhã e ensinaria a atualizar o número em vez de ler o defeito.
@@ -116,18 +121,14 @@ describe('#1572 — corpo vivo dos caminhos de decisão', () => {
     }
   });
 
-  it('admin_update_application conta avaliação de QUALQUER tipo e recusa sem justificativa', { skip: dbGated ? false : skipMsg }, () => {
+  it('admin_update_application recusa sem justificativa na transição para approved', { skip: dbGated ? false : skipMsg }, () => {
     const src = corpos.get('admin_update_application');
-    assert.match(src, /FROM public\.selection_evaluations/);
     assert.match(src, /early_acceptance_reason_required/);
     // O portão cobre a TRANSIÇÃO para approved, não o estado: reaprovar quem já está aprovado não
     // pode voltar a pedir justificativa.
     assert.match(src, /v_requested_status = 'approved' AND v_old_status <> 'approved'/);
-    // A contagem não pode filtrar por evaluation_type: `peer_eval_count` do dashboard só conta
-    // 'objective', e essa é justamente a divergência que faria a UI esconder o campo.
-    const trecho = src.match(/SELECT count\(\*\) INTO v_eval_count[\s\S]{0,240}/);
-    assert.ok(trecho, 'a contagem de avaliações precisa existir para ser auditada');
-    assert.doesNotMatch(trecho[0], /evaluation_type/);
+    // A régua (quantas avaliações bastam) é da #2392 e é afirmada no guard dela. A tela não reproduz
+    // a contagem: o campo de justificativa é renderizado sempre, e quem decide é a RPC.
   });
 
   it('a recusa acontece ANTES do UPDATE de status', { skip: dbGated ? false : skipMsg }, () => {

@@ -980,8 +980,8 @@ const SEL_I18N = {
       rankChapter: 'Rank (Cap.)', rankOverall: 'Rank (Geral)',
       changeStatus: 'Alterar Status', feedbackPlaceholder: 'Feedback / observações...',
       earlyAcceptanceTitle: 'Aceite antecipado',
-      earlyAcceptanceHint: 'Aprovar uma candidatura sem nenhuma avaliação registrada é permitido, mas exige justificativa de pelo menos 20 caracteres, que fica gravada na candidatura junto com quem aprovou. Deixe em branco se a candidatura já tem avaliação.',
-      earlyAcceptancePlaceholder: 'Por que esta aprovação dispensa avaliação?',
+      earlyAcceptanceHint: 'Aprovar com menos avaliadores objetivos que o mínimo do ciclo (somando a candidatura ligada, quando houver) é permitido, mas exige justificativa de pelo menos 20 caracteres, que fica gravada na candidatura junto com quem aprovou. Deixe em branco se a candidatura já atingiu o mínimo.',
+      earlyAcceptancePlaceholder: 'Por que aprovar abaixo do mínimo de avaliações?',
       saveChanges: 'Salvar alterações',
       loadingEvaluation: 'Carregando formulário de avaliação...',
       loadingComms: 'Carregando comunicações...',
@@ -1604,11 +1604,12 @@ const SEL_I18N = {
     return `<span class="text-[10px] text-[var(--text-muted)]" title="Sem convite individual">—</span>`;
   }
 
-  /* #1572 — campo de justificativa do aceite antecipado (aprovação com ZERO avaliação).
-     Renderizado SEM condição de contagem de propósito: quem decide se a justificativa é exigida é a
-     RPC, que conta avaliação de QUALQUER tipo, enquanto a linha do dashboard só traz `peer_eval_count`
-     (só as `objective`). Reproduzir a regra aqui com o número errado esconderia o campo justamente
-     na candidatura que a RPC vai recusar, e o GP bateria numa parede sem onde escrever. */
+  /* #1572, #2392 — campo de justificativa do aceite antecipado (aprovação abaixo do mínimo de
+     avaliadores objetivos do ciclo). Renderizado SEM condição de contagem de propósito: quem decide se
+     a justificativa é exigida é a RPC, que soma a candidatura ligada, enquanto a linha do dashboard
+     só traz `peer_eval_count` da própria candidatura. Reproduzir a regra aqui com o número errado
+     esconderia o campo justamente na candidatura que a RPC vai recusar, e o GP bateria numa parede
+     sem onde escrever. */
   function earlyAcceptanceBlock(): string {
     return `
       <div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 space-y-2">
@@ -2725,7 +2726,7 @@ const SEL_I18N = {
     body.querySelector('#modal-save-btn')?.addEventListener('click', async () => {
       const newStatus = (body.querySelector('#modal-status-select') as HTMLSelectElement)?.value;
       const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
-      // #1572 — só viaja quando preenchido; a RPC ignora o campo quando a candidatura já tem avaliação.
+      // #1572 — só viaja quando preenchido; a RPC ignora o campo quando a candidatura já atingiu o mínimo (#2392).
       const earlyReason = (body.querySelector('#modal-early-acceptance') as HTMLTextAreaElement)?.value?.trim();
       const btn = body.querySelector('#modal-save-btn') as HTMLButtonElement;
       if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
@@ -2754,8 +2755,8 @@ const SEL_I18N = {
       const researcherDecision = (body.querySelector('#modal-status-researcher') as HTMLSelectElement)?.value;
       const leaderDecision = (body.querySelector('#modal-status-leader') as HTMLSelectElement)?.value;
       const feedback = (body.querySelector('#modal-feedback') as HTMLTextAreaElement)?.value;
-      // #1572 — a justificativa vale para as DUAS pontas do par: a RPC repassa a cada lado e cada um
-      // decide se precisa, porque a contagem de avaliação é por candidatura, não por par.
+      // #1572 — a justificativa vale para as DUAS pontas do par: a RPC repassa a cada lado. Desde a
+      // #2392 a contagem é do par, então as duas pontas leem o mesmo número.
       const earlyReason = (body.querySelector('#modal-early-acceptance') as HTMLTextAreaElement)?.value?.trim();
       const btn = body.querySelector('#modal-dual-save-btn') as HTMLButtonElement;
       if (!researcherDecision || !leaderDecision) {
