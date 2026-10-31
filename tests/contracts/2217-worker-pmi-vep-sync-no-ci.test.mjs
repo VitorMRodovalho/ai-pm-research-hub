@@ -8,14 +8,17 @@
  * worker, e os 15 `.ts` do `src` davam erro fatal de parse (#2879). Um portao que existe mas nao
  * roda no CI nao protege nada, e um que roda mas nao pode reprovar tambem nao.
  *
- * Este guard amarra as quatro pontas da fiacao:
+ * Este guard amarra as cinco pontas da fiacao:
  *   1. o job roda DENTRO do diretorio do worker, instala a arvore dele e chama os tres scripts
  *      depois do `npm ci`, sem `continue-on-error` nem `if:` que o pule;
  *   2. o workflow reporta em toda PR, sem filtro de `paths`;
  *   3. cada script do worker chama a ferramenta certa;
  *   4. a config de lint do worker da o parser TypeScript aos `.ts`, e todo pacote que ela importa
  *      esta nas `devDependencies` do worker. O job instala SO a arvore do worker: um import que
- *      hoje resolve pelo `node_modules` da raiz quebraria la.
+ *      hoje resolve pelo `node_modules` da raiz quebraria la;
+ *   5. o check-run do job sai com o nome que o ruleset 21186263 exige. Desde 31/10 o `pmi-vep-sync`
+ *      e contexto obrigatorio da `main`, e o contexto e o id do job: um renome, ou um `name:` no job,
+ *      deixa toda PR esperando um status que nunca chega.
  *
  * Comentarios (YAML e JS) saem antes de qualquer assercao, para nao asserir sobre prosa.
  */
@@ -29,6 +32,9 @@ const DIR = 'cloudflare-workers/pmi-vep-sync';
 const WF = resolve(ROOT, '.github/workflows/worker-pmi-vep-sync.yml');
 const PKG = resolve(ROOT, DIR, 'package.json');
 const ESLINT = resolve(ROOT, DIR, 'eslint.config.mjs');
+// Contexto obrigatorio no ruleset 21186263 (`docs/GITHUB_SETTINGS.md`). Mudar aqui e mudar o ruleset
+// no mesmo passo.
+const CONTEXTO = 'pmi-vep-sync';
 
 /** Remove comentarios YAML (mesma forma dos guards #1509 e #2774). */
 function semComentarios(src) {
@@ -91,6 +97,15 @@ test('2217: o job do worker instala a arvore dele e roda typecheck, testes e lin
     `${job}: um passo com working-directory proprio roda fora do worker`);
   assert.doesNotMatch(texto, /continue-on-error:\s*true/, `${job}: continue-on-error deixa o portao passar vermelho`);
   assert.doesNotMatch(texto, /^\s+(?:-\s+)?if:/m, `${job}: um if: no job ou num passo pode pular o portao`);
+});
+
+test('2217: o check-run do job do worker sai com o nome do contexto obrigatorio', () => {
+  const { job, texto } = jobDoWorker();
+  assert.equal(job, CONTEXTO,
+    `o job do worker virou \`${job}\`: o ruleset exige o contexto \`${CONTEXTO}\` e toda PR ficaria esperando por ele`);
+  // `name:` no nivel do job (4 espacos) troca o nome do check-run; o dos passos fica em `- name:`.
+  assert.doesNotMatch(texto, /^ {4}name:/m,
+    `${job}: um \`name:\` no job troca o nome do check-run, e o contexto \`${CONTEXTO}\` deixa de reportar`);
 });
 
 test('2217: o workflow reporta em toda PR, sem filtro de caminho', () => {
