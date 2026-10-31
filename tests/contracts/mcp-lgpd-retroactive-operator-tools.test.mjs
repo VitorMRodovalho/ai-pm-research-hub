@@ -233,8 +233,11 @@ test('#1418: nucleo-ia-hub MCP server bumped to 2.80.0 (was 2.79.0 pre-#1418 raw
 // a nota de BRIEFING lida pelo entrevistador antes da entrevista. Aqui houve acao NOVA, nao so
 // descricao, e o conector cacheia tools/list: sem o bump, a unica forma de saber se o deploy pegou
 // seria tentar a acao e ver se falha.
-test('ef_version is 2.103.0 (#1836 set_notes; 2.102.0 no #1819; 2.101.0 no #1779)', () => {
-  assert.match(EF, /ef_version:\s*"2\.103\.0"/, '/health must report ef_version 2.103.0');
+// #2217 (30/10/2026): 2.103.0 -> 2.104.0. SDK do MCP 1.30.0 -> 1.32.2, zod 4.3.6 -> 4.6.7 e hono
+// 4.12.9 -> 4.13.14, com `maxToolInputElements` ligado nas tres superficies. Sem tool nova; o bump
+// e o que mostra, numa chamada a /health, que o deploy pegou o SDK novo (o campo `sdk` sobe junto).
+test('ef_version is 2.104.0 (#2217 SDK 1.32.2; 2.103.0 no #1836; 2.102.0 no #1819)', () => {
+  assert.match(EF, /ef_version:\s*"2\.104\.0"/, '/health must report ef_version 2.104.0');
 });
 
 test('#1392: /health /mcp surface derives its tool count + keeps version 2.80.0', () => {

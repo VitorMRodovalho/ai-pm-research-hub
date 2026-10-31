@@ -216,5 +216,5 @@ test('W6a: /semantic health count is DERIVED (not a literal) + version 0.12.0 â€
   // #1392 retired the hardcoded literal; /health derives from the registrar. Authoritative count
   // lives in semantic-envelope-w6b (registerSemanticTools == 52).
   assert.match(SRC, /"\/semantic":\s*\{[^}]*tools:\s*SEMANTIC_TOOL_COUNT\b/, '/semantic health must derive from SEMANTIC_TOOL_COUNT');
-  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/, '/semantic McpServer must be v0.12.0');
+  assert.match(SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*(?:,\s*\{\s*maxToolInputElements:\s*MAX_TOOL_INPUT_ELEMENTS\s*\}\s*)?\)/, '/semantic McpServer must be v0.12.0');
 });

@@ -187,14 +187,14 @@
 //   manage_initiative_engagement (action='remove' only), offboard_member, delete_card, archive_card.
 //   Default returns preview; confirm=true executes. Breaking behavior change.
 // V4 Cutover: canWrite/canWriteBoard → canV4 (ADR-0007, engagement-derived authority)
-// Transport: SDK 1.30.0 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
+// Transport: SDK 1.32.2 WebStandardStreamableHTTPServerTransport (native Streamable HTTP)
 // GC-132/133: Phase 1+2 | GC-161: P1 | GC-164: P2
 
-import { Hono } from "jsr:@hono/hono@4.12.9";
-import { McpServer } from "npm:@modelcontextprotocol/sdk@1.30.0/server/mcp.js";
-import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.30.0/server/webStandardStreamableHttp.js";
+import { Hono } from "jsr:@hono/hono@4.13.14";
+import { McpServer } from "npm:@modelcontextprotocol/sdk@1.32.2/server/mcp.js";
+import { WebStandardStreamableHTTPServerTransport } from "npm:@modelcontextprotocol/sdk@1.32.2/server/webStandardStreamableHttp.js";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { z } from "npm:zod@4.3.6";
+import { z } from "npm:zod@4.6.7";
 import {
   htmlToMarkdown,
   extractSectionAnchors,
@@ -13174,8 +13174,16 @@ function statelessGetNotAllowed(req: Request): Response | null {
   );
 }
 
+// Teto de elementos por chamada de ferramenta (SDK 1.32.0, opção desligada por padrão). Conta itens de
+// array e membros de objeto somados nos `arguments` de um `tools/call` e recusa com `isError` ANTES de o
+// Zod validar. Nenhum dos 36 `z.array` das ferramentas tem `.max()`, então até aqui o único teto era o
+// corpo de 4 MiB do transporte. A doc do SDK pede um valor acima do maior argumento legítimo e usa
+// 10_000 como exemplo. Os arrays daqui carregam ids de membro, e-mails, temas e referências; o maior
+// lote legítimo é a lista de membros de um convite ou de uma recirculação.
+const MAX_TOOL_INPUT_ELEMENTS = 10_000;
+
 // MCP endpoint — Native Streamable HTTP via WebStandardStreamableHTTPServerTransport
-// SDK 1.30.0 handles all protocol details: initialize, session, tools/list, tool/call, SSE
+// SDK 1.32.2 handles all protocol details: initialize, session, tools/list, tool/call, SSE
 app.all("/mcp", async (c) => {
   const getBlocked = statelessGetNotAllowed(c.req.raw); // #1497
   if (getBlocked) return getBlocked;
@@ -13184,7 +13192,7 @@ app.all("/mcp", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.80.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-hub", version: "2.80.0" }, { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS });
     registerKnowledge(mcp, sb);
     registerTools(mcp, sb);
 
@@ -13215,7 +13223,7 @@ app.all("/semantic", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION });
+    const mcp = new McpServer({ name: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION }, { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS });
     registerSemanticTools(mcp, sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -13245,7 +13253,7 @@ app.all("/actions", async (c) => {
     const token = authHeader?.replace("Bearer ", "");
 
     const sb = createAuthenticatedClient(token);
-    const mcp = new McpServer({ name: "nucleo-ia-actions", version: "0.2.0" });
+    const mcp = new McpServer({ name: "nucleo-ia-actions", version: "0.2.0" }, { maxToolInputElements: MAX_TOOL_INPUT_ELEMENTS });
     registerTools(filterToAllowlist(mcp, ACTIONS_ALLOWLIST), sb);
 
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -13269,14 +13277,14 @@ app.get("/health", (c) => c.json({
   // #1598 — bumpado de propósito: no arco anterior o ef_version ficou igual no vivo e no fonte, e
   // o /health não serviu de testemunha do deploy (a prova teve de ser grep de sentinela no corpo
   // baixado). Bumpar aqui torna o deploy verificável por UMA chamada.
-  ef_version: "2.103.0",
+  ef_version: "2.104.0",
   surfaces: {
     "/mcp": { server: "nucleo-ia-hub", version: "2.80.0", tools: MCP_TOOL_COUNT },
     "/semantic": { server: "nucleo-ia-semantic", version: SEMANTIC_SURFACE_VERSION, tools: SEMANTIC_TOOL_COUNT },
     "/actions": { server: "nucleo-ia-actions", version: "0.2.0", tools: ACTIONS_ALLOWLIST.size },
   },
   transport: "native-streamable-http",
-  sdk: "1.30.0",
+  sdk: "1.32.2",
 }));
 
 Deno.serve(app.fetch);

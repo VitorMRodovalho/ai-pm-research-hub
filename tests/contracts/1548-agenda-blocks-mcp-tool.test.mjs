@@ -178,7 +178,7 @@ test('#1548 a versão da superfície semântica tem UMA fonte, usada nas duas po
   // ficou para trás — e um health que mente sobre a versão é pior que um health ausente.
   assert.match(SRC, /const SEMANTIC_SURFACE_VERSION = "\d+\.\d+\.\d+";/, 'a constante única precisa existir');
   assert.match(
-    SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*\)/,
+    SRC, /new McpServer\(\s*\{\s*name:\s*"nucleo-ia-semantic"\s*,\s*version:\s*SEMANTIC_SURFACE_VERSION\s*\}\s*(?:,\s*\{\s*maxToolInputElements:\s*MAX_TOOL_INPUT_ELEMENTS\s*\}\s*)?\)/,
     'o McpServer tem de usar a constante, não um literal',
   );
   assert.match(
