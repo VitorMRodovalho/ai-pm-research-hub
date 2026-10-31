@@ -14,6 +14,8 @@ import { YOUTUBE_VIDEOS, youtubeEmbedUrl } from '../../src/data/youtube-playlist
 import { CSP } from '../../src/lib/securityHeaders.ts';
 
 const semComentarios = (s) => maskJsComments(s).replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
+// escape completo para montar regex a partir de texto (CodeQL js/incomplete-sanitization: escapar só o ponto não basta)
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const HERO = semComentarios(readFileSync('src/components/sections/HomepageHero.astro', 'utf8'));
 const PRIVACY = semComentarios(readFileSync('src/pages/privacy.astro', 'utf8'));
 
@@ -94,7 +96,7 @@ describe('#2553 PR 3, vídeo do hero', () => {
     const chaves = ['homeV2.hero.videoPlay', 'homeV2.hero.videoTitle', 'homeV2.hero.videoMeta', 'homeV2.hero.videoOpenYoutube', 'privacy.s10track.youtube'];
     for (const dic of ['pt-BR', 'en-US', 'es-LATAM']) {
       const src = readFileSync(`src/i18n/${dic}.ts`, 'utf8');
-      for (const k of chaves) assert.match(src, new RegExp(`'${k.replace(/\./g, '\\.')}': '[^']{4,}',`), `${dic}: ${k}`);
+      for (const k of chaves) assert.match(src, new RegExp(`'${escRe(k)}': '[^']{4,}',`), `${dic}: ${k}`);
       assert.match(src, /'privacy\.s10track\.youtube': '[^']*youtube-nocookie\.com[^']*',/, `${dic}: a política nomeia o domínio`);
     }
     const s10 = PRIVACY.match(/\{t\('privacy\.s10track\.title', lang\)\}([\s\S]*?)<\/section>/);
