@@ -36,7 +36,7 @@ function semComentarios(src) {
 }
 
 /**
- * Remove so comentario `//` que abre a linha. O `maskJsComments` dos helpers nao serve aqui: ele
+ * Remove so comentario `//` que abre a linha. O `maskJsComments` dos helpers nao serve aqui (#2882): ele
  * le o `/**` de dentro do glob `'node_modules/**'` como abertura de bloco e apaga ate o `*\/` de
  * `'**\/*.ts'`, justamente o trecho que este guard precisa ler.
  */
