@@ -71,7 +71,7 @@ test('#2864 S: _audit_list_public_triggers é SECURITY DEFINER, search_path vazi
 
 const URL_BASE = process.env.PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON = process.env.PUBLIC_SUPABASE_ANON_KEY;
+const ANON = process.env.SUPABASE_ANON_KEY || process.env.PUBLIC_SUPABASE_ANON_KEY;
 const temCredencial = Boolean(URL_BASE && KEY);
 const chamar = (chave) => dbFetch(`${URL_BASE}/rest/v1/rpc/_audit_list_public_triggers`, {
   method: 'POST',
