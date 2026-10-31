@@ -17,7 +17,9 @@
   recebe secret e não entra na faixa do banco.
 - **Fora do `.nvmrc`, de propósito:** o runtime de produção é o workerd da Cloudflare, não Node; as
   Edge Functions rodam em Deno (`deno-ef-check.yml` fixa a versão do Deno); o worker
-  `cloudflare-workers/pmi-vep-sync` não tem workflow nem `engines`.
+  `cloudflare-workers/pmi-vep-sync` roda no workerd e não tem `engines`. O `tsc`, o `vitest` e o
+  lint dele rodam no `worker-pmi-vep-sync.yml`, que lê o `.nvmrc` como os outros workflows: a troca
+  de major passa por eles também.
 
 ## Antes do dia: prontidão
 
