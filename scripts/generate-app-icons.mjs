@@ -1,40 +1,67 @@
 #!/usr/bin/env node
-// #2806: gera os icones do app instalavel (manifest) a partir de um SVG tipografico nas cores do site
-// (--color-navy #003B5C, --color-orange #FF610F). Icone PROVISORIO: o Nucleo nao tem arquivo de logo no
-// repositorio, e trocar e so substituir os PNG em public/icons/ (ou mudar o SVG abaixo e rodar de novo).
+// #2806: gera a marca a partir de scripts/brand/capitulo.mjs, o simbolo "Capitulo".
 //
 //   node scripts/generate-app-icons.mjs
 //
-// Saidas: app-192.png e app-512.png (purpose any, cantos arredondados) e app-maskable-512.png (purpose maskable,
-// fundo ate a borda e o conteudo dentro da zona segura de 80%, que o sistema recorta em circulo ou squircle).
+// Saidas:
+//   public/brand/nucleo-simbolo-{principal,reduzido}[-negativo].svg, para a comunicacao;
+//   public/favicon.svg (versao reduzida; as sementes azuis ficam brancas no tema escuro) e public/favicon.ico (16, 32
+//   e 48 px, para o navegador que nao le SVG);
+//   public/icons/app-192.png e app-512.png (purpose any, cantos arredondados, simbolo principal em negativo);
+//   public/icons/app-maskable-512.png (purpose maskable, fundo ate a borda, simbolo dentro da zona segura de 80%, que o
+//   sistema recorta em circulo ou squircle);
+//   public/icons/apple-touch-180.png (opaco e ate a borda: o iOS arredonda sozinho e pinta de preto o que e transparente).
 import sharp from 'sharp';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { NAVY, symbol, svgDocument, faviconSvg, appIcons, FAVICON_ICO_SIZES } from './brand/capitulo.mjs';
 
-const OUT = resolve(process.cwd(), 'public/icons');
-const NAVY = '#003B5C';
-const ORANGE = '#FF610F';
+const PUBLIC = resolve(process.cwd(), 'public');
+const WHITE = '#FFFFFF';
+mkdirSync(resolve(PUBLIC, 'brand'), { recursive: true });
+mkdirSync(resolve(PUBLIC, 'icons'), { recursive: true });
 
-function svg({ size, radius, scale }) {
-  const c = size / 2;
-  const s = (n) => Math.round(n * scale * (size / 512));
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${radius}" fill="${NAVY}"/>
-  <text x="${c}" y="${c + s(40)}" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="700"
-        font-size="${s(230)}" fill="${ORANGE}" letter-spacing="${s(-6)}">IA</text>
-  <text x="${c}" y="${c + s(150)}" text-anchor="middle" font-family="DejaVu Sans, Arial, sans-serif" font-weight="700"
-        font-size="${s(84)}" fill="#FFFFFF" letter-spacing="${s(4)}">&amp; GP</text>
-</svg>`;
+for (const name of ['principal', 'reduzido']) {
+  writeFileSync(resolve(PUBLIC, `brand/nucleo-simbolo-${name}.svg`), svgDocument(symbol(name)));
+  writeFileSync(resolve(PUBLIC, `brand/nucleo-simbolo-${name}-negativo.svg`), svgDocument(symbol(name, { base: WHITE })));
+}
+writeFileSync(resolve(PUBLIC, 'favicon.svg'), faviconSvg());
+
+// fundo azul (rx 0 = ate a borda) com o simbolo principal em negativo, centrado, com `mark` px de lado
+async function tile(size, { radius, mark, opaque }) {
+  const off = (size - mark) / 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">` +
+    `<rect width="${size}" height="${size}" rx="${radius}" fill="${NAVY}"/>` +
+    `<svg x="${off}" y="${off}" width="${mark}" height="${mark}" viewBox="0 0 100 100">${symbol('principal', { base: WHITE })}</svg></svg>`;
+  let img = sharp(Buffer.from(svg));
+  if (opaque) img = img.flatten({ background: NAVY });
+  return img.png({ compressionLevel: 9 }).toBuffer();
 }
 
-mkdirSync(OUT, { recursive: true });
-const jobs = [
-  { file: 'app-192.png', size: 192, radius: 36, scale: 1 },
-  { file: 'app-512.png', size: 512, radius: 96, scale: 1 },
-  { file: 'app-maskable-512.png', size: 512, radius: 0, scale: 0.78 },
-];
-for (const j of jobs) {
-  await sharp(Buffer.from(svg(j))).png({ compressionLevel: 9 }).toFile(resolve(OUT, j.file));
-  const meta = await sharp(resolve(OUT, j.file)).metadata();
-  console.log(`${j.file} ${meta.width}x${meta.height}`);
+// .ico com uma imagem PNG por tamanho (o formato aceita PNG dentro desde o Windows Vista)
+async function ico(sizes) {
+  const pngs = await Promise.all(sizes.map((s) => sharp(Buffer.from(svgDocument(symbol('reduzido'), { size: s }))).png({ compressionLevel: 9 }).toBuffer()));
+  const head = Buffer.alloc(6 + 16 * sizes.length);
+  head.writeUInt16LE(0, 0);
+  head.writeUInt16LE(1, 2);
+  head.writeUInt16LE(sizes.length, 4);
+  let offset = head.length;
+  sizes.forEach((s, i) => {
+    const e = 6 + 16 * i;
+    head.writeUInt8(s % 256, e);
+    head.writeUInt8(s % 256, e + 1);
+    head.writeUInt16LE(1, e + 4);
+    head.writeUInt16LE(32, e + 6);
+    head.writeUInt32LE(pngs[i].length, e + 8);
+    head.writeUInt32LE(offset, e + 12);
+    offset += pngs[i].length;
+  });
+  return Buffer.concat([head, ...pngs]);
+}
+
+const jobs = [...appIcons().map((i) => [i.file, tile(i.size, i)]), ['favicon.ico', ico(FAVICON_ICO_SIZES)]];
+for (const [file, job] of jobs) {
+  const buf = await job;
+  writeFileSync(resolve(PUBLIC, file), buf);
+  console.log(`${file} ${buf.length} bytes`);
 }
