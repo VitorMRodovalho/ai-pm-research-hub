@@ -1,0 +1,17 @@
+# Trigger-level orphan allowlist — #2864
+#
+# Gatilhos vivos em `public` (pg_trigger, NOT tgisinternal) sem nenhum
+# `CREATE [OR REPLACE] [CONSTRAINT] TRIGGER <nome> ... ON [public.]<tabela>`
+# em supabase/migrations/*.sql. Formato: <tabela>.<gatilho>, um por linha.
+#
+# Medido em 31/10/2026 17:46Z: 175 gatilhos vivos, 6 sem migration. A #2864
+# capturou os 2 de board_items (trg_auto_comms_on_publish e
+# trg_notify_leader_review); ficam estes 4.
+#
+# Ratchet para BAIXO: capture o gatilho numa migration, sem mudar o
+# comportamento (definição copiada de pg_get_triggerdef), e tire a linha.
+# Para CIMA: proibido. Gatilho novo nasce em migration.
+attendance.trg_auto_complete_first_meeting
+knowledge_assets.trg_knowledge_assets_updated_at
+knowledge_insights.trg_knowledge_insights_updated_at
+pmi_video_screenings.trg_pmi_video_screening_voice_consent

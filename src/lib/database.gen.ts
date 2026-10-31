@@ -27895,12 +27895,14 @@ export type Database = {
       }
       vep_opportunities: {
         Row: {
+          application_deadline: string | null
           chapter_posted: string | null
           created_at: string | null
           cycle_id: string | null
           eligibility: string | null
           end_date: string | null
           essay_mapping: Json
+          home_listing: string
           id: string
           initiative_id: string | null
           is_active: boolean | null
@@ -27915,12 +27917,14 @@ export type Database = {
           vep_url: string | null
         }
         Insert: {
+          application_deadline?: string | null
           chapter_posted?: string | null
           created_at?: string | null
           cycle_id?: string | null
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
+          home_listing?: string
           id?: string
           initiative_id?: string | null
           is_active?: boolean | null
@@ -27935,12 +27939,14 @@ export type Database = {
           vep_url?: string | null
         }
         Update: {
+          application_deadline?: string | null
           chapter_posted?: string | null
           created_at?: string | null
           cycle_id?: string | null
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
+          home_listing?: string
           id?: string
           initiative_id?: string | null
           is_active?: boolean | null
@@ -31029,6 +31035,17 @@ export type Database = {
         Args: never
         Returns: {
           table_name: string
+        }[]
+      }
+      _audit_list_public_triggers: {
+        Args: never
+        Returns: {
+          definition: string
+          enabled: string
+          function_name: string
+          function_schema: string
+          table_name: string
+          trigger_name: string
         }[]
       }
       _audit_list_revoked_secdef_fns_with_rls_refs: {
@@ -34358,6 +34375,20 @@ export type Database = {
         }[]
       }
       get_public_gamification_summary: { Args: never; Returns: Json }
+      get_public_home_openings: {
+        Args: never
+        Returns: {
+          application_deadline: string
+          line_title: string
+          listing: string
+          opportunity_id: string
+          role_default: string
+          start_date: string
+          time_commitment: string
+          title: string
+          vep_url: string
+        }[]
+      }
       get_public_home_team: { Args: never; Returns: Json }
       get_public_impact_data: { Args: never; Returns: Json }
       get_public_leaderboard: {
