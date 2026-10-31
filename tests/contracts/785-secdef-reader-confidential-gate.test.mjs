@@ -184,7 +184,7 @@ const ALLOWLIST = {
   get_public_verticals: 'kind=community_vertical AND status=active; confidential is kind=committee',
   get_publication_pipeline_summary: 'reads publication_submissions only; confidential committee has 0 submissions',
   get_publication_submissions: 'reads publication_submissions (p_tribe_id by legacy_tribe_id); confidential has 0 submissions',
-  list_curation_board: 'gated (curate_content/write_board) reads hub_resources only; confidential has 0 hub_resources',
+  list_curation_board: 'gated (curate_content/governance, #2862) reads hub_resources only; confidential has 0 hub_resources',
   verify_certificate: 'public verification by unguessable code (rate-limited); no enumeration of confidential events',
   webinars_pending_comms: 'comms-analytics gated; reads webinars (not events); confidential has 0 webinars',
   get_affiliation_verification_queue: 'filiacao_director OR manage_member gate; reads only initiatives.legacy_tribe_id (via events.initiative_id) to tell whether a presence was in the person\'s OWN tribe (#2718 signal), and returns no initiative content. Gating it by rls_can_see_initiative would make that signal change with who is looking.',
