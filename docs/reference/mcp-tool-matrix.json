@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-09-30T03:19:22.441Z",
+  "generated_at": "2026-10-31T13:36:50.516Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 393,
+  "total": 394,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
     "events": 19,
     "gamification": 17,
-    "board": 79,
+    "board": 80,
     "tribe": 124,
     "comms": 19,
     "knowledge": 13,
@@ -638,8 +638,7 @@
       ],
       "tables": [],
       "canV4_actions": [
-        "curate_content",
-        "write_board"
+        "curate_content"
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
@@ -655,8 +654,7 @@
       "tables": [],
       "canV4_actions": [
         "curate_content",
-        "participate_in_governance_review",
-        "write_board"
+        "participate_in_governance_review"
       ],
       "external_fetch_count": 0,
       "uses_service_role": false,
@@ -664,7 +662,7 @@
     },
     {
       "name": "submit_curation_review",
-      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft with appended feedback. Requires participate_in_governance_review.",
+      "description": "Submit a structured curation review for a board item in curation_pending. decision ∈ approved|returned_for_revision|rejected. On reaching reviewers_required approvals the item auto-publishes; returned_for_revision/rejected route it back to draft; the review stays in the curation record and in the decision notice to the author (not appended to the card). Requires participate_in_governance_review.",
       "domain": "board",
       "rpcs": [
         "submit_curation_review"
@@ -676,6 +674,17 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "{ action: \"submit_curation_review\", review_log_id: data, item_id: params.item_id, decision"
+    },
+    {
+      "name": "submit_for_curation",
+      "description": "Submit a board item (card) to the curation committee: curation_status draft|leader_review -> curation_pending, with the SLA due date and automatic reviewer assignment. Moving a card to the 'review' column does NOT submit it to curation; this tool does. Authority and eligibility are decided by the RPC (participate_in_governance_review OR tribe leader; only publishable artifacts, #2447) and its refusal is returned as-is. Optional target_venue/target_date record the publication destination first (see their descriptions). Returns the resulting curation_status, curation_due_at, review_round and how many reviewers were assigned.",
+      "domain": "board",
+      "rpcs": [],
+      "tables": [],
+      "canV4_actions": [],
+      "external_fetch_count": 0,
+      "uses_service_role": false,
+      "return_shape_hint": "{ action: \"submit_for_curation\", ...res.state, warnings: res.warnings }"
     },
     {
       "name": "assign_curation_reviewer",
@@ -4664,9 +4673,14 @@
       "description": "ADR-0095 GAP-205.D: Change kind on an alternate email. Rejects primary (kind follows backfill convention). Returns true if updated, false if email not registered for member. Auth: self or manage_member.",
       "domain": "tribe",
       "rpcs": [
-        "member_update_alternate_email_kind"
+        "get_artifact_classification",
+        "member_update_alternate_email_kind",
+        "set_curation_target",
+        "submit_for_curation"
       ],
       "tables": [
+        "board_items",
+        "curation_reviewer_assignments",
         "events"
       ],
       "canV4_actions": [
@@ -4768,13 +4782,14 @@
     },
     {
       "name": "card_write",
-      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
+      "description": "Semantic card writer (absorbs create/update/move/move_to_board/archive/restore/delete/duplicate/mirror/forecast — 297 calls/180d). Set `action`: 'create' (board_id + title), 'update' (card_id + any of title/description/assignee_id/reviewer_id/due_date/tags/forecast_date/is_portfolio_item), 'move' (card_id + status; optional position/reason), 'move_to_board' (card_id + target_board_id), 'archive' (card_id; DESTRUCTIVE→confirm), 'restore' (card_id; optional restore_status), 'delete' (card_id + reason; DESTRUCTIVE→confirm), 'duplicate' (card_id; optional target_board_id), 'mirror' (card_id + target_board_id), 'forecast' (card_id + forecast_date + justification), 'assign_role' / 'unassign_role' (card_id + member_id + assignment_role author|reviewer|contributor|curation_reviewer — quem e autor/revisor/contribuidor DAQUELE card; le-se em card_get.assignments), 'submit_for_curation' (card_id; envia o card publicavel a curadoria: mover para a coluna 'review' NAO envia; devolve curation_status, curation_due_at, review_round e quantos pareceristas foram designados; quem pode enviar e o que entra decide a RPC; aceita target_venue/target_date, gravados ANTES do envio), 'set_curation_target' (card_id + target_venue and/or target_date; grava o destino da publicacao sem enviar, antes da publicacao; quem grava decide a RPC: autoria, lideranca da iniciativa ou governanca). Authority: write_board, BOARD-SCOPED via the #785 gate on the target card/board (fixes the Wave-0 resourceless-write findings for delete/duplicate/mirror). archive+delete return a preview unless confirm=true (ADR-0018). Stable envelope.",
       "domain": "board",
       "rpcs": [],
       "tables": [
         "board_items"
       ],
       "canV4_actions": [
+        "submit_for_curation",
         "write_board"
       ],
       "external_fetch_count": 0,
@@ -5135,7 +5150,7 @@
     },
     {
       "name": "agenda_blocks",
-      "description": "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; para inscrever outra pessoa, nomeie-a em guest_name (+ external_guest se for de fora). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
+      "description": "Semantic Agenda Viva de Protagonismo tool (#1548 — o dominio nao tinha superficie MCP nenhuma). Set `action`: 'list' (le a pauta: com event_id devolve os blocos daquele evento via get_meeting_preparation; sem event_id devolve a janela corrente via get_geral_agenda_viva, ultima realizada + proximas), 'reserve' (#2158 — event_id + format_slug + title + duration_min: RESERVA um bloco na pauta. A reserva e SEMPRE em nome do chamador; #2593 fatia 6: membro do Nucleo que apresenta junto (ou no lugar do chamador) vai em copresenter_member_ids (ate 3 membros ativos; cada um recebe o mesmo XP de protagonismo na confirmacao, se presente), e guest_name e SO para convidado de fora (external_guest=true; convidado externo EXIGE guest_email, dado pessoal de terceiro guardado ate 1 ano depois da reuniao, e guest_language escolhe o idioma do convite: pt-BR|en-US|es-LATAM, padrao pt-BR; o convite so sai quando o bloco for confirmado). Autoridade e reserve_agenda_block, capacidade PROPRIA, NAO manage_event), 'confirm' (block_id para um bloco OU event_id para todos os reservados do evento — CONCEDE XP ao protagonista, calculado pelo format_slug e pela faixa de duracao), 'no_show' (block_id + reason — marca nao realizado e ESTORNA o XP com pontos negativos no ledger). Authority: 'reserve' pede reserve_agenda_block; 'confirm'/'no_show' pedem manage_event (as RPCs gateiam). Confirmar e um VEREDITO HUMANO sobre quem de fato apresentou: as tres acoes de escrita devolvem preview e so executam com confirm=true (ADR-0018 W1). Stable envelope.",
       "domain": "tribe",
       "rpcs": [
         "reserve_agenda_block"
@@ -5334,13 +5349,14 @@
     },
     {
       "name": "certificate_manage",
-      "description": "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
+      "description": "Certificate lifecycle (absorbs issue_certificate + update_certificate + verify_certificate + get_all_certificates + get_my_certificates + exec_cert_timeline). Set `action`: 'issue' (member_id + title + type [+ cycle, language, period_start, period_end, function_role, description] — DESTRUCTIVE→confirm), 'update' (cert_id + typed fields — confirm), 'revoke' (#2701: cert_id + reason — manage_member; status passa a revoked, a verificacao publica responde invalido, o membro recebe aviso no sino com o motivo e a auditoria registra; o Termo de Voluntariado NAO e revogado aqui, e sim pelo distrato — DESTRUCTIVE→confirm), 'verify' (code — public), 'list' ([status, search, include_volunteer_agreements] — admin), 'my' ([include_volunteer_agreements] — self), 'timeline' ([months] — admin). Inputs are validated BEFORE dispatch (title required, type/language enums, cycle coerced to int) so a bad payload returns a clean error instead of a DB constraint crash (root cause of the 18/27 issue_certificate failures). Authority: curate_content / manager / superadmin (issue/update/list/timeline). NOTE: counter_sign stays RAW — countersign is the Dir. de Voluntariados' exclusive act, never automated. Stable envelope.",
       "domain": "governance",
       "rpcs": [
         "exec_cert_timeline",
         "get_all_certificates",
         "get_my_certificates",
         "issue_certificate",
+        "revoke_certificate",
         "update_certificate",
         "verify_certificate"
       ],
