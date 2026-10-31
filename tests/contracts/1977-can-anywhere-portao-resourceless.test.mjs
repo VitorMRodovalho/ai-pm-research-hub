@@ -26,6 +26,11 @@
  *      o alcance indevido entraria sem tocar em nenhuma das seis.
  *
  * Migration: 20260825031531_1977_can_anywhere_portao_resourceless_explicito.sql
+ *
+ * #2862 (31/10/2026): as 4 leitoras da fila de curadoria saíram desta lista. Elas deixaram de
+ * perguntar por `write_board` e passaram a pedir `curate_content` OU governança, o critério da tela;
+ * o guard delas é `2862-curadoria-pelo-criterio-da-tela`. Aqui ficam as 2 de comms, para as quais a
+ * pergunta "write_board em algum lugar" continua sendo a certa.
  */
 
 import test from 'node:test';
@@ -57,16 +62,12 @@ const RESOURCELESS = /public\.can_by_member\(\s*\w+\s*,\s*'write_board'(\s*::\s*
  */
 const ALVOS = [
   ['get_comms_pipeline',                'manage_event'],
-  ['get_curation_dashboard',            'curate_content'],
-  ['get_curation_queue_state',          'curate_content'],
-  ['list_curation_board',               'curate_content'],
-  ['list_curation_pending_board_items', 'curate_content'],
   ['update_webinar_comms_assets',       'manage_event'],
 ];
 
 // ─── A: estática sobre a captura ────────────────────────────────────────────────
 
-test('#1977 controle positivo: as 8 funções têm captura em migration', () => {
+test('#1977 controle positivo: as 4 funções têm captura em migration', () => {
   for (const n of [HELPER, HELPER_BY_MEMBER, ...ALVOS.map((a) => a[0])]) {
     const cap = latestFunctionCapture(ROOT, n);
     assert.ok(cap.body.length > 0, `${n} resolveu para captura vazia — toda asserção abaixo passaria por vácuo`);
@@ -110,7 +111,7 @@ test('#1977 A: `_can_anywhere_by_member` DELEGA, não reimplementa a regra', () 
     'o irmão por member reimplementou a consulta em vez de delegar');
 });
 
-test('#1977 A: as 6 usam `_can_anywhere_by_member`, uma vez cada', () => {
+test('#1977 A: as 2 usam `_can_anywhere_by_member`, uma vez cada', () => {
   for (const [nome] of ALVOS) {
     const block = maskLineComments(latestFunctionCapture(ROOT, nome).block);
     const n = (block.match(new RegExp(CHAMADA.source, 'g')) || []).length;
@@ -118,7 +119,7 @@ test('#1977 A: as 6 usam `_can_anywhere_by_member`, uma vez cada', () => {
   }
 });
 
-test('#1977 A (INVERSA): a forma sem recurso não sobrou em nenhuma das 6', () => {
+test('#1977 A (INVERSA): a forma sem recurso não sobrou em nenhuma das 2', () => {
   for (const [nome] of ALVOS) {
     const block = maskLineComments(latestFunctionCapture(ROOT, nome).block);
     const sobrou = block.match(new RegExp(RESOURCELESS.source, 'g')) || [];
@@ -176,7 +177,7 @@ const rpc = (nome, corpo) => dbFetch(`${URL_BASE}/rest/v1/rpc/${nome}`, {
   body: JSON.stringify(corpo),
 });
 
-test("#1977 A': o corpo VIVO das 8 é igual à captura", { skip: temCredencial ? false : 'sem credencial de banco' }, async () => {
+test("#1977 A': o corpo VIVO das 4 é igual à captura", { skip: temCredencial ? false : 'sem credencial de banco' }, async () => {
   for (const n of [HELPER, HELPER_BY_MEMBER, ...ALVOS.map((a) => a[0])]) {
     const r = await rpc('_audit_function_source', { p_proname: n });
     assert.equal(r.status, 200, `_audit_function_source falhou para ${n}`);

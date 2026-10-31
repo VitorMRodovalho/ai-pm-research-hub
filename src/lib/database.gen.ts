@@ -31037,6 +31037,17 @@ export type Database = {
           table_name: string
         }[]
       }
+      _audit_list_public_triggers: {
+        Args: never
+        Returns: {
+          definition: string
+          enabled: string
+          function_name: string
+          function_schema: string
+          table_name: string
+          trigger_name: string
+        }[]
+      }
       _audit_list_revoked_secdef_fns_with_rls_refs: {
         Args: never
         Returns: {
