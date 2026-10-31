@@ -1,0 +1,54 @@
+# #2217: typecheck, testes e lint do worker cloudflare-workers/pmi-vep-sync.
+#
+# O worker tem package.json e lock proprios, e nenhum outro workflow instala ou roda nada dele:
+# ate aqui o `tsc`, o `vitest` e o `eslint` do worker so rodavam na maquina de quem lembrasse.
+# Este job instala SO a arvore do worker, entao a config de lint dele tem de declarar tudo o que
+# importa (o guard `2217-worker-pmi-vep-sync-no-ci` confere).
+#
+# Sem filtro de `paths`, pelo mesmo motivo do deno-ef-check.yml: um check com filtro que vire
+# obrigatorio deixa toda PR que nao toca o caminho esperando um status que nunca chega.
+#
+# Nao fala com o banco: nao recebe secret, nao entra na faixa (`wait-for-db-lane`) e so le o repo.
+name: Worker pmi-vep-sync
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  pmi-vep-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: cloudflare-workers/pmi-vep-sync
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          check-latest: true
+          cache: 'npm'
+          cache-dependency-path: cloudflare-workers/pmi-vep-sync/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Lint
+        run: npm run lint
