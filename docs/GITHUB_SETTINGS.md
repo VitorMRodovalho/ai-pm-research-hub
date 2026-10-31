@@ -27,7 +27,7 @@ Status: **ACTIVE**. The gate is the repository ruleset `21186263` ("main - porta
 
 `ci.yml` also runs `visual_dark_mode` and `quality_gate`, which needs `validate`, `browser_guards` and `visual_dark_mode`. Neither is a required context.
 
-**A required context must report on EVERY pull request.** None of these workflows filters by `paths`. A path-filtered required check never reports on a PR that does not touch the path, and that PR waits forever. The context is the job id, so renaming the job has the same effect: change the ruleset in the same step. Only `pmi-vep-sync` has a guard for both today: `tests/contracts/2217-worker-pmi-vep-sync-no-ci.test.mjs` fails on a `paths` filter and on a renamed job. For `deno` there is only the comment at the top of `deno-ef-check.yml`, and nothing checks the `ci.yml` triggers or job ids.
+**A required context must report on EVERY pull request.** None of these workflows filters by `paths`. A path-filtered required check never reports on a PR that does not touch the path, and that PR waits forever. The context is the job id, so renaming the job has the same effect: change the ruleset in the same step. Only `pmi-vep-sync` has a guard for both today: `tests/contracts/2217-worker-pmi-vep-sync-no-ci.test.mjs` fails on a `paths` filter and on a renamed job. For `deno` there is only the comment at the top of `deno-ef-check.yml`, and nothing checks the `ci.yml` triggers or job ids. A guard for every required context is proposed in #2894.
 
 ## How to read and change it
 
