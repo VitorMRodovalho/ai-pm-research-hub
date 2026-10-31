@@ -130,7 +130,8 @@ test('C4: a CSP libera o áudio e a capa do feed, sem abrir frame-src', () => {
   const ssot = read('src/lib/securityHeaders.ts');
   assert.match(ssot, /"media-src 'self' https:\/\/anchor\.fm https:\/\/d3ctxlq1ktw2nl\.cloudfront\.net; "/);
   assert.match(ssot, /"img-src [^"]*https:\/\/d3t3ozftmdmh3i\.cloudfront\.net; "/);
-  assert.match(ssot, /"frame-src https:\/\/calendar\.google\.com; "/);
+  // O podcast não abriu frame-src. A única fonte que entrou depois é o player sem cookies do hero (#2553 PR 3).
+  assert.match(ssot, /"frame-src https:\/\/calendar\.google\.com https:\/\/www\.youtube-nocookie\.com; "/);
 });
 
 test('E1: a EF grava o idioma do áudio a partir do <language> do item ou do canal', () => {

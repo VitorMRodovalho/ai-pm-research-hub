@@ -32,9 +32,11 @@
  * (modern UAs prefer frame-ancestors; this prevents a future permissive CSP from
  * silently overriding the XFO header) — this is the clickjacking guard and stays
  * `'none'` ALWAYS. `frame-src` controls what WE may embed (not who embeds us);
- * it is scoped to `https://calendar.google.com` ONLY, for the editorial calendar
- * iframe on /admin/comms (#886). Adding any new frame source is a security review
- * item — keep this allowlist minimal. `img-src` includes `https://i.ytimg.com`
+ * it is scoped to `https://calendar.google.com`, for the editorial calendar
+ * iframe on /admin/comms (#886), and `https://www.youtube-nocookie.com`, for the home
+ * hero video (#2553 PR 3, GP decision of 2026-10-31): YouTube's privacy-enhanced domain,
+ * loaded only after the visitor clicks play. Adding any new frame source is a security
+ * review item — keep this allowlist minimal. `img-src` includes `https://i.ytimg.com`
  * for YouTube video thumbnails on /admin/comms (#886).
  *
  * #2553: a página pública /podcast toca o áudio do RSS do Spotify for Creators e mostra
@@ -57,7 +59,7 @@ export const CSP =
   "media-src 'self' https://anchor.fm https://d3ctxlq1ktw2nl.cloudfront.net; " +
   "connect-src 'self' data: https://ldrfrvwhxsmgaabwmaik.supabase.co wss://ldrfrvwhxsmgaabwmaik.supabase.co https://us.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://cloudflareinsights.com https://viacep.com.br; " +
   "worker-src 'self' blob:; " +
-  "frame-src https://calendar.google.com; " +
+  "frame-src https://calendar.google.com https://www.youtube-nocookie.com; " +
   "object-src 'none'; " +
   "frame-ancestors 'none'; " +
   "base-uri 'self'";

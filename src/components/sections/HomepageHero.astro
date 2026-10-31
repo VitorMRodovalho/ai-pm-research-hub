@@ -3,9 +3,15 @@ import { t, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 import type { HomeStats } from '../../lib/homeStats';
 import { currentYearBrt } from '../../lib/publicHomeData';
+import { youtubeEmbedUrl, youtubeWatchUrl } from '../../data/youtube-playlists';
 
 interface Props { lang?: Lang; stats?: HomeStats | null; }
 const { lang = 'pt-BR', stats = null } = Astro.props;
+
+// #2553 PR 3: o vídeo do hero. O id mora no SSOT; o endereço do player só vira iframe no clique (script abaixo).
+const heroVideoEmbed = youtubeEmbedUrl('homeHero', lang);
+const heroVideoWatch = youtubeWatchUrl('homeHero');
+const heroVideoSizes = '(min-width: 1280px) 460px, (min-width: 640px) 600px, 100vw';
 
 // #2553: os 4 números do hero (pesquisadores, linhas, capítulos, horas) vêm da busca única da página
 // (loadHomeStats), a mesma que alimenta a seção de capítulos.
@@ -37,8 +43,13 @@ const heroBadge = cycleNum
 
   <!-- ═══ VISITOR HERO ═══ -->
   <!-- #2553 PR 2: título, frase do problema e relação com o PMI (D11, versão A), 4 números da fonte única e duas
-       portas: pesquisar, ou capítulos e organizações. "Entrar" fica no menu. Sem vídeo nesta PR (D10). -->
-  <div id="hero-visitor" class="relative z-10 text-center max-w-[900px] px-6 py-8">
+       portas: pesquisar, ou capítulos e organizações. "Entrar" fica no menu.
+       #2553 PR 3: o vídeo entra ao lado do texto no desktop e embaixo dos botões no celular (D3 do GP, 31/10). O lado a
+       lado começa em 1280 px: medido em 1024, o título quebrava em 4 linhas e os rótulos dos números em 3. -->
+  <!-- A grade fica num filho: no próprio #hero-visitor, o xl:grid venceria o `hidden` que o script põe para membro. -->
+  <div id="hero-visitor" class="relative z-10 w-full max-w-[1200px] px-6 py-8">
+  <div class="xl:grid xl:grid-cols-[minmax(0,1fr)_460px] xl:gap-12 xl:items-center">
+   <div class="text-center xl:text-left">
     <div class="inline-block bg-orange/15 text-orange text-[.78rem] font-semibold px-5 py-1.5 rounded-full border border-orange/30 mb-6 tracking-wider uppercase">
       {heroBadge}
     </div>
@@ -47,15 +58,15 @@ const heroBadge = cycleNum
       {t('homeV2.hero.title', lang)}
     </h1>
 
-    <p class="text-[clamp(.95rem,2.2vw,1.15rem)] text-white/75 max-w-[680px] mx-auto mb-3">
+    <p class="text-[clamp(.95rem,2.2vw,1.15rem)] text-white/75 max-w-[680px] mx-auto xl:mx-0 mb-3">
       {t('homeV2.hero.problem', lang)}
     </p>
-    <p id="hero-pmi-relation" class="text-[clamp(.85rem,2vw,1rem)] text-white/60 max-w-[680px] mx-auto mb-8">
+    <p id="hero-pmi-relation" class="text-[clamp(.85rem,2vw,1rem)] text-white/60 max-w-[680px] mx-auto xl:mx-0 mb-8">
       {t('homeV2.hero.relation', lang)}
     </p>
 
     <!-- Stats counters -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 mb-8 max-w-[760px] mx-auto">
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-10 xl:gap-6 mb-8 max-w-[760px] mx-auto xl:mx-0">
       <div class="text-center">
         <div class="text-3xl sm:text-4xl font-extrabold text-[#05BFE0] tabular-nums" id="stat-members" data-target={stats?.members ?? undefined}>{statText(stats?.members)}</div>
         <div class="text-[.7rem] text-white/60 uppercase tracking-wider mt-1">{t('homeV2.hero.statResearchers', lang)}</div>
@@ -75,7 +86,7 @@ const heroBadge = cycleNum
     </div>
 
     <!-- CTAs -->
-    <div class="flex flex-wrap justify-center gap-3">
+    <div class="flex flex-wrap justify-center xl:justify-start gap-3">
       <a href="#join" class="inline-flex items-center min-h-[44px] px-6 py-3 bg-[var(--color-orange-deep)] text-white rounded-xl text-[.95rem] font-bold no-underline hover:opacity-90">
         {t('homeV2.hero.ctaResearch', lang)}
       </a>
@@ -83,6 +94,28 @@ const heroBadge = cycleNum
         {t('homeV2.hero.ctaInstitutions', lang)}
       </a>
     </div>
+   </div>
+
+    <!-- #2553 PR 3: o vídeo. Até o clique, a página só tem a capa servida daqui; nenhum pedido sai para o YouTube.
+         A capa é preguiçosa e de prioridade baixa para não disputar o LCP com o título. -->
+    <figure id="hero-video" class="mt-10 xl:mt-0 mx-auto w-full max-w-[600px] xl:max-w-none" data-embed-src={heroVideoEmbed} data-title={t('homeV2.hero.videoTitle', lang)}>
+      <button type="button" id="hero-video-play" class="group relative block w-full aspect-video overflow-hidden rounded-2xl border border-white/15 bg-white/5 p-0 cursor-pointer shadow-[0_20px_60px_rgba(0,0,0,.35)]" aria-label={t('homeV2.hero.videoPlay', lang)}>
+        <picture>
+          <source type="image/avif" srcset="/assets/home/hero-video-capa-960.avif 960w, /assets/home/hero-video-capa-1600.avif 1600w" sizes={heroVideoSizes} />
+          <source type="image/webp" srcset="/assets/home/hero-video-capa-960.webp 960w, /assets/home/hero-video-capa-1600.webp 1600w" sizes={heroVideoSizes} />
+          <img src="/assets/home/hero-video-capa-960.webp" width="960" height="540" alt="" loading="lazy" decoding="async" fetchpriority="low" class="block w-full h-full object-cover" />
+        </picture>
+        <span class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/0 transition-colors" aria-hidden="true">
+          <span class="flex items-center justify-center w-16 h-16 rounded-full bg-[var(--color-orange-deep)] text-white shadow-lg">
+            <svg viewBox="0 0 24 24" class="w-7 h-7 ml-1" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
+          </span>
+        </span>
+      </button>
+      <figcaption class="mt-3 text-[.8rem] text-white/65 text-center xl:text-left">
+        {t('homeV2.hero.videoMeta', lang)}{' · '}<a href={heroVideoWatch} target="_blank" rel="noopener noreferrer" class="text-white/80 underline underline-offset-2 hover:text-white">{t('homeV2.hero.videoOpenYoutube', lang)}</a>
+      </figcaption>
+    </figure>
+  </div>
   </div>
 
   <!-- ═══ MEMBER HERO ═══ -->
@@ -168,6 +201,26 @@ const heroBadge = cycleNum
 
 <script is:inline define:vars={{ langPrefix }}>
   if (typeof window !== 'undefined' && !window.__LANG_PREFIX) window.__LANG_PREFIX = langPrefix;
+</script>
+
+<script>
+  // #2553 PR 3: o player do YouTube só passa a existir no clique. O endereço (domínio sem cookies, legenda pela língua
+  // da página) vem pronto do servidor em data-embed-src; aqui só se troca o botão pelo iframe.
+  const heroVideo = document.getElementById('hero-video');
+  const heroVideoPlay = document.getElementById('hero-video-play');
+  if (heroVideo && heroVideoPlay) {
+    heroVideoPlay.addEventListener('click', () => {
+      const frame = document.createElement('iframe');
+      frame.src = heroVideo.dataset.embedSrc ?? '';
+      frame.title = heroVideo.dataset.title ?? '';
+      frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+      frame.allowFullscreen = true;
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.className = 'block w-full aspect-video rounded-2xl border border-white/15';
+      heroVideoPlay.replaceWith(frame);
+      frame.focus();
+    }, { once: true });
+  }
 </script>
 
 <script>

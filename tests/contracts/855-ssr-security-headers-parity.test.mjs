@@ -87,13 +87,14 @@ test('parity: middleware CSP byte-equals _headers /* CSP (anti-drift)', () => {
 test('parity: CSP keeps frame-ancestors none (clickjacking) + a minimal frame-src allowlist', () => {
   // frame-ancestors 'none' is the actual clickjacking guard (who may embed US) and
   // stays 'none' ALWAYS. frame-src controls what WE embed; #886 scopes it to the
-  // Google Calendar editorial embed on /admin/comms ONLY. Keep this allowlist
+  // Google Calendar editorial embed on /admin/comms, and #2553 PR 3 adds ONLY the YouTube
+  // privacy-enhanced player of the home hero (GP decision, 2026-10-31). Keep this allowlist
   // minimal — adding any new frame source is a security-review item.
   // The trailing `;` is load-bearing in BOTH patterns below: it anchors the directive's
   // value so a second source appended before the separator (e.g. `'none' https://attacker.com`)
   // FAILS the test instead of slipping through as a mere substring match.
   assert.match(ssotCsp, /frame-ancestors 'none';/, "CSP must declare frame-ancestors 'none' as the SOLE value");
-  assert.match(ssotCsp, /frame-src https:\/\/calendar\.google\.com;/, 'frame-src is scoped to ONLY the calendar embed (#886)');
+  assert.match(ssotCsp, /frame-src https:\/\/calendar\.google\.com https:\/\/www\.youtube-nocookie\.com;/, 'frame-src is exactly the calendar embed (#886) and the youtube-nocookie hero player (#2553 PR 3)');
   assert.ok(!/frame-src[^;]*\*/.test(ssotCsp), 'frame-src must not contain a wildcard');
   assert.ok(!/frame-src[^;]*'unsafe/.test(ssotCsp), "frame-src must not contain 'unsafe-*'");
 });

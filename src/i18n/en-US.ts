@@ -977,6 +977,10 @@ const enUS: Record<string, string> = {
   'homeV2.hero.statHours': 'impact hours in {year}',
   'homeV2.hero.ctaResearch': 'I want to do research with the Núcleo',
   'homeV2.hero.ctaInstitutions': 'For chapters and organizations',
+  'homeV2.hero.videoPlay': 'Watch the Núcleo introduction video',
+  'homeV2.hero.videoTitle': 'Video: meet Núcleo IA & GP',
+  'homeV2.hero.videoMeta': '1-min video narrated in Portuguese · English, Spanish and Portuguese subtitles',
+  'homeV2.hero.videoOpenYoutube': 'Open on YouTube',
   'homeV2.outputs.label': 'Our work',
   'homeV2.outputs.title': 'What the research lines have delivered',
   'homeV2.outputs.subtitle': 'The latest item in each format, with its date.',
@@ -4294,6 +4298,7 @@ const enUS: Record<string, string> = {
   'privacy.s10track.sentry': 'Sentry (error monitoring): Captures runtime errors for diagnostics. PII is automatically removed before submission.',
   'privacy.s10track.activity': 'Activity tracking (identified): The platform records pages visited, last access, and daily sessions linked to the authenticated member. This data is used for the platform adoption dashboard and is NOT shared with third parties.',
   'privacy.s10track.email': 'Email tracking: Emails sent by the platform may contain tracking pixels that record whether the email was opened and whether links were clicked. This data is used to measure communication effectiveness.',
+  'privacy.s10track.youtube': 'YouTube video on the home page: the player only loads when you click to watch, from the youtube-nocookie.com domain (the YouTube privacy-enhanced mode). Nothing is loaded from YouTube before the click. After the click, playback follows the Google privacy policy.',
   'privacy.s10track.noAds': 'We do not use advertising, remarketing, or third-party tracking cookies for commercial purposes.',
 
   // S11 — Minors

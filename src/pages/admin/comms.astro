@@ -205,7 +205,7 @@ const COMMS_I18N = {
                AND allow-same-origin to render, and that exact pair is an ESCAPABLE sandbox — browsers
                warn it "can escape its sandboxing", i.e. it gives false assurance plus console noise
                while not actually isolating anything. The real, sufficient controls are:
-               CSP `frame-src https://calendar.google.com` (only Google Calendar can EVER be framed),
+               CSP `frame-src` (only Google Calendar and, for the home hero video, youtube-nocookie can be framed),
                `frame-ancestors 'none'`, and the embed URL being superadmin-write-only (site_config RLS).
                Do NOT re-add an allow-scripts+allow-same-origin sandbox here (re-introduces the warning
                for zero security gain). -->
