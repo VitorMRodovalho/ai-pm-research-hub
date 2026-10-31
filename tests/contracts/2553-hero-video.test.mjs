@@ -2,7 +2,7 @@
 //   A. o id mora no SSOT, e o endereço do player é o domínio sem cookies, com a legenda pela língua da página
 //      (ligada por padrão só em /en e /es, porque a narração é em português);
 //   B. até o clique a página não tem iframe nem pedido ao YouTube: o iframe nasce DENTRO do handler de clique;
-//   C. a capa é servida daqui, leve, preguiçosa e com tamanho declarado;
+//   C. a capa é servida daqui, com tamanho declarado, e só é pedida quando a figura entra na tela (noscript sem JS);
 //   D. o frame-src da CSP tem exatamente duas origens, o Calendar e o player sem cookies;
 //   E. o #hero-visitor não tem utilitário de display, senão o `hidden` que o script põe para membro perde;
 //   F. textos nas 3 línguas, e a política de privacidade cita o player na seção de rastreamento.
@@ -46,8 +46,29 @@ describe('#2553 PR 3, vídeo do hero', () => {
     assert.equal((HERO.match(/createElement\('iframe'\)/g) || []).length, 1, 'o único iframe é o do clique');
   });
 
-  it('C: a capa é servida daqui, leve, preguiçosa e com tamanho declarado', () => {
-    assert.match(HERO, /<img src="\/assets\/home\/hero-video-capa-960\.webp" width="960" height="540" alt="" loading="lazy" decoding="async" fetchpriority="low"/);
+  it('C: a capa só é pedida quando a figura entra na tela; sem JavaScript, vale a cópia em noscript', () => {
+    // a <picture> que o script controla nasce sem endereço de capa: só data-srcset/data-src, e o <img> com o GIF vazio
+    const viva = HERO.match(/<picture id="hero-video-capa">([\s\S]*?)<\/picture>/);
+    assert.ok(viva, 'a picture da capa existe');
+    assert.doesNotMatch(viva[1], /\ssrcset=/, 'nenhum srcset real antes da interseção');
+    assert.match(viva[1], /<source type="image\/avif" data-srcset=\{heroCapaAvif\}/);
+    assert.match(viva[1], /<img src=\{heroCapaVazia\} data-src="\/assets\/home\/hero-video-capa-960\.webp" width="960" height="540" alt=""/);
+    assert.match(HERO, /const heroCapaVazia = 'data:image\/gif;base64,[A-Za-z0-9+/=]+';/);
+    // o observador decide: margem 0, e a capa só carrega na interseção, copiando data-* para os atributos reais
+    const obs = HERO.match(/new IntersectionObserver\(\(entradas\) => \{([\s\S]*?)\}, \{ rootMargin: '([^']*)' \}\);/);
+    assert.ok(obs, 'o IntersectionObserver da capa existe');
+    assert.equal(obs[2], '0px', 'sem margem: só quando a figura entra na tela');
+    assert.match(obs[1], /if \(entradas\.some\(\(e\) => e\.isIntersecting\)\) \{ observador\.disconnect\(\); carregarCapa\(\); \}/);
+    const carregar = HERO.match(/const carregarCapa = \(\) => \{([\s\S]*?)\n    \};/);
+    assert.ok(carregar, 'carregarCapa existe');
+    assert.match(carregar[1], /s\.srcset = s\.dataset\.srcset/);
+    assert.match(carregar[1], /img\.src = img\.dataset\.src/);
+    assert.equal((HERO.match(/carregarCapa\(\)/g) || []).length, 1, 'carregarCapa só é chamada pelo observador');
+    // sem JavaScript: a cópia em noscript tem a capa de verdade
+    const ns = HERO.match(/<noscript>([\s\S]*?)<\/noscript>/);
+    assert.ok(ns, 'há fallback em noscript');
+    assert.match(ns[1], /<source type="image\/avif" srcset=\{heroCapaAvif\}/);
+    assert.match(ns[1], /<img src="\/assets\/home\/hero-video-capa-960\.webp" width="960" height="540"/);
     for (const w of [960, 1600]) {
       for (const ext of ['avif', 'webp']) {
         const arq = `public/assets/home/hero-video-capa-${w}.${ext}`;

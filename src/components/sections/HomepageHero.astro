@@ -12,6 +12,10 @@ const { lang = 'pt-BR', stats = null } = Astro.props;
 const heroVideoEmbed = youtubeEmbedUrl('homeHero', lang);
 const heroVideoWatch = youtubeWatchUrl('homeHero');
 const heroVideoSizes = '(min-width: 1280px) 460px, (min-width: 640px) 600px, 100vw';
+const heroCapaAvif = '/assets/home/hero-video-capa-960.avif 960w, /assets/home/hero-video-capa-1600.avif 1600w';
+const heroCapaWebp = '/assets/home/hero-video-capa-960.webp 960w, /assets/home/hero-video-capa-1600.webp 1600w';
+// GIF transparente de 1x1: o <img> nasce sem pedir a capa, que só vem quando a figura entra na tela (script abaixo).
+const heroCapaVazia = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
 
 // #2553: os 4 números do hero (pesquisadores, linhas, capítulos, horas) vêm da busca única da página
 // (loadHomeStats), a mesma que alimenta a seção de capítulos.
@@ -97,14 +101,22 @@ const heroBadge = cycleNum
    </div>
 
     <!-- #2553 PR 3: o vídeo. Até o clique, a página só tem a capa servida daqui; nenhum pedido sai para o YouTube.
-         A capa é preguiçosa e de prioridade baixa para não disputar o LCP com o título. -->
+         A capa só é pedida quando a figura entra na tela (decisão de 31/10): no celular ela fica logo abaixo da
+         primeira tela, e o lazy nativo a pedia já na carga. Sem JavaScript, vale a cópia em <noscript>. -->
     <figure id="hero-video" class="mt-10 xl:mt-0 mx-auto w-full max-w-[600px] xl:max-w-none" data-embed-src={heroVideoEmbed} data-title={t('homeV2.hero.videoTitle', lang)}>
       <button type="button" id="hero-video-play" class="group relative block w-full aspect-video overflow-hidden rounded-2xl border border-white/15 bg-white/5 p-0 cursor-pointer shadow-[0_20px_60px_rgba(0,0,0,.35)]" aria-label={t('homeV2.hero.videoPlay', lang)}>
-        <picture>
-          <source type="image/avif" srcset="/assets/home/hero-video-capa-960.avif 960w, /assets/home/hero-video-capa-1600.avif 1600w" sizes={heroVideoSizes} />
-          <source type="image/webp" srcset="/assets/home/hero-video-capa-960.webp 960w, /assets/home/hero-video-capa-1600.webp 1600w" sizes={heroVideoSizes} />
-          <img src="/assets/home/hero-video-capa-960.webp" width="960" height="540" alt="" loading="lazy" decoding="async" fetchpriority="low" class="block w-full h-full object-cover" />
+        <picture id="hero-video-capa">
+          <source type="image/avif" data-srcset={heroCapaAvif} sizes={heroVideoSizes} />
+          <source type="image/webp" data-srcset={heroCapaWebp} sizes={heroVideoSizes} />
+          <img src={heroCapaVazia} data-src="/assets/home/hero-video-capa-960.webp" width="960" height="540" alt="" decoding="async" fetchpriority="low" class="block w-full h-full object-cover" />
         </picture>
+        <noscript>
+          <picture>
+            <source type="image/avif" srcset={heroCapaAvif} sizes={heroVideoSizes} />
+            <source type="image/webp" srcset={heroCapaWebp} sizes={heroVideoSizes} />
+            <img src="/assets/home/hero-video-capa-960.webp" width="960" height="540" alt="" loading="lazy" decoding="async" class="absolute inset-0 block w-full h-full object-cover" />
+          </picture>
+        </noscript>
         <span class="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/0 transition-colors" aria-hidden="true">
           <span class="flex items-center justify-center w-16 h-16 rounded-full bg-[var(--color-orange-deep)] text-white shadow-lg">
             <svg viewBox="0 0 24 24" class="w-7 h-7 ml-1" fill="currentColor"><path d="M8 5v14l11-7z" /></svg>
@@ -208,6 +220,19 @@ const heroBadge = cycleNum
   // da página) vem pronto do servidor em data-embed-src; aqui só se troca o botão pelo iframe.
   const heroVideo = document.getElementById('hero-video');
   const heroVideoPlay = document.getElementById('hero-video-play');
+  // A capa só é pedida quando a figura entra na tela, sem margem. Quem não rola não paga a capa.
+  const heroVideoCapa = document.getElementById('hero-video-capa');
+  if (heroVideoCapa) {
+    const carregarCapa = () => {
+      heroVideoCapa.querySelectorAll<HTMLSourceElement>('source[data-srcset]').forEach((s) => { s.srcset = s.dataset.srcset ?? ''; });
+      const img = heroVideoCapa.querySelector<HTMLImageElement>('img[data-src]');
+      if (img) img.src = img.dataset.src ?? '';
+    };
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) { observador.disconnect(); carregarCapa(); }
+    }, { rootMargin: '0px' });
+    observador.observe(heroVideoCapa);
+  }
   if (heroVideo && heroVideoPlay) {
     heroVideoPlay.addEventListener('click', () => {
       const frame = document.createElement('iframe');
