@@ -186,9 +186,10 @@ This repo lives under Vitor's portfolio PMO. Claude Code auto-loads `CLAUDE.md`
 
 2. **Hand work back via `_handoff/`, not memory.** Copy `_handoff/TEMPLATE.md` to
    `_handoff/codex-<YYYY-MM-DD>.md`, fill it in, and **commit it**. Tuesday's
-   Claude session reconciles it into memory + the `[LL]` issue. Do NOT post `[LL]`
-   GitHub issues/comments yourself — the harvest loop depends on exact format;
-   just record lessons in the handoff file.
+   Claude session reconciles it into memory + the `[LL]` intake, which is the PRIVATE
+   `nucleo-ia-gp/wiki#2`. Do NOT post `[LL]` GitHub issues/comments yourself — the harvest
+   loop depends on exact format; just record lessons in the handoff file. Never put a lesson
+   in this repository's tracker: it is public.
 
 3. **Grounding rule still applies (CLAUDE.md).** Any count/%/metric you state must
    come from a live tool result THIS session. Never recite numbers from memory or

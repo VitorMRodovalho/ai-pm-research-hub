@@ -179,7 +179,10 @@ alcança. Issue, comentário ou corpo de PR que cite **pessoa identificável** (
 - This repo lives under Vitor's portfolio PMO at `~/projects` (the parent
   `CLAUDE.md` there governs PMO mode; machine-global skills at
   `~/.claude/skills/`, SSOT = `AI-PMO-Framework/skills/`).
-- It carries a standing `[LL]` lessons-learned-intake issue; at the end of
-  meaningful work sessions, log reusable lessons there (what worked, what
-  should change in the framework/skills/kits) so the PMO can harvest them
-  (`pmo-sync.sh harvest`).
+- Its standing `[LL]` lessons-learned intake is **`nucleo-ia-gp/wiki#2` (PRIVATE)**. At the end of
+  meaningful work sessions, log reusable lessons there as a comment (what worked, what should change
+  in the framework/skills/kits) so the PMO can harvest them (`pmo-sync.sh harvest`).
+- **NEVER post a lesson in this repository's tracker** (issue, PR or comment, and no new ad-hoc `[LL]`
+  issue): it is public. The old public intake was closed and locked on 30/10/2026 (owner's decision), and
+  the owner's account can still comment on a locked issue, so this instruction is the guard, not the lock.
+  Even in the private intake, name a person by role unless the name is needed for the lesson.
