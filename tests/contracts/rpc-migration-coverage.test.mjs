@@ -37,6 +37,7 @@ import {
   prodAheadVersions,
 } from '../helpers/migration-drift-classifier.mjs';
 import { skipDataInvariant } from '../helpers/data-invariant-gate.mjs';
+import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -115,6 +116,15 @@ const MIGRATION_EMPTY_STATEMENTS_BASELINE_PATH = resolve(
 // Cross-cut with missing-file baseline: 12 ALSO missing local file
 // (truly lost — body only in pg_proc); 29 with local file (cosmetic).
 const MIGRATION_EMPTY_STATEMENTS_BASELINE_SIZE = 41;
+
+// #2864: gatilhos. Gatilho vivo em public sem `CREATE [OR REPLACE] TRIGGER` em migration é órfão,
+// a mesma classe de função e tabela órfãs: o comportamento existe no banco e em nenhum arquivo.
+// Medido em 31/10/2026: 175 gatilhos vivos, 6 sem migration; a #2864 capturou 2, ficam 4.
+const TRIGGER_ORPHAN_ALLOWLIST_PATH = resolve(
+  ROOT,
+  'docs/audit/TRIGGER_ORPHAN_ALLOWLIST_2864.txt'
+);
+const TRIGGER_ORPHAN_BASELINE_SIZE = 4;
 
 function loadAllMigrationsConcat() {
   const files = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort();
@@ -250,6 +260,49 @@ function loadTableDriftAllowlist() {
       .map(s => s.trim())
       .filter(s => s.length > 0 && !s.startsWith('#'))
   );
+}
+
+function loadTriggerOrphanAllowlist() {
+  const raw = readFileSync(TRIGGER_ORPHAN_ALLOWLIST_PATH, 'utf8');
+  return new Set(
+    raw
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0 && !s.startsWith('#'))
+  );
+}
+
+/**
+ * #2864: `<tabela>.<gatilho>` de cada `CREATE [OR REPLACE] [CONSTRAINT] TRIGGER <nome> ... ON
+ * [public.]<tabela>` das migrations, com comentário de linha mascarado (um CREATE comentado não
+ * captura nada). O par amarra o nome à TABELA: o mesmo nome em outra tabela não conta.
+ */
+function extractCreatedTriggers(sql) {
+  const masked = maskLineComments(sql);
+  const regex = /\bCREATE\s+(?:OR\s+REPLACE\s+)?(?:CONSTRAINT\s+)?TRIGGER\s+"?([a-z_][a-z0-9_]*)"?\s[^;]*?\bON\s+(?:"?public"?\s*\.\s*)?"?([a-z_][a-z0-9_]*)"?/gi;
+  const out = new Set();
+  let m;
+  while ((m = regex.exec(masked)) !== null) {
+    out.add(`${m[2].toLowerCase()}.${m[1].toLowerCase()}`);
+  }
+  return out;
+}
+
+async function callTriggersAuditRpc() {
+  const url = `${SUPABASE_URL}/rest/v1/rpc/_audit_list_public_triggers`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    },
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) {
+    throw new Error(`triggers audit RPC failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
 }
 
 function loadTableOrphanAllowlist() {
@@ -996,3 +1049,69 @@ test('ADR-0097: empty-statements baseline size matches p224 constant', () => {
       `always capture body — investigate cause before accepting).`
   );
 });
+
+// ─── #2864: gatilhos ─────────────────────────────────────────────────────────────
+
+test('#2864: o extrator de CREATE TRIGGER reconhece as formas e amarra o nome à tabela', () => {
+  const fixture = [
+    'CREATE TRIGGER trg_a AFTER UPDATE OF curation_status ON public.board_items FOR EACH ROW EXECUTE FUNCTION f();',
+    'create or replace trigger trg_b before insert on "public"."events" for each row execute function g();',
+    'CREATE CONSTRAINT TRIGGER trg_c AFTER INSERT ON members DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION h();',
+    '-- CREATE TRIGGER trg_comentado AFTER INSERT ON public.board_items FOR EACH ROW EXECUTE FUNCTION f();',
+    "EXECUTE format('CREATE TRIGGER %I AFTER INSERT ON public.%I FOR EACH ROW EXECUTE FUNCTION f()', n, t);",
+  ].join('\n');
+  const got = extractCreatedTriggers(fixture);
+  assert.deepEqual([...got].sort(), ['board_items.trg_a', 'events.trg_b', 'members.trg_c'],
+    `extrator leu ${JSON.stringify([...got].sort())}`);
+});
+
+test('#2864 ratchet: trigger-orphan allowlist size matches baseline', () => {
+  const allowlist = loadTriggerOrphanAllowlist();
+  assert.equal(
+    allowlist.size,
+    TRIGGER_ORPHAN_BASELINE_SIZE,
+    `Trigger-orphan allowlist size drifted from ${TRIGGER_ORPHAN_BASELINE_SIZE} to ${allowlist.size}. ` +
+      `Ratcheting DOWN (gatilho capturado numa migration) atualiza a constante. ` +
+      `Ratcheting UP é proibido: gatilho novo nasce em migration.`
+  );
+});
+
+test(
+  '#2864: todo gatilho vivo em public tem CREATE TRIGGER em migration (ou está na allowlist)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callTriggersAuditRpc();
+    // Controle positivo: sem linhas, a asserção de órfão passaria por vácuo.
+    assert.ok(rows.length > 0, '_audit_list_public_triggers devolveu 0 gatilhos');
+    const vivos = new Set(rows.map(r => `${r.table_name}.${r.trigger_name}`));
+    assert.ok(vivos.has('board_items.trg_auto_comms_on_publish') && vivos.has('board_items.trg_notify_leader_review'),
+      'os 2 gatilhos da #2864 sumiram do banco: o controle positivo não vale mais');
+    const capturados = extractCreatedTriggers(loadAllMigrationsConcat());
+    const allowlist = loadTriggerOrphanAllowlist();
+    const orfaos = [...vivos].filter(k => !capturados.has(k) && !allowlist.has(k)).sort();
+    if (orfaos.length > 0) {
+      assert.fail(
+        `Gatilho vivo sem CREATE TRIGGER em migration (#2864). Capture com a definição de ` +
+          `pg_get_triggerdef, sem mudar o comportamento:\n  ${orfaos.join('\n  ')}`
+      );
+    }
+  }
+);
+
+test(
+  '#2864 ratchet: trigger-orphan allowlist stays in sync (no resolved-or-extinct entries)',
+  { skip: !canRun && skipMsg },
+  async () => {
+    const rows = await callTriggersAuditRpc();
+    assert.ok(rows.length > 0, '_audit_list_public_triggers devolveu 0 gatilhos');
+    const vivos = new Set(rows.map(r => `${r.table_name}.${r.trigger_name}`));
+    const capturados = extractCreatedTriggers(loadAllMigrationsConcat());
+    const stale = [...loadTriggerOrphanAllowlist()].filter(k => !vivos.has(k) || capturados.has(k)).sort();
+    if (stale.length > 0) {
+      assert.fail(
+        `Trigger-orphan allowlist tem entradas que não são mais órfãs (capturadas ou extintas). ` +
+          `Tire de ${TRIGGER_ORPHAN_ALLOWLIST_PATH} e atualize TRIGGER_ORPHAN_BASELINE_SIZE:\n  ${stale.join('\n  ')}`
+      );
+    }
+  }
+);

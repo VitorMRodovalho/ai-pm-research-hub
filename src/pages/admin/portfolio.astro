@@ -60,7 +60,7 @@ const scriptI18n = JSON.stringify({
       <h1 class="text-xl font-extrabold text-navy mb-3">{t('portfolio.title', lang)}</h1>
       <p class="text-sm text-[var(--text-secondary)] mb-4">{t('portfolio.subtitle', lang)}</p>
       <div id="portfolio-macros" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mb-4"></div>
-      <div class="flex flex-wrap gap-2 mb-4">
+      <div id="portfolio-platform-actions" class="hidden flex flex-wrap gap-2 mb-4">
         <button id="portfolio-run-taxonomy-alerts" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">{t('portfolio.runTaxonomy', lang)}</button>
         <button id="portfolio-run-sanity" class="px-3 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-primary)] text-xs font-semibold hover:bg-[var(--surface-hover)]">{t('portfolio.runSanity', lang)}</button>
       </div>
@@ -87,7 +87,7 @@ const scriptI18n = JSON.stringify({
 </AdminLayout>
 
 <script>
-  import { hasPermission } from '../../lib/permissions';
+  import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
 
   // Read i18n bundle injected by Astro template
   const _i18n = JSON.parse(document.getElementById('portfolio-i18n')?.textContent || '{}');
@@ -98,6 +98,16 @@ const scriptI18n = JSON.stringify({
     if (!member) return false;
     return hasPermission(member, 'admin.portfolio');
   }
+
+  // #2863 (G13): os dois diagnósticos só rodam com manage_platform no servidor. Quem não tem não vê
+  // os botões, em vez de clicar e receber uma falha genérica. Fora da simulação, porque o cache de
+  // capacidades reflete o usuário real (o mesmo cuidado da tela de curadoria). As capacidades podem
+  // chegar depois do membro, e o evento do Nav reaplica.
+  function applyPlatformActions() {
+    const show = !getSimulation().active && canFor('manage_platform');
+    document.getElementById('portfolio-platform-actions')?.classList.toggle('hidden', !show);
+  }
+  window.addEventListener('nav:capabilities', applyPlatformActions);
 
   function cardHtml(entry: any): string {
     const hasNoActiveCards = Number(entry.total_cards || 0) === 0;
@@ -168,6 +178,7 @@ const scriptI18n = JSON.stringify({
       denied?.classList.remove('hidden');
       return;
     }
+    applyPlatformActions();
 
     const [{ data, error }, membersQuery, tribesQuery] = await Promise.all([
       sb.rpc('exec_portfolio_board_summary', { p_include_inactive: false }),
