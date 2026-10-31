@@ -14,6 +14,14 @@
  *     submit_curation_review already gates on participate_in_governance_review (curators hold it).
  *
  * Asserted as RELATIONSHIPS (capability sets), not hardcoded names, so it survives roster growth.
+ *
+ * #2862 (31/10/2026): o ramo `write_board` das leitoras VIGENTES saiu. `write_board` vem de qualquer
+ * engajamento de tribo, e a fila abria para todo pesquisador e líder; a tela já pedia `curate_content`
+ * OU governança, e as RPCs passaram a pedir o mesmo. O que #245 protege continua: o portão é
+ * ADITIVO (nunca uma capacidade só) e o curador puro passa. Por isso as afirmações sobre a captura
+ * vigente trocam o braço de `write_board` pelo de governança, e o teste "a população de write_board
+ * continua passando" saiu: a #2862 decidiu o contrário. Afirmações sobre a migration 098 falam
+ * daquele arquivo e ficam. O guard do critério novo é `2862-curadoria-pelo-criterio-da-tela`.
  */
 
 import test from 'node:test';
@@ -37,7 +45,9 @@ const ROOT = process.cwd();
  */
 const corpoVigente = (nome) => maskLineComments(latestFunctionCapture(ROOT, nome).body);
 const RAMO_BOARD = "(?:can_by_member|_can_anywhere_by_member)\\(v_member_id, 'write_board'\\)";
-const ADITIVO = (extra = RAMO_BOARD) => new RegExp(
+/** #2862: o braço vizinho de curate_content na captura vigente. */
+const RAMO_GOV = "can_by_member\\(v_member_id, 'participate_in_governance_review'\\)";
+const ADITIVO = (extra = RAMO_GOV) => new RegExp(
   `can_by_member\\(v_member_id, 'curate_content'\\)[\\s\\S]{0,120}OR[\\s\\S]{0,120}public\\.${extra}`,
 );
 /** As duas formas de estreitar para UMA capacidade, que continuam proibidas. */
@@ -65,14 +75,14 @@ test('#245 static: migration 098 exists', () => {
   assert.ok(existsSync(MIG), 'migration 20260805000098 exists');
 });
 
-test('#245 static: get_curation_dashboard gates curate_content OR write_board', () => {
+test('#245/#2862 static: get_curation_dashboard gates curate_content OR governance', () => {
   const corpo = corpoVigente('get_curation_dashboard');
-  assert.match(corpo, ADITIVO(), 'get_curation_dashboard gate is additive (curate_content OR write_board)');
+  assert.match(corpo, ADITIVO(), 'get_curation_dashboard gate is additive (curate_content OR governance)');
   assert.doesNotMatch(corpo, SO_BOARD, 'get_curation_dashboard nao pode estreitar para write_board sozinho');
   assert.doesNotMatch(corpo, SO_CURATE, 'get_curation_dashboard nao pode estreitar para curate_content sozinho');
 });
 
-test('#245 static: list_curation_pending_board_items gates curate_content OR write_board', () => {
+test('#245/#2862 static: list_curation_pending_board_items gates curate_content OR governance', () => {
   const corpo = corpoVigente('list_curation_pending_board_items');
   assert.match(corpo, ADITIVO(), 'list_curation_pending_board_items gate is additive');
   assert.doesNotMatch(corpo, SO_BOARD, 'list_curation_pending_board_items nao pode estreitar para write_board sozinho');
@@ -101,7 +111,7 @@ test('#245 static: no view RPC narrows to a curate_content-ONLY gate (symmetric 
 test('#185 Item-2 static: a captura VIGENTE de list_curation_board tem o portao aditivo', () => {
   assert.ok(existsSync(MIG185), 'migration 20260805000112 exists');
   const corpo = corpoVigente('list_curation_board');
-  assert.match(corpo, ADITIVO(), 'list_curation_board gate is additive (curate_content OR write_board)');
+  assert.match(corpo, ADITIVO(), 'list_curation_board gate is additive (curate_content OR governance)');
   assert.match(corpo, /RAISE EXCEPTION 'Not authenticated'/,
     'list_curation_board raises when caller is not a member');
 });
@@ -109,7 +119,7 @@ test('#185 Item-2 static: a captura VIGENTE de list_curation_board tem o portao 
 test('#185 Item-2 static: list_curation_board does not narrow to a single-capability gate', () => {
   const corpo = corpoVigente('list_curation_board');
   assert.doesNotMatch(corpo, SO_CURATE,
-    'list_curation_board must keep the write_board OR-arm (no curate_content-only narrowing)');
+    'list_curation_board must keep the governance OR-arm (no curate_content-only narrowing)');
   assert.doesNotMatch(corpo, SO_BOARD,
     'list_curation_board must keep the curate_content OR-arm (no write_board-only gate)');
 });
@@ -169,30 +179,11 @@ test('#245 behavioural: review action submit_curation_review is reachable by cur
     }
   });
 
-test('#245 behavioural: existing write_board population still passes (zero-regression)',
-  { skip: dbGated ? false : skipMsg }, async () => {
-    const sb = client();
-    const { data, error } = await sb.from('members')
-      .select('id, name')
-      .eq('member_status', 'active')
-      .eq('operational_role', 'tribe_leader')
-      .limit(3);
-    assert.ifError(error);
-    assert.ok(Array.isArray(data) && data.length > 0, 'has active tribe_leaders to sample');
-    for (const m of data) {
-      // additive gate = curate_content OR write_board; tribe_leaders keep access via write_board
-      const passes = (await can(sb, m.id, 'curate_content')) || (await can(sb, m.id, 'write_board'));
-      assert.equal(passes, true, `tribe_leader ${m.name} must still pass the additive curation gate`);
-    }
-  });
-
 test('#245 behavioural: gate still CLOSES for members lacking both capabilities (not fail-open)',
   { skip: dbGated ? false : skipMsg }, async () => {
     const sb = client();
-    // write_board is broadly held (tribe-membership engagements grant it); curate_content is narrow.
-    // The denial set = active members with NEITHER capability (no tribe engagement + not a curator).
-    // Grounded 2026-06-03: 15 of 50 active members are denied. Sampling 40 of 50 (ordered) guarantees
-    // >= 5 denied remain in the sample, so the >= 1 assertion is robust to roster drift.
+    // #2862: o portão vigente é curate_content OU governança, e as duas são estreitas. Medido em
+    // 31/10/2026: 19 de 117 membros ativos passam, então qualquer amostra de 40 tem negados de sobra.
     const { data, error } = await sb.from('members')
       .select('id, name')
       .eq('member_status', 'active')
@@ -202,9 +193,9 @@ test('#245 behavioural: gate still CLOSES for members lacking both capabilities 
     assert.ok(Array.isArray(data) && data.length > 0, 'has active members to sample');
     let denied = 0;
     for (const m of data) {
-      const passes = (await can(sb, m.id, 'curate_content')) || (await can(sb, m.id, 'write_board'));
+      const passes = (await can(sb, m.id, 'curate_content')) || (await can(sb, m.id, 'participate_in_governance_review'));
       if (!passes) denied++;
     }
     assert.ok(denied >= 1,
-      `gate must DENY members lacking both curate_content and write_board (not fail-open); ${denied}/${data.length} denied`);
+      `gate must DENY members lacking both curate_content and governance (not fail-open); ${denied}/${data.length} denied`);
   });
