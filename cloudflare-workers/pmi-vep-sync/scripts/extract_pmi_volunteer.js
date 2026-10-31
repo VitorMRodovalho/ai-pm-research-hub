@@ -157,7 +157,8 @@
     // 76631 e 76661 a 76664: vagas do Grupo de Estudos CPMAI (2026/27).
     // 72562: vaga do capítulo, restrita pelo mapa abaixo (#2827).
     // 76080: pesquisador da linha Segundo Cérebro & Comunicação de Times (2026/27).
-    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76080, 76631, 76661, 76662, 76663, 76664],
+    // 76624 a 76630 e 76632: vagas de apoio e a de líder de linha 2027 (2026/27).
+    NUCLEO_OPPORTUNITY_ALLOWLIST: [64966, 64967, 66470, 72562, 76080, 76624, 76625, 76626, 76627, 76628, 76629, 76630, 76631, 76632, 76661, 76662, 76663, 76664],
     // #2843 — a allowlist e o mapa de baldes abaixo são lidos daqui antes do modal.
     // As duas listas fixas só valem quando esta leitura falha.
     NUCLEO_OPPORTUNITIES_URL: 'https://pmi-vep-sync.ai-pm-research-hub.workers.dev/opportunities',

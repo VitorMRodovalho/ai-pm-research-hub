@@ -368,3 +368,52 @@ export async function loadImpactData(): Promise<ImpactData | null> {
     timeline: timeline.map((t) => ({ year: t.year, title: t.title, description: optText(t.description) })),
   };
 }
+
+// ── Vagas abertas do VEP (get_public_home_openings, GP 31/10/2026) ──────────────────────────────────────────────────
+// Quais vagas aparecem é uma marcação por vaga no banco (vep_opportunities.home_listing), nunca um id neste código. A
+// RPC já exclui iniciativa confidencial e vaga vencida; aqui só se confere o formato, e uma vaga aberta sem link
+// público ou sem prazo não vira cartão. Lista vazia ou leitura que falha devolvem [], e a seção não aparece.
+const VEP_PUBLIC_URL = /^https:\/\/volunteer\.pmi\.org\/opportunities\/\d+$/;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export interface HomeOpening {
+  id: string;
+  /** O título do VEP sem o sufixo da organização, pela mesma regra do e-mail de boas-vindas (worker, openingLabel). */
+  label: string;
+  /** O título inteiro, como está no VEP. */
+  title: string;
+  role: string;
+  listing: 'open' | 'soon';
+  url: string | null;
+  deadline: string | null;
+  start: string | null;
+  /** Como o VEP grava, em inglês ("11-20 hours per month"); a seção traduz o formato conhecido. */
+  hours: string | null;
+  /** Nome da linha de pesquisa, quando a vaga é de uma linha (a RPC só o devolve para iniciativa não confidencial). */
+  line: string | null;
+}
+
+const isoOrNull = (v: unknown): string | null => (isText(v) && ISO_DATE.test(v) ? v : null);
+
+export async function loadHomeOpenings(): Promise<HomeOpening[]> {
+  const rows = rowsOf(await rpc<unknown>('get_public_home_openings'));
+  if (!rows) return [];
+  return rows
+    .filter((r) => isText(r.opportunity_id) && isText(r.title) && (r.listing === 'open' || r.listing === 'soon'))
+    .map((r) => {
+      const cut = r.title.search(/\s+-\s+Núcleo\b/);
+      return {
+        id: r.opportunity_id,
+        label: (cut > 0 ? r.title.slice(0, cut) : r.title).trim(),
+        title: r.title,
+        role: optText(r.role_default),
+        listing: r.listing,
+        url: isText(r.vep_url) && VEP_PUBLIC_URL.test(r.vep_url) ? r.vep_url : null,
+        deadline: isoOrNull(r.application_deadline),
+        start: isoOrNull(r.start_date),
+        hours: isText(r.time_commitment) ? r.time_commitment : null,
+        line: isText(r.line_title) ? r.line_title : null,
+      } as HomeOpening;
+    })
+    .filter((o) => o.listing === 'soon' || (o.url !== null && o.deadline !== null));
+}
