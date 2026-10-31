@@ -78,6 +78,8 @@ describe('#2553 a virada da home', () => {
       assert.match(join, new RegExp(`<ApplyInterest client:visible roleInterest="${role}" source="home-join"`), role);
     }
     assert.match(join, /<article id="join-institutions"[^>]*data-door="chapter">/);
+    // Desde 31/10/2026 (GP), o bloco "Vagas abertas" leva link para o VEP, mas o link vem do banco
+    // (get_public_home_openings): o componente continua sem a URL escrita.
     assert.doesNotMatch(join, /volunteer\.pmi\.org/);
     assert.match(read('src/lib/interestPayload.ts'), /export type InterestRole = 'researcher' \| 'leader' \| 'chapter' \| 'partner';/);
     // B4 (GP 26/10/2026) substitui o "Entrada contínua" de D2: não há prazo para manifestar interesse, mas a entrada

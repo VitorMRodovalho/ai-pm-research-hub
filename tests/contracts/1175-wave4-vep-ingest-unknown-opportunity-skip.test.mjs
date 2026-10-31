@@ -31,7 +31,8 @@ const indexSrc = readFileSync(resolve(WORKER_DIR, 'src/index.ts'), 'utf8');
 const mapperSrc = readFileSync(resolve(WORKER_DIR, 'src/script-mapper.ts'), 'utf8');
 const scriptSrc = readFileSync(resolve(WORKER_DIR, 'scripts/extract_pmi_volunteer.js'), 'utf8');
 
-const NUCLEO_ALLOWLIST = ['64966', '64967', '66470', '72562', '76080', '76631', '76661', '76662', '76663', '76664'];
+const NUCLEO_ALLOWLIST = ['64966', '64967', '66470', '72562', '76080', '76624', '76625', '76626', '76627', '76628',
+  '76629', '76630', '76631', '76632', '76661', '76662', '76663', '76664'];
 
 // ── Layer A: worker source guards ──────────────────────────────────────────────
 
