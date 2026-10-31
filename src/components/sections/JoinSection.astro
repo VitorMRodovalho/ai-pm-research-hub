@@ -3,17 +3,41 @@
  * #2553 PR 2: "Participe", três portas: pesquisador, capítulo do PMI, organização ou comunidade.
  *
  * D1 (GP 20/10/2026): "Candidatar-me" abre o formulário de interesse (capture_visitor_lead), com entrada contínua e
- * resposta em até 5 dias úteis. A vaga VEP com link fica para quando vep_opportunities guardar a URL pública e o prazo
- * de inscrição (pacote próprio). D2: "entrada contínua" em todo lugar. D11: PDUs sem número, com link para o manual
+ * resposta em até 5 dias úteis. Desde 31/10/2026 (GP), acima das portas, o bloco "Vagas abertas" (#vagas) lista as
+ * vagas do VEP marcadas em vep_opportunities.home_listing, com link e prazo lidos do banco. D2: "entrada contínua" em todo lugar. D11: PDUs sem número, com link para o manual
  * de requisitos de certificação da PMI (CCR Handbook). As três portas usam o mesmo formulário, com o papel de cada uma.
  */
 import { t, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 import ApplyInterest from './InterestForm.tsx';
+import { loadHomeOpenings } from '../../lib/publicHomeData';
+import { formatDateOnly } from '../../lib/date-only';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
+const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
+
+// Vagas abertas (GP 31/10/2026): quais vagas aparecem é a marcação vep_opportunities.home_listing, e o link vem do
+// banco. Sem vaga marcada, ou com a leitura falhando, o bloco não aparece e as três portas seguem como antes.
+const openings = await loadHomeOpenings();
+const open = openings.filter((o) => o.listing === 'open');
+const soon = openings.filter((o) => o.listing === 'soon');
+const fmtDate = (iso: string) => formatDateOnly(iso, { day: 'numeric', month: 'long', year: 'numeric' }, locale);
+const fmtHours = (h: string | null) => {
+  const m = h?.match(/^(\d+)\s*-\s*(\d+) hours per month$/i);
+  return m ? t('homeV2.join.openings.hours', lang).replace('{min}', m[1]!).replace('{max}', m[2]!) : h;
+};
+// "Dá para começar agora?": com um prazo só entre as abertas, a resposta diz a data; com prazos diferentes, remete
+// a cada cartão. O início citado é o mais cedo, daí o "a partir de".
+const deadlines = [...new Set(open.map((o) => o.deadline))];
+const firstStart = open.map((o) => o.start).filter((s): s is string => s !== null).sort()[0];
+const startNow = deadlines.length === 1 && deadlines[0] && firstStart
+  ? t('homeV2.join.openings.startNowA', lang).replace('{deadline}', fmtDate(deadlines[0])).replace('{start}', fmtDate(firstStart))
+  : t('homeV2.join.openings.startNowAMixed', lang);
+// As linhas de requisito só aparecem quando a vaga a que se referem está aberta na seção.
+const hasLine = open.some((o) => o.line !== null);
+const hasLeader = open.some((o) => o.role === 'leader');
 const labels: Record<string, string> = JSON.parse(buildPageI18n(['comp.interestForm'], lang));
 // edição atual do manual (abril de 2026, conferida em 22/10/2026); a frase da home não leva número
 const CCR_HANDBOOK = 'https://www.pmi.org/-/media/pmi/documents/public/pdf/certifications/ccr-certification-requirements-handbook.pdf';
@@ -25,6 +49,64 @@ const primary = 'inline-flex items-center justify-center min-h-[44px] px-5 round
     <div class="text-[.73rem] font-bold tracking-[.15em] uppercase text-teal mb-2">{t('homeV2.join.label', lang)}</div>
     <h2 class="text-[clamp(1.6rem,3.5vw,2.3rem)] font-extrabold leading-tight mb-3 text-navy">{t('homeV2.join.title', lang)}</h2>
     <p class="text-base text-[var(--text-secondary)] max-w-[700px] mb-8">{t('homeV2.join.subtitle', lang)}</p>
+
+    {(open.length > 0 || soon.length > 0) && (
+      <div id="vagas" class="scroll-mt-24 mb-8 grid gap-4" data-block="openings">
+        <div class="grid gap-2 max-w-[760px]">
+          <h3 class="text-xl font-extrabold text-navy">{t('homeV2.join.openings.title', lang)}</h3>
+          <p class="m-0 text-[15px] text-[var(--text-secondary)]">{t('homeV2.join.openings.intro', lang)}{lang !== 'pt-BR' && <> {t('homeV2.join.openings.langNote', lang)}</>}</p>
+          {open.length > 0 && (
+            <dl class="m-0 grid gap-2 text-[15px] text-[var(--text-secondary)]">
+              <div><dt class="font-bold text-[var(--text-primary)]">{t('homeV2.join.openings.startNowQ', lang)}</dt><dd class="m-0">{startNow}</dd></div>
+              <div>
+                <dt class="font-bold text-[var(--text-primary)]">{t('homeV2.join.openings.levelQ', lang)}</dt>
+                <dd class="m-0">
+                  {t('homeV2.join.openings.levelA', lang)}
+                  <ul class="mt-1 mb-0 pl-5 grid gap-1">
+                    {hasLine && <li>{t('homeV2.join.openings.levelLine', lang)}</li>}
+                    {hasLeader && <li>{t('homeV2.join.openings.levelLeader', lang)}</li>}
+                    <li>{t('homeV2.join.openings.levelMembership', lang)}</li>
+                  </ul>
+                </dd>
+              </div>
+            </dl>
+          )}
+        </div>
+
+        {open.length > 0 && (
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {open.map((o) => (
+              <article class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-2 content-start min-w-0" data-opening={o.id}>
+                {o.line && (
+                  <span class="justify-self-start text-[.7rem] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--color-orange-deep)] text-white">{t('homeV2.join.openings.pilot', lang)}</span>
+                )}
+                <h4 class="text-lg font-bold text-[var(--text-primary)] break-words">{o.label}</h4>
+                {o.line && !o.label.includes(o.line) && <p class="m-0 text-sm text-teal font-semibold">{t('homeV2.join.openings.line', lang).replace('{line}', o.line)}</p>}
+                <ul class="m-0 pl-5 grid gap-1 text-[15px] text-[var(--text-secondary)]">
+                  {o.deadline && <li>{t('homeV2.join.openings.deadline', lang).replace('{date}', fmtDate(o.deadline))}</li>}
+                  {o.start && <li>{t('homeV2.join.openings.start', lang).replace('{date}', fmtDate(o.start))}</li>}
+                  {o.hours && <li>{fmtHours(o.hours)}</li>}
+                </ul>
+                {o.line && <p class="m-0 text-sm text-[var(--text-secondary)]">{t('homeV2.join.openings.pilotNote', lang)}</p>}
+                {o.url && (
+                  <a href={o.url} target="_blank" rel="noopener noreferrer" title={o.title}
+                    class="inline-flex items-center min-h-[44px] text-sm font-bold text-teal no-underline hover:underline">{t('homeV2.join.openings.cta', lang)} ↗</a>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {soon.length > 0 && (
+          <div class="text-[15px] text-[var(--text-secondary)]">
+            <span class="font-bold text-[var(--text-primary)]">{t('homeV2.join.openings.soon', lang)}:</span>
+            <ul class="mt-1 mb-0 pl-5 grid gap-1">
+              {soon.map((o) => <li data-opening={o.id}>{o.label}</li>)}
+            </ul>
+          </div>
+        )}
+      </div>
+    )}
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <article class="bg-[var(--surface-base)] border border-[var(--border-default)] rounded-2xl p-5 grid gap-3 content-start min-w-0" data-door="researcher">
