@@ -58,7 +58,7 @@ export function tela(src) {
       && /\{showPreCuration && \(\['draft', 'peer_review', 'leader_review'\]/.test(c),
     liderSoDevolve: /const leaderOptions: Array<'approved' \| 'returned' \| 'waived'> = needsCuration \? \['approved', 'returned', 'waived'\] : \['returned'\];/.test(c)
       && /\{leaderOptions\.map\(\(d\) =>/.test(c),
-    atalhoSoArtefato: /item\.curation_status === 'draft' && needsCuration && \(isLeader \|\| isCardAssignee\)/.test(c),
+    atalhoSoArtefato: /item\.curation_status === 'draft' && needsCuration && canSubmitCuration && \(/.test(c),
     escreveTaxonomia: /sb\.rpc\('set_board_item_artifact_type', \{ p_item_id: item\.id, p_type: type, p_subtype: subtype \}\)/.test(c),
     rotuloTraduzido: /\{i18n\.portfolioFlagLabel \|\|/.test(c),
   };
@@ -129,7 +129,7 @@ test('#2447 mutacao: cada detector reprova a forma do defeito, pela MESMA funcao
   // 7: lider volta a ver aprovar em card que nao e artefato
   assert.equal(tela(m(CARD, "needsCuration ? ['approved', 'returned', 'waived'] : ['returned']", "['approved', 'returned', 'waived']")).liderSoDevolve, false);
   // 8: atalho de submissao direta sem a trava
-  assert.equal(tela(m(CARD, "item.curation_status === 'draft' && needsCuration && (isLeader", "item.curation_status === 'draft' && (isLeader")).atalhoSoArtefato, false);
+  assert.equal(tela(m(CARD, "item.curation_status === 'draft' && needsCuration && canSubmitCuration", "item.curation_status === 'draft' && canSubmitCuration")).atalhoSoArtefato, false);
   // 9: seletor sem escrita na taxonomia
   assert.equal(tela(m(CARD, "sb.rpc('set_board_item_artifact_type'", "sb.rpc('noop'")).escreveTaxonomia, false);
 });

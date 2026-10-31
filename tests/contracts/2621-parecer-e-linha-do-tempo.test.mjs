@@ -91,9 +91,11 @@ test('C. a etapa atual decide pelo estado e pelo ultimo parecer', () => {
 
 test('C. o reenvio so e oferecido a quem tem o botao; os demais pedem a lideranca', () => {
   const t = timeline();
-  assert.match(t, /const canResubmit = needsCuration && \(isLeader \|\| isCardAssignee\);/, 'mesma condicao do botao');
+  // #2621 (G1, 31/10/2026): a condicao do botao e do reenvio passou a ser `canSubmitCuration`, que vem
+  // do servidor (get_artifact_classification). O que este teste guarda continua: as duas sao a MESMA.
+  assert.match(t, /const canResubmit = needsCuration && canSubmitCuration;/, 'mesma condicao do botao');
   assert.match(t, /\{needsCuration && \(canResubmit\s+\? `\$\{i18n\.tlResubmitHint[^`]*`\s+: \(i18n\.tlAskLeader/);
-  assert.match(card, /\{item\.curation_status === 'draft' && needsCuration && \(isLeader \|\| isCardAssignee\) && \(/, 'o botao segue com a mesma condicao');
+  assert.match(card, /\{item\.curation_status === 'draft' && needsCuration && canSubmitCuration && \(/, 'o botao segue com a mesma condicao');
 });
 
 test('C. falar com a curadoria leva ao comentario do card', () => {

@@ -25,6 +25,8 @@ type ArtifactClassification = {
   can_edit: boolean;
   /** #2455: a mesma regra de complete_leader_review (líder da iniciativa ou revisor de governança). */
   can_leader_review?: boolean;
+  /** #2621: a mesma regra de autoridade de submit_for_curation (governança, ou tribe_leader líder da iniciativa). */
+  can_submit_curation?: boolean;
   types: ArtifactTag[] | null;
   subtypes: ArtifactTag[] | null;
 };
@@ -321,6 +323,9 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
   // fora o revisor de governança, que o banco autoriza; a resposta vem do servidor, não de uma cópia
   // da regra no navegador.
   const canLeaderReview = isLeader || !!classif?.can_leader_review;
+  // #2621 (G1): o envio à curadoria aparece só para quem a submit_for_curation aceita. `isLeader ||
+  // isCardAssignee` oferecia o botão ao atribuído, e a RPC recusava. A regra vem do servidor.
+  const canSubmitCuration = !!classif?.can_submit_curation;
   const [showBaselineModal, setShowBaselineModal] = useState(false);
   const [newBaselineDate, setNewBaselineDate] = useState('');
   const [baselineReason, setBaselineReason] = useState('');
@@ -1238,7 +1243,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                 </div>
 
                 {/* Fase A — Direct Submit (canonical shortcut for tribe leaders) */}
-                {item.curation_status === 'draft' && needsCuration && (isLeader || isCardAssignee) && (
+                {item.curation_status === 'draft' && needsCuration && canSubmitCuration && (
                   <div className="mt-2 flex justify-between items-center gap-2">
                     <span className="text-[10px] text-purple-700 italic">
                       {i18n.curationSubmitShortcutHint || 'Atalho: pula peer/leader review e vai direto ao Comitê'}
@@ -1414,7 +1419,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
                   const next: string[] = stage === 'curation' ? [i18n.tlDecision || 'Decisão da curadoria', i18n.tlPublication || 'Publicação']
                     : stage === 'adjust' ? [i18n.tlResubmit || 'Reenvio à curadoria', i18n.tlCuration || 'Curadoria', i18n.tlPublication || 'Publicação']
                     : [];
-                  const canResubmit = needsCuration && (isLeader || isCardAssignee);
+                  const canResubmit = needsCuration && canSubmitCuration;
                   const toneCls: Record<Ev['tone'], string> = { done: 'bg-teal', ok: 'bg-emerald-600', warn: 'bg-amber-600', bad: 'bg-red-600' };
                   const goToComments = () => {
                     const box = document.getElementById(`card-comments-${item.id}`);
