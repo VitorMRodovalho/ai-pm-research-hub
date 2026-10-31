@@ -29,6 +29,7 @@ import { parseMigration, normalizeArgs } from '../helpers/rpc-body-drift-parser.
 const ROOT = process.cwd();
 const MIG_DIR = join(ROOT, 'supabase/migrations');
 const ARQUIVOS = readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql')).sort();
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const CARD = "'Unauthorized: cannot access this card'";
 const QUADRO = "'Unauthorized: cannot access this board'";
@@ -157,7 +158,7 @@ function migracaoDoPortao() {
 test('A. a migration tira o EXECUTE de anon nas 11 e devolve a authenticated e service_role', () => {
   const mig = migracaoDoPortao();
   for (const fn of SEM_ANON) {
-    const args = PORTOES[fn].args.replace(/[()[\]]/g, '\\$&');
+    const args = reEsc(PORTOES[fn].args);
     assert.match(mig, new RegExp(`REVOKE ALL ON FUNCTION public\\.${fn}\\(${args}\\) FROM PUBLIC, anon;\\s+GRANT EXECUTE ON FUNCTION public\\.${fn}\\(${args}\\) TO authenticated, service_role;`),
       `${fn}: REVOKE de anon seguido do GRANT a authenticated e service_role`);
   }
