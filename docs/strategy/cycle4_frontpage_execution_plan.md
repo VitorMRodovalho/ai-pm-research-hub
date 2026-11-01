@@ -20,7 +20,7 @@
 |---|---------|
 | Sequência | **Verticais primeiro** (mais perto do kickoff do C4). Caminho crítico = 0 → A → B; C em paralelo/depois. |
 | Modo de operação | Toda a onda: **branch → QA visual → só então deploy pra produção.** Sem deploy direto. |
-| Vertical-piloto | **Construção** — Henrique Diniz já em pré-onboarding como líder = âncora real (não vaporware). |
+| Vertical-piloto | **Construção** — member A já em pré-onboarding como líder = âncora real (não vaporware). |
 | Parceiros (C) | Parceria entra **pelo Programa/Núcleo** (porta única de 1º contato) mas é **firmada VIA PMI-GO**, capítulo-sede e dono da relação. Copy precisa deixar isso explícito. |
 | Deck | **Não é entregável de build** — é conhecimento/inspiração para layout e organização dos temas. `branded-deck-build` numa sessão separada. |
 | Landing — regra de ferro | **Nada hardcoded** (indicadores e verticais saem de dado ao vivo) + **mudar a informação, preservar o sistema visual** (sem rebrand na virada de ciclo). |
@@ -53,9 +53,9 @@
 - **Saída:** ADR-0103 aceito; `community_vertical` autorizado e configurado.
 
 ### Fatia A — Modelo de vertical no banco (caminho crítico) — ✅ CONCLUÍDA (2026-06-19)
-> Migration `20260805000221` (kind `community_vertical` + engagement_kinds `vertical_lead`/`vertical_member`) + vertical Construção criada via `create_initiative` (`81fdbdfa-4a92-401f-9e50-9318be9b94fe`, status engine=active, `metadata.status='forming'`, anchor PMI-CP, parceiro Global Construction Ambassadors). Henrique = líder pretendido em `metadata.intended_lead` (engajamento adiado p/ termo assinado). `has_board=false` honrado (0 boards), invariantes 0 violações. Adiados p/ ativação: engajar Henrique, seeds de permissão do líder, elevação de operational_role, invariante AJ guard-parent (detalhe no ADR-0103 §Implementação).
+> Migration `20260805000221` (kind `community_vertical` + engagement_kinds `vertical_lead`/`vertical_member`) + vertical Construção criada via `create_initiative` (`81fdbdfa-4a92-401f-9e50-9318be9b94fe`, status engine=active, `metadata.status='forming'`, anchor PMI-CP, parceiro Global Construction Ambassadors). member A = líder pretendido em `metadata.intended_lead` (engajamento adiado p/ termo assinado). `has_board=false` honrado (0 boards), invariantes 0 violações. Adiados p/ ativação: engajar member A, seeds de permissão do líder, elevação de operational_role, invariante AJ guard-parent (detalhe no ADR-0103 §Implementação).
 - Configurar o **kind `community_vertical`** via config ADR-0009 (admin, **sem migration**), `custom_fields_schema` do ADR-0103: `anchor_credential`, `predecessor_credential`, `credential_body`, `partner_org`, `status` (`forming|open|paused` — dirige o CTA da landing), `pmi_registry_url`.
-- **Aterrar Henrique** (person/engagement reais) **antes de seedar**; criar a vertical **Construção** como `community_vertical` (âncora **PMI-CP**, parceiro Global Construction Ambassadors, `status`) com Henrique como líder.
+- **Aterrar member A** (person/engagement reais) **antes de seedar**; criar a vertical **Construção** como `community_vertical` (âncora **PMI-CP**, parceiro Global Construction Ambassadors, `status`) com member A como líder.
 - Roteamento deliverable↔vertical (ADR-0103 §3, `verticals text[]` vs. join) pode ficar para fatia posterior — a landing só precisa das verticais existirem + `status`.
 - **Council:** `data-architect` (config do kind + seed + autoridade de quem gere vertical; confirmar zero-migration).
 - **Aceite:** ≥1 `community_vertical` consultável com `status`; landing consegue lê-la ao vivo.

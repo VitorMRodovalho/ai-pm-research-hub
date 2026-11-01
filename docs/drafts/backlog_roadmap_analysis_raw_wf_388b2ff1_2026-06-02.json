@@ -54,7 +54,7 @@
           "type": "bug",
           "priority": "high",
           "status": "open",
-          "summary": "10 structural gaps in external_reviewer onboarding (4 HIGH severity: duplicate persons, broken MCP tools, token expiry, Supabase Auth bypass; 5 MEDIUM; 1 low). Mario Trentim case shows silent failures and missing governance tracking.",
+          "summary": "10 structural gaps in external_reviewer onboarding (4 HIGH severity: duplicate persons, broken MCP tools, token expiry, Supabase Auth bypass; 5 MEDIUM; 1 low). member B case shows silent failures and missing governance tracking.",
           "depends_on": [],
           "blocks": [
             179
@@ -78,7 +78,7 @@
             411
           ],
           "overlaps_or_dup": [],
-          "business_decision": "PM decision on dual-interviewer intent (Vitor+Fabricio per event) — intentional or accidental? Determines Step 2 routing design. Current cycle4 blocked unblocked with Núcleo link as temporary unblocker.",
+          "business_decision": "PM decision on dual-interviewer intent (Vitor+member E per event) — intentional or accidental? Determines Step 2 routing design. Current cycle4 blocked unblocked with Núcleo link as temporary unblocker.",
           "readiness": "ready",
           "effort": "M",
           "recommended_wave": "Wave 1"
@@ -125,11 +125,11 @@
         },
         {
           "number": 357,
-          "title": "SPEC #348 Child #4 — Cycle4-2026 committee reseed: Vitor + Fabricio researcher (URLs NULL)",
+          "title": "SPEC #348 Child #4 — Cycle4-2026 committee reseed: Vitor + member E researcher (URLs NULL)",
           "type": "spec",
           "priority": "high",
           "status": "open",
-          "summary": "One-shot DML migration seeding selection_committee for cycle4 with 2 de facto evaluators (Vitor 51, Fabricio 40 evals). Idempotent, URLs NULL until #356 populated.",
+          "summary": "One-shot DML migration seeding selection_committee for cycle4 with 2 de facto evaluators (Vitor 51, member E 40 evals). Idempotent, URLs NULL until #356 populated.",
           "depends_on": [
             348
           ],
@@ -146,7 +146,7 @@
           "type": "bug",
           "priority": "high",
           "status": "open",
-          "summary": "Flavio Oliveira row shows Pesquisa=288.5 (composite/final) instead of objective=184.5; PERT chip compares to wrong cutoff. Frontend field mapping issue.",
+          "summary": "member D row shows Pesquisa=288.5 (composite/final) instead of objective=184.5; PERT chip compares to wrong cutoff. Frontend field mapping issue.",
           "depends_on": [],
           "blocks": [],
           "overlaps_or_dup": [],
@@ -209,7 +209,7 @@
           "type": "bug",
           "priority": "medium",
           "status": "open",
-          "summary": "RPC matches application by primary email only; reconciled apps with canonical email=alternate remain invisible to candidate self-view. Paulo case (pejota81→paulo-junior) already remedied point-wise in #446.",
+          "summary": "RPC matches application by primary email only; reconciled apps with canonical email=alternate remain invisible to candidate self-view. member F case (pejota81→paulo-junior) already remedied point-wise in #446.",
           "depends_on": [],
           "blocks": [],
           "overlaps_or_dup": [],
@@ -246,7 +246,7 @@
           "blocks": "Issues #260, #348, #411; candidate-facing communications reliability"
         },
         {
-          "decision": "Dual-interviewer intent for researcher interviews (Vitor+Fabricio per event intentional or accidental?). Determines booking URL routing schema (per-evaluator pool vs committee link).",
+          "decision": "Dual-interviewer intent for researcher interviews (Vitor+member E per event intentional or accidental?). Determines booking URL routing schema (per-evaluator pool vs committee link).",
           "owner": "PM + GP (Selection committee)",
           "blocks": "Issues #348 Step 2 schema design, #357 committee reseed, #411 notification routing"
         },
@@ -534,11 +534,11 @@
         },
         {
           "number": 334,
-          "title": "[Task]: Wave 5 Angeline legal-ops chain — ANPD Art. 48 + notification template + DPO + Adendo Privacidade (C4 of #221/#218 decomposition)",
+          "title": "[Task]: Wave 5 member G legal-ops chain — ANPD Art. 48 + notification template + DPO + Adendo Privacidade (C4 of #221/#218 decomposition)",
           "type": "task",
           "priority": "high",
           "status": "blocked",
-          "summary": "Legal-ops async cycle (external: Angeline legal counsel). Blocks: ANPD Art. 48 §1 pre-disclosure determination, Art. 18 §IV notification template, DPO appointment stance, Adendo Privacidade Principal publication.",
+          "summary": "Legal-ops async cycle (external: member G legal counsel). Blocks: ANPD Art. 48 §1 pre-disclosure determination, Art. 18 §IV notification template, DPO appointment stance, Adendo Privacidade Principal publication.",
           "depends_on": [
             221,
             218,
@@ -548,7 +548,7 @@
             332
           ],
           "overlaps_or_dup": [],
-          "business_decision": "External async dependency: Angeline opinion needed on 5 items (ANPD, notification template, DPO, policy addendum, speaker term). PM must initiate contact + track completion. Blocks C2 final ship (C2 uses interim text until C4 template arrives).",
+          "business_decision": "External async dependency: member G opinion needed on 5 items (ANPD, notification template, DPO, policy addendum, speaker term). PM must initiate contact + track completion. Blocks C2 final ship (C2 uses interim text until C4 template arrives).",
           "readiness": "blocked",
           "effort": "S",
           "recommended_wave": "Wave 5"
@@ -643,8 +643,8 @@
           "blocks": "Issues #308, #311 planning; downstream child issues cannot be created until architecture ADR/spec approved"
         },
         {
-          "decision": "ANPD Art. 48 §1 pre-disclosure requirement, Art. 18 §IV notification template, DPO appointment stance, and Adendo Privacidade Principal must come from legal counsel (Angeline). Typical 3-5 business days async cycle.",
-          "owner": "PM (legal ops) → Angeline (external counsel)",
+          "decision": "ANPD Art. 48 §1 pre-disclosure requirement, Art. 18 §IV notification template, DPO appointment stance, and Adendo Privacidade Principal must come from legal counsel (member G). Typical 3-5 business days async cycle.",
+          "owner": "PM (legal ops) → member G (external counsel)",
           "blocks": "Issue #334 and downstream C2 #332 final ship (C2 uses interim text until template arrives from #334)"
         },
         {
@@ -663,7 +663,7 @@
           "blocks": "Issue #455 cannot proceed until MCP capability gaps fixed"
         }
       ],
-      "recommended_sequence": "\n**Phase 1 (Foundation — decision gates):**\n1. **#315 (PM decision matrix)** — governance documents taxonomy, visibility, acknowledgement. BLOCKS all downstream #310/#312/#314/#311/#403.\n2. **#334 (Angeline legal-ops)** — initiate async cycle; blocks #332 final ship. Parallel with Phase 1.\n\n**Phase 2 (Cascading governance)**\nOnce #315 decisions locked:\n3. **#209 (Drive offboarding cascade)** — LGPD Art. 16, approval gate, audit ledger. (Wave 1 ready; size L).\n4. **#403 (fix confirm_manual_version + link_attachment_to_governance)** — patch RPCs once #315 semantic defaults chosen (size S).\n5. **#301 (Drive grants for curation)** — temporary access for submitted artifacts; least-privilege handoff (Wave 2; size M).\n\n**Phase 3 (Evidence + certificates)**\n6. **#308 (curator evidence bundles)** — architecture audit + design. Planning issue; blocks #311. (Size L).\n7. **#311 (evidence bundles all roles)** — generic model backed by #308 design. (Size L).\n8. **#455 (alumni certificate backfill)** — refactor native emitter + MCP fixes, re-emit for 17 legacy alumni (Wave 3; size M).\n9. **#459 (MCP read document body)** — add governance_documents content retrieval via MCP. (Wave 2; size S).\n\n**Phase 4 (Spec + ratification)**\n10. **#333 (invariant U registration)** — once sequencing decision made by PM (Wave 4; size S; currently blocked).\n11. **#335 (ADR-0094)** — author after C1/C2/C3 (Wave 1a/1b/1c) close; council ratification required (size S).\n\n**Cross-cluster dependencies:**\n- #209 ↔ #204 (parent: offboarding framework)\n- #301 ↔ #190/#201 (curatorship modal/queue state foundations)\n- #308/#311 ↔ #181 (counter-signature/certificate evidence)\n- #308/#311 ↔ #166 (semantic layer roadmap)\n- #333 ↔ #332/#331 (C-selection-pipeline Wave 4 invariant siblings)\n- #334 ↔ #332 (legal-ops blocks C2 final; C2 uses interim text)\n- #335 ↔ #212 (Initiative Collaboration Hub spec; #221/#218 W1 completion required)\n- #403 ↔ #315 (semantic defaults required before RPC fix scoped)\n- #455 ↔ #449/#451 (offboarding fixes; MCP tool gaps parallel)\n",
+      "recommended_sequence": "\n**Phase 1 (Foundation — decision gates):**\n1. **#315 (PM decision matrix)** — governance documents taxonomy, visibility, acknowledgement. BLOCKS all downstream #310/#312/#314/#311/#403.\n2. **#334 (member G legal-ops)** — initiate async cycle; blocks #332 final ship. Parallel with Phase 1.\n\n**Phase 2 (Cascading governance)**\nOnce #315 decisions locked:\n3. **#209 (Drive offboarding cascade)** — LGPD Art. 16, approval gate, audit ledger. (Wave 1 ready; size L).\n4. **#403 (fix confirm_manual_version + link_attachment_to_governance)** — patch RPCs once #315 semantic defaults chosen (size S).\n5. **#301 (Drive grants for curation)** — temporary access for submitted artifacts; least-privilege handoff (Wave 2; size M).\n\n**Phase 3 (Evidence + certificates)**\n6. **#308 (curator evidence bundles)** — architecture audit + design. Planning issue; blocks #311. (Size L).\n7. **#311 (evidence bundles all roles)** — generic model backed by #308 design. (Size L).\n8. **#455 (alumni certificate backfill)** — refactor native emitter + MCP fixes, re-emit for 17 legacy alumni (Wave 3; size M).\n9. **#459 (MCP read document body)** — add governance_documents content retrieval via MCP. (Wave 2; size S).\n\n**Phase 4 (Spec + ratification)**\n10. **#333 (invariant U registration)** — once sequencing decision made by PM (Wave 4; size S; currently blocked).\n11. **#335 (ADR-0094)** — author after C1/C2/C3 (Wave 1a/1b/1c) close; council ratification required (size S).\n\n**Cross-cluster dependencies:**\n- #209 ↔ #204 (parent: offboarding framework)\n- #301 ↔ #190/#201 (curatorship modal/queue state foundations)\n- #308/#311 ↔ #181 (counter-signature/certificate evidence)\n- #308/#311 ↔ #166 (semantic layer roadmap)\n- #333 ↔ #332/#331 (C-selection-pipeline Wave 4 invariant siblings)\n- #334 ↔ #332 (legal-ops blocks C2 final; C2 uses interim text)\n- #335 ↔ #212 (Initiative Collaboration Hub spec; #221/#218 W1 completion required)\n- #403 ↔ #315 (semantic defaults required before RPC fix scoped)\n- #455 ↔ #449/#451 (offboarding fixes; MCP tool gaps parallel)\n",
       "cross_cluster_dependencies": [
         "#204 (offboarding framework parent)",
         "#190 #201 (curatorship modal/queue state)",
@@ -703,7 +703,7 @@
           "type": "bug/rls-violation",
           "priority": "high",
           "status": "open",
-          "summary": "RLS policy on selection-resumes bucket passes auth.uid() to can() function, but can() expects persons.id. Since auth.uid() ≠ persons.id, policy always denies SELECT for all admins including Vitor/Fabricio (verified live). Violates ADR-0007 canonical authority contract. CV download returns 400.",
+          "summary": "RLS policy on selection-resumes bucket passes auth.uid() to can() function, but can() expects persons.id. Since auth.uid() ≠ persons.id, policy always denies SELECT for all admins including Vitor/member E (verified live). Violates ADR-0007 canonical authority contract. CV download returns 400.",
           "depends_on": [],
           "blocks": [],
           "overlaps_or_dup": [],
@@ -718,7 +718,7 @@
           "type": "bug/test-infrastructure",
           "priority": "medium",
           "status": "open",
-          "summary": "PostgREST Prefer: tx=rollback does not rollback rows inserted by SECDEF functions. Synthetic test rows (%@invariant.test) persists post-CI, causing invariants R+S to report false violations (3rd recurrence: p206, p207, p209 post-#215). Blocks CI trust.",
+          "summary": "PostgREST Prefer: tx=rollback does not rollback rows inserted by SECDEF functions. Synthetic test rows (person-1@example.invalid) persists post-CI, causing invariants R+S to report false violations (3rd recurrence: p206, p207, p209 post-#215). Blocks CI trust.",
           "depends_on": [],
           "blocks": [
             220,
@@ -732,11 +732,11 @@
         },
         {
           "number": 245,
-          "title": "rls/governance: role conflict — curador + ponto focal blocks /admin/curatorship (Roberto Macêdo report)",
+          "title": "rls/governance: role conflict — curador + ponto focal blocks /admin/curatorship (member C report)",
           "type": "bug/rls-gate",
           "priority": "high",
           "status": "open",
-          "summary": "Roberto Macêdo cannot access /admin/curatorship despite carrying both curator operational_role AND ponto focal designation. System fails to resolve dual authority. Blocks curatorship SLA (Débora's article deadline 26/mai).",
+          "summary": "member C cannot access /admin/curatorship despite carrying both curator operational_role AND ponto focal designation. System fails to resolve dual authority. Blocks curatorship SLA (member H's article deadline 26/mai).",
           "depends_on": [
             161,
             191,
@@ -751,7 +751,7 @@
         },
         {
           "number": 246,
-          "title": "ux/realtime: /attendance does not refresh in real time during live meetings (Jefferson report)",
+          "title": "ux/realtime: /attendance does not refresh in real time during live meetings (member A report)",
           "type": "bug/realtime",
           "priority": "high",
           "status": "open",
@@ -768,11 +768,11 @@
         },
         {
           "number": 247,
-          "title": "attendance: Jefferson Pinto incorrectly marked absent — audit data + identify root cause",
+          "title": "attendance: member A incorrectly marked absent — audit data + identify root cause",
           "type": "audit/data-integrity",
           "priority": "high",
           "status": "open",
-          "summary": "Jefferson was incorrectly marked absent in a meeting where he was present, skewing gamification leaderboard. Manual correction applied by Vitor. Root cause unclear: symptomatic of #246 (realtime UI showing wrong state) or register_attendance RPC writing wrong row?",
+          "summary": "member A was incorrectly marked absent in a meeting where he was present, skewing gamification leaderboard. Manual correction applied by Vitor. Root cause unclear: symptomatic of #246 (realtime UI showing wrong state) or register_attendance RPC writing wrong row?",
           "depends_on": [
             246
           ],
@@ -808,7 +808,7 @@
         {
           "decision": "Role model: confirm whether operational_role must remain single-valued (with lateral designations in members.designations) or support curator + ponto focal coexistence. Affects role gate in /admin/curatorship and dual-authority gates generally (#161).",
           "owner": "Product lead / PM Núcleo",
-          "blocks": "#245 (Roberto curatorship access), #161 (multi-role gate audit), #192 (review-per-curator enforcement)"
+          "blocks": "#245 (member C curatorship access), #161 (multi-role gate audit), #192 (review-per-curator enforcement)"
         },
         {
           "decision": "Assignee model canonical form: keep single assignee_id (sync picker + create_board_item) or migrate to multi-role assignments junction? No data loss; scope depends on choice.",
@@ -955,15 +955,15 @@
         },
         {
           "number": 249,
-          "title": "agenda/timezone: T4 meeting shown as Tuesday but actually Wednesday (Fernando report 25/abr)",
+          "title": "agenda/timezone: T4 meeting shown as Tuesday but actually Wednesday (member I report 25/abr)",
           "type": "bug",
           "priority": "medium",
           "status": "open",
-          "summary": "T4 (Cultura & Change) recurring meeting displays day-of-week incorrectly. Open since 25-Apr (35 days). Likely timezone UTC→local conversion bug or BYDAY recurrence mismatch. Status: possibly fixed silently (needs verification from Fernando).",
+          "summary": "T4 (Cultura & Change) recurring meeting displays day-of-week incorrectly. Open since 25-Apr (35 days). Likely timezone UTC→local conversion bug or BYDAY recurrence mismatch. Status: possibly fixed silently (needs verification from member I).",
           "depends_on": [],
           "blocks": [],
           "overlaps_or_dup": [],
-          "business_decision": "None — verify with Fernando whether bug persists in current deploy.",
+          "business_decision": "None — verify with member I whether bug persists in current deploy.",
           "readiness": "needs-triage",
           "effort": "S",
           "recommended_wave": "Wave 0"
@@ -1041,7 +1041,7 @@
           "blocks": "#414 (internal, no hard blocker)"
         }
       ],
-      "recommended_sequence": "\n**Wave 0 (Stop-the-line — S effort, ready for immediate pickup):**\n1. #217 (BUG engagement email 404) — 1 migration fix; unblocks all engagement notifications\n2. #248 (Calendar day 19 strikethrough) — frontend debug; visual UX regression\n3. #249 (T4 day-of-week bug) — verify with Fernando if persists; if yes, debug timezone logic\n\n**Wave 1 (P1/P2, depend on #205 CLOSED + business decisions):**\n4. #210 (Calendar recurrence cleanup) — blocked on #205 (CLOSED as of context); unblock immediately. Enables #210 execution. Gate: P2 but critical for #204 umbrella.\n5. #414 (Parametrized recurrence interval) — decouple from #210; enables biweekly Leadership series (required post-cleanup)\n6. #415 (Recurrence stockout cron) — observability to prevent future silent series expiry (learned from leadership meeting gap 28-May)\n\n**Wave 2 (P2, depends on architecture clarity):**\n7. #212 (SPEC: initiative collaboration hub) — blocks #211; requires architecture decision on G1 + G2. Assign L-effort spec work to agent + PM pairing session.\n8. #211 (Initiative metadata UI) — unblock after #212 spec is approved; M-effort; unblocks multi-hub scalability\n\n**Backlog/Triage (P3, low, deferred):**\n9. #416 (Google Calendar sync) — low priority; nice-to-have; requires ADR + OAuth setup; defer beyond Wave 2\n10. #206, #207, #208, #209 — components of #204 umbrella (multimodal AI, Drive cascade) — tracked separately; not in this cluster's critical path yet\n\n**Cross-cluster dependencies to track:**\n- #204 umbrella: #210 is the only Calendar issue in the cluster that feeds into #204's ARM impact\n- #206, #207, #208, #209 (sub-issues of #204): open, tracked in separate cluster\n- #92, #116: historical ARM-5 blockers on Calendar; cross-check with #210 before implementation\n- #157: similar cancelled-event visual bug; may share CSS root cause with #248\n\n**Note on #204 (Umbrella):**\n#204 is open and in Wave 1, but #205 (Foundation blocker) is already CLOSED. #204's acceptance criteria depend on closure of #206–#210. This cluster (#210, #211, #212, #217) feeds into #204. Recommend updating #204's status after #210 ships (mark as 1/6 sub-issues resolved).\n",
+      "recommended_sequence": "\n**Wave 0 (Stop-the-line — S effort, ready for immediate pickup):**\n1. #217 (BUG engagement email 404) — 1 migration fix; unblocks all engagement notifications\n2. #248 (Calendar day 19 strikethrough) — frontend debug; visual UX regression\n3. #249 (T4 day-of-week bug) — verify with member I if persists; if yes, debug timezone logic\n\n**Wave 1 (P1/P2, depend on #205 CLOSED + business decisions):**\n4. #210 (Calendar recurrence cleanup) — blocked on #205 (CLOSED as of context); unblock immediately. Enables #210 execution. Gate: P2 but critical for #204 umbrella.\n5. #414 (Parametrized recurrence interval) — decouple from #210; enables biweekly Leadership series (required post-cleanup)\n6. #415 (Recurrence stockout cron) — observability to prevent future silent series expiry (learned from leadership meeting gap 28-May)\n\n**Wave 2 (P2, depends on architecture clarity):**\n7. #212 (SPEC: initiative collaboration hub) — blocks #211; requires architecture decision on G1 + G2. Assign L-effort spec work to agent + PM pairing session.\n8. #211 (Initiative metadata UI) — unblock after #212 spec is approved; M-effort; unblocks multi-hub scalability\n\n**Backlog/Triage (P3, low, deferred):**\n9. #416 (Google Calendar sync) — low priority; nice-to-have; requires ADR + OAuth setup; defer beyond Wave 2\n10. #206, #207, #208, #209 — components of #204 umbrella (multimodal AI, Drive cascade) — tracked separately; not in this cluster's critical path yet\n\n**Cross-cluster dependencies to track:**\n- #204 umbrella: #210 is the only Calendar issue in the cluster that feeds into #204's ARM impact\n- #206, #207, #208, #209 (sub-issues of #204): open, tracked in separate cluster\n- #92, #116: historical ARM-5 blockers on Calendar; cross-check with #210 before implementation\n- #157: similar cancelled-event visual bug; may share CSS root cause with #248\n\n**Note on #204 (Umbrella):**\n#204 is open and in Wave 1, but #205 (Foundation blocker) is already CLOSED. #204's acceptance criteria depend on closure of #206–#210. This cluster (#210, #211, #212, #217) feeds into #204. Recommend updating #204's status after #210 ships (mark as 1/6 sub-issues resolved).\n",
       "cross_cluster_dependencies": [
         "#204 (Umbrella: gemini + drive/calendar governance) — parent initiative; #210 is a sub-issue",
         "#205 (Foundation: member_resolve_email RPC) — CLOSED; unblocks #210, #212",

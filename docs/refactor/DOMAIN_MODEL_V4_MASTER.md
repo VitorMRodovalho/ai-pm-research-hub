@@ -144,8 +144,8 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 **Shadow Validation — Dia 2 (2026-04-14):**
 - Guardian smoke check: 1077 pass / 0 fail, build 0 erros, todos invariantes verdes
 - Shadow validation re-executada: **70/71 members mirrors_ok = true**
-- **1 divergência esperada e aprovada:** Marcel Fleming (`tribe_leader`, `current_cycle_active=false`) — canWrite legado retorna true (só checa role), can() V4 retorna false (engagement expired por ciclo inativo). Marcel solicitou desligamento no início do ciclo. **can() está mais correto.** O legado canWrite era permissivo demais (bug de design — não checava atividade). PM aprovou: esta melhoria de segurança é desejada no cutover.
-- Divergências análogas em não-writers (Leandro Mota, Maurício Abe Machado: researchers com current_cycle_active=false) — sem impacto em gates de escrita, mirrors_ok=true porque ambos retornam false nos dois sistemas.
+- **1 divergência esperada e aprovada:** member D (`tribe_leader`, `current_cycle_active=false`) — canWrite legado retorna true (só checa role), can() V4 retorna false (engagement expired por ciclo inativo). member D solicitou desligamento no início do ciclo. **can() está mais correto.** O legado canWrite era permissivo demais (bug de design — não checava atividade). PM aprovou: esta melhoria de segurança é desejada no cutover.
+- Divergências análogas em não-writers (member C, member A: researchers com current_cycle_active=false) — sem impacto em gates de escrita, mirrors_ok=true porque ambos retornam false nos dois sistemas.
 - Cron de expiração shadow: ativo (03:00 UTC diário), sem logs = nenhum engagement com end_date expirado (todos têm end_date=null). Esperado.
 - **Veredicto: PRONTO para cutover em 2026-04-15.**
 
@@ -154,7 +154,7 @@ Objetivo: migrar gates de autoridade para função derivada de engagements.
 - 14 call sites migrados: 10× `write`, 2× `write_board`, 1× `manage_partner`, 1× `promote`
 - nucleo-guide prompt: `WRITE_ROLES.includes()` → `canV4(sb, member.id, 'write')`
 - Deploy: `supabase functions deploy nucleo-mcp` — 3.013MB, HTTP 200
-- Smoke validation live: 8 tribe_leaders ativos → can_write=true. Marcel Fleming (inactive) → can_write=false (melhoria aprovada). Researchers → write_board=true, write=false. Liaisons → manage_partner=true via engagement kind. Manager/superadmin → all actions true.
+- Smoke validation live: 8 tribe_leaders ativos → can_write=true. member D (inactive) → can_write=false (melhoria aprovada). Researchers → write_board=true, write=false. Liaisons → manage_partner=true via engagement kind. Manager/superadmin → all actions true.
 - **Quiet window de 48h concluída (2026-04-13 a 2026-04-15).** RLS migration executada em 2026-04-13.
 
 **RLS Migration (2026-04-13):**
@@ -171,7 +171,7 @@ Objetivo: mover lifecycle de código para config por engagement_kind.
 - [x] **Migration 1/3:** Schema enrichment — 11 novas colunas em `engagement_kinds` (ADR-0008 compliant) + seed enriquecido para 12 kinds — `20260413500000_v4_phase5_engagement_kinds_lifecycle.sql`
 - [x] **Migration 2/3:** `anonymize_by_engagement_kind()` — kind-aware anonymization com retention_days_after_end + anonymization_policy por kind. Coexiste com legacy. Cron mensal — `20260413510000_v4_phase5_anonymize_by_kind.sql`
 - [x] **Migration 3/3:** `v4_expire_engagements()` (real, substitui shadow) + `v4_notify_expiring_engagements()`. Cron diário 03:00 + 08:00 UTC — `20260413520000_v4_phase5_real_expiration.sql`
-- [ ] Revisão jurídica (DPO PMI-GO (Ivan Lourenço Costa)) de base legal + retenção — **PENDENTE humano**
+- [ ] Revisão jurídica (DPO PMI-GO (member B)) de base legal + retenção — **PENDENTE humano**
 - [x] **Testes:** 1107 pass / 0 fail (1077 + 30 engagement-lifecycle contracts). Build 0 erros. MCP HTTP 200.
 - [x] Dry-run: `anonymize_by_engagement_kind(true)` → 0 candidates (nenhum engagement offboarded). `v4_expire_engagements()` → 0 expired. `v4_notify_expiring_engagements()` → 0 notifications. Todas funções executam sem erro.
 
@@ -331,7 +331,7 @@ Lista de smoke tests obrigatórios em cada cutover de fase. Atualizar conforme f
 | Backfill de members → persons corrompe dados | Baixa-Média | Dry-run primeiro, backup antes, reversible migration |
 | Gate de termo vencido corta acesso indevidamente | Alta | Shadow mode do trigger por 2 semanas antes de ativar |
 | LGPD audit entre fases (DPO PMI-GO) encontra gap | Média | Revisão ADR-0008 antes da Fase 5 |
-| Congresso CBGPL entra em conflito com cronograma | Alta | Herlon parallel track não depende do refactor |
+| Congresso CBGPL entra em conflito com cronograma | Alta | member F parallel track não depende do refactor |
 
 ## Decisões do PM (aprovadas 2026-04-11)
 
@@ -339,20 +339,20 @@ Lista de smoke tests obrigatórios em cada cutover de fase. Atualizar conforme f
 - [x] **D2 — Freeze parcial de features:** ✅ Durante o refactor, apenas issues/features **já em construção** antes de 2026-04-11 são aceitas. Features novas só após conclusão da Fase 7. Correções de bugs críticos e LGPD permanecem permitidas.
 - [x] **D3 — Timeline:** ✅ **6 semanas** (target ~2026-05-23). Plano em fases precisa caber nesse orçamento — se alguma fase estourar, reconciliar via trade-off com PM antes de expandir prazo.
 - [x] **D4 — Cutover Claude.ai connector:** ✅ **Fase 4 em cutover único** — authority derivation entra em produção num único deploy coordenado, não em migração gradual. Janela de risco concentrada mas controlável. Requer smoke test dos 68 MCP tools antes + rollback plan pronto + comunicação prévia aos MCP hosts.
-- [x] **D5 — Herlon entry:** ✅ Herlon NÃO entra operacionalmente agora. Plataforma entra pronta para recebê-lo (Fase 3 ou Fase 4 do refactor). Enquanto isso:
+- [x] **D5 — member F entry:** ✅ member F NÃO entra operacionalmente agora. Plataforma entra pronta para recebê-lo (Fase 3 ou Fase 4 do refactor). Enquanto isso:
    - Login vínculo: **já resolvido** (ghost linked em 2026-04-11)
    - VEP opportunity: PM criará a vaga formal **em paralelo** — carregada na plataforma, sem ativação de role
    - Termo de voluntariado: assinado quando plataforma estiver pronta
-   - `is_superadmin` temporário: **descartado** — não precisa mais desta concessão, Herlon espera o modelo V4
+   - `is_superadmin` temporário: **descartado** — não precisa mais desta concessão, member F espera o modelo V4
 
 ## Features em construção autorizadas a continuar
 
 Features iniciadas antes de 2026-04-11 que permanecem autorizadas durante o refactor (D2):
 
-- **Issue-06 CPMAI i18n collision** — mural de celebração de certificados (Marcos Klemz certificado no ciclo conta para meta anual) — **RESOLVIDO na Fase 0** (ver registro abaixo)
+- **Issue-06 CPMAI i18n collision** — mural de celebração de certificados (member E certificado no ciclo conta para meta anual) — **RESOLVIDO na Fase 0** (ver registro abaixo)
 - **Congresso CBGPL** — operação já em curso, não pode parar
 - **Correções LGPD** — sempre permitidas (governança máxima não entra em freeze)
-- **VEP opportunity do Herlon** — criação formal em paralelo (PM)
+- **VEP opportunity do member F** — criação formal em paralelo (PM)
 - (acrescentar conforme identificadas durante Fase 0)
 
 ## Referências
@@ -361,4 +361,4 @@ Features iniciadas antes de 2026-04-11 que permanecem autorizadas durante o refa
 - ADR index: `docs/adr/README.md`
 - Guardrails de sessão: `.claude/rules/refactor-in-progress.md`
 - Agente de auditoria: `.claude/agents/refactor-guardian.md`
-- Parallel track Herlon: `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md`
+- Parallel track member F: `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md`

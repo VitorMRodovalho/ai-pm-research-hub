@@ -14,7 +14,7 @@
 >
 > **Still pending decision (C5, deferred to v2):** C5 pilot author for issue #1 — decisão diferida até Gate 0 jurídico cair (CR-050 + R3-C4 ratificadas). Sem sentido nomear autor pre-Gate-0; quando ratificarem, abrir issue dedicada `frontiers-issue-1-pilot`.
 >
-> **Author of this draft:** Vitor Maia Rodovalho (PM); proposer-of-record on `governance_documents.proposer_member_id` is Fabricio Costa (`92d26057-…`).
+> **Author of this draft:** Vitor Maia Rodovalho (PM); proposer-of-record on `governance_documents.proposer_member_id` is member A (`92d26057-…`).
 
 ---
 
@@ -809,7 +809,7 @@ Estos gates aplican **a esta Guía editorial**, NO a los `content_products` deri
 
 **Mantenedores designados:**
 
-- **Editor-chefe:** Fabricio Costa (proposer-of-record do Guia; co-autor original do docx 2026-04-21).
+- **Editor-chefe:** member A (proposer-of-record do Guia; co-autor original do docx 2026-04-21).
 - **Co-mantenedor:** GP Vitor Maia Rodovalho (orquestração da v1 reconciliada + decisões pendentes C2-C5).
 - **Curadores assistentes:** a serem nomeados quando Frontiers entrar em operação ativa (Gate 2 da #96).
 
@@ -833,7 +833,7 @@ Estos gates aplican **a esta Guía editorial**, NO a los `content_products` deri
 
 **Designated maintainers:**
 
-- **Editor-in-chief:** Fabricio Costa (proposer-of-record of the Guide; co-author of original 2026-04-21 docx).
+- **Editor-in-chief:** member A (proposer-of-record of the Guide; co-author of original 2026-04-21 docx).
 - **Co-maintainer:** GP Vitor Maia Rodovalho (orchestration of reconciled v1 + pending decisions C2-C5).
 - **Assistant curators:** to be named when Frontiers enters active operation (Gate 2 of #96).
 
@@ -857,7 +857,7 @@ Estos gates aplican **a esta Guía editorial**, NO a los `content_products` deri
 
 **Mantenedores designados:**
 
-- **Editor-en-jefe:** Fabricio Costa (proposer-of-record de la Guía; coautor original del docx 2026-04-21).
+- **Editor-en-jefe:** member A (proposer-of-record de la Guía; coautor original del docx 2026-04-21).
 - **Co-mantenedor:** GP Vitor Maia Rodovalho (orquestación de la v1 reconciliada + decisiones pendientes C2-C5).
 - **Curadores asistentes:** a ser nombrados cuando Frontiers entre en operación activa (Gate 2 de #96).
 
