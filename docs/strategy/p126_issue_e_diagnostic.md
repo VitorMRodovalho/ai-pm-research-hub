@@ -27,7 +27,7 @@ Query: `SELECT id, applicant_name, status, interview_status, objective_score_avg
 
 **Affected candidates (10):**
 1. Maria Araújo — final_score=209
-2. Marcio Pimenta — final_score=212
+2. candidate A — final_score=212
 3. Flavio Oliveira — final_score=NULL
 4. Luciana Carpes Pranke — final_score=144
 5. Luíse Quintana — final_score=NULL
