@@ -1293,7 +1293,7 @@ const enUS: Record<string, string> = {
   'governance.docs.intake.fieldDocType': 'Document type',
   'governance.docs.intake.fieldDocTypeHint': 'Drives gates, acknowledgement mode and default visibility. Cannot be changed later without migrating versions.',
   'governance.docs.intake.fieldAuthor': 'Author / Proposer',
-  'governance.docs.intake.fieldAuthorPlaceholder': 'e.g. Fabricio Costa',
+  'governance.docs.intake.fieldAuthorPlaceholder': 'e.g. Fulano de Tal',
   'governance.docs.intake.fieldAuthorHint': 'Free text — who proposed/authored the document. May differ from the intake executor (you). To link a specific member, use the Advanced section.',
   'governance.docs.intake.fieldVisibility': 'Visibility class',
   'governance.docs.intake.fieldVisibilityHint': 'Determines who sees the document once active. Tightest visibility always wins.',
