@@ -95,11 +95,11 @@ com schema da tool**.
 A issue aponta o cron de selagem como candidato. **Medição posterior mostrou que ele não explica o
 caso principal:**
 
-O Nestor entrou em **15/08**. Em **27/08**, doze dias depois, **oito faltas retroativas nasceram no
+O member F entrou em **15/08**. Em **27/08**, doze dias depois, **oito faltas retroativas nasceram no
 mesmo instante**, cobrindo eventos de 09/07 a 12/08. O cron diário sela a janela do dia; ele não
 cria oito eventos de semanas diferentes de uma vez.
 
-Isso é assinatura de **backfill no momento do ingresso**. A Anastasia entrou no mesmo dia e tem o
+Isso é assinatura de **backfill no momento do ingresso**. A member G entrou no mesmo dia e tem o
 mesmo padrão. **Convivem três escritores na tabela `attendance`, e só um está errado.**
 
 Atualizar a #2236 antes de consertar, senão o conserto erra o alvo.
@@ -108,13 +108,12 @@ Atualizar a #2236 antes de consertar, senão o conserto erra o alvo.
 
 ## 6. Feito e NÃO refazer
 
-- **Três desligamentos formalizados**: João Paulo Castro (02/09, prioridade externa), Letícia
-  Rodrigues Vieira (15/07, sobrecarga profissional) e Cristiano Nunes (11/09, lapso de filiação).
+- **Três desligamentos formalizados**: member B (02/09, prioridade externa), member A (15/07, sobrecarga profissional) e member C (11/09, lapso de filiação).
   Todos com motivo, data correta e certificado. Nenhum tinha item atribuído.
 - **Pesquisa da Tribo 4 enviada a 78 pessoas** (74 por campanha + 4 individuais), todas entregues.
 - **Reunião do time de comunicação de 10/09** registrada: ata, 6 presenças, 4 decisões, 8 ações
   rastreáveis. Cadência corrigida para semanal às quintas, 18:30.
-- **Currículo da Patrícia Sebastião recuperado** a 23h da assinatura expirar. Ela é uma das 3
+- **Currículo da member H recuperado** a 23h da assinatura expirar. Ela é uma das 3
   candidatas com entrevista pendente.
 - **RCE critical do astro fechado**, 17 alertas do Dependabot zerados.
 - **Pesquisa das docs dos 45 dias** nos 8 provedores, mergeada (#2212).
@@ -125,12 +124,12 @@ Atualizar a #2236 antes de consertar, senão o conserto erra o alvo.
 
 1. **Os cinco pontos do PMOGA**, só na thread do WhatsApp do grupo "Núcleo Tribos PMO / PMO GA
    LATAM". Varri banco, Gmail, Drive e 9 exports: não estão em lugar alcançável.
-2. **A resposta do Jefferson** sobre se a reunião de 18/08 aconteceu. Decide se há presença legítima
+2. **A resposta do member I** sobre se a reunião de 18/08 aconteceu. Decide se há presença legítima
    a recuperar, porque as linhas foram apagadas em 03/09.
 3. **A Tribo 10 tem 1 pessoa ativa: o próprio líder.** Zero pesquisadores, zero reuniões futuras, 10
-   cards (4 concluídos, incluindo um inventário de domínio que é ativo transferível). O Honório
+   cards (4 concluídos, incluindo um inventário de domínio que é ativo transferível). O member J
    propôs encerrar e seguir noutra tribo. Três cards vivos precisam de destino antes.
-4. **Regularizar o VEP de Sarah e Roberto**, curadores sem VEP ativo.
+4. **Regularizar o VEP de member D e member E**, curadores sem VEP ativo.
 5. **Os 3 candidatos** seguem sem reserva de entrevista, com e-mail entregue.
 
 ---

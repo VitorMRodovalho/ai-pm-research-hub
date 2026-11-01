@@ -190,7 +190,7 @@ should reconcile (NOT in Q-A scope — captured verbatim):
      so no live bug — but the formula divergence is real. NEEDS PM CALL:
      canonize PERT or AVG, then reconcile the unused branch.
 4. **One-shot importers hardcode** the cycle code `cycle3-2026` AND two
-   evaluator UUIDs (Vitor + Fabricio). Verified p53 — picture more nuanced
+   evaluator UUIDs (Vitor + member P). Verified p53 — picture more nuanced
    than the "archive vs parameterize" framing suggested:
    - There IS a currently open cycle (`cycle3-2026-b2`, closes 2026-05-31).
    - But the importers are FORMAT-COUPLED: they expect specific keys in the
@@ -198,7 +198,7 @@ should reconcile (NOT in Q-A scope — captured verbatim):
      `interview_scores_conv`), and the structure assumes exactly 2
      objective evaluators + 1 interview lead.
    - Parameterizing cycle_code alone is trivial; parameterizing evaluator
-     UUIDs is also tractable. But the structural coupling to "Fabricio +
+     UUIDs is also tractable. But the structural coupling to "member P +
      Vitor are the evaluators" means these importers won't generalize to
      a cycle with different evaluators or different input format.
    - Realistic options: (a) leave as-is (cycle3-2026 done, cycle3-2026-b2
@@ -559,7 +559,7 @@ Functions whose legacy gate doesn't map cleanly to existing V4 actions:
 - `admin_manage_comms_channel`
 - New action `manage_comms` granted to: volunteer × {co_gp, manager,
   deputy_manager, comms_leader}
-- Privilege drift surfaced: Mayanna Duarte lost access (V3 designation
+- Privilege drift surfaced: member N lost access (V3 designation
   comms_leader sem V4 engagement volunteer×comms_leader). Documented
   per ADR Q1 — drift correction, not regression. PM may create
   engagement post-fact if she's a real comms operator.
@@ -604,7 +604,7 @@ track**, not a security incident response. Closing it improves
 auditability (explicit kind/role/action mapping) and consistency
 but isn't urgent.
 
-**Sponsor briefing impact**: when reporting to Ivan, distinguish:
+**Sponsor briefing impact**: when reporting to member F, distinguish:
 - ✅ Phase Q-D security sweep: 100% closed (8/8 buckets)
 - ✅ Track R schema exposure: 85% closed (152 REVOKEs)
 - 🟡 Phase B'' V3→V4 modernization: 9% closed (21/246) — ongoing track,
@@ -612,7 +612,7 @@ but isn't urgent.
 
 Members impacted by p59 ADR conversions:
 - **Gained access**: 5 sponsors via manage_finance (intentional Q1)
-- **Drift correction**: Mayanna Duarte lost comms access (V3 designation
+- **Drift correction**: member N lost comms access (V3 designation
   never used in audit log — confirmed pure drift, no engagement needed)
 - **Drift correction**: V3 observers lost governance reader access (not
   actually used by observers per usage analysis)
@@ -858,14 +858,14 @@ The 60 D/F fns are mostly "leave-as-is, not admin gates".
 - Phase B'' p63 Pacote I easy-convert: 6 fns (5 names + 1 overload)
 - **Phase B'' p66 ADR-0026 extension: 2 fns (admin_get_campaign_stats, admin_preview_campaign — manage_comms reuse)**
 - **Phase B'' p66 ADR-0030 view_internal_analytics: 2 fns + 1 helper (exec_chapter_dashboard, exec_role_transitions, can_read_internal_analytics — new V4 action)**
-- **Phase B'' p66 ADR-0031 admin_list_members: 1 fn (Opção B reuse view_internal_analytics, +Roberto chapter_board×liaison gain)**
-- **Phase B'' p66 ADR-0032 board admin: 4 fns (3 writers via new manage_board_admin resource-scoped + 1 reader via Opção B reuse view_internal_analytics, Path A drift Sarah/Mayanna)**
-- **Phase B'' p66 ADR-0033 Phase 1 partner subsystem: 4 fns (3 via Opção B reuse manage_partner + 1 via manage_platform reuse, drift loss João chapter_liaison)**
-- **Phase B'' p66 ADR-0034 Phase 2 partner attachments: 4 fns (Path A writers + Path D readers, drift signals #5 #6 CLOSED, drift loss Sarah curator + 6 tribe_leaders)**
+- **Phase B'' p66 ADR-0031 admin_list_members: 1 fn (Opção B reuse view_internal_analytics, +member I chapter_board×liaison gain)**
+- **Phase B'' p66 ADR-0032 board admin: 4 fns (3 writers via new manage_board_admin resource-scoped + 1 reader via Opção B reuse view_internal_analytics, Path A drift member K/member N)**
+- **Phase B'' p66 ADR-0033 Phase 1 partner subsystem: 4 fns (3 via Opção B reuse manage_partner + 1 via manage_platform reuse, drift loss member Q chapter_liaison)**
+- **Phase B'' p66 ADR-0034 Phase 2 partner attachments: 4 fns (Path A writers + Path D readers, drift signals #5 #6 CLOSED, drift loss member K curator + 6 tribe_leaders)**
 - **Phase B'' p66 ADR-0035 analytics + no-gate hardening: 4 fns (2 V3→V4 reuse view_internal_analytics + 2 no-gate hardening get_annual_kpis/get_cycle_report)**
 - **Phase B'' p66 ADR-0036 get_member_detail: 1 fn (Opção B reuse view_internal_analytics, ADR-0031 ladder precedent)**
-- **Phase B'' p67 ADR-0037 get_chapter_needs + get_org_chart: 2 fns (Opção B reuse view_internal_analytics + manage_platform; Path Y formalized for chapter_board sub-role preservation; drift loss João chapter_liaison + 6 tribe_leaders + Sarah curator — precedented)**
-- **Phase B'' p67 ADR-0037 ext submit_chapter_need: 1 fn (closes chapter_needs subsystem 100% V4 — V4 expansion 12→13 with Vitor + Fabricio gain via org-tier leadership engagement, drift loss João — same precedent)**
+- **Phase B'' p67 ADR-0037 get_chapter_needs + get_org_chart: 2 fns (Opção B reuse view_internal_analytics + manage_platform; Path Y formalized for chapter_board sub-role preservation; drift loss member Q chapter_liaison + 6 tribe_leaders + member K curator — precedented)**
+- **Phase B'' p67 ADR-0037 ext submit_chapter_need: 1 fn (closes chapter_needs subsystem 100% V4 — V4 expansion 12→13 with Vitor + member P gain via org-tier leadership engagement, drift loss member Q — same precedent)**
 - **Cumulative: 82 of 246 fns (~33.3%)** — up from p66 79/246 (32.1%)
 - **New V4 actions cumulative**: 5 (manage_finance, manage_comms, view_internal_analytics, manage_board_admin + 3 Opção B reuses: governance readers + member directory + archived board listing + partner subsystem 100%)
 - **First p66 use of resource-scoped `can_by_member(_, action, 'initiative', id)`** — precedent established para ADRs futuras com per-resource gates (pattern já existia em V4 core mas pouco usado em Phase B'' até este ponto).
@@ -939,8 +939,8 @@ worth the effort (uncovered 23 in p68).
 
 **Deferred for explicit PM ratify (p68)**:
 - `create_cost_entry` / `create_revenue_entry` — V4 manage_finance would
-  expand audience by **+5 sponsors** (Felipe, Francisca, Ivan, Márcio,
-  Matheus — all `sponsor × sponsor`). V4 catalog explicitly grants sponsor
+  expand audience by **+5 sponsors** (member E, member B, member F, member M,
+  member D — all `sponsor × sponsor`). V4 catalog explicitly grants sponsor
   manage_finance, but V3 RPC was narrower. Sensitive finance write —
   needs explicit PM rubber-stamp.
 
@@ -987,7 +987,7 @@ input.
 - `get_volunteer_agreement_status` — V4 manage_member + Path Y chapter_board engagement
 
 Privilege expansion countersign cluster: V3 set 10 → V4+Path Y 13.
-Gains 3 (Ana Cristina Fernandes Lima, Roberto Macêdo, Rogério Peixoto —
+Gains 3 (member A, member I, member J —
 all legitimate chapter_board V4 engagements without V3 designation).
 Losses 0.
 
@@ -1005,8 +1005,8 @@ same pattern (manage_X + Path Y chapter_board engagement). Forward
 commitment: any subsystem with V3 gate `(<some org-tier> OR chapter_board
 designation)` is a Path Y candidate.
 
-**Engagement-without-designation drift correction**: 3 members (Ana Cristina,
-Roberto, Rogério) had legitimate `chapter_board` engagements in
+**Engagement-without-designation drift correction**: 3 members (member A,
+member I, member J) had legitimate `chapter_board` engagements in
 `auth_engagements` but lacked the `chapter_board` designation in
 `members.designations`. V3 missed them; V4 catches them via Path Y. This is
 inverse drift correction (engagement IS source of truth, designation is
@@ -1082,23 +1082,23 @@ Per-fn deltas with concrete member impact documented in
 `docs/adr/ADR-0041-participate-in-governance-review-action.md` § Privilege expansion.
 
 Aggregate:
-- **V4 set** (5): Vitor (volunteer/manager), Fabricio (volunteer/co_gp),
-  Ana Cristina Fernandes Lima (chapter_board/liaison), Roberto Macêdo
-  (chapter_board/liaison), Rogério Peixoto (chapter_board/liaison).
-- **Gains** (consistent across 9 fns): Ana Cristina + Rogério (V4 catalog
-  inclusion via chapter_board.liaison engagement). Roberto re-routed via
+- **V4 set** (5): Vitor (volunteer/manager), member P (volunteer/co_gp),
+  member A (chapter_board/liaison), member I
+  (chapter_board/liaison), member J (chapter_board/liaison).
+- **Gains** (consistent across 9 fns): member A + member J (V4 catalog
+  inclusion via chapter_board.liaison engagement). member I re-routed via
   catalog (was previously curator-designation).
 - **Losses** (governance review tightening, PM-accepted in §G ratify):
-  - Sarah Faria (curator + founder designations — no V4 engagement)
-  - Andressa Martins, Antonio Marcos Costa, Ivan Lourenço (founder
-    designations — Ivan has chapter_board.board_member but seed targets
+  - member K (curator + founder designations — no V4 engagement)
+  - member L, member C, member F (founder
+    designations — member F has chapter_board.board_member but seed targets
     only chapter_board.liaison)
-  - 6 tribe_leaders for `create_document_comment` only (Ana Carla, Débora,
-    Fernando, Hayala, Jefferson, Marcos — governance commenting moved to
+  - 6 tribe_leaders for `create_document_comment` only (member G, member R,
+    member S, member T, member U, member V — governance commenting moved to
     committee scope; tribe→committee handoff fns preserve their access)
 - Future: `committee_curator` engagement kind (PM ratify §G item 2) will
-  restore Sarah-class curator access. `committee_coordinator/coordinator`
-  catalog seed candidate (Sarah + Roberto + Fabricio engagements ready).
+  restore member K-class curator access. `committee_coordinator/coordinator`
+  catalog seed candidate (member K + member I + member P engagements ready).
 
 ### Pattern sediment (p72)
 
@@ -1150,14 +1150,14 @@ designation-based curator gates and migrate to engagement.
 ### Privilege expansion (p72 ADR-0042)
 
 - **`view_chapter_dashboards` audience after seed (10 members)**:
-  Ana Cristina Fernandes Lima, Emanoela Kerkhoff, Felipe Moraes Borges,
-  Francisca Jessica de Sousa, Ivan Lourenço, Lorena Souza, Márcio Silva,
-  Matheus Frederico Rosa, Roberto Macêdo, Rogério Peixoto.
+  member A, member H, member E,
+  member B, member F, member O, member M,
+  member D, member I, member J.
 - **Restored** (per Amendment B documented impact): 5 sponsors + 2 chapter_liaisons
-- **New gains**: Emanoela + Lorena (chapter_board/board_member observer-status;
-  legitimate via V4 engagement model). Roberto already gained via ADR-0041.
+- **New gains**: member H + member O (chapter_board/board_member observer-status;
+  legitimate via V4 engagement model). member I already gained via ADR-0041.
 - **`_can_manage_event` privilege expansion**: zero (V3 ∩ V4 = same; superadmin
-  bypass dropped only because Vitor + Fabricio both have V4 engagements covering
+  bypass dropped only because Vitor + member P both have V4 engagements covering
   manage_event).
 
 ### Pattern sediment (p72 ADR-0042)
@@ -1199,9 +1199,9 @@ domain-specific Path Y (tribe scope + creator self-management) verbatim.
 ### Privilege expansion (p72 ADR-0043)
 
 - `manage_finance` audience already existed (ADR-0025): volunteer × {manager, deputy, co_gp} + sponsor × sponsor
-- V3→V4 net change: Ivan Lourenço gains finance entry creation (sponsor × sponsor; was V3-blocked)
-- Safeguard trigger fires for Ivan-class non-volunteer sponsors (current: just Ivan)
-- Volunteer chain (Vitor, Fabricio) does NOT trigger — normal flow
+- V3→V4 net change: member F gains finance entry creation (sponsor × sponsor; was V3-blocked)
+- Safeguard trigger fires for member F-class non-volunteer sponsors (current: just member F)
+- Volunteer chain (Vitor, member P) does NOT trigger — normal flow
 
 ### Pattern sediment (p72 ADR-0043)
 
@@ -1258,11 +1258,11 @@ timestamps > 20260514060000 (current latest, ADR-0044) for any future redefiniti
 
 ### Privilege expansion (p72 ADR-0044)
 
-- V3 (`is_superadmin = true`): Vitor + Fabricio
+- V3 (`is_superadmin = true`): Vitor + member P
 - V4 `manage_platform`: same set (volunteer × {manager, deputy_manager, co_gp})
 - Net change in *who can act*: zero
 - Net change in *requirement*: 2-of-N enforcement — single actor cannot
-  unilaterally publish; both Vitor AND Fabricio (or future additional
+  unilaterally publish; both Vitor AND member P (or future additional
   manage_platform holders) must participate
 
 ### Pattern sediment (p72 ADR-0044)
@@ -1379,14 +1379,14 @@ status. ALL authenticated PostgREST table reads triggering members RLS
 failed silently for ~8 hours — `.single()` returned null, `.select()`
 returned `[]`, frontend pages depending on direct table reads broke.
 
-**Curator-tier collateral**: Sarah (curator) attempted to read Adendo
+**Curator-tier collateral**: member K (curator) attempted to read Adendo
 IP doc via `/governance/ip-agreement` flow. `get_pending_ratifications`
 (SECDEF RPC) worked; clicking through to read content called
 `sb.from('document_versions')` directly → RLS chained to
 `can_by_member()` → permission denied → `versionRes.data = null` →
 page rendered "(conteúdo indisponível)". Member then accidentally
 clicked Sign without reading content. Signoff was reverted per
-`incident(p64): revert Sarah's accidental signoff per PM Opção A`
+`incident(p64): revert member K's accidental signoff per PM Opção A`
 (commit `5891746`).
 
 **Hotfix migrations** (commit `a995d3f`):
@@ -1432,7 +1432,7 @@ function GRANTs):
 
 **Audit trail**: Every Q-D commit references this doc; this doc
 references every Q-D migration. Single source of truth for the
-remediation track. PMI sponsor (Ivan Lourenço) to be notified at
+remediation track. PMI sponsor (member F) to be notified at
 next quarterly touchpoint that Q-D is in progress and closing this
 sprint (per accountability-advisor 2026-04-25 governance memo).
 
@@ -1576,7 +1576,7 @@ platform-guardian + security-engineer callsite review (2026-04-25):
   `/admin/selection.astro:443`. Converted from SQL to PL/pgSQL to
   accommodate gate.
 
-Privilege expansion safety check: legacy_count=2 (Vitor SA, Fabricio SA),
+Privilege expansion safety check: legacy_count=2 (Vitor SA, member P SA),
 v4_count=2, would_gain=null. Zero authorization change in production.
 
 **Deferred** (3 of 6 — PM tier clarification needed):

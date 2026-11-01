@@ -1,6 +1,6 @@
 # Hub de Comunicação — Relatório de Usabilidade + Sessão 23/Abr
 
-**Origem:** Relatório Mayanna Duarte (`comms_leader`, Tribo 8), recebido 22/Abr.
+**Origem:** Relatório member D (`comms_leader`, Tribo 8), recebido 22/Abr.
 **Sessão de follow-up:** 23/Abr p36 — GP Vitor + AI pair (debug mode).
 **Status do relatório original:** `/home/vitormrodovalho/Downloads/A/relatorio_usabilidade_hub comunicação.pdf`
 **Board afetado:** `Hub de Comunicação` (id `a6b78238-11aa-476a-b7e2-a674d224fd79`, scope=global, domain_key=communication).
@@ -18,7 +18,7 @@
 | 05 | Limitação de permissão | Status "concluído" só GP | **Discussão de governança necessária** | MÉDIA |
 | 06 | Melhoria | Menções `@` em comentários | **Depende de #01** | MÉDIA |
 | 07 | Melhoria/Integração | Drive / repositório | **Resolvido parcialmente por #04 (link)** | MÉDIA |
-| — | Bug adjacente | Carlos Magno não consegue editar perfil | **Investigação em aberto — precisa runtime evidence** | MÉDIA |
+| — | Bug adjacente | member B não consegue editar perfil | **Investigação em aberto — precisa runtime evidence** | MÉDIA |
 
 ---
 
@@ -42,7 +42,7 @@ Build `npx astro build` passa. `npm test` mantém 1313/22 (22 falhas pré-existe
 ### Pendente
 
 - [ ] Commit + deploy
-- [ ] Mayanna reproduzir em prod e confirmar fix
+- [ ] member D reproduzir em prod e confirmar fix
 - [ ] Confirmar se Bug #03 (checklist) desaparece junto (hipótese: modal caía antes de ela testar o checklist)
 
 ---
@@ -51,7 +51,7 @@ Build `npx astro build` passa. `npm test` mantém 1313/22 (22 falhas pré-existe
 
 ### Análise de permissões (code review)
 
-Mayanna tem `operational_role='researcher'` + `designations=['comms_leader']`. Board Hub de Comunicação é `board_scope='global'`. Em `src/hooks/useBoardPermissions.ts`:
+member D tem `operational_role='researcher'` + `designations=['comms_leader']`. Board Hub de Comunicação é `board_scope='global'`. Em `src/hooks/useBoardPermissions.ts`:
 
 - `isComms = true` (tem `comms_leader` nas designations)
 - `isGlobal = true` (board_scope)
@@ -67,7 +67,7 @@ Logo o checklist **deveria** aparecer para ela. Hipóteses candidatas:
 ### Pendente
 
 - [ ] Aguardar fix #02 em prod
-- [ ] Mayanna tentar checklist de novo
+- [ ] member D tentar checklist de novo
 - [ ] Se persistir, instrumentar `CardDetail` com telemetria em `canEdit`/`addCheckItem`
 
 ---
@@ -111,7 +111,7 @@ GP endossou o caminho "link em vez de upload" (preserva storage + LGPD).
 ### Pendente
 
 - [ ] Commit + deploy
-- [ ] Confirmar com Mayanna
+- [ ] Confirmar com member D
 
 ---
 
@@ -124,9 +124,9 @@ Em `useBoardPermissions.ts`:
 canMove = canManageBoard || isCommsOnGlobal || (isOwnTribe && tier <= 4)
 ```
 
-Mayanna (`comms_leader` em board global) tem `canMove=true`. O motivo dela ver "só GP pode" deve ser um caso específico ou experimentação com usuário diferente. **Confirmar com ela qual card + qual perfil ela estava logada.**
+member D (`comms_leader` em board global) tem `canMove=true`. O motivo dela ver "só GP pode" deve ser um caso específico ou experimentação com usuário diferente. **Confirmar com ela qual card + qual perfil ela estava logada.**
 
-### Alternativa proposta pela Mayanna
+### Alternativa proposta pela member D
 
 "Revisar política de permissões para permitir que o responsável pela entrega atualize o status de conclusão"
 
@@ -134,7 +134,7 @@ Isso já seria equivalente a `canMove = ... || isCardAssignee` — factível, ma
 
 ### Pendente
 
-- [ ] Confirmar reprodução específica com Mayanna
+- [ ] Confirmar reprodução específica com member D
 - [ ] Decisão GP: card assignee pode mover para "done"? Ou apenas `in_review` e GP faz o último passo?
 
 ---
@@ -166,17 +166,17 @@ Para repositório **nativo** centralizado (fora do card):
 
 ---
 
-## Bug adjacente — Carlos Magno não consegue editar perfil
+## Bug adjacente — member B não consegue editar perfil
 
 ### Contexto reportado
 
-GP Vitor (WhatsApp 23/Abr): "Carlos Magno me informou que ele não consegue, pós logado, ir no Perfil dele, editar as informações dele próprio. Ele realmente é um voluntário inativo, mas o Perfil dele deveria ficar inativo?"
+GP Vitor (WhatsApp 23/Abr): "member B me informou que ele não consegue, pós logado, ir no Perfil dele, editar as informações dele próprio. Ele realmente é um voluntário inativo, mas o Perfil dele deveria ficar inativo?"
 
 ### Estado atual no banco
 
 ```
 member_id: f43ce173-****-****-****-f2ea47eabd5d
-name:      Carlos Magno do HUB Cerrado
+name:      member B do HUB Cerrado
 auth_id:   <set, login OK — UUID omitido por higiene de secret scan>
 member_status:    alumni
 operational_role: alumni
@@ -214,23 +214,23 @@ updated_at:       2026-04-23 19:05:36  (modificado hoje — por quem?)
 
 1. **LGPD Art. 18 V** — direito de retificação é um direito do titular de dados, independente de status operacional
 2. **UX** — se ex-voluntário quer atualizar LinkedIn/telefone para receber digest de alumni ou aceitar retorno futuro, precisa conseguir
-3. **Precedente** — Pedro Henrique (offboardado hoje) também virou `observer` e deveria conseguir editar
+3. **Precedente** — member A (offboardado hoje) também virou `observer` e deveria conseguir editar
 
 O que **não deve** ser editável por alumni: `operational_role`, `designations`, `tribe_id`, `is_superadmin` (isso já é true — campos de governança não aparecem em `/profile` hoje).
 
 ### Pendente
 
-- [ ] Pedir ao Carlos para gravar print/vídeo da tela + console DevTools ao tentar acessar `/profile`
+- [ ] Pedir ao member B para gravar print/vídeo da tela + console DevTools ao tentar acessar `/profile`
 - [ ] Ou: logar com a conta dele em ambiente de teste para reproduzir
 - [ ] Se confirmado, instrumentar `profile.astro` com logs em `boot()` para capturar qual branch dispara (nav:member recebido? shouldRedirectFromProfile retorna true? `_member` null?)
 - [ ] Adicionar `alumni` + `observer` em `OPROLE_LABELS` de `profile.astro:217-218` (fix UX mesmo que não seja o root cause)
-- [ ] Normalizar Carlos no banco: setar `offboarded_at` para bater com `inactivated_at` OU retornar `member_status` para `inactive` se ele nunca foi voluntário (data suggere que não)
+- [ ] Normalizar member B no banco: setar `offboarded_at` para bater com `inactivated_at` OU retornar `member_status` para `inactive` se ele nunca foi voluntário (data suggere que não)
 
 ---
 
 ## Trabalho operacional aplicado na sessão (não relacionado ao report)
 
-### Pedro Henrique Rodrigues Mendes — desligamento voluntário
+### member A — desligamento voluntário
 
 Decidido via WhatsApp 22/Abr 12:40. Aplicado:
 
@@ -241,7 +241,7 @@ Decidido via WhatsApp 22/Abr 12:40. Aplicado:
 - Audit trail em `admin_audit_log`: `member.status_transition` + `member.role_change`
 - Reason: `personal_agenda: desligamento voluntário — porta aberta`
 
-### Roberto Macêdo — observer/curator na Tribo 8
+### member C — observer/curator na Tribo 8
 
 Decidido 22/Abr com base em pedido do GP:
 
@@ -254,6 +254,6 @@ Decidido 22/Abr com base em pedido do GP:
 ## Próximos passos recomendados
 
 1. **Imediato (GP + dev team):** revisar este doc + decidir se commita os fixes #02 e #04 hoje/amanhã
-2. **Curto prazo (1-2 dias):** confirmar reprodução de #03 com Mayanna após deploy do #02; investigar Carlos Magno
+2. **Curto prazo (1-2 dias):** confirmar reprodução de #03 com member D após deploy do #02; investigar member B
 3. **Médio prazo (1-2 semanas):** scope de #01 (comentários) + #06 (menções) — abrir spec em `docs/specs/`
 4. **Longo prazo:** decisão formal sobre #05 (permissão de concluir para assignee)

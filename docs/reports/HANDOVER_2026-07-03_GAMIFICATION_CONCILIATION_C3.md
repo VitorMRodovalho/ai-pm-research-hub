@@ -16,32 +16,32 @@ Total: **15 showcases** (`register_showcase`) + **3 champions de entregável** (
 ### 1a. Showcases — preenchimento de gaps (reuniões que tinham 0 showcase)
 | record_id | event | data | membro | member_id | tipo | XP |
 |---|---|---|---|---|---|---|
-| `0f655508` | `5f4b01be` | 05-07 | Marcos Klemz | `c204ac61` | case_study | 25 |
-| `5ec290e0` | `5f4b01be` | 05-07 | Thiago Freire | `279684f3` | tool_review | 20 |
-| `60bc6287` | `5f4b01be` | 05-07 | Fernando Maquiaveli | `c8b930c3` | tool_review | 20 |
-| `5134b0ec` | `5f4b01be` | 05-07 | Ana Carla Cavalcante | `63b87315` | case_study | 25 |
-| `da38f4e2` | `5f4b01be` | 05-07 | João Coelho Júnior | `293fcaf8` | case_study | 25 |
-| `b3be07fb` | `5f4b01be` | 05-07 | João Uzejka dos Santos | `d29c42fd` | awareness | 15 |
-| `d8557b7b` | `a029ce54` | 06-18 | Rodolfo Santana | `60ffebc2` | case_study | 25 |
-| `d7e543e3` | `a029ce54` | 06-18 | Leonardo Chaves | `8f171d94` | tool_review | 20 |
-| `05beb383` | `a029ce54` | 06-18 | Ricardo França | `c562af94` | awareness | 15 |
-| `5c3017a9` | `a029ce54` | 06-18 | Fernando Maquiaveli | `c8b930c3` | awareness | 15 |
-| `18a1e6ca` | `a029ce54` | 06-18 | Marcos Klemz | `c204ac61` | awareness | 15 |
-| `02beb41f` | `f8a7787b` | 03-12 | Ana Carla Cavalcante | `63b87315` | tool_review | 20 |
+| `0f655508` | `5f4b01be` | 05-07 | member L | `c204ac61` | case_study | 25 |
+| `5ec290e0` | `5f4b01be` | 05-07 | member M | `279684f3` | tool_review | 20 |
+| `60bc6287` | `5f4b01be` | 05-07 | member N | `c8b930c3` | tool_review | 20 |
+| `5134b0ec` | `5f4b01be` | 05-07 | member D | `63b87315` | case_study | 25 |
+| `da38f4e2` | `5f4b01be` | 05-07 | member A | `293fcaf8` | case_study | 25 |
+| `b3be07fb` | `5f4b01be` | 05-07 | member C | `d29c42fd` | awareness | 15 |
+| `d8557b7b` | `a029ce54` | 06-18 | member P | `60ffebc2` | case_study | 25 |
+| `d7e543e3` | `a029ce54` | 06-18 | member G | `8f171d94` | tool_review | 20 |
+| `05beb383` | `a029ce54` | 06-18 | member I | `c562af94` | awareness | 15 |
+| `5c3017a9` | `a029ce54` | 06-18 | member N | `c8b930c3` | awareness | 15 |
+| `18a1e6ca` | `a029ce54` | 06-18 | member L | `c204ac61` | awareness | 15 |
+| `02beb41f` | `f8a7787b` | 03-12 | member D | `63b87315` | tool_review | 20 |
 
 ### 1b. Showcases — passe fino (protagonista da ata sem showcase, em reuniões que já tinham outros)
 | record_id | event | data | membro | member_id | tipo | XP |
 |---|---|---|---|---|---|---|
-| `6aa53caf` | `ba2b9bf9` | 03-26 | Fabrício Costa | `92d26057` | tool_review | 20 |
-| `30b8a5d0` | `deb3de2b` | 04-23 | Fabrício Costa | `92d26057` | awareness | 15 |
-| `23c10244` | `9ea5fc3c` | 06-04 | Fabrício Costa | `92d26057` | awareness | 15 |
+| `6aa53caf` | `ba2b9bf9` | 03-26 | member H | `92d26057` | tool_review | 20 |
+| `30b8a5d0` | `deb3de2b` | 04-23 | member H | `92d26057` | awareness | 15 |
+| `23c10244` | `9ea5fc3c` | 06-04 | member H | `92d26057` | awareness | 15 |
 
 ### 1c. Champions de entregável (`surface=deliverable`, `context_kind=artifact` = meeting_artifacts)
 | champion_id | ata (context_id) | data | destinatário | member_id | critérios | pts |
 |---|---|---|---|---|---|---|
-| `6d8bab65` | `df735a51` | 03-30 | Débora Moura | `a8c9af17` | qualidade_acima_baseline, inovacao_tecnica | 50 |
-| `45b186c7` | `76c39319` | 03-23 | Débora Moura | `a8c9af17` | qualidade_acima_baseline, inovacao_tecnica | 50 |
-| `d7708aef` | `dcded397` | 04-06 | Jefferson Pinto | `622ab18b` | qualidade_acima_baseline, impacto_pmi | 50 |
+| `6d8bab65` | `df735a51` | 03-30 | member E | `a8c9af17` | qualidade_acima_baseline, inovacao_tecnica | 50 |
+| `45b186c7` | `76c39319` | 03-23 | member E | `a8c9af17` | qualidade_acima_baseline, inovacao_tecnica | 50 |
+| `d7708aef` | `dcded397` | 04-06 | member O | `622ab18b` | qualidade_acima_baseline, impacto_pmi | 50 |
 
 > **Decisão de escopo:** a ata Geral 04-09 (`c1a8e1c5`, creator Vitor) **NÃO** foi premiada — o próprio Vitor (gestor da comunidade) pediu para não se autopontuar. Além disso a ata tem `initiative` NULL, o que poderia falhar na checagem de autoridade.
 
@@ -62,14 +62,14 @@ Total: **15 showcases** (`register_showcase`) + **3 champions de entregável** (
 
 | membro | cycle_showcase | cycle_artifacts | cycle_bonus | cycle_points | rank |
 |---|---|---|---|---|---|
-| Ana Carla (`63b87315`) | **15** | 0 | 195 | 420 | 7º |
-| Fabrício (`92d26057`) | **0** | 0 | 85 | 285 | 9º |
-| Débora (`a8c9af17`) | **0** | 0 | 375 | 515 | 2º |
+| member D (`63b87315`) | **15** | 0 | 195 | 420 | 7º |
+| member H (`92d26057`) | **0** | 0 | 85 | 285 | 9º |
+| member E (`a8c9af17`) | **0** | 0 | 375 | 515 | 2º |
 
 **Por que parece errado:**
-- Ana Carla tem **6 showcases** no ciclo (incluindo os de hoje) mas `cycle_showcase` mostra **15** (≈ um único item).
-- Fabrício ganhou 3 showcases hoje + já tinha 1 (04-09) e mostra `cycle_showcase = 0`.
-- O grosso do XP está em **`cycle_bonus`** (Débora 375, Ana Carla 195), que não deveria ser o destino de showcase/champion.
+- member D tem **6 showcases** no ciclo (incluindo os de hoje) mas `cycle_showcase` mostra **15** (≈ um único item).
+- member H ganhou 3 showcases hoje + já tinha 1 (04-09) e mostra `cycle_showcase = 0`.
+- O grosso do XP está em **`cycle_bonus`** (member E 375, member D 195), que não deveria ser o destino de showcase/champion.
 
 **Hipóteses a investigar (time):**
 1. `register_showcase` / `award_champion` estão **escrevendo o XP no bucket errado** (ex.: `bonus` em vez de `showcase`/`artifacts`) — bug de roteamento na RPC.
@@ -84,11 +84,11 @@ Total: **15 showcases** (`register_showcase`) + **3 champions de entregável** (
 
 | # | Item | Situação | Encaminhamento |
 |---|---|---|---|
-| A | **Ricardo França** = `c562af94` | `full_name` na base grava **"Ricardo Santos"** (email `r_frana@…`) | Vitor confirmou que é o Ricardo França. Corrigir o `full_name` no cadastro? |
-| B | **Sávio** (05-21, CPMAI) | Convidado **externo** (organizado por Fabrício), não é membro | Correto **não** pontuar (não-atribuível). Nenhuma ação. |
-| C | **"Maia" vs Mayanna** (03-26, podcasts NotebookLM) | Showcase pré-existente atribui "NotebookLM podcasts" a **Ana Carla**; a ata do 03-26 fala em **"Maia"** (= Mayanna Duarte, comms). Possível **misatribuição** de um showcase antigo. | **Revisar:** o showcase de podcast do 03-26 é da Ana Carla ou da Mayanna? (não foi alterado nesta conciliação) |
-| D | **Thiago** | Dois na base: Thiago Freire (`279684f3`, T4) e Thiago Dieb (`36631e37`, guest). Usado o **Freire** (confirmado por Vitor). | OK. |
-| E | **João** | Dois: João Coelho Jr (`293fcaf8`) e João Uzejka (`d29c42fd`). Desambiguado por evidência de showcase/ata evento a evento. | OK. |
+| A | **member I** = `c562af94` | `full_name` na base grava **"member J"** (email `r_frana@…`) | Vitor confirmou que é o member I. Corrigir o `full_name` no cadastro? |
+| B | **Sávio** (05-21, CPMAI) | Convidado **externo** (organizado por member H), não é membro | Correto **não** pontuar (não-atribuível). Nenhuma ação. |
+| C | **"Maia" vs member K** (03-26, podcasts NotebookLM) | Showcase pré-existente atribui "NotebookLM podcasts" a **member D**; a ata do 03-26 fala em **"Maia"** (= member K, comms). Possível **misatribuição** de um showcase antigo. | **Revisar:** o showcase de podcast do 03-26 é da member D ou da member K? (não foi alterado nesta conciliação) |
+| D | **member F** | Dois na base: member M (`279684f3`, T4) e member F (`36631e37`, guest). Usado o **member S** (confirmado por Vitor). | OK. |
+| E | **member A** | Dois: member B (`293fcaf8`) e member C (`d29c42fd`). Desambiguado por evidência de showcase/ata evento a evento. | OK. |
 
 ---
 
@@ -96,9 +96,9 @@ Total: **15 showcases** (`register_showcase`) + **3 champions de entregável** (
 
 | Item | Motivo | Próximo passo |
 |---|---|---|
-| **`talk` 25 XP** (palestrantes SESTEC 06-03 + Painel ANSI 07-01) | **Não há tool MCP** para registrar `talk`; a rota é o engajamento `speaker` da iniciativa do webinar | Confirmar/aplicar a rota do `talk` (PR #1075) — palestrantes: Fernando ×2, Hayala, Sarah, Marcos, Jefferson, Fabrício |
+| **`talk` 25 XP** (palestrantes SESTEC 06-03 + Painel ANSI 07-01) | **Não há tool MCP** para registrar `talk`; a rota é o engajamento `speaker` da iniciativa do webinar | Confirmar/aplicar a rota do `talk` (PR #1075) — palestrantes: member N ×2, member Q, member R, member L, member O, member H |
 | **`youtube_url` NULL** em 3 eventos (05-21 `43135439`, 06-04 `9ea5fc3c`, 06-18 `a029ce54`) | `update_event_instance` não cobre o campo | `execute_sql` no hub (SQL pronto no working doc §5) para vincular as gravações |
-| **Champion `general`** (≤3/reunião) | Depende de seleção do gestor | Vitor indica os destaques por reunião (a ata de 05-21 já sugere Ana Carla, Fernando, Fabrício) |
+| **Champion `general`** (≤3/reunião) | Depende de seleção do gestor | Vitor indica os destaques por reunião (a ata de 05-21 já sugere member D, member N, member H) |
 
 ---
 
@@ -108,13 +108,13 @@ Total: **15 showcases** (`register_showcase`) + **3 champions de entregável** (
 2. **Item C (§4):** o showcase de podcast NotebookLM do 03-26 está no membro certo?
 3. **`talk`:** a rota do webinar já credita os 25 XP automaticamente a partir do engajamento `speaker`, ou precisa de um passo manual?
 4. Os **25 showcases pré-existentes** (não criados aqui) já foram auditados alguma vez, ou vale um passe de sanidade junto?
-5. Padronizar `full_name` "Ricardo Santos" → "Ricardo França"?
+5. Padronizar `full_name` "member J" → "member I"?
 
 ---
 
 ## 7. Resumo de impacto (se o XP estiver no bucket certo)
 
 - **+290 XP** de showcase distribuídos (12 gaps + 3 passe fino).
-- **+150 pts** de champion de entregável (Débora 100, Jefferson 50).
-- Membros mais impactados: Ana Carla (+65), Marcos Klemz (+40), Fernando (+35 showcase), Fabrício (+50 showcase), Débora (+100 champion).
+- **+150 pts** de champion de entregável (member E 100, member O 50).
+- Membros mais impactados: member D (+65), member L (+40), member N (+35 showcase), member H (+50 showcase), member E (+100 champion).
 - Cobertura de showcase das 10 Reuniões Gerais do Ciclo 3: de 7/10 para **10/10**.

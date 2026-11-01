@@ -39,7 +39,7 @@ distintas** com `volunteer` ativo:
 O `44` conta **linhas**; a tela conta **pessoas**, e 39 daquelas pessoas já apareciam pela outra
 linha. Lição apensada em `reference-contar-da-tabela-de-linhas-em-vez-do-catalogo`.
 
-A 6ª linha da lista (Vinicyus) **saiu sozinha**: o `pmi-vep-sync` reimportou 26/08 01:45 UTC e o
+A 6ª linha da lista (member E) **saiu sozinha**: o `pmi-vep-sync` reimportou 26/08 01:45 UTC e o
 espelho virou `Complete`. Na hora da medição a lista tinha **5 linhas e 5 falsos positivos**.
 
 ### Duas armadilhas que o conserto ingênuo criaria
@@ -77,8 +77,8 @@ confiar na simulação. **Corrigi os números no cabeçalho da migration antes d
 
 ### A lista que sobrou é real, pequena e acionável
 
-`platform_only`, 5 linhas: **Farhad Abdollahyan** (`OfferNotExtended` — o mesmo da #1997, que não
-tem conta), Maria Sabino (`OfferExtended`), Rafael dos Santos e Thiago Sousa (`Submitted`), e o GP
+`platform_only`, 5 linhas: **member D** (`OfferNotExtended` — o mesmo da #1997, que não
+tem conta), member C (`OfferExtended`), member B e member A (`Submitted`), e o GP
 (sem candidatura VEP, esperado). **4 das 5 são gap real do lado VEP.**
 
 ### Guard
@@ -156,7 +156,7 @@ Nenhuma PR aberta. Abertas e sem dono, na ordem que o arranque sugeriu:
 
 | # | gancho |
 |---|---|
-| **#1997** | 9 de 20 sem `auth_id`. O Farhad é **líder**, 16 passos atribuídos, 0 feitos, **nenhuma conta** — e ele reaparece hoje no `platform_only` com `OfferNotExtended` |
+| **#1997** | 9 de 20 sem `auth_id`. O member D é **líder**, 16 passos atribuídos, 0 feitos, **nenhuma conta** — e ele reaparece hoje no `platform_only` com `OfferNotExtended` |
 | **#1995** | admin sem visão de alocação × termo × onboarding; denominador varia por template (3, 6, 7, 12, 16) |
 | **#1996** | `No Memberships` do PMI virando `NULL`: negativa definitiva indistinguível de "não medi". 40 candidaturas |
 | **#1999** | editar membro tem 2 RPCs com garantias diferentes; a tela de lista grava `is_superadmin` direto na tabela |

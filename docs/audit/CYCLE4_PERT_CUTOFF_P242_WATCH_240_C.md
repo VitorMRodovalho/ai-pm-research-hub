@@ -52,14 +52,14 @@ The 11 above-target apps (PM's "11 apps cycle4") break down as 1 + 3 + 1 + 1 + 5
 
 | Applicant | obj_avg | Band Position | Suggested Next Action |
 |---|---|---|---|
-| Henrique Diniz S. Silva | 227.00 | above_target | committee dispatches cutoff email (top performer) |
-| João Coelho Júnior | 171.00 | above_target | committee dispatches cutoff email |
-| Francisleila Melo Santos | 164.00 | above_target | committee dispatches cutoff email |
-| Cristiano de Oliveira Santos Filho | 163.00 | above_target | committee dispatches cutoff email |
-| Edinan Soares | 157.50 | above_target | committee dispatches cutoff email |
-| Hector Rigon | 140.50 | in_band_below_target | **committee judgment call** — within ±10% band but below 155.42 target |
-| Alexandre Fortes | 119.50 | below_band | committee marks `objective_cutoff` (below band lower) |
-| Carla Rosa | 117.50 | below_band | committee marks `objective_cutoff` (below band lower) |
+| member H S. Silva | 227.00 | above_target | committee dispatches cutoff email (top performer) |
+| member C | 171.00 | above_target | committee dispatches cutoff email |
+| member B | 164.00 | above_target | committee dispatches cutoff email |
+| member A | 163.00 | above_target | committee dispatches cutoff email |
+| member G | 157.50 | above_target | committee dispatches cutoff email |
+| member E | 140.50 | in_band_below_target | **committee judgment call** — within ±10% band but below 155.42 target |
+| member F | 119.50 | below_band | committee marks `objective_cutoff` (below band lower) |
+| member D | 117.50 | below_band | committee marks `objective_cutoff` (below band lower) |
 
 ### Canonical cutoff-advance workflow (audit-confirmed RPC contracts)
 
@@ -81,21 +81,21 @@ For the **cutoff-advance step** (the actual gap this audit surfaced), the canoni
 
 ```sql
 -- Run as Vitor (platform admin) from authenticated MCP-Claude session:
-SELECT public.notify_selection_cutoff_approved('bcc54dfc-ac79-4a26-a05f-eeb571d48fd9'::uuid); -- Henrique
-SELECT public.notify_selection_cutoff_approved('cef2b25e-4bc0-4e0e-a642-a3f3fec68549'::uuid); -- João
-SELECT public.notify_selection_cutoff_approved('72ea1a45-8dc8-4b0b-b4cb-f1427968ff22'::uuid); -- Francisleila
-SELECT public.notify_selection_cutoff_approved('f82f5ec7-1a76-4960-8c0d-5a94b502ffc3'::uuid); -- Cristiano
-SELECT public.notify_selection_cutoff_approved('77fdb870-5398-4c52-abda-b292b594b558'::uuid); -- Edinan
+SELECT public.notify_selection_cutoff_approved('bcc54dfc-ac79-4a26-a05f-eeb571d48fd9'::uuid); -- member H
+SELECT public.notify_selection_cutoff_approved('cef2b25e-4bc0-4e0e-a642-a3f3fec68549'::uuid); -- member C
+SELECT public.notify_selection_cutoff_approved('72ea1a45-8dc8-4b0b-b4cb-f1427968ff22'::uuid); -- member B
+SELECT public.notify_selection_cutoff_approved('f82f5ec7-1a76-4960-8c0d-5a94b502ffc3'::uuid); -- member A
+SELECT public.notify_selection_cutoff_approved('77fdb870-5398-4c52-abda-b292b594b558'::uuid); -- member G
 ```
 
 Each call is **idempotent** (no-op if `cutoff_approved_email_sent_at` already set) and returns `{ success: true, email_sent: true|false, recipient_email_redacted: "ab***xy.z" }`. The `cutoff_approved_email_sent_at` column flips post-dispatch and the candidate receives the booking email.
 
-For the **2 below-band apps** (Alexandre 119.50, Carla 117.50), no canonical `screening → objective_cutoff` RPC exists in the current codebase (`status='objective_done'` is referenced only as a variable name `v_objective_done int` inside `notify_selection_cutoff_approved`, never written as a status enum value). PM has 2 options:
+For the **2 below-band apps** (member F 119.50, member D 117.50), no canonical `screening → objective_cutoff` RPC exists in the current codebase (`status='objective_done'` is referenced only as a variable name `v_objective_done int` inside `notify_selection_cutoff_approved`, never written as a status enum value). PM has 2 options:
 
 1. **Leave them in `screening` until committee runs `finalize_decisions`** with `decision='rejected'` after the broader cohort review.
 2. **Manual UPDATE** via authenticated PM session: `UPDATE selection_applications SET status='objective_cutoff' WHERE id IN (…) AND status='screening'` (write `admin_audit_log` row for traceability).
 
-For the **1 in-band borderline app** (Hector 140.50), committee judges in next meeting.
+For the **1 in-band borderline app** (member E 140.50), committee judges in next meeting.
 
 **Pre-dispatch check**: confirm `cycle4-2026.interview_booking_url` is set, otherwise `notify_selection_cutoff_approved` will raise `CUTOFF_NO_BOOKING_URL P0020`:
 
@@ -184,7 +184,7 @@ GROUP BY j.jobid, j.jobname, j.schedule, j.active;
 ## Open follow-ups (not blocking WATCH-240.C close)
 
 1. **0/38 emails for cutoff_approved**: The `cutoff_approved_email_sent_at` column exists (p228 W2 Leaf 4 foundation) but no app has ever been dispatched. The dispatch trigger is gated on `selection_cutoff_approved` notification, which itself fires after `finalize_decisions` advances apps to `objective_done`. Since `finalize_decisions` was never run for cycle4, the chain never started. Will resolve naturally once PM committee runs `finalize_decisions`.
-2. **In-band judgment**: Hector Rigon (140.50) is within ±10% band but below target. The current `recompute_all_active_pert_cutoffs()` output doesn't encode a band-resolution policy (committee call vs auto-approve vs auto-reject). PM may want a written policy memo for future band candidates — not urgent (1 borderline case in cycle4).
+2. **In-band judgment**: member E (140.50) is within ±10% band but below target. The current `recompute_all_active_pert_cutoffs()` output doesn't encode a band-resolution policy (committee call vs auto-approve vs auto-reject). PM may want a written policy memo for future band candidates — not urgent (1 borderline case in cycle4).
 3. **Cycle3-b2 minor**: only 2 cycle3-b2 apps still in scope for cutoff updates. PM may want to verify these 2 are the late-evaluation candidates from p240 backfill (`WATCH-240.B`) before next session.
 4. **Cron observability**: jobid 47 has no health-check RPC; the verify-after-first-fire recipe above is manual. A `get_selection_cron_health()` MCP tool could surface this in the admin dashboard — defer until PM signals demand.
 

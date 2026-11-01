@@ -1,6 +1,6 @@
 # Auditoria do módulo administrativo - 04/08/2026
 
-**Pergunta da sessão:** o problema do Fernando é sistêmico ou pontual?
+**Pergunta da sessão:** o problema do member C é sistêmico ou pontual?
 **Veredito:** **sistêmico**, e não é do lado da autoridade. É do lado da **tela**.
 **Escopo:** diagnóstico + recomendação. Nenhuma cirurgia feita, nenhuma concessão proposta.
 
@@ -45,7 +45,7 @@ um caso; é a maioria da base.
 Time de comunicação ativo hoje: **3 pessoas** (1 `comms_leader`, 2 `comms_member`), todas com
 `operational_role = researcher`.
 
-Rastreando **Mayanna Duarte** (`comms_leader`) pelas quatro camadas, para o item "Comunicação"
+Rastreando **member A** (`comms_leader`) pelas quatro camadas, para o item "Comunicação"
 (`/admin/comms-ops`) e "Mídia Social" (`/admin/comms`):
 
 | camada | o que decide | resultado |
@@ -58,7 +58,7 @@ Rastreando **Mayanna Duarte** (`comms_leader`) pelas quatro camadas, para o item
 **Três camadas autorizam o time de comunicação. A quarta - a única que é puramente cosmética - é a
 que diz não.** O backend já foi construído para eles. Eles só não conseguem achar a porta.
 
-Menu efetivo de Mayanna hoje: **2 itens de 40** - "Gamificação" e "Ajuda". Dos 2 `comms_member`:
+Menu efetivo de member A hoje: **2 itens de 40** - "Gamificação" e "Ajuda". Dos 2 `comms_member`:
 **1 item de 40** (só "Ajuda").
 
 Webinars: `canAccessWebinarsWorkspace()` = `hasPermission('board.view_global')`, que a designation
@@ -93,7 +93,7 @@ ações V4 vivas. "Menu" = itens visíveis computados com o módulo real `hasPer
 | `guest` + external_reviewer | 1 | NÃO | 0/40 | 0 |
 | `manager` [superadmin] | 2 | SIM | 40/40 | 16-17 |
 
-### O caso `tribe_leader` (12 pessoas, inclui o Fernando) - o menu promete 22 e entrega uma fração
+### O caso `tribe_leader` (12 pessoas, inclui o member C) - o menu promete 22 e entrega uma fração
 
 Ações V4 do `tribe_leader`: `write`, `manage_event`, `manage_initiative`, `manage_board_admin`,
 `view_pii`, `award_champion`. Confrontando com o gate medido de cada RPC por trás do item de menu:
@@ -112,7 +112,7 @@ Ações V4 do `tribe_leader`: `write`, `manage_event`, `manage_initiative`, `man
 | Portfólio Executivo | `get_portfolio_planned_vs_actual` | qualquer membro logado | ✅ |
 | Tags | `get_tags` | sem gate de action | ✅ |
 
-**O `400` do Fernando não é regressão nem é dele.** É a experiência-padrão de 12 pessoas, e a
+**O `400` do member C não é regressão nem é dele.** É a experiência-padrão de 12 pessoas, e a
 superfície nunca foi desse papel. O defeito é o menu ter oferecido a porta.
 
 ---
@@ -135,7 +135,7 @@ silêncio, sem erro de build:
 Mesmo padrão em `TIER_PERMISSIONS`: `guest` (4 ativos) não é um `OperationalTier` declarado → menu
 zerado. Aqui o resultado está correto por acidente, não por desenho.
 
-Caso mais visível: **Emanuele Melo** (`chapter_liaison` + `chapter_board` + `chapter_vice_president`)
+Caso mais visível: **member B** (`chapter_liaison` + `chapter_board` + `chapter_vice_president`)
 vê 22 itens de menu e tem **0 ações V4**. Vice-presidente de capítulo com o mapa inteiro aberto e
 nenhuma porta.
 
@@ -159,13 +159,13 @@ servidor de fato exige (`manage_comms`) - o usuário pediria a permissão errada
   inventada - não porque falta concessão.
 - O gate real de `submit_evaluation` é: estar em `selection_committee` do ciclo da candidatura **OU**
   ter `manage_platform`, e depois `role IN ('evaluator','lead')`.
-- Fernando **está** no comitê do ciclo vivo (`08c1e301`, `status='open'`) como `evaluator`,
+- member C **está** no comitê do ciclo vivo (`08c1e301`, `status='open'`) como `evaluator`,
   `can_interview=true`. **Ele passa no gate de escrita.**
 - O que o bloqueia é a **leitura**: `get_selection_dashboard` exige `view_internal_analytics`, que ele
   não tem. Ele pode avaliar e não consegue ver o que avaliar.
 
 Comitê do ciclo vivo, 7 pessoas: 2 `manager` (171 e 265 avaliações), 4 `observer` (0 - corretamente
-barrados pelo `role IN ('evaluator','lead')`), e **Fernando, o único `evaluator` não-manager, com 0**.
+barrados pelo `role IN ('evaluator','lead')`), e **member C, o único `evaluator` não-manager, com 0**.
 Somado à #1568 (superfície do avaliador no ar **sem entrada de menu**), o avaliador não tem caminho
 nenhum. As duas se resolvem juntas.
 
@@ -227,7 +227,7 @@ servidor.
 
 **Ressalva do `ux-leader` sobre R3:** quando o item abre por `manage_comms` **ou** pela designation,
 o texto tem de dizer **qual dos dois braços** falhou. Se disser genericamente "peça `manage_comms`", a
-Mayanna - que já tem a designation - pediria a permissão errada. O OR precisa de mecanismo *e* de
+member A - que já tem a designation - pediria a permissão errada. O OR precisa de mecanismo *e* de
 texto por braço.
 
 ### R4 - zero chamada de rede sem permissão
@@ -305,7 +305,7 @@ Consequências, e o que a decisão **não** é:
 - ✅ **Ordem de execução: a Opção A do #1584 vem primeiro.** Este arco do admin fica em fila atrás
   dela; o gap assessment da jornada do candidato segue em aberto quanto a posição.
 
-- ✅ **R8 - Fernando avalia neste ciclo; a saída é entrada de menu para `/minhas-avaliacoes`**, não
+- ✅ **R8 - member C avalia neste ciclo; a saída é entrada de menu para `/minhas-avaliacoes`**, não
   concessão de `view_internal_analytics`. Ver R8 abaixo.
 
 **Consequência de R6+R7 juntas:** a cirurgia do **#1590** é **inteiramente de cliente**. Não toca
@@ -320,7 +320,7 @@ primeiro item acessível. Resolver no desenho da cirurgia.
 
 ## 7. R8 - a entrada de menu do avaliador (decisão do PM, 04/08)
 
-**Decisão:** Fernando avalia neste ciclo, e a saída é dar entrada de menu para `/minhas-avaliacoes`
+**Decisão:** member C avalia neste ciclo, e a saída é dar entrada de menu para `/minhas-avaliacoes`
 (#1568). Nenhuma concessão de `view_internal_analytics` - o anti-pattern que o próprio #1568 já
 rejeitou por escalar privilégio muito além do caso de uso.
 
@@ -353,7 +353,7 @@ dentro do próprio conserto, exatamente a doença que esta auditoria diagnostico
 que não abre.
 
 **Predicado correto:** participação em `selection_committee` do ciclo em `phase='evaluating'`
-**E** `role IN ('evaluator','lead')`. Hoje isso habilita **3 pessoas** (os 2 `manager` + Fernando),
+**E** `role IN ('evaluator','lead')`. Hoje isso habilita **3 pessoas** (os 2 `manager` + member C),
 não 7.
 
 ### Caso exemplar de R3

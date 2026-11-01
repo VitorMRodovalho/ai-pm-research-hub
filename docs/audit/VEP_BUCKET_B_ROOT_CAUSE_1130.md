@@ -69,10 +69,9 @@ reconciliável**, não como verdade externa (campo `mirror_note` deixa isso expl
 
 Os **6 `OfferExtended`** (todos C4, aprovados/convertidos) são exatamente os que têm oferta emitida e
 **falta aceitar** — aparecem no bucket B corrigido (`onboarding_divergent`) e também no
-`platform_only` da matriz quando já têm contrato ativo. Nominalmente: Adailson Santos, Francisco Jose
-Nascimento de Oliveira, Hector Rigon, Jhonathan Brandao, Joao Leite de Oliveira Neto, Marcela Foligno.
+`platform_only` da matriz quando já têm contrato ativo. Nominalmente: member C, member B, member E, member F, member A, member D.
 
-Caso Ricardo França (`active_members_divergent` + `vep_only`): offboarded na plataforma mas `Active` no
+Caso member G (`active_members_divergent` + `vep_only`): offboarded na plataforma mas `Active` no
 VEP — divergência legítima, com ação sugerida "reativar contrato ou encerrar no VEP".
 
 ## Recomendação de automação/alerta

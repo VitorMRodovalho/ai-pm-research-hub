@@ -14,11 +14,11 @@ Live RPC invocation of `create_governance_document_intake` via Supabase MCP `exe
 |---|---|---|
 | `title` | `Guia Editorial Frontiers in AI & Project Mgmt` | SPEC §9 literal |
 | `doc_type` | `editorial_guide` | P0-Q1 ratified |
-| `author_label` | `Fabricio Costa` | SPEC §9 |
+| `author_label` | `member A` | SPEC §9 |
 | `visibility_class` | `active_members` | SPEC §9 post-approval target |
 | `description` | 701 chars (under 1000 wizard limit) — scope, tracks A/B/C, 9-stage editorial flow, declarations, CR-050/R3-C3/ADR-0021 deps, #96 anchor | drafted from #96 body + SPEC §9 ajustes |
 | `proposer_ack_offline` | `false` | PM Recommended — canonical A2 path |
-| `proposer_member_id` | `92d26057-5550-4f15-a3bf-b00eed5f32f9` | Fabrício Costa member.id, distinct from caller (guard satisfied) |
+| `proposer_member_id` | `92d26057-5550-4f15-a3bf-b00eed5f32f9` | member A member.id, distinct from caller (guard satisfied) |
 
 ## RPC return value
 
@@ -96,7 +96,7 @@ WHERE target_id = '18ec4690-4f5a-4cab-904d-451e2c7245bf'
    OR (metadata->>'document_id') = '18ec4690-4f5a-4cab-904d-451e2c7245bf'
 ```
 
-returned `count=0`, `actions=null`. **Correct by design**: the RPC only writes an `admin_audit_log` row with `action='governance.proposer_attestation_offline'` when `proposer_ack_offline=true`. Our canonical `false` path skipped that branch. The `proposer_member_id` Fabrício UUID was validated (distinct from caller) but otherwise NOT persisted anywhere — it lives only in the request payload, by design.
+returned `count=0`, `actions=null`. **Correct by design**: the RPC only writes an `admin_audit_log` row with `action='governance.proposer_attestation_offline'` when `proposer_ack_offline=true`. Our canonical `false` path skipped that branch. The `proposer_member_id` member A UUID was validated (distinct from caller) but otherwise NOT persisted anywhere — it lives only in the request payload, by design.
 
 ### 5. Redirect URL (computed, not browser-tested)
 
@@ -159,7 +159,7 @@ Explicit `p_filters.status` override allowed ONLY for admin/audit contexts (admi
 
 | Carry | Source | Status |
 |---|---|---|
-| Curator-draft-access mitigation (Roberto Macêdo + Sarah Faria) | Wave 1a M2 RLS swap removed `curate_content`/`manager`/`deputy_manager` operational_role bypass; only `manage_member` is admin bypass | Wave 1b separate leaf (NOT this PR) |
+| Curator-draft-access mitigation (member C + member B) | Wave 1a M2 RLS swap removed `curate_content`/`manager`/`deputy_manager` operational_role bypass; only `manage_member` is admin bypass | Wave 1b separate leaf (NOT this PR) |
 | `/governance/document/[id].astro` reader hardening | Table-direct SELECT bypass; OPP-153.1 follow-up; behavior post-RLS-swap uncertain | Separate leaf to investigate + harden via SECDEF RPC if needed |
 | `list_governance_library` payload extension for `depends_on` / templates | Wave 1b expansion | Deferred until concrete dependency-graph need surfaces |
 
@@ -170,9 +170,9 @@ Explicit `p_filters.status` override allowed ONLY for admin/audit contexts (admi
 | Documento cadastrado em `governance_documents` | ✓ `18ec4690-…` |
 | `doc_type = editorial_guide` (recomendação) | ✓ P0-Q1 ratified |
 | Título: `Guia Editorial Frontiers in AI & Project Mgmt` | ✓ verbatim |
-| Autor/proponente: Fabricio Costa | ✓ in `author_label` + Fabrício's member UUID validated as `proposer_member_id` (distinct from caller) |
+| Autor/proponente: member A | ✓ in `author_label` + member A's member UUID validated as `proposer_member_id` (distinct from caller) |
 | Submitter: GP/admin por intake assistido | ✓ caller = Vitor (manager + manage_event); RPC enforced |
-| Status inicial: `draft` ou `under_review` | ⚠ chose `pending_proposer_consent` (A2 canonical) instead — Fabrício hasn't signed in-app yet; SPEC §9 predates A2 amendment from Wave 0 ratification. PM A2 ratificada supersedes §9 status enumeration. |
+| Status inicial: `draft` ou `under_review` | ⚠ chose `pending_proposer_consent` (A2 canonical) instead — member A hasn't signed in-app yet; SPEC §9 predates A2 amendment from Wave 0 ratification. PM A2 ratificada supersedes §9 status enumeration. |
 | Visibilidade pos-aprovacao: `active_members` | ✓ pre-set at intake; will apply automatically when status advances to active |
 | Versao inicial: `v1.0-proposed` | ⚠ no version created yet; editor will create on first save. Wizard does NOT create a version row — it only creates the document shell. |
 | Ciencia: informativa para membros ativos | ✓ `acknowledgement_mode='informational'` (A1 default for editorial_guide) |
@@ -193,6 +193,6 @@ Explicit `p_filters.status` override allowed ONLY for admin/audit contexts (admi
 
 1. Wave 4 #312 audit jornada (review/comment/approval persona smoke + curadoria per instrumento) — next-in-line for v1 close per SPEC §16.5 + §17.
 2. GAP-259.A resolution (option a/b/c) — narrow follow-up leaf when PM dispatches.
-3. Curator-draft-access mitigation (Roberto + Sarah) — Wave 1b separate leaf.
+3. Curator-draft-access mitigation (member C + member B) — Wave 1b separate leaf.
 4. `/governance/document/[id]` reader hardening — separate leaf.
 5. Optional: PM walks through `/admin/governance/documents` browser modal to capture wizard UX evidence (visual smoke; not blocking).

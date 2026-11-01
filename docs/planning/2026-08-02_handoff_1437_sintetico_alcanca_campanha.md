@@ -31,8 +31,8 @@ cada 15 min):
 | IG STORIES "começa agora" | 04/08 21:50 | `t6-story-comeca-agora-1080x1920.png` |
 
 As 3 artes respondem HTTP 200. Conferi visualmente a do LinkedIn e a de "começa agora": data
-(4 de agosto), horário (19h às 20h30 Brasília), nomes (Fernando Carvalho / Clendson Gonçalves,
-mediação Denis Vasconcelos) e framing institucional corretos. O texto do LinkedIn D-1 tem o rótulo
+(4 de agosto), horário (19h às 20h30 Brasília), nomes (member B / member C,
+mediação member A) e framing institucional corretos. O texto do LinkedIn D-1 tem o rótulo
 `Link do evento:` com a URL do Airmeet, sem hashtag e sem travessão.
 
 ✅ **Dependência manual, já resolvida:** a arte de "começa agora" diz **"Link na bio"**. O Vitor

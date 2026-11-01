@@ -21,7 +21,7 @@
 > de e-mail) os agendamentos que não viraram entrevista. **A medição posterior mostrou três classes, não
 > duas.** Existe uma terceira: o Apps Script dispara o webhook **uma vez por convidado** do evento, e
 > quando o endereço do candidato não é enviado a reserva se perde **com os dois lados corretos** — e-mail
-> da candidatura batendo e status na allow-list. Medido no evento `bsb4n49e06al6cj95mdivgqkp8@google.com`:
+> da candidatura batendo e status na allow-list. Medido no evento `person-1@example.invalid`:
 > 70 tentativas, todas com o e-mail do PM como `guest_email`. Números atualizados: **10 eventos** desde
 > 01/07 não viraram entrevista (não 9), sendo 6 endereços de candidato real sem candidatura
 > correspondente (Classe B) e o restante Classe C. Há ainda uma Classe D: `interview_noshow` fica fora da
@@ -153,7 +153,7 @@ resolve o e-mail via **`member_emails`**, que só cobre **membros da plataforma*
 é membro. **A ponte é inerte por construção para exatamente o público que deveria atender.**
 
 Escala medida: **9 `calendar_event_id` distintos** desde 01/07 registraram `calendar_booking_unmatched` e
-**nunca** viraram entrevista. Descontando os que são o e-mail do organizador (você e o Fabricio, que o Apps
+**nunca** viraram entrevista. Descontando os que são o e-mail do organizador (você e o member D, que o Apps
 Script também envia como convidado), sobram estes agendamentos de candidato perdidos:
 
 | e-mail do agendamento | agendado para (UTC) |
@@ -201,7 +201,7 @@ resolve a URL por três caminhos, registrados em `selection_dispatch_url_log`:
 | `member_global` | trilha `researcher`, quando o comitê não tem URL própria | `members.interview_booking_url` |
 
 A parte por design: **candidato a líder sempre cai na agenda do Núcleo**, porque a entrevista de líder é em
-grupo (você e o Fabricio juntos). Isso está explícito no #1450 e na migration de roteamento.
+grupo (você e o member D juntos). Isso está explícito no #1450 e na migration de roteamento.
 
 ### Correção de um achado preliminar (verificado 03/08 por resolução de redirect)
 
@@ -214,7 +214,7 @@ Resolvendo os quatro links cadastrados pelo `Location` do redirect:
 
 | link curto | schedule de destino | dono |
 |---|---|---|
-| `1jDNjPpoGCkV2V9A6` | `AcZssZ1HnqjUn0m8zof...` | Fabricio (confirmado pelo PM contra a URL longa dele) |
+| `1jDNjPpoGCkV2V9A6` | `AcZssZ1HnqjUn0m8zof...` | member D (confirmado pelo PM contra a URL longa dele) |
 | `MHAmfkgZCwT9KsoKA` | `AcZssZ23xtPliqd0Kjf...` | PM |
 | `q9urWE15HYZRNymd7` | `AcZssZ23xtPliqd0Kjf...` | PM, **mesmo schedule do anterior** |
 | `XPiGWLh9JaLVFKJc6` | `AcZssZ2X11x_q2gAe8C...` | terceiro schedule, distinto dos dois pessoais |
@@ -228,14 +228,14 @@ encurtador. A comparação tem de ser feita no **recurso resolvido**, não no li
 Comparar os literais produziu um falso achado que já estava escrito como causa do sintoma relatado.
 
 Com a correção, o sintoma "às vezes uma agenda, às vezes outra" fica **inteiramente explicado pela
-trilha** (pesquisador vai para PM ou Fabricio em rodízio; líder vai para o terceiro schedule), que é o
+trilha** (pesquisador vai para PM ou member D em rodízio; líder vai para o terceiro schedule), que é o
 comportamento desenhado. Não há bug de configuração de URL.
 
 A parte que **não** é por design:
 
 1. **O round-robin alcança só duas pessoas.** Dos 7 membros do comitê do ciclo aberto, apenas você e o
-   Fabricio têm `interview_booking_url`. O filtro do LRD exige
-   `role IN ('evaluator','lead') AND can_interview AND URL IS NOT NULL`, então o Fernando Maquiaveli, que é
+   member D têm `interview_booking_url`. O filtro do LRD exige
+   `role IN ('evaluator','lead') AND can_interview AND URL IS NOT NULL`, então o member E, que é
    `evaluator` com `can_interview = true`, **nunca é sorteado** por não ter URL.
 2. **Todos os 4 `observer` estão com `can_interview = true`.** Hoje isso é inócuo, porque o filtro do LRD
    exclui `observer` por papel. Mas é um dado incoerente, e qualquer código futuro que confie em
@@ -246,11 +246,11 @@ Composição medida do comitê do ciclo aberto:
 | membro | papel | `can_interview` | `interview_booking_url` |
 |---|---|---|---|
 | Vitor Maia Rodovalho | evaluator | true | `calendar.app.google/MHAmfkgZCwT9KsoKA` |
-| Fabricio Costa | evaluator | true | `calendar.app.google/1jDNjPpoGCkV2V9A6` |
-| Fernando Maquiaveli | evaluator | true | **null** |
-| Ivan Lourenço | observer | true | null |
-| Lorena Souza | observer | true | null |
-| Welma Alves de Melo | observer | true | null |
+| member D | evaluator | true | `calendar.app.google/1jDNjPpoGCkV2V9A6` |
+| member E | evaluator | true | **null** |
+| member B | observer | true | null |
+| member F | observer | true | null |
+| member A | observer | true | null |
 | VP Desenvolvimento Profissional (PMI-GO) | observer | true | null |
 
 **O campo já existe.** O pedido de front-end não é "criar o campo", é decidir a superfície onde o próprio
@@ -260,20 +260,20 @@ membro do comitê edita o dele, e qual a regra de precedência entre comitê, me
 
 ## 7-bis. Achado G: o comitê não alcança a superfície onde trabalha
 
-**Origem:** o Fernando tentou abrir `/admin/selection` em 03/08 e recebeu "acesso negado". Não é erro de
+**Origem:** o member C tentou abrir `/admin/selection` em 03/08 e recebeu "acesso negado". Não é erro de
 cadastro dele.
 
 ### O que bloqueia
 
 A tela tem **dois gates independentes**, de naturezas diferentes:
 
-| gate | onde | exigência | Fernando passa? |
+| gate | onde | exigência | member C passa? |
 |---|---|---|---|
 | cliente | `canAccessAdminRoute(m,'admin_selection')`, `src/lib/admin/constants.ts:181` | tier mínimo **`admin`** | **não** (tier `leader`) |
 | servidor | `get_selection_dashboard` | `can_by_member(caller,'view_internal_analytics')` | **não** |
 
 O gate do cliente é **tier-based** (`operational_role` + `designations`) e o do servidor é **action V4**.
-Eles não são a mesma pergunta, e discordam entre si: Ivan Lourenço e Welma Alves de Melo têm
+Eles não são a mesma pergunta, e discordam entre si: member B e member A têm
 `view_internal_analytics = true` (passariam no servidor) e mesmo assim são barrados no cliente por tier.
 
 ### Extensão medida no comitê do ciclo aberto
@@ -281,11 +281,11 @@ Eles não são a mesma pergunta, e discordam entre si: Ivan Lourenço e Welma Al
 | membro | papel | `operational_role` | `view_internal_analytics` | abre a tela? |
 |---|---|---|---|---|
 | Vitor Maia Rodovalho | evaluator | manager | true | **sim** |
-| Fabricio Costa | evaluator | manager | true | **sim** |
-| Fernando Maquiaveli | evaluator | tribe_leader | false | não |
-| Ivan Lourenço | observer | sponsor | true | não |
-| Welma Alves de Melo | observer | chapter_liaison | true | não |
-| Lorena Souza | observer | chapter_liaison | false | não |
+| member D | evaluator | manager | true | **sim** |
+| member E | evaluator | tribe_leader | false | não |
+| member B | observer | sponsor | true | não |
+| member A | observer | chapter_liaison | true | não |
+| member F | observer | chapter_liaison | false | não |
 | VP Desenvolvimento Profissional | observer | chapter_liaison | false | não |
 
 **5 dos 7 membros do comitê não conseguem abrir a superfície de seleção.** Só os dois admins conseguem.
@@ -305,18 +305,18 @@ Isso passou despercebido porque, até agora, o comitê operante *era* os dois ad
 
 Verificado no corpo de `get_my_pending_evaluations`: o gate é
 `EXISTS (SELECT 1 FROM selection_committee WHERE member_id = caller AND cycle_id = <ciclo evaluating>)
-OR can_by_member(caller,'manage_member')`. Fernando satisfaz o primeiro ramo: `is_active = true`, e está
+OR can_by_member(caller,'manage_member')`. member C satisfaz o primeiro ramo: `is_active = true`, e está
 no comitê do `cycle4-2026`, que está em `phase = 'evaluating'`.
 
 ### Conclusão: é gap, mas NÃO onde parece
 
-**A autoridade do Fernando como avaliador já está correta e completa no backend.** O path 3 cobre o caso
+**A autoridade do member C como avaliador já está correta e completa no backend.** O path 3 cobre o caso
 de uso inteiro. O que falta é **superfície**: `grep` por consumidores das RPCs de avaliador retorna
 **um único arquivo**, `src/pages/admin/selection.astro`, e ele está atrás do gate de tier `admin`.
 
 Portanto:
 
-- ❌ **Não** seedar `view_internal_analytics` para o kind/role do Fernando. Seria o anti-pattern documentado
+- ❌ **Não** seedar `view_internal_analytics` para o kind/role do member C. Seria o anti-pattern documentado
   na própria referência: a action é **leitura global de analytics de toda a plataforma**, e concedê-la para
   poder avaliar candidato é escalar privilégio muito além do caso de uso.
 - ❌ **Não** baixar `ROUTE_MIN_TIER.admin_selection` de `admin` para `leader`. A tela tem abas de import,
@@ -385,12 +385,11 @@ Escopo declarado em aberto, para não parecer cobertura que não existe:
 
 ## 11. Ambiguidade aberta
 
-O Vitor disse que "está entrando mais uma pessoa no Comitê (Fernando)". Em `members` só existe **Fernando
-Maquiaveli**, que **já está** no comitê do ciclo aberto como `evaluator` com `can_interview = true` e
-**sem** `interview_booking_url`. O Fernando Carvalho que circulou nesta semana é palestrante do webinar de
+O Vitor disse que "está entrando mais uma pessoa no Comitê (member C)". Em `members` só existe **member E**, que **já está** no comitê do ciclo aberto como `evaluator` com `can_interview = true` e
+**sem** `interview_booking_url`. O member C que circulou nesta semana é palestrante do webinar de
 04/08 e não é membro.
 
-Se for o Maquiaveli, a tarefa não é adicionar: é configurar a URL de agendamento dele, o que também
+Se for o member G, a tarefa não é adicionar: é configurar a URL de agendamento dele, o que também
 conserta o round-robin de duas pessoas descrito no Achado F.
 
 ---

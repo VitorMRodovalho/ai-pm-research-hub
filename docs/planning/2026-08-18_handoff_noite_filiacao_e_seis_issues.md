@@ -104,14 +104,14 @@ para **todo** o comitê, é uma linha — mas é reversão consciente.
 
 ## A entrevista de hoje
 
-**Dayane Guimarães · Pesquisadora · 18/08 20:00 BRT · entrevistador Fernando Maquiaveli.**
+**member A · Pesquisadora · 18/08 20:00 BRT · entrevistador member B.**
 
 ✅ **Briefing gravado** (2.726 chars) via `interview_manage action='set_notes'`. A ficha dela é
 curta — motivação em uma frase, disponibilidade só "Sim.", sem tema proposto nem liderança —, então
 o briefing diz isso com todas as letras e amarra perguntas a **cada critério da régua**, citando as
 faixas. **Comunicação vale 40 dos 130** (31%), e o papel é de Redação Técnica.
 
-📌 **Confirmado por impersonação:** o Fernando alcança `get_evaluation_form(interview)` pelo MCP, e
+📌 **Confirmado por impersonação:** o member B alcança `get_evaluation_form(interview)` pelo MCP, e
 recebe `criteria_with_weights`, `max_weighted_subtotal`, `pert_cutoff` e a candidatura. **Ele tem a
 régua e o teto.**
 

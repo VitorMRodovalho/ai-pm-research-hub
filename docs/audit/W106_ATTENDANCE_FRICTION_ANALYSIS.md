@@ -131,16 +131,16 @@ FROM members m ... WHERE m.is_active = true AND NOT EXISTS (...) ORDER BY m.name
 
 | name | role | tribe | designations |
 |---|---|---|---|
-| Ana Cristina Fernandes Lima | chapter_liaison | — | [chapter_liaison] |
-| Felipe Moraes Borges | sponsor | — | [sponsor] |
-| Francisca Jessica de Sousa de Alcântara | sponsor | — | [sponsor] |
-| Leonardo Chaves | researcher | Radar Tecnológico | [] |
-| Lorena Almeida | researcher | Radar Tecnológico | [] |
-| Matheus Frederico Rosa Rocha | sponsor | — | [sponsor] |
-| Ricardo Santos | researcher | Agentes Autônomos | [] |
-| Roberto Macêdo | chapter_liaison | — | [chapter_liaison, ambassador, curator] |
-| Rogério Peixoto | chapter_liaison | — | [chapter_liaison] |
-| Wellinghton Pereira Barboza | researcher | Talentos & Upskilling | [] |
+| member B | chapter_liaison | — | [chapter_liaison] |
+| member H | sponsor | — | [sponsor] |
+| member C | sponsor | — | [sponsor] |
+| member Q | researcher | Radar Tecnológico | [] |
+| member M | researcher | Radar Tecnológico | [] |
+| member A | sponsor | — | [sponsor] |
+| member P | researcher | Agentes Autônomos | [] |
+| member R | chapter_liaison | — | [chapter_liaison, ambassador, curator] |
+| member S | chapter_liaison | — | [chapter_liaison] |
+| member I | researcher | Talentos & Upskilling | [] |
 
 **10 ghost members (19.2%).**
 - 3 sponsors (expected — advisory role, not required at events)
@@ -158,16 +158,16 @@ ORDER BY events_attended DESC LIMIT 10;
 
 | name | tribe | events_attended | months_active |
 |---|---|---|---|
-| **Joao Coelho Junior** | Inclusao & Colaboracao & Comunicacao | **7** | 2 |
-| **Debora Moura** | Agentes Autonomos | **7** | 3 |
-| **Leticia Clemente** | Inclusao & Colaboracao & Comunicacao | **7** | 2 |
+| **member G** | Inclusao & Colaboracao & Comunicacao | **7** | 2 |
+| **member O** | Agentes Autonomos | **7** | 3 |
+| **member L** | Inclusao & Colaboracao & Comunicacao | **7** | 2 |
 | Vitor Maia Rodovalho | — | 5 | 3 |
-| Francisco Jose Nascimento | Inclusao & Colaboracao & Comunicacao | 5 | 2 |
-| Fabricio Costa | ROI & Portfolio | 4 | 3 |
-| Mayanna Duarte | Inclusao & Colaboracao & Comunicacao | 4 | 2 |
-| Luciana Dutra Martins | ROI & Portfolio | 4 | 2 |
-| Gustavo Batista Ferreira | Agentes Autonomos | 4 | 3 |
-| Antonio Marcos Costa | Governanca & Trustworthy AI | 4 | 2 |
+| member J | Inclusao & Colaboracao & Comunicacao | 5 | 2 |
+| member K | ROI & Portfolio | 4 | 3 |
+| member N | Inclusao & Colaboracao & Comunicacao | 4 | 2 |
+| member E | ROI & Portfolio | 4 | 2 |
+| member D | Agentes Autonomos | 4 | 3 |
+| member F | Governanca & Trustworthy AI | 4 | 2 |
 
 **Insight:** Top champion has only 7 events (out of 12 non-interview events). Tribo 8 (Inclusao & Colaboracao & Comunicacao) dominates — 4 of top 10 are from this tribe.
 
@@ -214,7 +214,7 @@ GROUP BY ear.attendance_type;
 
 ### 1. Ghost Rate: 19.2% (10 of 52 active members)
 - 6 are sponsors/chapter_liaisons (advisory, expected)
-- **4 researchers with zero attendance is a retention risk** (Leonardo, Lorena, Ricardo, Wellinghton)
+- **4 researchers with zero attendance is a retention risk** (member Q, member M, member P, member I)
 
 ### 2. Event Type Attendance
 - **Kick-off: 80.8%** attendance (42/52) — best performing
@@ -292,4 +292,4 @@ Members who attend 1-3 events haven't built attendance into their routine. They 
 |---|---|---|
 | **A7:** Create post-kickoff "week 2 onboarding" touchpoint for new members | Addresses H2, reduces 50% cliff | Medium (content + automation) |
 | **A8:** Replace mandatory/optional binary with tiered attendance expectations by role | Addresses H6, sets realistic expectations | Medium (schema + UI) |
-| **A9:** Contact 4 ghost researchers individually (Leonardo, Lorena, Ricardo, Wellinghton) | Direct intervention for at-risk retention | Low (manual outreach) |
+| **A9:** Contact 4 ghost researchers individually (member Q, member M, member P, member I) | Direct intervention for at-risk retention | Low (manual outreach) |

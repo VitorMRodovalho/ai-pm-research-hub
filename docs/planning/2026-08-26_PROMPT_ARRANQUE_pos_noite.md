@@ -17,7 +17,7 @@ CI da main verde (deploy incluido). Nao ha merge pendente.
 - **#1992** fechou a **#1990** (`manage_event` resourceless).
 - **#1993** levou o handoff e tirou a T6 de `RULES_IN_TRANSITION`.
 - **4 aprovados foram notificados** por decisao do PM, e o e-mail saiu (00:55, 47s de atraso).
-- **`pmi_id` do Rogerio Peixoto corrigido** de `85729` para `853729`, com auditoria propria.
+- **`pmi_id` do member A corrigido** de `85729` para `853729`, com auditoria propria.
 - **Colheita de licoes registrada na #588** (`[LL]`), em 7 licoes agrupadas por onde mudam o framework.
 
 ## Cinco issues novas, todas com numero medido no corpo
@@ -25,7 +25,7 @@ CI da main verde (deploy incluido). Nao ha merge pendente.
 | # | gancho |
 |---|---|
 | **#1998** | `plat_keys` exige `legal_basis='contract'` e **44 pessoas sao `consent`**: a tela acusa 5 que TEM contrato, e o denominador do painel esta subcontado |
-| **#1997** | 9 de 20 sem `auth_id`. O Farhad e **lider**, tem 16 passos atribuidos, 0 feitos, e **nenhuma conta** |
+| **#1997** | 9 de 20 sem `auth_id`. O member B e **lider**, tem 16 passos atribuidos, 0 feitos, e **nenhuma conta** |
 | **#1995** | admin nao tem onde ver alocacao x termo x onboarding. O denominador do onboarding **varia por template** (3, 6, 7, 12 e 16 passos observados) |
 | **#1996** | `No Memberships` do PMI vira `NULL`: negativa definitiva indistinguivel de "nao medi". **40 candidaturas** buscaram e vieram vazias |
 | **#1999** | editar membro tem 2 RPCs com garantias diferentes, e a tela de lista grava `is_superadmin` **direto na tabela**, sem auditoria |
@@ -44,7 +44,7 @@ Depois: **#1997** (tem gente esperando), **#1995** (maior valor, mas e feature d
 
 ## ⚠️ O item humano desconfortavel
 
-O e-mail que enviamos aos 4 manda **acessar `/onboarding`**. O Farhad **nao tem conta** e nao consegue
+O e-mail que enviamos aos 4 manda **acessar `/onboarding`**. O member B **nao tem conta** e nao consegue
 abrir essa tela. A medicao que expos isso veio DEPOIS do envio. Se ele responder ao e-mail ha caminho;
 se nao, ele fica cobrado sem saida. **Ele tambem tem duas candidaturas, uma `approved` e uma
 `rejected`** - confira qual vale antes de criar o acesso.

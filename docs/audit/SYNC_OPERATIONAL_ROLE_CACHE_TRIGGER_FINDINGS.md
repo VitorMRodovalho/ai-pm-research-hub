@@ -1,7 +1,7 @@
 # `sync_operational_role_cache` trigger — investigation findings (2026-04-29)
 
 ## Context
-Governance audit (p81) tried to set `operational_role='alumni'` for 4 offboarded members (Daniel Bittencourt, Leandro Mota, Pedro Henrique R Mendes, Wellinghton Pereira Barboza). Direct UPDATE on `members.operational_role` did NOT stick — final state showed Daniel/Leandro=`guest`, Pedro/Wellinghton=`observer`. Investigation was needed.
+Governance audit (p81) tried to set `operational_role='alumni'` for 4 offboarded members (member C, member D, member B R Mendes, member A). Direct UPDATE on `members.operational_role` did NOT stick — final state showed member C/member D=`guest`, member B/member A=`observer`. Investigation was needed.
 
 ## Root cause
 `members.operational_role` is a **CACHE** maintained by trigger `sync_operational_role_cache` (per CLAUDE.md). The trigger derives the role from `auth_engagements.kind` rows where `is_authoritative=true`, **NOT** from a direct UPDATE on the `members` row.
@@ -31,7 +31,7 @@ WHERE ae.person_id = COALESCE(NEW.person_id, OLD.person_id)
 ```
 
 ## Why all 6 members are inconsistent
-SQL audit showed all 6 (Daniel, Leandro, Marcel, Lídia, Pedro, Wellinghton) have **NO `auth_engagements` rows** (LEFT JOIN returned NULL for all kind/role/is_authoritative).
+SQL audit showed all 6 (member C, member D, member E, member F, member B, member A) have **NO `auth_engagements` rows** (LEFT JOIN returned NULL for all kind/role/is_authoritative).
 
 For empty set:
 - `bool_or(...)` returns NULL on every branch
@@ -39,9 +39,9 @@ For empty set:
 - Falls through to `ELSE 'guest'`
 
 But:
-- Daniel/Leandro currently `guest` ← matches `ELSE` rule (probably trigger fired recently with empty set)
-- Pedro/Wellinghton currently `observer` ← STALE cache from past auth_engagements row that was deleted; trigger never re-fired
-- Marcel/Lídia currently `alumni` ← STALE cache from past `kind='alumni'` row
+- member C/member D currently `guest` ← matches `ELSE` rule (probably trigger fired recently with empty set)
+- member B/member A currently `observer` ← STALE cache from past auth_engagements row that was deleted; trigger never re-fired
+- member E/member F currently `alumni` ← STALE cache from past `kind='alumni'` row
 
 The trigger fires only when `auth_engagements` is INSERT/UPDATE/DELETE'd. Direct UPDATE on `members.operational_role` doesn't fire it. Direct UPDATE that I attempted appears to have been silently overwritten OR the trigger is also attached to `members` updates and re-runs the cache logic before commit.
 
@@ -71,7 +71,7 @@ The `kind` enum allowed (per trigger): `volunteer`, `external_signer`, `observer
 1. **Schema audit**: what are the required NOT NULL columns of `auth_engagements`? (need full DDL inspection)
 2. **`is_authoritative=true` semantic**: does inserting a NEW row of kind='alumni' COEXIST with the old volunteer row, or should the volunteer row be flipped to is_authoritative=false?
 3. **Multiple `is_authoritative=true` rows**: if a member has BOTH a `volunteer` (old) AND `alumni` (new) row authoritative, the bool_or matches volunteer first → role='researcher' or similar — NOT alumni. Probably need to set `is_authoritative=false` on the old volunteer row simultaneously.
-4. **Pedro and Wellinghton stale cache**: current `observer`/`guest` is stale from past auth_engagements rows. Will any future engagement trigger a cache refresh (now that they have NO auth_engagements rows, the trigger sets to ELSE='guest' on next fire). Marcel/Lídia stay `alumni` only because trigger hasn't fired since their alumni-kind rows were deleted.
+4. **member B and member A stale cache**: current `observer`/`guest` is stale from past auth_engagements rows. Will any future engagement trigger a cache refresh (now that they have NO auth_engagements rows, the trigger sets to ELSE='guest' on next fire). member E/member F stay `alumni` only because trigger hasn't fired since their alumni-kind rows were deleted.
 
 ## Recommendation
 

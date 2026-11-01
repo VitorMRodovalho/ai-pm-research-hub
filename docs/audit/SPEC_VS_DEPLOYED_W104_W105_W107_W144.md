@@ -194,10 +194,10 @@ The `attendance_general_avg_pct` auto_query in `get_annual_kpis` returns **1616.
 
 | # | Check | Status | Evidence |
 |---|-------|--------|----------|
-| 69 | Active members have tribe_id | ⚠️ Partial | 2 missing: **Vitor Maia Rodovalho** (manager), **Erick Oliveira** |
+| 69 | Active members have tribe_id | ⚠️ Partial | 2 missing: **Vitor Maia Rodovalho** (manager), **member K** |
 | 70 | Tribe leaders have correct operational_role | ✅ Full | No mismatches — all `leader_member_id` targets have `operational_role='tribe_leader'` |
-| 71 | Fabricio has correct designations | ⚠️ Partial | Has `["ambassador","founder","curator","co_gp"]` — **missing `deputy_manager`** |
-| 72 | Superadmins correct | ✅ Full | Exactly 2: Vitor Maia Rodovalho, Fabricio Costa |
+| 71 | member H has correct designations | ⚠️ Partial | Has `["ambassador","founder","curator","co_gp"]` — **missing `deputy_manager`** |
+| 72 | Superadmins correct | ✅ Full | Exactly 2: Vitor Maia Rodovalho, member H |
 | 73 | No orphan gamification_points | ✅ Full | `count=0` |
 | 74 | Sponsors have correct roles | ⚠️ Partial | Issues found (see below) |
 
@@ -205,16 +205,16 @@ The `attendance_general_avg_pct` auto_query in `get_annual_kpis` returns **1616.
 
 | Name | operational_role | designations | Issue |
 |------|-----------------|--------------|-------|
-| Ivan Lourenço | sponsor | [sponsor, founder, ambassador] | ✅ OK |
-| Márcio Silva dos Santos | sponsor | [sponsor] | ✅ OK |
-| Francisca Jessica de Sousa de Alcântara | sponsor | [sponsor] | ✅ OK |
-| Felipe Moraes Borges | sponsor | [sponsor] | ✅ OK |
-| Fabricio Costa | tribe_leader | [ambassador, founder, curator, co_gp] | ⚠️ Missing `deputy_manager` |
-| Rafael Camilo | **guest** | [founder] | ⚠️ Founder with `guest` role |
-| Carlos Magno do HUB Cerrado | **none** | [founder] | ⚠️ Founder with `none` role |
-| Giovanni Oliveira Baroni Brandão | **none** | [founder] | ⚠️ Founder with `none` role |
-| Sarah Faria Alcantara Macedo | **none** | [ambassador, founder, curator] | ⚠️ Curator+Founder with `none` role |
-| Marcio Miranda | researcher | [] | ✅ OK (different Márcio) |
+| member F | sponsor | [sponsor, founder, ambassador] | ✅ OK |
+| member E | sponsor | [sponsor] | ✅ OK |
+| member B | sponsor | [sponsor] | ✅ OK |
+| member D | sponsor | [sponsor] | ✅ OK |
+| member H | tribe_leader | [ambassador, founder, curator, co_gp] | ⚠️ Missing `deputy_manager` |
+| member J | **guest** | [founder] | ⚠️ Founder with `guest` role |
+| member G do HUB Cerrado | **none** | [founder] | ⚠️ Founder with `none` role |
+| member A | **none** | [founder] | ⚠️ Founder with `none` role |
+| member C | **none** | [ambassador, founder, curator] | ⚠️ Curator+Founder with `none` role |
+| member I | researcher | [] | ✅ OK (different member E) |
 
 **Data Sanity Score: 8/12 (✅ 8 | ⚠️ 4)**
 
@@ -248,10 +248,10 @@ The `attendance_general_avg_pct` auto_query in `get_annual_kpis` returns **1616.
 | Item | Issue | Fix | Effort |
 |------|-------|-----|--------|
 | #69 | Vitor missing tribe_id | Assign tribe_id (manager may intentionally be unassigned) | 5min |
-| #69 | Erick Oliveira missing tribe_id | Assign to correct tribe | 5min |
-| #71 | Fabricio missing `deputy_manager` designation | `UPDATE members SET designations = designations || '{"deputy_manager"}' WHERE name LIKE '%Fabricio%Costa%'` | 2min |
-| #74 | Rafael Camilo is `guest` with `founder` designation | Clarify: if inactive founder, set `is_active=false`; if active, set `operational_role='observer'` | 5min |
-| #74 | Carlos Magno, Giovanni, Sarah have `operational_role='none'` | Set to `observer` or `researcher` based on actual participation | 10min |
+| #69 | member K missing tribe_id | Assign to correct tribe | 5min |
+| #71 | member H missing `deputy_manager` designation | `UPDATE members SET designations = designations || '{"deputy_manager"}' WHERE name LIKE '%member H%Costa%'` | 2min |
+| #74 | member J is `guest` with `founder` designation | Clarify: if inactive founder, set `is_active=false`; if active, set `operational_role='observer'` | 5min |
+| #74 | member G, member A, member C have `operational_role='none'` | Set to `observer` or `researcher` based on actual participation | 10min |
 | #65 | 5 entregavel_lider items missing baseline_date | Tribe leaders need to set baseline dates for their deliverables | 15min (manual) |
 
 ### Priority 3 — Enhancements
@@ -267,27 +267,27 @@ The `attendance_general_avg_pct` auto_query in `get_annual_kpis` returns **1616.
 ## MEMBER DATA FIXES (SQL)
 
 ```sql
--- #71: Add deputy_manager designation to Fabricio
+-- #71: Add deputy_manager designation to member H
 UPDATE members
 SET designations = array_append(designations, 'deputy_manager')
-WHERE name LIKE '%Fabricio%Costa%'
+WHERE name LIKE '%member H%Costa%'
   AND NOT (designations @> ARRAY['deputy_manager']);
 
 -- #69: Vitor tribe_id — intentional? Manager oversees all tribes.
 -- Uncomment if assignment needed:
 -- UPDATE members SET tribe_id = 6 WHERE name LIKE '%Vitor%Rodovalho%' AND tribe_id IS NULL;
 
--- #69: Erick Oliveira — assign to appropriate tribe
--- UPDATE members SET tribe_id = <TRIBE_ID> WHERE name LIKE '%Erick%Oliveira%' AND tribe_id IS NULL;
+-- #69: member K — assign to appropriate tribe
+-- UPDATE members SET tribe_id = <TRIBE_ID> WHERE name LIKE '%member K%Oliveira%' AND tribe_id IS NULL;
 
 -- #74: Inactive founders — set is_active = false if not participating
 -- UPDATE members SET is_active = false
--- WHERE name IN ('Rafael Camilo', 'Carlos Magno do HUB Cerrado', 'Giovanni Oliveira Baroni Brandão')
+-- WHERE name IN ('member J', 'member G do HUB Cerrado', 'member A')
 --   AND operational_role IN ('guest', 'none');
 
--- #74: Sarah Faria — has curator + founder designations, needs proper role
+-- #74: member C — has curator + founder designations, needs proper role
 -- UPDATE members SET operational_role = 'observer'
--- WHERE name LIKE '%Sarah%Faria%' AND operational_role = 'none';
+-- WHERE name LIKE '%member C%' AND operational_role = 'none';
 ```
 
 > **Note:** Member data fixes are commented out pending GP confirmation. Run after validating each member's actual status with the GP.
