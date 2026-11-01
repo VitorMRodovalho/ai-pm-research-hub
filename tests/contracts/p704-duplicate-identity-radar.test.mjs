@@ -4,7 +4,7 @@
  * selection_applications dedups by (vep_application_id, vep_opportunity_id) — per VEP
  * ACCOUNT, never per PERSON. One human with two PMI registrations (distinct pmi_id +
  * email + name) appears as independent candidates. The anchor case (Ana) has DIFFERENT
- * names per account ("Ana Pacheco" vs "Ana Sofia Pires Pacheco"), so group-by-name finds
+ * names per account ("Fulano Alfa" vs "Fulano Beta Gama Alfa"), so group-by-name finds
  * nothing — detection needs multi-signal fuzzy matching.
  *
  * get_duplicate_identity_candidates() (migration 20260805000175) is the standing radar:
@@ -66,16 +66,16 @@ test('#704 static: migration 20260805000175 exists and defines the gated radar',
 // ── ALGORITHM (deterministic, no DB) ────────────────────────────────────────────
 test('#704 algorithm: anchor case (Ana) is a strong cross-account match', () => {
   // The two accounts: distinct name/email/pmi_id, same person.
-  assert.equal(isStrongPair('Ana Pacheco', 'Ana Sofia Pires Pacheco'), true,
-    'Ana Pacheco ⇄ Ana Sofia Pires Pacheco must match on first+last token');
+  assert.equal(isStrongPair('Fulano Alfa', 'Fulano Beta Gama Alfa'), true,
+    'Fulano Alfa ⇄ Fulano Beta Gama Alfa must match on first+last token');
 });
 
 test('#704 algorithm: coincidental BR surnames are NOT strong matches (no false positives)', () => {
   // Same first token, different last token → not a duplicate identity.
   assert.equal(isStrongPair('Candidato Teste A', 'Candidato Teste B'), false, 'diff last token');
-  assert.equal(isStrongPair('Erick Oliveira', 'Flavio Oliveira'), false, 'diff first token');
+  assert.equal(isStrongPair('Fulano Delta', 'Ciclano Delta'), false, 'diff first token');
   // accent-insensitivity must not collapse distinct names
-  assert.equal(isStrongPair('Bruna Soares', 'Edinan Soares'), false, 'diff first token (shared surname)');
+  assert.equal(isStrongPair('Beltrano Epsilon', 'Sicrano Epsilon'), false, 'diff first token (shared surname)');
 });
 
 test('#704 algorithm: normalization is accent + case insensitive', () => {
