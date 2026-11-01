@@ -6472,6 +6472,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.modal.videosDuration': '{sec}s',
   'admin.selection.modal.videosConfidence': 'Confiança STT: {pct}%',
   'admin.selection.modal.videosNoAiScoreYet': 'Avaliação subjetiva por IA ainda não implementada — substrato em construção (B-full).',
+  'admin.selection.modal.videosRestricted': 'Os vídeos desta candidatura ficam com a coordenação e a avaliação do ciclo.',
+  'admin.selection.modal.videosRecused': 'Você é candidato(a) neste ciclo: os vídeos estão impedidos por conflito de interesse.',
   'admin.selection.modal.returningBadge': 'Retornante',
   'admin.selection.modal.email': 'Email',
   'admin.selection.modal.role': 'Papel',

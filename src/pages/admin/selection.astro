@@ -187,6 +187,8 @@ const SEL_I18N = {
     videosDuration: t('admin.selection.modal.videosDuration', lang),
     videosConfidence: t('admin.selection.modal.videosConfidence', lang),
     videosNoAiScoreYet: t('admin.selection.modal.videosNoAiScoreYet', lang),
+    videosRestricted: t('admin.selection.modal.videosRestricted', lang),
+    videosRecused: t('admin.selection.modal.videosRecused', lang),
     returningBadge: t('admin.selection.modal.returningBadge', lang),
     email: t('admin.selection.modal.email', lang),
     chapter: t('admin.selection.chapter', lang),
@@ -3091,7 +3093,10 @@ const SEL_I18N = {
   }
 
   /* ── p150 B-light: Vídeos tab — per-application pmi_video_screenings detail.
-     Renders 3 states:
+     Renders 3 states, after the gate:
+       0) the RPC refuses (ADR-0134: only manage_platform or the cycle's lead/evaluator seat; or the
+          caller is a candidate in the cycle) → neutral notice, not an error (T.modal.videosRestricted /
+          T.modal.videosRecused)
        1) summary.total === 0 → "candidato ainda não decidiu" (T.modal.videosEmpty)
        2) summary.uploaded === 0 AND summary.opted_out > 0 → opt-out banner
        3) any uploaded → per-pillar list with transcription + drive/youtube links
@@ -3105,6 +3110,11 @@ const SEL_I18N = {
         p_application_id: applicationId,
       });
       if (error) throw error;
+      if (data?.error === 'Unauthorized' || data?.error === 'recused_conflict_of_interest') {
+        const notice = data.error === 'Unauthorized' ? T.modal.videosRestricted : T.modal.videosRecused;
+        container.innerHTML = `<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-[var(--text-muted)]">${esc(notice)}</div>`;
+        return;
+      }
       if (data?.error) throw new Error(data.error);
       const rows = Array.isArray(data?.rows) ? data.rows : [];
       const summary = data?.summary || { total: 0, uploaded: 0, opted_out: 0, failed: 0, total_duration_seconds: 0 };
