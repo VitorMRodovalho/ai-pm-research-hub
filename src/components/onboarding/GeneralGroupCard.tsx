@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { phoneVisibleNotice } from '../../lib/whatsapp-group-notice';
 
 // #740: persistent pointer to the Hub's general WhatsApp group on /workspace.
 //
@@ -96,6 +97,7 @@ export default function GeneralGroupCard({ lang = 'pt-BR' }: Props) {
     >
       <h2 className="text-[13px] font-bold text-emerald-800 dark:text-emerald-300">{c.title}</h2>
       <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{c.body}</p>
+      <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{phoneVisibleNotice(lang)}</p>
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <a
           href={url}

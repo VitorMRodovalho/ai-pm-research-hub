@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { phoneVisibleNotice } from '../../lib/whatsapp-group-notice';
 
 interface Step {
   step_key: string;
@@ -49,9 +50,9 @@ const STEP_META: Record<string, { icon: string; pt: string; en: string; es: stri
 // joins a group sees its members' phone numbers (same pattern as get_tribe_group_link).
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', guide: 'Guia & Glossário', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo', helpTitle: 'Dúvidas? Você não está sozinho', helpBody: 'Entre no grupo de WhatsApp do pré-onboarding — candidatos, o Núcleo e as diretorias de filiação e voluntariado tiram dúvidas por lá.', helpCta: 'Entrar no grupo de WhatsApp' },
-  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', guide: 'Guide & Glossary', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking', step: 'Step', helpTitle: 'Questions? You\'re not alone', helpBody: 'Join the pre-onboarding WhatsApp group — candidates, the Hub team, and the membership & volunteering boards answer questions there.', helpCta: 'Join the WhatsApp group' },
-  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', guide: 'Guía y Glosario', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración', step: 'Paso', helpTitle: '¿Dudas? No estás solo', helpBody: 'Únase al grupo de WhatsApp de pre-integración — candidatos, el equipo del Núcleo y las direcciones de afiliación y voluntariado responden dudas allí.', helpCta: 'Entrar al grupo de WhatsApp' },
+  'pt-BR':   { title: 'Preparação Pré-Onboarding', subtitle: 'Complete sua preparação para começar com tudo!', xp: 'XP', of: 'de', steps: 'etapas', completed: 'concluídas', profile: 'Ir ao Perfil', guide: 'Guia & Glossário', blog: 'Ir ao Blog', pmi: 'PMI Learning', noData: 'Nenhuma etapa de pré-onboarding encontrada.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pré-Onboarding', step: 'Passo', helpTitle: 'Dúvidas? Você não está sozinho', helpBody: 'Entre no grupo de WhatsApp do onboarding do Núcleo: candidatos, o Núcleo e as diretorias de filiação e voluntariado tiram dúvidas por lá.', helpCta: 'Entrar no grupo de WhatsApp' },
+  'en-US':   { title: 'Pre-Onboarding Prep', subtitle: 'Complete your prep to hit the ground running!', xp: 'XP', of: 'of', steps: 'steps', completed: 'completed', profile: 'Go to Profile', guide: 'Guide & Glossary', blog: 'Go to Blog', pmi: 'PMI Learning', noData: 'No pre-onboarding steps found.', autoDetect: 'Auto-detected', ranking: 'Pre-Onboarding Ranking', step: 'Step', helpTitle: 'Questions? You\'re not alone', helpBody: 'Join the Hub onboarding WhatsApp group: candidates, the Hub team, and the membership & volunteering boards answer questions there.', helpCta: 'Join the WhatsApp group' },
+  'es-LATAM': { title: 'Preparación Pre-Integración', subtitle: '¡Complete su preparación para empezar con todo!', xp: 'XP', of: 'de', steps: 'pasos', completed: 'completados', profile: 'Ir al Perfil', guide: 'Guía y Glosario', blog: 'Ir al Blog', pmi: 'PMI Learning', noData: 'No se encontraron pasos de pre-integración.', autoDetect: 'Auto-detectado', ranking: 'Ranking Pre-Integración', step: 'Paso', helpTitle: '¿Dudas? No estás solo', helpBody: 'Únase al grupo de WhatsApp de onboarding del Núcleo: candidatos, el equipo del Núcleo y las direcciones de afiliación y voluntariado responden dudas allí.', helpCta: 'Entrar al grupo de WhatsApp' },
 };
 
 // F2/F3/F4 #740 — community & purpose copy (Credly mini-guide, 2026 purpose card,
@@ -361,6 +362,7 @@ export default function PreOnboardingChecklist({ lang = 'pt-BR' }: Props) {
           <span>💬</span> {l.helpTitle}
         </h3>
         <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{l.helpBody}</p>
+        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 leading-relaxed">{phoneVisibleNotice(lang)}</p>
         <a
           href={groupUrl}
           target="_blank"
