@@ -2,7 +2,7 @@
 --
 -- Audit found 14/35 cycle4 apps with consent_ai_analysis_at NULL (cv_extracted_text + ai_analysis
 -- correctly NULL per LGPD Art. 20) — committee via Claude Chat / dashboard read this as
--- "missing data" and confuse it with pipeline failure. Plus Marcio Pimenta's 57-byte "PDF"
+-- "missing data" and confuse it with pipeline failure. Plus candidate A's 57-byte "PDF"
 -- (actually .txt with just LinkedIn URL) was invisible to evaluator workflow.
 --
 -- Adds to each application row:
@@ -244,4 +244,4 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.get_selection_dashboard(text) IS
-  'p197d A (2026-05-19): each application row gains consent_ai_status (pending/consented/revoked) + consent_ai_at + consent_ai_revoked_at; extra_flags gains pdf_likely_invalid (storage object size < 1000 bytes — catches Azure SAS error pages saved as .pdf, like Marcio Pimenta 57-byte case); stats gains consent_ai_pending/consented/revoked aggregates. Application + stats jsonb_build_object built as chunks merged via || to dodge PG 100-arg cap.';
+  'p197d A (2026-05-19): each application row gains consent_ai_status (pending/consented/revoked) + consent_ai_at + consent_ai_revoked_at; extra_flags gains pdf_likely_invalid (storage object size < 1000 bytes — catches Azure SAS error pages saved as .pdf, like candidate A 57-byte case); stats gains consent_ai_pending/consented/revoked aggregates. Application + stats jsonb_build_object built as chunks merged via || to dodge PG 100-arg cap.';

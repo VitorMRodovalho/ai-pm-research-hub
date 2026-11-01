@@ -6,7 +6,7 @@
 -- - 35 apps total in cycle4-2026
 -- - 21 with consent_ai_analysis_at populated (consent given) — 20 fully parsed, 1 invalid PDF
 -- - 14 without consent (consent_pending) — extraction correctly SKIPPED per LGPD Art. 20
--- - 1 invalid PDF (Marcio Pimenta — unpdf raised "Invalid PDF structure", corrupted upload)
+-- - 1 invalid PDF (candidate A — unpdf raised "Invalid PDF structure", corrupted upload)
 --
 -- So the 40% was NOT pipeline failure — it was correct LGPD compliance (no consent =
 -- no IA processing). However, this migration still ships because:
@@ -91,4 +91,4 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.extract_cv_text_batch(integer) IS
-  'p197c E1 (2026-05-19): pickup filter now includes resume_storage_path (post-p195 VEP sync writes PDFs to private bucket selection-resumes) — was previously only resume_url, latent bug for cycle5+ where resume_url is NULL by default. EF extract-cv-text patched in parallel to prefer storage_path. service_role-gated (cron). Audit found 40% NULL cv_extracted_text in cycle4-2026 was due to LGPD compliance (14/35 without consent_ai_analysis_at), NOT pipeline failure — only 1 actual failure (Marcio Pimenta, corrupted PDF "Invalid PDF structure"). Migration ships as future-proofing.';
+  'p197c E1 (2026-05-19): pickup filter now includes resume_storage_path (post-p195 VEP sync writes PDFs to private bucket selection-resumes) — was previously only resume_url, latent bug for cycle5+ where resume_url is NULL by default. EF extract-cv-text patched in parallel to prefer storage_path. service_role-gated (cron). Audit found 40% NULL cv_extracted_text in cycle4-2026 was due to LGPD compliance (14/35 without consent_ai_analysis_at), NOT pipeline failure — only 1 actual failure (candidate A, corrupted PDF "Invalid PDF structure"). Migration ships as future-proofing.';

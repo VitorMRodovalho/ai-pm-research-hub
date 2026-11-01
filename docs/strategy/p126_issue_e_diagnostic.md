@@ -26,16 +26,16 @@ Query: `SELECT id, applicant_name, status, interview_status, objective_score_avg
 - Some have `final_score` populated (e.g., 209.00, 212.00, 144.00); others NULL
 
 **Affected candidates (10):**
-1. Maria Araújo — final_score=209
-2. Marcio Pimenta — final_score=212
-3. Flavio Oliveira — final_score=NULL
-4. Luciana Carpes Pranke — final_score=144
-5. Luíse Quintana — final_score=NULL
-6. CRISTIANO NUNES — final_score=114
-7. Danilo Nascimento — final_score=115
-8. William Junio — final_score=NULL
-9. Bruna Lima Zomer — final_score=NULL
-10. Bruna Soares — final_score=NULL
+1. candidate B — final_score=209
+2. candidate A — final_score=212
+3. candidate C — final_score=NULL
+4. candidate D — final_score=144
+5. candidate E — final_score=NULL
+6. candidate F — final_score=114
+7. candidate G — final_score=115
+8. candidate H — final_score=NULL
+9. candidate I — final_score=NULL
+10. candidate J — final_score=NULL
 
 ## Diagnosis: Issue E is manifestation of Issue B
 
