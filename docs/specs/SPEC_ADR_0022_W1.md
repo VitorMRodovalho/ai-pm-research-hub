@@ -332,7 +332,7 @@ Loss: any digest_delivered_at timestamp set during the W1 window. Acceptable —
 1. **Opt-out modes**: ADR-0022 §Pendências — is `digest_weekly` the only default, or do we ship 4 modes (`immediate_all` / `weekly_digest` / `suppress_all` / `custom_per_type`)? Affects W2 settings UI scope.
 2. **EF split (§5.2)**: dev team confirms Option A?
 3. **Column name `delivery_mode`** — final, or prefer alternate (e.g., `dispatch_mode`, `routing_class`)?
-4. **Stakeholder review**: any of Roberto / Ivan / Fabricio / Sarah notification types we missed? Specifically: review-gate-pending, mentor-pairing, anything in curation backlog?
+4. **Stakeholder review**: any of member A / member B / member C / member D notification types we missed? Specifically: review-gate-pending, mentor-pairing, anything in curation backlog?
 5. **CR-051**: ADR-0022 + W1 spec packaged as formal CR for ratification, or keeps as Proposed until dev review concludes?
 6. **Producer audit cutoff**: update only mandatory-immediate producers in W1 (5 producers — recommended) vs all 12 producers (single big PR)?
 7. **Legacy `attendance_reminder` 1733 rows**: backfill specific delivery_mode (case-by-case based on event timestamp) or accept default `digest_weekly` for everything? Affects: ~50 rows are for events still upcoming and may need immediate routing.

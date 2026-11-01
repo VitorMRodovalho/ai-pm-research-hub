@@ -239,8 +239,8 @@ END
 
 - Trigger function replaced.
 - Invariant body replaced (A3 CASE chain identical to trigger — ADR-0023 mandatory parity).
-- Selective backfill: Sarah Faria Alcantara Macedo Rodovalho + Roberto Macêdo (`observer` → `researcher`). 2 audit-log rows inserted via `admin_audit_log` with rationale.
-- A3 violation_count: 6 → 1 (Eder Valasco edge case remains, orthogonal — no engagements).
+- Selective backfill: member A + member C (`observer` → `researcher`). 2 audit-log rows inserted via `admin_audit_log` with rationale.
+- A3 violation_count: 6 → 1 (member B edge case remains, orthogonal — no engagements).
 
 ### What changed institutionally
 

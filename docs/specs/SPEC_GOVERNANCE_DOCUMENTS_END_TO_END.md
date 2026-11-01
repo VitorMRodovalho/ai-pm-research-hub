@@ -331,7 +331,7 @@ Estado desejado:
 - Documento cadastrado em `governance_documents`.
 - `doc_type`: recomendacao `editorial_guide`.
 - Titulo: `Guia Editorial Frontiers in AI & Project Mgmt`.
-- Autor/proponente: Fabricio Costa.
+- Autor/proponente: member A.
 - Submitter: GP/admin por intake assistido.
 - `submitted_via`: `GP-assisted intake`.
 - Fonte: Google Doc/DOCX no Drive institucional como anexo/origem restrita.
@@ -877,10 +877,10 @@ Objetivo: validar que o fluxo funciona para pessoas reais e nao apenas para admi
 Smoke matrix minima:
 
 1. GP/admin cria Frontiers via intake e abre draft.
-2. Fabricio aparece como autor/proponente, mas nao como actor do intake se GP executou.
+2. member A aparece como autor/proponente, mas nao como actor do intake se GP executou.
 3. Curador comenta em documento de governanca.
 4. Curador em `independent_blind` nao ve parecer par antes de submeter.
-5. Roberto/Sarah acessam rotas de curadoria/revisao sem depender de admin indevido.
+5. member B/member D acessam rotas de curadoria/revisao sem depender de admin indevido.
 6. Membro ativo acessa `/governance/documents` e ve docs ativos.
 7. Membro ativo nao ve anexos restritos.
 8. Ciencia informativa nao bloqueia vigencia do Guia Frontiers.
@@ -1003,7 +1003,7 @@ Escopo:
 Criterios de aceite:
 
 - [ ] GP cria Guia Frontiers via UI sem SQL manual.
-- [ ] Fabricio aparece como autor/proponente; GP como actor/intake submitter.
+- [ ] member A aparece como autor/proponente; GP como actor/intake submitter.
 - [ ] Documento abre em `/admin/governance/documents/{docId}/versions/new`.
 - [ ] Source artifact fica registrado sem expor URL indevida.
 - [ ] Campos obrigatorios por doc_type bloqueiam cadastro incompleto.
@@ -1060,7 +1060,7 @@ Criterios de aceite:
 - [ ] LinkedIn alerta tamanho/idioma/publico antes de revisao profunda.
 - [ ] Revista/formal article oculta pareceres pares ate submissao inicial.
 - [ ] Release de blind reviews torna consolidacao visivel para curadoria/GP.
-- [ ] Smoke Sarah/Roberto/Fabricio cobre os modos principais.
+- [ ] Smoke member C/member E/member A cobre os modos principais.
 
 Gate de saida:
 

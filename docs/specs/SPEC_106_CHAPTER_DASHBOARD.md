@@ -1,7 +1,7 @@
 # SPEC #106 — Chapter-facing dashboard (Diretores de Voluntariado)
 
 - **Status:** v2 — council reviewed GO-with-changes ×3 (product-leader + ux-leader + data-architect, 2026-06-18); changes incorporated below. legal-counsel sign-off on Bloco 2 (LGPD) é pré-condição do PR1.
-- **Issue:** #106 (OPEN) — Item 7, handoff 2026-04-25 (Lorena Souza, PMI-GO voluntariado_director)
+- **Issue:** #106 (OPEN) — Item 7, handoff 2026-04-25 (member A, PMI-GO voluntariado_director)
 - **Date:** 2026-06-18
 - **Author:** Vitor Maia Rodovalho (Assisted-By: Claude)
 - **PM decision:** completar os 5 blocos do #106 (não fatia mínima) — 2026-06-18
@@ -13,7 +13,7 @@ A premissa original da issue (2026-04-25) está **vencida**, e o dashboard está
 
 1. **Dashboard existe**: RPC `get_chapter_dashboard(p_chapter)` (6976 chars) → snapshot (active/observers/alumni + `by_role`), output (board cards, publicações), attendance (engagement/reliability/avg), hours/PDU, certifications, partnerships, gamification (avg_xp + top 3), lista de membros, `available_chapters`. Rota `/admin/chapter.astro` (+en/es) + componente `ChapterDashboard.tsx`.
 2. **Acesso own-chapter já modelado**: o gate V4 da RPC = `can_by_member(caller, 'view_internal_analytics')` → cross-chapter; senão `p_chapter IS NULL OR = caller_chapter` → só o próprio. O componente trata `isGP=false → próprio capítulo`.
-3. **A persona já alcança**: a designation `chapter_board` concede `admin.access` + `admin.analytics.chapter` (`permissions.ts:237-241`); o middleware NÃO gateia `/admin`; o item de menu "Meu Capítulo" (`/admin/chapter`) aparece sob `admin.analytics.chapter`. **Lorena Souza** (`11b8c3a7`, designations `[chapter_board, voluntariado_director]`) **já loga** (a issue dizia "auth_id null" — vencido) e já resolve a permissão → vê e abre o dashboard hoje.
+3. **A persona já alcança**: a designation `chapter_board` concede `admin.access` + `admin.analytics.chapter` (`permissions.ts:237-241`); o middleware NÃO gateia `/admin`; o item de menu "Meu Capítulo" (`/admin/chapter`) aparece sob `admin.analytics.chapter`. **member A** (`11b8c3a7`, designations `[chapter_board, voluntariado_director]`) **já loga** (a issue dizia "auth_id null" — vencido) e já resolve a permissão → vê e abre o dashboard hoje.
 
 **Conclusão:** #106 não é "construir o dashboard" — é **(a)** corrigir um bug + **(b)** adicionar os 4 blocos chapter-facing que faltam. Nenhuma rota nova, nenhum gate novo de acesso.
 
@@ -70,7 +70,7 @@ A persona (chapter_board) abre p/ responder "quantos ativos / quem entrou-saiu".
 ## Instrumentação (product-leader — pré-req do PR1, não pós-hoc)
 - `chapter_dashboard_viewed` (`chapter_code`, `is_own_chapter`, `designation`) — métrica primária: sessões de chapter_board/voluntariado_director em `/admin/chapter` nas 4 semanas pós-launch (baseline 0).
 - `chapter_csv_exported` — proxy de "substituiu a planilha manual".
-- Sinal de falha: 0 eventos em 30d = nasceu sem uso (precedente buddy 0/0, entry_chapter 0/48) → plano de ativação (DM Lorena + 1 diretora no dia do launch).
+- Sinal de falha: 0 eventos em 30d = nasceu sem uso (precedente buddy 0/0, entry_chapter 0/48) → plano de ativação (DM member A + 1 diretora no dia do launch).
 
 ## Schema / índices (data-architect — no PR correspondente)
 - PR1: `CREATE INDEX IF NOT EXISTS idx_offboarding_chapter_at ON member_offboarding_records (chapter_at_offboard, offboarded_at DESC) WHERE chapter_at_offboard IS NOT NULL;`

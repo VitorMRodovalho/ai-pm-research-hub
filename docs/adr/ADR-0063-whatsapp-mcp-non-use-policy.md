@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-04-28)
 **Decision date:** p77 session (Decision #3 A — PM-confirmed)
 **Supersedes:** —
-**Related:** Issue #93 Op #3, Issue #91 (Lídia 4 audios offboarding gap)
+**Related:** Issue #93 Op #3, Issue #91 (member A 4 audios offboarding gap)
 
 ---
 
@@ -15,7 +15,7 @@ documentado:
 
 - Núcleo opera fortemente em WhatsApp (chats liderança, comms, GP-presidentes
   de chapter)
-- Lídia Do Vale (offboarding 22/Abr) deixou 4 áudios WhatsApp não-transcritos
+- member A (offboarding 22/Abr) deixou 4 áudios WhatsApp não-transcritos
   — gap explícito em #91 G3
 
 Apesar do match operacional real, há riscos materiais que tornam adoção em
@@ -112,7 +112,7 @@ Sem TODOS os 5, decisão de não-uso permanece.
 
 Permitido SOMENTE em casos específicos onde:
 
-1. **Sujeito é o próprio dono do conteúdo**: ex. Lídia pediu transcrição
+1. **Sujeito é o próprio dono do conteúdo**: ex. member A pediu transcrição
    dos próprios áudios para inclusão em exit interview formal — consent
    explícito da única pessoa relevante.
 
@@ -126,12 +126,12 @@ Permitido SOMENTE em casos específicos onde:
    admin_audit_log com action='whatsapp_local_processing' + metadata
    {consent_date, audio_hash, target_member_id}.
 
-## Caso concreto: Lídia 4 áudios
+## Caso concreto: member A 4 áudios
 
 Aplicação dos critérios acima:
-- ✅ Sujeito é a própria Lídia (consent implícito ao mandar áudios para
+- ✅ Sujeito é a própria member A (consent implícito ao mandar áudios para
   o GP em contexto de offboarding interview)
-- ⚠️ Recomendação: Lídia confirma por escrito (mensagem WhatsApp ou
+- ⚠️ Recomendação: member A confirma por escrito (mensagem WhatsApp ou
   email) "autorizo Vitor a transcrever esses 4 áudios para inclusão em
   exit interview" — formaliza o consent
 - ✅ Operação local Vitor's machine + Whisper API (não MCP — Whisper é
@@ -153,7 +153,7 @@ do Núcleo" sem reabrir os 5 critérios.
 ## Provenance
 
 - Issue #93 Op #3 (2026-04-22) — surfaced opportunity
-- Handoff 2026-04-25 — confirmed real use case (4 audios Lídia)
+- Handoff 2026-04-25 — confirmed real use case (4 audios member A)
 - p77 session 2026-04-28 — Decision #3 A confirmed por PM
 - ADR escrito 2026-04-28
 

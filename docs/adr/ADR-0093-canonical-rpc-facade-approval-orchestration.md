@@ -15,14 +15,14 @@
 
 P201/P202 lifecycle audit revelou **drift silenciosa entre dois caminhos de aprovação de candidato voluntário**:
 
-- `admin_update_application(uuid, jsonb)` — chamado pelo `/admin/selection` UI (4 call sites, todos em `src/pages/admin/selection.astro`). Pré-p204: atualizava `selection_applications.status='approved'`, promovia `operational_role` de members EXISTENTES, mas **não criava member novo** se não existia (gap real: 1 caso em produção — Adalberto Neris).
+- `admin_update_application(uuid, jsonb)` — chamado pelo `/admin/selection` UI (4 call sites, todos em `src/pages/admin/selection.astro`). Pré-p204: atualizava `selection_applications.status='approved'`, promovia `operational_role` de members EXISTENTES, mas **não criava member novo** se não existia (gap real: 1 caso em produção — member A).
 - `finalize_decisions(uuid, jsonb)` — chamado pelo comitê em bulk no fim do ciclo. Pré-p204: criava member novo, seedava onboarding canônico, mas **não populava `members.person_id` nem `engagements.selection_application_id`** (não tocava grafo V4).
 
 Os dois RPCs divergiram organicamente: cada vez que um caminho ganhou um side-effect novo (notification, audit log, partner-chapter flag), o outro não foi atualizado em paralelo. Symptom acumulado:
 
-- 38 applications `approved`/`converted`, 1 sem `members` row (Adalberto Neris, conversion docs como deliberate non-active).
+- 38 applications `approved`/`converted`, 1 sem `members` row (member A, conversion docs como deliberate non-active).
 - 0 approved members com `person_id IS NULL` na baseline, mas **futura aprovação via `admin_update_application` criaria** essa drift porque o RPC nunca tocou `persons`.
-- 16 engagements ativos com `requires_agreement=true` AND `agreement_certificate_id IS NULL` — operational queue legítima (Herlon-class invariant: counter-signature pendente). Nenhum dos 2 RPCs cobria criação inicial de engagement; populated por caminhos paralelos (VEP sync, manual admin inserts, etc.).
+- 16 engagements ativos com `requires_agreement=true` AND `agreement_certificate_id IS NULL` — operational queue legítima (member B-class invariant: counter-signature pendente). Nenhum dos 2 RPCs cobria criação inicial de engagement; populated por caminhos paralelos (VEP sync, manual admin inserts, etc.).
 
 **O risco vai além dos 2 RPCs existentes.** Adicionar uma 3ª entrada de aprovação no futuro (MCP tool em Issue #183, batch cron de reprocessamento, REST endpoint para integração com VEP, conversion API para sponsor track) replicaria a divergência. A próxima entrada quase certamente esquece pelo menos um dos 8 side-effects mandatórios (validação V4, member upsert, person upsert, members.person_id link, engagement insert, onboarding seed, notification, audit). E o caller pode estar fora do mundo PostgREST onde os tests contratuais existentes detectariam drift.
 

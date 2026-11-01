@@ -26,7 +26,7 @@ PM decision log §B.1 ratified converting `create_cost_entry` and
 'deputy_manager') OR is_superadmin = true`) to V4 (`can_by_member(
 'manage_finance')`). The V4 catalog `manage_finance` audience is broader
 than V3:
-- V3: ~3 active members (Vitor, Fabricio + any superadmin)
+- V3: ~3 active members (Vitor, member F + any superadmin)
 - V4: `volunteer × {manager, deputy_manager, co_gp}` + `sponsor × sponsor`
 
 **PM concern**: `sponsor × sponsor` in `manage_finance` lets non-volunteer
@@ -89,9 +89,9 @@ Detection logic:
 - `v_is_volunteer` — actor has any `volunteer × *` authoritative engagement
 - Trigger fires only when `v_is_sponsor AND NOT v_is_volunteer`
 
-This excludes Vitor (manager) and Fabricio (co_gp), who are already in the
-volunteer chain. It targets sponsor-only members (Ivan, Felipe, Francisca,
-Márcio, Matheus per current population) when they log finance entries.
+This excludes Vitor (manager) and member F (co_gp), who are already in the
+volunteer chain. It targets sponsor-only members (member E, member D, member B,
+member C, member A per current population) when they log finance entries.
 
 ### Section D — Enhanced audit log
 
@@ -126,23 +126,23 @@ their chapter, their engagement profile, the specific governance flag.
 | Member | Engagement | V3 access | V4 access |
 |---|---|---|---|
 | Vitor Maia Rodovalho | volunteer/manager | ✓ | ✓ |
-| Fabricio Costa | volunteer/co_gp | ✓ (super) | ✓ |
-| Ivan Lourenço | sponsor/sponsor | ✗ | **✓ (new)** |
-| Felipe Moraes Borges | (chapter_board.board_member only) | ✗ | ✗ |
-| Francisca Jessica de Sousa | (chapter_board.board_member only) | ✗ | ✗ |
-| Márcio Silva dos Santos | (chapter_board.board_member only) | ✗ | ✗ |
-| Matheus Frederico Rosa Rocha | (chapter_board.board_member only) | ✗ | ✗ |
+| member F | volunteer/co_gp | ✓ (super) | ✓ |
+| member E | sponsor/sponsor | ✗ | **✓ (new)** |
+| member D | (chapter_board.board_member only) | ✗ | ✗ |
+| member B | (chapter_board.board_member only) | ✗ | ✗ |
+| member C | (chapter_board.board_member only) | ✗ | ✗ |
+| member A | (chapter_board.board_member only) | ✗ | ✗ |
 
-**Net change**: Ivan gains finance entry creation (V4 catalog allowed,
+**Net change**: member E gains finance entry creation (V4 catalog allowed,
 intentional per ADR-0025). The other "sponsor-flagged" members
-(Felipe/Francisca/Márcio/Matheus) have **only** chapter_board × board_member
+(member D/member B/member C/member A) have **only** chapter_board × board_member
 engagement, NOT sponsor × sponsor — they do NOT gain manage_finance.
 
 ### Trigger fire scope
 
-Trigger fires for finance entries created by Ivan (or any future
+Trigger fires for finance entries created by member E (or any future
 sponsor × sponsor member without parallel volunteer engagement). Volunteer
-chain entries (Vitor, Fabricio) do NOT trigger — those are normal flow.
+chain entries (Vitor, member F) do NOT trigger — those are normal flow.
 
 ---
 
@@ -209,7 +209,7 @@ since it's net-new code, not a V3→V4 conversion.)
 - [x] Audit doc update — Phase B'' tally bumps (96 → 98 / 246, ~39.8%)
 - [x] Tests preserved: 1415 / 1383 / 0 / 32 + ADR-0022 contract test
   (catalog parity)
-- [ ] Future: smoke test trigger fire with Ivan as actor (manual; could be
+- [ ] Future: smoke test trigger fire with member E as actor (manual; could be
   scheduled when sponsor finance flow is exercised in production)
 
 ---

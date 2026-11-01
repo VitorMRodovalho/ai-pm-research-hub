@@ -68,7 +68,7 @@ The question this ADR settles: **is a vertical a first-class `initiative_kind`, 
 1. **Curated vs. open → CURATED.** Verticals são um catálogo curado: só GP/liderança cria via `create_initiative`. `max_concurrent_per_org = 8` (config). O teto é um botão de config (ADR-0009, editável no admin **sem migration**) e pode ser elevado quando uma vertical específica precisar de mais — reversível por design. Abrir a proposta à comunidade fica como evolução futura (fluxo request-to-join), não bloqueia o Ciclo 4.
 2. **`verticals text[]` vs. join → DEFERIDA.** O roteamento deliverable↔vertical não é necessário para a landing (que só lê a existência da vertical + `metadata.status`). Decidir quando o relatório `GROUP BY vertical` ou metadata de roteamento (framing/owner) for necessário. Sem impacto na Fatia A.
 3. **Âncora própria + escada → SIM.** Cada vertical tem sua credencial-âncora (`metadata.anchor_credential`, ex.: Construção = PMI-CP) **além** da escada transversal Champion→CPMAI. Bakeado no `custom_fields_schema`.
-4. **Vertical-piloto → CONSTRUÇÃO** (PM sobrepôs a sugestão ESG/Ágil): Henrique Diniz já em pré-onboarding como líder fundador = âncora real, não vaporware.
+4. **Vertical-piloto → CONSTRUÇÃO** (PM sobrepôs a sugestão ESG/Ágil): member A já em pré-onboarding como líder fundador = âncora real, não vaporware.
 
 ## Implementação (Fatia A, 2026-06-19) — o que foi feito vs. adiado
 
@@ -76,10 +76,10 @@ The question this ADR settles: **is a vertical a first-class `initiative_kind`, 
 - Kind `community_vertical`: `has_board/meeting_notes/deliverables/attendance/certificate = false` (a vertical referencia, não executa — anti-silo §3), `max_concurrent_per_org = 8`, `lifecycle_states` no domínio do engine (`draft/active/concluded/archived`). `metadata.status` (`forming|open|paused`) é ortogonal ao `initiatives.status` e é o que a landing lê para o CTA.
 - `custom_fields_schema` com `required: [anchor_credential, status]` (validado por `validate_initiative_metadata` — presença + tipo; enum não é validado no trigger, controlado pela app).
 - Par dedicado de engagement kinds `vertical_lead` (legal_basis=consent) + `vertical_member` (legitimate_interest), `initiative_kinds_allowed=['community_vertical']`. **Não** se reusou `committee_*`/`workgroup_*` para não contaminar a CASE WHEN de `operational_role` (`sync_operational_role_cache`) nem a semântica legal.
-- Vertical Construção criada (`81fdbdfa…`, `initiatives.status=active`, `metadata.status=forming`, anchor PMI-CP, parceiro Global Construction Ambassadors). Henrique registrado como **líder pretendido em `metadata.intended_lead`** (`engagement_status=pending_volunteer_term`).
+- Vertical Construção criada (`81fdbdfa…`, `initiatives.status=active`, `metadata.status=forming`, anchor PMI-CP, parceiro Global Construction Ambassadors). member A registrado como **líder pretendido em `metadata.intended_lead`** (`engagement_status=pending_volunteer_term`).
 
-**Adiado para a ativação** (kickoff do Ciclo 4 / termo de voluntário do Henrique — decisão PM "não promover ainda"):
-- **Engajar o Henrique** como `vertical_lead × leader` (via `manage_initiative_engagement`) — só após o termo de voluntário assinado.
+**Adiado para a ativação** (kickoff do Ciclo 4 / termo de voluntário do member A — decisão PM "não promover ainda"):
+- **Engajar o member A** como `vertical_lead × leader` (via `manage_initiative_engagement`) — só após o termo de voluntário assinado.
 - **Seeds de `engagement_kind_permissions`** para `vertical_lead × leader` (manage_member/initiative, view_pii/initiative, write/initiative): não conceder PII/gestão a um líder ainda em pré-onboarding; gestão da coorte fundadora é GP-only por ora.
 - **Elevação de `operational_role`**: `vertical_lead` hoje deriva `guest` (não está na CASE WHEN); elevar (ex.: → researcher) só quando a vertical for `open`. Evita mexer em trigger crítico sem necessidade.
 - **Invariante `AJ_vertical_no_tribe_child`** (guard: `community_vertical` não pode parentear `research_tribe` — inverteria o eixo produção/distribuição, §Costs): só relevante quando existir fluxo de criação de filhos de vertical. `create_initiative` não cria filhos automaticamente; o guard entra junto com esse fluxo (Fatia B+).

@@ -51,7 +51,7 @@ Como `signed_version_id` é NOT NULL, é preciso ESCOLHER uma âncora. A escolha
 `from_version_id` do audit-trail (todos os não-v9 disparam obrigação igual).
 
 - **Recomendado:** v2.7 `29a2d175` (última pré-v9) → delta de auditoria "v2.7 → v9" = o delta
-  jurídico real que a rodada Aaron/Angeline produziu.
+  jurídico real que a rodada member B/member C produziu.
 - Alternativa: v1 `0f61a8db` (mais antiga) — "assinou a linhagem mais antiga".
 - Verdade documentada: assinaram texto pré-versionamento; a âncora é uma convenção de auditoria.
 - **Confirmar com legal_counsel.**
@@ -68,7 +68,7 @@ para não perder ninguém). Se o backfill incluir os 40 históricos, o fan-out a
 - **Recomendado:** (a) — backfill dos 48 para verdade do ledger; a Onda 2 obriga só os 30 active.
 
 ### D3 — Liderança na população
-Os 30 incluem **GP (Vitor)** e **co-GP/curador (Fabricio Costa)** — assinaram versão antiga como
+Os 30 incluem **GP (Vitor)** e **co-GP/curador (member A)** — assinaram versão antiga como
 voluntários; ratificaram a v9 como curadores. Papéis distintos ⇒ re-aceitam como voluntários.
 Confirmar que não há exclusão de liderança desejada.
 
