@@ -28,9 +28,11 @@ import { createClient } from '@supabase/supabase-js';
 //     predicate REQUIRES open chain — capability alone is insufficient)
 //   - GRANT/REVOKE preserved + NOTIFY pgrst + COMMENT
 //   - SEDIMENT-235.A close-keyword discipline
-//   - DB-gated smoke: the curator population W4e serves exists (derived from the
-//     live catalog); open chains exist on chained docs; W4e bypass invocation
-//     surfaces (service-role gate verification surrogate).
+//   - DB-gated smoke: the curate_content grant and every authoritative engagement
+//     holding it, as rules over the live population (#2896); open chains exist on
+//     chained docs; W4e bypass invocation surfaces (service-role gate verification
+//     surrogate).
+//   - Offline: the population decisions above, exercised on fixture rows.
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000044_p264_312_w4e_curator_draft_read_assigned.sql';
 const MIGRATION_SQL  = readFileSync(MIGRATION_PATH, 'utf8');
@@ -46,7 +48,47 @@ const VISIBILITY_BLOCK_MATCH = MIGRATION_SQL.match(
 );
 const VISIBILITY_BLOCK = VISIBILITY_BLOCK_MATCH ? VISIBILITY_BLOCK_MATCH[1] : '';
 
-const UNKNOWN_DOC_ID   = '00000000-0000-0000-0000-000000000000';
+const UNKNOWN_DOC_ID = '00000000-0000-0000-0000-000000000000';
+
+// The live smoke asserts RULES over the population, never a named member. A curator
+// engagement reaching its end_date is the system working; pinning one member turned
+// the smoke red on the calendar (#2896). The decisions are pure functions so the
+// offline block can exercise them on fixture rows.
+const ORG_SCOPES = new Set(['organization', 'global']);
+const tupleKey = (r) => `${r.kind}/${r.role}`;
+
+// (kind, role) tuples whose curate_content grant reaches can_by_member(member, action)
+// with no resource, which is how the 'curator' gate of _can_sign_gate asks: only
+// organization/global scope does. `withManageMember` lists those that also grant
+// manage_member.
+function curateContentGrant(permissionRows) {
+  const tuples = new Set(permissionRows
+    .filter((r) => r.action === 'curate_content' && ORG_SCOPES.has(r.scope))
+    .map(tupleKey));
+  const withManageMember = [...new Set(permissionRows
+    .filter((r) => r.action === 'manage_member' && tuples.has(tupleKey(r)))
+    .map(tupleKey))];
+  return { tuples, withManageMember };
+}
+
+// An auth_engagements row that must resolve curate_content: it holds the grant, it is
+// authoritative (active, inside its term, agreement when required), and it has a member
+// for can_by_member to ask about.
+const holdsGrant = (e, tuples) =>
+  tuples.has(tupleKey(e)) && e.is_authoritative === true && Boolean(e.legacy_member_id);
+
+// Engagements holding the grant that can_by_member denied. One no longer authoritative
+// on the second read crossed its end_date between the reads: the rule working.
+function deniedCurators(before, canCurate, after, tuples) {
+  const stillAuthoritative = new Set(after
+    .filter((e) => e.is_authoritative === true)
+    .map((e) => e.engagement_id));
+  return before
+    .filter((e) => holdsGrant(e, tuples))
+    .filter((e) => canCurate.get(e.legacy_member_id) !== true)
+    .filter((e) => stillAuthoritative.has(e.engagement_id))
+    .map((e) => e.engagement_id);
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -369,58 +411,56 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
   });
 
   describe('DB-gated live smoke (skips without SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)', () => {
-    // Curator population DERIVED from the live catalog. These smokes used to pin two
-    // named members, and a curator engagement that ends by date takes curate_content
-    // away with no code change: measured 2026-11-01, one of the two lost it at midnight
-    // UTC and this went red on an unrelated PR. What W4e serves is a member who holds
-    // curate_content and NOT manage_member. Candidates come from the grants and the
-    // authoritative engagements, and can_by_member decides each one live. No grant at
-    // all fails (no one could ever be a curator); no member in the population between
-    // curator cycles is a business state, not a regression, so it SKIPS with the reason.
-    // A renamed or dropped column still fails, through the query error.
-    it('a member holds curate_content without manage_member (population the bypass serves, derived)', { skip: !sb }, async (t) => {
-      const { data: grants, error: grantErr } = await sb
+    const liveGrant = async () => {
+      const { data, error } = await sb
         .from('engagement_kind_permissions')
-        .select('kind, role')
-        .eq('action', 'curate_content');
-      assert.ifError(grantErr);
-      assert.ok((grants || []).length > 0, 'curate_content must be granted to at least one (kind, role)');
-      const pairs = new Set(grants.map((g) => `${g.kind}|${g.role}`));
+        .select('kind, role, action, scope')
+        .in('action', ['curate_content', 'manage_member']);
+      assert.ifError(error);
+      return curateContentGrant(data ?? []);
+    };
 
-      const { data: engs, error: engErr } = await sb
-        .from('auth_engagements')
-        .select('person_id, kind, role')
-        .eq('is_authoritative', true)
-        .in('kind', [...new Set(grants.map((g) => g.kind))]);
-      assert.ifError(engErr);
-      const personIds = [...new Set((engs || [])
-        .filter((e) => pairs.has(`${e.kind}|${e.role}`))
-        .map((e) => e.person_id))];
-      if (personIds.length === 0) {
-        t.skip('no authoritative engagement carries a curate_content grant: no curator right now (business state, not a regression)');
+    it('the curate_content grant reaches can() without a resource and carries no manage_member (rule, not a person)', { skip: !sb }, async () => {
+      const { tuples, withManageMember } = await liveGrant();
+      assert.ok(tuples.size > 0,
+        'no organization-scope curate_content grant: the curator gate of _can_sign_gate passes for nobody');
+      // Regression provenance: W4e exists because curators are not admins, so they read
+      // drafts through the assignment bypass and not through v_is_admin.
+      assert.deepEqual(withManageMember, [],
+        'a tuple granting curate_content also grants manage_member: its holders would read drafts as admins');
+    });
+
+    it('every authoritative engagement holding the grant resolves curate_content in can_by_member (population, derived)', { skip: !sb }, async (t) => {
+      const { tuples } = await liveGrant();
+      assert.ok(tuples.size > 0, 'no organization-scope curate_content grant: nothing to check against');
+      const kinds = [...new Set([...tuples].map((k) => k.split('/')[0]))];
+      const readEngagements = async () => {
+        const { data, error } = await sb
+          .from('auth_engagements')
+          .select('engagement_id, kind, role, is_authoritative, legacy_member_id')
+          .in('kind', kinds);
+        assert.ifError(error);
+        return data ?? [];
+      };
+
+      const before = await readEngagements();
+      const holders = [...new Set(before.filter((e) => holdsGrant(e, tuples)).map((e) => e.legacy_member_id))];
+      if (holders.length === 0) {
+        t.skip('no authoritative engagement holds the grant: business state, not a regression');
         return;
       }
-
-      const { data: members, error: memErr } = await sb
-        .from('members')
-        .select('id')
-        .in('person_id', personIds)
-        .eq('is_active', true);
-      assert.ifError(memErr);
-
-      let served = 0;
-      for (const m of members || []) {
-        const { data: canCurate, error: curateErr } = await sb.rpc('can_by_member', { p_member_id: m.id, p_action: 'curate_content' });
-        const { data: canAdmin, error: adminErr }   = await sb.rpc('can_by_member', { p_member_id: m.id, p_action: 'manage_member' });
-        assert.ifError(curateErr);
-        assert.ifError(adminErr);
-        if (canCurate === true && canAdmin === false) served++;
+      const canCurate = new Map();
+      for (const id of holders) {
+        const { data, error } = await sb.rpc('can_by_member', { p_member_id: id, p_action: 'curate_content' });
+        assert.ifError(error);
+        canCurate.set(id, data);
       }
-      if (served === 0) {
-        t.skip(`${(members || []).length} active member(s) with a curate_content engagement, none with curate_content and without manage_member: the bypass has no live population (business state, not a regression)`);
-        return;
-      }
-      t.diagnostic(`${served} active member(s) hold curate_content without manage_member`);
+      const after = await readEngagements();
+
+      const outsideTerm = before.filter((e) => tuples.has(tupleKey(e)) && e.is_authoritative !== true).length;
+      t.diagnostic(`members holding the grant: ${holders.length}; non-authoritative engagements of the grant: ${outsideTerm}`);
+      assert.deepEqual(deniedCurators(before, canCurate, after, tuples), [],
+        'an authoritative engagement holding the curate_content grant is denied by can_by_member: the grant or can() regressed');
     });
 
     // Regression target DERIVED from the live catalog. It used to pin the TAP CPMAI id,
@@ -464,6 +504,59 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
       assert.ok(error, 'service-role call must fail authentication gate');
       assert.match(error.message || '', /Unauthorized|insufficient_privilege|42501|no active member/i,
         'expected gate-fire error, got: ' + (error.message || JSON.stringify(error)));
+    });
+  });
+
+  describe('population decisions of the live smoke, on fixture rows (offline)', () => {
+    const perm = (kind, role, action, scope = 'organization') => ({ kind, role, action, scope });
+
+    it('only an organization/global curate_content grant counts, and manage_member is reported only on those tuples', () => {
+      const { tuples, withManageMember } = curateContentGrant([
+        perm('observer', 'curator', 'curate_content'),
+        perm('committee_member', 'leader', 'curate_content', 'initiative'),
+        perm('committee_member', 'leader', 'manage_member', 'initiative'),
+        perm('volunteer', 'manager', 'curate_content', 'global'),
+        perm('volunteer', 'manager', 'manage_member'),
+      ]);
+      assert.deepEqual([...tuples].sort(), ['observer/curator', 'volunteer/manager']);
+      assert.deepEqual(withManageMember, ['volunteer/manager']);
+    });
+
+    const tuples = new Set(['observer/curator']);
+    const eng = (id, over = {}) => ({
+      engagement_id: id, kind: 'observer', role: 'curator', is_authoritative: true, legacy_member_id: `m-${id}`, ...over,
+    });
+    const can = (id, value) => new Map([[`m-${id}`, value]]);
+
+    it('control: an authoritative holder that can_by_member grants is not denied', () => {
+      assert.deepEqual(deniedCurators([eng('a')], can('a', true), [eng('a')], tuples), []);
+    });
+
+    it('an authoritative holder that can_by_member denies is reported', () => {
+      assert.deepEqual(deniedCurators([eng('a')], can('a', false), [eng('a')], tuples), ['a']);
+    });
+
+    it('an engagement past its term is not a defect: losing the grant is the rule (#2896)', () => {
+      const ended = eng('a', { is_authoritative: false });
+      assert.deepEqual(deniedCurators([ended], can('a', false), [ended], tuples), []);
+    });
+
+    it('an engagement that crossed its end_date between the two reads is not a defect', () => {
+      assert.deepEqual(deniedCurators([eng('a')], can('a', false), [eng('a', { is_authoritative: false })], tuples), []);
+    });
+
+    it('an engagement that became authoritative between the two reads is not judged', () => {
+      assert.deepEqual(deniedCurators([eng('a', { is_authoritative: false })], can('a', false), [eng('a')], tuples), []);
+    });
+
+    it('a tuple outside the grant is not checked', () => {
+      const reviewer = eng('a', { role: 'reviewer' });
+      assert.deepEqual(deniedCurators([reviewer], can('a', false), [reviewer], tuples), []);
+    });
+
+    it('an engagement with no member is not checked: can_by_member needs one', () => {
+      const noMember = eng('a', { legacy_member_id: null });
+      assert.deepEqual(deniedCurators([noMember], new Map(), [noMember], tuples), []);
     });
   });
 });
