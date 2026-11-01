@@ -6465,6 +6465,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.modal.videosDuration': '{sec}s',
   'admin.selection.modal.videosConfidence': 'Confianza STT: {pct}%',
   'admin.selection.modal.videosNoAiScoreYet': 'Evaluación subjetiva por IA aún no implementada — sustrato en construcción (B-full).',
+  'admin.selection.modal.videosRestricted': 'Los videos de esta candidatura quedan con la coordinación y la evaluación del ciclo.',
+  'admin.selection.modal.videosRecused': 'Usted es candidato(a) en este ciclo: los videos están bloqueados por conflicto de interés.',
   'admin.selection.modal.returningBadge': 'Retornante',
   'admin.selection.modal.email': 'Email',
   'admin.selection.modal.role': 'Rol',

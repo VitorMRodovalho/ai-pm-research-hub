@@ -6464,6 +6464,8 @@ const enUS: Record<string, string> = {
   'admin.selection.modal.videosDuration': '{sec}s',
   'admin.selection.modal.videosConfidence': 'STT confidence: {pct}%',
   'admin.selection.modal.videosNoAiScoreYet': 'AI subjective scoring not implemented yet — substrate in progress (B-full).',
+  'admin.selection.modal.videosRestricted': 'Videos for this application are available to the cycle lead and evaluators.',
+  'admin.selection.modal.videosRecused': 'You are a candidate in this cycle: videos are blocked due to a conflict of interest.',
   'admin.selection.modal.returningBadge': 'Returning',
   'admin.selection.modal.email': 'Email',
   'admin.selection.modal.role': 'Role',

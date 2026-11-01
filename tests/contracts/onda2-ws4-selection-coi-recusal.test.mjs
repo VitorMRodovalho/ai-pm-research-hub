@@ -78,6 +78,11 @@ const GATED_SURFACES = [
   'get_selection_health',
   'get_application_score_breakdown',
   'get_vep_divergence_report',
+  // #2393 (ADR-0134 §6): a leitura por vaga também recusa quem é candidato no ciclo.
+  'list_opening_applications',
+  'get_opening_application',
+  // ADR-0134, portão provisório do vídeo: o vídeo do candidato também recusa quem é candidato no ciclo.
+  'get_application_video_screenings',
 ];
 
 test('ADR-0109 PR-2: ALL selection surfaces carry the recusal gate (no silent drop)', () => {
