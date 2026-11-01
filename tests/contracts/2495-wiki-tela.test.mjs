@@ -243,5 +243,5 @@ test('#2495 tela: o Comece aqui abre o vídeo da NIA pelo SSOT, sem id solto e s
   const ssot = readFileSync(resolve(ROOT, 'src/data/youtube-playlists.ts'), 'utf8');
   assert.match(ssot, /wikiWelcome: '[A-Za-z0-9_-]{11}',/);
   const sec = readFileSync(resolve(ROOT, 'src/lib/securityHeaders.ts'), 'utf8');
-  assert.match(sec, /"frame-src https:\/\/calendar\.google\.com; "/, 'frame-src continua só com o Google Calendar');
+  assert.match(sec, /"frame-src https:\/\/calendar\.google\.com https:\/\/www\.youtube-nocookie\.com; "/, 'frame-src: o Google Calendar e só o player sem cookies do hero (#2553 PR 3); o wiki não embute');
 });

@@ -123,7 +123,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   .wk-start img { width: 100px; height: auto; }
   .wk-start h3 { font-size: 1.1rem; font-weight: 800; margin: 0 0 .3rem; color: var(--text-primary); }
   .wk-start ol { margin: .4rem 0 .8rem; padding-left: 1.1rem; color: var(--text-secondary); font-size: .84rem; list-style: decimal; }
-  /* O vídeo abre no YouTube: embutir o player exigiria abrir frame-src na CSP, que é item de revisão de segurança. */
+  /* O vídeo abre no YouTube. O frame-src só aceita o player sem cookies do hero da home (#2553 PR 3); embutir aqui também seria decisão nova. */
   .wk-video { display: flex; flex-direction: column; gap: .5rem; border: 1px solid var(--border-default); border-radius: .6rem; padding: .6rem; font-size: .8rem; color: var(--text-secondary); text-decoration: none; }
   .wk-video:hover { border-color: var(--border-strong); }
   .wk-video .thumb { position: relative; display: block; }
