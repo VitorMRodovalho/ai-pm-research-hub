@@ -36016,6 +36016,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rebuild_preview_gate_eligibles_cache_cron: { Args: never; Returns: Json }
       recalculate_cycle_rankings: {
         Args: { p_cycle_id: string; p_reason?: string }
         Returns: Json
