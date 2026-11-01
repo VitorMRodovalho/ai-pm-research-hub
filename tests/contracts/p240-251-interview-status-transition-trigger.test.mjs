@@ -1,8 +1,8 @@
 /**
  * Forward-defense: p240 #251 — interview status transition gap.
  *
- * Origin: PM reproduced 2026-05-24 (#251 reopened): Luíse Quintana +
- *   William Junio (researcher) + 8 others in cycle4-2026 were labelled
+ * Origin: PM reproduced 2026-05-24 (#251 reopened): member B +
+ *   member A (researcher) + 8 others in cycle4-2026 were labelled
  *   'Aguardando Entrevista' in /admin/selection despite having completed
  *   interviews + submitted interview evals.
  *

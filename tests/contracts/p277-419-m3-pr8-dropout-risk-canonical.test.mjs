@@ -11,8 +11,8 @@
  * last p_threshold eligible mandatory events) and EXCUSED is treated as NEUTRAL (D1 / get_attendance_engagement_rate
  * parity — the old body wrongly counted excused as a miss). 8-col shape + p_threshold + manage_event gate preserved.
  *
- * Live smoke (MEASURED, as a manage_event holder, threshold 3): 0 flagged (antes) → 4 flagged (depois): Maria Luiza
- * (T8), Andressa Martins (T2), Gustavo Batista Ferreira (T2), Débora Moura (T2-leader). Two T4 researchers excused
+ * Live smoke (MEASURED, as a manage_event holder, threshold 3): 0 flagged (antes) → 4 flagged (depois): member B
+ * (T8), member C (T2), member A (T2), member D (T2-leader). Two T4 researchers excused
  * in-window correctly do NOT flag. Phase-C md5 file==live (d1005d83105095a9fae313ff64956eca). Invariants 23/23=0.
  *
  * Also folds the home-hero attendance dead-read: HomepageHero read `tribe_events_count ?? tribe_total` (neither

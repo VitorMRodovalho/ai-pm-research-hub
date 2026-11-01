@@ -10,7 +10,7 @@
  * baseline at p204 close: both invariants 0 violations.
  *
  * Scope note: status='converted' is INTENTIONALLY out-of-scope for R. The 1
- * converted-without-member case in production (Adalberto Neris) is an explicit
+ * converted-without-member case in production (member A) is an explicit
  * non-active state documented in `conversion_reason`. See migration header.
  */
 import test from 'node:test';

@@ -14,7 +14,7 @@ import {
  * O nav lia `user.user_metadata.avatar_url` (a foto da identidade OAuth) enquanto o card do
  * /profile lia `members.photo_url` (a foto que o membro sobe na plataforma). Quem subia foto via
  * plataforma via a foto no perfil e continuava vendo as iniciais no nav, do lado do badge de papel
- * — foi exatamente o que o William reportou (nota de voz + print, 29/07/2026). E a allowlist de XSS
+ * — foi exatamente o que o membro reportou (nota de voz + print, 29/07/2026). E a allowlist de XSS
  * do nav só permitia hosts de provedor OAuth, então nem lendo photo_url a imagem passaria.
  *
  * Ver `reference-ui-displays-one-source-authorizes-another`.
@@ -66,7 +66,7 @@ test('host desconhecido e esquema nao-http sao rejeitados', () => {
 });
 
 test('iniciais usam duas letras em maiuscula e nao quebram em nome vazio', () => {
-  assert.equal(initialsFor('William Junio'), 'WJ');
+  assert.equal(initialsFor('Waldo Jota'), 'WJ');
   assert.equal(initialsFor('  '), '?');
   assert.equal(initialsFor(null), '?');
 });

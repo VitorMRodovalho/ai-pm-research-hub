@@ -2,7 +2,7 @@
  * #1997 — quem não tem conta na plataforma para de ser cobrado por uma jornada que não
  * consegue abrir, e o admin passa a enxergar essa diferença.
  *
- * O caso: Farhad Abdollahyan, aprovado como líder em 14/08, 16 passos de onboarding, 0 feitos,
+ * O caso: member A, aprovado como líder em 14/08, 16 passos de onboarding, 0 feitos,
  * `members.auth_id` NULL. Três passos já `overdue` — um deles chamado literalmente
  * `platform_access`. O detector marcou atraso no passo "conseguir acesso" e cobrou a pessoa por
  * isso numa notificação in-app, cujo link (`/workspace`, para onde `/onboarding` redireciona)

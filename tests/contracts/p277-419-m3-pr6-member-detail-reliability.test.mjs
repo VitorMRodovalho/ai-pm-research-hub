@@ -9,7 +9,7 @@
  *     [silent 3rd denom] → engagement (Participação) + reliability (Confiabilidade) via canonical primitives;
  *     (c) recent[].present = att.id IS NOT NULL → att.present = true. Raw P/A/E/no_record + eligible recent[].
  *
- * Live smoke (as Vitor): Jefferson Pinto buggy rate 9.6% (27/281) → engagement 100% + reliability 100% (24/24
+ * Live smoke (as Vitor): member A buggy rate 9.6% (27/281) → engagement 100% + reliability 100% (24/24
  * eligible, P24/A0/E0); recent[] eligible-only with present=att.present. Non-attendance member-detail sections
  * byte-identical. Reliability counts: global P586→577/A6→5/E56→54 (−12 non-elig), PMI-GO P198→191. md5 file==live.
  *

@@ -1,7 +1,7 @@
 /**
  * Contract: #1325 — a membresia numa research_tribe (via o picker) concede 'researcher', não 'participant'.
  *
- * Incidente (2026-07-11, reportado pela membra Ligia Ribeiro): sumiu do ranking público de trilha.
+ * Incidente (2026-07-11, reportado pela membra member A): sumiu do ranking público de trilha.
  * review_tribe_request(approve) inseria o engagement de entrada com role='participant'.
  * sync_operational_role_cache mapeia volunteer/participant para o fallback 'guest' (não casa nenhuma
  * regra de researcher/leader), e get_public_trail_ranking exclui operational_role IN (...,'guest').

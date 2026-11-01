@@ -37,7 +37,7 @@ test('aceita Assisted-By, que e a atribuicao correta', () => {
 });
 
 test('aceita Co-Authored-By de pessoa', () => {
-  assert.equal(runHook(SUBJECT + 'Co-Authored-By: Maria Silva <maria@example.org>\n'), 0);
+  assert.equal(runHook(SUBJECT + 'Co-Authored-By: Fulano de Tal <autor@example.org>\n'), 0);
 });
 
 test('linha de comentario (#) nao conta, porque o git a remove', () => {

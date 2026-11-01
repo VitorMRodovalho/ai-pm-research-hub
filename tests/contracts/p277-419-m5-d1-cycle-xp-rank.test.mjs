@@ -4,7 +4,7 @@
  * BUG (live-grounded 2026-06-04, cycle_3 start 2026-03-01): the RPC DISPLAYED each member's
  * cycle XP (points since cycle_start) but computed rank_position by LIFETIME XP
  * (ROW_NUMBER() OVER (ORDER BY SUM(points) DESC), no cycle filter, no tiebreak). The #1 cycle
- * earner (Hayala Curto, 435 cycle XP) surfaced at rank #12 (her all-time total); 31 of 60
+ * earner (member A, 435 cycle XP) surfaced at rank #12 (her all-time total); 31 of 60
  * members shared a cycle-XP value so ties ranked non-deterministically.
  *
  * FIX (migration 20260805000101, body-only CREATE OR REPLACE, same signature):
