@@ -9,10 +9,10 @@
 --   and members are clean (0 fuzzy dups; Ana not yet onboarded → no member/person leak yet).
 --   The leak would materialize at the onboarding/conversion boundary, NOT now. This RPC is
 --   the RADAR so the dimension is monitored as VEP waves accumulate — it does NOT merge or
---   mutate any data (PM decision 2026-06-14: do not touch Ana's data).
+--   mutate any data (PM decision 2026-06-14: do not touch the candidate's data).
 --
 -- DETECTION = multi-signal fuzzy match (NOT group-by-name — the anchor case has DIFFERENT
---   names per account: "Ana Pacheco" vs "Ana Sofia Pires Pacheco"):
+--   names per account: "Fulano Alfa" vs "Fulano Beta Gama Alfa"):
 --   * exact corroborators, name-independent → confidence HIGH:
 --       same email / phone / linkedin / resume_url across DIFFERENT pmi_id.
 --   * fuzzy name (pmi_id distinct AND email distinct):
@@ -20,7 +20,7 @@
 --       trigram similarity(name) >= 0.55                       → 'fuzzy_name'        (MEDIUM)
 --   Name normalization: lower + manual unaccent (translate) + strip non-alpha. Mirrors the
 --   live grounding query that produced the n=1 dimension. The 0.35–0.45 tail (coincidental
---   BR surnames: Pimenta/Vidal, Oliveira/Silva variants) is deliberately EXCLUDED.
+--   BR surnames: Alfa/Beta, Gama/Delta variants) is deliberately EXCLUDED.
 --
 -- AUTHORITY: can_by_member(caller,'manage_member'). Identity reconciliation / dedup is
 --   member-lifecycle work; manage_member is the authority that already reads every
