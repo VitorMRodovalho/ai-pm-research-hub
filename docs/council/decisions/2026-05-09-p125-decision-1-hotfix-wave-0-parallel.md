@@ -4,7 +4,7 @@
 **Decided by:** Vitor Rodovalho (PM)
 **Status:** Accepted
 **Reversibility:** Medium (calendar deploy reversível; ADR doc + RPC invariant additive)
-**Path impact (Trentim A/B/C):** preserva (operational debt cleanup)
+**Path impact (member A A/B/C):** preserva (operational debt cleanup)
 
 ## Context
 

@@ -36,15 +36,15 @@ This document consolidates 11 council agent reviews. Each agent saw the same inp
 
 ## 2. C-Level Advisor
 
-**TL;DR:** Path A/B/C todos preservados. Estrutural blockers (`cost_entries` sem org_id + `supabase.ts` single-host) escalar como Ω-E gates pré-pilot, **NÃO mistura com Ω-A i18n** (atomicidade do diff). Ω-A direta unblocking para Natália + CPMAI. Para Detroit/LIM, whitepaper lidera com 33 READY substrate (Agent D) + framing honesto da MISSING como roadmap. **Red flag sustentabilidade**: zero segundo operadores documented = `CHAPTER_ONBOARDING_PLAYBOOK.md` mandatory antes Detroit.
+**TL;DR:** Path A/B/C todos preservados. Estrutural blockers (`cost_entries` sem org_id + `supabase.ts` single-host) escalar como Ω-E gates pré-pilot, **NÃO mistura com Ω-A i18n** (atomicidade do diff). Ω-A direta unblocking para member B + CPMAI. Para Detroit/LIM, whitepaper lidera com 33 READY substrate (Agent D) + framing honesto da MISSING como roadmap. **Red flag sustentabilidade**: zero segundo operadores documented = `CHAPTER_ONBOARDING_PLAYBOOK.md` mandatory antes Detroit.
 
 **Path-by-path impact**:
 - **Path A (PMI internal)**: APROXIMADO por 33 READY pages + trilingue + Sympla replacement. CLOSED por single-host blockers. Resolver Ω-E antes pitch meeting.
 - **Path B (consulting)**: APROXIMADO. Sub-agent C/D/E artifacts são deliverables consulting prontos. NFS-e Receita 2026 = insight valioso pago. Trilingue gate antes demos internacionais.
-- **Path C (Trentim founder/community)**: APROXIMADO. Trilingue = community-growth blocker. Sustainability gap = single operator documented. Open-source framing convida contribuição.
+- **Path C (member C founder/community)**: APROXIMADO. Trilingue = community-growth blocker. Sustainability gap = single operator documented. Open-source framing convida contribuição.
 
 **Demo windows criticality**:
-- **Natália PMI Latam (próxima)**: Português safe; ES risk médio; CPMAI page priority; 3-5h work pré-touchpoint.
+- **member B PMI Latam (próxima)**: Português safe; ES risk médio; CPMAI page priority; 3-5h work pré-touchpoint.
 - **Detroit/LIM (Sep-Oct 2026)**: highest stakes. Multi-client gap = narrative risk. **LIM Lima 13-Aug** (session #747 accepted) é tighter constraint. Agent D directorate cross-ref table = LIM whitepaper appendix verbatim.
 - **CPMAI Latam multi-país**: maior frequência; trilingue `/cpmai.astro` priority.
 
@@ -171,7 +171,7 @@ CREATE POLICY "cost_entries_org_scoped" ON public.cost_entries
 
 ## 5. Security Engineer
 
-**TL;DR:** Single-org RLS é solid. **Critical risk Ω-A**: undefined security architecture for multi-tenant. 3 áreas requerem gate decisions antes pilot chapter 2: (1) `supabase.ts` fallback hard-bind ao Núcleo project ref, (2) zero `organization_id` em new p125 tables, (3) NF-e A1 cert storage com NO current answer. Anonymize bifurcated cron é o melhor LGPD retention chain do codebase. ADR-0076 anonymization ship-ready contingent Wave 4 Ivan sign-off.
+**TL;DR:** Single-org RLS é solid. **Critical risk Ω-A**: undefined security architecture for multi-tenant. 3 áreas requerem gate decisions antes pilot chapter 2: (1) `supabase.ts` fallback hard-bind ao Núcleo project ref, (2) zero `organization_id` em new p125 tables, (3) NF-e A1 cert storage com NO current answer. Anonymize bifurcated cron é o melhor LGPD retention chain do codebase. ADR-0076 anonymization ship-ready contingent Wave 4 member D sign-off.
 
 **1. Multi-tenant isolation analysis**:
 - Frontend ✅ adequate single-tenant: zero `organization_id` em queries frontend = correct server-side defense (RLS via `members.organization_id`).
@@ -199,7 +199,7 @@ Required:
 - **NFeWizard-io GPL-3.0 — HIGH, requires legal-counsel ADR**: questão "distribution under GPL § 4-6". FSF interpretation: network services NOT distribution (ASP loophole; AGPL fecha). NFeWizard-io é GPL-3.0 não AGPL. Tentative: server-side EF/Worker NOT distribution to users. Cloudflare Workers bundle deploy is unresolved case law. Alternative `node-sped-nfe` MIT eliminates risk. **Recommendation**: escalate legal-counsel; if urgent timeline use node-sped-nfe interim.
 
 **5. LGPD chapter rollout**:
-- ADR-0076 single controlador (PMI-GO). Multi-chapter creates "operador + multiple controladores" novo legal subject. Required: legal-counsel confirm operador role + DPA artifact. Wave 4 parallel Ivan DPO.
+- ADR-0076 single controlador (PMI-GO). Multi-chapter creates "operador + multiple controladores" novo legal subject. Required: legal-counsel confirm operador role + DPA artifact. Wave 4 parallel member D DPO.
 - `anonymize_rejected_applicants` operates globally sem `organization_id` scoping. SECURITY DEFINER bypasses RLS. Required pre-multi-chapter: add `p_organization_id` parameter; cron schedules per-organization.
 - Art. 18 cycle: consent ✓; access (`list_pii_access_log_admin` not org-scoped); export gap selection_applications PII; delete/anonymize bifurcated cron comprehensive `data_anomaly_log` exception logging — notable improvement.
 
@@ -220,7 +220,7 @@ Required:
 6. (conditional) `p_organization_id` anonymize crons
 7. (deferred) Signed-export RPC applicant PII Cycle 4
 
-**Ship gate ADR-0076 + p125 migrations: CONDITIONAL OK**. Ivan signs base legal + retention before crons activate `p_dry_run=false`. NF-e Track 3 BLOCK. Multi-chapter PMIS BLOCK on supabase.ts decision. NFeWizard-io BLOCK GPL clearance. Single-chapter platform: OK ship.
+**Ship gate ADR-0076 + p125 migrations: CONDITIONAL OK**. member D signs base legal + retention before crons activate `p_dry_run=false`. NF-e Track 3 BLOCK. Multi-chapter PMIS BLOCK on supabase.ts decision. NFeWizard-io BLOCK GPL clearance. Single-chapter platform: OK ship.
 
 **Risk flags security**: 10 flags ranked R1-R10; supabase.ts fallback (HIGH), CANONICAL_HOST (MED), NF-e cert undefined (CRITICAL), NFeWizard-io GPL (HIGH), anonymize crons not org-scoped (MED), DPA undefined (HIGH), pii_access_log not org-scoped (LOW), mailto hardcoded (LOW), service_history promote broad (LOW accepted), OAuth issuer hardcoded (MED).
 
@@ -292,7 +292,7 @@ Required:
 **TL;DR:** Núcleo IA Hub é real-market problem chasing defensible wedge MAS **NÃO investável today**. Real substrate (multi-tenant scaffolding, governance chains, Sustentabilidade 5 tables) MAS commercialization variables todas open: zero paying chapters, zero CAC, no validated pricing, multi-tenant gap 40 HIGH/MED items 3-6 months work pre-second chapter safe. Investability gate: close ONE paying pilot chapter (PMI-GO/CE) at any price, measure retention, price-anchor from there.
 
 **5 questions investidor faria**:
-1. Quem escreveu cheque? PMI-GO uses free, Natalia "integrate not buy". 0 paying after 43 active members + 15 seeded chapters = core commercial risk.
+1. Quem escreveu cheque? PMI-GO uses free, member B "integrate not buy". 0 paying after 43 active members + 15 seeded chapters = core commercial risk.
 2. Counter-argument Wild Apricot ~$50-150/mo (UNVALIDATED — WebFetch blocked)? "AI/MCP layer" precisa survive 10 seconds skepticism.
 3. Sympla replacement = best near-term monetization. Build timeline + NFS-e legal sign-off?
 4. Multi-client gap 40 severity items deep — quem builds, timeline, funded how?
@@ -301,7 +301,7 @@ Required:
 **Moat: FORMING — não exists yet**:
 - AI/MCP differentiation: per-chapter MCP candidate moat IF accumulates chapter-specific structured data (governance, volunteer, financial) making switching costly. Today single-tenant; multi-tenant scoping não built. Moat forms when (a) chapter-own MCP endpoint, (b) chapter-specific data accumulates isolation, (c) switching = lose institutional memory.
 - Defensibility 12-24mo: governance chains (genuinely hard replicate 6-9 months minimum); volunteer lifecycle V4 (4-6 months replicate); trilingue + LATAM positioning regional wedge; **network effects ABSENT today** (no cross-chapter knowledge transfer).
-- 18-month moat-killer: PMI Global builds/acquires chapter-ops platform (budget + distribution). Asymmetric downside Natalia "integrate" = prelude PMI absorbing internal tool no equity event.
+- 18-month moat-killer: PMI Global builds/acquires chapter-ops platform (budget + distribution). Asymmetric downside member B "integrate" = prelude PMI absorbing internal tool no equity event.
 
 **TAM/SAM/SOM (UNVALIDATED — knowledge cutoff Aug 2025)**:
 - Global PMI: ~300 chapters (verify pmi.org). Realistic paying TAM: 100-150 chapters >100 active + budget + pain. **TAM ~120 × R$1500/mo = R$2.16M ARR (~$432K USD) bootstrap-scale not venture**.
@@ -342,9 +342,9 @@ Required:
 - Multi-tenant whitelabel MVP (ADR-F Phase 1)
 
 **Path A/B/C capital path**:
-- **A (PMI partnership)**: Natalia "integrate not buy" = opening; PMI moves slowly (2026→2028 likely); PMI may absorb not pay. **Distribution accelerator NOT monetization**. Don't expect PMI check.
+- **A (PMI partnership)**: member B "integrate not buy" = opening; PMI moves slowly (2026→2028 likely); PMI may absorb not pay. **Distribution accelerator NOT monetization**. Don't expect PMI check.
 - **B (consulting bootstrap)**: highest capital efficiency. R$5-20K per chapter onboard + monthly platform fee. Bootstrap to 3-5 paying then raise on demonstrated traction. **Correct first move**.
-- **C (PE/VC)**: only after Path B validates 5+ chapters R$15-20K MRR. R$500K-1.5M raise hire 2 engineers + CS + ADR-H. NOT traditional VC (TAM too small 100x return). BR angel syndicate, impact/edtech angels, strategic (Trentim/LSB). Multiple at exit BR edtech/community SaaS 3-8x ARR. R$100K ARR (5 chapters) → exit R$300K-800K. Acquirer candidates: PMI Global internal, consulting firm, Sympla/Evently.
+- **C (PE/VC)**: only after Path B validates 5+ chapters R$15-20K MRR. R$500K-1.5M raise hire 2 engineers + CS + ADR-H. NOT traditional VC (TAM too small 100x return). BR angel syndicate, impact/edtech angels, strategic (member C/LSB). Multiple at exit BR edtech/community SaaS 3-8x ARR. R$100K ARR (5 chapters) → exit R$300K-800K. Acquirer candidates: PMI Global internal, consulting firm, Sympla/Evently.
 
 **Recomendação Ω-A capital-efficient**:
 Ω-A → Ω-B sequence technically correct mas commercially back-loaded. Translation = blocking dependency institutional demos but generates zero revenue. **Recommended**:
@@ -357,7 +357,7 @@ Do NOT build ADR-I through ADR-L before steps 1-4 yield paying customer.
 
 **Risk flags VC**:
 1. Single-founder technical concentration (Vitor sole engineer, bus factor=1) — institutional checks blocker
-2. PMI brand dependency — risk Natalia "integrate" prelude absorption
+2. PMI brand dependency — risk member B "integrate" prelude absorption
 3. NFeWizard-io GPL-3 IP liability commercial SaaS
 4. 40 HIGH/MED multi-tenant findings = real eng weeks data-leakage risk (DPO names cross-chapter = LGPD violation)
 5. TAM bootstrap-scale not venture — Brazilian PMI chapter SaaS peaks ~R$250-300K ARR. Strong SMB/bootstrap, NOT VC unless Path A activates. **Pitch que não acknowledges esta distinction = detected immediately**.
@@ -449,10 +449,10 @@ Do NOT build ADR-I through ADR-L before steps 1-4 yield paying customer.
 
 **CPMAI Latam catalyst** (PT+ES simultaneous Sep-Oct 2026):
 - Demo Núcleo: CPMAI attendees automatically receive (1) certificate via Núcleo, (2) recording access token-gated, (3) subscriber record follow-up, (4) PMI member discount validated registration → PMI Latam concrete operational benefit.
-- **Concrete ask Natalia testing commitment**: "Você pode nos ceder acesso Airmeet API pra piloto integração antes CPMAI?" Zero-cost ask. Yes = design partner. "Check with team" = validator.
+- **Concrete ask member B testing commitment**: "Você pode nos ceder acesso Airmeet API pra piloto integração antes CPMAI?" Zero-cost ask. Yes = design partner. "Check with team" = validator.
 
 **PMI Latam relationship dynamics**:
-- Natalia validator NÃO client. Don't over-invest. Secondary test: "Podemos incluir integração Airmeet caso uso whitepaper Detroit?" Yes = design partner. Approval needed = validator.
+- member B validator NÃO client. Don't over-invest. Secondary test: "Podemos incluir integração Airmeet caso uso whitepaper Detroit?" Yes = design partner. Approval needed = validator.
 
 **Sustentabilidade as differentiator**:
 - Single-tenant admin-only hoje. Cannot differentiate até V5 financial refactor lands.
@@ -477,7 +477,7 @@ Benefits 4+ (Sympla, NFS-e, financial) = 90-day horizon.
 
 **Brand strategy chapters**:
 - Acordo Cooperação tech pilot ANTES second chapter signs — `legal-counsel` flag.
-- Natalia incident (Vargas "ação PMI") = brand bleed organic when product good. Mitigation = canonical language ready partners use NÃO brand policing. Boilerplate `feedback_pmi_brand_canonical` + distribute proactively.
+- member B incident (member G "ação PMI") = brand bleed organic when product good. Mitigation = canonical language ready partners use NÃO brand policing. Boilerplate `feedback_pmi_brand_canonical` + distribute proactively.
 
 **Path A/B/C reinforcement**:
 - **Path A pitch line for Detroit/LIM**: "15 chapters, 1 platform, R$120K/year external tool fees eliminated, zero PMI Global budget required." PMI Global programs cannot replicate (top-down sale). Núcleo = chapter-peer software built by chapter for chapters.
@@ -490,8 +490,8 @@ Concrete Ω-A output GTM value beyond i18n: Agent E `cost_entries`/`revenue_entr
 
 **Risk flags**:
 1. **Kill sequence inversion**: Sympla full-stack before V5 financial = single-tenant tables commingle data → LGPD violation + migration headache
-2. **Airmeet over-investment**: 2 sprints integration if Natalia not committed = stranded
-3. **Brand exposure pre inter-chapter agreement**: fee-on-ticket activates revenue chapters before legal framework. Angelina (advogada PMI-GO voluntária) review BEFORE first external chapter payment.
+2. **Airmeet over-investment**: 2 sprints integration if member B not committed = stranded
+3. **Brand exposure pre inter-chapter agreement**: fee-on-ticket activates revenue chapters before legal framework. member E (advogada PMI-GO voluntária) review BEFORE first external chapter payment.
 4. **Closes optionality A/B/C**: fee-on-ticket shifts Núcleo Path A voluntary → Path B commercial. Escalate `c-level-advisor` before pricing communicated. Today framed "operational cost recovery"; once contract signed, optionality narrows.
 5. **NFeWizard-io GPL-3.0**: do not import without explicit `legal-counsel` sign-off. Use NFS-e API direct primary path.
 
@@ -506,7 +506,7 @@ Chapters cobrando eventos = OBRIGADOS emissão NFS-e. **Simples Nacional obrigat
 GPL-3.0 ≠ AGPL-3.0. Edge Function Deno **server-side NÃO distribuindo código ao cliente final = tecnicamente compatível com GPL-3.0**. Risco surge SE código for published as package/SDK. **Documentar decisão em ADR-0079**. **Preferir node-sped-nfe** (LGPL-3.0/MIT dual = mais permissivo, todas opções futuras abertas).
 
 **3. LGPD chapter rollout — data controller architecture**:
-Cada chapter = controlador independente. Núcleo = operador. **DPA por chapter ANTES pilot PMI-CE = MANDATORY**. RPCs sem `p_organization_id` explicit = LGPD hard blocker. **DPO compartilhado (Ivan) é VIÁVEL durante fase piloto** SE formalizado em cláusula Acordo de Cooperação.
+Cada chapter = controlador independente. Núcleo = operador. **DPA por chapter ANTES pilot PMI-CE = MANDATORY**. RPCs sem `p_organization_id` explicit = LGPD hard blocker. **DPO compartilhado (member D) é VIÁVEL durante fase piloto** SE formalizado em cláusula Acordo de Cooperação.
 
 **4. ADR-0076 base legal Art. 7 IX replicabilidade**:
 ✅ Replicável todos chapters com 3 condições: (a) LIA simplificada por chapter, (b) privacy policy adaptada identifying chapter-controlador, (c) candidato ciente escopo multi-chapter ao se inscrever. **Retention 5y/12m/90d uniformes** (LGPD federal).
@@ -514,11 +514,11 @@ Cada chapter = controlador independente. Núcleo = operador. **DPA por chapter A
 **5. PMI brand hierarchy risk**:
 **Risco BAIXO** se Núcleo mantém branding próprio + chapters como "operadores da plataforma Núcleo IA Hub". **Risco MÉDIO** se nomeadas "PMI-CE Platform" (cria expectativa PMI Global oficial). **Mailto hardcoded HIGH must-fix pré-pilot**.
 
-**6. Termo Voluntariado v2.7 §15.4 Roberto**:
-NÃO bloqueia Ω-A/B/C técnicos. Bloqueia emissão Termos voluntários PMI-CE. Decisão Opção C (híbrida) bem fundamentada — CF art. 5 XXXVI + Lei 9.610/98 art. 49. **Angelina deve validar mecanismo "ciência prévia" como substituto consentimento expresso**.
+**6. Termo Voluntariado v2.7 §15.4 member A**:
+NÃO bloqueia Ω-A/B/C técnicos. Bloqueia emissão Termos voluntários PMI-CE. Decisão Opção C (híbrida) bem fundamentada — CF art. 5 XXXVI + Lei 9.610/98 art. 49. **member E deve validar mecanismo "ciência prévia" como substituto consentimento expresso**.
 
 **7. Política IP v2.7 Wave 1-5**:
-NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + Trentim Path B firewall legalmente vinculante**. IP Policy v3 (Q3/2026) = veículo firewall definitivo.
+NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + member C Path B firewall legalmente vinculante**. IP Policy v3 (Q3/2026) = veículo firewall definitivo.
 
 ---
 
@@ -533,9 +533,9 @@ NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + Trenti
 
 **2. Governance chain analysis**:
 - **ADR-NEW-D per-chapter MCP** affects LGPD Art. 7 IX base legal scope (ADR-0076 pending Wave 4). Don't finalize until ADR-0076 closes.
-- **ADR-NEW-E per-chapter privacy policy** = LGPD compliance instrument not product decision. PMI-CE different DPO mandatory (currently Ivan + Angeline hardcoded). Requires `legal-counsel` co-sign.
+- **ADR-NEW-E per-chapter privacy policy** = LGPD compliance instrument not product decision. PMI-CE different DPO mandatory (currently member D + member F hardcoded). Requires `legal-counsel` co-sign.
 - **ADR-NEW-G i18n bundles chapter-aware** = brand representations. ~150+ keys "Núcleo IA & GP"/"Goiás" — chapter sign-off mandatory before bundle overlay deployed.
-- **Curador signatures pending pre any multi-chapter**: Roberto Macedo open comments (5 unresolved Política IP v2.7 + Termo Voluntário) MUST close. Expanding chapter with open curator objections = audit trail showing known issues unresolved at expansion time.
+- **Curador signatures pending pre any multi-chapter**: member A open comments (5 unresolved Política IP v2.7 + Termo Voluntário) MUST close. Expanding chapter with open curator objections = audit trail showing known issues unresolved at expansion time.
 
 **3. Budget impact**:
 - i18n 13-21h: PM bandwidth opportunity cost. **5 critical pages 3-5h delivers 80% demo-readiness**. Schedule remainder Ω-B.
@@ -550,9 +550,9 @@ NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + Trenti
 **5. Risk management**:
 - Sustentabilidade module no role-based separation. PMI-CE Diretor Financeiro role chapter-scoped + write entries + read-only other chapters + auditable does NOT exist. Don't expose without role design (ADR-0077).
 - **NF-e fiscal responsibility chapter assumes**: chapter CNPJ = legal emitter. Errors = chapter responsibility. Required: (a) DPA Núcleo↔chapter, (b) UI fiscal terms chapter responsible, (c) chapter policy authorize NFS-e emission. **NONE EXIST**.
-- **LGPD Art. 42 joint controller liability**: PMI-CE = controller, Núcleo = processor. Required: (a) DPA per chapter, (b) PMI-CE own DPO not Ivan, (c) PMI-CE privacy policy version, (d) chapter-isolated extraction Art. 18 (LGPD cron 5y currently global not per-chapter).
+- **LGPD Art. 42 joint controller liability**: PMI-CE = controller, Núcleo = processor. Required: (a) DPA per chapter, (b) PMI-CE own DPO not member D, (c) PMI-CE privacy policy version, (d) chapter-isolated extraction Art. 18 (LGPD cron 5y currently global not per-chapter).
 
-**Concrete worst-case PMI-CE Art. 18 deletion request**: Ivan (PMI-GO DPO) receives notification → not PMI-CE DPO → handling PMI-GO domain not PMI-CE → PMI-CE president legally exposed for Art. 18 failure unaware. **Chapter president exposure scenario must close before pilot**.
+**Concrete worst-case PMI-CE Art. 18 deletion request**: member D (PMI-GO DPO) receives notification → not PMI-CE DPO → handling PMI-GO domain not PMI-CE → PMI-CE president legally exposed for Art. 18 failure unaware. **Chapter president exposure scenario must close before pilot**.
 
 **6. Diretoria handover playbook MISSING = critical**:
 PMI annual elections. Outgoing → incoming must: (1) receive admin transfer, (2) understand existing data + decisions + obligations (LGPD, governance, financial), (3) continue financial reporting uninterrupted. NO handover workflow. Closest = audit log MCP. Year-end financial reconciliation impossible audit log alone.
@@ -569,7 +569,7 @@ Lei 6.404/76 + CFC: signing financial statements requires Contador with CRC. Dis
 Platform must NOT present substitute professional accounting. **UI fiscal emission carry**: "Esta plataforma é ferramenta apoio. Responsabilidade fiscal pela NFS-e/NFC-e emitida é inteiramente do capítulo como pessoa jurídica, devendo manter contabilidade formal junto a profissional contábil habilitado."
 
 **ADR sequencing governance-safe (Gates)**:
-- **Gate 0** (async, no Ω-A block): Roberto comments close + ADR-0076 Wave 4 Ivan DPO
+- **Gate 0** (async, no Ω-A block): member A comments close + ADR-0076 Wave 4 member D DPO
 - **Gate 1** (pre-second-chapter): ADR-NEW-C contact emails + ADR-0077 multi-tenant financial + decision log entries all ADRs
 - **Gate 2** (pre-fiscal module): DPA template + legal-counsel review ADR-NEW-E + ADR-0079 + chapter fiscal responsibility terms
 - **Gate 3** (pre-prod financial): ADR-NEW-B brand schema + ADR-NEW-D MCP (post-ADR-0076) + ADR-NEW-A URL routing + ADR-0078 ticketing
@@ -583,7 +583,7 @@ Platform must NOT present substitute professional accounting. **UI fiscal emissi
 - NF-e no DPA: HIGH/CRITICAL **Gate 2**
 - LGPD Art. 18 wrong DPO: HIGH/HIGH **Gate 1**
 - Diretoria handover no playbook: CERTAIN/MED-HIGH **Create before pilot**
-- Roberto curator open at expansion: MED/MED **Gate 0**
+- member A curator open at expansion: MED/MED **Gate 0**
 - Volunteer Financeiro fiscal no disclaimer: HIGH/MED **Gate 2**
 - ADR-NEW-A/G no decision log: CERTAIN/MED **Before any Ω-E implementation**
 - i18n PT-only PMI international demos: HIGH/MED **Ω-A close**

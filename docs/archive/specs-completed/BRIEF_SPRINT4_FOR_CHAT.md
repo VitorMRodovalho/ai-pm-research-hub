@@ -15,7 +15,7 @@ A plataforma está tecnicamente sólida mas **não mede o que importa**. Temos:
 - MCP usage logging funcional (mcp_usage_log)
 - Adoption dashboard com auth providers + designation filter
 
-**O que falta:** instrumentação granular de features. Sabemos quantos pageviews temos, mas não sabemos se alguém criou um card, moveu um card, viu um webinar, leu um blog post, ou emitiu um certificado. Sem isso, o report para sponsors e a demo para Mario Trentim (3/Abr) carecem de dados concretos de uso.
+**O que falta:** instrumentação granular de features. Sabemos quantos pageviews temos, mas não sabemos se alguém criou um card, moveu um card, viu um webinar, leu um blog post, ou emitiu um certificado. Sem isso, o report para sponsors e a demo para member A (3/Abr) carecem de dados concretos de uso.
 
 ---
 
@@ -124,7 +124,7 @@ posthog.capture('board_card_created', { board_id, tribe_id, tags });
 | Pesquisador | 32 | Ver uso próprio, perfil completo | ✅ profile_updated event, filter |
 | Líder de Tribo | 7 | Board analytics, attendance filter | ✅ board events, designation filter |
 | Comms | 3 | Blog engagement metrics | ✅ blog_post_read event |
-| GP | 2 | Visão consolidada, demo para Mario | ✅ Todos os eventos + smoke test |
+| GP | 2 | Visão consolidada, demo para member A | ✅ Todos os eventos + smoke test |
 | Sponsor | 5 | Report com dados reais | ✅ PostHog events alimentam dashboards |
 | Chapter Liaison | 3 | Filtrar membros do capítulo | ✅ Designation filter |
 
@@ -132,8 +132,8 @@ posthog.capture('board_card_created', { board_id, tribe_id, tags });
 
 - **Customer Obsession:** Os 32 pesquisadores e 7 líderes são os clientes primários. As instrumentações medem se eles estão realmente a beneficiar da plataforma.
 - **Insist on the Highest Standards:** O smoke test garante que cada deploy mantém a qualidade. Zero regressões.
-- **Bias for Action:** Todos os 3 specs são executáveis sem blockers externos. Não dependem do Ivan, dos sponsors, ou do MCP connector.
-- **Deliver Results:** A demo para Mario (3/Abr) precisa de dados concretos. PostHog events são o caminho.
+- **Bias for Action:** Todos os 3 specs são executáveis sem blockers externos. Não dependem do member B, dos sponsors, ou do MCP connector.
+- **Deliver Results:** A demo para member A (3/Abr) precisa de dados concretos. PostHog events são o caminho.
 
 ### Decisões já tomadas (não mudar)
 
@@ -173,4 +173,4 @@ O Code executa specs na ordem que o Product Leader define. Cada spec gera 1 comm
 | 29/Mar | Brief enviado ao Chat Claude |
 | 30-31/Mar | Specs produzidas e validadas |
 | 1-2/Abr | Code implementa Sprint 4 |
-| 3/Abr 10:00 ET | Demo Mario Trentim (com dados reais de PostHog) |
+| 3/Abr 10:00 ET | Demo member A (com dados reais de PostHog) |

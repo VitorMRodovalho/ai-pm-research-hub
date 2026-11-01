@@ -10,11 +10,11 @@
 
 ### D1: Logica de skip de membros inativos e fragil
 **Problema:** A RPC `import_vep_applications` faz skip de qualquer email que exista em `members` com `is_active = false`. Isso bloqueia ex-voluntarios que retornam legitimamente (ex: alguem do ciclo 1 que quer participar do ciclo 3).
-**Caso real:** Leandro Mota (offboarded 18/Mar no ciclo 3) apareceu como "Submitted" no VEP. A logica corretamente skipou, mas a regra e muito ampla.
+**Caso real:** member A (offboarded 18/Mar no ciclo 3) apareceu como "Submitted" no VEP. A logica corretamente skipou, mas a regra e muito ampla.
 **Regra correta:** So bloquear quem foi inativado DENTRO DO CICLO ATUAL. Ex-voluntarios de ciclos anteriores que reaplicam sao candidatos legitimos.
 
 ### D2: Dados de teste contaminaram producao
-**Problema:** Os 8 candidatos do primeiro import manual tinham dados parciais (sem essays, membership fake). O Joao Uzejka apareceu como PMI-GO quando na realidade e PMI-RS.
+**Problema:** Os 8 candidatos do primeiro import manual tinham dados parciais (sem essays, membership fake). O member B apareceu como PMI-GO quando na realidade e PMI-RS.
 **Causa:** Import manual via SQL com dados simplificados antes do CSV real estar disponivel.
 **Solucao:** Limpar dados de teste e reimportar do CSV real.
 
@@ -32,10 +32,10 @@
 **Problema:** O CSV tem "Application Submitted" date mas nao estamos importando. O campo `created_at` do DB recebe `now()` (data de import) em vez da data real de candidatura.
 **Implicacao:** Timeline de selecao fica incorreta. Candidatos que aplicaram em Marco aparecem como se tivessem aplicado em Abril.
 
-### D5: Joao PMI-GO vs PMI-RS
+### D5: member B PMI-GO vs PMI-RS
 **Causa raiz:** Import manual com dados fake. O membro tem `chapter = PMI-RS` na tabela members, mas a selection_application tem `chapter = PMI-GO` do import manual.
-**Nota:** No CSV real do VEP (vep_app_id 281787), Joao aparece com status "Active" (ja aceito) e membership "Individual Membership,Goias, Brazil Chapter" — isso e o CHAPTER DA VAGA (PMI-GO posted a vaga), nao o chapter do voluntario.
-**Descoberta critica:** O campo "Membership status" do CSV mistura o tipo de membership com os CHAPTERS QUE O VOLUNTARIO E FILIADO, nao o chapter que postou a vaga. Mas um voluntario pode ser filiado a multiplos chapters. Joao pode ser filiado a PMI-GO E PMI-RS.
+**Nota:** No CSV real do VEP (vep_app_id 281787), member B aparece com status "Active" (ja aceito) e membership "Individual Membership,Goias, Brazil Chapter" — isso e o CHAPTER DA VAGA (PMI-GO posted a vaga), nao o chapter do voluntario.
+**Descoberta critica:** O campo "Membership status" do CSV mistura o tipo de membership com os CHAPTERS QUE O VOLUNTARIO E FILIADO, nao o chapter que postou a vaga. Mas um voluntario pode ser filiado a multiplos chapters. member B pode ser filiado a PMI-GO E PMI-RS.
 
 ---
 
@@ -136,7 +136,7 @@ CREATE TABLE vep_opportunities (
 ### R4: Cleanup Batch 2 (IMEDIATO)
 - Deletar os 8 registros de teste manual
 - Reimportar do CSV real com parser corrigido
-- Joao sera importado corretamente como returning member com dados reais
+- member B sera importado corretamente como returning member com dados reais
 
 ### R5: Chapter merge logic (BAIXO)
 - Ao importar, se email existe em members table, usar o chapter da members table como primario

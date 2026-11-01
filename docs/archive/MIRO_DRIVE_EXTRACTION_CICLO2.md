@@ -18,16 +18,16 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 ## Tribe Content Map
 
 ### Miro Tribo 3 (Ciclo 2) — "Portfólio & Priorização"
-**Ciclo 3 equivalent:** Closest to T6 (ROI & Portfólio, Fabricio)
-**Members visible:** Mayanna Duarte, Denis Vasconcelos, Luciana Dutra, Fabricio Costa, Andressa, Italo
+**Ciclo 3 equivalent:** Closest to T6 (ROI & Portfólio, member J)
+**Members visible:** member G, member F, member H, member J, member N, member O
 **Content richness:** ★★★★★ (most documented tribe)
 
 **Research artifacts found:**
 1. **Problem statements (individual sticky notes):**
-   - Mayanna: Subjectivity in portfolio prioritization, lack of analytical intelligence
-   - Denis: Stakeholder political influence, lack of structured criteria, need for BASICO/AHP methods
-   - Luciana: Technology gap → bad data → failed quantitative models → return to subjectivity (cycle)
-   - Fabricio: Governance gaps, political prioritization, manual data transport between tools
+   - member G: Subjectivity in portfolio prioritization, lack of analytical intelligence
+   - member F: Stakeholder political influence, lack of structured criteria, need for BASICO/AHP methods
+   - member H: Technology gap → bad data → failed quantitative models → return to subjectivity (cycle)
+   - member J: Governance gaps, political prioritization, manual data transport between tools
 
 2. **Integrated Problem Statement:** Full merged declaration synthesizing all 4 perspectives into a unified research problem (Portuguese, ~3 paragraphs)
 
@@ -42,7 +42,7 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
    8) Conclusão
 
 4. **Authorship assignment per section:**
-   - 1) Posteriormente | 2) Mayanna | 3) Luciana | 4) Mayanna | 5) Italo | 6) Denis | 7) Andressa | 8) Posteriormente
+   - 1) Posteriormente | 2) member G | 3) member H | 4) member G | 5) member O | 6) member F | 7) member N | 8) Posteriormente
 
 5. **Prototypes (Lovable apps):**
    - Bússola de Portfólio: https://bussola-portfolio-pmi.lovable.app/
@@ -56,26 +56,26 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 
 ### Miro Tribo 4 (Ciclo 2) — "IA Aplicada ao Gerenciamento de Riscos"
 **Ciclo 3 equivalent:** Partially maps to T3 (TMO & PMO do Futuro)
-**Members visible:** Gustavo, Lorena, Lidia, Marcos
+**Members visible:** member P, member Q, member R, member S
 **Content richness:** ★★★★☆
 
 **Research artifacts found:**
 1. **Article 1 — "IA Promete, mas Entrega?"**
-   - Author: Gustavo (board owner)
+   - Author: member P (board owner)
    - Focus: ClickUp Brain evaluation for risk management
    - Google Doc: https://docs.google.com/document/d/1FeXwPs4x49Zc15iBykztjC1QyLr20OUCmEeoMmbh1XA
    - Status: Structured outline with 4 sections, PMI alignment table
    - Key finding: ClickUp Brain good for internal semantic analysis, fails on external data
 
 2. **Article 2 — "Do Sucesso ao Fracasso"**
-   - Author: Lorena (board owner)
+   - Author: member Q (board owner)
    - Focus: Predictive risk analysis with ML (classification: Success vs Failure)
    - Google Doc: https://docs.google.com/document/d/1kx8B4mFdyZheD4WxkP11SUkjRoXfhje3a2xPZt4-P8M
    - Status: Structured outline with 4 sections, feature importance focus
 
 3. **Kanban board** embedded in frame
 4. **Planning spreadsheet** linked
-5. **Individual boards:** Gustavo, Lorena, Lidia, Marcos (separate workspaces within frame)
+5. **Individual boards:** member P, member Q, member R, member S (separate workspaces within frame)
 6. **Data table** with bibliography
 
 ---
@@ -91,14 +91,14 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 ---
 
 ### Miro Tribo 6 (Ciclo 2) — "Agentes de IA & Status Reports"
-**Ciclo 3 equivalent:** Members now split across T2 (Débora) and T8 (Letícia, João, Francisco)
-**Members visible:** Débora Moura (facilitadora), Letícia Clemente, Lucas Vasconcelos, + others
+**Ciclo 3 equivalent:** Members now split across T2 (member K) and T8 (member E, member C, member D)
+**Members visible:** member K (facilitadora), member E, member I, + others
 **Content richness:** ★★★★★ (187 items!)
 
 **Research artifacts found:**
 1. **Full article: "De Ferramentas a Parceiros Digitais"**
    - Google Doc: https://docs.google.com/document/d/1J3MOZJuthn_JbzUuhcTveoEI6sC78-xi-UEsq8OcY20
-   - Authors: Letícia Clemente, Débora Moura, João Coelho Jr., Francisco José Oliveira, Cíntia Simões de Oliveira
+   - Authors: member E, member K, member C., member D, member A
    - Status: SUBSTANTIAL — Part 1 complete with references, Part 2 framework defined, Part 3 outlined
    - **Key deliverable:** EAA Framework (Estrutura Analítica de Agente / Agent WBS)
      - 4 pillars: Percepção, Cognição/Memória, Ação, Governança
@@ -128,8 +128,8 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 
 ### "Pesquisa e Agentes"
 - Perplexity search link on AI agent tools
-- "Agente Franze" (Francisco's agent)
-- "Agente Cintia": https://claude.ai/public/artifacts/c09eb85a-0fda-4aa0-bbcc-359bcde0b185
+- "Agente Franze" (member D's agent)
+- "Agente member T": https://claude.ai/public/artifacts/c09eb85a-0fda-4aa0-bbcc-359bcde0b185
 - Google Doc: Agent creation guide
 
 ### "Fluxo do artigo"
@@ -147,11 +147,11 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 **Folder:** https://drive.google.com/drive/folders/1a8FJTIBrBvibpBgLwF_rD5iCry-rKotL
 
 **Subfolders found:**
-1. **Artigo** (created 2026-03-13, by João Coelho)
+1. **Artigo** (created 2026-03-13, by member C)
    - Contains: `Artigo_tribo_8_inclusao_e_colaboracao` — Google Doc, EMPTY
-2. **Apresentação da Proposta do Projeto** (created 2026-03-11, by Ana Carla)
+2. **Apresentação da Proposta do Projeto** (created 2026-03-11, by member B)
    - Contents not yet accessible (subfolder, no Google Docs found inside)
-3. **Material de Estudo da Pesquisa** (created 2026-03-05, by Ana Carla)
+3. **Material de Estudo da Pesquisa** (created 2026-03-05, by member B)
    - Contents not yet accessible
 
 **Assessment:** T8 is in early research phase. Doc structure exists but content is minimal.
@@ -162,8 +162,8 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 
 | Fix | Before | After |
 |-----|--------|-------|
-| T8 leader_member_id | Mayanna Duarte (researcher) | Ana Carla Cavalcante (tribe_leader) ✅ |
-| T3 leader_member_id | Marcelo Ferreira (inactive, no tribe) | Marcel Fleming (tribe_leader) ✅ |
+| T8 leader_member_id | member G (researcher) | member B (tribe_leader) ✅ |
+| T3 leader_member_id | member M (inactive, no tribe) | member L (tribe_leader) ✅ |
 
 **Audit result:** All 8 tribes now have `leader_member_id` aligned with `operational_role = tribe_leader` and `is_active = true`.
 
@@ -180,7 +180,7 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 | T5 (Talentos) | ~15 PDFs | — | 0 | PDF catalog possible |
 | T6 (ROI/Portfólio) | ~52 items | 1 full article | 159 | Already rich; article could be artifact |
 | T7 (Governança) | — | — | 0 | None from Miro |
-| T8 (Inclusão) | — | 1 empty doc | 0 | Awaiting Notion data from Ana Carla |
+| T8 (Inclusão) | — | 1 empty doc | 0 | Awaiting Notion data from member B |
 
 **Recommendation:** The richest untapped content is in the Miro Ciclo 2 Tribo 6 article (EAA framework) which maps to current members in T2 and T8. This could be imported as an artifact reference for both tribes.
 
@@ -189,7 +189,7 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 ## Notion — Tribo 8 (Ciclo 3) — ACCESSED
 
 ### Page: "Atividades — Neuro-Advantage Framework"
-**Source:** Ana Carla's Notion workspace (duplicated to Vitor's workspace for access)
+**Source:** member B's Notion workspace (duplicated to Vitor's workspace for access)
 
 **Project Overview:**
 - **Framework:** Neuro-Advantage Framework v1 — 5 pillars for neurodiversity + AI in the workplace
@@ -210,10 +210,10 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 **Kanban items (from Notion database, visible in screenshots):**
 | Item | Status | Assignee | Due |
 |------|--------|----------|-----|
-| Pesquisa sobre TDAH e Resumo com Citações | A fazer | Ana Carla | 17/mar |
-| Criar catálogo de leituras para Artigo Pilar 1 | A fazer | Ana Carla | 17/mar |
-| Criar Mural de Ideias | A fazer | Ana Carla | 17/mar |
-| Criar link para artigo colaborativo | Concluído | Ana Carla | 17/mar |
+| Pesquisa sobre TDAH e Resumo com Citações | A fazer | member B | 17/mar |
+| Criar catálogo de leituras para Artigo Pilar 1 | A fazer | member B | 17/mar |
+| Criar Mural de Ideias | A fazer | member B | 17/mar |
+| Criar link para artigo colaborativo | Concluído | member B | 17/mar |
 
 ### Sub-page: "Pesquisas relevantes na semana sobre Neurodiversidade"
 **Curated research (week of 2026-03-09):**
@@ -240,5 +240,5 @@ The Miro board contains **32 frames** from Ciclo 2, organized into:
 - 4 kanban items from Notion (mapped: A fazer→todo, Concluído→done)
 - 5 pillar milestones (Pilar 1 = in_progress, Pilares 2-5 = backlog)
 - All tagged with pilar numbers and categories
-- All assigned to Ana Carla (tribe_leader)
+- All assigned to member B (tribe_leader)
 - Source marked as "notion" for traceability

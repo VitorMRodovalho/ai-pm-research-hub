@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-Ω-A deve fechar esta sessão com o escopo cirúrgico que UX Leader e Senior Engineer validaram: 5 páginas críticas de i18n (4-6h) + composite DB index (30min) + doc refresh README/INDEX (30min). Tudo mais entra em gates formais pré-piloto. A razão é simples: trilingue nas páginas críticas é o único entregável que desbloqueia TRÊS demo windows simultâneas (Natália PMI Latam, LIM Lima 13-Ago, CPMAI Latam Sep-Oct) com esforço de uma tarde. Os 7 ADRs multi-tenant são reais e urgentes, mas misturá-los com Ω-A mata atomicidade do diff e atrasa demo unblocking que é gating event estratégico. **Trade-off explícito**: aceita que PMI-CE pilot ainda não pode começar esta semana — mas chega no LIM com site trilingue funcional e whitepaper honesto, em vez de chegar com nada funcionando. **Dois riscos vivos** que não podem ficar no backlog genérico: RLS `USING(true)` nas tabelas financeiras expõe dados HOJE (Data Architect RF-1), e curador Roberto tem 5 comentários abertos criando audit trail de "problemas conhecidos não resolvidos na expansão" (Accountability red flag).
+Ω-A deve fechar esta sessão com o escopo cirúrgico que UX Leader e Senior Engineer validaram: 5 páginas críticas de i18n (4-6h) + composite DB index (30min) + doc refresh README/INDEX (30min). Tudo mais entra em gates formais pré-piloto. A razão é simples: trilingue nas páginas críticas é o único entregável que desbloqueia TRÊS demo windows simultâneas (member B PMI Latam, LIM Lima 13-Ago, CPMAI Latam Sep-Oct) com esforço de uma tarde. Os 7 ADRs multi-tenant são reais e urgentes, mas misturá-los com Ω-A mata atomicidade do diff e atrasa demo unblocking que é gating event estratégico. **Trade-off explícito**: aceita que PMI-CE pilot ainda não pode começar esta semana — mas chega no LIM com site trilingue funcional e whitepaper honesto, em vez de chegar com nada funcionando. **Dois riscos vivos** que não podem ficar no backlog genérico: RLS `USING(true)` nas tabelas financeiras expõe dados HOJE (Data Architect RF-1), e curador tem 5 comentários abertos criando audit trail de "problemas conhecidos não resolvidos na expansão" (Accountability red flag).
 
 ---
 
@@ -56,7 +56,7 @@
 |---|---|---|---|---|
 | **Ω-B** | p135 | Trilingue admin (42 pages) + attendance.astro + 5 inline-dict files | Ω-A clean | Site trilingue 100% (demo-ready LIM) |
 | **Ω-C** | p136 | UI dashboards (ARM-12 Observability, ARM-1 funnel) | Ω-B clean | PMIS demo + stakeholder chapter dashboard |
-| **Ω-D** | p137 | Newsletter Frontiers (#96, owner Fabricio) | Ω-C clean | ARM-10 Communication 2.8→3.0 |
+| **Ω-D** | p137 | Newsletter Frontiers (#96, owner member C) | Ω-C clean | ARM-10 Communication 2.8→3.0 |
 | **Ω-E.1** | p138 | ADR-F financial org_id + RLS RF-1 fix | ADR log entries criados | Bloqueia PMI-CE financial pilot |
 | **Ω-E.2** | p139 | ADR-NEW-A URL routing path-first + ADR-NEW-B brand schema + organization_settings | ADR-F shipped | Chapter whitelabel MVP |
 | **Ω-E.3** | p140 | ADR-NEW-C contact emails + CHAPTER_ONBOARDING_PLAYBOOK + CHAPTER_GOVERNANCE_CONTINUITY | Ω-E.2 clean | Pilot PMI-CE pode começar |
@@ -86,7 +86,7 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 
 **Ação recomendada (pós-Ω-E.1):** Proposta formal written PMI-GO paid pilot em paralelo com Ω-E.2. Framing: "operational cost recovery R$299-499/mo" (Startup Advisor pricing), não "SaaS fee". Zero pressão. Get written response.
 
-**O que pode acontecer agora sem esperar Ω-E:** Perguntar a Natália diretamente próxima interação: "Vocês exportam attendance via API ou planilha manual? Recordings vão para YouTube ou ficam no Airmeet?" Pergunta design partner research Airmeet — custo zero, informa integration depth, abre conversa sem comprometer comercialmente.
+**O que pode acontecer agora sem esperar Ω-E:** Perguntar a member B diretamente próxima interação: "Vocês exportam attendance via API ou planilha manual? Recordings vão para YouTube ou ficam no Airmeet?" Pergunta design partner research Airmeet — custo zero, informa integration depth, abre conversa sem comprometer comercialmente.
 
 ---
 
@@ -102,7 +102,7 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 | PlugNotas/NFE.io | SAFETY NET | Se complexidade XMLDSIG inviabilizar REST direct MVP <4 sem, SaaS emissão fallback. Fee ~R$0.50-2.00/nota mas elimina complexidade técnica signing. |
 
 **Pré-requisitos inegociáveis antes NFS-e produção (Accountability Gate 2):**
-1. DPA Núcleo (operador) ↔ chapter (controlador) via Ângelina
+1. DPA Núcleo (operador) ↔ chapter (controlador) via member D
 2. UI fiscal disclaimer: "Responsabilidade fiscal pela NFS-e/NFC-e emitida é inteiramente do capítulo como pessoa jurídica"
 3. Cert A1 stored Supabase Vault (ADR-0077 opção A), NÃO coluna readable, NÃO env vars
 4. Chapter fiscal responsibility terms aceitos UI antes primeira emissão
@@ -132,7 +132,7 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 
 ## Decisão #6 — Airmeet posture
 
-**Recomendação:** Integrate NÃO compete. HÍBRIDO Zoom + Airmeet seletivo. NÃO construir integração completa antes Natália confirmar design partnership.
+**Recomendação:** Integrate NÃO compete. HÍBRIDO Zoom + Airmeet seletivo. NÃO construir integração completa antes member B confirmar design partnership.
 
 - **Zoom:** manter tribe weekly meetings. Barato, funciona, recording flow OK. NÃO tocar.
 - **Airmeet:** adotar seletivamente CPMAI Latam + Detroit Summit + LIM-class. 3-4 eventos/ano onde engagement + multilingue + brand quality justificam custo.
@@ -143,13 +143,13 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 
 | Integração | Esforço | Quando | Gate |
 |---|---|---|---|
-| Webhook `registrant.added` → Núcleo `event_attendance` | M | Ω-D/E | Natália confirmar API access |
+| Webhook `registrant.added` → Núcleo `event_attendance` | M | Ω-D/E | member B confirmar API access |
 | Certificate auto-emit pós attendance Airmeet | M | Ω-E | Substrate webinars + ADR-0078 |
 | Recording sync → YouTube + token-gated | M | Ω-E | 60d purge workaround |
 
-**O que NÃO construir ainda:** Full attendee management via Airmeet API (Startup Advisor risco #2 — 2 sprints stranded se Natália não comprometida). Aguardar resposta design partner antes alocar.
+**O que NÃO construir ainda:** Full attendee management via Airmeet API (Startup Advisor risco #2 — 2 sprints stranded se member B não comprometida). Aguardar resposta design partner antes alocar.
 
-**PMI Latam piggyback opportunity:** PMI Latam Enterprise license Airmeet desde 2020 (2000 attendees). Se Núcleo integrar como parceiro CPMAI Latam, pode piggyback sem custo próprio. Perguntar Natália: "Podemos incluir integração Airmeet caso uso whitepaper Detroit?" Custo zero pergunta, upside alto.
+**PMI Latam piggyback opportunity:** PMI Latam Enterprise license Airmeet desde 2020 (2000 attendees). Se Núcleo integrar como parceiro CPMAI Latam, pode piggyback sem custo próprio. Perguntar member B: "Podemos incluir integração Airmeet caso uso whitepaper Detroit?" Custo zero pergunta, upside alto.
 
 **Airmeet vs Sympla prioridade:** GP Leader claro — Sympla > Airmeet em urgência adoção chapter. Honrar.
 
@@ -164,7 +164,7 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 | ADR | Escopo | Complexidade | Depende |
 |---|---|---|---|
 | **ADR-F (=ADR-0080)** | `cost/revenue/sustainability_kpi_targets` org_id + RLS RF-1 fix | L | Decision log entry criado |
-| **ADR-0079** | NF-e cert storage + library choice | M | Security-engineer sign-off + Ângelina DPA review |
+| **ADR-0079** | NF-e cert storage + library choice | M | Security-engineer sign-off + member D DPA review |
 
 **Grupo 2 — Whitelabel MVP (Ω-E.2, p139):**
 
@@ -178,7 +178,7 @@ ADR-NEW-A + ADR-0079 (NF-e cert) → ADR-0078 (internal ticketing)
 
 | ADR | Escopo | Complexidade | Depende |
 |---|---|---|---|
-| **ADR-NEW-D** | Per-chapter MCP (JWT org_id claim) | M | ADR-0076 Wave 4 Ivan DPO sign-off |
+| **ADR-NEW-D** | Per-chapter MCP (JWT org_id claim) | M | ADR-0076 Wave 4 member E DPO sign-off |
 | **ADR-NEW-E** | Per-chapter privacy policy | M | Legal-counsel co-sign + PMI-CE DPO formal |
 | **ADR-NEW-G** | i18n chapter-aware overrides | XL | ADR-NEW-B + chapter sign-off |
 | **ADR-0078** | Internal ticketing module | XL | ADR-F + NFS-e Phase 2 gate |
@@ -263,17 +263,17 @@ Itens NÃO entram Ω-A mas precisam gates formais, NÃO backlog genérico.
 **O que sacrifica:**
 - Velocidade pilot PMI-CE. Sequência proposta = pilot técnico PMI-CE provavelmente p139-p140 (ago-set). VC/Angel corretamente aponta 3 meses zero receita nova. Aceitável porque alternativa é onboard chapter sem isolamento financial = LGPD violation = consequência pior.
 - Feature velocity nas 20 páginas Medium/Low i18n. Ficam Ω-B. Nenhuma bloqueia demo windows.
-- Airmeet integration antes confirmação. Perguntar Natália primeiro antes alocar sprint. 2-3 semanas espera resposta. Aceitável porque stranded sprint custaria mais.
+- Airmeet integration antes confirmação. Perguntar member B primeiro antes alocar sprint. 2-3 semanas espera resposta. Aceitável porque stranded sprint custaria mais.
 
 ---
 
 ## Justificativa estratégica
 
-**Preservação optionality Trentim (A/B/C):**
+**Preservação optionality member F (A/B/C):**
 
-- **Path A (PMI internal):** Trilingue Ω-A unlock imediato. Sem ES funcional, demo Natália é PT-only = contexto perdido reunião LATAM multilíngue. C-Level: "Path A APROXIMADO por 33 READY pages + trilingue". Single-host blockers FECHAM Path A enquanto não resolvidos — gate Ω-E.2.
+- **Path A (PMI internal):** Trilingue Ω-A unlock imediato. Sem ES funcional, demo member B é PT-only = contexto perdido reunião LATAM multilíngue. C-Level: "Path A APROXIMADO por 33 READY pages + trilingue". Single-host blockers FECHAM Path A enquanto não resolvidos — gate Ω-E.2.
 - **Path B (consulting):** Sub-agents C/D/E geraram deliverables consulting prontos: directorate needs mapping table, gap multi-tenant severities, tool replacement roadmap ROI, NFS-e research Workers mTLS discovery. C-Level: "artifacts são deliverables consulting prontos". Em `docs/strategy/` + `docs/research/` IP reutilizável.
-- **Path C (community):** Trilingue = community-growth blocker. Com Ω-A fechado, contribuidor ES pode navegar sem context loss. Startup Advisor: "Natalia incident (Vargas 'ação PMI') = brand bleed organic when product good" — produto precisa estar bom primeiro.
+- **Path C (community):** Trilingue = community-growth blocker. Com Ω-A fechado, contribuidor ES pode navegar sem context loss. Startup Advisor: "member B incident (member G 'ação PMI') = brand bleed organic when product good" — produto precisa estar bom primeiro.
 
 **Demo windows criticality:**
 
@@ -284,7 +284,7 @@ Itens NÃO entram Ω-A mas precisam gates formais, NÃO backlog genérico.
 **Game-changers não-óbvios:**
 
 1. **Cloudflare Workers mTLS binding** NFS-e: o que parecia XL é agora L (REST direct via mtls binding). Muda completamente ROI Sympla replacement Phase 3. Não estava radar antes research Wave 2.
-2. **PMI Latam Enterprise Airmeet customer desde 2020:** piggyback via parceria CPMAI Latam pode eliminar custo licença. Pergunta a Natália pode unlocar isso. Custo zero pergunta.
+2. **PMI Latam Enterprise Airmeet customer desde 2020:** piggyback via parceria CPMAI Latam pode eliminar custo licença. Pergunta a member B pode unlocar isso. Custo zero pergunta.
 3. **Data Architect RF-1 (RLS USING(true) financial):** qualquer membro autenticado pode hoje `SELECT * FROM cost_entries` via PostgREST direct. NÃO é multi-tenant — é exposição single-tenant TODAY. Finding precisa ser escalado como bug, NÃO roadmap item.
 
 ---
@@ -307,9 +307,9 @@ Itens NÃO entram Ω-A mas precisam gates formais, NÃO backlog genérico.
 - ADR-F shipped (cost/revenue/kpi_targets org_id + RLS RF-1 fix)
 - `supabase.ts` FALLBACK removido ou env var obrigatório
 - CANONICAL_HOST dinâmico (ADR-NEW-A shipped)
-- DPA template redigido (Ângelina)
+- DPA template redigido (member D)
 - CHAPTER_ONBOARDING_PLAYBOOK.md criado
-- Roberto curator open comments resolvidos (Gate 0 Accountability)
+- member A curator open comments resolvidos (Gate 0 Accountability)
 
 **Gate 4 — Pré-fiscal module:**
 - ADR-0079 accepted (cert storage + DPA + UI fiscal terms)
@@ -326,21 +326,21 @@ PM precisa confirmar/negar explicitamente:
 
 1. **Escopo Ω-A:** Aprovar Opção B (cirúrgica 5 pages) OU preferir tentar 25 pages (13-21h)? Se 25 pages, aceita vazar p135?
 2. **Commercial action timing:** Aprovar defer paid pilot proposal pós-Ω-E.2 (p139)? OU quer iniciar conversa comercial informal PMI-GO agora, mesmo sem whitelabel?
-3. **Pergunta a Natália:** Autorizar perguntar Airmeet API access + attendance export próxima interação? Posiciona Núcleo design partner não cliente.
+3. **Pergunta a member B:** Autorizar perguntar Airmeet API access + attendance export próxima interação? Posiciona Núcleo design partner não cliente.
 4. **Workers Paid plan:** Confirmar se projeto já está em Workers Paid (necessário mTLS bindings). Se não, decisão antes ADR-0079.
-5. **Roberto curator:** Confirmar se quer escalar resolução 5 comentários abertos antes Ω-E (Gate 0) OU aceita seguir expansão com audit trail "pendência conhecida".
+5. **member A curator:** Confirmar se quer escalar resolução 5 comentários abertos antes Ω-E (Gate 0) OU aceita seguir expansão com audit trail "pendência conhecida".
 6. **ADR-NEW-A URL routing:** Confirmar preferência naming: path `/org/[slug]/` com redirect `/` → `/org/nucleo-ia-gp/` OU manter single-tenant URL até pilot real? Impacta SEO e refactoring scope.
-7. **DPA Ângelina:** Autorizar briefar Ângelina sobre DPA template ainda em Ω-E.1? Async, pode andar paralelo sprints técnicos.
+7. **DPA member D:** Autorizar briefar member D sobre DPA template ainda em Ω-E.1? Async, pode andar paralelo sprints técnicos.
 
 ---
 
 ## Open questions to escalate
 
-1. **Ivan DPO sign-off ADR-0076 Wave 4:** Status atual desconhecido. Desbloqueia ADR-NEW-D. Vitor verificar antes p139.
-2. **Airmeet tier PMI Latam:** Exato tier desconhecido. Pode ser Enterprise (2000 attendees). Resposta Natália informa custo piggyback.
+1. **member E DPO sign-off ADR-0076 Wave 4:** Status atual desconhecido. Desbloqueia ADR-NEW-D. Vitor verificar antes p139.
+2. **Airmeet tier PMI Latam:** Exato tier desconhecido. Pode ser Enterprise (2000 attendees). Resposta member B informa custo piggyback.
 3. **Workers Paid plan status:** Não confirmado inputs. mTLS binding requer Paid plan.
-4. **Roberto Macedo 5 comentários abertos:** Status comentários específicos Política IP v2.7 + Termo Voluntário. Vitor resolver assincronamente.
-5. **Ângelina revisão §15.4:** Mecanismo "ciência prévia" como substituto consentimento expresso — pendência legal não técnica. Vitor acionar.
+4. **member A 5 comentários abertos:** Status comentários específicos Política IP v2.7 + Termo Voluntário. Vitor resolver assincronamente.
+5. **member D revisão §15.4:** Mecanismo "ciência prévia" como substituto consentimento expresso — pendência legal não técnica. Vitor acionar.
 6. **TAM validação:** VC/Angel flagou Wild Apricot pricing + comparables UNVALIDATED (WebFetch bloqueado). Antes pitch Detroit, validar pricing real. Visitar site diretamente OU perguntar chapter treasurer PMI que usa.
 
 ---
@@ -351,7 +351,7 @@ PM precisa confirmar/negar explicitamente:
 2. **NÃO propor paid pilot PMI-GO/CE antes whitelabel básico pronto.** GP Leader explícito: "não assino sem branding básico". Primeiro evento dando errado = "perda confiança equipe + participantes meses recuperar".
 3. **NÃO usar NFeWizard-io.** Incompatível Workers razões técnicas (JDK), independente questão licença GPL-3. Debate licença irrelevante — software não roda.
 4. **NÃO registrar cost_entries sem org_id após ADR-F.** Data Architect: write-path SECURITY DEFINER bypassa RLS — após backfill, qualquer INSERT sem org_id no SECURITY DEFINER body corromperia silenciosamente dados multi-chapter.
-5. **NÃO construir integração Airmeet completa antes Natália confirmar design partnership.** Startup Advisor: 2 sprints stranded se ela não comprometida.
+5. **NÃO construir integração Airmeet completa antes member B confirmar design partnership.** Startup Advisor: 2 sprints stranded se ela não comprometida.
 6. **NÃO linkar ADR-NEW-D (per-chapter MCP) antes ADR-0076 Wave 4 fechar.** Accountability: "ADR-NEW-D afeta LGPD Art. 7 IX base legal scope (ADR-0076 pending Wave 4). Don't finalize until ADR-0076 closes."
 7. **NÃO implementar `get_member_homepage_bundle()` composite RPC em Ω-A.** Senior Engineer explícito: premature optimization, blast radius marginal benefit. One sub-query failure = total bundle failure.
 8. **NÃO construir Sympla replacement full-stack antes Phase 1 API ingestion validar.** Kill scenario confirmado Startup Advisor.

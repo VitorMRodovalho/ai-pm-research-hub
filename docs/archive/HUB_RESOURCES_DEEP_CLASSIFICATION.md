@@ -88,7 +88,7 @@ Every active item now has exactly one origin tag:
 
 ### Author linkage (certificates)
 6 certificates linked to member UUIDs via name matching in title:
-- Vitor Rodovalho, Leticia Clemente, Marcos Moura, Débora Moura, Roberto Macêdo, João Coelho, Lídia Vale
+- Vitor Rodovalho, member B, member E, member C, member A, member D, member F
 
 ### Cycle assignment
 64 items assigned `cycle_code` from existing tags:

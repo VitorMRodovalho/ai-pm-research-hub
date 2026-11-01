@@ -3,7 +3,7 @@
 **Documento:** Propostas de Alteração ao Manual de Governança e Operações R2
 **Referência:** GC-007 a GC-013
 **Data:** 2026-03-14
-**Propostas por:** Vitor Maia Rodovalho (GP) e Fabrício Costa (Co-GP)
+**Propostas por:** Vitor Maia Rodovalho (GP) e member D (Co-GP)
 **Para aprovação de:** Liderança dos Capítulos (Nível 1) conforme Seção 7 do Manual R2
 
 ---
@@ -96,7 +96,7 @@ Adicionar ao Manual, Seção 3.4:
 
 **Justificativa:**
 - No Ciclo 3, ambos os avaliadores pontuaram na mesma planilha. Ao scrollar horizontalmente, um podia ver as notas do outro — configurando viés de ancoragem.
-- Exemplo concreto: para o candidato Hayala Curto, o Avaliador 1 atribuiu 0 em Carta de Motivação enquanto o Avaliador 2 atribuiu 3. Divergências desta magnitude sugerem critérios distintos ou influência mútua.
+- Exemplo concreto: para o candidato member B, o Avaliador 1 atribuiu 0 em Carta de Motivação enquanto o Avaliador 2 atribuiu 3. Divergências desta magnitude sugerem critérios distintos ou influência mútua.
 - A avaliação blind é padrão ouro em processos de peer review acadêmico e em processos seletivos de organizações como PMI Global, IEEE e ACM.
 
 **Consultorias envolvidas:**
@@ -124,7 +124,7 @@ Adicionar ao Manual, Seção 3.4:
 > *"O processo seletivo utiliza vaga unificada. Candidatos interessados na função de Líder de Tribo respondem perguntas adicionais não obrigatórias no formulário de candidatura. A avaliação inicial segue os critérios da Tabela 3 (pesquisador). Candidatos com desempenho excepcional ou perfil identificado pelo Comitê de Seleção como adequado à liderança podem ser recomendados para avaliação complementar conforme critérios da Tabela 2. A conversão de pesquisador para líder requer aprovação do Gerente de Projeto e aceite formal do candidato."*
 
 **Justificativa:**
-- No Ciclo 3, 3 candidatos a pesquisador foram identificados como potenciais líderes (Alexandre Meirelles, Paulo Alves, Ana Carla Cavalcante) — todos foram convertidos informalmente. A proposta formaliza uma prática que já existe.
+- No Ciclo 3, 3 candidatos a pesquisador foram identificados como potenciais líderes (member C, member E, member A) — todos foram convertidos informalmente. A proposta formaliza uma prática que já existe.
 - Reduz fricção para o candidato: aplica-se uma vez, é avaliado uma vez, e o sistema identifica o melhor encaixe.
 - Elimina o risco de perder bons líderes que não se candidataram por insegurança ou desconhecimento da função.
 

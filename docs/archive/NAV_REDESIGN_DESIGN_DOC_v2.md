@@ -244,7 +244,7 @@ O dark mode pode ser feito incrementalmente. A ordem sugerida é:
 │  │ T6: ROI & Portfólio                              [Abrir →] │    │
 │  │ 📋 12 itens · 3 pendentes · 📅 Próx: Qui 19:30           │    │
 │  │ ██████░░░░ 60% progresso                                   │    │
-│  │ 👤 Fabricio Costa (Líder) · 5 membros                      │    │
+│  │ 👤 member A (Líder) · 5 membros                      │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 │  ── Subprojetos ─────────────────────────────────────────────────── │
@@ -391,7 +391,7 @@ Para cada rota, verificar em ambos os temas (light + dark):
 <section class="py-16 px-6 bg-[#F7F4EF]" id="tribes">
   <div class="bg-white rounded-2xl overflow-hidden border border-black/5">
     <h3 class="text-[.95rem] font-bold text-slate-900">Radar Tecnológico</h3>
-    <p class="text-[.82rem] text-slate-500">Hayala Curto, MSc</p>
+    <p class="text-[.82rem] text-slate-500">member B, MSc</p>
   </div>
 </section>
 ```
@@ -402,7 +402,7 @@ Para cada rota, verificar em ambos os temas (light + dark):
 <section class="py-16 px-6 bg-[var(--surface-section-warm)]" id="tribes">
   <div class="bg-[var(--surface-card)] rounded-2xl overflow-hidden border border-[var(--border-subtle)]">
     <h3 class="text-[.95rem] font-bold text-[var(--text-primary)]">Radar Tecnológico</h3>
-    <p class="text-[.82rem] text-[var(--text-secondary)]">Hayala Curto, MSc</p>
+    <p class="text-[.82rem] text-[var(--text-secondary)]">member B, MSc</p>
   </div>
 </section>
 ```
