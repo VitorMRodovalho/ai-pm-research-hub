@@ -23,7 +23,7 @@ This pattern fails the V4 reality. `operational_role` is a single-value GLOBAL c
 
 But `TIER_PERMISSIONS.tribe_leader` in `src/lib/permissions.ts` grants **cross-context privileges** (admin.access, admin.portfolio, board.edit_tribe_items, event.create globais). Logo, anyone who leads any workgroup or committee gets "leader of tribe of pesquisa" privileges everywhere.
 
-p163 audit (2026-05-15): a Track E (p162) backfill promoted 6 mems via the trigger compute. PM flagged that 5/6 promotions were scope-leak (Sarah/Roberto are curators not tribe leaders; Mayanna/Maria Luiza/Leticia lead Hub Comunicação workgroup but are researchers in their tribes). Backfill was reverted.
+p163 audit (2026-05-15): a Track E (p162) backfill promoted 6 mems via the trigger compute. PM flagged that 5/6 promotions were scope-leak (member A/member E are curators not tribe leaders; member B/member D/member F lead Hub Comunicação workgroup but are researchers in their tribes). Backfill was reverted.
 
 The fix in `sync_operational_role_cache` would be invasive and trigger-state-coupled. ADR-0007 already established that `can()` is the V4 source of truth, scoped per resource. The frontend just hadn't migrated.
 
@@ -111,11 +111,11 @@ Pending. These show/hide UI items by tier — not security-critical (RPCs are th
 | Member | Real institutional role | `canForAdminEntry()` | Expected |
 |---|---|---|---|
 | Vitor Maia Rodovalho | manager + superadmin | **true** (is_superadmin + org_actions full) | ✓ admin entry |
-| Fabricio Costa | vice-GP (volunteer.co_gp) | true (write/manage_event/etc. org) | ✓ admin entry |
-| Sarah Faria | curadora (designation; observer.* engagements) | **false** (only `participate_in_governance_review` org) | ✓ NOT admin |
-| Mayanna Duarte | researcher + workgroup_member.leader Hub | **false** (zero ADMIN_TIER_ACTIONS org) | ✓ NOT admin |
-| Mayanna scope-aware | `canFor('manage_event', initiative=Hub)` | **true** | ✓ leader em Hub |
-| Mayanna scope-aware | `canFor('manage_event', tribe=8 her tribe)` | **false** (only `write_board` em tribe 8) | ✓ NOT leader na tribo dela |
+| member C | vice-GP (volunteer.co_gp) | true (write/manage_event/etc. org) | ✓ admin entry |
+| member A | curadora (designation; observer.* engagements) | **false** (only `participate_in_governance_review` org) | ✓ NOT admin |
+| member B | researcher + workgroup_member.leader Hub | **false** (zero ADMIN_TIER_ACTIONS org) | ✓ NOT admin |
+| member B scope-aware | `canFor('manage_event', initiative=Hub)` | **true** | ✓ leader em Hub |
+| member B scope-aware | `canFor('manage_event', tribe=8 her tribe)` | **false** (only `write_board` em tribe 8) | ✓ NOT leader na tribo dela |
 
 Scope-leak fechado para os 4 mems flagados pelo PM.
 
@@ -153,7 +153,7 @@ Scope-leak fechado para os 4 mems flagados pelo PM.
 - **Display-only gates** (TeamSection, PresentationLayer, Nav items)
 - **operational_role cache deprecation plan** — once Tiers A+B done, cache can be drift-tolerant (no security impact). A3 invariant could be downgraded to "informational" or removed.
 - **Trigger refinement** (`sync_operational_role_cache` Track E v3): map workgroup/committee.leader → researcher (not tribe_leader) in cache; UI gates won't notice because they consult canFor. — ✅ shipped p164 Tier A (ADR-0023 Amendment B, migration `20260662`)
-- **Re-evaluate A3 backfill candidates** — Fabricio (manager via volunteer.co_gp) is the only institutionally legitimate promotion from the original 6. — ✅ Fabricio shipped p163 + Sarah/Roberto shipped p164 Tier A.
+- **Re-evaluate A3 backfill candidates** — member C (manager via volunteer.co_gp) is the only institutionally legitimate promotion from the original 6. — ✅ member C shipped p163 + member A/member E shipped p164 Tier A.
 - **Capability cache invalidation hook** — refresh on engagement INSERT/UPDATE/DELETE via realtime channel (today refresh is auth-event-bound only). — ✅ shipped p164 Tier B (migration `20260663` + `subscribeCapabilityInvalidation` helper + Nav.astro wiring). See validation trace below.
 
 ## Tier B realtime invalidation — live validation (p164, 2026-05-15)

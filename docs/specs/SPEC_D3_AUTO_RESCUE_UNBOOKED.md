@@ -15,8 +15,8 @@ dispara `notify_selection_cutoff_approved` apenas quando `cutoff_approved_email_
 fica preso: `status='interview_pending'`, `cutoff_approved_email_sent_at` setado, sem slot futuro — invisível
 a todos os crons de ação. O detector `detect_stuck_selection_funnel` (#781, job60) apenas **notifica o GP**.
 
-**Coorte viva (medida):** Hector Rigon (convite 27/05, 23d, nunca agendou) = o caso indisputável. Os 2 no-shows
-(Edinan, Bruna) já são re-convidados pelo caminho `interview_scheduled → selection_rescue_stuck_interview`;
+**Coorte viva (medida):** member A (convite 27/05, 23d, nunca agendou) = o caso indisputável. Os 2 no-shows
+(member B, member C) já são re-convidados pelo caminho `interview_scheduled → selection_rescue_stuck_interview`;
 o auto-rescue unificado os cobre quando o convite de re-engajamento deles envelhecer.
 
 **Não é o mesmo que o stuck-SCHEDULED já coberto** por `_selection_stuck_scheduled_rescue_cron` (job52):
@@ -77,7 +77,7 @@ Unschedule idempotente antes.
 ### 2.4 Fix do detector #781 — bucket B ancora no cutoff (data-architect blocker 3, mesmo PR)
 No `detect_stuck_selection_funnel`, bucket B (noshow): adicionar
 `AND a.cutoff_approved_email_sent_at < now() - v_booking_grace` ao predicado (além do `ns.last_noshow_at`),
-para não notificar o GP sobre no-show **já re-convidado** (Edinan/Bruna re-convidados 17/06 mas ainda contados).
+para não notificar o GP sobre no-show **já re-convidado** (member B/member D re-convidados 17/06 mas ainda contados).
 Re-aplicar o corpo VERBATIM (Phase-C compara prosrc; copiar do arquivo da mig 208 + 1 linha).
 
 ### 2.5 Invariante `AI_unbooked_rescue_cap_respected` (data-architect rec; 35→36)
@@ -107,7 +107,7 @@ saúde do funil sem cron invisível. (Se inflar o PR, vira follow-up imediato �
 ---
 
 ## 4. Validação (GC-097)
-- Coorte alvo do cron (dry SELECT do predicado) = Hector (1) hoje; Edinan/Bruna NÃO (convite fresco 2d).
+- Coorte alvo do cron (dry SELECT do predicado) = member A (1) hoje; member B/member D NÃO (convite fresco 2d).
 - Probe ROLLBACK da RPC: `DO` block que chama a RPC, assere count incrementado + cutoff limpo, `RAISE` p/ rollback.
 - Invariantes 36/0 (AI=0). `npx astro build` verde. Suíte completa DB-aware. Contrato novo `D3-auto-rescue.test.mjs`.
 - Ritual apply_migration: apply MCP → Write arquivo local 219 → `migration repair --status applied 20260805000219`

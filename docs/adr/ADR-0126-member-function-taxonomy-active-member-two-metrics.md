@@ -120,8 +120,8 @@ list — this ADR makes them converge on the tier taxonomy).
 - Stakeholder tier active: chapter_liaison 10 + sponsor 5 = 15. Pending: guest 6, no-active-engagement 2.
 - Ladder SSOT: `sync_operational_role_cache` (curator/GP/Co-GP/comms-leader/committee collapses verified in
   the live function body).
-- The 4 chapter-director cases: Eder Valasco (chapter PMO volunteer analyst), Graziele Brescansin (filiação
-  director), Lorena Souza (voluntariado director + PMI-GO countersigner), Welma Alves de Melo (certificação
+- The 4 chapter-director cases: member D (chapter PMO volunteer analyst), member C (filiação
+  director), member B (voluntariado director + PMI-GO countersigner), member A (certificação
   director) — all PMI-GO chapter board, engagement `chapter_board`, correctly `chapter_liaison`.
 
 ## Implementation (follows this ADR)

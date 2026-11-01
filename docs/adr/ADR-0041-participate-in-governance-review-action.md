@@ -132,29 +132,29 @@ no-gate hardening sweep, ADR-0040 helper REVOKE).
 ```
 === create_document_comment ===
 V3 union (curator/founder/manager/deputy/tribe_leader) = 13 members:
-  Andressa, Antonio, Ana Carla, Débora, Fabricio, Fernando, Hayala,
-  Ivan, Jefferson, Marcos, Roberto, Sarah, Vitor
+  member C, member B, member D, member N, member I, member J, member K,
+  member G, member L, member M, member H, member F, Vitor
 V4 set                          = 5 members:
-  Vitor (volunteer/manager), Fabricio (volunteer/co_gp),
-  Ana Cristina Fernandes Lima (chapter_board/liaison),
-  Roberto Macêdo (chapter_board/liaison),
-  Rogério Peixoto (chapter_board/liaison)
-gains = [Ana Cristina, Rogério]
-losses = [Andressa, Antonio, Ana Carla, Débora, Fernando, Hayala, Ivan,
-          Jefferson, Marcos, Sarah]  (10)
+  Vitor (volunteer/manager), member I (volunteer/co_gp),
+  member A (chapter_board/liaison),
+  member H (chapter_board/liaison),
+  member E (chapter_board/liaison)
+gains = [member A, member E]
+losses = [member C, member B, member D, member N, member J, member K, member G,
+          member L, member M, member F]  (10)
 
 === list_document_comments ===
 V3 union (curator/founder/manager/deputy)  = 7 members:
-  Andressa, Antonio, Fabricio, Ivan, Roberto, Sarah, Vitor
+  member C, member B, member I, member G, member H, member F, Vitor
 V4 set                                      = 5 members
-gains   = [Ana Cristina, Rogério]
-losses  = [Andressa, Antonio, Ivan, Sarah]  (4)
+gains   = [member A, member E]
+losses  = [member C, member B, member G, member F]  (4)
 
 === resolve_document_comment (with author self-resolve preservation) ===
 V3 union (author OR curator OR manager/deputy) = (any commenter) ∪ {7}
 V4 set + Path Y author                          = (any commenter) ∪ {5}
-gains  (non-author)  = [Ana Cristina, Rogério]
-losses (non-author)  = [Andressa, Antonio, Ivan, Sarah]  (4)
+gains  (non-author)  = [member A, member E]
+losses (non-author)  = [member C, member B, member G, member F]  (4)
 ```
 
 ### Curation/board cluster (6 fns)
@@ -162,53 +162,53 @@ losses (non-author)  = [Andressa, Antonio, Ivan, Sarah]  (4)
 ```
 === assign_curation_reviewer / submit_curation_review / publish_board_item_from_curation ===
 V3 union (superadmin OR manager/deputy OR curator OR co_gp) = 4 members:
-  Vitor (super+manager), Fabricio (super+co_gp+curator), Roberto (curator), Sarah (curator)
+  Vitor (super+manager), member I (super+co_gp+curator), member H (curator), member F (curator)
 V4 set                                                       = 5 members
-gains  = [Ana Cristina, Rogério]
-losses = [Sarah]  (1)
+gains  = [member A, member E]
+losses = [member F]  (1)
 
 === assign_member_to_item (with Path Y: tribe_leader + board_admin + self+author + curator-special) ===
 V3 union (super OR manager/deputy/tribe_leader OR board_admin OR (curator+curation_reviewer) OR (self+author))
        = 8 + (board_admin members) + (any member self-claim) + (curators with curation_reviewer scope)
-V4 + Path Y = 11 (Vitor, Fabricio, 6 tribe_leaders, Ana Cristina, Roberto, Rogério)
+V4 + Path Y = 11 (Vitor, member I, 6 tribe_leaders, member A, member H, member E)
             + (board_admin members) + (any member self-claim) + (curators)
-gains  = [Ana Cristina, Roberto (also gained via tribe-scoped role coverage), Rogério]
+gains  = [member A, member H (also gained via tribe-scoped role coverage), member E]
 losses = none
 
 === submit_for_curation / unassign_member_from_item (with Path Y: tribe_leader) ===
 V3 union (super OR manager/deputy/tribe_leader) = 8 members:
-  Vitor, Fabricio, Ana Carla, Débora, Fernando, Hayala, Jefferson, Marcos
+  Vitor, member I, member D, member N, member J, member K, member L, member M
 V4 + Path Y                                       = 11 members:
-  V3 set + Ana Cristina + Roberto + Rogério (chapter_board.liaison gain)
-gains  = [Ana Cristina, Roberto, Rogério]
+  V3 set + member A + member H + member E (chapter_board.liaison gain)
+gains  = [member A, member H, member E]
 losses = none
 ```
 
 ### Aggregate impact
 
 **Gains (consistent across 9 fns)**:
-- **Ana Cristina Fernandes Lima** — `chapter_board × liaison` engagement.
+- **member A** — `chapter_board × liaison` engagement.
   PMI-CE chapter governance representative.
-- **Rogério Peixoto** — `chapter_board × liaison` engagement. Same PMI-CE
+- **member E** — `chapter_board × liaison` engagement. Same PMI-CE
   representative.
-- **Roberto Macêdo** — gains via `chapter_board × liaison` (was already in V3
+- **member H** — gains via `chapter_board × liaison` (was already in V3
   via `curator` designation; route now via V4 catalog instead of designation).
 
 **Losses (governance review committee tightening)**:
-- **Sarah Faria** — V3 access via `curator` designation + `founder` designation;
+- **member F** — V3 access via `curator` designation + `founder` designation;
   loses access to all 9 fns under strict V4. Reason: PM decision log §G item 2
   defers `committee_curator` engagement kind to future seed; until then,
   curator designation alone does not grant `participate_in_governance_review`.
-- **Andressa Martins, Antonio Marcos Costa, Ivan Lourenço** — `founder`
+- **member C, member B, member G** — `founder`
   designation; lose access to document_comments cluster (3 fns). Reason:
   founder designation is honorary/historical, not an active governance
-  authority in V4 catalog. Antonio + Andressa: no chapter_board engagement.
-  Ivan: has `chapter_board × board_member` engagement (sponsor) — does NOT
+  authority in V4 catalog. member B + member C: no chapter_board engagement.
+  member G: has `chapter_board × board_member` engagement (sponsor) — does NOT
   match `chapter_board × liaison` seed; intentional separation between
   sponsor visibility (future ADR-0042 `view_chapter_dashboards`) and
   governance review participation.
-- **Tribe_leaders for `create_document_comment`** (6: Ana Carla, Débora,
-  Fernando, Hayala, Jefferson, Marcos) — lose ability to comment on
+- **Tribe_leaders for `create_document_comment`** (6: member D, member N,
+  member J, member K, member L, member M) — lose ability to comment on
   governance documents. Reason: governance document review is committee work,
   not tribe operations. Tribe leaders retain access to the tribe→committee
   handoff fns (`submit_for_curation`, `assign/unassign_member_from_item`)
@@ -216,15 +216,15 @@ losses = none
 
 ### Operational mitigation
 
-For the 4 lost users (Sarah, Andressa, Antonio, Ivan), governance commenting
+For the 4 lost users (member F, member C, member B, member G), governance commenting
 can be channeled through:
 1. PM (Vitor) directly (always-authoritative).
-2. Fabricio (volunteer/co_gp engagement, V4-authorized).
-3. Roberto Macêdo (chapter_board/liaison, V4-authorized) for PMI-CE
+2. member I (volunteer/co_gp engagement, V4-authorized).
+3. member H (chapter_board/liaison, V4-authorized) for PMI-CE
    stakeholder voice.
 4. **Future** `committee_curator` engagement kind (PM decision log §G item 2).
-5. **Future** `committee_coordinator/coordinator` catalog seed (Sarah +
-   Roberto + Fabricio engagements already exist for this kind).
+5. **Future** `committee_coordinator/coordinator` catalog seed (member F +
+   member H + member I engagements already exist for this kind).
 
 ---
 
@@ -279,10 +279,10 @@ Post-p72: 95/246 (~38.6%)
 
 ## Trade-offs aceitos
 
-1. **Sarah, Andressa, Antonio, Ivan loses governance comment access**: PM
+1. **member F, member C, member B, member G loses governance comment access**: PM
    accepted this in §G ratify, with mitigation path (future
    `committee_curator` + `committee_coordinator/coordinator` seeds). Concrete
-   workaround: PM/Fabricio/Roberto channel governance feedback during the
+   workaround: PM/member O/member H channel governance feedback during the
    transition period.
 2. **Path Y for `tribe_leader` (3 fns)**: pragmatic preservation of
    tribe→committee handoff. Could be replaced later by `tribe × leader`

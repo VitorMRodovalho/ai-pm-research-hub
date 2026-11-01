@@ -229,11 +229,11 @@ Migration `20260516220000_phase_b_pmi_journey_v4_one_off_direct_insert.sql`:
 
 ## Amendment 2026-05-01 — Workflow Gate gap surfacing (PMI Journey Phase 2 trigger)
 
-**Trigger:** Vice-GP Fabricio Costa reportou via WhatsApp 2026-05-01 09:42 BRT que via 2 entrevistas marcadas para o dia seguinte sem que tivesse sido feita análise inicial. Sweep p87 confirmou:
+**Trigger:** Vice-GP reportou via WhatsApp 2026-05-01 09:42 BRT que via 2 entrevistas marcadas para o dia seguinte sem que tivesse sido feita análise inicial. Sweep p87 confirmou:
 
-- **Thayanne Monteiro** (`1e529a68-…`): AI fit_for_role=1/5 ("aplicação extremamente genérica"), 0 par-revisões humanas, status=`submitted`/interview_status=`none`. Calendar booking foi feito sem que `mark_interview_status` ou `schedule_interview` fossem chamados.
-- **Danilo Nascimento** (`d05ddb44-…`): AI fit_for_role=3/5 (junior viável), 0 par-revisões humanas, status=`interview_pending` (flipped sem precondições). Mesmo gap.
-- **João Uzejka dos Santos**: único candidato cycle3-2026-b2 com 2 par-revisões humanas → score 137 → único pronto para entrevista legítima.
+- **member C** (`1e529a68-…`): AI fit_for_role=1/5 ("aplicação extremamente genérica"), 0 par-revisões humanas, status=`submitted`/interview_status=`none`. Calendar booking foi feito sem que `mark_interview_status` ou `schedule_interview` fossem chamados.
+- **member E** (`d05ddb44-…`): AI fit_for_role=3/5 (junior viável), 0 par-revisões humanas, status=`interview_pending` (flipped sem precondições). Mesmo gap.
+- **member A**: único candidato cycle3-2026-b2 com 2 par-revisões humanas → score 137 → único pronto para entrevista legítima.
 - **0 rows futuras em `selection_interviews`** — Calendar bookings não chegam ao DB (#116).
 
 ### Causa raiz (ratificação)
@@ -274,10 +274,10 @@ Vitor articulou explicitamente em WhatsApp 2026-05-01 11:30 BRT:
 
 ### Hotfix p87 (não código — operacional)
 
-- Email `pre_eval_pause` (template novo) disparado para Thayanne (`5effc0ba-d225-4003-8fc8-39429a7fbad3`) e Danilo (`d4976563-99da-462e-8d8a-7783bcb9faf0`) explicando descompasso e novos próximos passos
-- Danilo `status` revertido `interview_pending → submitted` (sem score, sem par-revisão = não pronto para entrevista)
-- Fabricio cancela 2 events Calendar do lado dele
-- João Uzejka (single legítimo) preservado
+- Email `pre_eval_pause` (template novo) disparado para member C (`5effc0ba-d225-4003-8fc8-39429a7fbad3`) e member E (`d4976563-99da-462e-8d8a-7783bcb9faf0`) explicando descompasso e novos próximos passos
+- member E `status` revertido `interview_pending → submitted` (sem score, sem par-revisão = não pronto para entrevista)
+- member F cancela 2 events Calendar do lado dele
+- member A (single legítimo) preservado
 
 ### Status
 
@@ -287,11 +287,11 @@ Vitor articulou explicitamente em WhatsApp 2026-05-01 11:30 BRT:
 
 ### Trace
 
-- WhatsApp Vitor + Fabricio 2026-05-01 09:42–11:50 BRT
+- WhatsApp Vitor + member F 2026-05-01 09:42–11:50 BRT
 - p87 sweep findings (sessão dedicada)
 - Issue #116 comment p87 + Issue #117 spinoff
-- Routine `trig_01DYnnv5uimkc5PqnzeyaPnv` (armed 2026-05-02T14:00Z) verificará Thayanne reschedule outcome
-- 6 candidatos cycle3-2026-b2 com AI rodada, apenas 1 (João Uzejka) com peer-review humana → benchmark do que workflow correto produz
+- Routine `trig_01DYnnv5uimkc5PqnzeyaPnv` (armed 2026-05-02T14:00Z) verificará member C reschedule outcome
+- 6 candidatos cycle3-2026-b2 com AI rodada, apenas 1 (member A) com peer-review humana → benchmark do que workflow correto produz
 
 Assisted-By: Claude (Anthropic)
 
@@ -342,7 +342,7 @@ Assisted-By: Claude (Anthropic)
 
 ## Amendment 3 — 2026-05-05 (p92) — Worker `_bucket` filter (Bug #2)
 
-**Trigger:** p91 audit (`docs/specs/p91-selection-journey-audit.md`) catalogou 7 bugs estruturais na jornada de seleção, originados de relato do candidato William Junio (link onboarding broken). Bug #2 = welcomes spurious para 4 não-candidatos no batch 04-29 (`Hayala/Ana Carla/Marcos` já líderes ativos PMI; `Adalberto` declinou em 2025-12-23).
+**Trigger:** p91 audit (`docs/specs/p91-selection-journey-audit.md`) catalogou 7 bugs estruturais na jornada de seleção, originados de relato do candidato member G (link onboarding broken). Bug #2 = welcomes spurious para 4 não-candidatos no batch 04-29 (`member H/member D/member K` já líderes ativos PMI; `member I` declinou em 2025-12-23).
 
 ### Root cause
 
@@ -371,9 +371,9 @@ if (result.was_new) {
 
 | # | Ação | Detalhes |
 |---|---|---|
-| 1 | Anulação 4 tokens inválidos | `expires_at=now()` Hayala/Ana Carla/Marcos/Adalberto |
-| 2 | Welcome corretos resend | Herlon (`bf21ab32`/`c2111bc2`) + Ana Pacheco (`cd93951c`/`ac7fa21e`) + DJEIMIYS (`64c06a27`/`4778119f`) — todos delivered |
-| 3 | Gmail draft William | Reply `r-5580222886714244339` em `nucleoia@pmigo.org.br` Drafts (pending PM send) |
+| 1 | Anulação 4 tokens inválidos | `expires_at=now()` member H/member D/member K/member L |
+| 2 | Welcome corretos resend | member J (`bf21ab32`/`c2111bc2`) + member B (`cd93951c`/`ac7fa21e`) + member M (`64c06a27`/`4778119f`) — todos delivered |
+| 3 | Gmail draft member G | Reply `r-5580222886714244339` em `nucleoia@pmigo.org.br` Drafts (pending PM send) |
 | 4 | Audit log | 7 entries `admin_audit_log` com incident `p91-pmi-vep-sync-status-filter-gap` |
 
 ### Bulk dispatch ainda BLOQUEADO
@@ -382,7 +382,7 @@ PM 2026-05-05: 18 candidatos `status='submitted'` sem `onboarding_token` (Bug #3
 
 ### Trace
 - p91 audit `docs/specs/p91-selection-journey-audit.md` §1 Bug #2
-- William Junio thread Gmail `19ddab9069399422` (origin)
+- member G thread Gmail `19ddab9069399422` (origin)
 - p92 Phase A commit (this session)
 
 Assisted-By: Claude (Anthropic)

@@ -25,14 +25,14 @@ Coorte viva (todos convidados, todos invisíveis aos crons):
 
 | Candidato | Idade | Sinal | Bucket |
 |---|---|---|---|
-| Hector Rigon | 86d | convidado, **sem linha de entrevista** | invited_never_booked |
-| Djeimiys Wille | 57d | idem | invited_never_booked |
-| Francisco | 28d | idem | invited_never_booked |
-| Luã / Evilasio / Lizzie | 8–18d | idem (envelhecendo) | invited_never_booked |
-| Edinan Soares | 86d | **no-show 05/06, sem recuperação** | noshow_not_recovered |
-| Bruna Zomer | 66d | reschedule→noshow→cancel, nunca completou | noshow_not_recovered |
+| member D | 86d | convidado, **sem linha de entrevista** | invited_never_booked |
+| member A | 57d | idem | invited_never_booked |
+| member E | 28d | idem | invited_never_booked |
+| member K / member F / member G | 8–18d | idem (envelhecendo) | invited_never_booked |
+| member C | 86d | **no-show 05/06, sem recuperação** | noshow_not_recovered |
+| member B | 66d | reschedule→noshow→cancel, nunca completou | noshow_not_recovered |
 
-Falso-positivo a **excluir**: Hanae (linha cancelada + linha `scheduled` futura 23/06 = reschedule legítimo).
+Falso-positivo a **excluir**: member H (linha cancelada + linha `scheduled` futura 23/06 = reschedule legítimo).
 
 ---
 
@@ -46,8 +46,8 @@ sobre o candidato (sem comms externas automáticas — isso é D3 auto-rescue, f
 
 - Painel FE "ação minha hoje" (D1) — PR posterior, consome a mesma lógica de detecção.
 - Auto-rescue / re-convite automático do candidato (D3) — risco de comms externas; depois que o GP confiar nos sinais.
-- Bucket "múltiplas-falhas" como classe separada (threshold é **contagem**, não intervalo → não cabe em `sla_policies`; Bruna já cai em noshow_not_recovered). Adiar.
-- Bucket "cancelado-sem-rebooking" (ex.: Cristiano, recuperando) — **questão aberta p/ data-architect** (§7).
+- Bucket "múltiplas-falhas" como classe separada (threshold é **contagem**, não intervalo → não cabe em `sla_policies`; member B já cai em noshow_not_recovered). Adiar.
+- Bucket "cancelado-sem-rebooking" (ex.: member I, recuperando) — **questão aberta p/ data-architect** (§7).
 - Corrigir os 2 bugs de RPC achados (`get_selection_health` → `column t.created_at does not exist`; `get_selection_dashboard` 274k chars sem paginação) — **logar no backlog**, não neste PR.
 
 ---
@@ -71,13 +71,13 @@ sobre o candidato (sem comms externas automáticas — isso é D3 auto-rescue, f
 - `status='interview_pending'`
 - existe linha `selection_interviews` com `status='noshow'`
 - **NÃO EXISTE** linha **posterior ao último noshow** com `status IN ('scheduled','completed')` — qualificar temporalmente: `created_at > (SELECT max(created_at) FROM selection_interviews WHERE application_id=app.id AND status='noshow')` (evita falso-negativo de completed-antes-de-noshow)
-- **NÃO EXISTE** linha com `scheduled_at > now()` e `status IN ('scheduled','rescheduled')` (sem futuro agendado → exclui Hanae)
+- **NÃO EXISTE** linha com `scheduled_at > now()` e `status IN ('scheduled','rescheduled')` (sem futuro agendado → exclui member H)
 - `now() - (max scheduled_at das linhas noshow) > sla('noshow_recovery_grace')` (default **3 days**)
 
 Prioridade: B antes de A (se a app tem noshow, classifica como noshow_not_recovered, não como never_booked — embora os predicados sejam mutuamente exclusivos por "NÃO EXISTE linha" em A).
 
 ### 4.2 Destinatário do nudge
-- **GP managers**: `members WHERE operational_role='manager'` (ao vivo: Vitor, Fabricio).
+- **GP managers**: `members WHERE operational_role='manager'` (ao vivo: Vitor, member J).
 - 1 notificação por `(manager, application, bucket-type)`.
 - **Idempotência:** não inserir se já existe `notifications` com `recipient_id=v_manager_id` + `source_type='selection_application'` + `source_id=app.id` + `type IN ('selection_candidate_unbooked','selection_noshow_unrecovered')` nos últimos **7 dias** (filtrar pelos 2 types novos, não type genérico — evita colisão com outras notificações da mesma candidatura; espelha a janela do job48).
 

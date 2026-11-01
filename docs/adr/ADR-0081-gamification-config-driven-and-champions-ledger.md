@@ -177,12 +177,12 @@ PM input needed: **rodar retroactive sync sobre dados existentes ou forward-only
 | Membro | retro_pts | retro_rows | Papel |
 |---|---:|---:|---|
 | Vitor Maia Rodovalho | 1640 | 96 | GP / PM |
-| Fabricio Costa | 505 | 20 | Vice-GP |
-| Sarah Faria Alcantara Macedo Rodovalho | 265 | 13 | Líder tribo |
-| Roberto Macêdo | 195 | 15 | Curador |
-| Débora Moura | 150 | 10 | Líder tribo |
-| Marcos Antunes Klemz | 100 | 4 | Líder tribo |
-| Jefferson Pinto | 15 | 1 | Tribo |
+| member E | 505 | 20 | Vice-GP |
+| member A | 265 | 13 | Líder tribo |
+| member F | 195 | 15 | Curador |
+| member D | 150 | 10 | Líder tribo |
+| member B | 100 | 4 | Líder tribo |
+| member C | 15 | 1 | Tribo |
 
 ### Recommendation: forward-only
 
@@ -226,7 +226,7 @@ Justificativa PM: aceita recomendação por consistência com `effective_from` s
 - Triggers AFTER UPDATE com `OF column` exigem que UPDATE explicite a coluna; UPDATE em massa de outras colunas não fira XP mesmo se o predicado seria satisfeito. Aceitável: triggers existentes do codebase já tocam as colunas-fonte corretas.
 - Backfill forward-only deixa 167 rows sem XP retro; se PM decidir mudar de opinião em p163+, precisa migration adicional (idempotência protege duplicate firings).
 
-## Path impact (Trentim)
+## Path impact (member G)
 
 - **Path A (PMI internal)**: leaderboard diversificado + Champion auditável = produto vendável para outros PMI chapters como módulo de engagement
 - **Path B (consulting)**: gamification_rules table + helper pattern = template reusável para clientes (advanced gamification sem custom code)

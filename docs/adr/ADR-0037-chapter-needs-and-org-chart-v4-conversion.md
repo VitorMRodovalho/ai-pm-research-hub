@@ -73,17 +73,17 @@ Para `get_chapter_needs`:
 - Audience: SA + manager + deputy_manager (broad) + chapter_board + sponsor + chapter_liaison (chapter-bound)
 - Best match: split-path com `manage_platform` (broad) + `view_internal_analytics` (chapter-bound)
 - Catalog gap: `chapter_board × board_member` tem `view_pii` mas NÃO `view_internal_analytics`
-  (apenas `chapter_board × liaison` tem). Sem Path Y, 3 active board_member (Emanuele,
-  Emanoela, Lorena) perderiam acesso a chapter needs do próprio chapter — **regressão
+  (apenas `chapter_board × liaison` tem). Sem Path Y, 3 active board_member (member K,
+  member F, member H) perderiam acesso a chapter needs do próprio chapter — **regressão
   operacional não-intencional** (board_members são quem fulfilm needs no chapter).
 
 Para `get_org_chart`:
 - Audience: SA + manager + sponsor + chapter_liaison + tribe_leader + deputy_manager + curator
 - Best match: `view_internal_analytics` (catalog: SA + manager + co_gp + deputy_manager + sponsor + chapter_liaison + chapter_board×liaison)
-- 7 drift losses: 6 tribe_leaders (volunteer × leader, initiative-scope) + Sarah curator
+- 7 drift losses: 6 tribe_leaders (volunteer × leader, initiative-scope) + member L curator
   (designation deprecated, no V4 engagement role for curator)
 - Drift losses são **exatamente o padrão precedente 8×** (ADR-0030/0034: tribe_leaders +
-  Sarah curator). PM rubber-stamp esperado.
+  member L curator). PM rubber-stamp esperado.
 
 ### Privilege expansion (verified pre-apply)
 
@@ -93,16 +93,16 @@ Para `get_org_chart`:
 legacy (V3)  = 14 members
 v4 + Path Y  = 13 members
 would_gain   = (none)
-would_lose   = [João Uzejka Dos Santos]
+would_lose   = [member B]
 ```
 
-João context: `operational_role=researcher`, `designations=[chapter_liaison]`,
+member B context: `operational_role=researcher`, `designations=[chapter_liaison]`,
 engagements `volunteer × researcher` only. V3 grants via `chapter_liaison`
 designation; V4 catalog requires `chapter_board × liaison` engagement (which
-João doesn't have). **Same drift as ADR-0030/0034 João loss** — PM-precedented.
+member B doesn't have). **Same drift as ADR-0030/0034 member B loss** — PM-precedented.
 
 Path Y (chapter_board × any role engagement) preserves 3 board_member members
-(Emanuele Melo, Emanoela Kerkhoff, Lorena Souza — chapter_board × board_member
+(member K, member F, member H — chapter_board × board_member
 engagements) for own-chapter access only. Zero would_gain for Path Y.
 
 #### `get_org_chart`:
@@ -111,17 +111,17 @@ engagements) for own-chapter access only. Zero would_gain for Path Y.
 legacy (V3)  = 17 members
 v4 (pure)    = 10 members
 would_gain   = (none)
-would_lose   = [Débora Moura, Ana Carla Cavalcante, Hayala Curto, Jefferson Pinto,
-                Fernando Maquiaveli, Marcos Antunes Klemz, Sarah Faria]
+would_lose   = [member J, member C, member I, member E,
+                member D, member A, member L]
 ```
 
 Drift composition:
-- 6 tribe_leaders (Ana Carla, Débora, Hayala, Jefferson, Fernando, Marcos) —
+- 6 tribe_leaders (member C, member J, member I, member E, member D, member A) —
   `operational_role=tribe_leader`, engagement `volunteer × leader` (initiative
   scope). V4 `view_internal_analytics` is organization-scope; tribe_leaders
   don't qualify. **Same drift as ADR-0034 (6 tribe_leaders for partner
   attachments)** — PM-precedented.
-- Sarah Faria — `designations=[ambassador, founder, curator]`. No V4 engagement
+- member L — `designations=[ambassador, founder, curator]`. No V4 engagement
   for curator role; her `committee_*`/`workgroup_*`/`ambassador` engagements
   don't grant `view_internal_analytics`. **Same drift as ADR-0034** —
   PM-precedented.
@@ -231,14 +231,14 @@ external-callable.
 - pg_policy precondition verificado (zero refs) — sem regressão RLS.
 
 ### Para members (drift consolidado)
-- **João Uzejka** (chapter_liaison designation drift) — perde get_chapter_needs.
+- **member B** (chapter_liaison designation drift) — perde get_chapter_needs.
   Mesmo drift de ADR-0030/0034 (PM-precedented).
-- **6 tribe_leaders + Sarah curator** — perdem get_org_chart. Mesmo drift de
+- **6 tribe_leaders + member L curator** — perdem get_org_chart. Mesmo drift de
   ADR-0034 (PM-precedented).
-- **3 chapter_board × board_member members** (Emanuele, Emanoela, Lorena) —
+- **3 chapter_board × board_member members** (member K, member F, member H) —
   PRESERVAM acesso a get_chapter_needs via Path Y. Operacionalmente correto
   (board_members fulfilm chapter needs).
-- **Roberto Macêdo** (chapter_board × liaison) — gain implícito via ADR-0030 já
+- **member M** (chapter_board × liaison) — gain implícito via ADR-0030 já
   ratificado. Aplicado a get_chapter_needs (analytics-tier reader sister fn).
 
 ### Para path A/B/C optionality
@@ -261,15 +261,15 @@ Recomendação: **SIM** (ADR-0030/0031/0036 precedent extension).
 Path Y preserva 3 chapter_board × board_member members para acesso ao próprio
 chapter — operacionalmente legítimo (board members são quem opera chapter needs
 locally). Sem Path Y, board_members perderiam acesso a chapter needs do próprio
-chapter — regressão real. Com Path Y, drift = 1 (João) ao invés de 4.
+chapter — regressão real. Com Path Y, drift = 1 (member B) ao invés de 4.
 
 Recomendação: **SIM** (Path Y aceito; padrão para futuras conversões com
 chapter_board sub-role mismatch).
 
-### Q3 — `get_org_chart` 7 drift losses (6 tribe_leaders + Sarah curator) aceitos?
+### Q3 — `get_org_chart` 7 drift losses (6 tribe_leaders + member L curator) aceitos?
 
 Mesmo padrão precedent 8× (ADR-0030/0034). tribe_leaders são
-volunteer×leader (initiative scope), não org-scope analytics audience. Sarah
+volunteer×leader (initiative scope), não org-scope analytics audience. member L
 curator designation já não tem V4 engagement role.
 
 Recomendação: **SIM** (PM-precedented drift correction).
@@ -301,9 +301,9 @@ Recomendação: **p67 mesmo**.
 
 - 2 fns V3 convertidas (get_chapter_needs + get_org_chart) reusando action existente.
 - Privilege expansion totals:
-  - get_chapter_needs: legacy 14 → V4+Path Y 13 (drift 1: João, precedented).
-  - get_org_chart: legacy 17 → V4 10 (drift 7: 6 tribe_leaders + Sarah, precedented).
-- Zero would_gain (Roberto já aplicado em ADR-0030).
+  - get_chapter_needs: legacy 14 → V4+Path Y 13 (drift 1: member B, precedented).
+  - get_org_chart: legacy 17 → V4 10 (drift 7: 6 tribe_leaders + member L, precedented).
+- Zero would_gain (member M já aplicado em ADR-0030).
 - Zero novo V4 action — full reuse `view_internal_analytics` + `manage_platform`.
 - Defense-in-depth REVOKE FROM anon aplicado.
 - pg_policy precondition (Q-D charter): zero RLS refs verificados.
@@ -332,17 +332,17 @@ Caller: `src/pages/stakeholder.astro` + `nucleo-mcp` MCP tool `submit_chapter_ne
 ```
 V3 set       = 12 members (chapter_board / sponsor / chapter_liaison designations)
 V4+Path Y    = 13 members
-would_gain   = [Fabricio Costa, Vitor Maia Rodovalho]
-would_lose   = [João Uzejka Dos Santos]
+would_gain   = [member G, Vitor Maia Rodovalho]
+would_lose   = [member B]
 ```
 
-**Gain rationale**: Vitor (SA + manager) + Fabricio (co_gp). Both have
+**Gain rationale**: Vitor (SA + manager) + member G (co_gp). Both have
 `view_internal_analytics` via organization-tier leadership engagement. V3
 restricted to chapter-tier designations only; V4 extension is consistent
 with view_internal_analytics audience design. Org-tier leadership submitting
 chapter needs on behalf of own chapter is operationally legitimate.
 
-**Loss rationale**: João Uzejka — same chapter_liaison designation drift as
+**Loss rationale**: member B — same chapter_liaison designation drift as
 get_chapter_needs (precedent ADR-0030/0034).
 
 ### Decisão
@@ -373,6 +373,6 @@ REVOKE EXECUTE ON FUNCTION public.submit_chapter_need(text, text, text) FROM PUB
 
 - 1 fn write convertida. Phase B'' tally: 81 → 82 / 246 (~33.3%).
 - chapter_needs subsystem 100% V4 (get + submit).
-- Vitor + Fabricio gain (V4-consistent expansion, org-tier leadership).
-- João loses (precedented drift).
+- Vitor + member G gain (V4-consistent expansion, org-tier leadership).
+- member B loses (precedented drift).
 - Migration `20260427145000_adr_0037_ext_submit_chapter_need_v4.sql` + REVOKE.

@@ -19,10 +19,10 @@ Os 4 casos (todos cycle4-2026):
 
 | Candidata | app_status | linha órfã (aberta) | linha real | leitura |
 |---|---|---|---|---|
-| Bruna Soares | approved | `scheduled` 08/05 (evento ainda 'scheduled') | `completed` 13/05 | progressão normal + órfã |
-| Cristiano Nunes | approved | `rescheduled` 06/05 (evento já cancelled) | `completed` 12/05 | idem |
-| Luíse Quintana | approved | `rescheduled` 12/05 (evento já cancelled) | `completed` 15/05 | idem |
-| Bruna Lima Zomer | interview_pending | `rescheduled` 06/05 | cadeia → `noshow` 12/05 → `cancelled` 14/05 | estado real = cancelled |
+| member B | approved | `scheduled` 08/05 (evento ainda 'scheduled') | `completed` 13/05 | progressão normal + órfã |
+| member D | approved | `rescheduled` 06/05 (evento já cancelled) | `completed` 12/05 | idem |
+| member C | approved | `rescheduled` 12/05 (evento já cancelled) | `completed` 15/05 | idem |
+| member A | interview_pending | `rescheduled` 06/05 | cadeia → `noshow` 12/05 → `cancelled` 14/05 | estado real = cancelled |
 
 Métricas globais: `apps_with_multi_open=0` (ninguém tem 2 abertas simultâneas);
 `orphan_open_not_newest=4` (linha aberta que **não** é a mais recente da app).
@@ -58,7 +58,7 @@ de INSERT, torna a invariante verdadeira por construção.
 - **Seguro p/ app.status**: cancelar uma linha dispara `trg_sync_interview_to_app_status`, que
   nunca toca app em status terminal/locked e cujo branch de status aberto não casa `cancelled`.
 - **Corrige eventos stale**: cancelar a órfã dispara `trg_sync_interview_to_event`, marcando
-  o evento velho como `cancelled` (intencional — corrige o evento 'scheduled' stale da Bruna Soares).
+  o evento velho como `cancelled` (intencional — corrige o evento 'scheduled' stale da member B).
 
 ### 3.2 Backfill (mesma migration, 1×, global a todos os ciclos)
 Cancela as linhas abertas que **não** são a linha mais recente da app

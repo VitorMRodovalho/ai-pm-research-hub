@@ -2,7 +2,7 @@
 
 - **Status:** Proposed (draft for council review — 2026-06-09)
 - **Issue:** #569 (legal-ops, type:feature, priority:high, governance, audit-trail)
-- **Origin:** Parecer Técnico-Jurídico nº 01/2026 (Aaron Chaves), recomendação **(k)**; instrumento **Declaração Explícita de Exclusão de PI e Autoria Independente** (doc7), **Cláusula Quarta 4.1 + Anexo I**.
+- **Origin:** Parecer Técnico-Jurídico nº 01/2026 (member A), recomendação **(k)**; instrumento **Declaração Explícita de Exclusão de PI e Autoria Independente** (doc7), **Cláusula Quarta 4.1 + Anexo I**.
 - **Refs:** doc9 §B (procedimento OpenTimestamps); ADR-0004 (`organization_id`), ADR-0007 (`can()`), GC-162 (RLS/LGPD).
 
 ## Context
@@ -28,7 +28,7 @@ Architecture:
 **Eficácia = `confirmed`, não `pending`** (closes the QA gap on doc7 Cl.4.1): a freshly-created `.ots` is `pending` (not yet Bitcoin-anchored) and does not yet attest a date. `export_anexo_i` surfaces per-asset status + an `all_confirmed` flag so the Declaração's efficacy is reported honestly.
 
 ## Slices (1 PR each)
-- **0. Spike — DONE** (2026-06-09): the `opentimestamps@0.4.9` lib is `likely_breaks` under Deno EF; decision = **HAND_ROLL** a zero-dep fetch+`.ots` engine (`_shared/ots.ts`), verified **byte-exact** vs 5 canonical vectors + a live stamp. See `docs/specs/SPEC_569_S0_OTS_DENO_SPIKE.md`.
+- **0. Spike — DONE** (2026-06-09): the `person-1@example.invalid` lib is `likely_breaks` under Deno EF; decision = **HAND_ROLL** a zero-dep fetch+`.ots` engine (`_shared/ots.ts`), verified **byte-exact** vs 5 canonical vectors + a live stamp. See `docs/specs/SPEC_569_S0_OTS_DENO_SPIKE.md`.
 - **1. DB** — tables + RLS + member-facing RPCs + internal `_ots_*` pipeline RPCs (**this ADR**).
 - **2. EF stamp — DONE** (2026-06-09): `ots-stamp` EF wires `ots.ts` to `_ots_claim_unstamped_assets`/`_ots_mark_stamped`; deployed + smoked in prod (full data path incl. the bytea-over-PostgREST seam verified byte-exact).
 - **3. pg_cron upgrade pass + health tool — DONE** (2026-06-10, migration `20260805000136`): 3 cron jobs (stamp 02:10 / upgrade 02:40 UTC non-overlapping + retention monthly), claim turned into an UPDATE-based **lease** (`claimed_at`, 10-min window, FOR UPDATE SKIP LOCKED — see note under Open items), registry retention pass (revoked + window, 1y safety floor, default 5y), `get_ots_pipeline_health` RPC + MCP tool. Cron auth via dedicated `vault.ots_cron_secret` ⇄ EF env `OTS_CRON_SECRET` (fail-closed gate widening on both EFs — the vault `service_role_key` copy was proven stale vs the EF-injected key, 403 live; see #618).
