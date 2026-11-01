@@ -2689,6 +2689,8 @@ const esLATAM: Record<string, string> = {
   'admin.settings.cycleDefaultLabel': 'Ciclo predeterminado (ID)',
   'admin.settings.cycleDefaultHint': 'ID del ciclo predeterminado cuando no esté definido (opcional)',
   'admin.settings.webhookHint': 'URL para notificaciones externas (opcional)',
+  'admin.settings.whatsappOnboardingLabel': 'Invitación del grupo de WhatsApp de onboarding',
+  'admin.settings.whatsappOnboardingHint': 'Enlace de invitación del grupo (https://chat.whatsapp.com/...). Aparece en la tarjeta de pre-integración para los aprobados. Al cambiar de grupo, pegue aquí la nueva invitación.',
   'admin.settings.saveBtn': 'Guardar configuración',
   'admin.settings.platformLimits': 'Límites de la Plataforma',
   'admin.settings.platformLimitsHint': 'Límites configurables. Los cambios requieren justificación y se registran en el log de auditoría.',

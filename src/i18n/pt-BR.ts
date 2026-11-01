@@ -2695,6 +2695,8 @@ const ptBR: Record<string, string> = {
   'admin.settings.cycleDefaultLabel': 'Ciclo padrão (ID)',
   'admin.settings.cycleDefaultHint': 'ID do ciclo padrão quando não definido (opcional)',
   'admin.settings.webhookHint': 'URL para notificações externas (opcional)',
+  'admin.settings.whatsappOnboardingLabel': 'Convite do grupo de WhatsApp do onboarding',
+  'admin.settings.whatsappOnboardingHint': 'Link de convite do grupo (https://chat.whatsapp.com/...). Aparece no cartão do pré-onboarding para os aprovados. Ao trocar de grupo, cole aqui o convite novo.',
   'admin.settings.saveBtn': 'Salvar configurações',
   'admin.settings.platformLimits': 'Limites da Plataforma',
   'admin.settings.platformLimitsHint': 'Limites configuráveis. Alterações requerem justificativa e são registadas no log de auditoria.',
