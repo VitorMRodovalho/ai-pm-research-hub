@@ -131,7 +131,7 @@ Também corrigido:
 - Bug: `get_tribe_attendance_grid` mostrava `na` para reunião da Tribo 7 de 2026-05-19 sem linhas de presença.
 - Root cause: branch `WHEN COALESCE(erc.row_count, 0) = 0 THEN 'na'` marcava evento elegível vazio como não aplicável.
 - Migration: `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql`.
-- Validação: simulando Marcos Klemz, o evento `4b31e97d-2b63-4548-91af-65adbec6fb46` retorna `today_status='absent'`; invariantes 16/16 zeradas.
+- Validação: simulando member B, o evento `4b31e97d-2b63-4548-91af-65adbec6fb46` retorna `today_status='absent'`; invariantes 16/16 zeradas.
 
 ### 3.3 Cloudflare MCP Bootstrap
 
@@ -152,7 +152,7 @@ Confirmado:
 5. **Local QA:** `supabase start` falha por migration order; isso bloqueia debug local de Edge Functions — GitHub #164.
 6. **Release backfill:** `docs/RELEASE_LOG.md` precisa de backfill p40-p201 — GitHub #165.
 7. **Parallel agent governance:** padronizar worktrees, lanes, handoff e gates — GitHub #159.
-8. **Herlon authority state:** decidir acordo/certificado vs requirement vs UX pendente — GitHub #160.
+8. **member A authority state:** decidir acordo/certificado vs requirement vs UX pendente — GitHub #160.
 9. **Sensitive UI gates:** auditar `hasPermission(...)` e migrar superfícies sensíveis para `canFor(...)` — GitHub #161.
 10. **Agreement issuance for special kinds:** emitir termo vigente para special engagement kinds sem certificado e sem shortcut de autoridade — GitHub #177.
 11. **Approval orchestration:** `/admin/selection` aprova via `admin_update_application`, mas o caminho completo `finalize_decisions` está órfão no frontend — GitHub #179.
@@ -171,10 +171,10 @@ Consulta live em `members`, `engagements`, `can_by_member` e `get_caller_capabil
 
 | Pessoa | Estado atual | Evidência de permissão |
 |---|---|---|
-| Roberto Macêdo | `operational_role='researcher'`, designations `chapter_liaison`, `ambassador`, `curator`; active Curadoria committee coordinator | `curate_content=true`, `participate_in_governance_review=true`, `view_internal_analytics=true`, `view_chapter_dashboards=true` |
-| Sarah Faria | `operational_role='researcher'`, designations `ambassador`, `founder`, `curator`; active Curadoria committee coordinator | `curate_content=true`, `participate_in_governance_review=true`; initiative `Comitê de Curadoria` grants `view_pii`, `write`, `write_board` |
-| Marcos Klemz | `operational_role='tribe_leader'`, Tribe 7 leader | `manage_event=true`, `write_board=true`, `award_champion=true` scoped to Tribe 7 / initiative `Governança & Trustworthy AI` |
-| Herlon Alves | `operational_role='observer'`, designations `ambassador`; active `study_group_owner` role `leader` in CPMAI | `org_actions=[]`, `initiative_actions={}` because `requires_agreement=true`, `agreement_certificate_id=NULL`, `is_authoritative=false` |
+| member C | `operational_role='researcher'`, designations `chapter_liaison`, `ambassador`, `curator`; active Curadoria committee coordinator | `curate_content=true`, `participate_in_governance_review=true`, `view_internal_analytics=true`, `view_chapter_dashboards=true` |
+| member D | `operational_role='researcher'`, designations `ambassador`, `founder`, `curator`; active Curadoria committee coordinator | `curate_content=true`, `participate_in_governance_review=true`; initiative `Comitê de Curadoria` grants `view_pii`, `write`, `write_board` |
+| member B | `operational_role='tribe_leader'`, Tribe 7 leader | `manage_event=true`, `write_board=true`, `award_champion=true` scoped to Tribe 7 / initiative `Governança & Trustworthy AI` |
+| member A | `operational_role='observer'`, designations `ambassador`; active `study_group_owner` role `leader` in CPMAI | `org_actions=[]`, `initiative_actions={}` because `requires_agreement=true`, `agreement_certificate_id=NULL`, `is_authoritative=false` |
 
 ### 5.2 Bugs Confirmados e Corrigidos
 
@@ -186,7 +186,7 @@ Consulta live em `members`, `engagements`, `can_by_member` e `get_caller_capabil
 - `navigation.config.ts` exposes `/admin/curatorship` at `minTier='observer'`, but the React island had stricter legacy permission gating. This class of mismatch can create "link visible, content denied" bugs.
 - `AdminNav.astro` previously mapped `curatorship` to `admin.curation` only; p201 hotfix now adds V4 capability fallback for `curate_content` and `participate_in_governance_review`.
 - `getAccessTier()` and `hasPermission()` remain cache/designation driven. V4 source of truth is `can()` / `can_by_member()` / capability cache. High-risk pages should prefer `canFor()`.
-- Herlon is a live example of pending-authority state: the `study_group_owner/leader` engagement has permissions in `engagement_kind_permissions`, but `auth_engagements` does not expose them because the engagement requires agreement and has no `agreement_certificate_id`. This may be correct compliance behavior, but the UI needs to explain "leadership pending agreement" instead of silently showing only `observer`.
+- member A is a live example of pending-authority state: the `study_group_owner/leader` engagement has permissions in `engagement_kind_permissions`, but `auth_engagements` does not expose them because the engagement requires agreement and has no `agreement_certificate_id`. This may be correct compliance behavior, but the UI needs to explain "leadership pending agreement" instead of silently showing only `observer`.
 
 ### 5.4 Recommended Permission Audit Matrix
 

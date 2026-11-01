@@ -37,8 +37,8 @@ Nenhum gatilho recomputa o ranking do ciclo quando um score muda. Os gatilhos em
 no botão "Recalcular Rankings".
 - Último snapshot de ranking: `2026-07-02 23:42`. Avaliações submetidas depois disso: **26**.
 - Researcher: 53 ranqueáveis ao vivo, **47 divergem** do `rank_researcher` armazenado, **13 que deveriam ter rank estão NULL**.
-  Inversão grave: **Francisco J.** (research 259.50, `approved`) exibido **#39**, rank vivo **#7** (gap 32).
-- Líder: 9 ranqueáveis, 7 divergem, 3 NULL. O 4º maior `leader_score` (**Paulo A.**) aparece **sem rank**.
+  Inversão grave: **member H J.** (research 259.50, `approved`) exibido **#39**, rank vivo **#7** (gap 32).
+- Líder: 9 ranqueáveis, 7 divergem, 3 NULL. O 4º maior `leader_score` (**member I A.**) aparece **sem rank**.
 - Impacto direto na superfície: `get_selection_rankings` (admin/curador) ordena pelo rank armazenado E **descarta linhas
   com rank NULL**, então os 13 researchers + 3 líderes somem da lista. `get_my_selection_result` mostra o rank stale ao
   próprio candidato (35 de 41 apps em status final estão errados).
@@ -55,7 +55,7 @@ no botão "Recalcular Rankings".
   numérico atual = 0**. Passa a divergir no instante em que qualquer tipo chegar a 3+ avaliadores.
 - **Metade VIVA (sem trava de min):** `objective_score_avg` (usado no corte) exige 2 avaliadores; `research_score`
   aceita **1**. Resultado: **17 apps têm `research_score` mas `objective_score_avg` NULL** (71 com research vs 54 com
-  obj_avg). Duas delas estão **ranqueadas E aprovadas com base em 1 único avaliador** (ex.: Priscila O., research 239.00).
+  obj_avg). Duas delas estão **ranqueadas E aprovadas com base em 1 único avaliador** (ex.: member J O., research 239.00).
   Isso fura a regra de revisão dupla que dá credibilidade ao mérito.
 - O guard dedicado `check_application_score_consistency()` **não pega** isso (inspeciona as colunas PERT gated, nunca `research_score`).
 - **Fix:** derivar `research_score` das colunas já consolidadas (`objective_score_avg + interview_score`) e deixar NULL
@@ -109,10 +109,10 @@ coluna de data-do-fato, então um backfill de presença histórica cai inteiro n
 - Em `2026-07-11 ~03:15 UTC` (batch, `granted_by=null`) foram inseridas **558 linhas de presença** (57 membros). Resolvendo
   `ref_id -> attendance -> events.date`: **525 são de eventos ANTERIORES ao cycle_4** (datas reais de 2025-10-08 a
   2026-07-09), só 33 do ciclo atual. **5250 pontos mal-atribuídos ao cycle_4, afetando 48 membros.**
-- Efeito no ranking do ciclo (exibido vs corrigido por data-do-evento): Ana C. 280->50, **Jefferson P. 280->30**,
-  Marcos A. 260->20, Fabricio C. 230->10. Quem tem atividade real do ciclo (Paulo A. 120, Honorio D. 150) aparece
+- Efeito no ranking do ciclo (exibido vs corrigido por data-do-evento): member K C. 280->50, **member L P. 280->30**,
+  member M A. 260->20, member N C. 230->10. Quem tem atividade real do ciclo (member I A. 120, member O D. 150) aparece
   soterrado em #12/#20. O líder exibido do ciclo lidera com presença do Ciclo 3.
-- Caso Jefferson: "Ciclo Atual 280" = 28 presenças, 25 backfillpadas em 11/07 (Reunião Geral Ciclo 03, Talentos &
+- Caso member L: "Ciclo Atual 280" = 28 presenças, 25 backfillpadas em 11/07 (Reunião Geral Ciclo 03, Talentos &
   Upskilling, Lideranca #1-6, Tribo semanal — 09/04 a 07/07). Reais do cycle_4: 3 eventos (30 pts). Ele nunca teve reunião
   de tribo do ciclo atual, correto.
 - **Fix:** atribuir ciclo pela data real do fato. Adicionar `occurred_at`/`activity_date` em `gamification_points`
@@ -136,7 +136,7 @@ coluna de data-do-fato, então um backfill de presença histórica cai inteiro n
 pontos de regra inativa OU somar só regras ativas no leaderboard + contract test `SUM(all)==SUM(pilares)`.
 
 ### B2 — Leaderboard interno inclui inativos; público exclui `[DIRETO]` — BAIXA
-27 membros inativos têm pontos. **Débora M.** (inativa, 1380) aparece **#4** no `get_gamification_leaderboard`; o
+27 membros inativos têm pontos. **member P M.** (inativa, 1380) aparece **#4** no `get_gamification_leaderboard`; o
 `get_public_leaderboard` a exclui (`is_active`). Inconsistência de quem-aparece entre superfícies interna e pública.
 
 > Nota: não reproduzi nenhum erro numérico no leaderboard/pilares. Se há uma tela/número específico que parece errado,
@@ -176,7 +176,7 @@ Racional: corrigir primeiro (Ondas 1-4), expor depois. Escopo proposto:
 - **Gamificação "Minha pontuação, auditável":** painel por membro (e admin vendo qualquer membro) com CICLO vs VITALÍCIO
   claramente separados e rotulados; breakdown por pilar expansível até a linha de CADA fato (evento/atividade) com a
   DATA REAL, o ciclo a que pertence e os pontos; rótulo explícito "certificações contam vitalício"; export. Responde direto
-  ao "de onde vêm estes pontos e em qual ciclo" (o caso Jefferson). Depende do B0 (`occurred_at`) estar aplicado.
+  ao "de onde vêm estes pontos e em qual ciclo" (o caso member L). Depende do B0 (`occurred_at`) estar aplicado.
 - **Seleção decomposta por critério:** visão consolidada critério x avaliador COM `criterion_notes` (racional), respeitando
   blind-review; e a visão do próprio candidato com seu breakdown por critério pós-decisão. Depende de A1/A3 + Onda 4.
 - Princípio de credibilidade: a superfície de transparência só sobe quando os números por trás estão corrigidos e estáveis.
@@ -185,7 +185,7 @@ Racional: corrigir primeiro (Ondas 1-4), expor depois. Escopo proposto:
 
 | # | Achado | Sev | Ação |
 |---|--------|-----|------|
-| 1 | A1 ranks stale (13 researchers + 3 líderes somem; Francisco #39 vs #7) | ALTA | PR: recompute-on-score-change + rodar `recalculate_cycle_rankings` agora |
+| 1 | A1 ranks stale (13 researchers + 3 líderes somem; member H #39 vs #7) | ALTA | PR: recompute-on-score-change + rodar `recalculate_cycle_rankings` agora |
 | 2 | A2 `research_score` sem trava min_evaluators (17 apps 1-avaliador, 2 aprovadas) | ALTA | PR: reescrever `compute_application_scores` (deriva de colunas PERT + gate min) |
 | 3 | A3 corte inclui rejeitados + param morto + carimbo cross-role | MÉDIA | Decisão de política + PR conforme decisão |
 | 4 | A2b contradição objective_rank vs banner persistido | MÉDIA | PR UI: alinhar/rotular o badge de rank |
@@ -211,10 +211,10 @@ Migrations 475 (A2) e 476 (A1) aplicadas via `apply_migration` (byte-igual ao ar
 | leader_score não-nulo | 11 | 9 |
 | researchers ranqueáveis | 53 | 38 |
 | apps de 1 avaliador ainda pontuadas | 17 | 0 |
-| Francisco J. (rank pesquisador) | stored #39, vivo #7 | #7 |
+| member H J. (rank pesquisador) | stored #39, vivo #7 | #7 |
 
 - As 54 apps de 2+ avaliadores ficaram byte-idênticas: fingerprint md5 do conjunto {research, leader, final} inalterado (`72283da9b5088a6d7d4a21eb01f822ea` antes e depois). Zero divergência colateral.
-- 17 nulados = 3 researchers approved (Priscila O. 239, Nícolas R. 218, Rogerio P. 170) + 2 líderes submitted (216.80 e 108.50 para NULL) + 12 researchers pré-final. Os 3 approved mantêm status `approved` (nular score não revoga aprovação); saem do ranking por terem 1 único avaliador objetivo, que é a regra min-2 restaurada. Divergência vs. o plano documentado: eram 3 approved, não 2.
+- 17 nulados = 3 researchers approved (member J O. 239, member Q R. 218, member R P. 170) + 2 líderes submitted (216.80 e 108.50 para NULL) + 12 researchers pré-final. Os 3 approved mantêm status `approved` (nular score não revoga aprovação); saem do ranking por terem 1 único avaliador objetivo, que é a regra min-2 restaurada. Divergência vs. o plano documentado: eram 3 approved, não 2.
 - Verificação adversarial pré-apply (3 lentes independentes: fórmula A2, paridade de rank A1 vs. `recalculate_cycle_rankings`, segurança/cascata): 0 blocking issues. Backfill sem side-effect outward-facing (candidato vê rank por pull); `_trg_recompute_final_score_pert` grava só colunas `final_score_pert_*`, então não clobbera o corte objetivo 130.89 que a Onda 2 usa.
 - **Follow-on mig 478 (invariante M):** o teste `schema-invariants` exige `M_application_score_consistency=0`, e o invariante re-derivava `research_score` pela fórmula ANTIGA (AVG cru das avaliações, sem trava min), marcando os 17 nulados como falso drift. Alinhado à derivação ratificada (`objective_score_avg` + `interview_score`, byte-fiel ao `compute_application_scores`; só o bloco M mudou, provado por diff + md5 normalizado live==arquivo `1d998a15…`). Isso expôs 4 apps LEGADOS do Ciclo 3 (closed) com colunas stored não-respaldadas por avaliações, que a fórmula fraca mascarava. **Decisão do owner: recomputar TODOS os ciclos** (`compute_application_scores` em 163 apps, 0 erro) — blast radius real = 4 apps do Ciclo 3 (1 valor 142→87.5, 3 NULL→não-nulo); Ciclo 4 idempotente (fingerprint inalterado). `check_schema_invariants()` volta 100% zero.
 - Onda 2 (mig 477, corte active-only retroativo) segue por último e é decisão humana. Nota de numeração: **477 fica reservado à Onda 2**; a mig do invariante M é **478** (gap 477 no histórico até a Onda 2 preencher).
@@ -234,6 +234,6 @@ Migration **20260805000479** (renumerada de 477 por 478 já estar no head; 4 fix
 - **A3 parte 1 (active-only):** `_compute_pert_cutoff_core` passa a honrar `p_filter_active_only` (exclui `rejected/withdrawn/cancelled/objective_cutoff/merged`). Os 7 excluídos eram todos `rejected` (obj 58.5–127.0) e puxavam o min de 93.5 para 58.5. Decisão do owner: retroativo, **não revogar** os aprovados na banda elevada.
 - **A3 parte 2 (cross-role researcher-only):** o UPDATE objetivo (e, por simetria, o `leader_extra` e o `final_score`) passa a escopar `role_applied = p_role`; `get_cutoff_dispatch_health` + `_selection_cutoff_pending_cron` ganham `role_applied='researcher'`; **DML nulificou as 14 linhas de líder** que carregavam o corte objetivo. Isso torna `get_selection_dashboard.pert_cutoff` / `get_selection_rankings` / `get_pert_cutoff_summary` / `get_application_score_breakdown` / `get_evaluation_form` researcher-only via NULL (MAX ignora NULL; leitura por-linha vira NULL p/ líder = correto).
 - **Recompute** (`_compute_pert_cutoff_core(...,'researcher',TRUE,'objective_score_avg', <owner>)`): 62 linhas researcher carimbadas 142.69; líderes seguem NULL (writer escopado provado ao vivo). **Zero status flip** — distribuição idêntica ao before (researcher approved 43/rejected 7/submitted 8/interview_pending 2/interview_scheduled 2; leader approved 7/rejected 3/submitted 2). `check_schema_invariants()` = 100% zero. Inerte no funil: cohort de dispatch (`screening|interview_pending` com obj) estava vazio, então ninguém é reprovado/despachado; candidato não vê corte/banda (`get_my_selection_result` e `minha-candidatura.astro` não expõem).
-- **Display (decisão do owner — badge admin):** `src/pages/admin/selection.astro` ganha selo só-admin "Régua anterior" nos aprovados na banda recém-cruzada **[130.9, 142.69)** — exatamente os 7: Claudio Sousa 134.5, Eduardo Luz 134.5, MERY Herrmann 135, Marcela Foligno 136.5, Blenda Amorim 137, Juliano Sousa 138, Hector Rigon 140.5. Predicado limitado por baixo em 130.9 de propósito: os 15 aprovados abaixo do corte antigo (obj até 93.5) foram aprovados por `research_score` ranking (o corte objetivo nunca foi o gate de aprovação), então NÃO recebem o selo. Aprovação mantida em todos.
+- **Display (decisão do owner — badge admin):** `src/pages/admin/selection.astro` ganha selo só-admin "Régua anterior" nos aprovados na banda recém-cruzada **[130.9, 142.69)** — exatamente os 7: member C 134.5, member A 134.5, member F 135, member D 136.5, member G 137, member B 138, member E 140.5. Predicado limitado por baixo em 130.9 de propósito: os 15 aprovados abaixo do corte antigo (obj até 93.5) foram aprovados por `research_score` ranking (o corte objetivo nunca foi o gate de aprovação), então NÃO recebem o selo. Aprovação mantida em todos.
 - **Verificação adversarial pré-apply (3 lentes independentes, workflow):** B (null-safety dos leitores) = SAFE, C (side-effects do recompute/triggers) = SAFE (único trigger em AFTER UPDATE genérico é o de consent-revoke, no-op; `trg_final_score_pert_refresh` é `UPDATE OF final_score`), D (completeness) = CONCERN → 2 correções incorporadas antes do apply (leader_extra simétrico escopado; badge limitado a [130.9,142.69) em vez de <142.69, que teria marcado 22 em vez de 7).
 - **Follow-up aberto (fora do escopo PERT do A3):** `recompute_application_status` tem um corte objetivo PRÓPRIO (`median(objective_score_avg)*0.75` pooled cross-role, sem filtro de role; pode setar `status='objective_cutoff'`). Materialidade BAIXA: NÃO wired a cron (self-heal manual), métrica diferente do PERT, `in_cutoff=0` hoje. Escopar `cyc_median` a researcher OU documentar como intencionalmente fora do A3 — abrir issue.

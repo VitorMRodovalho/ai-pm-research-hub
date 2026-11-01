@@ -100,11 +100,11 @@ lista nominal ao GP **fora de issue e PR**. Ensaio antes do piso devolve `skippe
 ## ITEM 3: comunicações aguardando aprovação do PM
 
 Arquivo: `docs/_deliverables/2026-08-19_comunicados_tribo_talentos_e_horarios.md` (rascunho antigo, com
-o Figueiredo). **Os textos A e B foram REESCRITOS para o Marcelo Pereira na conversa e ainda não estão
+o member C). **Os textos A e B foram REESCRITOS para o member B na conversa e ainda não estão
 em arquivo.** Recupere-os do handoff ou refaça:
 
-- **A** → Marcelo Pereira (na tribo desde 07/08, Drive desde 08/08, falta `start_trail`).
-- **B** → Jefferson Pinto (líder), sobre o Pereira + manter horário publicado.
+- **A** → member B (na tribo desde 07/08, Drive desde 08/08, falta `start_trail`).
+- **B** → member A (líder), sobre o Pereira + manter horário publicado.
 - **C** → ✅ **ESCRITO para a tribo 13** (decisão do PM em 19/08: essa primeiro), em
   `docs/_deliverables/2026-08-19_comunicado_C_tribo13_horario.md`, **não versionado**. Verificado por
   impersonação que o líder consegue corrigir sozinho. **Falta o texto da tribo 10**, o caso oposto.
@@ -124,7 +124,7 @@ em arquivo.** Recupere-os do handoff ou refaça:
   As outras 10 estão cobertas: 3 pelos slots (5, 7, 8) e 7 pelo texto. **Confirme com o PM qual das
   duas mensagens ele quer antes de escrever**, porque elas não são a mesma.
 
-⚠️ **Não use o rascunho antigo.** Ele dá boas-vindas ao Figueiredo, que **não está em tribo** (a
+⚠️ **Não use o rascunho antigo.** Ele dá boas-vindas ao member C, que **não está em tribo** (a
 alocação foi revertida em 19/08 a pedido do PM: ele escolhe a tribo dele depois do onboarding).
 
 ## ITEM 4: worktree paralela em curso

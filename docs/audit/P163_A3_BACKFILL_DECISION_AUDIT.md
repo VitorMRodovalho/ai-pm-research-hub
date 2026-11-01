@@ -28,12 +28,12 @@ Apliquei UPDATE em `members.operational_role` para 6 mems baseado na CASE chain 
 
 | # | Membro | De | Para (autonomia) | Real role institucional |
 |---|--------|-----|------------------|------------------------|
-| 1 | Sarah Faria Alcantara Macedo Rodovalho | observer | tribe_leader | **Curadora** (designation), não tribe leader |
-| 2 | Roberto Macêdo | observer | tribe_leader | **Curador PMI-CE**, chapter_liaison, ambassador |
-| 3 | Fabricio Costa | tribe_leader | manager | **Vice-GP (co_gp)** + tribe leader (ROI & Portfólio) |
-| 4 | Mayanna Duarte | researcher | tribe_leader | Researcher na tribo + leader **APENAS** do Hub de Comunicação (workgroup) |
-| 5 | Maria Luiza | researcher | tribe_leader | Researcher na tribo + member do Hub de Comunicação |
-| 6 | Leticia Clemente | researcher | tribe_leader | Researcher na tribo + member do Hub de Comunicação |
+| 1 | member A | observer | tribe_leader | **Curadora** (designation), não tribe leader |
+| 2 | member E | observer | tribe_leader | **Curador PMI-CE**, chapter_liaison, ambassador |
+| 3 | member C | tribe_leader | manager | **Vice-GP (co_gp)** + tribe leader (ROI & Portfólio) |
+| 4 | member F | researcher | tribe_leader | Researcher na tribo + leader **APENAS** do Hub de Comunicação (workgroup) |
+| 5 | member G | researcher | tribe_leader | Researcher na tribo + member do Hub de Comunicação |
+| 6 | member D | researcher | tribe_leader | Researcher na tribo + member do Hub de Comunicação |
 
 **Por que foi um erro:** o trigger é "highest tier reached" em qualquer engagement, mas as **TIER_PERMISSIONS** em `src/lib/permissions.ts` tratam `tribe_leader` como "tem privilégios de líder de uma tribo de pesquisa em todos contextos". Logo, quem é leader de qualquer workgroup/committee ganharia acesso a:
 
@@ -44,7 +44,7 @@ Apliquei UPDATE em `members.operational_role` para 6 mems baseado na CASE chain 
 - `data.view_tribe_members`
 - Visibility a eventos `visibility = 'leadership'` (gate em `attendance.astro:509`)
 
-Para Mayanna/Maria Luiza/Leticia, isso é **privilege expansion sem fundamento institucional** — elas nunca foram tribe leaders.
+Para member F/member G/member D, isso é **privilege expansion sem fundamento institucional** — elas nunca foram tribe leaders.
 
 ### Decisão 2 — `admin.gamification` adicionado ao tier `tribe_leader`
 
@@ -60,7 +60,7 @@ Adicionei a permissão para que o CTA "Conferir Champion" do digest funcionasse 
 
 ## Análise por mem
 
-### 1. Sarah Faria Alcantara Macedo Rodovalho
+### 1. member A
 
 **Designations:** ambassador, founder, **curator**
 **operational_role atual:** observer
@@ -73,11 +73,11 @@ Adicionei a permissão para que o CTA "Conferir Champion" do digest funcionasse 
 | observer | observer | (sem initiative) | — |
 | observer | reviewer | congress | LATAM LIM 2026 |
 
-**Análise:** Sarah é curadora institucional. CASE chain de Track E mapeia `committee_coordinator.coordinator` → `tribe_leader`. Mas curadoria ≠ liderança de tribo de pesquisa.
+**Análise:** member A é curadora institucional. CASE chain de Track E mapeia `committee_coordinator.coordinator` → `tribe_leader`. Mas curadoria ≠ liderança de tribo de pesquisa.
 
 **Recomendação:** **Manter `observer`**. Autoridade de curadoria já está coberta por `designation = curator` + RPCs scoped (e.g. `submit_evaluation`, content.curate em outros tiers). Promover a tribe_leader expõe admin pages que ela não precisa.
 
-### 2. Roberto Macêdo
+### 2. member E
 
 **Designations:** chapter_liaison, ambassador, **curator**
 **operational_role atual:** observer
@@ -91,14 +91,14 @@ Adicionei a permissão para que o CTA "Conferir Champion" do digest funcionasse 
 | observer | curator | research_tribe | Inclusão & Colaboração & Comunicação |
 | speaker | lead_presenter | congress | LATAM LIM 2026 |
 
-**Análise:** Roberto é curador, ambassador, chapter liaison PMI-CE. Mesmo problema de Sarah — committee.coordinator pega no novo CASE chain. CASE também tem `chapter_board` mapeando para `chapter_liaison`, mas tribe_leader vem antes na priority.
+**Análise:** member E é curador, ambassador, chapter liaison PMI-CE. Mesmo problema de member A — committee.coordinator pega no novo CASE chain. CASE também tem `chapter_board` mapeando para `chapter_liaison`, mas tribe_leader vem antes na priority.
 
 **Recomendação:** **Decidir entre 3 opções:**
 - (a) Manter `observer` (status quo).
 - (b) Promover para `chapter_liaison` (legítimo via chapter_board engagement).
 - (c) Refinar trigger para skip committee/workgroup → tribe_leader mapping.
 
-### 3. Fabricio Costa
+### 3. member C
 
 **Designations:** ambassador, founder, curator, **co_gp, deputy_manager**
 **operational_role atual:** tribe_leader
@@ -113,7 +113,7 @@ Adicionei a permissão para que o CTA "Conferir Champion" do digest funcionasse 
 | observer | reviewer | congress | LATAM LIM 2026 |
 | workgroup_coordinator | coordinator | workgroup | Newsletter |
 
-**Análise:** Fabricio é vice-GP (co_gp) **e** tribe leader (ROI & Portfólio). CASE prioriza `volunteer.co_gp` → manager. Em V3 priority ladder, manager > tribe_leader, e `TIER_PERMISSIONS.manager` é SUPERSET de tribe_leader (inclui admin.members.manage, admin.events.manage, system.global_config etc.).
+**Análise:** member C é vice-GP (co_gp) **e** tribe leader (ROI & Portfólio). CASE prioriza `volunteer.co_gp` → manager. Em V3 priority ladder, manager > tribe_leader, e `TIER_PERMISSIONS.manager` é SUPERSET de tribe_leader (inclui admin.members.manage, admin.events.manage, system.global_config etc.).
 
 **Você perguntou:** "vc tirou ele do tribe leader? Isto não dará conflito com a tribo dele em si?"
 
@@ -124,13 +124,13 @@ Adicionei a permissão para que o CTA "Conferir Champion" do digest funcionasse 
 - `attendance.astro:676`: `MEMBER?.operational_role === 'tribe_leader'`.
 - `attendance.astro:810`: `(MEMBER?.operational_role === 'researcher' && MEMBER?.tribe_id === ev.tribe_id)`.
 
-Se algum desses for load-bearing pra Fabricio gerir a tribo "ROI & Portfólio", trocar para manager pode quebrar capability na tribo. Precisa testar.
+Se algum desses for load-bearing pra member C gerir a tribo "ROI & Portfólio", trocar para manager pode quebrar capability na tribo. Precisa testar.
 
 **Recomendação:** **2 opções:**
-- (a) Manter `tribe_leader` (status quo) — Fabricio continua com permissions de líder de tribo. Manager-level permissions ele não recebe pelo cache, mas pode ainda obter via engagement-derived can() em RPCs específicas.
+- (a) Manter `tribe_leader` (status quo) — member C continua com permissions de líder de tribo. Manager-level permissions ele não recebe pelo cache, mas pode ainda obter via engagement-derived can() em RPCs específicas.
 - (b) Promover para `manager` — concede superset, mas precisa varrer exact-match gates antes (especialmente `tribe_leader`-specific paths em attendance e board).
 
-### 4. Mayanna Duarte
+### 4. member F
 
 **Designations:** **comms_leader**
 **operational_role atual:** researcher
@@ -141,7 +141,7 @@ Se algum desses for load-bearing pra Fabricio gerir a tribo "ROI & Portfólio", 
 | volunteer | researcher | research_tribe | Inclusão & Colaboração & Comunicação |
 | workgroup_member | leader | workgroup | Hub de Comunicação |
 
-**Análise:** Mayanna é researcher na sua tribo de pesquisa **E** leader do Hub de Comunicação (workgroup). CASE chain de Track E mapeia `workgroup_member.leader` → `tribe_leader`. Mas o escopo de leadership dela é APENAS o workgroup.
+**Análise:** member F é researcher na sua tribo de pesquisa **E** leader do Hub de Comunicação (workgroup). CASE chain de Track E mapeia `workgroup_member.leader` → `tribe_leader`. Mas o escopo de leadership dela é APENAS o workgroup.
 
 **Privilege expansion concreta se promovida:**
 - Acesso a `/admin/portfolio` (visão de gestão de tribos).
@@ -151,32 +151,32 @@ Se algum desses for load-bearing pra Fabricio gerir a tribo "ROI & Portfólio", 
 
 **Recomendação:** **Manter `researcher`**. Autoridade no Hub de Comunicação deve fluir via `can_by_member(action, 'initiative', initiative_id)` com escopo. Designation `comms_leader` já dá `admin.gamification` + `board.view_global` etc. via `DESIGNATION_PERMISSIONS`.
 
-### 5. Maria Luiza
+### 5. member G
 
 **Designations:** comms_member
 **operational_role atual:** researcher
-**Engagements:** idem Mayanna estrutura, mas role no workgroup é `coordinator` (não leader) e designation é só `comms_member`.
+**Engagements:** idem member F estrutura, mas role no workgroup é `coordinator` (não leader) e designation é só `comms_member`.
 
 **Análise:** Sem fundamento institucional para promoção a tribe_leader. CASE chain pega `workgroup_member.coordinator` → tribe_leader, mas isso é claramente over-permissive.
 
 **Recomendação:** **Manter `researcher`**.
 
-### 6. Leticia Clemente
+### 6. member D
 
 **Designations:** comms_member
-**Engagements:** idem Maria Luiza.
+**Engagements:** idem member G.
 
 **Recomendação:** **Manter `researcher`**.
 
-### 7. Herlon Alves de Sousa (não no backfill)
+### 7. member B (não no backfill)
 
 **Designations:** ambassador
 **operational_role atual:** observer
 **Status:** NÃO há engagements authoritative (não assinou agreement de study_group_owner).
 
-**Análise:** trigger Track E habilita o mapeamento `study_group_owner.leader → tribe_leader` para QUANDO Herlon assinar o agreement. Hoje o engagement existe com `is_authoritative=false`, então não conta. Não precisa backfill.
+**Análise:** trigger Track E habilita o mapeamento `study_group_owner.leader → tribe_leader` para QUANDO member B assinar o agreement. Hoje o engagement existe com `is_authoritative=false`, então não conta. Não precisa backfill.
 
-**Recomendação:** **Aguardar Herlon assinar `/volunteer-agreement`**. Quando assinar, view_authoritative recompute → trigger fires → operational_role atualiza naturalmente. Mesma reflexão de scope-leak se aplica: leader de UM study group vira tribe_leader global. Decisão arquitetural pendente (próxima seção).
+**Recomendação:** **Aguardar member B assinar `/volunteer-agreement`**. Quando assinar, view_authoritative recompute → trigger fires → operational_role atualiza naturalmente. Mesma reflexão de scope-leak se aplica: leader de UM study group vira tribe_leader global. Decisão arquitetural pendente (próxima seção).
 
 ---
 
@@ -222,7 +222,7 @@ Encontrei **23 gates V3 exact-match** em `src/`. Os mais críticos:
 
 A maioria das **RPCs/MCP tools** já chamam `can_by_member(action, 'initiative', initiative_id)` ou similar — autoridade scoped. **As gates de UI** (frontend pages/components) ainda dependem de `operational_role` em V3 paths. ADR-0007 declara que can() é source of truth, mas o cache continua sendo lido por gates legados.
 
-**Migração V3 → V4 nas UI gates é incompleta.** Track E expandiu a CASE chain achando que estava resolvendo drift (Herlon caso real), mas os 6 mems extras eram drift "intencional" (porque o CASE não devia mapear committee/workgroup leader → tribe_leader sem distinção).
+**Migração V3 → V4 nas UI gates é incompleta.** Track E expandiu a CASE chain achando que estava resolvendo drift (member B caso real), mas os 6 mems extras eram drift "intencional" (porque o CASE não devia mapear committee/workgroup leader → tribe_leader sem distinção).
 
 ---
 
@@ -233,7 +233,7 @@ A maioria das **RPCs/MCP tools** já chamam `can_by_member(action, 'initiative',
 Voltar `sync_operational_role_cache` ao body pré-Track E (apenas volunteer.{leader,researcher,...}). 
 
 - **Pró:** zero privilege expansion. Status quo restaurado.
-- **Contra:** Herlon e os 5 demais V4-kind leaders continuam bate em `guest` (drift fixed em outras direções, não nessa).
+- **Contra:** member B e os 5 demais V4-kind leaders continuam bate em `guest` (drift fixed em outras direções, não nessa).
 - **Drift A3 esperado:** subir de 7 para algo maior (porque os 6 mems voltariam a ser computados como guest pela CASE original em vez de tribe_leader). **Wait** — não, eles voltariam a ser computados como o que eram antes do Track E começar a expandir, mas isso não ajuda na real validation.
 
 ### Opção B — Refinar Track E (CASE chain) para distinguir scope
@@ -242,7 +242,7 @@ Modificar `sync_operational_role_cache` CASE chain:
 - `volunteer.leader/comms_leader` → `tribe_leader` (research_tribe leadership = "leader de tribo de pesquisa", legítimo).
 - `workgroup_member.leader/coordinator`, `committee_*.coordinator/leader`, `study_group_owner.leader` → **NÃO** map para tribe_leader. Map para `researcher` (mantém UI access básico, mas não admin/board edit globais). Autoridade real flui via can() scoped.
 
-- **Pró:** elimina o leak de scope. Mantém Herlon/etc. como "guest" ou "researcher" — autoridade institucional fica na can() scoped (que já existe via engagement_kind_permissions seed).
+- **Pró:** elimina o leak de scope. Mantém member B/etc. como "guest" ou "researcher" — autoridade institucional fica na can() scoped (que já existe via engagement_kind_permissions seed).
 - **Contra:** trigger fica "menos forte" — reverter parte do Track E. Pode acontecer drift novo se member ganhar leader em workgroup mas não tem engagement em research_tribe (bate em guest, mesmo sendo "alguém ativo").
 - **Risco:** PRECISA validar que `gamification.view_ranking` etc. funciona pra workgroup leaders mesmo com `operational_role=guest/researcher`.
 
@@ -305,18 +305,18 @@ PM aprovou Opção C: migrar gates V3 exact-match para `canFor()` scoped via cap
 | Member | `canForAdminEntry()` | Validação |
 |---|---|---|
 | Vitor (manager + superadmin) | true | ✓ admin entry mantido |
-| Fabricio (volunteer.co_gp) | true (write/manage_event/etc. org) | ✓ admin entry mantido |
-| Sarah (curadora, observer.* engagements) | **false** (só `participate_in_governance_review` org) | ✓ scope-leak fechado |
-| Mayanna (workgroup_member.leader Hub) | **false** (zero ADMIN_TIER_ACTIONS org) | ✓ scope-leak fechado |
-| Mayanna scope-aware tribe=8 (sua tribo) | manage_event = false | ✓ NÃO leader na tribo onde é researcher |
-| Mayanna scope-aware initiative=Hub | manage_event = true | ✓ leader no Hub Comunicação |
+| member C (volunteer.co_gp) | true (write/manage_event/etc. org) | ✓ admin entry mantido |
+| member A (curadora, observer.* engagements) | **false** (só `participate_in_governance_review` org) | ✓ scope-leak fechado |
+| member F (workgroup_member.leader Hub) | **false** (zero ADMIN_TIER_ACTIONS org) | ✓ scope-leak fechado |
+| member F scope-aware tribe=8 (sua tribo) | manage_event = false | ✓ NÃO leader na tribo onde é researcher |
+| member F scope-aware initiative=Hub | manage_event = true | ✓ leader no Hub Comunicação |
 
 **Pendente próxima sessão (Tier B + C + display gates)**:
 - Tier B (allowlist com tribe_leader): nav items, vários componentes residuais
 - Tier C (manager/deputy_manager exact-match): polish only
 - Display gates (TeamSection, PresentationLayer)
 - attendance.astro:810 (researcher edit minutes — semântica complexa)
-- Re-aplicar A3 backfill seletivo apenas para Fabricio (manager via volunteer.co_gp) — único institucionalmente válido
+- Re-aplicar A3 backfill seletivo apenas para member C (manager via volunteer.co_gp) — único institucionalmente válido
 
 **State pós-Opção C Tier A**:
 - A3 invariant continua = 7 (cache stale aceito; perde load-bearing role)
@@ -329,7 +329,7 @@ PM aprovou Opção C: migrar gates V3 exact-match para `canFor()` scoped via cap
 ## Recomendação final (minha opinião)
 
 1. **Aprovar Opção D**: refinar trigger Track E para não mapear committee/workgroup/study_group → tribe_leader, mantendo apenas volunteer.{leader,comms_leader} → tribe_leader (research_tribe leadership genuíno).
-2. **Re-aplicar A3 backfill seletivo** após o trigger refinement: apenas Fabricio (manager via volunteer.co_gp) — única promoção institucionalmente justificada. Demais ficam onde estão.
+2. **Re-aplicar A3 backfill seletivo** após o trigger refinement: apenas member C (manager via volunteer.co_gp) — única promoção institucionalmente justificada. Demais ficam onde estão.
 3. **Backlog item nova:** auditar as 23 V3 exact-match gates e migrar para can() scoped (ADR-0007 conformity).
 4. **Eu não devo decidir solo** mudanças de operational_role daqui em diante. Esse cache é load-bearing pra autoridade UI; mudanças precisam validação institucional caso-a-caso.
 

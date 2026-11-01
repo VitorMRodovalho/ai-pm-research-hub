@@ -9,9 +9,9 @@
 1. **Abortar** o workflow de seleção de candidatos, o comitê de seleção, os disparos de e-mail de
    agendamento e **qualquer outro e-mail da jornada do candidato**.
 2. Ele acredita que **ainda há bugs na jornada**.
-3. Está entrando **mais uma pessoa no comitê (Fernando)**, e é preciso organizar para funcionar.
+3. Está entrando **mais uma pessoa no comitê (member C)**, e é preciso organizar para funcionar.
 4. Possivelmente algo de **front-end**, se for a melhor saída, para o **calendário de agendamento** e
-   a **configuração pelo próprio membro do comitê**. Hoje ele e o Fabricio configuram por fora e
+   a **configuração pelo próprio membro do comitê**. Hoje ele e o member D configuram por fora e
    mandam o link.
 5. Três sintomas que ele relatou textualmente:
    - às vezes o agendamento **sai pela agenda deles**, às vezes **pela agenda do Núcleo**;
@@ -105,11 +105,11 @@ Composição do comitê no ciclo **aberto** (7 linhas):
 | membro | papel | `can_interview` | tem URL própria | host |
 |---|---|---|---|---|
 | Vitor Maia Rodovalho | evaluator | sim | **sim** | `calendar.app.google` |
-| Fabricio Costa | evaluator | sim | **sim** | `calendar.app.google` |
-| Fernando Maquiaveli | evaluator | sim | não | - |
-| Ivan Lourenço | observer | sim | não | - |
-| Lorena Souza | observer | sim | não | - |
-| Welma Alves de Melo | observer | sim | não | - |
+| member D | evaluator | sim | **sim** | `calendar.app.google` |
+| member E | evaluator | sim | não | - |
+| member B | observer | sim | não | - |
+| member F | observer | sim | não | - |
+| member A | observer | sim | não | - |
 | VP Desenvolvimento Profissional (PMI-GO) | observer | sim | não | - |
 
 Três hipóteses que essa tabela sugere e que a auditoria precisa **confirmar ou derrubar**, não
@@ -125,15 +125,15 @@ assumir:
 
 ## 6. Ambiguidade a resolver com o Vitor logo no começo
 
-Ele disse "estamos adicionando mais uma pessoa no Comitê (**Fernando**)".
+Ele disse "estamos adicionando mais uma pessoa no Comitê (**member C**)".
 
-**Só existe um Fernando em `members`: Fernando Maquiaveli** (tribe_leader, ativo) e ele **já está**
+**Só existe um member C em `members`: member E** (tribe_leader, ativo) e ele **já está**
 no comitê do ciclo aberto, como `evaluator` com `can_interview = true`, sem `interview_booking_url`.
 
-O outro Fernando que circulou nesta semana, **Fernando Carvalho**, é palestrante do webinar de 04/08
+O outro member C que circulou nesta semana, **member C**, é palestrante do webinar de 04/08
 e **não é membro da plataforma**. Há memória registrada de que os dois não devem ser confundidos.
 
-**Pergunte antes de mexer no comitê.** Se for o Maquiaveli, a tarefa não é adicionar: é configurar
+**Pergunte antes de mexer no comitê.** Se for o member G, a tarefa não é adicionar: é configurar
 o `interview_booking_url` dele e conferir o papel. Se for outra pessoa, ela precisa existir como
 membro primeiro.
 
@@ -186,7 +186,7 @@ superada pela nova spec.
 
 - Não pausar `send-notification-emails` (9) nem `dispatch-pending-emails` (30) sem entender que eles
   entregam e-mail de **toda** a plataforma.
-- Não assumir que "Fernando" precisa ser adicionado (ver seção 6).
+- Não assumir que "member C" precisa ser adicionado (ver seção 6).
 - Não tratar `interview_booking_url` como campo a criar: ele existe.
 - Não recitar nenhum número deste documento sem re-medir.
 

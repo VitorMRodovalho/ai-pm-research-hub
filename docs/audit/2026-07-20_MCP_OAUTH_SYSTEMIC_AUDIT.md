@@ -1,18 +1,18 @@
 # MCP OAuth / DCR - Systemic End-to-End Audit
 
 **Date:** 2026-07-20
-**Trigger:** Owner decision to stop chained hotfixes and audit the whole MCP connect flow after 4 OAuth layers were fixed in one session (Site URL, true DCR, consent-hang, client_secret). Two symptoms remained open: Leticia (Claude) `oauth_client_not_found / invalid client_id format`, and Perplexity `Failed to verify OAuth request` after a 200 token exchange.
+**Trigger:** Owner decision to stop chained hotfixes and audit the whole MCP connect flow after 4 OAuth layers were fixed in one session (Site URL, true DCR, consent-hang, client_secret). Two symptoms remained open: member D (Claude) `oauth_client_not_found / invalid client_id format`, and Perplexity `Failed to verify OAuth request` after a 200 token exchange.
 **Method:** Inline diagnosis + a 4-agent workflow (map + adversarial verify) + owner-run live SQL on the `auth` schema. Every number below comes from a live tool result captured this session (curl, GoTrue admin API, `execute_sql`, git). Deployed head at audit time: main `8a011a01`, EF `nucleo-mcp` 2.90.0.
 
 ---
 
 ## 1. Verdict
 
-The happy path is healthy and was reproduced live end to end: discovery, true DCR (per-client create), GoTrue authorize, consent, GoTrue-native token, 401 + WWW-Authenticate, initialize, tools/list. A real member (Eduardo Luz) has a working Claude connection through the new per-client DCR path, which proves the pipeline works for a non-owner user.
+The happy path is healthy and was reproduced live end to end: discovery, true DCR (per-client create), GoTrue authorize, consent, GoTrue-native token, 401 + WWW-Authenticate, initialize, tools/list. A real member (member A) has a working Claude connection through the new per-client DCR path, which proves the pipeline works for a non-owner user.
 
 Both open symptoms are now diagnosed with confirmed root causes. Neither is a new server bug; both are the aftermath of earlier states:
 
-- **Leticia** holds a non-UUID client_id cached by her Claude client from a 38-minute shim window on 2026-03-26. It cannot be repaired server-side. The fix is a client-side reconnect.
+- **member D** holds a non-UUID client_id cached by her Claude client from a 38-minute shim window on 2026-03-26. It cannot be repaired server-side. The fix is a client-side reconnect.
 - **Perplexity** emits the "Failed to verify" string itself, after our server side completes successfully. The one server-side contributor worth fixing is a resource-metadata mismatch; the rest is Perplexity-client behavior, most likely a mobile in-app-browser state split.
 
 No production OAuth client was deleted during the audit. The two subagent "deletion" security flags were conservative false alarms: `auth.oauth_clients` (which retains soft-deleted rows) confirms every delete targeted an `__audit_*` / `probe` throwaway the agents created and cleaned up in the same run. All 6 real clients are intact.
@@ -34,7 +34,7 @@ No production OAuth client was deleted during the audit. The two subagent "delet
 
 **Authorize error taxonomy (fingerprints, live-verified):**
 
-- non-UUID client_id  -> `400 oauth_client_not_found / "invalid client_id format"`  (Leticia)
+- non-UUID client_id  -> `400 oauth_client_not_found / "invalid client_id format"`  (member D)
 - valid UUID, no such client  -> `400 oauth_client_not_found / "invalid client_id"` (no "format")
 - empty client_id  -> `400 validation_failed / "client_id is required"`
 - wrong redirect_uri  -> `400 validation_failed / "invalid redirect_uri"` (hard 400, not redirected)
@@ -48,7 +48,7 @@ All findings were passed through an adversarial verifier. Verdicts: FM-01 CONFIR
 
 ### P0 - user-facing, act now
 
-**FM-02 / LR (Leticia) - cached non-UUID client_id, unrescuable server-side.**
+**FM-02 / LR (member D) - cached non-UUID client_id, unrescuable server-side.**
 GoTrue rejects her cached `nucleo-mcp-xxxxxxxx` at authorize with the exact error she reported. Root cause: a register.ts shim that ran only 2026-03-26 14:51:45 to 15:29:04 returned `client_id: nucleo-mcp-${randomUUID().slice(0,8)}` (a non-UUID) and created no GoTrue row. Claude caches the DCR client_id by server URL and does not re-register, so the bad value has persisted since March. It lives only in her client cache; there is no server object to migrate, admin UPDATE is broken (500), and a passthrough rewrite is dead code because current discovery points authorize straight at GoTrue and the cached-discovery path is also blocked by the retired token stub.
 **Fix (no code, no deploy, no risk):** she removes the connector and re-adds it at `https://nucleoia.vitormr.dev/mcp/semantic` (a server-URL key her March client never registered against), forcing a fresh DCR that mints a valid UUID. Fallbacks if it persists: try the other Claude surface (web vs desktop have separate caches), full Claude sign-out/in, or `/mcp` / `/mcp/actions` as a different key. Exact PT-BR instruction in section 4.
 
@@ -73,9 +73,9 @@ The string appears nowhere in `src/` or `supabase/`. Our chain completes: author
 
 ---
 
-## 4. Leticia - ready-to-send instruction (PT-BR)
+## 4. member D - ready-to-send instruction (PT-BR)
 
-> Oi Leticia! O conector antigo do Claude ficou preso com um identificador em formato antigo que o nosso login recusa. O jeito de resolver e recriar o conector do zero:
+> Oi member D! O conector antigo do Claude ficou preso com um identificador em formato antigo que o nosso login recusa. O jeito de resolver e recriar o conector do zero:
 > 1. No Claude, abra Configuracoes > Conectores, ache o conector do Nucleo e clique em Remover/Desconectar.
 > 2. Adicione de novo como conector novo, colando exatamente esta URL: `https://nucleoia.vitormr.dev/mcp/semantic`
 > 3. Faca o login e autorize quando o Claude abrir a tela de consentimento.
@@ -89,8 +89,8 @@ The string appears nowhere in `src/` or `supabase/`. Our chain completes: author
 
 | client_id | name | active consents (who) | disposition |
 |---|---|---|---|
-| `8636c0d0` | Nucleo IA MCP (legacy shared) | 3 - Vitor, Fabricio Costa, Fernando Maquiaveli (connected 08-09/Jul, pre-DCR) | KEEP. Deleting breaks 3 members. |
-| `033828f2` | Claude | 1 - Eduardo Luz (real member, working) | KEEP. |
+| `8636c0d0` | Nucleo IA MCP (legacy shared) | 3 - Vitor, member B, member C (connected 08-09/Jul, pre-DCR) | KEEP. Deleting breaks 3 members. |
+| `033828f2` | Claude | 1 - member A (real member, working) | KEEP. |
 | `f3d4bacc` | Claude | 1 - Vitor | KEEP. |
 | `6bef8765` | Claude | 0 (orphan, first of the 14:52 double-registration) | SAFE TO DELETE (only unambiguous cleanup). |
 | `0d4fb692` | Perplexity | 1 - Vitor | KEEP for now (owner's own; part of the failing Perplexity test). |
@@ -103,7 +103,7 @@ The string appears nowhere in `src/` or `supabase/`. Our chain completes: author
 ## 6. Systemic hardening + anti-regression tests
 
 **Code hardening (proposals, not yet applied):**
-1. `register.ts`: assert `created.client_id` matches a UUID before returning it (defense against the exact Leticia class ever recurring from a shim). Fallback branch: stop echoing requested redirect_uris; 400 on sanitize-emptied non-empty requests (FM-01).
+1. `register.ts`: assert `created.client_id` matches a UUID before returning it (defense against the exact member D class ever recurring from a shim). Fallback branch: stop echoing requested redirect_uris; 400 on sanitize-emptied non-empty requests (FM-01).
 2. `register.ts` (optional): idempotency dedup by `(client_name, redirect_uris)` to stop the x2/x3 orphan pileup. Cosmetic; owner's call.
 3. `oauth-protected-resource.ts`: path-aware `resource` + path-suffixed catch-all route (PPX-3/FM-03/FM-04).
 4. `authorize.ts` (optional, marginal reach): detect a non-UUID client_id and 302 to a friendly "re-add your connector" page. Only fires for cached-discovery clients, so low value.
@@ -124,7 +124,7 @@ Existing OAuth tests to extend: `tests/contracts/1210-mcp-native-oauth.test.mjs`
 
 | Prio | Action | Type | Risk | Needs owner |
 |---|---|---|---|---|
-| P0 | Send Leticia the reconnect instruction (section 4) | Comms | none | send it |
+| P0 | Send member D the reconnect instruction (section 4) | Comms | none | send it |
 | P1 | FM-01: fix register fallback echo + 400-on-empty-sanitize | Code + deploy | low | approve |
 | P1 | PPX-3: path-aware protected-resource metadata + catch-all | Code + deploy | low | approve |
 | P1 | Add the 5 contract tests | Code | none | approve |

@@ -49,7 +49,7 @@ Corrigido 1 bug crítico + 1 limitação na plataforma Hub de Comunicação, mai
 
 #### 🟢 Quick fix UX perfil — `alumni` + `observer` labels (**BAIXA**)
 
-`src/pages/profile.astro:217-218` não mapeava `alumni` nem `observer` em `OPROLE_LABELS`/`OPROLE_COLORS`. Usuários com esses roles viam o valor bruto no badge. Adicionadas as entradas. Não resolve o bug reportado pelo Carlos Magno, mas elimina uma das hipóteses (render quebrado por role desconhecido).
+`src/pages/profile.astro:217-218` não mapeava `alumni` nem `observer` em `OPROLE_LABELS`/`OPROLE_COLORS`. Usuários com esses roles viam o valor bruto no badge. Adicionadas as entradas. Não resolve o bug reportado pelo member B, mas elimina uma das hipóteses (render quebrado por role desconhecido).
 
 ---
 
@@ -79,7 +79,7 @@ Expectativa: deploy em ~1-2 min, zero downtime. Sem database change, sem EF chan
 3. Abrir qualquer card **sem participantes** (para cair no caminho legacy do MemberPicker single).
 4. Clicar no campo "Responsável" ou "Revisor" — dropdown deve abrir sem crash. Antes: ReferenceError no console + modal desmontava.
 5. No mesmo card, botão "🔗 Colar link" na seção Anexos → testar com `https://youtu.be/dQw4w9WgXcQ` → deve aparecer badge YouTube com ícone ▶️.
-6. Avisar Mayanna para testar de novo no ambiente dela.
+6. Avisar member D para testar de novo no ambiente dela.
 
 ---
 
@@ -87,9 +87,9 @@ Expectativa: deploy em ~1-2 min, zero downtime. Sem database change, sem EF chan
 
 ### 🔴 Bug #03 — Checklist activities (**ALTA, dependente**)
 
-Mayanna reporta que não consegue adicionar atividades (checklist) no card. **Hipótese forte:** era efeito colateral do Bug #02 — o modal caía antes dela chegar a testar o checklist. Pós-deploy, se Mayanna conseguir abrir o card sem crash, o checklist deve funcionar (permissões dela são OK: `canEditAny=true` para comms_leader em global board).
+member D reporta que não consegue adicionar atividades (checklist) no card. **Hipótese forte:** era efeito colateral do Bug #02 — o modal caía antes dela chegar a testar o checklist. Pós-deploy, se member D conseguir abrir o card sem crash, o checklist deve funcionar (permissões dela são OK: `canEditAny=true` para comms_leader em global board).
 
-**Plano:** pedir à Mayanna para reconfirmar pós-deploy. Se persistir, instrumentar `CardDetail` com telemetria em `canEdit`/`addCheckItem`.
+**Plano:** pedir à member D para reconfirmar pós-deploy. Se persistir, instrumentar `CardDetail` com telemetria em `canEdit`/`addCheckItem`.
 
 ### 🔴 Bug #01 — Comentários no card (**ALTA, FEATURE NOVA**)
 
@@ -105,19 +105,19 @@ Mayanna reporta que não consegue adicionar atividades (checklist) no card. **Hi
 
 ### 🟡 Limitação #05 — Status "concluído" só GP
 
-Mayanna relatou que só GP pode concluir cards. **Code review indica que a permissão `canMove` para comms_leader em board global já deveria incluir concluir** (`isCommsOnGlobal=true` → `canMove=true`). Provavelmente é repro com outro perfil dela, ou entendimento equivocado.
+member D relatou que só GP pode concluir cards. **Code review indica que a permissão `canMove` para comms_leader em board global já deveria incluir concluir** (`isCommsOnGlobal=true` → `canMove=true`). Provavelmente é repro com outro perfil dela, ou entendimento equivocado.
 
 **Ação:** confirmar com ela qual card/perfil específico. Decisão de governança aberta: responsável pela entrega deveria poder mover para "done" diretamente, ou só após revisão GP?
 
-### 🟡 Issue #100 — Carlos Magno não edita perfil (**INVESTIGAÇÃO ABERTA**)
+### 🟡 Issue #100 — member B não edita perfil (**INVESTIGAÇÃO ABERTA**)
 
 Usuário alumni (`operational_role='alumni'`, login OK, RLS/RPC análise passam). **Code review não achou bloqueio.** 5 hipóteses registradas no doc `docs/reports/USABILITY_HUB_COMMS_MAYANA_2026-04-22.md` seção final.
 
-**Decisão de governança registrada:** perfil de alumni **deve** continuar editável — LGPD Art. 18 V (retificação) + UX + precedente Pedro Henrique recém-offboardado. Não é opcional.
+**Decisão de governança registrada:** perfil de alumni **deve** continuar editável — LGPD Art. 18 V (retificação) + UX + precedente member A recém-offboardado. Não é opcional.
 
-**Próximo passo:** GP precisa pedir ao Carlos print da tela `/profile` + abrir DevTools (F12 → Console tab) → tentar editar → capturar qualquer erro vermelho. Com isso dá para instrumentar com runtime evidence.
+**Próximo passo:** GP precisa pedir ao member B print da tela `/profile` + abrir DevTools (F12 → Console tab) → tentar editar → capturar qualquer erro vermelho. Com isso dá para instrumentar com runtime evidence.
 
-**Inconsistência adicional no banco do Carlos** (pode ser root cause ou ruído):
+**Inconsistência adicional no banco do member B** (pode ser root cause ou ruído):
 - `member_status='alumni'` mas `offboarded_at=NULL`
 - `inactivated_at = created_at` (sugere que nunca ativou como voluntário)
 - Talvez normalizar: ou setar `offboarded_at` coerente, ou reverter para `inactive` se nunca foi voluntário
@@ -126,14 +126,14 @@ Usuário alumni (`operational_role='alumni'`, login OK, RLS/RPC análise passam)
 
 ## 4. Trabalho operacional aplicado em BANCO (já em prod — só FYI)
 
-### Pedro Henrique Rodrigues Mendes — offboarded (conforme WhatsApp 22/Abr)
+### member A — offboarded (conforme WhatsApp 22/Abr)
 
 - `member_status`: active → **observer**
 - `operational_role`: researcher → **guest** (trigger V4 recalcula para guest porque não há engagement ativo — comportamento correto, não erro)
 - Engagement `volunteer/researcher` na Tribo 7 → `offboarded`
 - Audit trail em `admin_audit_log`
 
-### Roberto Macêdo — observer/curator na Tribo 8
+### member C — observer/curator na Tribo 8
 
 - Novo engagement: `kind=observer`, `role=curator`, `initiative_id=9cbaf0b9` (Inclusão & Colaboração & Comunicação)
 - Propósito em metadata: *"Apoio em metodologia de escrita e aumento de impacto dos artigos em publicação"*
@@ -161,18 +161,18 @@ Estão ligados a outras sessões (ADR-0022 batching, artifacts archive Phase 3, 
 
 ## 6. Documentação relacionada
 
-- **Report completo do caso Mayana + Carlos:** `docs/reports/USABILITY_HUB_COMMS_MAYANA_2026-04-22.md`
-- **Log consolidado de issues/gaps (handoff entre sessões):** `~/.claude/projects/-home-vitormrodovalho-Desktop-ai-pm-research-hub/memory/project_issue_gap_opportunity_log.md` — issues #99 (Mayana), #100 (Carlos) apendadas
+- **Report completo do caso Mayana + member B:** `docs/reports/USABILITY_HUB_COMMS_MAYANA_2026-04-22.md`
+- **Log consolidado de issues/gaps (handoff entre sessões):** `~/.claude/projects/-home-vitormrodovalho-Desktop-ai-pm-research-hub/memory/project_issue_gap_opportunity_log.md` — issues #99 (Mayana), #100 (member B) apendadas
 - **Nota de sessão:** `~/.claude/projects/-home-vitormrodovalho-Desktop-ai-pm-research-hub/memory/project_session_23apr_p36_mayana_carlos.md`
 
 ---
 
 ## 7. Contatos e stakeholders relevantes
 
-- **Mayanna Duarte** (`comms_leader`, Tribo 8) — reportadora do bug, testar pós-deploy
-- **Carlos Magno do HUB Cerrado** — usuário alumni com problema de edição de perfil (precisa coleta de evidência)
-- **Pedro Henrique** — já notificado do desligamento via WhatsApp (22/Abr)
-- **Roberto Macêdo** — GP pode avisar que está como observador na Tribo 8
+- **member D** (`comms_leader`, Tribo 8) — reportadora do bug, testar pós-deploy
+- **member B do HUB Cerrado** — usuário alumni com problema de edição de perfil (precisa coleta de evidência)
+- **member A** — já notificado do desligamento via WhatsApp (22/Abr)
+- **member C** — GP pode avisar que está como observador na Tribo 8
 
 ---
 

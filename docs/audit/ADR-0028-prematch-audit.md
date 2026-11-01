@@ -124,7 +124,7 @@ WITH v3_broad AS (
 v4 AS (
   SELECT id FROM members WHERE is_active = true AND can_by_member(id, 'manage_platform') = true
 )
--- v3 GAIN: 0 members, LOSE: 0 members. Sets are IDENTICAL = {Fabricio Costa, Vitor Maia Rodovalho}.
+-- v3 GAIN: 0 members, LOSE: 0 members. Sets are IDENTICAL = {member A, Vitor Maia Rodovalho}.
 ```
 
 **Confirmed**: Batch 1 V3-set vs V4-set diff is empty. Conversions

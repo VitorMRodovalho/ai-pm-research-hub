@@ -16,7 +16,7 @@ skipped); `check_schema_invariants()` sem violação.
 
 ## 1. O caso, e o relógio que ele tem
 
-Farhad Abdollahyan, aprovado como **líder** em 14/08 (`cycle4-2026`), 16 passos de onboarding,
+member C, aprovado como **líder** em 14/08 (`cycle4-2026`), 16 passos de onboarding,
 **0 feitos**, `members.auth_id` NULL. Três passos já `overdue` — e um deles é literalmente
 **`platform_access`**, SLA vencido em 21/08. O detector marcou atraso no passo "conseguir acesso" e
 cobrou a pessoa por isso numa notificação cujo link exige a sessão que falta.
@@ -25,10 +25,10 @@ Não é caso isolado. Medido 26/08, **4 pessoas** sem `auth_id` carregam jornada
 
 | pessoa | passos | feitos | overdue | próximo SLA | token vivo? |
 |---|---:|---:|---:|---|---|
-| Farhad Abdollahyan (líder) | 16 | 0 | 3 | 28/08 21:15 UTC | não |
-| Rafael dos Santos | 12 | 0 | 0 | 29/08 01:35 UTC | não |
-| Thiago Sousa | 12 | 0 | 0 | 29/08 01:35 UTC | não |
-| Hector Rigon (inativo) | 7 | 1 | 0 | — | não |
+| member C (líder) | 16 | 0 | 3 | 28/08 21:15 UTC | não |
+| member B | 12 | 0 | 0 | 29/08 01:35 UTC | não |
+| member A | 12 | 0 | 0 | 29/08 01:35 UTC | não |
+| member D (inativo) | 7 | 1 | 0 | — | não |
 
 O cron `detect-onboarding-overdue-daily` (`jobid 39`, `0 13 * * *`) fazia a primeira leva reproduzir
 o defeito em **29/08 às 10:00 BRT**. Os tokens de `profile_completion` (o outro caminho sem sessão,
@@ -66,7 +66,7 @@ estava atrasado"): ela troca **texto** e **destino**, e conta o caso em série p
 ## 4. O que NÃO entrou, e as duas perguntas ao PM
 
 Aceite da #1997: `[x]` detector, `[x]` painel, `[~]` bloqueio marcado (mas não "garantir o convite no
-fluxo de aprovação"), `[ ]` caminho de recuperação, `[ ]` acesso do Farhad.
+fluxo de aprovação"), `[ ]` caminho de recuperação, `[ ]` acesso do member C.
 
 **A plataforma não tem "reenviar convite de acesso".** Acesso é self-service: `try_auto_link_ghost`
 vincula pelo e-mail primário no primeiro login, e `request_account_claim` exige que a pessoa **já
@@ -76,7 +76,7 @@ e-mail a gente de verdade.
 1. **Mandar o e-mail de recuperação às 4 pessoas — sim/não, e com que texto?** Se sim, o caminho mais
    barato é catalogar um tipo `transactional_immediate` novo em `_delivery_mode_for` + uma RPC de
    admin que o dispara. Não inventei isso sem resposta.
-2. **Farhad tem duas candidaturas**: a `approved` é de **líder**, a `rejected` é de **pesquisador**.
+2. **member C tem duas candidaturas**: a `approved` é de **líder**, a `rejected` é de **pesquisador**.
    A jornada de 16 passos é a de líder. Confirma que é essa que vale?
 
 ## 5. Cinco achados colaterais, todos medidos, nenhum consertado aqui

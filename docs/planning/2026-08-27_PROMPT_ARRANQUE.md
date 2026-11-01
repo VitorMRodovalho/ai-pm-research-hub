@@ -22,12 +22,12 @@ nao fato.
   nada**, voltou a abrir o modal. Guard de 11 testes.
 - **#1995 investigada a fundo**, integral no comentario da issue. Nao virou codigo de proposito.
 - **Cinco issues novas**: #2009, #2010, #2011, #2012, #2013.
-- **Incidente operacional resolvido a mao**: entrevista da Anastasia Kukova (25/08 20h, Fernando)
+- **Incidente operacional resolvido a mao**: entrevista da member B (25/08 20h, member C)
   registrada por `schedule_interview` impersonando o lead, sem bypass.
 
 ## ⏰ O que tem relogio, em ordem de urgencia
 
-1. **29/08, 11h BRT - a Anastasia leva outro "vamos remarcar sua entrevista?"** se o Fernando nao
+1. **29/08, 11h BRT - a member B leva outro "vamos remarcar sua entrevista?"** se o member C nao
    tiver pontuado ate la. Nem `schedule_interview` nem `submit_interview_scores` escrevem
    `interview_status`; o que para o cron e a candidatura virar `final_eval`, o que so acontece
    quando ele pontua. **Cheque isso primeiro:** se `interview_status` ainda for `needs_reschedule`
@@ -38,9 +38,9 @@ nao fato.
 
 ## Duas decisoes do PM ja tomadas, nao re-litigar
 
-- **Farhad**: vale a candidatura de **lider** (`c9c2058d-...`, `approved`, cycle4-2026) - foi por ela
+- **member D**: vale a candidatura de **lider** (`c9c2058d-...`, `approved`, cycle4-2026) - foi por ela
   que saiu o convite de aceite pelo VEP. A de `researcher` esta `rejected` e nao gera jornada.
-- **Roberto Macedo**: e **curador**, nao pertence a tribo. Deu apoio pontual a tribo 8 como
+- **member A**: e **curador**, nao pertence a tribo. Deu apoio pontual a tribo 8 como
   `observer/curator`, e o engajamento **ja esta gravado assim**. `members.tribe_id = NULL` e o valor
   CERTO. Nao ha backfill a fazer, e o "residuo 67 vs 66" era **erro de contagem**, nao dado sujo.
 
@@ -48,7 +48,7 @@ nao fato.
 
 | # | pergunta | por que trava |
 |---|---|---|
-| **#1997** | mandar o e-mail de recuperacao **so ao Farhad**, com que texto? | acao sobre pessoa real. Os outros 2 sao **dia-1** (aprovados 26/08 01:35, ja receberam boas-vindas) e o **Hector saiu** (`offboarded`) |
+| **#1997** | mandar o e-mail de recuperacao **so ao member D**, com que texto? | acao sobre pessoa real. Os outros 2 sao **dia-1** (aprovados 26/08 01:35, ja receberam boas-vindas) e o **member E saiu** (`offboarded`) |
 | **#2004** | "Aguardando Entrevista" e lista de **tarefa** ou de **merito**? | se e formato, conserta-se a TELA; se e fase, aperta-se o PORTAO. Consertos opostos |
 | **#2001** | as 44 linhas `volunteer/consent` viram `contract`? | afirma que existe termo assinado: **juridico**. O guard (baseline 104, catraca) pode ir na frente |
 | **#1995** | (b) `Y=0` para 11 pessoas e estado legitimo ou falha da #2009? (c) a tela lista **12** ou **28**? | (b) decide se a tela mostra vazio ou defeito; (c) decide o default |
@@ -77,10 +77,10 @@ Medidos 26/08. Re-meça antes de usar em decisao, PR ou memoria.
 | medida | valor |
 |---|---:|
 | candidatos em `needs_reschedule` no cycle4 | **8** (todos desde 19/08) |
-| deles, ja `approved` **com nota** de entrevista | **2** (Rafael 95, Thiago 88) |
+| deles, ja `approved` **com nota** de entrevista | **2** (member F 95, member G 88) |
 | despachos de link de agendamento, janela **instrumentada** | 37 |
 | ... abertos / viraram agendamento | **14 (38%) / 5 (14%)** |
-| pessoas sem `auth_id` com jornada ativa | 4, mas **so 1 acionavel** (Farhad) |
+| pessoas sem `auth_id` com jornada ativa | 4, mas **so 1 acionavel** (member D) |
 | denominadores distintos de onboarding entre 95 ativos | **8** (0,1,3,6,7,11,12,16) |
 | ativos sem tribo (`kind='volunteer'`) | 28, dos quais **12 precisam de termo** |
 

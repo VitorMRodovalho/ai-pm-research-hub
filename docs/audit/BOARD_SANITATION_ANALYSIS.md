@@ -111,9 +111,9 @@
 | DELIVERABLE | Execução e Validação da PoC | 3 | backlog | — |
 | DELIVERABLE | Ideação do Projeto Piloto TMO/PMO | 3 | backlog | — |
 | DELIVERABLE | Relatório / Artigo Final TMO com IA | 3 | backlog | — |
-| LIKELY-DELIVERABLE | 1) Posteriormente 2) Mayanna 3) Luciana - Referências Bibliográficas | 2 | backlog | — |
+| LIKELY-DELIVERABLE | 1) Posteriormente 2) member B 3) member C - Referências Bibliográficas | 2 | backlog | — |
 | LIKELY-DELIVERABLE | Artigos Ciclo 1 | 2 | backlog | — |
-| LIKELY-DELIVERABLE | Fabricio 1. Introduction 2. Problem... | 2 | backlog | — |
+| LIKELY-DELIVERABLE | member D 1. Introduction 2. Problem... | 2 | backlog | — |
 | LIKELY-TASK | Buscar materiais acadêmicos e referências | 3 | todo | 2025-03-31 |
 | LIKELY-TASK | Criar apresentação/resumo do estudo | 3 | done | 2025-05-20 |
 | LIKELY-TASK | Criar documento no google drive para controle | 3 | todo | — |
@@ -236,7 +236,7 @@
 
 ### Future Sprint (P2)
 
-7. **T3 baseline dates** — 5 T3 deliverables have NULL baseline_date. Marcel Fleming needs to set delivery targets.
+7. **T3 baseline dates** — 5 T3 deliverables have NULL baseline_date. member A needs to set delivery targets.
 
 8. **Publicações pipeline audit** — 6 real article submissions are in `review` status. Verify curation workflow is active for these.
 

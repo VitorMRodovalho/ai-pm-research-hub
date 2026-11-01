@@ -1,8 +1,8 @@
-# OPP-246.A Audit — Francisleila `final_score=309` drift + structural race in `submit_evaluation`
+# OPP-246.A Audit — member D `final_score=309` drift + structural race in `submit_evaluation`
 
 **Date**: 2026-05-24 (p247 follow-up)
 **Author**: agent (PM-dispatched audit-only — no DB writes, no remediation without PM ratification)
-**Trigger**: PM call-out post-p246 close: "auditar Francisleila final_score=309 versus fórmula esperada, porque isso pode indicar drift antigo no cálculo do score final" + p247 close reaffirmation: "ponto de atenção real agora é o carry OPP-246.A: auditar o final_score=309 da Francisleila antes de o cohort líder chegar em n>=10, porque isso pode contaminar uma futura régua dinâmica de líderes se for drift antigo."
+**Trigger**: PM call-out post-p246 close: "auditar member D final_score=309 versus fórmula esperada, porque isso pode indicar drift antigo no cálculo do score final" + p247 close reaffirmation: "ponto de atenção real agora é o carry OPP-246.A: auditar o final_score=309 da member D antes de o cohort líder chegar em n>=10, porque isso pode contaminar uma futura régua dinâmica de líderes se for drift antigo."
 **Scope**: **audit-only**, **no remediation in this doc**. Any structural fix requires PM ratification of one of the 4 options below.
 
 ---
@@ -10,8 +10,8 @@
 ## TL;DR (3 lines)
 
 1. **Drift is real and structural** — `submit_evaluation` writes `final_score = obj + interview + leader_extra` (naïve sum), which contradicts canonical `compute_application_scores` writing `COALESCE(leader_score, research_score)` where `leader_score = research × 0.7 + leader_extra × 0.3` (CR-047). Same RPC's INSERT fires `_trg_recompute_application_scores` → canonical value gets written → then submit_evaluation's own UPDATE **overwrites** it with the naïve sum.
-2. **Drift currently isolated to 1 row** — Francisleila (cycle4-2026 leader, `status=screening`, `final_score=309.00` vs canonical `158.30`, delta `+150.70`). She is **NOT in the leader cohort** (cohort only includes `status=approved`). All 8 currently-approved leaders across all cycles have **0 drift** because their approval path runs through `submit_interview_scores` which calls `compute_application_scores` explicitly.
-3. **Self-heal exists** but is conditional — once Francisleila's interview is submitted via `submit_interview_scores`, her `final_score` reconciles to canonical. Risk window: if she (or any in-flight leader) is **approved without going through `submit_interview_scores`** (e.g., manual status advance, dual-track decision), the naïve sum survives into the cohort and contaminates the eventual dynamic régua when `cohort_n >= 10`.
+2. **Drift currently isolated to 1 row** — member D (cycle4-2026 leader, `status=screening`, `final_score=309.00` vs canonical `158.30`, delta `+150.70`). She is **NOT in the leader cohort** (cohort only includes `status=approved`). All 8 currently-approved leaders across all cycles have **0 drift** because their approval path runs through `submit_interview_scores` which calls `compute_application_scores` explicitly.
+3. **Self-heal exists** but is conditional — once member D's interview is submitted via `submit_interview_scores`, her `final_score` reconciles to canonical. Risk window: if she (or any in-flight leader) is **approved without going through `submit_interview_scores`** (e.g., manual status advance, dual-track decision), the naïve sum survives into the cohort and contaminates the eventual dynamic régua when `cohort_n >= 10`.
 
 ---
 
@@ -76,7 +76,7 @@ WHERE id = p_application_id;
 
 **This is the source of truth**. `final_score := COALESCE(leader_score, research_score)`.
 
-For Francisleila (leader, role_applied='leader', objective=164, leader_extra=145, no interview):
+For member D (leader, role_applied='leader', objective=164, leader_extra=145, no interview):
 - `v_research = round(164 + 0, 2) = 164` (partial: objective only branch)
 
   Wait — actually `v_research = round(164, 2) = 164` because `v_int_avg` is NULL → ELSIF branch. So research = 164.
@@ -110,7 +110,7 @@ ELSIF p_evaluation_type = 'interview' THEN
   WHERE id = p_application_id;
 ```
 
-For Francisleila after her last `submit_evaluation('leader_extra')` (Vitor's submission 2026-05-21 06:34:32 UTC):
+For member D after her last `submit_evaluation('leader_extra')` (Vitor's submission 2026-05-21 06:34:32 UTC):
 - objective_score_avg = 164
 - interview_score = NULL → COALESCE 0
 - v_pert_score (le PERT) = 145
@@ -139,14 +139,14 @@ END IF;
 
 So **every `submit_evaluation` call on leader_extra or interview leaves final_score in the drifted state** — until something else fires the trigger again (e.g., another evaluation INSERT) or calls `compute_application_scores` directly.
 
-### Why William reconciled but Francisleila didn't
+### Why member A reconciled but member D didn't
 
 | Candidate | Status | Last RPC that touched final_score |
 |---|---|---|
-| **Francisleila** | screening | `submit_evaluation('leader_extra')` 2026-05-21 06:34 → naïve sum, no follow-up |
-| **William Junio** | rejected | `submit_interview_scores(...)` (modern interview path) calls `compute_application_scores` explicitly → canonical |
-| **Henrique Diniz** | interview_scheduled | trigger refire via subsequent evaluation INSERT (Vitor le 2nd submission) re-ran compute |
-| All cycle3 leaders | approved/rejected | Same as William — modern interview path or post-decision orchestration ran compute |
+| **member D** | screening | `submit_evaluation('leader_extra')` 2026-05-21 06:34 → naïve sum, no follow-up |
+| **member A** | rejected | `submit_interview_scores(...)` (modern interview path) calls `compute_application_scores` explicitly → canonical |
+| **member C** | interview_scheduled | trigger refire via subsequent evaluation INSERT (Vitor le 2nd submission) re-ran compute |
+| All cycle3 leaders | approved/rejected | Same as member A — modern interview path or post-decision orchestration ran compute |
 
 ---
 
@@ -161,9 +161,9 @@ So **every `submit_evaluation` call on leader_extra or interview leaves final_sc
 | **cycle4-2026** | **leader** | **3** | **1** | **1** | **1** |
 | cycle4-2026 | researcher | 34 | 0 | 0 | 0 |
 
-The single cycle3-2026 researcher drift (Fabiano Bressiani, `final_score=35`) has `research_score=NULL` + `interview_score=5` + status=rejected — a separate edge case (partial evaluations on a rejected app, not part of any current/future cohort), not the same drift class.
+The single cycle3-2026 researcher drift (member B, `final_score=35`) has `research_score=NULL` + `interview_score=5` + status=rejected — a separate edge case (partial evaluations on a rejected app, not part of any current/future cohort), not the same drift class.
 
-Only **Francisleila** carries the structural race-condition drift.
+Only **member D** carries the structural race-condition drift.
 
 ---
 
@@ -173,7 +173,7 @@ The leader cohort that feeds `compute_pert_cutoff(p_score_column='final_score', 
 
 **Current pool**: 8 approved leaders, all clean.
 - 7 from cycle3-2026 (range 214.00 → 287.80)
-- 1 from cycle3-2026-b2 (Herlon, final=316.00 — administrative manual_advance path; needs separate sanity check below)
+- 1 from cycle3-2026-b2 (member E, final=316.00 — administrative manual_advance path; needs separate sanity check below)
 - min=214.00 / max=316.00 / avg=264.73
 - hypothetical PERT target if `cohort_n` already hit 10: **264.87** (target), band ≈ [238.38, 291.36]
 - target with drifted-rows-excluded: **identical** (no drift in cohort yet)
@@ -181,22 +181,22 @@ The leader cohort that feeds `compute_pert_cutoff(p_score_column='final_score', 
 **cohort_n=8 < 10 → currently `method=disabled`** per p219 Phase 1 threshold. Régua stays inert.
 
 **When does cohort_n hit 10?** Needs 2 more approved leaders. From current cycle4-2026:
-- 3 leaders with final_score (Francisleila screening, Henrique interview_scheduled, William rejected)
-- If Henrique gets approved AND any other cycle4 leader gets approved (need to triage other in-flight) → cohort hits ≥10 → leader régua becomes dynamic.
+- 3 leaders with final_score (member D screening, member C interview_scheduled, member A rejected)
+- If member C gets approved AND any other cycle4 leader gets approved (need to triage other in-flight) → cohort hits ≥10 → leader régua becomes dynamic.
 
-**Contamination risk** if régua activates while Francisleila (or analogous in-flight leader) is approved with drifted final_score:
+**Contamination risk** if régua activates while member D (or analogous in-flight leader) is approved with drifted final_score:
 
-- Hypothetical scenario: cohort grows to 10 including Francisleila's drifted 309 (instead of canonical 158.30)
+- Hypothetical scenario: cohort grows to 10 including member D's drifted 309 (instead of canonical 158.30)
 - Effective cohort_n=10, min=158→**309**? actually min would stay 214 since 309 > 214. But MAX shifts: max=316 → 316. AVG shifts: avg ≈ +15 points upward. PERT target shifts upward by ≈10 points.
 - **Effect**: leader régua target inflates → subsequent cycle leaders need higher final_score to clear "Acima da banda" → harder to qualify → **artificial elitization** of leader pool downstream.
 
-The risk is mitigated by the self-heal path (Francisleila will go through interview → submit_interview_scores → compute_application_scores → reconcile). **BUT** if she's approved via a path that doesn't call compute (e.g., manual admin_update_application without interview, or admin_decide_dual_track on a paired researcher app), the naïve sum survives into approval.
+The risk is mitigated by the self-heal path (member D will go through interview → submit_interview_scores → compute_application_scores → reconcile). **BUT** if she's approved via a path that doesn't call compute (e.g., manual admin_update_application without interview, or admin_decide_dual_track on a paired researcher app), the naïve sum survives into approval.
 
 ---
 
-## Side-finding: Herlon's `final_score=316` (cycle3-2026-b2)
+## Side-finding: member E's `final_score=316` (cycle3-2026-b2)
 
-The cycle3-2026-b2 leader cohort row is Herlon, `final_score=316.00`. He was approved via `application.status_manual_advance` on 2026-05-09 (administrative pre-cycle4 onboarding per PM directive — see WATCH-240.B audit p244). His `research_score` is unknown from this query (need to re-query); his `final_score=316` looks high relative to cycle3 leaders (max 287.80). Worth verifying his row passes `final_score = COALESCE(leader_score, research_score)` test as part of any cohort sanity audit. **Not blocking** — he's already in the cohort either way; only relevant if his row also drifted.
+The cycle3-2026-b2 leader cohort row is member E, `final_score=316.00`. He was approved via `application.status_manual_advance` on 2026-05-09 (administrative pre-cycle4 onboarding per PM directive — see WATCH-240.B audit p244). His `research_score` is unknown from this query (need to re-query); his `final_score=316` looks high relative to cycle3 leaders (max 287.80). Worth verifying his row passes `final_score = COALESCE(leader_score, research_score)` test as part of any cohort sanity audit. **Not blocking** — he's already in the cohort either way; only relevant if his row also drifted.
 
 ---
 
@@ -209,9 +209,9 @@ The cycle3-2026-b2 leader cohort row is Herlon, `final_score=316.00`. He was app
 - **Cost**: 0 lines code, 0 migrations.
 - **When to revisit**: when leader cohort_n approaches 9 (next approval triggers dynamic régua); audit then; remediate if any drift in cohort.
 
-### Option B — Manual one-shot fix for Francisleila (smallest surgical fix)
+### Option B — Manual one-shot fix for member D (smallest surgical fix)
 
-- **Action**: call `compute_application_scores(Francisleila.id)` via `execute_sql` from authenticated session (or admin RPC), with an `admin_audit_log` row documenting the canonical reconciliation.
+- **Action**: call `compute_application_scores(member D.id)` via `execute_sql` from authenticated session (or admin RPC), with an `admin_audit_log` row documenting the canonical reconciliation.
 - **Risk**: structural bug remains; another `submit_evaluation` call on her (e.g., re-submit le with edits) would re-drift.
 - **Cost**: 1 RPC call + 1 audit row. ~5 min.
 - **When**: any time. Removes the immediate visible drift on /admin/selection.
@@ -221,7 +221,7 @@ The cycle3-2026-b2 leader cohort row is Herlon, `final_score=316.00`. He was app
 - **Action**: refactor `submit_evaluation` leader_extra + interview branches to **NOT** write final_score directly. Instead, after the evaluation INSERT, call `PERFORM compute_application_scores(p_application_id)`. The trigger already does this, but making it explicit + removing the inline UPDATE eliminates the race.
 - **Risk**: small — `submit_evaluation` is a critical RPC; changes touch evaluator-facing flow. Need contract tests + canonical-formula assertions.
 - **Cost**: 1 migration (~50-100 lines), ~10-15 contract assertions (no inline naïve sum write; canonical formula preserved; trigger order intact), ~2-3h.
-- **Bonus**: kills the entire drift class, not just Francisleila. Forward-defense locks the regression.
+- **Bonus**: kills the entire drift class, not just member D. Forward-defense locks the regression.
 
 ### Option D — Auto-reconciliation cron (defense-in-depth, complements A or B)
 
@@ -235,30 +235,30 @@ The cycle3-2026-b2 leader cohort row is Herlon, `final_score=316.00`. He was app
 | Combo | Effect | Recommended? |
 |---|---|---|
 | **A only** | Tolerates ongoing drift; risk if leader cohort hits 10 with contamination | NOT recommended once cohort approaches 9 |
-| **B only** | Removes Francisleila's drift now; structural bug remains | Quick visibility fix, but PM call before B should consider C |
+| **B only** | Removes member D's drift now; structural bug remains | Quick visibility fix, but PM call before B should consider C |
 | **C only** | Permanent fix; kills the class | **RECOMMENDED** (highest leverage) |
-| **B + D** | Fixes Francisleila + autoheals future drift | Good middle ground if PM wants to delay C refactor |
+| **B + D** | Fixes member D + autoheals future drift | Good middle ground if PM wants to delay C refactor |
 | **C + B** | Permanent fix + immediate visibility cleanup | Highest assurance; B is trivial once C is in |
 
 ---
 
 ## What I did NOT do (and won't until PM ratifies)
 
-- ❌ Did NOT call `compute_application_scores(Francisleila.id)` (Option B would do this)
+- ❌ Did NOT call `compute_application_scores(member D.id)` (Option B would do this)
 - ❌ Did NOT modify `submit_evaluation` (Option C)
 - ❌ Did NOT create any cron (Option D)
 - ❌ Did NOT touch any other apps' `final_score`
-- ❌ Did NOT investigate Herlon's `final_score=316` deeply (sidecar audit suggested, not blocking)
+- ❌ Did NOT investigate member E's `final_score=316` deeply (sidecar audit suggested, not blocking)
 
 ---
 
 ## Verify-on-re-audit
 
-- Live: `Francisleila.final_score = 309.00` (cycle4-2026, leader, screening) — sediment of `submit_evaluation('leader_extra')` 2026-05-21 06:34:32 UTC, Vitor's submission
-- Live: `Francisleila.leader_score = 158.30` (correct, written by compute_application_scores)
-- Live: `Francisleila.research_score = 164.00` (correct)
-- Live: `Francisleila.objective_score_avg = 164.00`
-- Live: 4 evaluations submitted (Fabricio obj+le 2026-05-20, Vitor obj+le 2026-05-21)
+- Live: `member D.final_score = 309.00` (cycle4-2026, leader, screening) — sediment of `submit_evaluation('leader_extra')` 2026-05-21 06:34:32 UTC, Vitor's submission
+- Live: `member D.leader_score = 158.30` (correct, written by compute_application_scores)
+- Live: `member D.research_score = 164.00` (correct)
+- Live: `member D.objective_score_avg = 164.00`
+- Live: 4 evaluations submitted (member F obj+le 2026-05-20, Vitor obj+le 2026-05-21)
 - Live: 8 approved leaders all-time with final_score; 0 drift in cohort
 - Live: hypothetical leader PERT target if cohort_n>=10 today = 264.87 (no drift impact)
 - Live: cohort_n<10 → method=disabled — régua inert (no immediate cohort risk)
@@ -278,4 +278,4 @@ If a future session runs the same audit query (`WHERE final_score IS DISTINCT FR
 - `pg_proc.submit_evaluation` — drifted writer (naïve sum, leader_extra + interview branches)
 - `pg_proc._trg_recompute_application_scores` + `pg_trigger.trg_recompute_application_scores` — trigger that gets overridden
 - `pg_proc.submit_interview_scores` — modern interview path; explicitly calls compute_application_scores, sidesteps the drift
-- WATCH-240.B audit (p244) — established Herlon's `application.status_manual_advance` precedent for admin onboarding cycles
+- WATCH-240.B audit (p244) — established member E's `application.status_manual_advance` precedent for admin onboarding cycles
