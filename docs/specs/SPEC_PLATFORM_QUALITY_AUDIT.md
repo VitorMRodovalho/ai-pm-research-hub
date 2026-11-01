@@ -49,7 +49,7 @@ The Nucleo IA & GP platform will be demonstrated at the CBGPL Congress. Every vi
 | **Active Researcher** | researcher | — | Dashboard → Tribe → Boards → Attendance → Library → Blog → Webinars → Publications |
 | **Tribe Leader** | tribe_leader | — | Dashboard → Tribe mgmt → Board → Attendance → Deliverables → Events |
 | **Sponsor (Chapter Board)** | sponsor | chapter_board | Admin Dashboard → Certificates → Chapter Report → Analytics → Stakeholder |
-| **Chapter Board (Lorena)** | observer | chapter_board | Admin Dashboard → Certificates (counter-sign) → Chapter view |
+| **Chapter Board (member B)** | observer | chapter_board | Admin Dashboard → Certificates (counter-sign) → Chapter view |
 | **GP (Manager)** | manager | superadmin | Full admin → All reports → All dashboards → Selection → Governance |
 | **Congress Demo** | — | — | Public tour: Homepage → Impact → Blog → About → Governance → Webinars → Login → Dashboard overview |
 
@@ -85,7 +85,7 @@ The Nucleo IA & GP platform will be demonstrated at the CBGPL Congress. Every vi
 #### Completed this session:
 - [x] Member count standardized: 52 active (all RPCs aligned)
 - [x] Diversity data enriched: 70/70 gender, sector, seniority
-- [x] Daniel Bittencourt status fixed
+- [x] member A status fixed
 
 #### Remaining checks:
 - [x] KPI dashboard: 4 duplicate rows removed, all 18 KPIs now have `current_value` (zero "NO DATA")
@@ -109,7 +109,7 @@ The Nucleo IA & GP platform will be demonstrated at the CBGPL Congress. Every vi
 
 #### Remaining:
 - [ ] Verify the template content matches the signed PDF exactly
-- [ ] Test counter-sign flow as Lorena (chapter_board)
+- [ ] Test counter-sign flow as member B (chapter_board)
 - [ ] Test flow as non-PMI-GO member (ensure contracting_chapter = PMI-GO)
 - [ ] Verify /verify/[code] page shows correct counter-signer info
 

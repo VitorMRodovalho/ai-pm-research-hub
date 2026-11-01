@@ -22,9 +22,9 @@ Pré-ADR-0011 (V4 cutover 2026-04-13), `members.designations` (text[]) era a fon
 ADR-0086 (curation pipeline 2026-05-18) reafirmou centralidade do curator role no fluxo `peer_review → leader_review → curation_pending → published`; é o momento certo para fechar o legado V3.
 
 3 curators ativos em produção (p200 snapshot):
-- **Fabricio Costa**: designations=`[ambassador, founder, curator, co_gp, deputy_manager]` + active `committee_coordinator × leader` engagement em init `6a93cc94` (curation committee)
-- **Roberto Macêdo**: designations=`[chapter_liaison, ambassador, curator]` + active `committee_coordinator × coordinator` em init `6a93cc94` + active `observer × curator` em init `9cbaf0b9` (cross-initiative observer-curator)
-- **Sarah Faria Macedo Rodovalho**: designations=`[ambassador, founder, curator]` + active `committee_coordinator × coordinator` em init `6a93cc94`
+- **member B**: designations=`[ambassador, founder, curator, co_gp, deputy_manager]` + active `committee_coordinator × leader` engagement em init `6a93cc94` (curation committee)
+- **member C**: designations=`[chapter_liaison, ambassador, curator]` + active `committee_coordinator × coordinator` em init `6a93cc94` + active `observer × curator` em init `9cbaf0b9` (cross-initiative observer-curator)
+- **member A**: designations=`[ambassador, founder, curator]` + active `committee_coordinator × coordinator` em init `6a93cc94`
 
 Os 3 curadores têm V4 engagement coverage suficiente. Sweep não requer backfill de engagement; apenas seed da action nova.
 
@@ -42,11 +42,11 @@ INSERT INTO engagement_kind_permissions (kind, role, action) VALUES
 ```
 
 Cobertura empírica pós-seed:
-- Fabricio: ✅ via committee_coordinator.leader
-- Roberto: ✅ via committee_coordinator.coordinator + observer.curator
-- Sarah: ✅ via committee_coordinator.coordinator
+- member B: ✅ via committee_coordinator.leader
+- member C: ✅ via committee_coordinator.coordinator + observer.curator
+- member A: ✅ via committee_coordinator.coordinator
 
-Observer.curator é incluído explicitamente porque modela "cross-initiative curator" — quem cura conteúdo de iniciativa em que não é membro pleno (Roberto em init `9cbaf0b9`). Distinto semanticamente de committee_coordinator (que é membro do comitê de curadoria).
+Observer.curator é incluído explicitamente porque modela "cross-initiative curator" — quem cura conteúdo de iniciativa em que não é membro pleno (member C em init `9cbaf0b9`). Distinto semanticamente de committee_coordinator (que é membro do comitê de curadoria).
 
 ### §2. Sweep V4: substituir `'curator' = ANY(designations)` por `can_by_member('curate_content')` em 14 fns
 

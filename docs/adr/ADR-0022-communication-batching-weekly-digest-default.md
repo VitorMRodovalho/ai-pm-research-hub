@@ -198,7 +198,7 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 - [ ] W2 dev team review: settings UI para opt-out (4 modos: immediate_all / weekly_digest / suppress_all / custom_per_type)
 - [ ] W2: implementar `get_weekly_member_digest` RPC + send-weekly-member-digest EF body (atual = stub)
 - [ ] W3: leader digest, smart-skip empty digest, rate-limit tribe_broadcast urgent (1/week/leader)
-- [ ] Stakeholder review: validar com Roberto+Ivan+Fabricio+Sarah+curadoria se algum kind de notification é sensível a latência (ex: review gate pending) — review window pós-W2
+- [ ] Stakeholder review: validar com member I+member J+member H+member K+curadoria se algum kind de notification é sensível a latência (ex: review gate pending) — review window pós-W2
 - [ ] CR-051 (formal): converter ADR-0022 para CR formal de ratificação ainda? Ou ADR-0022 Accepted suficiente até CBGPL?
 
 ---
@@ -240,11 +240,11 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 
 - G3a: extend `send-notification-email` HTML template com 3 sections + CTAs (Publicar Ata / Marcar Presença / Conferir Champion) — PT-BR inline + tech debt i18n trilingual
 - G3b: URLSearchParams deep link readers em `/attendance` e `/admin/gamification` para pre-fill modal
-- G4: smoke real cron Sat 12:30 + verify email render para Roberto/Sarah/Fabricio/líderes
+- G4: smoke real cron Sat 12:30 + verify email render para member I/member Q/member H/líderes
 - G5: contract test `tests/contracts/weekly-tribe-digest.test.mjs` (cobertura 3 sections + recurrence grouping + hide-if-empty)
 - G1 (opcional): migration `events.event_champion_waived` + trio para eliminar falso positivo de champion_pending
 - Backlog item #17 (V4 leader identification): `get_weekly_tribe_digest:47` ainda usa `tribes.leader_member_id` (V3) em vez de auth_engagements. Não bloqueia smoke; pre-req para rollout multi-chapter.
-- Backlog A3 drift (7 membros): Sarah, Roberto, Fabricio, Leticia, Maria Luiza, Mayanna, Eder — operational_role precisa backfill após Track E trigger extension (continuation Track E).
+- Backlog A3 drift (7 membros): member K, member I, member H, member L, member E, member M, member N — operational_role precisa backfill após Track E trigger extension (continuation Track E).
 
 ### Cross-refs
 
@@ -279,7 +279,7 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 | D-mc-3 | Notification type permanece `'weekly_tribe_digest_leader'` mesmo após p173 refactor | Email handler `send-notification-email` reads tribe_name/tribe_health_pct. Mudar type = handler refactor + risk. Back-compat via payload aliases (tribe_name=initiative_name, tribe_id=legacy_tribe_id). Title atualizado pra "Resumo semanal: <initiative_name>" |
 | D-mc-4 | RPC novo `get_weekly_initiative_digest(uuid)` em vez de modificar `get_weekly_tribe_digest(integer)` | Latter ainda usado por MCP tool + frontend. Coexist é cheap; deprecation pode vir em session dedicated futura |
 | D-mc-5 | Leader roles incluem `leader/co_leader/coordinator/owner` em p173 (vs `leader/co_leader` em p172) | Workgroups usam `coordinator` (Hub Comm), congress usa `coordinator` (LATAM LIM). `owner` reserved p futuro |
-| D-mc-6 | NÃO filtrar por `is_authoritative=true` em helpers de leader-membership | Cert-pending leaders (Herlon CPMAI study_group_owner auth=false, Vitor LATAM LIM coord auth=false) ainda devem receber digest. Digest = notification, não permission grant |
+| D-mc-6 | NÃO filtrar por `is_authoritative=true` em helpers de leader-membership | Cert-pending leaders (member O CPMAI study_group_owner auth=false, Vitor LATAM LIM coord auth=false) ainda devem receber digest. Digest = notification, não permission grant |
 | D-mc-7 | Eventos `type='geral' AND initiative_id IS NULL` incluídos APENAS para initiatives tribe (legacy_tribe_id NOT NULL) | Pre-p173 todos digests incluíam geral events (1 tribe → 1 digest). Post-p173 múltiplas initiatives → cada digest somaria N× → ruído. Decision: keep geral em tribes (back-compat) + exclude de non-tribe |
 
 ### Migrations shipped
@@ -292,12 +292,12 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 15 leaders notified-eligible (dry-run validated):
 
 **Tribes (7):**
-- Hayala Curto · Débora Moura · Fernando Maquiaveli · Jefferson Pinto · Fabricio Costa · Marcos Antunes Klemz · Ana Carla Cavalcante
+- member F · member G · member C · member D · member H · member A · member B
 
 **Non-tribe (8):**
-- Hub Comunicação (3): Leticia · Maria Luiza · Mayanna
-- Publicações & Submissões (3): Fabricio · Roberto · Sarah
-- CPMAI Study Group (1): Herlon
+- Hub Comunicação (3): member L · member E · member M
+- Publicações & Submissões (3): member H · member I · member K
+- CPMAI Study Group (1): member O
 - LATAM LIM Congress (1): Vitor
 
 **Auto-skip (correto):** Curadoria + Newsletter (no signal — sem pending events/cards). Tribe 3 (TMO) is_active=false.
@@ -328,7 +328,7 @@ GP tem hoje workflow manual de weekly broadcast. Com ADR-0022 executado:
 
 | type | delivery_mode | candidate-facing? | rationale |
 |---|---|---|---|
-| `selection_termo_due` | `transactional_immediate` | Yes | Post-VEP-Active term + Lorena signature; cannot wait for weekly digest (p159, kept). |
+| `selection_termo_due` | `transactional_immediate` | Yes | Post-VEP-Active term + member P signature; cannot wait for weekly digest (p159, kept). |
 | `selection_approved` | `transactional_immediate` | Yes | Approval is a milestone event; bundling erodes candidate experience. |
 | `selection_interview_scheduled` | `transactional_immediate` | Yes | Calendar link + date/time must reach candidate before interview. |
 | `peer_review_requested` | `transactional_immediate` | No (evaluator) | Evaluator needs prompt action to keep cycle moving; was already hardcoded at INSERT site `dispatch_peer_review_invitations`, now catalog+helper parity-locked. |

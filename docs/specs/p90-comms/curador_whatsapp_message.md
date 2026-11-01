@@ -1,6 +1,6 @@
 # Mensagem WhatsApp para grupo curadoria — Round 6 completo (Editorial + Material + Anexo Técnico)
 
-**Para enviar Vitor → Sarah + Roberto + Fabricio (grupo curadoria)**
+**Para enviar Vitor → member B + member C + member D (grupo curadoria)**
 **Sugestão: enviar como áudio explicativo + sumário escrito anexo**
 **Status:** Phase 1 (editorial) + Phase 1.5 (cross-refs patch) + Phase 2 (material fixes + 6º doc Anexo Técnico) — todas aplicadas 2026-05-04 / 2026-05-05
 
@@ -10,9 +10,9 @@
 
 > Pessoal, atualização das nossas chains v3 governance — saímos de v3 para versões finais (v6 nos principais), incluindo tanto correções editoriais quanto material fixes, e criamos um 6º documento. Vou contextualizar.
 >
-> **Onde isso começou:** o Ricardo Santos, pesquisador do Núcleo (pesquisador com patentes próprias), enviou uma análise crítica dos documentos enviados — ele revisou Política IP e Termo de Voluntariado e apontou 8 pontos. 5 são correção factual / nomenclatura, e 3 envolvem mudança material que afeta direitos ou estrutura. Plus, o Ivan mencionou na conversa de ontem que a Ângelina, advogada voluntária do PMI-GO há uns 2 anos, vai topar fazer revisão jurídica dos docs.
+> **Onde isso começou:** o member A, pesquisador do Núcleo (pesquisador com patentes próprias), enviou uma análise crítica dos documentos enviados — ele revisou Política IP e Termo de Voluntariado e apontou 8 pontos. 5 são correção factual / nomenclatura, e 3 envolvem mudança material que afeta direitos ou estrutura. Plus, o member E mencionou na conversa de ontem que a Ângelina, advogada voluntária do PMI-GO há uns 2 anos, vai topar fazer revisão jurídica dos docs.
 >
-> **A decisão estratégica que tomei:** em vez de mandar pra Ângelina os docs Round 5 atuais e ela ficar fazendo remendo, fiz toda a análise crítica + verificação de fato/dado de cada ponto do Ricardo, redigi os textos novos com trailback documentado, e apliquei. Assim a Ângelina recebe texto pronto pra validar — não pra reescrever. E vocês também recebem versões finais sem precisar revisar intermediárias.
+> **A decisão estratégica que tomei:** em vez de mandar pra Ângelina os docs Round 5 atuais e ela ficar fazendo remendo, fiz toda a análise crítica + verificação de fato/dado de cada ponto do member A, redigi os textos novos com trailback documentado, e apliquei. Assim a Ângelina recebe texto pronto pra validar — não pra reescrever. E vocês também recebem versões finais sem precisar revisar intermediárias.
 >
 > **O que mudou em cada documento:**
 >
@@ -25,12 +25,12 @@
 > - Simplifiquei a seção tributária da Política. Tirei o detalhamento de alíquotas IRRF, faixas, lista de tratados CDT — porque essas regras mudam ano a ano e o time financeiro do PMI-GO ou do capítulo é quem deve verificar caso a caso na hora do pagamento. Ficou só a regra-mãe: "pagamentos observam a legislação tributária federal vigente na data do pagamento". Política mais enxuta e durável.
 > - Expandi o glossário com 12 termos novos que estavam aparecendo no doc sem definição: SCC, Adequação, CDT, Beneficial owner, Standby, Aceite expresso vs tácito, Direitos morais vs patrimoniais, Coautoria, Obra sensível, Período de graça INPI. Agora tem definição inline para os voluntários sem precisar buscar fora do doc.
 >
-> **2. Mudanças materiais — endereçando os pontos do Ricardo com cuidado**
+> **2. Mudanças materiais — endereçando os pontos do member A com cuidado**
 >
-> - Refatorei a cláusula de aceite tácito no Termo §15.4 e no Adendo Retificativo §3º. O Ricardo apontou que aceite tácito blanket pra "revisão" é sensível em contrato de adesão (CC art. 111 + 423 — favor aderente). Agora distinguimos explicitamente: aceite tácito aplica APENAS a Editorial change, e Material change exige aceite expresso do voluntário. Em ambiguidade, prevalece interpretação favorável ao voluntário. Isso não muda nosso framework Material/Editorial change que já existe nas Cláusulas 12.2 e 12.3 — só explicita que aceite tácito não cobre material.
-> - Refatorei a seção de transferência internacional de dados na Política IP para 3 regimes separados — Brasil + UE/EEE + UK + demais jurisdições. O Ricardo apontou que o art. 49 do GDPR não deve ser solução padrão para fluxo rotineiro (orientação EDPB) e que a situação UE-UK é diferente. Texto está future-proof: cobre cenário com OU sem decisão de adequação Brasil-UE — Ângelina vai verificar status atualizado via ANPD e Comissão Europeia.
-> - Movi a cláusula da plataforma operacional pra um documento separado novo. O Ricardo apontou que misturar PI das obras dos voluntários com PI da plataforma como ferramenta de software gera confusão interpretativa. Mais sobre isso no item 3.
-> - Adicionei uma Cláusula 16 nova na Política — Disclaimer de Marcas e Identidade Institucional. Reconhece explicitamente que "PMI®", "PMI Goiás Chapter", etc são propriedade exclusiva do PMI Global, e o Núcleo é iniciativa de capítulo (não direta PMI Global), em conformidade com Chapter Operating Guidelines. Isso fecha o flank de risco de uso da marca, que era um RED FLAG do Ricardo. Ângelina vai validar se Chapter Operating Guidelines requer autorização adicional.
+> - Refatorei a cláusula de aceite tácito no Termo §15.4 e no Adendo Retificativo §3º. O member A apontou que aceite tácito blanket pra "revisão" é sensível em contrato de adesão (CC art. 111 + 423 — favor aderente). Agora distinguimos explicitamente: aceite tácito aplica APENAS a Editorial change, e Material change exige aceite expresso do voluntário. Em ambiguidade, prevalece interpretação favorável ao voluntário. Isso não muda nosso framework Material/Editorial change que já existe nas Cláusulas 12.2 e 12.3 — só explicita que aceite tácito não cobre material.
+> - Refatorei a seção de transferência internacional de dados na Política IP para 3 regimes separados — Brasil + UE/EEE + UK + demais jurisdições. O member A apontou que o art. 49 do GDPR não deve ser solução padrão para fluxo rotineiro (orientação EDPB) e que a situação UE-UK é diferente. Texto está future-proof: cobre cenário com OU sem decisão de adequação Brasil-UE — Ângelina vai verificar status atualizado via ANPD e Comissão Europeia.
+> - Movi a cláusula da plataforma operacional pra um documento separado novo. O member A apontou que misturar PI das obras dos voluntários com PI da plataforma como ferramenta de software gera confusão interpretativa. Mais sobre isso no item 3.
+> - Adicionei uma Cláusula 16 nova na Política — Disclaimer de Marcas e Identidade Institucional. Reconhece explicitamente que "PMI®", "PMI Goiás Chapter", etc são propriedade exclusiva do PMI Global, e o Núcleo é iniciativa de capítulo (não direta PMI Global), em conformidade com Chapter Operating Guidelines. Isso fecha o flank de risco de uso da marca, que era um RED FLAG do member A. Ângelina vai validar se Chapter Operating Guidelines requer autorização adicional.
 > - Adicionei uma Cláusula 12 nova no Acordo de Cooperação Bilateral — Cooperação com Entidades Externas e Subsidiárias PMI Global. Isso permite a gente formalizar parceria com PMOGA, ICTs como FioCruz/CEIA-UFG/IFG, AIPM Ambassadors, sem precisar amend o Acordo Bilateral cada vez. As 5 partnership prospects que estão no nosso pipeline ficam cobertas.
 >
 > **3. Documento NOVO — o sexto doc**
@@ -67,7 +67,7 @@
 >
 > Cada mudança tem trailback no spec doc — fonte da crítica, verificação de fato, texto antes / texto depois, rationale. Tudo em `docs/specs/p90-comms/round6_material_fixes_proposed_text_with_trailback.md` no repo. Se quiserem ver diff exato de qualquer item, é só me chamar.
 >
-> Mais alguma dúvida ou se identificarem algo nos docs, joguem aqui no grupo. Pretendo enviar pra Ângelina ainda hoje / amanhã pelo canal que o Ivan abrir, e quando ela validar a gente fecha pra circulação aos 15 capítulos.
+> Mais alguma dúvida ou se identificarem algo nos docs, joguem aqui no grupo. Pretendo enviar pra Ângelina ainda hoje / amanhã pelo canal que o member E abrir, e quando ela validar a gente fecha pra circulação aos 15 capítulos.
 >
 > Abraço!
 

@@ -55,7 +55,7 @@
 
 ## 3. Personas e Necessidades
 
-### P1: Comms Member (Mayanna, Leticia, Maria Luiza)
+### P1: Comms Member (member B, member C, member A)
 **Precisa de:**
 - Ver quais posts performaram melhor (para replicar)
 - Saber o que publicar esta semana (backlog + calendario)

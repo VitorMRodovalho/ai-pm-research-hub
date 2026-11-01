@@ -1,7 +1,7 @@
 # ADR-0068: Governance Docs — Curadoria Redraft Framework (Path A/B + Material/Editorial Change)
 
 **Status:** Proposed (2026-05-01) — aguardando ratificação curadores + revisão advogado humano
-**Decision date:** p87 EXTENDED marathon (post-Bug Ana Carla, pré-redraft 5 docs)
+**Decision date:** p87 EXTENDED marathon (post-Bug member D member E, pré-redraft 5 docs)
 **Related:** ADR-0011 IP framework, ADR-0016 governance chain, ADR-0066 PMI Journey, ADR-0067 N1 Art.20 LGPD
 
 ---
@@ -16,25 +16,25 @@
 4. **Termo de Compromisso de Voluntário** (volunteer_term_template, v2)
 5. **Política de Publicação e Propriedade Intelectual** (policy, v2)
 
-3 curadores comentaram: **Roberto Macêdo (PMI-CE)**, **Sarah Faria Alcantara Macedo Rodovalho (PMI-GO)**, **Fabricio Costa (PMI-GO, vice-GP)**. Total 18 comments + 7 signoffs já dados (curator gate).
+3 curadores comentaram: **member C (PMI-CE)**, **member A (PMI-GO)**, **member B (PMI-GO, vice-GP)**. Total 18 comments + 7 signoffs já dados (curator gate).
 
 ### Problema central — Track B-Periódico
 
-Comentário **CRITICAL** Roberto (Adendo PI Art. 2, Parágrafo Único): re-licenciamento Track B "não funciona assim" — periódicos científicos exigem cessão exclusiva, programas inovação aberta capturam IP. Propõe deliberação caso a caso por petit comitê.
+Comentário **CRITICAL** member C (Adendo PI Art. 2, Parágrafo Único): re-licenciamento Track B "não funciona assim" — periódicos científicos exigem cessão exclusiva, programas inovação aberta capturam IP. Propõe deliberação caso a caso por petit comitê.
 
 **Validation:** Lei 9.610/98 art. 49 + art. 4º (interpretação restritiva). Elsevier subscription confirma transfer/exclusive policy. Springer OA preserva copyright author com CC.
 
 ### Outros comments materiais validados
 
-- Roberto preâmbulo Acordo Coop: versão vigente vs adesão futura (risco diferentes versões coexistindo)
-- Roberto Retificativo §2.6: standby 24m invalidado se editora exige indeterminado
-- Roberto Adendo PI Art. 5: termos inglês sem tradução em doc brasileiro
-- Roberto Adendo PI Art. 6: período graça INPI (Lei 9.279/96 art. 12 — 12 meses)
-- Roberto Acordo Coop §6: ausência attribution obrigatória (Lei 9.610/98 art. 24 II)
-- Roberto Acordo Coop §2: "Código Civil Brasileiro" explícito
-- Sarah Adendo PI Art. 2: aprovação prévia autores antes reprodução chapters
-- Fabricio + Sarah: glossário ausente (Track A/B/C/D, CC-BY-SA, MIT/Apache)
-- Fabricio Acordo Coop branding: "PMI Goiás" canonical (4 acordos ativos confirmam)
+- member C preâmbulo Acordo Coop: versão vigente vs adesão futura (risco diferentes versões coexistindo)
+- member C Retificativo §2.6: standby 24m invalidado se editora exige indeterminado
+- member C Adendo PI Art. 5: termos inglês sem tradução em doc brasileiro
+- member C Adendo PI Art. 6: período graça INPI (Lei 9.279/96 art. 12 — 12 meses)
+- member C Acordo Coop §6: ausência attribution obrigatória (Lei 9.610/98 art. 24 II)
+- member C Acordo Coop §2: "Código Civil Brasileiro" explícito
+- member A Adendo PI Art. 2: aprovação prévia autores antes reprodução chapters
+- member B + member A: glossário ausente (Track A/B/C/D, CC-BY-SA, MIT/Apache)
+- member B Acordo Coop branding: "PMI Goiás" canonical (4 acordos ativos confirmam)
 
 ### Process — 3 rounds deferring
 
@@ -155,7 +155,7 @@ Lei 9.279/96 art. 12 — Núcleo não divulga publicamente informação com pote
 
 1. **Política**: §5 Track B redraft (Path A/B); §7 Atribuição; glossário; lifecycle Material/Editorial; §4 período graça INPI
 2. **Acordo Cooperação**: Preâmbulo lifecycle; §2 "Código Civil Brasileiro"; §6 Atribuição contratual; cláusula remissiva standby; PMI Goiás fix
-3. **Adendo PI**: Art. 2 Path A/B + Sarah notificação; Art. 5 glossário; Art. 6 período graça
+3. **Adendo PI**: Art. 2 Path A/B + member A notificação; Art. 5 glossário; Art. 6 período graça
 4. **Adendo Retificativo**: §2.6 Standby fallback prazo indeterminado + teto 48m
 5. **Termo Compromisso**: ciência Path A/B; remissão glossário Política
 
@@ -163,13 +163,13 @@ Lei 9.279/96 art. 12 — Núcleo não divulga publicamente informação com pote
 
 | Doc | Quem | Razão |
 |---|---|---|
-| Acordo Cooperação | **Fabricio + Sarah** | Roberto comments 29/4 após signoffs 21/4 + 27/4 |
-| Adendo PI | **Fabricio** | Sarah 27/4 + Roberto 29/4 após 21/4 |
-| Adendo Retificativo | **Fabricio** | Sarah 27/4 + Roberto 29/4 após 21/4 |
-| Termo Compromisso | **Fabricio** | Sarah 27/4 após 21/4 |
-| Política | **NENHUM** | Roberto 19/4 anterior + change_note |
+| Acordo Cooperação | **member B + member A** | member C comments 29/4 após signoffs 21/4 + 27/4 |
+| Adendo PI | **member B** | member A 27/4 + member C 29/4 após 21/4 |
+| Adendo Retificativo | **member B** | member A 27/4 + member C 29/4 após 21/4 |
+| Termo Compromisso | **member B** | member A 27/4 após 21/4 |
+| Política | **NENHUM** | member C 19/4 anterior + change_note |
 
-Roberto: primeira signature em todos 5 (não assinou).
+member C: primeira signature em todos 5 (não assinou).
 
 ### Red flag preservado (não substituível por AI)
 

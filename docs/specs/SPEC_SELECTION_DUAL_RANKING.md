@@ -25,14 +25,14 @@ Após auditoria no banco de produção, identificamos 4 problemas críticos:
 **P1 — Fórmula de `final_score` inconsistente entre RPCs**
 - `submit_evaluation` (antiga, migration `20260319100025`): ao receber `leader_extra`, faz `objective_score_avg += leader_extra_pert` e recalcula `final_score`
 - `submit_interview_scores` (nova, migration `20260401070000`): sobrescreve `final_score = objective_score_avg + interview_score`, **ignorando leader_extra**
-- **Efeito**: se a entrevista completa DEPOIS do leader_extra, a contribuição do leader_extra é perdida. Fabrício Costa (leader) está nesse estado: `final_score=364=242+122`, sem os 76 pontos do leader_extra.
+- **Efeito**: se a entrevista completa DEPOIS do leader_extra, a contribuição do leader_extra é perdida. member C (leader) está nesse estado: `final_score=364=242+122`, sem os 76 pontos do leader_extra.
 
 **P2 — Candidatos duplicados em fluxo de dupla-trilha**
 Dados de produção:
-- **Ana Carla Cavalcante** aparece com **2 linhas** em `selection_applications`:
+- **member A** aparece com **2 linhas** em `selection_applications`:
   - `role_applied='leader'`, objective=240, final=361 (approved)
   - `role_applied='researcher'`, objective=115, final=236 (converted)
-- **Hayala Curto**: mesma situação (212/333 leader vs 137.5/258.5 researcher)
+- **member D**: mesma situação (212/333 leader vs 137.5/258.5 researcher)
 
 Isso quebra unicidade de `(cycle_id, email)` e cria ambiguidade: qual é a "verdadeira" application para audit? Por que os objective scores são diferentes entre as duas linhas da mesma pessoa?
 
@@ -245,7 +245,7 @@ $$;
 
 ## 4. Migração dos dados históricos
 
-### 4.1 Problema P2: duplicação Ana Carla + Hayala
+### 4.1 Problema P2: duplicação member A + member D
 
 **Decisão**: merge manual. Para cada par de applications duplicadas:
 1. Decidir qual row é a "canônica" (provavelmente a mais recente)
@@ -264,14 +264,14 @@ SELECT compute_application_scores(id) FROM selection_applications;
 SELECT recalculate_cycle_rankings(cycle_id) FROM (SELECT DISTINCT cycle_id FROM selection_applications) x;
 ```
 
-### 4.3 Resultado esperado (ciclo 3, Fabrício como exemplo)
+### 4.3 Resultado esperado (ciclo 3, member C como exemplo)
 
 | Candidato | Track | research_score | leader_score | rank_researcher | rank_leader |
 |-----------|-------|----------------|--------------|-----------------|-------------|
-| Fabrício Costa | leader | — (null, não conta) | 440 (242+122+76) | — | 2 (exemplo) |
-| Fernando Maquiaveli | leader | — | 462 (252+130+80) | — | 1 |
+| member C | leader | — (null, não conta) | 440 (242+122+76) | — | 2 (exemplo) |
+| member B | leader | — | 462 (252+130+80) | — | 1 |
 | Pesquisador X | researcher | 330 (200+130) | — | 1 | — |
-| Ana Carla (merged) | dual | 361 (240+121) | 441 (+80 leader_extra) | N (pos. entre pesquisadores) | M (pos. entre líderes) |
+| member A (merged) | dual | 361 (240+121) | 441 (+80 leader_extra) | N (pos. entre pesquisadores) | M (pos. entre líderes) |
 
 Candidatos em `dual` aparecem nos DOIS rankings, com scores coerentes (research é subset do leader).
 
@@ -348,10 +348,10 @@ Isso torna o ciclo **self-describing**. Um auditor externo pode ler direto do ba
 - [ ] Patchear `submit_evaluation` e `submit_interview_scores` para chamar `compute_application_scores()` no fim
 
 ### Fase 2 — Backfill de dados históricos
-- [ ] Migrar Ana Carla e Hayala para track='dual' (resolver P2)
+- [ ] Migrar member A e member D para track='dual' (resolver P2)
 - [ ] Rodar `compute_application_scores()` em todas as applications
 - [ ] Rodar `recalculate_cycle_rankings()` por ciclo
-- [ ] Validar: Fabrício deve ter leader_score = 440, rank_leader = X
+- [ ] Validar: member C deve ter leader_score = 440, rank_leader = X
 
 ### Fase 3 — Frontend admin
 - [ ] `/admin/selection` abas de ranking
@@ -373,7 +373,7 @@ Isso torna o ciclo **self-describing**. Um auditor externo pode ler direto do ba
 
 | Risco | Probabilidade | Impacto | Mitigação |
 |-------|--------------|---------|-----------|
-| Merge errado de Ana Carla/Hayala (perda de histórico) | Baixa | Alto | Dry-run + backup de `selection_evaluations` + revisão manual antes |
+| Merge errado de member A/member D (perda de histórico) | Baixa | Alto | Dry-run + backup de `selection_evaluations` + revisão manual antes |
 | Recálculo muda ranking já comunicado a candidatos | Alta | Médio | Comunicar mudança com transparência; `ranking_snapshots` preserva histórico |
 | `compute_application_scores` falha silenciosa | Média | Alto | Testes unitários cobrindo todos os cenários (só obj, obj+int, obj+int+leader, dual, etc.) |
 | Frontend quebra ao ler colunas novas | Baixa | Baixo | Deploy fase 1 + 2 antes de fase 3 |
@@ -384,7 +384,7 @@ Isso torna o ciclo **self-describing**. Um auditor externo pode ler direto do ba
 ## 10. Perguntas em aberto para o PM decidir
 
 1. **Backfill**: recalcular rankings do Ciclo 3 agora (mudando posições já comunicadas) ou só aplicar a novos ciclos? *Recomendação: aplicar só ao Ciclo 3 se os resultados ainda não foram formalmente publicados.*
-2. **Ana Carla e Hayala**: qual é a application canônica delas? Mergear para dual?
+2. **member A e member D**: qual é a application canônica delas? Mergear para dual?
 3. **Publicação**: candidatos devem ver seus próprios ranks ou só status? *Recomendação: rank relativo (top X%) sem nomes.*
 4. **Tiebreakers**: quando dois candidatos empatam em score, o que decide? *Proposta: ordem alfabética do nome (determinístico e auditável).*
 5. **Fórmula `leader_score`**: soma simples ou ponderada? *Atual proposto: soma simples. Alternativa: `research_score * 0.7 + leader_extra_pert * 0.3` se quiser valorizar mais os critérios de liderança.*
@@ -410,7 +410,7 @@ Após aprovação, implementamos em **5 commits sequenciais** (um por fase), cad
 
 **Decisão:** backfill inclui Ciclo 3. Snapshot pré-recálculo gravado para rollback se necessário.
 
-### R2. Dupla candidatura (Ana Carla, Hayala) — modelo revisado ⚠️
+### R2. Dupla candidatura (member A, member D) — modelo revisado ⚠️
 > "varios candidatos podem ocorrer de terem candidatado primeiro como pesquisador e terem sido triados para virarem lideres, neste caso apos a rotina de entrevista completa ja contemplando a de lider eles aplicam para a vaga de lider, entao provavelmente neste caso voce tem o application id de ambas vagas para eles, isto é normal e parte da jornada"
 
 **Descoberta:** Não é duplicação errada. É **jornada de triagem legítima**: candidato aplica como pesquisador, entrevista contempla critérios de líder, se triado ele **aplica novamente** para vaga de líder. Resultado: 2 application_ids distintos, 1 por pessoa.
@@ -439,7 +439,7 @@ ALTER TABLE selection_applications
 - Researcher app com `linked_application_id IS NOT NULL` E o linked leader app com status `approved|converted` → sai do `rank_researcher` (virou líder, não compete mais entre pesquisadores).
 - Researcher app mantém a row para audit histórico.
 
-**Backfill Ana Carla + Hayala:**
+**Backfill member A + member D:**
 - Identificar o par de applications (mesmo email, cycle_id)
 - Setar `linked_application_id` bidirectional
 - Setar `promotion_path='triaged_to_leader'` nas duas
@@ -516,7 +516,7 @@ WHERE cycle_id = p_cycle_id AND ...;
 - [x] CR-047 criado formalmente em `change_requests` (status: submitted)
 - [ ] **Aguardando review/approval do CR-047** antes de implementação
 - [ ] Fase 1: schema + compute_application_scores
-- [ ] Fase 2: backfill Ciclo 3 + link Ana Carla/Hayala
+- [ ] Fase 2: backfill Ciclo 3 + link member A/member D
 - [ ] Fase 3: frontend admin
 - [ ] Fase 4: candidate self-view + MCP tools
 - [ ] Fase 5: scoring_formula declarativa + Manual R3

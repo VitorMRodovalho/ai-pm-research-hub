@@ -16,7 +16,7 @@
   - Batch 1: migration `20260426170038_adr_0026_manage_comms_v4_conversion`
   - Extension: migrations `20260427011141_adr_0026_extension_campaign_fns_v4_manage_comms` +
     `20260427011239_adr_0026_extension_campaign_fns_revoke_anon`
-- Drift surfaced: Mayanna Duarte perdeu access (V3 designation comms_leader sem
+- Drift surfaced: member A perdeu access (V3 designation comms_leader sem
   V4 engagement). Documentado para PM decidir se cria engagement post-fact.
 
 ---
@@ -307,13 +307,13 @@ references in code that was never updated.
 ### Privilege expansion (zero change)
 
 ```
-legacy_count = 2  (Vitor SA, Fabricio manager-equiv)
+legacy_count = 2  (Vitor SA, member B manager-equiv)
 v4_count    = 2  (same)
 would_gain   = []
 would_lose   = []
 ```
 
-Mayanna (designation comms_leader, no V4 engagement volunteer×comms_leader) —
+member A (designation comms_leader, no V4 engagement volunteer×comms_leader) —
 same drift case as ADR-0026 batch 1; no incremental impact.
 
 ### pg_policy precondition (Q-D charter, p65)

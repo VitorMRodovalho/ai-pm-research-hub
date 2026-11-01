@@ -1,7 +1,7 @@
 # Round 6 Material Fixes — Análise Crítica com Trailback + Texto Proposto
 
 **Sessão:** p90.c (2026-05-04 → 2026-05-05)
-**Trigger:** Vitor decision 2026-05-05 — não esperar Ângelina; aplicar todas as mudanças com trailback + confirmação fato/dado, entregando docs PRONTOS para validação (não remendos).
+**Trigger:** Vitor decision 2026-05-05 — não esperar member D; aplicar todas as mudanças com trailback + confirmação fato/dado, entregando docs PRONTOS para validação (não remendos).
 **Spec mestre:** `docs/specs/p90-round-6-editorial-material-fixes-matrix.md`
 **Migration:** `20260516500002_p90c_round6_material_fixes_plus_anexo_tecnico.sql`
 
@@ -17,10 +17,10 @@ Este documento apresenta, para cada material fix:
 ## M1 — Aceite tácito framework (CC favor aderente)
 
 ### Trailback
-**Fonte:** Ricardo Santos análise crítica, item #2:
+**Fonte:** member A análise crítica, item #2:
 > "Em contrato de adesão, a combinação de remissão dinâmica, mudança posterior de obrigações e aceite tácito é sensível. O Código Civil diz que o silêncio só importa anuência quando as circunstâncias autorizarem (art. 111), e cláusulas ambíguas em contrato de adesão devem ser interpretadas em favor do aderente."
 > 
-> **Recomendação Ricardo:** "manter atualização automática apenas para mudanças editoriais; para mudanças materiais de PI, dados, sanções e uso de obras, exigir aceite expresso."
+> **Recomendação member A:** "manter atualização automática apenas para mudanças editoriais; para mudanças materiais de PI, dados, sanções e uso de obras, exigir aceite expresso."
 
 ### Verificação de fato/dado
 - ✅ **CC art. 111** (Lei 10.406/2002): "O silêncio importa anuência, quando as circunstâncias ou os usos o autorizarem, e não for necessária a declaração de vontade expressa." — Real, vigente.
@@ -64,22 +64,22 @@ Este documento apresenta, para cada material fix:
 ## M2 — Transferência internacional de dados (LGPD §2.5.5 + §2.5.7)
 
 ### Trailback
-**Fonte:** Ricardo Santos análise crítica, item #3:
+**Fonte:** member A análise crítica, item #3:
 > "A política afirma que o Brasil estava sem decisão de adequação para UE/EEE; o adendo pede consentimento expresso de residentes da UE com base no art. 49(1)(a) do GDPR. Isso ficou desatualizado em 2026. A Comissão Europeia e o Brasil adotaram decisões de adequação recíproca em janeiro de 2026. Já para o Reino Unido, a situação é diferente: a orientação atual do ICO ainda trata o Brasil como sem adequacy no regime UK GDPR."
 > 
-> **Recomendação Ricardo:** "separar três regimes: Brasil, UE/EEE e Reino Unido. Para UE/EEE, usar a base da adequação quando aplicável; para UK e outros países sem adequação, usar o mecanismo cabível do direito aplicável. Não usar consentimento do art. 49 como solução padrão para fluxo rotineiro."
+> **Recomendação member A:** "separar três regimes: Brasil, UE/EEE e Reino Unido. Para UE/EEE, usar a base da adequação quando aplicável; para UK e outros países sem adequação, usar o mecanismo cabível do direito aplicável. Não usar consentimento do art. 49 como solução padrão para fluxo rotineiro."
 
 ### Verificação de fato/dado
 - ✅ **GDPR Regulamento (UE) 2016/679** — Real, em vigor desde 25 de maio de 2018.
 - ✅ **GDPR art. 45** (decisões de adequação) — Real.
 - ✅ **GDPR art. 46** (salvaguardas para transferência internacional) — Real.
-- ✅ **GDPR art. 49** (derrogações para situações específicas) — Real, mas Comissão Europeia e EDPB têm orientação específica de que **art. 49 não deve ser solução padrão para fluxo rotineiro** (EDPB Guidelines 2/2018). Ricardo está correto.
+- ✅ **GDPR art. 49** (derrogações para situações específicas) — Real, mas Comissão Europeia e EDPB têm orientação específica de que **art. 49 não deve ser solução padrão para fluxo rotineiro** (EDPB Guidelines 2/2018). member A está correto.
 - ✅ **Decisão (UE) 2021/914** (novas SCCs / Standard Contractual Clauses) — Real, em vigor desde 27 de junho de 2021.
 - ✅ **UK GDPR** independente do EU GDPR após Brexit, fiscalizado pelo Information Commissioner's Office (ICO) — Real.
 - ✅ **International Data Transfer Agreement (IDTA)** + **UK Addendum to EU SCCs** — Real, mecanismos atuais ICO para transferência internacional (em vigor desde 21 março 2022).
 - ✅ **LGPD Lei 13.709/2018, arts. 33-36** — transferência internacional de dados, base legal brasileira. Real, vigente.
 - ✅ **ANPD** (Autoridade Nacional de Proteção de Dados) — autoridade fiscalizadora brasileira. Real.
-- ⚠️ **Reciprocal adequacy decision Brasil ↔ UE/EEE em janeiro/2026** — afirmação de Ricardo. **Sem confirmação primária por mim**; ANPD e Comissão Europeia têm conduzido diálogos desde 2022, mas decisão formal pode estar em andamento OU já adotada — **PENDÊNCIA: Ângelina verifica via ANPD (https://www.gov.br/anpd) e Comissão Europeia (https://commission.europa.eu/law/law-topic/data-protection/international-dimension-data-protection_en) antes do lock final**. Por isso o texto proposto é **future-proof**: cobre ambos cenários sem afirmar com data específica.
+- ⚠️ **Reciprocal adequacy decision Brasil ↔ UE/EEE em janeiro/2026** — afirmação de member A. **Sem confirmação primária por mim**; ANPD e Comissão Europeia têm conduzido diálogos desde 2022, mas decisão formal pode estar em andamento OU já adotada — **PENDÊNCIA: member D verifica via ANPD (https://www.gov.br/anpd) e Comissão Europeia (https://commission.europa.eu/law/law-topic/data-protection/international-dimension-data-protection_en) antes do lock final**. Por isso o texto proposto é **future-proof**: cobre ambos cenários sem afirmar com data específica.
 - ✅ **EDPB Guidelines 2/2018** sobre derrogações art. 49 — Real, ainda vigente.
 - ✅ **Transfer Impact Assessment (TIA)** — exigência pós-Schrems II, jurisprudência TJUE C-311/18 (julho/2020). Real.
 
@@ -107,12 +107,12 @@ O mecanismo vigente por voluntário é documentado no registro de atividades de 
 
 ### Rationale
 - **Future-proof:** cobre cenários com ou sem adequacy decision (não afirma fato com data específica)
-- **3 regimes separados** (Ricardo OK) + 4º catch-all (demais jurisdições) + 5º regra residência voluntário
+- **3 regimes separados** (member A OK) + 4º catch-all (demais jurisdições) + 5º regra residência voluntário
 - **Art. 49 não é solução padrão** explícito (EDPB Guidelines 2/2018)
-- **UK separado** (ICO + IDTA + UK Addendum) — Ricardo OK
+- **UK separado** (ICO + IDTA + UK Addendum) — member A OK
 - **Atualização normativa** explicitada — não engessa o texto
 
-### Pendência verificação Ângelina
+### Pendência verificação member D
 - ⚠️ Status atual da decisão de adequacy Brasil ↔ UE/EEE → confirmar via ANPD + Comissão Europeia primary sources
 - ⚠️ Versão atual do UK Addendum / IDTA → confirmar via ICO
 
@@ -121,10 +121,10 @@ O mecanismo vigente por voluntário é documentado no registro de atividades de 
 ## M3 — Cláusula plataforma → Anexo Técnico (NOVO 6º DOC)
 
 ### Trailback
-**Fonte:** Ricardo Santos análise crítica, item #8:
+**Fonte:** member A análise crítica, item #8:
 > "A cláusula sobre a plataforma pessoal do GP está deslocada [no termo do voluntário]. O adendo trata a plataforma operacional como projeto pessoal e independente do GP autor. Isso pode gerar desconfiança e confusão entre PI das obras do Núcleo e PI da plataforma."
 > 
-> **Recomendação Ricardo:** "mover esse tema para um anexo técnico separado ou para os termos de uso da plataforma. No termo do voluntário, basta dizer que a plataforma é ferramenta de gestão e que o uso dela não altera a titularidade das obras do voluntário nem do Núcleo."
+> **Recomendação member A:** "mover esse tema para um anexo técnico separado ou para os termos de uso da plataforma. No termo do voluntário, basta dizer que a plataforma é ferramenta de gestão e que o uso dela não altera a titularidade das obras do voluntário nem do Núcleo."
 
 **Fonte adicional Vitor 2026-05-04 (clarification de contexto):**
 > "vou deixar a plataforma como parte do legado do Nucleo, mas desde o dia zero declarei opensource no meu github entao eu auto licensie desta forma, e futuramente podemos ter uma exploracao comercial fechando o opensource mas com o nucleo junto - outros contribuidores na plataforma ainda nao existem entao somente meu nome, mas la na frente com o amadurecimento do nucleo e entrada de outros membros talvez isto possa vir a mudar caso outros venham a contribuir para com o desenvolvimento e amadurecimento da plataforma"
@@ -166,7 +166,7 @@ Estrutura:
 
 ### Rationale
 - **Separação clara** entre PI das obras (Política) e PI da plataforma (Anexo)
-- **Endereça crítica Ricardo #8** sobre cláusula deslocada
+- **Endereça crítica member A #8** sobre cláusula deslocada
 - **Captura clarification Vitor 2026-05-04** sobre opensource + futura exploração comercial conjunta
 - **Versionamento independente** (Anexo evolve sem precisar amend Política/Termo)
 - **Audit trail formal** via document_versions
@@ -176,10 +176,10 @@ Estrutura:
 ## M4 — Disclaimer Marca PMI® (RED FLAG #2c — estrutural, independente Round 6)
 
 ### Trailback
-**Fonte 1:** Ricardo Santos análise crítica, RED FLAG #2c (interno-Vitor sumário):
+**Fonte 1:** member A análise crítica, RED FLAG #2c (interno-Vitor sumário):
 > "marca PMI® third-party — Núcleo usa 'PMI®' branding mas não tem legal status PMI Brasil/Global = risco third-party trademark dispute"
 
-**Fonte 2:** Sediment incident CBGPL 2026-04-29 — Ricardo Vargas usou "ação do PMI" sem citar capítulos; slide com logo PMI-GO antiga; Natália Tavares (PMI Latam) reagiu positivamente, querendo INTEGRAR (não competir).
+**Fonte 2:** Sediment incident CBGPL 2026-04-29 — member C usou "ação do PMI" sem citar capítulos; slide com logo PMI-GO antiga; member B (PMI Latam) reagiu positivamente, querendo INTEGRAR (não competir).
 
 **Fonte 3:** Memory `feedback_pmi_brand_canonical.md` + `feedback_pmi_brand_at_cbgpl_natalia_signal.md`.
 
@@ -210,7 +210,7 @@ Estrutura:
 - **Distinguir** marcas PMI vs marcas/frameworks Núcleo
 - **Atualização framework** via Material change
 
-### Pendência verificação Ângelina
+### Pendência verificação member D
 - ⚠️ Confirmar se Chapter Operating Guidelines têm cláusula específica sobre uso de marca por capítulos para iniciativas inter-capítulos
 - ⚠️ Verificar se PMI Global requer autorização formal para uso da marca em iniciativas como Núcleo IA — ou se basta endorsement do Chapter Sponsor PMI-GO
 
@@ -236,7 +236,7 @@ Estrutura:
 - ✅ **AIPM Ambassadors** (PM AI Revolution) — programa real, Vitor é Ambassador.
 - ✅ **FioCruz, AI.Brasil, CEIA-UFG, IFG** — entidades reais de pesquisa/comunidade citadas em backlog Núcleo.
 
-### Verificação adicional pendente Ângelina
+### Verificação adicional pendente member D
 - ⚠️ PMOGA tem instrumento institucional próprio para parcerias com iniciativas de capítulos PMI? Ou se relaciona via Chapter Sponsor?
 - ⚠️ Há requisitos específicos PMI Global para cooperação inter-entidades?
 
@@ -291,7 +291,7 @@ Estrutura:
 - Adendo PI Cooperação Art 8 → Anexo Técnico (thin cross-ref)
 - Disclaimer Marca PMI® em Política §16 ← cross-ref pelos demais docs
 
-### Pendências para Ângelina validar
+### Pendências para member D validar
 
 | Item | Verificação primária requerida |
 |---|---|
@@ -300,11 +300,11 @@ Estrutura:
 | M4 (Marca PMI) | Chapter Operating Guidelines PMI Global — uso de marca por iniciativas inter-capítulos |
 | M5 (PMOGA) | Existe instrumento institucional PMOGA para parcerias com iniciativas de capítulos? |
 
-### Validação posterior Ângelina
+### Validação posterior member D
 
-Após apply de v6, Ângelina recebe:
+Após apply de v6, member D recebe:
 - **5 docs LOCKED v6** (governance) + **1 doc novo Anexo Técnico v1** (LOCKED)
 - Este spec doc com trailback + texto proposto + pendências
-- Ricardo's critique + drafts originais (`/home/vitormrodovalho/Downloads/A/`)
+- member A's critique + drafts originais (`/home/vitormrodovalho/Downloads/A/`)
 
 Sua função: **validar** texto pronto (não remendar) + endereçar 4 pendências de verificação primária.

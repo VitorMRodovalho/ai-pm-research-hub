@@ -15,7 +15,7 @@ PM aprovou os 3 blockers + 8 recomendações em 2026-04-28. Execução autônoma
 
 **🚨 B2 corrigido durante execução**: a recomendação original era "DELETE older duplicate rows + add UNIQUE on `vep_application_id`". Phase 0 examinou as 5 supostas duplicatas e descobriu:
 
-- São rows **legítimas** do dual-track `triaged_to_leader` selection pattern (Marcos Klemz, Adalberto Neris, Rodolfo Santana, Ana Cavalcante, Hayala Curto)
+- São rows **legítimas** do dual-track `triaged_to_leader` selection pattern (member E, member A, member D, member B, member C)
 - Cada par tem `linked_application_id` cross-ref + `promotion_path='triaged_to_leader'` + DIFFERENT `vep_opportunity_id` (64966 leader / 64967 researcher) + DIFFERENT scores
 - `(vep_application_id, vep_opportunity_id)` JÁ É unique em todos os 81 rows com ambos populated
 

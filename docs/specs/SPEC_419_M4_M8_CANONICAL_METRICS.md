@@ -20,8 +20,8 @@
 
 | Metric | The fork (live, today) | Canonical fix |
 |---|---|---|
-| **4 — member_count / tribe_roster** | tribe-8 shows **5** (`exec_tribe_dashboard`, kind='volunteer' drops curator Roberto) / **6** (`get_tribe_stats`, canonical) / **7** (`get_weekly_tribe_digest`, `current_cycle_active` alone adds offboarded Maria) | DISTINCT person with an **active, non-observer ROLE** engagement on the resolved initiative; one primitive `v_initiative_roster` + `get_initiative_roster_count()` |
-| **5 — XP rank / pillar** | cycle-mode rank is ordered on **lifetime** XP: the #1 cycle earner (Marcos, 425 cycle XP) shows at **rank 14-15**; ties are non-deterministic (Fernando 415 = Débora 415); **46 of 49** pooled members reorder once fixed | `get_xp_rankings(mode)` (cycle-mode orders on cycle XP, deterministic `member_id` tiebreak) + pillar via the `gamification_rules.slug=category` JOIN (100% live coverage) |
+| **4 — member_count / tribe_roster** | tribe-8 shows **5** (`exec_tribe_dashboard`, kind='volunteer' drops curator member F) / **6** (`get_tribe_stats`, canonical) / **7** (`get_weekly_tribe_digest`, `current_cycle_active` alone adds offboarded member D) | DISTINCT person with an **active, non-observer ROLE** engagement on the resolved initiative; one primitive `v_initiative_roster` + `get_initiative_roster_count()` |
+| **5 — XP rank / pillar** | cycle-mode rank is ordered on **lifetime** XP: the #1 cycle earner (member A, 425 cycle XP) shows at **rank 14-15**; ties are non-deterministic (member B 415 = member E 415); **46 of 49** pooled members reorder once fixed | `get_xp_rankings(mode)` (cycle-mode orders on cycle XP, deterministic `member_id` tiebreak) + pillar via the `gamification_rules.slug=category` JOIN (100% live coverage) |
 | **6 — trail_completion + cpmai** | trail: home **44** (binary "all-6", hardcoded `/6.0`, cohort 37 incl. 2 guests) vs ranking **46.66** (partial-credit avg, cohort 35, dynamic total). cpmai: **wall=2 / meta=1** conflated | trail = partial-credit avg over a **shared** cohort with **dynamic** is_trail total; cpmai goal-metric = certified **in the goal year** (boolean + year window), wall = all-time |
 | **7 — champions (#424)** | dual-written ledger (`champions_awarded`) + projection (`gamification_points` pillar='champions') with **no parity invariant**; award UI blocked to tribe leaders | `champions_awarded` ledger canonical, projection derived; parity invariant + contract test; **frontend-only** unblock (backend already authorizes leaders) |
 | **8 — webinars** | webinars **table = 7** vs `events WHERE type='webinar'` = **4** | count the `webinars` table (architectural source of truth, CLAUDE.md decision #4) |
@@ -30,7 +30,7 @@
 
 - **D-M6-CPMAI (goal-metric source):** the cpmai goal metric counts people who **certified during the
   goal year (2026)** — `members.cpmai_certified = true AND cpmai_certified_at` within the goal year. A member
-  who entered already holding CPMAI (cert dated before the goal year, e.g. Pedro, 2025-10-23) appears on the
+  who entered already holding CPMAI (cert dated before the goal year, e.g. member G, 2025-10-23) appears on the
   **certificate wall (mural)** but **NOT** in the goal metric. Same rule for any future entrant whose cert
   predates the goal year. **This is a PMI-GO-board-pactuated business rule** — it is the reason the source is
   the dated boolean, not the gamification ledger and not a date-free count.
@@ -47,7 +47,7 @@
 
 - **D-M4-AXIS** (Metric 4): reconcile `get_member_tribe` (the **shipped metric-3** cohort resolver + the
   `exec_tribe_dashboard` cross-tribe auth gate) onto the role axis? It filters `kind='volunteer'` (the wrong
-  axis) and returns **NULL for the curator Roberto** despite his active tribe-8 engagement. **Recommend:**
+  axis) and returns **NULL for the curator member F** despite his active tribe-8 engagement. **Recommend:**
   change to `role <> 'observer'` (PR-F, isolated, re-smoke metric-3 cohort_n before/after). If the PM prefers
   metric-3 frozen, document the KIND-vs-ROLE divergence in ADR-0100 instead.
 - **D-M8-COMPLETED** (Metric 8): the `webinars` table has **no `done`/`completed` status** (statuses live =
@@ -84,17 +84,17 @@ One conceptual quantity — "how many active members are in this tribe/initiativ
 live numbers** for tribe 8, plus a client-side fourth:
 
 - **5** — `exec_tribe_dashboard` / `TribeDashboardIsland.tsx` KPI. Predicate `kind='volunteer'` EXISTS, which
-  **wrongly drops the curator Roberto Macêdo** (`role='curator'`, `kind='observer'`).
+  **wrongly drops the curator member F** (`role='curator'`, `kind='observer'`).
 - **6** — `get_tribe_stats`, `get_initiative_stats`, `get_tribe_gamification`, admin cross-tribe. The canonical
   value, but each reaches it via a different path (`members.tribe_id`, engagement rows…) that only coincides today.
 - **7** — `get_weekly_tribe_digest.aggregates.active_members`. Predicate `current_cycle_active` alone, which
-  **wrongly adds the offboarded Maria Luiza** (`is_active=false`, `current_cycle_active=true`, tribe-8 engagement
+  **wrongly adds the offboarded member D** (`is_active=false`, `current_cycle_active=true`, tribe-8 engagement
   `status='offboarded'`).
 - **(client)** — `tribe/[id].astro` header badge reads `membersMap.size`; the same page's stats card reads the
   RPC `member_count` — two counts on one page.
 
 **Root trap — ROLE vs KIND.** `role` and `kind` are independent axes. Canonical filters on **role**
-(`role <> 'observer'`); the broken surfaces filter on **kind**. Roberto passes the role filter (counted) but
+(`role <> 'observer'`); the broken surfaces filter on **kind**. member F passes the role filter (counted) but
 fails the kind filter (dropped).
 
 ### M4.2 Canonical definition
@@ -107,7 +107,7 @@ fails the kind filter (dropped).
 - **Opt-out:** the aggregate count tallies opt-out members (a count, not PII); **named** rosters mask opted-out
   identity to non-`view_pii` viewers (forward-defense; 0 opted-out in tribe 8 today).
 
-### M4.3 Antes (VERIFIED live — tribe 8, initiative `9cbaf0b9-de4d-4e40-8375-5767cc97a9a4`)
+### M4.3 Antes (VERIFIED live — tribe 8, initiative `9cbaf0b9-de4d-4e(00) 00000-0000cc97a9a4`)
 
 | # | Quantity | Value | SQL |
 |---|---|---|---|
@@ -149,7 +149,7 @@ Reconcile (do not duplicate) the existing tribe↔initiative resolver: the front
 | `exec_cross_initiative_comparison` | per-initiative count → primitive | tribe-8 col 6, canonical all tribes |
 | `get_weekly_tribe_digest` | `active_members` → primitive | **7 → 6** |
 | `tribe/[id].astro` | header badge → RPC member_count (drop `membersMap.size`) | header + stats single source |
-| `get_member_tribe` | **D-M4-AXIS (PR-F, conditional):** `kind='volunteer'` → `role<>'observer'` | Roberto resolves to tribe 8 |
+| `get_member_tribe` | **D-M4-AXIS (PR-F, conditional):** `kind='volunteer'` → `role<>'observer'` | member F resolves to tribe 8 |
 
 ### M4.6 PRs
 - **PR4-A** (S, no dep): primitive `v_initiative_roster` + `get_initiative_roster_count` + reconcile resolver. Additive. Contract test: view=6 for tribe-8 initiative; includes curator; excludes a true role=observer.
@@ -194,12 +194,12 @@ cycle-order):
 
 | Member | lifetime_xp | cycle_xp | rank BUGGED (lifetime) | rank CANONICAL (cycle) |
 |---|---|---|---|---|
-| Marcos Antunes Klemz | 535 | 425 | **14** (in-pool) / **15** (RPC all-points path) | **1** |
-| Fernando Maquiaveli | 920 | 415 | 5 | 2 (tie) |
-| Débora Moura | 960 | 415 | 3 | 2 (tie) |
+| member A | 535 | 425 | **14** (in-pool) / **15** (RPC all-points path) | **1** |
+| member B | 920 | 415 | 5 | 2 (tie) |
+| member E | 960 | 415 | 3 | 2 (tie) |
 
 `SELECT m.id, m.name, SUM(gp.points) life, SUM(gp.points) FILTER (WHERE gp.created_at >= '2026-03-01') cyc …`
-(full query in workflow `wf_6c1ee407-948`). Fernando + Débora **tie at 415** → confirms the missing deterministic
+(full query in workflow `wf_6c1ee407-948`). member B + member E **tie at 415** → confirms the missing deterministic
 tiebreak.
 
 **Blast radius:** pool = **49**, **46 reorder** (94%) when cycle-mode is correctly ordered on cycle XP.
@@ -222,7 +222,7 @@ returning `(member_id, lifetime_xp, cycle_xp, rank, total_count)` — single poo
 re-implementing the `FILTER(gr.pillar=…)` block. Harden the existing `get_member_xp_pillars` (it already JOINs
 slug=category).
 
-- **PR5-A** (M, no dep): `get_xp_rankings` + `v_member_xp_pillar` (shadow, no repoint). Contract test: cycle-mode order matches the canonical fixture (Marcos #1) + reads `gamification_rules` not inline strings + a CI assert that every `gamification_points.category` has a `gamification_rules` row.
+- **PR5-A** (M, no dep): `get_xp_rankings` + `v_member_xp_pillar` (shadow, no repoint). Contract test: cycle-mode order matches the canonical fixture (member A #1) + reads `gamification_rules` not inline strings + a CI assert that every `gamification_points.category` has a `gamification_rules` row.
 - **PR5-B** (M, dep A): fix the global board (`get_gamification_leaderboard`) cycle-mode ORDER BY (highest visible impact: 46/49 reorder).
 - **PR5-C** (M, dep A): fix self-view (`get_member_cycle_xp`) — rank via `get_xp_rankings('cycle')`; remove `'2026-01-01'`; raw buckets → pillar JOIN. Fixes MCP `get_my_xp_and_ranking` + profile transitively.
 - **PR5-D** (S, dep A): admin `get_member_detail` rank → `get_xp_rankings('lifetime')`; categories by pillar.
@@ -244,7 +244,7 @@ opened — confirm which RPC each calls before assuming PR-G covers them.
 Two different metrics wear one name:
 - **Home** `calc_trail_completion_pct()` = **44** — a **binary "completed ALL 6"** rate (`COUNT FILTER(status='completed')
   / 6.0` per member, then AVG×100), cohort = `is_active ∧ current_cycle_active ∧ operational_role NOT IN
-  (sponsor, chapter_liaison, observer, candidate, visitor)` → **37 members incl. 2 guests** (Angeline, Mario).
+  (sponsor, chapter_liaison, observer, candidate, visitor)` → **37 members incl. 2 guests** (member H, member I).
   Trail total is **hardcoded `6.0`**.
 - **Ranking** `get_public_trail_ranking()` = **46.66** — a **partial-credit average** (per-member `completed/total`)
   over cohort **35** (excludes guests), with the **dynamic** live is_trail count (**6** courses today).
@@ -255,10 +255,10 @@ hardcoded `0` in both `get_tribe_gamification` / `get_initiative_gamification`.
 
 ### M6.2 Problem — cpmai
 The cpmai goal metric conflates **wall** (all-time certified) with **meta** (certified in the goal year):
-- `members.cpmai_certified` boolean all-time = **2** (Marcos 2026-03-04 + Pedro 2025-10-23).
-- Goal-year-2026 (`cpmai_certified_at` in 2026) = **1** (Marcos). **This is the meta** (PMI-GO board rule:
+- `members.cpmai_certified` boolean all-time = **2** (member A 2026-03-04 + member G 2025-10-23).
+- Goal-year-2026 (`cpmai_certified_at` in 2026) = **1** (member A). **This is the meta** (PMI-GO board rule:
   count only certifications earned during the goal year; pre-existing certs go on the wall, not the goal).
-- Pedro is `inactive` with a pre-2026 cert → correctly on the wall, out of the meta.
+- member G is `inactive` with a pre-2026 cert → correctly on the wall, out of the meta.
 
 ### M6.3 Antes (VERIFIED live)
 
@@ -285,12 +285,12 @@ The cpmai goal metric conflates **wall** (all-time certified) with **meta** (cer
   goal metric.
 
 > **Flag for PR time:** the goal "year" boundary — confirm whether the goal window is calendar-2026 or the cycle
-> window; both yield meta=1 today (Marcos 2026-03-04 is inside cycle_3 too). Resolve from `cycles`, not a literal.
+> window; both yield meta=1 today (member A 2026-03-04 is inside cycle_3 too). Resolve from `cycles`, not a literal.
 
 ### M6.5 PRs
 - **PR6-A** (M): `calc_trail_completion_pct` dynamic total + shared cohort + partial-credit; align native → N/A. Home **44 → ~the partial-avg over the shared cohort** (measure at PR time; home and ranking converge). Contract test: dynamic is_trail count read; cohort == ranking cohort; native N/A.
 - **PR6-B** (S, dep A): wire `trail_completion` in `get_tribe_gamification` / `get_initiative_gamification` (retire the hardcoded `0`).
-- **PR6-C** (M): cpmai goal metric = dated boolean within the goal window across the admin/portfolio/chapter surfaces; wall stays all-time; document the rule in ADR-0100. Contract test asserts meta excludes a pre-goal-year cert (Pedro fixture) and the wall includes it.
+- **PR6-C** (M): cpmai goal metric = dated boolean within the goal window across the admin/portfolio/chapter surfaces; wall stays all-time; document the rule in ADR-0100. Contract test asserts meta excludes a pre-goal-year cert (member G fixture) and the wall includes it.
 
 ### M6.6 Risks
 Home trail % visibly changes (binary 44 → partial-avg) — intended, ship with changelog; communicate "home now
@@ -325,7 +325,7 @@ the parity invariant is pure forward-defense (the dual-write has never executed 
   **`volunteer/leader@initiative`**.
 - The `award_champion` RPC's **tribe** surface gates on `can_by_member(caller, 'award_champion', 'initiative',
   v_target_init_id)`.
-- A real tribe-8 leader (Ana Carla, `volunteer/leader`) → `can_by_member('award_champion','initiative',her_tribe)`
+- A real tribe-8 leader (member C, `volunteer/leader`) → `can_by_member('award_champion','initiative',her_tribe)`
   = **TRUE**.
 
 The **only** blocker is the frontend: `src/pages/admin/gamification.astro:631-632`
@@ -336,7 +336,7 @@ also avoids the `database.md` "seed expansion as shortcut → privilege escalati
 
 ### M7.5 PRs
 - **PR7-A** (S): repoint the leaderboard 🏆 chip + tribe-tab `champions_points` onto the ledger (or a ledger-backed view); 0 visible change today. Contract test = the parity invariant (active ⇒ exactly one projection row; revoked ⇒ zero). Optionally add to `check_schema_invariants`.
-- **PR7-B** (M): tribe-leader award UI on the tribe page / tribe gamification tab (calls the existing `award_champion` tribe surface; backend unchanged). 3-dict i18n + `/en/` `/es/`. Smoke: Ana Carla can award within tribe 8; cannot award cross-tribe.
+- **PR7-B** (M): tribe-leader award UI on the tribe page / tribe gamification tab (calls the existing `award_champion` tribe surface; backend unchanged). 3-dict i18n + `/en/` `/es/`. Smoke: member C can award within tribe 8; cannot award cross-tribe.
 
 ### M7.6 Risks
 PR-A is zero-risk today (empty sources). PR-B is a permission-surface *exposure*, not a grant change — confirm the

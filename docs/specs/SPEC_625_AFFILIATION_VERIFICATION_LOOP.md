@@ -12,7 +12,7 @@ implementados; council-reviewed (3× GO_W_FIXES + verbatim-diff GO, todos os fol
 (b) anonimização (§4.1) é **FK-safe**: `member_id` mantido (linha de members anonimizada in-place),
 `verified_by_member_id`→NULL, `verification_obs`→NULL, `source_ref`→hash (NÃO "UUID neutro" — violaria
 FK RESTRICT); (c) periodicidade (§9.4) = **AMBAS** (radar contínuo D-30/D-7 + sinal de verificação obsoleta
->11 meses no mesmo cron); (d) **Welma provisionada** (designation + audit). **Pré-req institucional
+>11 meses no mesmo cron); (d) **member B provisionada** (designation + audit). **Pré-req institucional
 remanescente antes do go-live operacional:** LIA Art. 7º IX documentada no RoPA + Confidentiality & Records
 Compliance Agreement (por força do cargo PMI). **F2/F2.1 NÃO implementados** (gated).
 **Origem:** Auditoria da jornada de pré-onboarding ciclo 4 (2026-06-10) + decisões PM 2026-06-10/11.
@@ -34,7 +34,7 @@ ADR-0042 (chapter dashboards), ADR-0076 (PMI data/LIA/opt-out), GC-162 (RLS/LGPD
 ## 2. Decisões ratificadas (PM 2026-06-10/11 + council folds)
 
 1. **Verificação operacionalizada via Capítulo SEDE (PMI-GO)** — Diretoria de Filiação
-   (Welma Alves). A sede verifica TODOS os membros do Núcleo, de qualquer capítulo.
+   (member B). A sede verifica TODOS os membros do Núcleo, de qualquer capítulo.
 2. **Capítulos parceiros = visibilidade, não operação** — e no **v1 SÓ AGREGADOS**
    (counts por status). Lista nominal = F2.1, gated em pré-requisitos jurídicos (§6.3).
 3. **Radar de renovação da filiação é obrigatório** (F3).
@@ -43,7 +43,7 @@ ADR-0042 (chapter dashboards), ADR-0076 (PMI data/LIA/opt-out), GC-162 (RLS/LGPD
    identificação via `{chapterName}` + nome/e-mail + evidência hash/IP/UA). Atenção ao regime
    EEE/UK (cláusulas 13/14 → #573) se algum assinante residir fora do Brasil.
 6. **Versionamento**: documentos aprovados entram como **v0 real** (numeração de draft não migra).
-7. **Autoridade (decidido AGORA, não na implementação)**: Welma = engagement
+7. **Autoridade (decidido AGORA, não na implementação)**: member B = engagement
    `chapter_board/liaison` no PMI-GO (kind sem termo de voluntário; ADR-0042 já dá
    `view_chapter_dashboards`) **+ designation `diretoria_filiacao`**. O RPC de verificação
    gateia na **designation** (Path 2 do `V4_AUTHORITY_MODEL.md`) com escopo inline (Path 3)
@@ -67,9 +67,9 @@ ADR-0042 (chapter dashboards), ADR-0076 (PMI data/LIA/opt-out), GC-162 (RLS/LGPD
 
 | Papel no loop | Diretoria / contato |
 |---|---|
-| **Verificador operacional** (escreve na plataforma) | Diretoria de Filiação — `redacted-029@example.com` · Welma Alves `redacted-089@example.com` |
+| **Verificador operacional** (escreve na plataforma) | Diretoria de Filiação — `redacted-029@example.com` · member B `redacted-089@example.com` |
 | Consumidor primário do status | Diretoria de Voluntariado — `redacted-020@example.com` |
-| Patrocínio/escalação | Presidência (Ivan Lourenço `redacted-038@example.com`) · `redacted-083@example.com` |
+| Patrocínio/escalação | Presidência (member A `redacted-038@example.com`) · `redacted-083@example.com` |
 | Interlocução com capítulos parceiros | Relações Institucionais — `redacted-070@example.com` |
 | Demais (informativo) | Certificação `redacted-012@example.com` · Desenv. Profissional `redacted-017@example.com` · Eventos `redacted-018@example.com` · Adm/Finanças `redacted-019@example.com` |
 | **Capítulos parceiros** (visibilidade agregada v1) | Diretorias de filiação + voluntariado de cada capítulo conveniado (Acordos de Cooperação vigentes) |
@@ -106,7 +106,7 @@ created_at timestamptz DEFAULT now()
 ### 4.2 Autoridade — DECIDIDA (ver §2.7)
 
 Designation `diretoria_filiacao` + escopo inline no RPC. Sem seed novo em
-`engagement_kind_permissions`. Provisionamento da Welma = critério de aceitação F1 (§8).
+`engagement_kind_permissions`. Provisionamento da member B = critério de aceitação F1 (§8).
 
 ## 5. Superfícies (fases)
 
@@ -163,7 +163,7 @@ Designation `diretoria_filiacao` + escopo inline no RPC. Sem seed novo em
 
 ### 6.2 Cadeia de agentes de tratamento (REFRAME PM 2026-06-11 — supersede o council legal HIGH do v2)
 
-> **Correção registrada**: o texto v2 desta seção enquadrava a Welma como "operadora em nome
+> **Correção registrada**: o texto v2 desta seção enquadrava a member B como "operadora em nome
 > do Núcleo" citando o RF-E como autoridade — o RF-E diz o OPOSTO: "DPA formal entre PMI-GO e
 > plataforma nucleoia.vitormr.dev... contrato escrito **controlador↔operador**" (parecer
 > 2026-04-19). PMI-GO = controladora; plataforma = operadora. A Diretora de Filiação ver se o
@@ -175,7 +175,7 @@ Designation `diretoria_filiacao` + escopo inline no RPC. Sem seed novo em
 | Camada | Papel | Fontes |
 |---|---|---|
 | PMI Global | Sistema de registro da filiação (ThoughtSpot); dado de membro é **propriedade do PMI** cedida ao capítulo para o negócio do capítulo | Policy Manual ed. julho/2025: "Ownership of information" (§6.11), "Chapter use of PMI membership information and data" (§6.2) |
-| **PMI-GO (sede)** | **CONTROLADORA** — filiação é domínio institucional do capítulo; entidade juridicamente responsável pelo Programa | Política de PI v2.2 §1.1/§2.1 ("capítulo sede e controlador dos dados tratados no âmbito do Programa"); Termo v2.2 Cl. 9 §2 ("PMI-GO, na condição de controlador"); `/privacy` S1 (CNPJ 06.065.645/0001-99 · DPO Ivan Lourenço Costa / Angeline Prado substituta, dpo@pmigo.org.br) |
+| **PMI-GO (sede)** | **CONTROLADORA** — filiação é domínio institucional do capítulo; entidade juridicamente responsável pelo Programa | Política de PI v2.2 §1.1/§2.1 ("capítulo sede e controlador dos dados tratados no âmbito do Programa"); Termo v2.2 Cl. 9 §2 ("PMI-GO, na condição de controlador"); `/privacy` S1 (CNPJ 06.065.645/0001-99 · DPO member A / member C substituta, dpo@pmigo.org.br) |
 | **Plataforma** (nucleoia.vitormr.dev) | **OPERADORA** — trata por conta da controladora (direção do RF-E); operadores de infraestrutura = Supabase/Cloudflare/etc. (`/privacy` S4) | RF-E (parecer 2026-04-19); `/privacy` S4 |
 
 - O **Núcleo não tem personalidade jurídica** (Política de PI v2.2 §1.1; os 4 acordos o definem
@@ -190,10 +190,10 @@ Designation `diretoria_filiacao` + escopo inline no RPC. Sem seed novo em
 
 | Fatia | Regime de deveres |
 |---|---|
-| **Dados de filiação PMI** (status, capítulo, expiração — trilho ThoughtSpot/VEP) | Deveres do sistema PMI: uso restrito ao negócio do capítulo, sem compartilhamento fora de PMI/capítulo sem permissão escrita do President & CEO (§6.2); opt-out honrado com record-keeping (§6.4/§6.6); venda proibida (§6.10); confidencialidade + devolução no término (§6.11-6.13). **Gate**: Attachments D-G do Charter Agreement (DPA/Model Clauses incorporados por referência, §6.2 ¶2) verificados sob LGPD ANTES de dado linha-a-linha do trilho do capítulo entrar na plataforma — o v1 deste spec NÃO sincroniza ThoughtSpot (usa VEP + verificação manual); o gate D-G pertence ao trilho pmigo/Onda 2 (cf. #617). Nota: o registro `member_affiliation_verifications` inserido pela Welma é dado GERADO PELO NÚCLEO (linha de baixo) — não uma linha do ThoughtSpot |
+| **Dados de filiação PMI** (status, capítulo, expiração — trilho ThoughtSpot/VEP) | Deveres do sistema PMI: uso restrito ao negócio do capítulo, sem compartilhamento fora de PMI/capítulo sem permissão escrita do President & CEO (§6.2); opt-out honrado com record-keeping (§6.4/§6.6); venda proibida (§6.10); confidencialidade + devolução no término (§6.11-6.13). **Gate**: Attachments D-G do Charter Agreement (DPA/Model Clauses incorporados por referência, §6.2 ¶2) verificados sob LGPD ANTES de dado linha-a-linha do trilho do capítulo entrar na plataforma — o v1 deste spec NÃO sincroniza ThoughtSpot (usa VEP + verificação manual); o gate D-G pertence ao trilho pmigo/Onda 2 (cf. #617). Nota: o registro `member_affiliation_verifications` inserido pela member B é dado GERADO PELO NÚCLEO (linha de baixo) — não uma linha do ThoughtSpot |
 | **Dados gerados pelo Núcleo** (participação, XP, `verification_obs`, trilha de auditoria) | Deveres LGPD puros sob a política de privacidade do PMI-GO: bases duais (§6.1), RoPA, direitos Art. 18, retenção/anonimização (§4.1) |
 
-#### 6.2.3 Welma = agente autorizada nominal da controladora (NÃO operadora) — PRÉ-REQUISITO de F1
+#### 6.2.3 member B = agente autorizada nominal da controladora (NÃO operadora) — PRÉ-REQUISITO de F1
 
 Pessoa natural agindo sob autoridade direta do controlador (diretora do capítulo) É o
 controlador agindo — não agente de tratamento separado. **Âncora LGPD**: o Art. 5º, VII define
@@ -314,7 +314,7 @@ finalidade declarada; armazenar em `phone_encrypted`.
 ## 8. Critérios de aceitação
 
 - **F1**:
-  - [ ] Welma provisionada (`chapter_board/liaison` PMI-GO + designation `diretoria_filiacao`)
+  - [ ] member B provisionada (`chapter_board/liaison` PMI-GO + designation `diretoria_filiacao`)
         e smoke: auth dela chama `verify_member_affiliation` com sucesso (council LOW — sem
         isso F1 passa no teste e nasce morto em produção)
   - [ ] **Confidentiality & Records Compliance Agreement assinado + registro nominal da
@@ -336,7 +336,7 @@ finalidade declarada; armazenar em `phone_encrypted`.
 ## 9. Perguntas abertas (PM) — reduzidas pós-council
 
 1. ~~Farol ou bloqueio~~ → **FAROL no v1** (decidido, §2.8).
-2. ~~Kind da Welma~~ → **`chapter_board/liaison` + designation** (decidido, §2.7) — resta o
+2. ~~Kind da member B~~ → **`chapter_board/liaison` + designation** (decidido, §2.7) — resta o
    Confidentiality & Records Compliance Agreement customizado (§6.2.3) + verificação das
    partes do Instrumento nº 9 (§6.2.4) com o jurídico.
 3. ~~Nominal ou agregados no F2~~ → **agregados no v1** (decidido; nominal = F2.1 gated).

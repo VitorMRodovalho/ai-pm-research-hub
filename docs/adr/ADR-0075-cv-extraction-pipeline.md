@@ -57,7 +57,7 @@ WHERE created_at > now() - interval '90 days'
 
 ### Drift bilateral revelado em p116
 
-A/B re-triage pós-backfill mostrou que CVs ricos podem mover scores significativamente (João Coelho 4→7, Thayanne 1→3). Sem CV, AI triage opera com input incompleto e gera scores enviesados (tendência a subestimar). Pipeline é load-bearing para calibração futura.
+A/B re-triage pós-backfill mostrou que CVs ricos podem mover scores significativamente (member B 4→7, member D 1→3). Sem CV, AI triage opera com input incompleto e gera scores enviesados (tendência a subestimar). Pipeline é load-bearing para calibração futura.
 
 ### Restrições upstream (worker pmi-vep-sync)
 
@@ -91,7 +91,7 @@ Implementar **`extract-cv-text` Edge Function (Deno + unpdf)** acionada por **cr
 2. Mesma família de PDF.js usada por pdfjs-dist (Mozilla, validado)
 3. Compute zero — roda dentro do EF Supabase grátis até quota
 4. Mantém `cv_extracted_text` self-hosted em DB (compatível com purge trigger LGPD existente)
-5. Compatível com PDFs e .txt (este último como passthrough — ver p116, Marcio = .txt link LinkedIn)
+5. Compatível com PDFs e .txt (este último como passthrough — ver p116, member E = .txt link LinkedIn)
 
 ### Trigger choice: cron 15min + lazy fallback inline
 
@@ -326,9 +326,9 @@ Implementação completa em mesma sessão p117 (commit `5507352`):
 
 | Path | App | Pre chars | Post chars | Status | Duration | Log row |
 |------|-----|-----------|------------|--------|----------|---------|
-| Direct EF invoke | Alexandre Fortes | 2153 → null | 2104 | 200 | 1351ms | status=completed, both hashes set |
-| Idempotency re-run | Alexandre (already populated) | 2104 | 2104 | 200 noop_reason=already_extracted | early return | 0 new logs (correct) |
-| Batch RPC (cron simulation, `SET LOCAL role TO service_role`) | João Uzejka | 6548 → null | 6393 | 200 triggered_by=cron | 1585ms | status=completed |
+| Direct EF invoke | member A | 2153 → null | 2104 | 200 | 1351ms | status=completed, both hashes set |
+| Idempotency re-run | member A (already populated) | 2104 | 2104 | 200 noop_reason=already_extracted | early return | 0 new logs (correct) |
+| Batch RPC (cron simulation, `SET LOCAL role TO service_role`) | member C | 6548 → null | 6393 | 200 triggered_by=cron | 1585ms | status=completed |
 
 Pre vs post char count diff (2153→2104, 6548→6393) é ~2-2.4% — diferença normal entre pypdf (p116 backfill) e unpdf (atual). Mesma posição estrutural; diferença é só whitespace handling.
 

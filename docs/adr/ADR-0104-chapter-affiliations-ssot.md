@@ -13,7 +13,7 @@
 
 A member's PMI chapter is represented in **four inconsistent ways** today, none of
 which is canonical, and they contradict each other. For the same applicant (the
-Henrique Diniz case raised by the PM — a Pernambuco member):
+member B case raised by the PM — a Pernambuco member):
 
 1. **`selection_applications.pmi_memberships`** (jsonb) — the COMPLETE, reliable
    multi-chapter snapshot taken by the `pmi-vep-sync` worker (e.g. `["PMI Global",
@@ -86,7 +86,7 @@ To stop the wrong display **now**, without waiting for the durable model:
 
 ## Consequences
 
-- The Henrique case now displays his real BR affiliations (DF · PE · BA · RJ · SP ·
+- The member B case now displays his real BR affiliations (DF · PE · BA · RJ · SP ·
   Sergipe) with the form value marked, instead of an arbitrary "PMI-GO".
 - The chapter→code map gains the missing `Sergipe, Brazil Chapter → PMI-SE` entry
   (grounded against the live distinct set of `pmi_memberships` tokens).
@@ -415,7 +415,7 @@ Surfaces the 3c-i lifecycle to the frontends; pure read-surface + copy changes (
 
 ## Amendment: #1175 Waves 2-4 (registry-driven resolver, 15-partner status, service-history contract) (2026-07-08)
 
-Issue #1175 (Joao Leite index case) extended this ADR's SSOT in three directions. All
+Issue #1175 (member C index case) extended this ADR's SSOT in three directions. All
 counts below were re-grounded live on 2026-07-08.
 
 ### F2: name resolution becomes registry-driven (mig `20260805000364`)
@@ -518,7 +518,7 @@ chapter". Blast sent 6/6 for C4 (4 not_affiliated + 2 profile_private).
 
 **`members.chapter='Outro'` is an honest fallback, audited, not a bug.** All 9 live members with
 `chapter='Outro'` have ZERO resolvable SSOT (no `member_chapter_affiliations` row): 3 are genuine
-C4 cases already nudged in PR2 (Hector, Thiago, plus Aaron/Angeline with no affiliation) and 6 are
+C4 cases already nudged in PR2 (member D, member E, plus member F/member J with no affiliation) and 6 are
 synthetic `__205_synthetic__` test members. There is no `'Outro'` to rewrite to a real chapter.
 This confirms and extends the invariant-U carve-out already documented in the Wave 3b-ii amendment
 (non-registry chapters fall through to legacy).
@@ -535,7 +535,7 @@ chapter is a choice, needs the tiebreak); members with zero affiliation stay NUL
   `chapter = 'PMI-' || code`; trigger T1 recompute is a no-op). `check_schema_invariants()` = 0
   violations before and after. The backfill is idempotent (`WHERE entry_chapter_code IS NULL`;
   re-running touches 0 rows).
-- Out of scope: Paulo Alves de Oliveira Junior (C4 resolved, GO) has no `member_id` (application
+- Out of scope: member A (C4 resolved, GO) has no `member_id` (application
   email does not match a member row) and cannot be backfilled until that link is resolved; tracked
   separately from #1224.
 
@@ -590,8 +590,8 @@ A DATA-ONLY, additive, idempotent migration stamps `engagements.metadata.legacy_
 (`{cycle, vep_opportunity_id, source, sede:'PMI-GO', backfilled_by:'#1316_partD'}`) onto the
 engagements of legacy Cycle 1/2 members (from the `volunteer_applications` mirror) that never
 got a modern `selection_applications` row (`selection_application_id IS NULL`), so the entry
-cohort is readable without re-joining the mirror. Live scope: **4 engagements** (Luciana +
-Lorena + Cíntia = Cycle 1/62106; Marcos = Cycle 2/64967). The two column-scoped dual-write
+cohort is readable without re-joining the mirror. Live scope: **4 engagements** (member G +
+member H + member K = Cycle 1/62106; member I = Cycle 2/64967). The two column-scoped dual-write
 bridges (`trg_sync_tribe_id_from_engagement OF status,kind`;
 `trg_sync_member_initiative_from_engagement OF status,initiative_id`) do **not** fire on a
 metadata-only UPDATE (verified); `trg_sync_role_cache` recomputes idempotently (QA rolled-back:

@@ -28,9 +28,9 @@ candidatos BR muitas vezes não percebem que há uma ação pendente.
 
 | Candidato | app VEP | criada | `vep_last_seen_at` | `vep_reconciled_at` | `cutoff_email_sent_at` | tem email |
 |---|---|---|---|---|---|---|
-| Maria Araújo | 291346 | 2026-04-30 (~49d) | 2026-06-18 (hoje) | null | null | sim |
-| Bruna Soares | 288697 | 2026-04-15 (~64d) | 2026-06-18 (hoje) | null | null | sim |
-| Rafael Bellotti | 289167 | 2026-04-15 (~64d) | 2026-06-18 (hoje) | null | 2026-05-27 | sim |
+| member B | 291346 | 2026-04-30 (~49d) | 2026-06-18 (hoje) | null | null | sim |
+| member A | 288697 | 2026-04-15 (~64d) | 2026-06-18 (hoje) | null | null | sim |
+| member C | 289167 | 2026-04-15 (~64d) | 2026-06-18 (hoje) | null | 2026-05-27 | sim |
 
 Histórico: **1** candidatura `OfferExpired` (já virou `rejected`) — exatamente o desfecho que o D7 previne.
 

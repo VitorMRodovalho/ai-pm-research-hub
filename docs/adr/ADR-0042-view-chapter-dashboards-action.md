@@ -43,7 +43,7 @@ PM ratified **Opção C** — a new V4 action `view_chapter_dashboards` (read-
 only) granted to:
 - `chapter_board × board_member` (sponsors registered as chapter board)
 - `chapter_board × liaison` (chapter_liaisons)
-- `sponsor × sponsor` (Ivan-class direct sponsor engagement)
+- `sponsor × sponsor` (member J-class direct sponsor engagement)
 
 `manage_platform` remains the sole gate for write actions; this ADR only
 adds read-side gates (`OR can_by_member(...)`).
@@ -140,7 +140,7 @@ $function$;
 Privilege expansion: zero net change. V4 `manage_event` audience
 (volunteer × {manager, deputy_manager, co_gp}) covers all V3 cases
 (`is_superadmin` + `operational_role IN ('manager','deputy_manager')`)
-because the 2 superadmins (Vitor, Fabricio) both have authoritative
+because the 2 superadmins (Vitor, member K) both have authoritative
 `volunteer × {manager, co_gp}` engagements. Path Y preserves
 tribe-scoped and creator-scoped flows unchanged.
 
@@ -152,36 +152,36 @@ tribe-scoped and creator-scoped flows unchanged.
 
 ```
 V4 set (10 members):
-  Ana Cristina Fernandes Lima   (chapter_board/liaison)
-  Emanoela Kerkhoff             (chapter_board/board_member)
-  Felipe Moraes Borges          (chapter_board/board_member, sponsor)
-  Francisca Jessica de Sousa    (chapter_board/board_member, sponsor)
-  Ivan Lourenço                 (sponsor/sponsor + chapter_board/board_member)
-  Lorena Souza                  (chapter_board/board_member)
-  Márcio Silva dos Santos       (chapter_board/board_member, sponsor)
-  Matheus Frederico Rosa Rocha  (chapter_board/board_member, sponsor)
-  Roberto Macêdo                (chapter_board/liaison)
-  Rogério Peixoto               (chapter_board/liaison)
+  member B   (chapter_board/liaison)
+  member F             (chapter_board/board_member)
+  member E          (chapter_board/board_member, sponsor)
+  member C    (chapter_board/board_member, sponsor)
+  member J                 (sponsor/sponsor + chapter_board/board_member)
+  member H                  (chapter_board/board_member)
+  member D       (chapter_board/board_member, sponsor)
+  member A  (chapter_board/board_member, sponsor)
+  member G                (chapter_board/liaison)
+  member I               (chapter_board/liaison)
 ```
 
 ### Reader RPCs effective audience after Section B
 
 ```
-Pre-ADR-0042   = manage_platform set = {Vitor, Fabricio}
+Pre-ADR-0042   = manage_platform set = {Vitor, member K}
 Post-ADR-0042  = manage_platform ∪ view_chapter_dashboards = 12 members
                  (2 manage_platform + 10 view_chapter_dashboards; no overlap
-                  except Vitor/Fabricio who are unique to manage_platform)
+                  except Vitor/member L who are unique to manage_platform)
 ```
 
 **Restored** (5 sponsors + 2 chapter_liaisons, per Amendment B doc):
-- Felipe Moraes Borges, Francisca Jessica, Márcio, Matheus (4 sponsor users)
-- Ivan Lourenço (5th sponsor; via sponsor.sponsor or chapter_board.board_member)
-- Ana Cristina Fernandes Lima, Rogério Peixoto (2 chapter_liaisons)
+- member E, member C, member D, member A (4 sponsor users)
+- member J (5th sponsor; via sponsor.sponsor or chapter_board.board_member)
+- member B, member I (2 chapter_liaisons)
 
 **New gains** (not in pre-Amendment-B V3 set, but legitimate per V4 engagement):
-- Emanoela Kerkhoff, Lorena Souza (chapter_board/board_member observer-status
+- member F, member H (chapter_board/board_member observer-status
   members; engagement IS source of truth per V4 model)
-- Roberto Macêdo (chapter_board/liaison; gains read alongside ADR-0041
+- member G (chapter_board/liaison; gains read alongside ADR-0041
   participate_in_governance_review write access)
 
 ### `_can_manage_event` privilege expansion
@@ -189,10 +189,10 @@ Post-ADR-0042  = manage_platform ∪ view_chapter_dashboards = 12 members
 ```
 V3 set (is_superadmin OR manager/deputy + Path Y) = N members
 V4 set (manage_event + same Path Y)               = N members
-delta = 0 (Vitor + Fabricio both have V4 engagements)
+delta = 0 (Vitor + member K both have V4 engagements)
 ```
 
-Note: 1 active manager (Vitor) + 0 deputies + 1 active co_gp (Fabricio) all
+Note: 1 active manager (Vitor) + 0 deputies + 1 active co_gp (member K) all
 have V4 engagements that grant `manage_event`. No member loses this helper's
 return value.
 
@@ -249,8 +249,7 @@ already V4. Section B is a *gate addition*, not a V3→V4 conversion.)
 
 ## Trade-offs aceitos
 
-1. **Observer-status chapter_board members gain read access**: Emanoela
-   Kerkhoff and Lorena Souza are observer-status (not actively volunteering)
+1. **Observer-status chapter_board members gain read access**: member F and member H are observer-status (not actively volunteering)
    but have chapter_board × board_member engagements. V4 model treats
    engagement as source of truth, so they gain access. PM ratify §B.3
    accepted this as legitimate (board membership IS active even if member

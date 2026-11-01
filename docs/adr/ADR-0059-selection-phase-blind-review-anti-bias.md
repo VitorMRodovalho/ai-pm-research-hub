@@ -122,8 +122,7 @@ equivalente).
 
 Email curto aos 4 avaliadores ativos confirmados via `selection_committee`
 (query 2026-04-28): **Vitor Maia Rodovalho** (PM, 226 evaluations submitted),
-**Fabricio Costa** (deputy_manager, 142), **Sarah Faria Alcantara Macedo
-Rodovalho** (curator, 2), **Roberto Macêdo** (curator/chapter_liaison,
+**member B** (deputy_manager, 142), **member A** (curator, 2), **member C** (curator/chapter_liaison,
 0 — committee member sem submitted ainda):
 
 > Implementamos blind review enforcement em fase de avaliação ativa.
@@ -134,7 +133,7 @@ Rodovalho** (curator, 2), **Roberto Macêdo** (curator/chapter_liaison,
 > PMI Code of Ethics. Nenhuma avaliação já submetida foi invalidada.
 
 (Owner: PM enviar via canal preferido — email ou WhatsApp Núcleo IA Hub.
-Como PM é também avaliador, comunicar aos outros 3: Fabricio, Sarah, Roberto.)
+Como PM é também avaliador, comunicar aos outros 3: member B, member A, member C.)
 
 ## Verification
 

@@ -103,7 +103,7 @@ type-set — e.g. ~10 events carry the `general_meeting` tag vs 14 of type `gera
 eligibility differently (audience-rules + curator exclusion vs per-member type eligibility). **Decision (Option B):**
 type-based wins — simplest, least maintenance, self-consistent, already shipped on 5 surfaces. PR7 converged the
 last hold-out (`get_attendance_panel`, the 3 consumers home-widget/workspace/ranking) onto it (measured **70.5 →
-76.2**, now == home `calc_attendance_pct` 76.2 == `engagement_global` 76.19; Roberto Macêdo, a curator the old panel
+76.2**, now == home `calc_attendance_pct` 76.2 == `engagement_global` 76.19; member A, a curator the old panel
 excluded, **0 → 22.2** consistent with his home/member-detail) and dropped the orphan `get_attendance_summary`. The
 **PR10 p175 gate** forward-defends this principle (no new tag/audience-rule attendance eligibility in any RPC). The
 richer `event_audience_rules` precision is parked as a possible *future* enhancement only after a data-quality audit
@@ -162,7 +162,7 @@ by nature (relabel); `get_public_impact_data` (LGPD-public, hardcoded `'2026-03-
 | **D1** 🚦 | Excused in engagement denominator | **A — removed (neutral)** → 76.2% (vs B counts → 70.9%) | both metrics treat excused identically; org-sanctioned absence shouldn't penalize a recognition KPI |
 | **D2** | Cohort + averaging | **37 operational union (curator kept) + AVG-of-rates** | 39=incl. guests; 34=wrongly drops a manager who is also curator; AVG-of-rates is the §7 rule |
 | **D3** | `lideranca` eligibility | **`can_by_member('manage_event')`** + drop phantom `deputy_manager` | single V4 authority basis; 8≡8 capability/role today (0 change) |
-| **D4** 🚦 | `tribo` eligibility + NULL-tribe | **own-tribe only; org-manager excluded from tribo dim; fix the bridge bug** | blast radius = **8** holders not 2; Roberto Macedo is a live bridge bug to fix before convergence |
+| **D4** 🚦 | `tribo` eligibility + NULL-tribe | **own-tribe only; org-manager excluded from tribo dim; fix the bridge bug** | blast radius = **8** holders not 2; member A is a live bridge bug to fix before convergence |
 | **D5** | 1on1 events | **Exclude** | coaching artifact, no roster; only `calc_pct` counts it |
 | **D6** | evento_externo / comms | **C — exclude; keep comms branch dormant** | neither type exists live |
 | **D7** | Eligibility source | **C — hybrid: delegate to `is_event_mandatory_for_member` where rules exist** | preserves panel's 284-event richness; avoids downgrade |
@@ -191,7 +191,7 @@ by nature (relabel); `get_public_impact_data` (LGPD-public, hardcoded `'2026-03-
 ## 8. Key risks / findings (review-caught)
 
 - **Number moves on convergence** (home 64.4→76.2): ship PR2 with a changelog ("64.4 was a buggy hybrid").
-- **NULL-tribe correctness hole** (biggest): Roberto Macedo has `tribe_id=8` but `get_member_tribe=NULL` (no active engagement on the tribe-8 initiative) → **bridge bug, fix before convergence** or his tribo rate is wrong.
+- **NULL-tribe correctness hole** (biggest): member A has `tribe_id=8` but `get_member_tribe=NULL` (no active engagement on the tribe-8 initiative) → **bridge bug, fix before convergence** or his tribo rate is wrong.
 - **Blast radius = 8 not 2** (D3+D4 affect all `manage_event` holders).
 - **Dead dropout banner:** `get_dropout_risk_members` is live-broken today.
 - **`get_member_detail` has 3 bugs** (count-any-row as attended; silent third denominator; `att.id IS NOT NULL` as present).

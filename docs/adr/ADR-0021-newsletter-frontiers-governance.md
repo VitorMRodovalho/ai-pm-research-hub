@@ -4,13 +4,13 @@
 - Data: 2026-04-21 (revisões: 2026-04-21 24h, 2026-05-25 p267)
 - Revisão: 2026-04-21 24h — GP decidiu F1, F2 (trilíngue upgrade), F7 (busca formal desescalada), cadência biweekly. Pendente D3 (licensing comparativo apresentado), D4 (termo — quinta). **2026-05-25 (p267) — D3 ratificado: `CC BY-SA 4.0` como licença default do Guia Editorial Frontiers e dos produtos editoriais derivados, salvo exceção formal aprovada.**
 - Autor: Claude (debug session 9908f3, 2026-04-21) — revisão e ratificação D3 em sessão p267 (2026-05-25)
-- Escopo: Formaliza decisões editoriais e operacionais específicas da Newsletter "Frontiers in AI & Project Mgmt" (proposta por Fabrício em docx 2026-04-21) dentro do framework do Publication Pipeline (ADR-0020). Resolve 4 conflitos identificados em análise dual (Claude A jurídico/PI + Claude B operacional/editorial), consolidados em [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96).
+- Escopo: Formaliza decisões editoriais e operacionais específicas da Newsletter "Frontiers in AI & Project Mgmt" (proposta por member A em docx 2026-04-21) dentro do framework do Publication Pipeline (ADR-0020). Resolve 4 conflitos identificados em análise dual (Claude A jurídico/PI + Claude B operacional/editorial), consolidados em [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96).
 
 ## Contexto
 
 ### Estado em 2026-04-21
-- Guia Editorial "Frontiers in AI & Project Mgmt" criado pelo Fabrício, em revisão (Google Doc com permissão comment-only do GP)
-- Apenas 2 comentários no doc (Marcos + Jefferson aprovando título)
+- Guia Editorial "Frontiers in AI & Project Mgmt" criado pelo member A, em revisão (Google Doc com permissão comment-only do GP)
+- Apenas 2 comentários no doc (member B + member C aprovando título)
 - ADR-0020 aprovou primitivo `publication_series` (5 seeds aplicados via commit `57a1ce9`)
 - ADR-0020 D2 (`publication_ideas`) ainda **não aplicado** (W2 pendente)
 - Política de Propriedade Intelectual CR-050 v2.2 ainda **`under_review`** no portal de governance
@@ -28,7 +28,7 @@ ADR-0020 não trata licensing, AI disclosure, employer consent, declarações de
 
 ## Decisão
 
-> Todas as decisões deste ADR ficam em estado **Proposed** até as 6 perguntas pendentes da issue #96 serem respondidas pelo GP+Fabrício. Defaults sugeridos abaixo são recomendações do Claude B, não vinculantes.
+> Todas as decisões deste ADR ficam em estado **Proposed** até as 6 perguntas pendentes da issue #96 serem respondidas pelo GP+member A. Defaults sugeridos abaixo são recomendações do Claude B, não vinculantes.
 
 ### F1 — Frontiers como 6ª `publication_series` (confirmado GP 2026-04-21)
 
@@ -173,7 +173,7 @@ Quando qualquer gatilho disparar, revisitar F7 com busca formal + consulta jurí
 - **ADR-0020** — Publication Pipeline base. F1, F4, F5 dependem de `publication_ideas` aplicado.
 - **Issue #94 W2** — `publication_ideas` primitive. Este ADR enriquece o W2 com 3 stages adicionais e trigger de declarações.
 - **Issue #95 W1-W4** — `check_idea_originality` RPC. F6 depende.
-- **Issue #96 Gate 0** — todos os checks jurídicos + decisões 1-6 do GP+Fabrício.
+- **Issue #96 Gate 0** — todos os checks jurídicos + decisões 1-6 do GP+member A.
 
 ## Riscos
 
@@ -201,7 +201,7 @@ Se métricas falham:
 
 ## Referências
 
-- [Guia Editorial "Frontiers in AI & Project Mgmt"](docx do Fabrício, 2026-04-21) — fonte primária
+- [Guia Editorial "Frontiers in AI & Project Mgmt"](docx do member A, 2026-04-21) — fonte primária
 - ADR-0016 — IP Ratification Governance Model
 - ADR-0020 — Publication Pipeline (primitivo base)
 - Issue #94 — Pipeline (#94 Oportunidades #11-15 detalhadas em comment)
@@ -215,6 +215,6 @@ Se métricas falham:
 
 Aguarda:
 1. **GP Vitor** — aprovar F1, F2, F3, F5 (decisões 1, 2, 3, 6 da #96)
-2. **Fabrício** — co-autor do Guia, validar que F2/F3/F5 não desfiguram a proposta editorial original
-3. **Board PMI / Mario Trentim** — confirmar F7 (uso da palavra "Frontiers" + marcas PMI)
+2. **member A** — co-autor do Guia, validar que F2/F3/F5 não desfiguram a proposta editorial original
+3. **Board PMI /** — confirmar F7 (uso da palavra "Frontiers" + marcas PMI)
 4. **CR-050 v2.2 ratificação** — pré-requisito formal (ADR-0016 dependência)
