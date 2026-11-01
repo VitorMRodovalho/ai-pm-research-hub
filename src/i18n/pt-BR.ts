@@ -978,6 +978,10 @@ const ptBR: Record<string, string> = {
   'homeV2.hero.statHours': 'horas de impacto em {year}',
   'homeV2.hero.ctaResearch': 'Quero pesquisar com o Núcleo',
   'homeV2.hero.ctaInstitutions': 'Para capítulos e organizações',
+  'homeV2.hero.videoPlay': 'Assistir ao vídeo de apresentação do Núcleo',
+  'homeV2.hero.videoTitle': 'Vídeo: conheça o Núcleo IA & GP',
+  'homeV2.hero.videoMeta': 'Vídeo de 1 min · legendas em português, espanhol e inglês',
+  'homeV2.hero.videoOpenYoutube': 'Abrir no YouTube',
   'homeV2.outputs.label': 'Nossa produção',
   'homeV2.outputs.title': 'O que as linhas de pesquisa já entregaram',
   'homeV2.outputs.subtitle': 'O item mais recente de cada formato, com data.',
@@ -4301,6 +4305,7 @@ const ptBR: Record<string, string> = {
   'privacy.s10track.sentry': 'Sentry (monitoramento de erros): Captura erros de runtime para diagnóstico. PII é removido automaticamente antes do envio.',
   'privacy.s10track.activity': 'Rastreamento de atividade (identificado): A plataforma registra páginas visitadas, último acesso e sessões diárias vinculados ao membro autenticado. Esses dados são usados para o dashboard de adoção da plataforma e NÃO são compartilhados com terceiros.',
   'privacy.s10track.email': 'Rastreamento de email: Emails enviados pela plataforma podem conter pixels de rastreamento que registram se o email foi aberto e se links foram clicados. Esses dados são usados para medir a eficácia das comunicações.',
+  'privacy.s10track.youtube': 'Vídeo do YouTube na página inicial: o player só é carregado quando você clica para assistir, pelo domínio youtube-nocookie.com (modo de privacidade aprimorada do YouTube). Antes do clique, nada é carregado do YouTube. Depois do clique, a reprodução segue a política de privacidade do Google.',
   'privacy.s10track.noAds': 'Não utilizamos cookies de publicidade, remarketing ou rastreamento de terceiros para fins comerciais.',
 
   // S11 — Menores
