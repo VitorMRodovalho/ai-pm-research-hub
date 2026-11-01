@@ -19923,6 +19923,7 @@ export type Database = {
           fields_accessed: string[]
           id: string
           reason: string | null
+          target_application_id: string | null
           target_member_id: string | null
         }
         Insert: {
@@ -19934,6 +19935,7 @@ export type Database = {
           fields_accessed: string[]
           id?: string
           reason?: string | null
+          target_application_id?: string | null
           target_member_id?: string | null
         }
         Update: {
@@ -19945,6 +19947,7 @@ export type Database = {
           fields_accessed?: string[]
           id?: string
           reason?: string | null
+          target_application_id?: string | null
           target_member_id?: string | null
         }
         Relationships: [
@@ -20017,6 +20020,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_tribe_active_members"
             referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_application_id_fkey"
+            columns: ["target_application_id"]
+            isOneToOne: false
+            referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_application_id_fkey"
+            columns: ["target_application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "pii_access_log_target_application_id_fkey"
+            columns: ["target_application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "pii_access_log_target_member_id_fkey"
@@ -31452,6 +31476,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      _log_opening_application_access: {
+        Args: {
+          p_accessor_id: string
+          p_application_id: string
+          p_context: string
+          p_fields: string[]
+        }
+        Returns: undefined
+      }
       _manage_event_scope_ok: {
         Args: { p_caller_id: string; p_event_id: string }
         Returns: boolean
@@ -31512,6 +31545,10 @@ export type Database = {
         Returns: undefined
       }
       _ots_retention_pass: { Args: { p_retention?: string }; Returns: Json }
+      _passa_no_portao_do_video: {
+        Args: { p_application_id: string }
+        Returns: boolean
+      }
       _pmi_vep_sync_cycle_app_id_stats: {
         Args: never
         Returns: {
@@ -34241,6 +34278,10 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: Json
       }
+      get_opening_application: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       get_operational_arms: {
         Args: never
         Returns: {
@@ -35400,6 +35441,10 @@ export type Database = {
         }[]
       }
       list_open_initiatives: { Args: never; Returns: Json }
+      list_opening_applications: {
+        Args: { p_opportunity_id?: string }
+        Returns: Json
+      }
       list_orphan_card_assignments: {
         Args: { p_chapter?: string; p_limit?: number; p_tribe_id?: number }
         Returns: Json
