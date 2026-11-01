@@ -72,7 +72,7 @@ test('#704 algorithm: anchor case (Ana) is a strong cross-account match', () => 
 
 test('#704 algorithm: coincidental BR surnames are NOT strong matches (no false positives)', () => {
   // Same first token, different last token → not a duplicate identity.
-  assert.equal(isStrongPair('Marcio Pimenta', 'Marcio Vidal'), false, 'diff last token');
+  assert.equal(isStrongPair('Candidato Teste A', 'Candidato Teste B'), false, 'diff last token');
   assert.equal(isStrongPair('Erick Oliveira', 'Flavio Oliveira'), false, 'diff first token');
   // accent-insensitivity must not collapse distinct names
   assert.equal(isStrongPair('Bruna Soares', 'Edinan Soares'), false, 'diff first token (shared surname)');

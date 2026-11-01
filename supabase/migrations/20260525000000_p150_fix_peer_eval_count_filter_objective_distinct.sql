@@ -9,7 +9,7 @@
 --   * Detail panel filters evaluation_type='objective' → shows 1 row.
 --     The dashboard list and the detail panel disagreed.
 --   * Sample drift detected on 3 cycle-current applications:
---     Matheus Teixeira, Marcio Pimenta, Maria Araújo (types=[interview,objective],
+--     Matheus Teixeira, candidate A, Maria Araújo (types=[interview,objective],
 --     evaluator distinct count = 1).
 --
 -- Fix:
