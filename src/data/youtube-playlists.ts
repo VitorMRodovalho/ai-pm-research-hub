@@ -93,12 +93,30 @@ export function getPlaylistUrl(key: PlaylistKey): string {
 export const YOUTUBE_VIDEOS = {
   // "Boas-vindas com a NIA": como usar o wiki. Publicado em 29/09/2026, 1min25s, legendas pt, es e en.
   wikiWelcome: 'en9GGZqm3W8',
+  // #2553 PR 3: o vídeo do hero da home, "Conheça o Núcleo IA & GP". Público desde 31/10/2026, 1min04s,
+  // narração em português, legendas pt, es e en.
+  homeHero: 'OaIxsiY5tOA',
 } as const;
 
 export type VideoKey = keyof typeof YOUTUBE_VIDEOS;
 
 export function youtubeWatchUrl(key: VideoKey): string {
   return `https://www.youtube.com/watch?v=${YOUTUBE_VIDEOS[key]}`;
+}
+
+/**
+ * #2553 PR 3: o player embutido, só carregado depois do clique. O domínio é o do modo de privacidade aprimorada do
+ * YouTube, o único liberado no frame-src da CSP. Parâmetros conferidos na página oficial `player_parameters` em
+ * 31/10/2026: `hl` é a língua da interface e também orienta a faixa de legenda padrão; `cc_lang_pref` escolhe a
+ * legenda; `cc_load_policy=1` a liga mesmo para quem a desligou. A narração é em português, por isso a legenda só
+ * vem ligada nas páginas em inglês e espanhol (decisão do GP, 31/10). `rel=0` deixa os relacionados no próprio
+ * canal, porque desligá-los não existe mais.
+ */
+export function youtubeEmbedUrl(key: VideoKey, lang: 'pt-BR' | 'en-US' | 'es-LATAM'): string {
+  const legenda = lang === 'en-US' ? 'en' : lang === 'es-LATAM' ? 'es' : 'pt';
+  const params = new URLSearchParams({ autoplay: '1', playsinline: '1', rel: '0', hl: legenda, cc_lang_pref: legenda });
+  if (legenda !== 'pt') params.set('cc_load_policy', '1');
+  return `https://www.youtube-nocookie.com/embed/${YOUTUBE_VIDEOS[key]}?${params}`;
 }
 
 /** Miniatura servida por i.ytimg.com, já liberado no img-src da CSP. mqdefault é 16:9 (320x180). */

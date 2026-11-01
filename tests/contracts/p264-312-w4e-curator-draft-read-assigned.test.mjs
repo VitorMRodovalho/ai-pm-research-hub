@@ -28,9 +28,9 @@ import { createClient } from '@supabase/supabase-js';
 //     predicate REQUIRES open chain — capability alone is insufficient)
 //   - GRANT/REVOKE preserved + NOTIFY pgrst + COMMENT
 //   - SEDIMENT-235.A close-keyword discipline
-//   - DB-gated smoke: Roberto/Sarah curator-eligibility evidence; open chains
-//     exist on chained docs; W4e bypass invocation surfaces (service-role gate
-//     verification surrogate).
+//   - DB-gated smoke: the curator population W4e serves exists (derived from the
+//     live catalog); open chains exist on chained docs; W4e bypass invocation
+//     surfaces (service-role gate verification surrogate).
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000044_p264_312_w4e_curator_draft_read_assigned.sql';
 const MIGRATION_SQL  = readFileSync(MIGRATION_PATH, 'utf8');
@@ -46,11 +46,6 @@ const VISIBILITY_BLOCK_MATCH = MIGRATION_SQL.match(
 );
 const VISIBILITY_BLOCK = VISIBILITY_BLOCK_MATCH ? VISIBILITY_BLOCK_MATCH[1] : '';
 
-// Live fixtures — live state snapshot at p264 close (2026-05-26).
-// Member UUIDs (NOT auth UUIDs — auth_id is the application-internal session
-// reference; tests only need member.id which is the public domain anchor.)
-const ROBERTO_MEMBER_ID = '49836a70-a41e-4a0b-85b0-aa05b13d3f25';
-const SARAH_MEMBER_ID   = '19b7ff75-bcb1-4a15-a8e1-006fc6822069';
 const UNKNOWN_DOC_ID   = '00000000-0000-0000-0000-000000000000';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -374,36 +369,58 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
   });
 
   describe('DB-gated live smoke (skips without SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)', () => {
-    it('Roberto Macêdo exists with curate_content + NOT manage_member', { skip: !sb }, async () => {
-      const { data: m, error } = await sb
+    // Curator population DERIVED from the live catalog. These smokes used to pin two
+    // named members, and a curator engagement that ends by date takes curate_content
+    // away with no code change: measured 2026-11-01, one of the two lost it at midnight
+    // UTC and this went red on an unrelated PR. What W4e serves is a member who holds
+    // curate_content and NOT manage_member. Candidates come from the grants and the
+    // authoritative engagements, and can_by_member decides each one live. No grant at
+    // all fails (no one could ever be a curator); no member in the population between
+    // curator cycles is a business state, not a regression, so it SKIPS with the reason.
+    // A renamed or dropped column still fails, through the query error.
+    it('a member holds curate_content without manage_member (population the bypass serves, derived)', { skip: !sb }, async (t) => {
+      const { data: grants, error: grantErr } = await sb
+        .from('engagement_kind_permissions')
+        .select('kind, role')
+        .eq('action', 'curate_content');
+      assert.ifError(grantErr);
+      assert.ok((grants || []).length > 0, 'curate_content must be granted to at least one (kind, role)');
+      const pairs = new Set(grants.map((g) => `${g.kind}|${g.role}`));
+
+      const { data: engs, error: engErr } = await sb
+        .from('auth_engagements')
+        .select('person_id, kind, role')
+        .eq('is_authoritative', true)
+        .in('kind', [...new Set(grants.map((g) => g.kind))]);
+      assert.ifError(engErr);
+      const personIds = [...new Set((engs || [])
+        .filter((e) => pairs.has(`${e.kind}|${e.role}`))
+        .map((e) => e.person_id))];
+      if (personIds.length === 0) {
+        t.skip('no authoritative engagement carries a curate_content grant: no curator right now (business state, not a regression)');
+        return;
+      }
+
+      const { data: members, error: memErr } = await sb
         .from('members')
-        .select('id, name, is_active')
-        .eq('id', ROBERTO_MEMBER_ID)
-        .maybeSingle();
-      assert.ifError(error);
-      assert.ok(m, 'Roberto member row must exist');
-      assert.equal(m.is_active, true, 'Roberto must be active');
+        .select('id')
+        .in('person_id', personIds)
+        .eq('is_active', true);
+      assert.ifError(memErr);
 
-      const { data: canCurate } = await sb.rpc('can_by_member', { p_member_id: ROBERTO_MEMBER_ID, p_action: 'curate_content' });
-      const { data: canAdmin }  = await sb.rpc('can_by_member', { p_member_id: ROBERTO_MEMBER_ID, p_action: 'manage_member' });
-      assert.equal(canCurate, true,  'Roberto must have curate_content');
-      assert.equal(canAdmin,  false, 'Roberto must NOT have manage_member (regression provenance)');
-    });
-
-    it('Sarah Faria exists with curate_content + NOT manage_member', { skip: !sb }, async () => {
-      const { data: m, error } = await sb
-        .from('members')
-        .select('id, name, is_active')
-        .eq('id', SARAH_MEMBER_ID)
-        .maybeSingle();
-      assert.ifError(error);
-      assert.ok(m, 'Sarah member row must exist');
-      assert.equal(m.is_active, true, 'Sarah must be active');
-
-      const { data: canCurate } = await sb.rpc('can_by_member', { p_member_id: SARAH_MEMBER_ID, p_action: 'curate_content' });
-      const { data: canAdmin }  = await sb.rpc('can_by_member', { p_member_id: SARAH_MEMBER_ID, p_action: 'manage_member' });
-      assert.equal(canCurate, true,  'Sarah must have curate_content');
-      assert.equal(canAdmin,  false, 'Sarah must NOT have manage_member (regression provenance)');
+      let served = 0;
+      for (const m of members || []) {
+        const { data: canCurate, error: curateErr } = await sb.rpc('can_by_member', { p_member_id: m.id, p_action: 'curate_content' });
+        const { data: canAdmin, error: adminErr }   = await sb.rpc('can_by_member', { p_member_id: m.id, p_action: 'manage_member' });
+        assert.ifError(curateErr);
+        assert.ifError(adminErr);
+        if (canCurate === true && canAdmin === false) served++;
+      }
+      if (served === 0) {
+        t.skip(`${(members || []).length} active member(s) with a curate_content engagement, none with curate_content and without manage_member: the bypass has no live population (business state, not a regression)`);
+        return;
+      }
+      t.diagnostic(`${served} active member(s) hold curate_content without manage_member`);
     });
 
     // Regression target DERIVED from the live catalog. It used to pin the TAP CPMAI id,
