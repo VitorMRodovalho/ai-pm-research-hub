@@ -4,7 +4,7 @@
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
   "version": "W1.10",
-  "updated_at": "2026-10-11",
+  "updated_at": "2026-11-02",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into the single weekly digest, Monday 12:00 UTC (09:00 Brasilia), via generate_weekly_member_digest_cron. Default for most types.",
@@ -281,6 +281,10 @@
     "partner_lead_received": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2782 (GP decision, cataloged 2026-10-24): a chapter or organization request arrived through the home interest form (role_interest 'chapter' or 'partner'). capture_visitor_lead puts it in the partner CRM as a prospect (the requester's contact goes only to the interaction history) and notifies active members with a login and manage_platform, with a link to /admin/partnerships; no repeat while the previous notice about the same entity is unread. Immediate because the home promises a reply within 5 business days, and the ELSE (digest_weekly) would only arrive on Saturday. Title and body carry no name, e-mail, phone or message of the requester."
+    },
+    "selection_opening_new_applications": {
+      "delivery_mode": "digest_weekly",
+      "rationale": "#2393 (ADR-0134, GP decision 2026-11-02): new applications reached an opening linked to an initiative. An hourly cron (_selection_opening_new_applications_cron) sends ONE notification per (opening leader, opening) with the count and the opening, never a candidate name, email or answer. Recipients come from the same gate as the per-opening reader (can_by_member view_opening_applications on the opening initiative, minus conflict of interest). Bell immediately, email only in the Saturday digest: the leader acts within days (ADR-0134 section 8), and the first import of an opening must not become a burst. Not candidate-facing, so it honors suppress_all."
     }
   },
   "implementation": {
