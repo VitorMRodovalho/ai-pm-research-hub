@@ -1060,7 +1060,7 @@ export default function CardDetail({ item, board, permissions, mode, i18n, onClo
             {/* Drive Files (registered to this card via integration) */}
             <CardDriveFiles boardItemId={item.id} />
 
-            {/* Comments (Mayanna Item 01) */}
+            {/* Comments (member A Item 01) */}
             <div id={`card-comments-${item.id}`}>
             <CardComments
               boardItemId={item.id}

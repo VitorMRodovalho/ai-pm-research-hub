@@ -15,7 +15,7 @@
  *
  * Before p122c the filter was `if (tribeF && ev.tribe_id != tribeF) return false`,
  * which silently excluded every cross-cutting event for ~50 active non-GP
- * members for ~3 weeks until a tribe leader (João Uzejka, Radar PMI-RS)
+ * members for ~3 weeks until a tribe leader (member A, Radar PMI-RS)
  * reported it.
  *
  * Fix: scope the filter to `ev.type === 'tribo'`. This test fails if the

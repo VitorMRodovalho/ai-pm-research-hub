@@ -10,7 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 // What this migration does:
 //   1) ALTER TABLE governance_documents ADD COLUMN proposer_member_id uuid REFERENCES members(id)
 //      ON DELETE RESTRICT (nullable for backwards compat with pre-#377 docs).
-//   2) Backfills the 1 Frontiers fixture (18ec4690-…) with Fabrício Costa member_id (92d26057-…)
+//   2) Backfills the 1 Frontiers fixture (18ec4690-…) with member A member_id (92d26057-…)
 //      from p259 evidence doc (p256 M3 validated but never persisted the value).
 //   3) CREATE OR REPLACE create_governance_document_intake — minimum-diff extension to INSERT
 //      proposer_member_id from payload (preserves all prior behavior).
@@ -93,7 +93,7 @@ describe('p261 #312-W4b — sign_proposer_consent canonical A2 path', () => {
   });
 
   describe('p261.2 — Frontiers fixture backfill', () => {
-    it('UPDATE targets the exact Frontiers doc_id + Fabrício member_id', () => {
+    it('UPDATE targets the exact Frontiers doc_id + member A member_id', () => {
       assert.match(MIGRATION_SQL, /UPDATE public\.governance_documents\s+SET proposer_member_id = '92d26057-5550-4f15-a3bf-b00eed5f32f9'/);
       assert.match(MIGRATION_SQL, /WHERE id = '18ec4690-4f5a-4cab-904d-451e2c7245bf'/);
     });
@@ -208,7 +208,7 @@ describe('p261 #312-W4b — sign_proposer_consent canonical A2 path', () => {
 
   // ─── DB-gated smoke ──────────────────────────────────────────────────────────
   describe('DB-gated live smoke (skips without SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY)', () => {
-    it('Frontiers fixture has proposer_member_id = Fabrício Costa', { skip: !sb }, async () => {
+    it('Frontiers fixture has proposer_member_id = member A', { skip: !sb }, async () => {
       const { data, error } = await sb
         .from('governance_documents')
         .select('id, proposer_member_id, status')
@@ -216,7 +216,7 @@ describe('p261 #312-W4b — sign_proposer_consent canonical A2 path', () => {
         .single();
       assert.ifError(error);
       assert.equal(data.proposer_member_id, FABRICIO_MEMBER_ID,
-        'Frontiers fixture must have proposer_member_id backfilled to Fabrício Costa');
+        'Frontiers fixture must have proposer_member_id backfilled to member A');
     });
 
     it('sign_proposer_consent RPC is callable via PostgREST (existence probe)', { skip: !sb }, async () => {

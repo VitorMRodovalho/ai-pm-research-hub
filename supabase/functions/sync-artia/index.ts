@@ -692,7 +692,7 @@ Deno.serve(async (req) => {
         const newKpis = [
           { key: 'lim_lima_accepted', title: 'KPI: LATAM LIM Lima 2026 (1/1 sessão aceita)', desc: 'TAP §16 Critério 10. Sessão aceita para apresentação Agosto 2026 em Lima/Peru.', pct: 100, status: ARTIA_STATUS.ENCERRADO },
           { key: 'detroit_submission', title: 'KPI: PMI Global Summit Detroit 2026 (0/1 em planejamento)', desc: 'TAP §16 Critério 11. Submissão em planejamento para Outubro 2026 em Detroit/EUA.', pct: 0, status: ARTIA_STATUS.A_INICIAR },
-          { key: 'ip_policy_ratified', title: 'KPI: Política IP aprovada Comitê (em revisão — 6 chains v6/v5/v1)', desc: 'TAP §16 Critério 12. Doc cfb15185 status under_review. Aguardando assinaturas Roberto/Sarah/Fabricio.', pct: 75, status: ARTIA_STATUS.ANDAMENTO },
+          { key: 'ip_policy_ratified', title: 'KPI: Política IP aprovada Comitê (em revisão — 6 chains v6/v5/v1)', desc: 'TAP §16 Critério 12. Doc cfb15185 status under_review. Aguardando assinaturas do Comitê de Curadoria.', pct: 75, status: ARTIA_STATUS.ANDAMENTO },
           { key: 'cooperation_agreements_signed', title: 'KPI: Acordos Cooperação Bilateral (4/4 assinados)', desc: 'TAP §16 Critério 13. PMI-GO ↔ PMI-CE/DF/MG/RS. 4/4 assinados. Drive PMI-GO institucional.', pct: 100, status: ARTIA_STATUS.ENCERRADO },
         ]
 
@@ -749,11 +749,11 @@ Deno.serve(async (req) => {
         { code: '01.01', parent: 'iniciacao', name: '01.01 - Termo de Abertura do Projeto (TAP)', activities: [
           { title: 'Elaborar TAP Ciclo 3 (2026.1)', description: 'TAP elaborado 2026-05-05 por Vitor Maia Rodovalho (GP). Drive: docs/TAP_CICLO3_2026.md no repo + Google Doc institucional em Núcleo IA & GP/2026/1. Iniciação/. Versão 1.0 (draft inicial). 18 seções + Apêndice A + Apêndice B.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
           { title: 'Revisar TAP', description: 'Revisão técnica realizada por Vitor + análise estrutural via 7 confirmações PM (Tribos pausadas / sponsors / Política IP independente). Pronto para aprovação.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
-          { title: 'Aprovar TAP — Sponsor PMI-GO', description: 'Aguardando assinatura Ivan Lourenço (Presidente PMI-GO). Capítulo informal — assinatura formal não-bloqueante per PM directive 2026-05-05.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 50 },
+          { title: 'Aprovar TAP — Sponsor PMI-GO', description: 'Aguardando assinatura do presidente do PMI-GO. Capítulo informal — assinatura formal não-bloqueante per PM directive 2026-05-05.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 50 },
           { title: 'Anexar TAP no Drive Institucional', description: 'TAP arquivado em Drive PMI-GO institucional Núcleo IA & GP/2026/1. Iniciação/ (Google Doc). Histórico fundacional 2024 preservado em zArchive.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
         ]},
         { code: '01.02', parent: 'iniciacao', name: '01.02 - Registro das Partes Interessadas', activities: [
-          { title: 'Matriz RACI consolidada — TAP §14', description: 'Sponsors (Ivan + 4 capítulos parceiros via Acordos Cooperação) + GP Vitor + Vice-GP Fabricio + Comitê Curadoria (Roberto/Sarah/Fabricio) + 7 líderes de tribo + Coordenação CPMAI Herlon + 48 voluntários + stakeholders externos (PMI Latam Natália, PMI Global PMI×AI Champion).', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
+          { title: 'Matriz RACI consolidada — TAP §14', description: 'Sponsors (presidente do PMI-GO + 4 capítulos parceiros via Acordos Cooperação) + GP Vitor + Vice-GP + Comitê Curadoria + 7 líderes de tribo + Coordenação CPMAI + 48 voluntários + stakeholders externos (PMI Latam, PMI Global PMI×AI Champion).', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
         ]},
         { code: '01.03', parent: 'iniciacao', name: '01.03 - Reunião de Kick-off Ciclo 3 (2026.1)', activities: [
           { title: 'Kick-off realizado 2026-03-05 17:15', description: 'Evento de Abertura Ciclo 3 (2026/1) realizado em 2026-03-05 às 17:15 EST. Drive recording: Núcleo IA & GP/2026/1. Iniciação/Kick-off Ciclo 3/. Migração da pasta Calendar event Drive pessoal → institucional realizada 2026-05-05.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
@@ -761,7 +761,7 @@ Deno.serve(async (req) => {
         { code: '01.04', parent: 'iniciacao', name: '01.04 - Templates Institucionais', activities: [
           { title: 'TAP institucional Ciclo 3 (2026.1)', description: 'Template PMI-GO 18 seções + Apêndices A/B. Localização: docs/TAP_CICLO3_2026.md (markdown source) + Google Doc institucional Drive.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
           { title: 'Manual de Governança', description: 'Aprovado 2025-12 (Ciclo 2). Localização: Drive PMI-GO institucional. Próxima revisão: trimestral pós-aprovação TAP ou demanda mudança escopo material.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
-          { title: 'Política Institucional de Publicação e IP', description: 'Em revisão pelo Comitê de Curadoria (6 chains v6/v5/v1 em review aguardando assinaturas Roberto/Sarah/Fabricio). Independente do TAP — paralelo. Localização: instrumentos-ip/ + plataforma /governance.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 75 },
+          { title: 'Política Institucional de Publicação e IP', description: 'Em revisão pelo Comitê de Curadoria (6 chains v6/v5/v1 em review aguardando assinaturas do Comitê de Curadoria). Independente do TAP — paralelo. Localização: instrumentos-ip/ + plataforma /governance.', statusId: ARTIA_STATUS.ANDAMENTO, completedPercent: 75 },
           { title: 'Acordos de Cooperação Bilateral (4)', description: '4/4 assinados: PMI-GO ↔ PMI-CE / DF / MG / RS. Drive PMI-GO institucional. Cobre adesão dos demais capítulos sem necessidade de assinatura no TAP.', statusId: ARTIA_STATUS.ENCERRADO, completedPercent: 100 },
         ]},
         // ── Planejamento ──
@@ -823,7 +823,7 @@ Deno.serve(async (req) => {
 
       // ── Project metadata update plan ──
       const PROJECT_METADATA = {
-        description: 'Núcleo de Estudos e Pesquisa em IA & GP — Ciclo 3 (2026). Programa voluntário inter-capítulos PMI Brasil sediado no PMI Goiás. 5 capítulos parceiros (PMI-GO/CE/DF/MG/RS), 7 tribos M.O.R.E., 48 voluntários ativos, plataforma própria nucleoia.vitormr.dev. Concebido 2024-03 (PMI-GO + Antonio Marcos GP), GP atual Vitor Maia Rodovalho desde 2024-04.',
+        description: 'Núcleo de Estudos e Pesquisa em IA & GP — Ciclo 3 (2026). Programa voluntário inter-capítulos PMI Brasil sediado no PMI Goiás. 5 capítulos parceiros (PMI-GO/CE/DF/MG/RS), 7 tribos M.O.R.E., 48 voluntários ativos, plataforma própria nucleoia.vitormr.dev. Concebido 2024-03 (PMI-GO + GP anterior), GP atual Vitor Maia Rodovalho desde 2024-04.',
         justification: 'PMI Global tem direcionado sinalização forte para AI (PMI×AI Champion, Detroit 2026, publicações). Núcleo atua como catalisador nacional (potencialmente internacional) reunindo voluntários selecionados. Estrutura comunitária replicável + alinhada framework M.O.R.E. + tripé sustentabilidade.',
         premise: 'Adesão capítulos PMI parceiros via Acordos Cooperação · apoio diretorias PMI-GO · filiação PMI dos voluntários · reuniões mensais por tribo + plenárias mensais · revisão Comitê de Curadoria · Vice-GP designado mitiga single-point-of-failure · plataforma nucleoia.vitormr.dev como tool operacional.',
         restriction: 'Não realização eventos em datas conflito calendário PMI-GO · operação 100% voluntária (sem orçamento) · LGPD compliance produção conteúdo · disclaimer PMI® obrigatório · aprovações externas via canal PMI-GO → PMI Latam → PMI Global · submissões via Comitê de Curadoria.',

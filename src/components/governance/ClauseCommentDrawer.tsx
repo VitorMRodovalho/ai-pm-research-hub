@@ -89,7 +89,7 @@ function visibilityCls(v: Comment['visibility']): string {
 export default function ClauseCommentDrawer({ versionId, chainId, canComment, isSubmitter, isCurator, chainStatus, documentHtml, onCommentsChange }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  // p130 fix: includeResolved default true. Bug 3 reportado por Roberto Macêdo
+  // p130 fix: includeResolved default true. Bug 3 reportado por member A
   // (09/may/2026): após recirculação v2.6→v2.7, todos os 5 comments dele foram
   // marcados como resolvidos (já endereçados na nova versão). Drawer com default
   // false mostrava "Nenhum comentário ainda" e curador inferia que comentários

@@ -1,7 +1,7 @@
 /**
  * Contract: #1362 — an active engagement's authority window must not expire before its contract.
  *
- * Regression (2026-07-13): the VEP JSON import re-fired sync_operational_role_cache on Paulo Jr
+ * Regression (2026-07-13): the VEP JSON import re-fired sync_operational_role_cache on member A Jr
  * (pmi 1158211), a researcher promoted to tribe leader, and he dropped to `guest`. operational_role
  * derives from auth_engagements.is_authoritative, which requires `end_date IS NULL OR end_date >=
  * CURRENT_DATE`. His leader engagement pointed at the leader application (contract 2026-07-01 ->
@@ -17,9 +17,9 @@
  * have end_date < start_date.
  *
  * Live proof (prod ldrfrvwhxsmgaabwmaik, 2026-07-13, this session — re-run before merge):
- *  - Blast radius of the import demotion = 1 (Paulo). Latent bomb defused = 1 (Honorio 7304044,
+ *  - Blast radius of the import demotion = 1 (member A). Latent bomb defused = 1 (member B 7304044,
  *    engagement end 2026-12-31 vs contract 2027-06-30). Hotfix + backfill -> 0 divergence.
- *  - Paulo recomputed to tribe_leader after end_date -> 2027-06-30.
+ *  - member A recomputed to tribe_leader after end_date -> 2027-06-30.
  */
 
 import test from 'node:test';

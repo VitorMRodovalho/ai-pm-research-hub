@@ -6,7 +6,7 @@ import { createClient } from '@supabase/supabase-js';
 // WS-B: self-service account claim for guests whose login email differs from the VEP
 // email they applied with. Security invariant: proof-of-possession is sent to the
 // MEMBER's registered address (not the claimant's), so only someone controlling that
-// inbox can complete the claim — preserving the R3-a / Paulo Alves anti-hijack lesson.
+// inbox can complete the claim — preserving the R3-a / member A anti-hijack lesson.
 const MIGRATION = 'supabase/migrations/20260805000186_wsB_account_claim_rpcs.sql';
 const EF = 'supabase/functions/send-account-claim/index.ts';
 const PAGE_START = 'src/pages/claim/start.astro';

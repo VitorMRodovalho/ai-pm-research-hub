@@ -5,7 +5,7 @@
  * Root cause: _ip_ratify_cta_link sent only {volunteers_in_role_active, member_ratification,
  * external_signer} to a member route and dumped every other gate — incl. leader_awareness
  * (tribe leaders), curator, chapter_witness, president_go/president_others — to /admin/, which
- * non-admin signers read as "I can't access this" (Ana Carla, leader_awareness gate). Frontend
+ * non-admin signers read as "I can't access this" (member A, leader_awareness gate). Frontend
  * co-symptoms: my-pending linked its sign CTA to /admin/, and ReviewChainIsland showed a
  * "signing restricted" banner even to eligible signers.
  */

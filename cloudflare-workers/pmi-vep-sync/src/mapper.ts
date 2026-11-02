@@ -216,7 +216,7 @@ export function parseBrChapterCode(name: string | null | undefined): string | nu
  * Fix p87 #118: PMI VEP form retorna affiliation sem hífen ("PMIRS" /
  * "PMI RS"), o que não casa com canônico chapter_registry (PMI-RS).
  * Fallback usado quando parseChapterFromMembership não consegue resolver
- * via membership_status (caso João Uzejka — membership "Active" não tem
+ * via membership_status (caso member A — membership "Active" não tem
  * state name, mas chapter_affiliation tem "PMIRS").
  */
 export function normalizeChapterAffiliation(raw: string | null | undefined): string | null {

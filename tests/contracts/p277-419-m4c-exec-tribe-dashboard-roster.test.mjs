@@ -3,7 +3,7 @@
  *
  * The 12KB tribe-KPI-tab dashboard computed its member-cohort NINE times via
  *   m.is_active = true AND EXISTS(engagements WHERE kind='volunteer' AND status='active' AND initiative=X)
- * The kind='volunteer' predicate WRONGLY dropped the curator Roberto Macêdo (engagement role=curator,
+ * The kind='volunteer' predicate WRONGLY dropped the curator member A (engagement role=curator,
  * kind=observer) → tribe-8 KPI read 5. All 9 cohort sites now ride the canonical roster view
  * public.v_initiative_roster (role<>'observer'; primitive shipped PR4-A, mig 082):
  *   - members.total  := get_initiative_roster_count(v_tribe_initiative_id)   (reads the primitive directly)
@@ -12,7 +12,7 @@
  *   - by_role / by_chapter / list / inactive_30d / tribe_total_xp / top_contributors-cohort / cpmai
  *     → m.id IN (SELECT member_id FROM public.v_initiative_roster WHERE initiative_id = v_tribe_initiative_id)
  *
- * antes→depois (verified live, cycle_3): ONLY tribe 8 changes 5→6 (gains Roberto); t1=4 t2=5 t3=0 t4=5 t5=3
+ * antes→depois (verified live, cycle_3): ONLY tribe 8 changes 5→6 (gains member A); t1=4 t2=5 t3=0 t4=5 t5=3
  * t6=6 t7=4 unchanged. For every tribe today dash_total == dash_active, so active=total changes no number.
  * exec_initiative_dashboard(uuid,text) is a thin wrapper RETURN exec_tribe_dashboard(resolve_tribe_id(.),.)
  * — the primary live frontend path — so the fix is visible there too.

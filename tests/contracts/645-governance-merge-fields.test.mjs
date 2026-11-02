@@ -36,7 +36,10 @@ test('#645 merge-fields: extracts and renders known legal placeholders without m
   assert.ok(rendered.applied.includes('capitulo_aderente'));
   assert.match(rendered.html, /PMI-CE/);
   assert.match(rendered.html, /Ana &lt;Legal&gt;/, 'rendered values must be HTML-escaped');
-  assert.match(rendered.html, /Ivan Lourenço/);
+  // O valor institucional vem do proprio modulo (nao do teste): o teste continua provando que o campo e preenchido.
+  const presidente = readFileSync('src/lib/governance/mergeFields.ts', 'utf8').match(/presidente_pmigo:\s*'([^']+)'/)?.[1];
+  assert.ok(presidente, 'presidente_pmigo default must exist in mergeFields');
+  assert.ok(rendered.html.includes(presidente), 'presidente_pmigo placeholder must render the platform value');
 });
 
 test('#645 merge-fields: fail-closes unresolved placeholders for signing', () => {

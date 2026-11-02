@@ -12,7 +12,7 @@
  * For an admin-reconciled approved candidate whose member primary email differs
  * from the PMI email, that overwrite breaks the app↔member link and trips
  * `R_approved_application_has_member`, red-lighting CI for unrelated PRs every
- * cycle import. Live case: Paulo Alves (app 6259ced2) — the 2026-05-30 sync reset
+ * cycle import. Live case: member A (app 6259ced2) — the 2026-05-30 sync reset
  * email from the reconciled `redacted-064@example.com` back to `redacted-067@example.com`.
  *
  * Fix (db.ts): freeze email when `existing.vep_reconciled_at` is set, by writing

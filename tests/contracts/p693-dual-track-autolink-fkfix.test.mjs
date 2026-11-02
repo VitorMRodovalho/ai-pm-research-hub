@@ -6,7 +6,7 @@
  * `UPDATE sibling SET linked_application_id = NEW.id` — mas em BEFORE INSERT a row
  * NEW ainda não existe, e a FK `selection_applications_linked_application_id_fkey`
  * é NÃO-deferrable → FK violation → o INSERT da 2ª candidatura dual-track aborta →
- * a app é dropada em toda sync (live: Ana Sofia, researcher 296896 ↔ leader 296862).
+ * a app é dropada em toda sync (live: member A, researcher 296896 ↔ leader 296862).
  *
  * FIX (migration 20260805000172): trigger convertido para AFTER INSERT (NEW.id já
  * é uma row materializada → ambos os UPDATEs recíprocos resolvem a FK).

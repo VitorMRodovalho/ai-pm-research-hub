@@ -6,7 +6,7 @@
  * ROOT CAUSE: the member lookup matched ONLY by lower(email). When an applicant's PMI-registered
  * application email diverges from their platform member email (same pmi_id), the lookup returned
  * NULL and the function fell into the INSERT path, which collided on members_pmi_id_key
- * (UNIQUE pmi_id) -> 23505 -> PostgREST 409. Reproduced with Paulo Alves de Oliveira Junior
+ * (UNIQUE pmi_id) -> 23505 -> PostgREST 409. Reproduced with member A Junior
  * (member redacted-064@example.com, app redacted-067@example.com, shared pmi_id 1158211).
  *
  * SECONDARY: the promotion CASE omitted 'researcher', so an already-active researcher approved on
