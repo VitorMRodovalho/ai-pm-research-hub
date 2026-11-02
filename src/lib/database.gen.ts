@@ -27926,6 +27926,7 @@ export type Database = {
           eligibility: string | null
           end_date: string | null
           essay_mapping: Json
+          evaluation_track: string
           home_listing: string
           id: string
           initiative_id: string | null
@@ -27948,6 +27949,7 @@ export type Database = {
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
+          evaluation_track?: string
           home_listing?: string
           id?: string
           initiative_id?: string | null
@@ -27970,6 +27972,7 @@ export type Database = {
           eligibility?: string | null
           end_date?: string | null
           essay_mapping?: Json
+          evaluation_track?: string
           home_listing?: string
           id?: string
           initiative_id?: string | null
@@ -31506,6 +31509,10 @@ export type Database = {
       }
       _member_term_has_image_clause: {
         Args: { p_member_id: string }
+        Returns: boolean
+      }
+      _na_avaliacao_geral: {
+        Args: { p_application_id: string }
         Returns: boolean
       }
       _notify_drive_grant_failure: {
