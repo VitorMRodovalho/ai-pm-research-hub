@@ -11,9 +11,9 @@
 
 ## Context
 
-Por 1.5 meses (W90 entregue ~p133 até 2026-05-18) a infraestrutura de curadoria existiu mas **nunca foi usada em produção** (0 entries em `curation_review_log`, 503 cards parados em `curation_status='draft'`). Investigação iniciada por reportagem da Débora Moura (líder tribo Agentes Autônomos) revelou múltiplos gaps:
+Por 1.5 meses (W90 entregue ~p133 até 2026-05-18) a infraestrutura de curadoria existiu mas **nunca foi usada em produção** (0 entries em `curation_review_log`, 503 cards parados em `curation_status='draft'`). Investigação iniciada por reportagem da member A (líder tribo Agentes Autônomos) revelou múltiplos gaps:
 
-1. **Sem entrypoint UI canonical** — tribe leaders não tinham botão "Submeter para Curadoria"; a Débora intuitivamente atribuiu 3 curators via `+ Adicionar membro` (path `board_item_assignments` com `role='curation_reviewer'`), mas esse path não disparava transição na FSM `curation_status`.
+1. **Sem entrypoint UI canonical** — tribe leaders não tinham botão "Submeter para Curadoria"; a member A intuitivamente atribuiu 3 curators via `+ Adicionar membro` (path `board_item_assignments` com `role='curation_reviewer'`), mas esse path não disparava transição na FSM `curation_status`.
 2. **Manual §4.2 define 7 etapas** (geração → pesquisa → redação → revisão autores → peer review COLEGIADO → leader review NOMINAL → submissão curadoria), mas etapas 5-6 só existiam como valores de `curation_status` sem metadata estruturada (data, revisor, decisão, dispensa).
 3. **Sem cascade de notificações funcionais** — triggers `trg_notify_curation_status` etc. existiam mas só disparavam em mudança de `curation_status`, que nunca acontecia porque ninguém usava a FSM.
 
@@ -116,7 +116,7 @@ CHECK constraint de `board_lifecycle_events.action` expandido em p197 fix B1 par
 
 ### §7. Trigger safety-net pattern (defensive UX)
 
-Tribe leaders que ainda não conhecem o botão canonical podem fazer o "workaround Débora" — atribuir 3 `curation_reviewer` via `+ Adicionar membro`. Para honrar essa intent intuitiva, **trigger AFTER INSERT em `board_item_assignments`** detecta o pattern (role='curation_reviewer' + card.status='done' + curation_status='draft') e auto-transiciona para `curation_pending`.
+Tribe leaders que ainda não conhecem o botão canonical podem fazer o "workaround member A" — atribuir 3 `curation_reviewer` via `+ Adicionar membro`. Para honrar essa intent intuitiva, **trigger AFTER INSERT em `board_item_assignments`** detecta o pattern (role='curation_reviewer' + card.status='done' + curation_status='draft') e auto-transiciona para `curation_pending`.
 
 **Posicionamento**: este é safety NET, não canonical PATH. Documentado explicitamente no comentário da migration `20260711000000` e neste ADR. Quando todos os tribe leaders conhecerem o botão, o trigger raramente disparará — mas continua valioso como defensive UX.
 
@@ -164,7 +164,7 @@ Cards sem checklists preservam `actual_completion_date` setado por outros paths 
 - Peer review modelado corretamente (colegiado, não nominal)
 - Audit trail rico via `board_lifecycle_events` com actions distinctas
 - Curadores recebem notificações automáticas + veem fila em `/admin/curatorship`
-- Caso Débora end-to-end LIVE (primeiro item EVER aguardando review em produção)
+- Caso member A end-to-end LIVE (primeiro item EVER aguardando review em produção)
 
 ### Trade-offs
 
@@ -213,7 +213,7 @@ Pre-merge (p197 fix bundle, 2026-05-18 ~23:30):
 - `npx astro build` PASS
 - `npm test` 1449/0/46 offline preserved
 - `check_schema_invariants()` 16/16=0
-- Caso Débora live (642fe90f em curation_pending desde p196 backfill)
+- Caso member A live (642fe90f em curation_pending desde p196 backfill)
 
 ## Future work
 

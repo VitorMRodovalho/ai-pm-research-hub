@@ -10,7 +10,7 @@
 
 Hoje o domínio tem `tribes` como unidade de trabalho privilegiada (8 tribos fixas, `tribe_id` referenciado em board_items, meeting_notes, events, members, etc). Funciona para tribos de pesquisa — mas o Núcleo e a plataforma estão crescendo para abrigar outros tipos de trabalho coletivo:
 
-- **Grupo de Estudos Preparatório CPMAI** (Herlon/Pedro Henrique) — tem tabelas `cpmai_*` dedicadas, ou seja, foi modelado como caso especial
+- **Grupo de Estudos Preparatório CPMAI** (member B/member A) — tem tabelas `cpmai_*` dedicadas, ou seja, foi modelado como caso especial
 - **Congresso CBGPL 2026** — tratado como evento + comitê ad-hoc, sem contêiner formal
 - **Workshops pontuais** — sem modelo
 - **Book clubs / reading groups** — sem modelo

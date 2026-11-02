@@ -224,7 +224,7 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
   - **D1** — excused is **removed** from the engagement denominator (neutral; both metrics treat excused identically — an org-sanctioned absence must not penalize a recognition KPI). Extended in PR8: excused is also neutral for dropout-risk flagging.
   - **D2** — cohort = the **37-member operational union** {researcher, tribe_leader, manager} (curator kept); aggregate = **AVG-of-member-rates** (not pooled present/expected).
   - **D3** — `lideranca` eligibility = `can_by_member('manage_event')` (single V4 authority basis); the phantom `deputy_manager` is dropped.
-  - **D4** — `tribo` eligibility = **own-tribe only**; the org-manager is excluded from the tribo dimension; the legacy `tribe_id` ↔ engagements **bridge bug** (Roberto Macêdo: `tribe_id=8` but `get_member_tribe=NULL`) is treated V4-consistently (tribe-8 excluded from his eligible set; the data/intent question stays the PM's).
+  - **D4** — `tribo` eligibility = **own-tribe only**; the org-manager is excluded from the tribo dimension; the legacy `tribe_id` ↔ engagements **bridge bug** (member A: `tribe_id=8` but `get_member_tribe=NULL`) is treated V4-consistently (tribe-8 excluded from his eligible set; the data/intent question stays the PM's).
   - **D5** — 1-on-1 events **excluded** (coaching artifact, no roster).
   - **D6** — `evento_externo` / comms types **excluded** (neither type exists live; the comms branch stays dormant).
   - **D7** — *(superseded by PM Option B / §3b)* the original "hybrid: delegate to `is_event_mandatory_for_member`" was reversed; **type-based eligibility is canonical**.
@@ -251,7 +251,7 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
     `members.cpmai_certified = true AND cpmai_certified_at` within the goal year (resolved from the cycle, not a
     literal). A member who entered already holding CPMAI (cert dated before the goal year) appears on the
     **certificate wall (all-time)** but NOT in the goal metric. **PMI-GO-board-pactuated business rule.** Live:
-    wall = 2 (Marcos 2026-03-04 + Pedro 2025-10-23); goal-year-2026 = 1 (Marcos only). Canonical source = the
+    wall = 2 (member B 2026-03-04 + member C 2025-10-23); goal-year-2026 = 1 (member B only). Canonical source = the
     dated boolean, NOT the gamification `cert_cpmai` ledger, NOT a date-free count.
   - **champions (D-M7-SOURCE):** `champions_awarded` ledger is canonical; `gamification_points`
     category='champion_'||surface is a derived projection. Parity invariant added (PR7, test-only — both sources
@@ -269,7 +269,7 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
   Two recommend-and-proceed decisions: **D-M4-AXIS** (reconcile `get_member_tribe` kind→role) — **RESOLVED
   2026-06-01: NOT applied.** Grounding showed `get_member_tribe` is the attendance-eligibility resolver
   (feeds `_attendance_eligible_events` → all of metric-3); switching it to the role axis would make the
-  observer-kind curator Roberto (0/13 tribe-8 `tribo` attendance) a mandatory attendee → tribe-8 engagement
+  observer-kind curator member A (0/13 tribe-8 `tribo` attendance) a mandatory attendee → tribe-8 engagement
   0.842→0.717, a false no-show signal. Instead the **member definition** was unified onto the **kind** axis
   (participants-only, §2.2; mig 088), which eliminates the role-vs-kind divergence; `get_member_tribe` and
   metric-3 are left untouched. · **D-M8-COMPLETED** ("realized" = `scheduled_at < now()`; the webinars table has
@@ -281,12 +281,12 @@ A live-DB gamification integrity probe (audit doc §"GAMIFICATION PROBE") found 
     (webinars table = 7 vs events.type='webinar' = 4).
   - **Metric 4 member_count (tribe 8):** SHIPPED via the single primitive `v_initiative_roster` (PR4-A→D, migs
     082–086), then **revised to participants-only** (mig 088, PM 2026-06-01): `status='active' AND role<>'observer'
-    AND kind<>'observer'` = **5** for tribe-8 (the observer-kind curator Roberto does NOT count; the original
+    AND kind<>'observer'` = **5** for tribe-8 (the observer-kind curator member A does NOT count; the original
     role-only rule gave 6). Every surface (get_tribe_stats / exec_tribe_dashboard / get_weekly_tribe_digest /
     exec_cross) rides the primitive ⇒ 5. Natives also revised: LATAM 5→3, Grupo 4→3 (observer-kind reviewers
     excluded), Mesa 4 (unchanged). D-M4-AXIS NOT applied; metric-3 frozen (global engagement 0.7991 unchanged).
-  - **Metric 5 XP rank:** cycle-#1 earner (Marcos, 425 cycle XP) shows at lifetime rank 14/15; 46 of 49 pooled
-    members reorder once cycle-mode ranks on cycle XP; ties (Fernando 415 = Débora 415) lack a deterministic
+  - **Metric 5 XP rank:** cycle-#1 earner (member B, 425 cycle XP) shows at lifetime rank 14/15; 46 of 49 pooled
+    members reorder once cycle-mode ranks on cycle XP; ties (member D 415 = member E 415) lack a deterministic
     tiebreak. Taxonomy JOIN 100% (0 of 19,910 unmatched). [PENDING — PR5]
 
 - **2026-06-02 — chapters metric canonicalized + webinar "realized" redefined (#479, PR #480).** The chapter

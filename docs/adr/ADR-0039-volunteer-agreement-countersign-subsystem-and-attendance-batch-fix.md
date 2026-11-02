@@ -90,7 +90,7 @@ V4 catalog `manage_member` audience: `volunteer × manager + deputy_manager +
 co_gp` only — **does NOT include chapter_board** (any role).
 
 Without Path Y, V3→V4 conversion would lose all 7 chapter_board × board_member
-members (Emanoela, Emanuele, Lorena + 4 sponsor × sponsor + chapter_board ×
+members (member D, member E, member F + 4 sponsor × sponsor + chapter_board ×
 board_member), which is operationally wrong: chapter_board members are who
 countersign their chapter's volunteer agreements (chapter governance).
 
@@ -103,18 +103,18 @@ Same pattern applied here.
 ```
 V3 set       = 10 members
 V4+Path Y    = 13 members
-gains        = [Ana Cristina Fernandes Lima, Roberto Macêdo, Rogério Peixoto]
+gains        = [member A, member B, member C]
 losses       = (none)
 ```
 
 **Gain rationale (3)**:
-- **Ana Cristina Fernandes Lima** — `chapter_board` engagement registered in V4
+- **member A** — `chapter_board` engagement registered in V4
   but NO `chapter_board` designation in `members.designations`. Inverse drift
   pattern (engagement-without-designation). V4 conversion correctly grants
   access — V4 engagement is source of truth.
-- **Roberto Macêdo** — `chapter_board × liaison` engagement (already gained in
+- **member B** — `chapter_board × liaison` engagement (already gained in
   ADR-0030 view_internal_analytics catalog). Consistent extension.
-- **Rogério Peixoto** — same as Ana Cristina (engagement-without-designation).
+- **member C** — same as member A (engagement-without-designation).
 
 **Loss rationale**: zero. Vitor (manager+SA) covered by `manage_member`;
 all 7 chapter_board designations have matching chapter_board engagements.
@@ -386,13 +386,13 @@ REVOKE EXECUTE ON FUNCTION public.register_attendance_batch(uuid, uuid[], uuid) 
 - `volunteer_agreement_countersign` subsystem 100% V4.
 
 ### Para members (drift consolidado)
-- **3 gains** (Ana Cristina, Roberto, Rogério) — all legitimate chapter_board
+- **3 gains** (member A, member B, member C) — all legitimate chapter_board
   V4 engagements. V3 designation drift correction (members had engagement
   but lacked designation in `members.designations`). Inverse drift correction
   (engagement-without-designation), legitimate gain.
 - **0 losses** — Vitor (manage_member) + 7 chapter_board × board_member members
-  + 7 chapter_board × sponsor (Felipe, Francisca, Ivan, Márcio, Matheus +
-  Lorena/Emanuele/Emanoela) all preserved.
+  + 7 chapter_board × sponsor (member G, member H, member I, member J, member K +
+  member F/member E/member D) all preserved.
 - Section B (register_attendance_batch): zero member-set change, security
   vector closed.
 

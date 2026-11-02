@@ -57,7 +57,7 @@ pessoa) e 4 por envio individual, todos com confirmação de entrega.
 
 ### 2.6 Currículo recuperado
 
-**Patrícia Sebastião** (`36b3cc78`), uma das três candidatas com entrevista pendente, estava sem
+**member A** (`36b3cc78`), uma das três candidatas com entrevista pendente, estava sem
 currículo na plataforma por falha transitória de upload. Recuperado a cerca de 23 horas da
 assinatura de origem expirar.
 
@@ -115,12 +115,12 @@ qualquer bateria de repetição reporta o dobro da taxa real.
 ### Do lado do GP
 
 1. **Os cinco pontos do PMOGA.** Só existem na thread do WhatsApp do grupo
-   "Núcleo Tribos PMO / PMO GA LATAM", no complemento que o Fernando fez à sugestão do Fabricio.
+   "Núcleo Tribos PMO / PMO GA LATAM", no complemento que o member D fez à sugestão do member E.
    Varri banco, Gmail, Drive e 9 exports de WhatsApp: não estão em lugar alcançável. O caminho é
    exportar aquele grupo ou colar a mensagem.
-2. **A resposta do Jefferson** sobre se a reunião de 18/08 aconteceu. Decide se há presença legítima
+2. **A resposta do member F** sobre se a reunião de 18/08 aconteceu. Decide se há presença legítima
    a recuperar, porque as linhas foram apagadas em 03/09.
-3. **Regularizar o VEP de Sarah e Roberto**, que são curadores sem VEP ativo (planejado para este
+3. **Regularizar o VEP de member C e member B**, que são curadores sem VEP ativo (planejado para este
    mês).
 4. **Os 3 candidatos** seguem sem reserva de entrevista, com e-mail entregue. Se não reservarem, o
    gargalo é outro e precisa ser medido, não reemitido.

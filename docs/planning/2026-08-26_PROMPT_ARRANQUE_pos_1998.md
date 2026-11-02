@@ -27,8 +27,7 @@ doc entra logo acima). **Fila VAZIA**, zero bypass, arvore limpa, CI verde. Nao 
 
 ## Proximo passo sugerido: #1997
 
-**Tem gente esperando, e o custo humano ja e visivel.** 9 de 20 sem `auth_id`. O **Farhad
-Abdollahyan** e **lider**, tem **16 passos de onboarding atribuidos, 0 feitos, e nenhuma conta** -
+**Tem gente esperando, e o custo humano ja e visivel.** 9 de 20 sem `auth_id`. O **member A** e **lider**, tem **16 passos de onboarding atribuidos, 0 feitos, e nenhuma conta** -
 e ele reapareceu na #1998 do outro lado, como `OfferNotExtended` no `platform_only` da
 reconciliacao. Ou seja: dois paineis diferentes apontando a mesma pessoa travada.
 

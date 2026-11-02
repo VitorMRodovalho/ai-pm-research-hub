@@ -172,7 +172,7 @@ Reuso de `admin_audit_log` para signoffs. Rejeitada: signoff tem shape estrutura
 ### Dependências externas não cobertas por esta ADR
 - **RF-2 (IRRF)**: Política §4.5.4 menciona royalties — validar com especialista tributário antes de IP-4 seed + primeiro pagamento
 - **RF-3 (GDPR UE)**: Ambassadors residentes UE — consultar advogado europeu antes de formalizar acordo
-- **Validação advogado humano BR**: Ivan indicou contato; pendente resposta sobre Roberto's 2 pontos + novos P1 pós-v2.1
+- **Validação advogado humano BR**: member D indicou contato; pendente resposta sobre member B's 2 pontos + novos P1 pós-v2.1
 
 ## Relacionados
 
@@ -225,7 +225,7 @@ Expansão do enum semantic de `gate_kind` em `_can_sign_gate()`:
 Refinamento de autoridade dentro de `chapter_board`:
 
 - **`legal_signer`**: marca quem no chapter_board tem poder de assinatura legal pelo capítulo. Presidentes de capítulos assinam gate `president_go`/`president_others` apenas se `legal_signer = true`.
-- **`voluntariado_director`**: exceção específica para PMI-GO Diretoria de Voluntariado (Lorena). Eligível como president_go APENAS para `doc_type = 'volunteer_term_template'`. Scope doc-aware via `_can_sign_gate` switch.
+- **`voluntariado_director`**: exceção específica para PMI-GO Diretoria de Voluntariado (member E). Eligível como president_go APENAS para `doc_type = 'volunteer_term_template'`. Scope doc-aware via `_can_sign_gate` switch.
 - **`chapter_vice_president`**: preposto fallback. Em gate `chapter_witness`, se nenhum `chapter_board.legal_signer` estiver disponível, `chapter_vice_president` pode assinar como testemunha.
 
 **Rationale:** capítulos têm pluralidade de boards (président e vice, secretário, diretor financeiro, diretor de voluntariado). Nem todos têm poder legal de assinatura. Sem essa granularidade, RPC gate check dava pass para quem não deveria assinar.
@@ -401,7 +401,7 @@ RPC passou a filtrar versões sem `approval_chain.status='approved'`, ou seja, *
 
 ### Smoke end-to-end validado
 
-Adendo PI aos Acordos v1.0 lacrado 20/04 18:12, chain `47362201-23e0-4e2d-96c5-4019b936331e` (status=review). 3 notifications enfileiradas para curadores (Fabrício Costa, Roberto Macêdo, Sarah Faria Alcantara Macedo Rodovalho). Drain cron `send-notification-emails` processou em 18:15:01-02 via Resend (SPF/DKIM verified `pmigo.org.br`). Confirmação manual de entrega ao recipient (Sarah). Pipeline: lock → approval_chain → trigger enqueue → drain cron → Resend → delivery em ≤3min.
+Adendo PI aos Acordos v1.0 lacrado 20/04 18:12, chain `47362201-23e0-4e2d-96c5-4019b936331e` (status=review). 3 notifications enfileiradas para curadores (member C, member B, member A). Drain cron `send-notification-emails` processou em 18:15:01-02 via Resend (SPF/DKIM verified `pmigo.org.br`). Confirmação manual de entrega ao recipient (member A). Pipeline: lock → approval_chain → trigger enqueue → drain cron → Resend → delivery em ≤3min.
 
 ## Amendment 3 — 2026-04-27 — `preview_gate_eligibles` hybrid cache (sessão p74)
 
@@ -540,7 +540,7 @@ A cadeia de recirculação do R01 é **sequencial** (ordens distintas): `submitt
 ### D4.5 — Escopo e Fase B
 
 - O gate é **inerte** até uma chain carregá-lo. `cert_director_go` **NÃO** entra em `resolve_default_gates('project_charter')` por ora (hand-built-chain-only; reavaliar quando um 2º TAP precisar).
-- **Fase B (recirculação, gated/outward-facing, sessão posterior):** UPDATE `approval_chains.gates` da chain `897aeddf` (2→4 gates, audit-logado) → `recirculate_governance_doc` dry-run → não-dry-run (supersede + lacra R01 + e-mail). Precondições: RACI do R01 alinhada (Diretoria de Área de `C`→`A` na linha "Aprovação do TAP"), Welma briefada sobre o escopo da assinatura.
+- **Fase B (recirculação, gated/outward-facing, sessão posterior):** UPDATE `approval_chains.gates` da chain `897aeddf` (2→4 gates, audit-logado) → `recirculate_governance_doc` dry-run → não-dry-run (supersede + lacra R01 + e-mail). Precondições: RACI do R01 alinhada (Diretoria de Área de `C`→`A` na linha "Aprovação do TAP"), member F briefada sobre o escopo da assinatura.
 
 ### Migration aplicada
-- `20260805000152_adr0016_amendment_4_cert_director_go` — `_validate_gates_shape` + `_can_sign_gate` + `_ip_ratify_cta_link` + `_enqueue_gate_notifications`. Smoke verificado (Welma+project_charter=true; Welma+policy=false [scoping]; não-cert=false; CTA member-facing; file==live para as 4 funções).
+- `20260805000152_adr0016_amendment_4_cert_director_go` — `_validate_gates_shape` + `_can_sign_gate` + `_ip_ratify_cta_link` + `_enqueue_gate_notifications`. Smoke verificado (member F+project_charter=true; member F+policy=false [scoping]; não-cert=false; CTA member-facing; file==live para as 4 funções).

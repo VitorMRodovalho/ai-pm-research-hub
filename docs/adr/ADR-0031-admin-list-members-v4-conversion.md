@@ -55,26 +55,26 @@ Análise das 9 actions V4 existentes:
 | `manage_finance` (ADR-0025) | manage_platform + sponsor | Falta chapter_liaison |
 | `manage_comms` (ADR-0026) | manage_platform + comms_leader | Não cabe |
 | `view_pii` | manage_platform + chapter_board.board_member + initiative leaders | Broad demais — initiative leaders veriam todo o diretório |
-| **`view_internal_analytics` (ADR-0030)** | volunteer×{co_gp,manager,deputy_manager} + sponsor + chapter_board×liaison | ✅ **Match excelente** — legacy 9 → V4 10 (+Roberto) |
+| **`view_internal_analytics` (ADR-0030)** | volunteer×{co_gp,manager,deputy_manager} + sponsor + chapter_board×liaison | ✅ **Match excelente** — legacy 9 → V4 10 (+member A) |
 | `write` / `write_board` | tribe-scoped | Não cabe |
 
 **Privilege expansion check (verified pre-apply):**
 ```
-legacy (V3) = 9: Vitor SA, Ana, Fabricio, Felipe, Francisca, Ivan,
-                  Márcio, Matheus, Rogério
-v4 (view_internal_analytics) = 10: legacy 9 + Roberto Macêdo
-would_gain = [Roberto Macêdo] (chapter_board × liaison engagement)
+legacy (V3) = 9: Vitor SA, member B, member C, member D, member E, member F,
+                  member G, member H, member I
+v4 (view_internal_analytics) = 10: legacy 9 + member A
+would_gain = [member A] (chapter_board × liaison engagement)
 would_lose = []
 ```
 
-**Roberto context**: `operational_role=observer` mas designations
+**member A context**: `operational_role=observer` mas designations
 `[chapter_liaison, ambassador, curator]` + V4 engagement `chapter_board ×
-liaison` (organization scope). V3 não incluía Roberto porque V3 usa
+liaison` (organization scope). V3 não incluía member A porque V3 usa
 `operational_role IN (...)` (string match em coluna `operational_role`),
-não designations. V4 inclui Roberto via engagement chapter_board×liaison
+não designations. V4 inclui member A via engagement chapter_board×liaison
 — legítimo papel institucional.
 
-Roberto **deveria** ter acesso a member directory para seu chapter_board
+member A **deveria** ter acesso a member directory para seu chapter_board
 liaison role. V4 conversion **corrige um gap** de V3: papel governance
 sem operational_role admin não tinha acesso, mas o engagement V4 indica
 que deveria.
@@ -82,7 +82,7 @@ que deveria.
 ### Custo de não fazer
 
 - 1 fn V3 permanece. Phase B'' tally trava.
-- Roberto continua sem acesso member directory que sua função exige.
+- member A continua sem acesso member directory que sua função exige.
 - Inconsistência: ADR-0030 já dá acesso a chapter_board × liaison para
   analytics; admin_list_members é parte da mesma surface admin.
 
@@ -160,7 +160,7 @@ Logging em loop seria caro e ruidoso. Deferred para audit doc backlog
 - Zero novo V4 action — economia de inventário.
 
 ### Para members
-- Roberto Macêdo gain access — corrige gap V3 onde chapter_board liaison
+- member A gain access — corrige gap V3 onde chapter_board liaison
   observer não tinha acesso.
 - Zero would_lose.
 
@@ -177,9 +177,9 @@ Logging em loop seria caro e ruidoso. Deferred para audit doc backlog
 
 Recomendação: **SIM** (Opção B reuse).
 
-### Q2 — Roberto Macêdo gain (chapter_board × liaison) é intencional?
+### Q2 — member A gain (chapter_board × liaison) é intencional?
 
-Roberto tem V4 engagement chapter_board × liaison (organization scope).
+member A tem V4 engagement chapter_board × liaison (organization scope).
 ADR-0030 já dá-lhe acesso a analytics. Estender member directory listing
 é consistente com role institucional.
 
@@ -219,7 +219,7 @@ Recomendação: **p66 mesmo**.
 ### Outcome (post-apply)
 
 - 1 fn V3 convertida (admin_list_members) reusando action existente.
-- Privilege expansion: legacy 9 → V4 10 (Roberto Macêdo gain via
+- Privilege expansion: legacy 9 → V4 10 (member A gain via
   chapter_board × liaison engagement — corrige gap V3).
 - Zero would_lose.
 - Defense-in-depth REVOKE FROM anon aplicado.

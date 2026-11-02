@@ -1,7 +1,7 @@
 # HF5 Data Patch — Runbook de Execução em Produção
 
 **Objetivo**: Executar o patch idempotente HF5 no banco de produção para:
-1. Restaurar LinkedIn da Sarah (quando em branco)
+1. Restaurar LinkedIn da member B (quando em branco)
 2. Alinhar `members.operational_role` e `members.designations` com `member_cycle_history` ativo
 3. Garantir consistência deputy_manager (co_gp) e manager (sem co_gp)
 
@@ -18,8 +18,8 @@ docs/migrations/hf5-audit-data-patch.sql
 ```
 
 **O que observar**:
-- 1) Snapshot dos membros Sarah e Roberto — estado antes do patch
-- 1b) Sarah sem LinkedIn — deve retornar 0 linhas *após* o patch; antes pode ter 1
+- 1) Snapshot dos membros member B e member A — estado antes do patch
+- 1b) member B sem LinkedIn — deve retornar 0 linhas *após* o patch; antes pode ter 1
 - 2) Mismatches entre `members` e `member_cycle_history` — quantos registros divergem
 - 3a) `deputy_manager` sem `co_gp` — quantos precisam de correção
 - 3b) `manager` com `co_gp` — quantos precisam de correção
@@ -49,7 +49,7 @@ docs/migrations/hf5-audit-data-patch.sql
 ```
 
 **Verificações esperadas**:
-- 1b) **0 linhas** — Sarah deve ter LinkedIn preenchido (ou não existir no critério)
+- 1b) **0 linhas** — member B deve ter LinkedIn preenchido (ou não existir no critério)
 - 2) **0 linhas** — nenhum mismatch entre members e cycle history
 - 3a) **0 linhas** — nenhum deputy_manager sem co_gp
 - 3b) **0 linhas** — nenhum manager com co_gp
@@ -64,7 +64,7 @@ Adicione entrada em `docs/RELEASE_LOG.md`:
 ## YYYY-MM-DD — HF5 Data Patch (Produção)
 
 ### Scope
-Execução do patch HF5 em produção: Sarah LinkedIn, alinhamento cycle history, deputy hierarchy.
+Execução do patch HF5 em produção: member B LinkedIn, alinhamento cycle history, deputy hierarchy.
 
 ### Delivered
 - Executado hf5-apply-data-patch.sql no Supabase produção

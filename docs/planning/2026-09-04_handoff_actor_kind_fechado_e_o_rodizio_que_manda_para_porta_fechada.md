@@ -104,7 +104,7 @@ foi marcado e a janela de auto-registro segue aberta até 06/09 19:00.
 **3 presenças removidas**, todas em reunião cancelada, todas marcadas DEPOIS do cancelamento (11, 5
 e 3 dias). Rastro escrito à mão em `admin_audit_log`, porque `clear_member_attendance` não audita.
 
-**Fila de seleção medida e comunicada** a Fabricio e Fernando, em mensagens individuais: 8 candidatos
+**Fila de seleção medida e comunicada** a member B e member A, em mensagens individuais: 8 candidatos
 sem nenhuma avaliação objetiva (3 esperando há mais de duas semanas) e 4 com a fase objetiva completa
 esperando só a entrevista, os mais antigos há 50 dias.
 
@@ -203,7 +203,7 @@ os quatro links e recontar é a verificação.
 
 ## O que continua parado do lado do PM, e tem prazo
 
-**Os cinco pontos da pauta** que o Fernando cita como esqueleto da descrição de cada produto para o
+**Os cinco pontos da pauta** que o member A cita como esqueleto da descrição de cada produto para o
 PMOGA, e **a atribuição da mensagem das 8:56** no WhatsApp (se a mudança de cidade e a
 indisponibilidade até meados da semana são do PM ou do coordenador do PMOGA).
 

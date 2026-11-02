@@ -563,7 +563,7 @@ VALUES ('2026-1', 'Seleção Ciclo 3 — 1º Semestre 2026', 'closed', '2026-01-
 From `Selecao_candidatos_2026-1.xlsx`:
 - **48 researcher candidates** (tab "Avaliação Pesquisador") with full scores
 - **10 leader candidates** (tab "Avaliação Líderes") with full scores
-- All evaluation scores per evaluator (Fabricio + Vitor)
+- All evaluation scores per evaluator (member B + Vitor)
 - Interview data (date, theme, scores)
 - Final decisions (Approved, Rejected, Waitlist, Converted, Withdrawn, Cancelled)
 - Tags (from color coding): convert_to_leader, returning_member, comms_potential
@@ -683,7 +683,7 @@ test_diversity:
 test_historical_import:
   - 48 researcher applications imported with correct scores
   - 10 leader applications imported
-  - 3 conversions (Ana Carla, Hayala, Klemz) recorded correctly
+  - 3 conversions (member A, member C, Klemz) recorded correctly
   - 44 member records enriched with phone/linkedin/pmi_id
 ```
 

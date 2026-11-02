@@ -61,28 +61,28 @@ match excelente para audiência admin readers + chapter governance.
 |---|---|---|
 | `manage_platform` | volunteer×{co_gp,manager,deputy_manager} | NÃO — perde sponsor + chapter_liaison + chapter_board (4 vs 9) |
 | `manage_member` | manage_platform + initiative leaders | NÃO — só 2 active members têm hoje |
-| **`view_internal_analytics`** | volunteer×{co_gp,manager,deputy_manager} + sponsor + chapter_board×liaison | ✅ **Match excelente** — legacy 9 → V4 10 (+Roberto, igual ADR-0031) |
+| **`view_internal_analytics`** | volunteer×{co_gp,manager,deputy_manager} + sponsor + chapter_board×liaison | ✅ **Match excelente** — legacy 9 → V4 10 (+member A, igual ADR-0031) |
 | `view_pii` | broader — initiative leaders | Broad demais para member directory detail |
 
 ### Privilege expansion (verified pre-apply)
 
 ```
-legacy (V3) = 9: Vitor SA, Ana, Fabricio, Felipe, Francisca, Ivan,
-                  Márcio, Matheus, Rogério
-v4 (view_internal_analytics) = 10: legacy 9 + Roberto Macêdo
-would_gain = [Roberto Macêdo] (chapter_board × liaison engagement)
+legacy (V3) = 9: Vitor SA, member B, member C, member D, member E, member F,
+                  member G, member H, member I
+v4 (view_internal_analytics) = 10: legacy 9 + member A
+would_gain = [member A] (chapter_board × liaison engagement)
 would_lose = []
 ```
 
-**Roberto context**: idêntico ao ADR-0031 — chapter_board × liaison
+**member A context**: idêntico ao ADR-0031 — chapter_board × liaison
 engagement legítimo, V3 não cobria por usar operational_role string match.
 Member detail é parte da mesma surface admin que admin_list_members; é
-consistente que Roberto tenha acesso a ambos.
+consistente que member A tenha acesso a ambos.
 
 ### Custo de não fazer
 
 - 1 fn V3 permanece. Phase B'' tally trava.
-- Inconsistência: ADR-0031 admin_list_members já dá acesso a Roberto;
+- Inconsistência: ADR-0031 admin_list_members já dá acesso a member A;
   get_member_detail (clicar em row da lista) bloqueia. UX broken.
 
 ---
@@ -141,7 +141,7 @@ foi deferido para audit doc backlog "log_pii_access enhancement carry"
 - Zero novo V4 action.
 
 ### Para members
-- Roberto Macêdo gain access — idêntico ao ADR-0031, corrige inconsistência.
+- member A gain access — idêntico ao ADR-0031, corrige inconsistência.
 - Zero would_lose.
 
 ### Para path A/B/C optionality
@@ -158,7 +158,7 @@ foi deferido para audit doc backlog "log_pii_access enhancement carry"
 
 PM **SIM** — Opção B reuse, mesma ladder de ADR-0031.
 
-### Q2 — Roberto Macêdo gain (chapter_board × liaison) é intencional?
+### Q2 — member A gain (chapter_board × liaison) é intencional?
 
 PM **SIM** — consistente com ADR-0031, role-aligned.
 
@@ -187,9 +187,9 @@ PM **p66** — junto com restante do final round.
 ### Outcome (post-apply)
 
 - 1 fn V3 convertida (get_member_detail) reusando action existente.
-- Privilege expansion: legacy 9 → V4 10 (Roberto Macêdo gain via
+- Privilege expansion: legacy 9 → V4 10 (member A gain via
   chapter_board × liaison engagement — corrige inconsistência com ADR-0031).
 - Zero would_lose.
 - pg_policy precondition (Q-D charter): zero RLS refs verified.
 - Phase B'' tally: 78 → 79 / 246 (~32.1%).
-- Member detail page consistent with admin_list_members (Roberto gains access in both).
+- Member detail page consistent with admin_list_members (member A gains access in both).

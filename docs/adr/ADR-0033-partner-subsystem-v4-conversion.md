@@ -12,7 +12,7 @@
 - Privilege expansion outcome (Phase 1):
   - legacy=11 → v4=10
   - would_gain = []
-  - would_lose = [João Uzejka — chapter_liaison designation sem V4 engagement,
+  - would_lose = [member B — chapter_liaison designation sem V4 engagement,
                   same drift pattern as ADR-0030]
 - Cross-references: ADR-0007 (V4 authority), ADR-0011 (V4 auth pattern),
   ADR-0027/0031/0032 (Opção B reuse precedents),
@@ -58,7 +58,7 @@ que merece tratamento separado.
 | `get_partner_interaction_attachments(uuid)` | Same as above (mesma tier) | Same |
 
 **Por que defer Phase 2**: curator é V3 designation sem V4 engagement (drift
-correction same as ADR-0030 Sarah). E visibility tier multi-nível (leader
+correction same as ADR-0030 member A). E visibility tier multi-nível (leader
 gets all + chapter_stakeholder gets own-chapter) precisa per-resource scope
 checks parecidos com ADR-0032 mas mais sutis. PM rubber-stamp não é trivial.
 
@@ -143,7 +143,7 @@ SELECT
   (SELECT count(*) FROM v4_manage_partner) AS v4_count;
 ```
 
-(executar pre-apply para confirmar; expected drift losses Mayanna/Sarah/João
+(executar pre-apply para confirmar; expected drift losses member C/member A/member B
 seguindo precedent ADR-0030/0031)
 
 ### 6. Defense-in-depth REVOKE
@@ -165,10 +165,10 @@ REVOKE EXECUTE ON FUNCTION public.auto_generate_cr_for_partnership(uuid) FROM PU
 - 4 fns attachment-related ainda V3 (Phase 2 deferred).
 
 ### Para members
-- Mayanna (comms_leader designation, mas não em partner V3 ladder) — não afeta.
-- Sarah (curator) + João (chapter_liaison designation) — drift losses similar
+- member C (comms_leader designation, mas não em partner V3 ladder) — não afeta.
+- member A (curator) + member B (chapter_liaison designation) — drift losses similar
   a ADRs anteriores se ladders se cruzarem. Pre-apply check confirma.
-- co_gp engagement (Sarah Faria has co_gp → tem manage_partner) — confere.
+- co_gp engagement (member A has co_gp → tem manage_partner) — confere.
 
 ### Para path A/B/C
 - Path A/B/C neutros (consistente com Opção B reuses anteriores).
@@ -224,7 +224,7 @@ Phase 1 estimativa: ~45 min (4 fns simples, mesma action reuse).
   get_partner_pipeline → manage_partner; auto_generate_cr_for_partnership →
   manage_platform).
 - Zero novo V4 action (full reuse Opção B).
-- João Uzejka loses (chapter_liaison designation drift, same as ADR-0030).
-- Sarah Faria mantém access (V4 engagement volunteer × co_gp grants manage_partner).
+- member B loses (chapter_liaison designation drift, same as ADR-0030).
+- member A mantém access (V4 engagement volunteer × co_gp grants manage_partner).
 - Phase B'' tally: 66 → 70 / 246 (~28.5%).
 - 4 attachment fns ainda V3 — backlog ADR-0034 com drift signals #5 #6 closure.

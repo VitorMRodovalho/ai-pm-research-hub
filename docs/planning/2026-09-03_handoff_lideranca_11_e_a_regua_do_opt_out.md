@@ -18,7 +18,7 @@ Lane nova criada: `.wt-lideranca`. As outras duas seguem vivas: `.wt-campanha` (
 
 ## O que foi entregue
 
-**A página de condução da Liderança #11**, para Fernando e Fabricio, que conduziram sem o GP:
+**A página de condução da Liderança #11**, para member A e member B, que conduziram sem o GP:
 https://claude.ai/code/artifact/53824d61-5d5a-409c-8cf2-8d29d5eeafdb
 (privada; só abre para quem receber o compartilhamento). Fonte em
 `docs/planning/reuniao-lideranca-11.html`. Publicada às 16h20 e **republicada às 22h**, porque a
@@ -101,7 +101,7 @@ reprova; árvore limpa dá 3 de 3.
 | **A candidatura travada** (#2004, metade 2) | ratchet em **2** | GP: avaliação objetiva ou destravamento explícito |
 | **A virada de presença das 16:28** | invariante AC em **1** violação | decidir se foi correção legítima; se foi, o marco cai junto |
 | **Webinar de PI** | `planned` em **28/05**, ação `open` | GP: data real ou cancelar |
-| **Série da Tribo 14** | ação `open`; 15 linhas quarta vs 15 títulos segunda | Paulo: qual é o dia real |
+| **Série da Tribo 14** | ação `open`; 15 linhas quarta vs 15 títulos segunda | member C: qual é o dia real |
 | **`agenda_url` / `agenda_text` do evento #11** | **vazios** | uma chamada, quando quiserem |
 | **PR #2168** | 10 verdes, 2 vermelhos | destrava sozinha quando as duas primeiras saírem |
 

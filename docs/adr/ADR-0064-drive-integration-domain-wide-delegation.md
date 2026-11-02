@@ -3,7 +3,7 @@
 **Status:** Accepted (2026-04-28) — **Amended same day** to Path F
 **Decision date:** p78 session (smoke-test discovery + autonomous resolution)
 **Supersedes:** —
-**Related:** Issue #110 (Mayanna Item 07), `docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md`
+**Related:** Issue #110 (member A Item 07), `docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md`
 
 ## Amendment 1 (2026-04-28, same session)
 

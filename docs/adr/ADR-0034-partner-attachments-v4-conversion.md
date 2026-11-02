@@ -44,21 +44,21 @@ via decisão entre 2 caminhos:
 ### Privilege analysis — pre-apply numbers
 
 **Group W2 (writers — add/delete_partner_attachment)**:
-- **legacy = 4**: Vitor SA, Fabricio, Roberto curator, Sarah curator
-- **V4 manage_partner = 10**: legacy 2 (Vitor, Fabricio) + 7 admin/governance (Ana,
-  Felipe, Francisca, Ivan, Márcio, Matheus, Rogério) + Roberto chapter_board × liaison
+- **legacy = 4**: Vitor SA, member B, member C curator, member D curator
+- **V4 manage_partner = 10**: legacy 2 (Vitor, member B) + 7 admin/governance (member A,
+  member E, member F, member G, member H, member I, member J) + member C chapter_board × liaison
 - would_gain = 7 admin/governance roles
-- would_lose = [Sarah] (curator drift, same precedent ADR-0030/0031/0033)
+- would_lose = [member D] (curator drift, same precedent ADR-0030/0031/0033)
 
 Trade-off material: V3 era 4 (admin + curator), V4 vira 10 (admin + governance roles).
 Sponsors + chapter_board liaisons ganham capacidade upload/delete partnership docs.
 
 **Group R2 (readers — get_*_attachments)**:
-- **legacy_org = 10**: Vitor, Fabricio, Roberto, Sarah + 6 tribe_leaders
-  (Ana Carla, Débora, Fernando, Hayala, Jefferson, Marcos)
+- **legacy_org = 10**: Vitor, member B, member C, member D + 6 tribe_leaders
+  (member A, member K, member L, member M, member N, member O)
 - **V4 manage_partner = 10**: admin/governance only, sem tribe_leaders
-- would_gain = 7 admin/governance (Ana, Felipe, Francisca, Ivan, Márcio, Matheus, Rogério)
-- would_lose = [Sarah curator + 6 tribe_leaders] = 7
+- would_gain = 7 admin/governance (member A, member E, member F, member G, member H, member I, member J)
+- would_lose = [member D curator + 6 tribe_leaders] = 7
 
 **Tribe_leaders losing partner attachment visibility** is a material UX regression
 mas pode ser intencional: tribe_leaders historicamente tinham acesso amplo
@@ -76,7 +76,7 @@ IF NOT public.can_by_member(v_caller_id, 'manage_partner') THEN
 END IF;
 ```
 
-Privilege expansion: 4 → 10 (7 admin/governance gain). Sarah loses (curator drift).
+Privilege expansion: 4 → 10 (7 admin/governance gain). member D loses (curator drift).
 
 ### Path D — Readers: reuse `manage_partner` + drop chapter scope
 
@@ -93,7 +93,7 @@ RETURN ( /* fetch attachments */ );
 
 Privilege adjustment:
 - 7 admin/governance gain attachment visibility for ALL chapters
-- 6 tribe_leaders + Sarah lose (drift correction)
+- 6 tribe_leaders + member D lose (drift correction)
 
 ### Path E — Readers (alternative): reuse `manage_partner` + preserve own-chapter clause
 
@@ -123,8 +123,8 @@ broader than V3 (V3 only allowed own-chapter to sponsor/chapter_liaison).
 
 ### Para members
 - Group W2: 7 admin/governance gain upload/delete attachments capability.
-- Group R2: 7 lose visibility (6 tribe_leaders + Sarah).
-- Drift correction precedent agora 6× (Mayanna×3, Sarah×3, João×3 — todos V3 designation sem V4 engagement).
+- Group R2: 7 lose visibility (6 tribe_leaders + member D).
+- Drift correction precedent agora 6× (member P×3, member D×3, member Q×3 — todos V3 designation sem V4 engagement).
 
 ### Para path A/B/C
 - **Path A (PMI internal)**: positivo — partner governance tightened.
@@ -137,7 +137,7 @@ broader than V3 (V3 only allowed own-chapter to sponsor/chapter_liaison).
 
 ### Q1 — Group W2 writers: aceito reuse `manage_partner` (Path A)?
 
-Privilege expansion 4 → 10 (7 governance gain, Sarah loses).
+Privilege expansion 4 → 10 (7 governance gain, member D loses).
 
 **Recomendação**: SIM. Same Opção B precedent.
 
@@ -180,8 +180,8 @@ Phase 2 estimativa: ~45 min (4 fns simples reuse).
 
 - 4 fns V3 convertidas (add/delete attachment + 2 attachment readers).
 - Zero novo V4 action (full reuse Opção B).
-- Group W2: 7 admin/governance gain upload/delete; Sarah curator drift loss.
-- Group R2: 7 admin/governance gain visibility; 6 tribe_leaders + Sarah lose.
+- Group W2: 7 admin/governance gain upload/delete; member D curator drift loss.
+- Group R2: 7 admin/governance gain visibility; 6 tribe_leaders + member D lose.
 - **Drift signals #5 #6 closed** — V3 chapter_match removed.
 - Phase B'' tally: 70 → 74 / 246 (~30.1%).
 - Partner subsystem 100% V4 (Phase 1 + Phase 2 = 8/8 fns).

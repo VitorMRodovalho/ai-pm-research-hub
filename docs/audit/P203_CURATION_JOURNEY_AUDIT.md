@@ -74,9 +74,9 @@ Capacidades dos 3 curadores V4:
 
 | Curador | `curate_content` | `participate_in_governance_review` | `write_board` |
 |---|---:|---:|---:|
-| Fabricio | true | true | true |
-| Roberto | true | true | false |
-| Sarah | true | true | false |
+| member C | true | true | true |
+| member A | true | true | false |
+| member B | true | true | false |
 
 ---
 
@@ -95,9 +95,9 @@ Capacidades dos 3 curadores V4:
 
 Impacto live:
 
-- Roberto e Sarah têm `curate_content=true`, mas `write_board=false`.
+- member A e member B têm `curate_content=true`, mas `write_board=false`.
 - A UI pode deixar entrar, mas a RPC nega a fila.
-- Isso explica o relato de Roberto: "Sem acesso / status em conflito".
+- Isso explica o relato de member A: "Sem acesso / status em conflito".
 
 Próxima ação:
 
@@ -310,7 +310,7 @@ Próxima ação:
 **Camada:** frontend UX / semantic envelope
 **GitHub:** #201
 
-Fabricio reportou que o item submetido por Débora/Agentes Autônomos aparece em `/admin/curatorship`, mas o modal de avaliação não mostra o link do artigo nem a pasta/contexto da submissão.
+member C reportou que o item submetido por member D/Agentes Autônomos aparece em `/admin/curatorship`, mas o modal de avaliação não mostra o link do artigo nem a pasta/contexto da submissão.
 
 Evidência live do item `642fe90f-20ad-4ba4-a9e7-05470ed7c5de`:
 
@@ -516,7 +516,7 @@ Achados:
 
 - `tests/contracts/rpc-acl.test.mjs` ainda espera "curator designation or admin role" para RPCs de curadoria.
 - `tests/contracts/rls-v4-phase4-1.test.mjs` valida `curation_review_log_write` com `write_board`, enquanto a direção de #185 é separar leitura/curadoria V4 de board-write amplo.
-- `tests/ui-stabilization.test.mjs` cobre wiring básico de `CuratorshipBoardIsland`, mas não garante persona Roberto/Sarah nem bloqueia regressão de gates V4.
+- `tests/ui-stabilization.test.mjs` cobre wiring básico de `CuratorshipBoardIsland`, mas não garante persona member A/member B nem bloqueia regressão de gates V4.
 
 Próxima ação:
 

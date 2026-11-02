@@ -6,8 +6,8 @@
 
 **Participantes:**
 - Demo runner: **Vitor** (GP)
-- Timekeeper + Q&A simulator: **Fabrício** (embaixador AIPM)
-- Audience proxy + feedback: **Ivan** (sponsor PMI-GO) se disponível
+- Timekeeper + Q&A simulator: **member A** (embaixador AIPM)
+- Audience proxy + feedback: **member B** (sponsor PMI-GO) se disponível
 - Optional: 1 líder de tribo que nunca viu o demo (teste de clareza para público externo)
 
 ---
@@ -49,11 +49,11 @@ Notebook que vai para Gramado:
 
 ### Parte 1 — Preparação (5 min)
 - [ ] Vitor abre as 5 tabs na ordem
-- [ ] Fabrício inicia cronômetro
+- [ ] member A inicia cronômetro
 - [ ] Gravar a tela (Loom ou OBS) para revisão posterior
 
 ### Parte 2 — Demo integral (20 min cronometrados)
-Seguir `docs/CBGPL_DEMO_SCRIPT.md` cabo a cabo. **Timekeeper Fabrício dá sinal a cada 5min** (sinalização discreta, não interromper fala).
+Seguir `docs/CBGPL_DEMO_SCRIPT.md` cabo a cabo. **Timekeeper member A dá sinal a cada 5min** (sinalização discreta, não interromper fala).
 
 Meta de tempo por ato:
 - Act 1 (público): 5:00 ± 0:30
@@ -64,7 +64,7 @@ Meta de tempo por ato:
 **Sem pausar** para corrigir erros durante o dry-run. Anotar e corrigir depois.
 
 ### Parte 3 — Q&A simulado (5 min)
-Fabrício (ou Ivan) dispara 3-5 perguntas da lista:
+member A (ou member B) dispara 3-5 perguntas da lista:
 
 **Perguntas-base** (do demo script):
 1. "Quanto custa?"
@@ -80,7 +80,7 @@ Fabrício (ou Ivan) dispara 3-5 perguntas da lista:
 9. "Como mediram que a IA amplifica em vez de substituir?"
 10. "E quando a OpenAI lançar um gerenciador de projetos nativo?"
 
-Vitor responde em 30-60s por pergunta. Fabrício anota respostas fracas para refinar.
+Vitor responde em 30-60s por pergunta. member A anota respostas fracas para refinar.
 
 ### Parte 4 — Revisão (30 min)
 Assistir gravação juntos. Anotar:
@@ -118,13 +118,13 @@ Se falhar o gate → agendar Dry-Run #2.
 - [ ] Lista de 5-10 ajustes no `CBGPL_DEMO_SCRIPT.md`
 - [ ] Confirmação de métricas atualizadas no script
 - [ ] Lista de 10 Q&A com respostas refinadas (anexar ao demo script)
-- [ ] Sign-off do comitê (Ivan + Fabrício + líder de tribo convidado) → "Pronto para Gramado"
+- [ ] Sign-off do comitê (member B + member A + líder de tribo convidado) → "Pronto para Gramado"
 
 ---
 
 ## Stakeholder follow-ups após dry-run
 
 - [ ] WhatsApp comitê: envio de link gravação + resumo de ajustes
-- [ ] Email Ivan: confirmar slot no Arena + presença committee no dia
+- [ ] Email member B: confirmar slot no Arena + presença committee no dia
 - [ ] DM para Ricardo Vargas (via AIPM): 1-liner com link do vídeo 3min (pré-briefing)
 - [ ] LinkedIn post pré-evento (26/Abr): vídeo 3min cut + convite para Arena

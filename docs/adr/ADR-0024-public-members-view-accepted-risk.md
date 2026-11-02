@@ -138,7 +138,7 @@ COMMENT ON VIEW public.public_members IS
 
 ## Elevator Pitch / Sponsor Q&A Response (p59 — para call de segunda)
 
-Se Ivan ou outro sponsor perguntar sobre o **1 ERROR remanescente** no
+Se member A ou outro sponsor perguntar sobre o **1 ERROR remanescente** no
 advisor de segurança Supabase, a resposta-padrão é:
 
 > "Esse ERROR é a única exposição intencional que mantemos. É uma view
@@ -160,9 +160,9 @@ advisor de segurança Supabase, a resposta-padrão é:
 4. **Tem critérios de re-trigger** se contexto mudar (audit externo etc.)
 5. **Trail completo** em GitHub: ADR-0024 + COMMENT ON VIEW inline + Issue #82
 
-**Se Ivan quiser action item adicional**, opções (em ordem de menor → maior custo):
+**Se member A quiser action item adicional**, opções (em ordem de menor → maior custo):
 1. **Re-confirmação formal** do "accepted risk" status (5 min — escrever
-   "ratified by Ivan Lourenço 2026-04-XX" no ADR)
+   "ratified by member A 2026-04-XX" no ADR)
 2. **Quarterly re-review trigger** (20 min — adicionar ao ROPA review trimestral)
 3. **Slim view refactor** (~6-8h — implementar OPÇÃO 3 da Onda 2/3 spec:
    `members_public_safe_v2` com 8 cols não-sensíveis + RPC `get_member_signature(id)`
