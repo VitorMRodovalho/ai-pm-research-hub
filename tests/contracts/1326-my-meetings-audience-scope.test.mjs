@@ -1,7 +1,7 @@
 /**
  * Contract: #1326 — get_my_meetings escopa por AUDIÊNCIA real, não pelo proxy `initiative_id IS NULL`.
  *
- * Incidente (2026-07-11, reportado pela membra Ligia Ribeiro): a widget "Minhas reuniões" mostrava
+ * Incidente (2026-07-11, reportado pela membra member A): a widget "Minhas reuniões" mostrava
  * entrevistas de candidatos e reuniões de liderança para TODO membro, porque o escopo usava
  * `e.initiative_id IS NULL` como proxy de "evento geral" — e entrevista/lideranca/1on1 também têm
  * initiative_id NULL. Consequências: lideranca (rule role) barrava no register_own_presence com

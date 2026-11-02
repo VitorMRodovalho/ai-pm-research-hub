@@ -4,7 +4,7 @@
  * The 3 view RPCs (get_curation_dashboard, list_curation_pending_board_items, list_pending_curation)
  * gated solely on write_board / write. A pure curator's authority is designation-derived
  * (`curator` designation → curate_content) and does NOT include write_board, so curators with
- * operational_role <> manager (Roberto Macêdo, Sarah Rodovalho) were denied at the RPC layer even
+ * operational_role <> manager (member B, member A) were denied at the RPC layer even
  * though the client gate (hasPermission 'admin.curation' via curator designation) let them through.
  *
  * Migration 20260805000098 makes the gate ADDITIVE: curate_content OR (existing write_board/write).

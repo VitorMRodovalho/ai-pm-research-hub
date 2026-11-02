@@ -1,7 +1,7 @@
 /**
  * Contract: #1280 — review_tribe_request(approve) é idempotente contra engagement ativa pré-existente.
  *
- * Incidente (2026-07-10, pego pelo check-invariants): David Gentil ficou com DUAS engagements
+ * Incidente (2026-07-10, pego pelo check-invariants): member A ficou com DUAS engagements
  * volunteer/active na MESMA research_tribe initiative — um stub retroativo do backfill #1247 mais a
  * engagement canônica criada quando o líder aprovou o join-request pendente para a mesma tribo.
  * O approve demovia volunteer em OUTRAS tribos (tribe switch) mas INSERIA incondicionalmente na

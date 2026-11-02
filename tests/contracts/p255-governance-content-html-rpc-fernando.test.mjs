@@ -6,7 +6,7 @@ import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 const GUARD_ROOT = process.cwd();
 
 // p255 HF2 — Governance viewer content_html via get_chain_workflow_detail.
-// Fernando Maquiaveli (external reviewer / pending signer) sees "conteúdo
+// member A (external reviewer / pending signer) sees "conteúdo
 // indisponível" + console 406 on document_versions.content_html because
 // ReviewChainIsland was doing a direct client-side SELECT under RLS that
 // blocks his read. Fix: extend the existing SECDEF RPC to return
@@ -28,7 +28,7 @@ const sb = SUPABASE_URL && SUPABASE_SRK ? createClient(SUPABASE_URL, SUPABASE_SR
   auth: { persistSession: false }
 }) : null;
 
-describe('p255 HF2 — governance viewer content_html via RPC (Fernando hotfix)', () => {
+describe('p255 HF2 — governance viewer content_html via RPC (member A hotfix)', () => {
   describe('migration file presence + header cross-refs', () => {
     it('migration file exists at canonical timestamp', () => {
       assert.ok(existsSync(MIGRATION_PATH));

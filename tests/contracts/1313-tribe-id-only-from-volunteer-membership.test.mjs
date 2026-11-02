@@ -4,7 +4,7 @@
  * Bug (2026-07-11): a ponte dual-write `_sync_tribe_id_from_engagement()` era ASSIMETRICA.
  * O ramo de ATIVACAO setava members.tribe_id para QUALQUER kind ativo numa research_tribe
  * (inclusive observer/speaker/curador), mas o guard de DEMOCAO so reconhece kind='volunteer'
- * para reter o tribe_id. Resultado: Roberto Macedo (observer/curador da T8) tinha tribe_id=8
+ * para reter o tribe_id. Resultado: member A (observer/curador da T8) tinha tribe_id=8
  * ("membro da tribo") enquanto o roster corretamente NAO o listava — drift dual-write semantico.
  *
  * Fix: o SET passou a exigir NEW.kind='volunteer', espelhando o predicado do guard de democao

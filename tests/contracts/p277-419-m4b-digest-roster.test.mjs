@@ -3,7 +3,7 @@
  *
  * get_weekly_tribe_digest.aggregates.active_members converges onto the canonical roster primitive
  * (get_initiative_roster_count, PR4-A). Was: count(*) FROM members WHERE tribe_id = p_tribe_id AND
- * current_cycle_active = true — which over-counts the OFFBOARDED Maria Luiza (tribe-8 engagement
+ * current_cycle_active = true — which over-counts the OFFBOARDED member A (tribe-8 engagement
  * status='offboarded', but members.current_cycle_active still true): tribe-8 antes = 7. Now = 6.
  * The weekly leader-digest email (Saturday cron) stops over-reporting the roster.
  *

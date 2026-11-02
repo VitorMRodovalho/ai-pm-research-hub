@@ -5,7 +5,7 @@
  * is_active -> false, role, designations -> '{}' but NEVER cleared
  * current_cycle_active (CCA). The sync_member_status_consistency() BEFORE-trigger
  * coerced is_active/role/designations on the same UPDATE OF member_status, yet left
- * CCA untouched. 3 offboarded members (Andressa Martins, Maria Luiza, Herlon)
+ * CCA untouched. 3 offboarded members (member B, member A, Herlon)
  * carried CCA=true, contradicting "active in the current cycle" and feeding the
  * get_gamification_leaderboard / get_public_leaderboard cohort's CCA=true branch.
  *

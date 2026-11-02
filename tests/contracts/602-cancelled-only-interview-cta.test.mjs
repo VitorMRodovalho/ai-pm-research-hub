@@ -1,7 +1,7 @@
 /**
  * Contract: #602 — cancelled-only interviews must NOT hide the "Iniciar avaliação ao vivo" CTA.
  *
- * Bug (live, 2026-06-08, Rafael Bellotti): a candidate whose ONLY interview row was
+ * Bug (live, 2026-06-08, member A): a candidate whose ONLY interview row was
  * `cancelled` (status reset to `interview_pending`) could not be evaluated — the
  * start-CTA / cutoff-invite / offline paths were gated on `!interviews?.length`, so one
  * cancelled row was enough to skip the branch, and the else-branch picked the cancelled
@@ -115,7 +115,7 @@ test('602 behavioural: gate predicate replayed from source against the trap scen
   const TERMINAL = [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
   const hasActionable = (rows) => rows.some((i) => !TERMINAL.includes(i.status));
 
-  // Rafael scenario: single cancelled row → branch must offer the CTA.
+  // member A scenario: single cancelled row → branch must offer the CTA.
   assert.equal(hasActionable([{ status: 'cancelled' }]), false, 'cancelled-only → no actionable → CTA branch');
   // ca50… scenario: 3 terminal rows (cancelled/noshow/rescheduled) → CTA branch.
   assert.equal(
