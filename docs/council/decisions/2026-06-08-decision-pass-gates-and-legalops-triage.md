@@ -14,21 +14,21 @@ Grounding showed **3 of the 4 nominal gates were already decided/shipped** — t
 - **Decision:** ratify all three as shipped. Residual = per-evaluator booking-URL routing, carried as **build** under #347→#348 (**not a gate**).
 
 ## G15 — Role model → RESOLVED = Option A
-- Single-valued `operational_role` + lateral `designations[]`. Roberto Macêdo lives with `['chapter_liaison','ambassador','curador']`; `can_by_member(Roberto,'curate_content')=true` vs `write_board=false` (designation path grants curator authority). #245/#161/#192 CLOSED. Option B (multi-valued operational_role) **declined** — fights ADR-0007.
+- Single-valued `operational_role` + lateral `designations[]`. member A lives with `['chapter_liaison','ambassador','curador']`; `can_by_member(member A,'curate_content')=true` vs `write_board=false` (designation path grants curator authority). #245/#161/#192 CLOSED. Option B (multi-valued operational_role) **declined** — fights ADR-0007.
 - **Decision:** ratify Option A. Canonical: `docs/reference/V4_AUTHORITY_MODEL.md` + ADR-0007.
 
 ## G19 — Connector strategy → RESOLVED = Option C
 - **Options:** A = private/custom only; B = official store listing now; **C = private/custom + member self-add canonical, defer official listing behind an explicit trigger** (org→Team/Enterprise, measured consulting/community discovery need, or a client rejecting custom-for-lack-of-listing); `SPEC_280A` = pre-built submission checklist.
 - **Rec + Decision:** **C**. Rationale: only Claude/OpenAI have store paths (Perplexity/xAI/Manus = custom-only → listing buys partial discovery, never removes the custom channel); PM on individual plan (org connectors need Team/Enterprise); member self-add works at $0; preserves all 3 strategic paths. **Unblocks the #280 `mcp`→`mcp/full` rename** (was G19-blocked only for lack of a stamped strategy). #234 stays open for 7-day continuity only.
 
-## G12 — Angeline legal-ops clock → START APPROVED (execution = QA/QC FIRST)
-- #334 has **0 comments** = external clock not started. #332 CLOSED → the interim Art.18 §IV notification was **already sent** to the affected candidate (o candidato afetado (#332), 2026-05-24) → Angeline's template is **retroactive/canonical, no time pressure**.
+## G12 — member C legal-ops clock → START APPROVED (execution = QA/QC FIRST)
+- #334 has **0 comments** = external clock not started. #332 CLOSED → the interim Art.18 §IV notification was **already sent** to the affected candidate (o candidato afetado (#332), 2026-05-24) → member C's template is **retroactive/canonical, no time pressure**.
 - **Decision:** approved to start the clock this pass.
-- **PM refinement (2026-06-08, same session):** before sending to Angeline/Aaron, **QA/QC the team's first-layer governance revision** (`~/Downloads/nucleo-juridico-revisado/`) **against Parecer 01/2026** — *"não acreditar na versão final"*. The clock starts on the **validated** send (timestamp → #334).
-- **⚠️ Correction recorded:** the platform-grounded G12 draft from `wf_1b9774e5-9df` got the **DPO framing wrong** (it asked to "designate a DPO"). PMI-GO **already has a DPO**: Ivan Lourenço (titular) + **Angeline (substituta)**, `dpo@pmigo.org.br`. Use the team's Gmail draft (id `19ea496bea8d47fc`) as the base, reconciled by the QA/QC. Do **not** send the platform draft as-is.
+- **PM refinement (2026-06-08, same session):** before sending to member C/member D, **QA/QC the team's first-layer governance revision** (`~/Downloads/nucleo-juridico-revisado/`) **against Parecer 01/2026** — *"não acreditar na versão final"*. The clock starts on the **validated** send (timestamp → #334).
+- **⚠️ Correction recorded:** the platform-grounded G12 draft from `wf_1b9774e5-9df` got the **DPO framing wrong** (it asked to "designate a DPO"). PMI-GO **already has a DPO**: member B (titular) + **member C (substituta)**, `dpo@pmigo.org.br`. Use the team's Gmail draft (id `19ea496bea8d47fc`) as the base, reconciled by the QA/QC. Do **not** send the platform draft as-is.
 
 ## Legal-ops cohort #569-574 → TRIAGED (ready-leaves first; self-contained eng in parallel)
-| Issue | Self-contained build (no Angeline) | Gated on G12 | Effort |
+| Issue | Self-contained build (no member C) | Gated on G12 | Effort |
 |---|---|---|---|
 | #569 OpenTimestamps (rec k) | full (pgcrypto+pg_cron+pg_net+R2 exist) | — | L |
 | #570 image/voice consent (rec e) | mechanism (ALTER consent_records + RPCs) | go-live = clause text | M |
@@ -36,7 +36,7 @@ Grounding showed **3 of the 4 nominal gates were already decided/shipped** — t
 | #572 portability/retention/LGPD self-service (rec g) | blocks A/B/C (Block C already live) | cross-processor (DPA/SCC) | XL → 3 |
 | #573 EEA/UK conditional clauses | plumbing (`is_eu_resident`→`is_eea_or_uk` + variant log + metric) | clause text (GDPR/SCC/IDTA) | M |
 | #574 DPO fiscalization + audit-log integrity (rec h) | Slice A (hash-chain — closes a real gap) | Slice B (DPO role) | L |
-- **Decision:** ready-leaves first (#246→#247, #231, #403, #196, #375), then legal-ops **self-contained eng in parallel** with the Angeline async clock; G12-gated slices park behind G12. Do **not** hold the whole cohort to Wave 5.
+- **Decision:** ready-leaves first (#246→#247, #231, #403, #196, #375), then legal-ops **self-contained eng in parallel** with the member C async clock; G12-gated slices park behind G12. Do **not** hold the whole cohort to Wave 5.
 
 ## Execution refs
 - Roadmap `docs/project-governance/BACKLOG_ROADMAP_2026-06.md`: gate rows G1/G2/G3/G12/G15/G19 annotated + §7 "first moves" callout updated.

@@ -29,7 +29,7 @@
 
 ### Insights
 
-1. **Sprint 4 path (b) potencial convergente FUNCIONOU** — recall mais que dobrou. Casos que antes eram FN (Ana Carla MBA + 5 evals approved → AI=NO) agora capturados como YES via path (b) formação sólida + commitment.
+1. **Sprint 4 path (b) potencial convergente FUNCIONOU** — recall mais que dobrou. Casos que antes eram FN (member A MBA + 5 evals approved → AI=NO) agora capturados como YES via path (b) formação sólida + commitment.
 2. **Trade-off precision**: AI agora "amplia rede" — pega mais approved mas também mais rejected entram em YES. Recoverable via fit_for_role filter.
 3. **AI=NO agora é signal mais forte de rejection** (vs antes era 67% errado). Quando AI diz NO, 11/16 = **69% chance ser rejected** (vs 36% no v1).
 4. **Best operacional combo**: `fit_for_role >= 4 AND raises_the_bar = yes` = 17 candidatos no n=53, 15 approved + 2 converted = **88% precision** quando filter por fit também.
@@ -188,7 +188,7 @@ PM já ratificou Sprint 4 prompt LIVE. UI hint atualizar com calibração nova:
 - **Iteração prompt v3**: target precision ↑ sem sacrificar recall (current trade-off Sprint 4 trouxe recall mas perdeu precision)
 - **Dimension separation**: separar `track_record_evidence` de `potential_signal` no schema (atualmente combinados em raises_the_bar) — permitir diff analysis explícita
 - **LinkedIn integration** (consent-gated): se candidato consente, scrape público + alimenta AI. Resolve 5 FN restantes (todos sem texto adequado mas potencially OK no LinkedIn)
-- **Revisitar 5 FN cycle3-2026 cases** para training data documentar rationale humano (PM + Fabricio action)
+- **Revisitar 5 FN cycle3-2026 cases** para training data documentar rationale humano (PM + member B action)
 
 ### Manter
 - raises_the_bar como dimension primary

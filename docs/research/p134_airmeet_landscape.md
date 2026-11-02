@@ -75,15 +75,15 @@ User complaints (G2/Capterra recurring themes):
 - **Changemakers Initiative:** Multi-format (keynote + panel + multi-speaker), parallel tracks in different regional languages **simultaneously**
 - **Quality signals:** "HD audio/video, lag-free streams"; "intuitive, browser-based no-download"; engagement features (chat, Q&A, emoji) cited as key
 
-**Validation:** Confirms PMI Latam is **deeply integrated, multi-year customer**. Translation: Núcleo proposing ANY integration with Airmeet has institutional precedent — Natália Tavares' team will recognize the platform name, not raise eyebrows. **This is a credibility booster for the LIM/CPMAI conversation.**
+**Validation:** Confirms PMI Latam is **deeply integrated, multi-year customer**. Translation: Núcleo proposing ANY integration with Airmeet has institutional precedent — member A' team will recognize the platform name, not raise eyebrows. **This is a credibility booster for the LIM/CPMAI conversation.**
 
 **What we don't know (gaps for diligence):**
 - Exact tier PMI Latam pays (likely Enterprise given 2000-attendee + parallel sessions)
 - Renewal cycle (lifetime-deal-revocation risk)
 - Member satisfaction beyond marketing case study
-- Whether Natália's team uses webhooks/API or just the dashboard
+- Whether member A's team uses webhooks/API or just the dashboard
 
-**Recommendation for Natália follow-up:** ASK directly: "Vocês exportam attendance via API ou planilha manual? Recordings vão para YouTube ou ficam no Airmeet?" — answer informs our integration depth.
+**Recommendation for member A follow-up:** ASK directly: "Vocês exportam attendance via API ou planilha manual? Recordings vão para YouTube ou ficam no Airmeet?" — answer informs our integration depth.
 
 ---
 
@@ -172,7 +172,7 @@ User complaints (G2/Capterra recurring themes):
 - 60-day recording retention adds operational complexity for ALL events
 
 ### Why not full replace
-- Airmeet has real PMI Latam credibility — institutional fit when working WITH PMI Latam (Natália's team) on co-branded events
+- Airmeet has real PMI Latam credibility — institutional fit when working WITH PMI Latam (member A's team) on co-branded events
 - Multilingue Interprefy integration is real and proven
 - Engagement features (lounges, networking) outclass Zoom for **conference-format** events
 
@@ -185,7 +185,7 @@ User complaints (G2/Capterra recurring themes):
 | **Núcleo monthly webinar** (~50–150) | **Zoom Webinar** ($79/mo) | Token-gated YouTube mirror already works; cert flow already works |
 | **CPMAI study groups** | Zoom (pilot) → **Airmeet if multilingue PT/ES needed** | Pilot cheap; upgrade if Latam scale demands |
 | **CPMAI Latam multi-country** | **Airmeet + Interprefy** | Multilingue + 19-country reach is Airmeet's exact strength |
-| **Detroit Summit / LIM-class** | **Airmeet (Enterprise) co-branded with PMI Latam** | Natália's team already has the license; piggyback |
+| **Detroit Summit / LIM-class** | **Airmeet (Enterprise) co-branded with PMI Latam** | member A's team already has the license; piggyback |
 | **Chapter pilots (PMI-GO/CE diretorias)** | Zoom (default per PMI institutional norm) | Match buyer expectation |
 
 ### Integration roadmap (if Hybrid path chosen)
@@ -193,11 +193,11 @@ User complaints (G2/Capterra recurring themes):
 1. **Phase 0 (defer):** Build NOTHING until first concrete CPMAI Latam co-event is calendarized (real demand)
 2. **Phase 1 (~4 days dev):** Webhook ingest `attendee.joined` → `event_attendance` table; reuses existing `issue_certificate` flow; daily cron `airmeet_recording_mirror` → YouTube unlisted (within 7d, well within 60d)
 3. **Phase 2 (~3 days dev):** Registration sync — push our event registrations TO Airmeet via `Manage Registrations` API (so attendees don't double-register); pull post-event attendance back
-4. **Phase 3 (only if volume warrants):** Negotiate Núcleo's own Enterprise license (or NPO sub-license under PMI Latam's Enterprise account if Natália's team agrees — much cheaper)
+4. **Phase 3 (only if volume warrants):** Negotiate Núcleo's own Enterprise license (or NPO sub-license under PMI Latam's Enterprise account if member A's team agrees — much cheaper)
 
 **Cost ceiling for go/no-go:** If Airmeet quotes >$3,000/yr standalone for Núcleo's volume, **defer and ride PMI Latam's license** for co-branded events only.
 
-### Open questions for Natália meeting
+### Open questions for member A meeting
 
 1. Quem opera tecnicamente o Airmeet de PMI Latam? (Tech contact = our integration counterpart)
 2. PMI Latam's Airmeet license tier — sub-account possible for Núcleo as institutional partner?

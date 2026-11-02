@@ -73,7 +73,7 @@ multi-role gate audit (#161) — because analyzed Wave 1/2 issues depend on them
   carefully with `exec_tribe_dashboard` / `get_tribe_gamification`, which were touched by metric-4 work this week.
 - **Governance decision matrix (#315) is a chokepoint.** Five issues (#310/#312/#314/#311/#403) cannot proceed
   until the 7-axis matrix is ratified. It is small effort (S) but high leverage — do it early in Wave 1.
-- **Legal-ops (#334) is externally async** (Angeline, ~3–5 business days/cycle) and gates #332/#333. Start the
+- **Legal-ops (#334) is externally async** (member E, ~3–5 business days/cycle) and gates #332/#333. Start the
   contact clock in Wave 1 even though the engineering lands in Wave 4/5.
 - **Selection has live candidates.** Cycle-4 corrections corr 1–4 are merged (#472, PRs #473–#476) and corr-2 worker
   is deployed; the candidate-facing communication policy (#260) and dual-interviewer intent (#347) are *decision*
@@ -90,7 +90,7 @@ recorded for traceability; the rest are **OPEN** and owned as noted.
 | # | Decision gate | Owner | Blocks | Needed by |
 |---|---|---|---|---|
 | **G1** | Selection notification routing policy: which `selection_*` types are transactional (candidate-facing) vs digest vs admin; do candidate-facing emails bypass `suppress_all`? | PM | #260, #348, #411 | ✅ **Shipped + live-verified** 2026-06-08 (#260/#411/#292 closed; operational `suppress_all` bypass live; ADR-0022 parity guarded by `adr-0022-delivery-mode.test.mjs`) — ratified in decision pass 2026-06-08 |
-| **G2** | Dual-interviewer intent — is Vitor+Fabricio per researcher event intentional or accidental? Determines booking-URL routing schema (per-evaluator pool vs committee link) | PM + GP | #347 step 2, #357, #411 | ✅ **Intent ratified** 2026-06-08 (#357 committee reseed live, both evaluators `can_interview=true`); per-evaluator booking-URL routing carried as **build** under #347→#348, **not a gate** |
+| **G2** | Dual-interviewer intent — is Vitor+member F per researcher event intentional or accidental? Determines booking-URL routing schema (per-evaluator pool vs committee link) | PM + GP | #347 step 2, #357, #411 | ✅ **Intent ratified** 2026-06-08 (#357 committee reseed live, both evaluators `can_interview=true`); per-evaluator booking-URL routing carried as **build** under #347→#348, **not a gate** |
 | **G3** | `selection_cutoff_approved` trigger + auto-dispatch policy (above-target only; 50/day cutoff cap, 20/day rescue) | PM + Foundation | #260, #348, #411 | ✅ **Shipped + live-verified** 2026-06-08 (#411 closed; crons `selection-cutoff-pending-daily` + `…rescue-daily` last_status=succeeded 2026-06-08) — ratified in decision pass 2026-06-08 |
 | **G4** | VEP re-import status freeze (do not rebind advanced apps to `submitted`) | Foundation | #472 B2 | **Shipped** (corr-2, worker `ed843957`) — confirm & close |
 | **G5** | Calendar↔`selection_interviews` reconciliation (sync nucleoia@pmigo + evaluator calendars) | Foundation + Integration | #472 B1 | Wave 0/1 (corr-1 webhook mirror pending) |
@@ -100,10 +100,10 @@ recorded for traceability; the rest are **OPEN** and owned as noted.
 | **G9** | Attendance combined-% visibility — restrict per-member %, or keep visible to all authenticated members? | PM + Privacy | #421, #425 | Wave 2 |
 | **G10** | Governance documents **decision matrix** (7 axes: doc_type, visibility_class, status, acknowledgement mode, template/signed relationship, version-dependency graph, corpus backfill) + Frontiers Editorial Guide type/gate/visibility | PM | #310, #312, #314, #311, #403, #315 | Wave 1 (chokepoint) |
 | **G11** | Evidence-bundle source: function/period from V4 engagements/history (not `operational_role` cache); bilingual at template level | PM + Eng | #308, #311 | Wave 1/2 |
-| **G12** | ANPD Art. 48 §1 pre-disclosure; Art. 18 §IV notification template; DPO appointment stance; Adendo Privacidade Principal | PM → Angeline (external) | #334, #332 | 🟡 **Clock-start approved 2026-06-08** (decision pass). **Execution = QA/QC the team's first-layer revision (`Downloads/nucleo-juridico-revisado/`) vs Parecer 01/2026 BEFORE devolver a Angeline/Aaron** (PM directive 2026-06-08); external clock begins on validated send (timestamp → #334); lands Wave 5 |
+| **G12** | ANPD Art. 48 §1 pre-disclosure; Art. 18 §IV notification template; DPO appointment stance; Adendo Privacidade Principal | PM → member E (external) | #334, #332 | 🟡 **Clock-start approved 2026-06-08** (decision pass). **Execution = QA/QC the team's first-layer revision (`Downloads/nucleo-juridico-revisado/`) vs Parecer 01/2026 BEFORE devolver a member E/member G** (PM directive 2026-06-08); external clock begins on validated send (timestamp → #334); lands Wave 5 |
 | **G13** | Drive permission revocation: human approval gate (no auto-revocation), mirrors `admin_reactivate_member` | Security / DPO | #209 | Wave 1 |
 | **G14** | Invariant U sequencing: C2 #332 before C3 #333, or C3 first with 1-row allowlist | PM | #333 | Wave 4 |
-| **G15** | Role model: is `operational_role` single-valued (lateral designations) or should curator + ponto focal coexist? | Product / PM | #245, #161, #192 | ✅ **RESOLVED = Option A** 2026-06-08 (single-valued `operational_role` + lateral `designations[]`; curador+ponto-focal coexist as designations — Roberto Macêdo live; #245/#161/#192 closed; see `docs/reference/V4_AUTHORITY_MODEL.md` + ADR-0007) |
+| **G15** | Role model: is `operational_role` single-valued (lateral designations) or should curator + ponto focal coexist? | Product / PM | #245, #161, #192 | ✅ **RESOLVED = Option A** 2026-06-08 (single-valued `operational_role` + lateral `designations[]`; curador+ponto-focal coexist as designations — member A live; #245/#161/#192 closed; see `docs/reference/V4_AUTHORITY_MODEL.md` + ADR-0007) |
 | **G16** | Assignee model canonical: keep `assignee_id` (sync picker) or migrate to `board_item_assignments` junction | Product | #440 | Triage |
 | **G17** | Test infra: adopt explicit try/finally cleanup vs rely on `Prefer: tx=rollback` for SECDEF rows | QA / CI | #231 | Wave 1 |
 | **G18** | AI strategy: Gemini 3.5 Flash go/no-go (tri-model with Gemini 2.5 Flash + Sonnet 4.6) | PM | #204, #206, #207 | Wave 1 |
@@ -136,7 +136,7 @@ and the metrics closeout that downstream surfaces read.
 | #227 | D | S | RLS policy passes `auth.uid()` to `can()` (expects `persons.id`) → all admin CV downloads 400 | ADR-0007 (Option B `can_by_auth_uid` SECDEF helper) |
 | #217 | E | S | `_enqueue_engagement_welcome` hardcodes `/iniciativas/` → all engagement emails 404 | none |
 | #248 | E | S | Calendar day "19" renders struck-through/cancelled | none |
-| #249 | E | S | T4 meeting shows wrong day-of-week (timezone/BYDAY) — verify with Fernando first | none (verify) |
+| #249 | E | S | T4 meeting shows wrong day-of-week (timezone/BYDAY) — verify with member H first | none (verify) |
 | #419 | B | (metric 5) | Complete the last core metric: XP rank/pillar cycle-mode ordering + deterministic tiebreak | **G6 ratified; G7 flag-first** |
 | #421 | B | — | Audit tracker — closes via #419 + #420 completion + G9 product call | depends on #419/#420 |
 | #292 | A | S | Ratify the P0 Selection Reliability Sprint sequence; answer G1/G2/G3 | **G1, G2, G3** |
@@ -165,7 +165,7 @@ connector decisions so Wave 2 can build.
 - #315 (S, **G10 chokepoint**) decision matrix — do early · #403 (S) fix `confirm_manual_version` + `link_attachment_to_governance` (missing `organization_id`/`visibility_class`/`acknowledgement_mode`), scoped by #315 · #209 (L) Drive revocation cascade on offboarding (**G13**) · #308 (L) curator evidence bundles (**G11**, planning).
 
 **D — Live RLS / data-integrity bugs:**
-- #245 (M) curator + ponto-focal dual-authority blocks `/admin/curatorship` (**G15**) · #246 (S) `/attendance` not refreshing in realtime · #247 (S) Jefferson absent-mark audit (depends #246 diagnosis) · #231 (S) tx=rollback leaks synth rows → false invariant violations (**G17**).
+- #245 (M) curator + ponto-focal dual-authority blocks `/admin/curatorship` (**G15**) · #246 (S) `/attendance` not refreshing in realtime · #247 (S) member I absent-mark audit (depends #246 diagnosis) · #231 (S) tx=rollback leaks synth rows → false invariant violations (**G17**).
 
 **E — Calendar recurrence hardening:**
 - #210 (M) recurrence attendee cleanup (unblocked — #205 closed) · #414 (S) parametrized recurrence interval (weekly/biweekly/monthly) · #415 (M) recurrence-stockout cron · #204 (XL) Gemini/Drive/Calendar umbrella — triage + start G18.
@@ -208,7 +208,7 @@ gateway design approved; analytics tab live.
 
 ### Wave 5 — Legal-ops async (externally gated)
 
-- **C:** #334 (S) Angeline legal-ops chain (ANPD Art. 48 / notification template / DPO / Adendo) — **G12**, external. Start the contact clock in Wave 1.
+- **C:** #334 (S) member E legal-ops chain (ANPD Art. 48 / notification template / DPO / Adendo) — **G12**, external. Start the contact clock in Wave 1.
 
 ### Backlog / triage (analyzed cohort)
 
@@ -278,7 +278,7 @@ roadmap's tracking umbrella — see the recount note in §1.1). Every backlog is
 | 227 | D | RLS `can(auth.uid())` → admin CV download 400 | ready | S | **0** |
 | 217 | E | engagement welcome email `/iniciativas/` 404 | ready | S | **0** |
 | 248 | E | calendar day "19" strikethrough | ready | S | **0** |
-| 249 | E | T4 wrong day-of-week (verify Fernando) | needs-triage | S | **0** |
+| 249 | E | T4 wrong day-of-week (verify member H) | needs-triage | S | **0** |
 | 226 | G | clean 3 CI drift fails (force `--admin`) | needs-decision | L | **0** |
 | 374 | G | bypass W22 17 > 2 — PM review | needs-decision | S | **0** |
 | 472 | A | off-platform interviews ≠ selection_interviews (corr-5 + webhook left) | needs-decision | XL | **0** (corr-5/webhook) |
@@ -287,7 +287,7 @@ roadmap's tracking umbrella — see the recount note in §1.1). Every backlog is
 | 347 | A | booking routing policy + calendar registry | ready | M | **1** |
 | 348 | A | per-evaluator booking URL roadmap | ready | M | **1** |
 | 356 | A | admin UI edit `interview_booking_url` | ready | S | **1** |
-| 357 | A | cycle-4 committee reseed (Vitor+Fabricio) | ready | S | **1** |
+| 357 | A | cycle-4 committee reseed (Vitor+member F) | ready | S | **1** |
 | 365 | A | objective PERT column shows composite | ready | S | **1** |
 | 375 | A | cron validation credential path | needs-decision | S | **1** |
 | 411 | A | interview-invite lifecycle UI + crons | ready | L | **1** |
@@ -300,7 +300,7 @@ roadmap's tracking umbrella — see the recount note in §1.1). Every backlog is
 | 231 | D | tx=rollback leaks synth rows (false invariants) | needs-decision | S | **1** |
 | 245 | D | curator + ponto-focal blocks /admin/curatorship | blocked | M | **1** |
 | 246 | D | /attendance no realtime refresh | needs-triage | S | **1** |
-| 247 | D | Jefferson absent-mark audit | blocked (246) | S | **1** |
+| 247 | D | member I absent-mark audit | blocked (246) | S | **1** |
 | 204 | E | Gemini + Drive/Calendar umbrella | needs-triage | XL | **1** |
 | 210 | E | calendar recurrence attendee cleanup | blocked→ready | M | **1** |
 | 414 | E | parametrized recurrence interval | ready | S | **1** |
@@ -326,7 +326,7 @@ roadmap's tracking umbrella — see the recount note in §1.1). Every backlog is
 | 235 | G | bypass-audit v2 refinement | ready | S | **2** |
 | 455 | C | alumni certificate backfill (17 legacy) | needs-triage | M | **3** |
 | 333 | C | invariant U voice-biometric consent | blocked | S | **4** |
-| 334 | C | Angeline legal-ops chain (ANPD/DPO/Adendo) | blocked | S | **5** |
+| 334 | C | member E legal-ops chain (ANPD/DPO/Adendo) | blocked | S | **5** |
 | 335 | C | author ADR-0094 collaboration hub | blocked | S | triage |
 | 440 | D | board assignee-model divergence | needs-decision | M | triage |
 | 416 | E | bidirectional Google Calendar sync | needs-decision | L | triage |
@@ -344,7 +344,7 @@ landing, not a per-issue analysis.
 **Curatorship program (10):** #185 align queue RPC gates w/ V4 `curate_content` · #186 broadcast submissions to committee · #187 replace V3 designation filter in reviewer picker · ⏫ #188 curator-native queue/review MCP tools (→#201) · #189 align card pipeline visual w/ curation_status · ⏫ #190 create `curation_queue_state` semantic layer (→#201/#301/#308) · ⏫ #191 reconcile legacy curation APIs (→#245) · ⏫ #192 enforce one review per curator (→#245) · #193 clean phantom FSM states + dead auto-publish trigger · #194 contract tests for p197 review flow.
 → **Disposition:** coherent program; run the 4 ⏫ blockers as Wave-1/2 prerequisites, fold the rest into a Curatorship hardening track adjacent to cluster D #201/#245.
 
-**Volunteer lifecycle & agreements (11):** #159 p201 parallel-agent operating model · #160 Herlon study_group_owner authority · #168 triage WhatsApp action intake · #169 João Coelho event 02 Jun · #171 Ana Carla cannot read governance doc (access bug, HIGH) · #173 Rogério Peixoto reintegration as observer T07 · #177 issue agreements for special engagement kinds · #180 approved volunteers enter V4 graph · ⏫ #181 persist counter-signature + agreement evidence (→#308/#311) · #182 map agreement notifications/renewals · #183 canonical lifecycle MCP tools.
+**Volunteer lifecycle & agreements (11):** #159 p201 parallel-agent operating model · #160 member J study_group_owner authority · #168 triage WhatsApp action intake · #169 member D event 02 Jun · #171 member C cannot read governance doc (access bug, HIGH) · #173 member B reintegration as observer T07 · #177 issue agreements for special engagement kinds · #180 approved volunteers enter V4 graph · ⏫ #181 persist counter-signature + agreement evidence (→#308/#311) · #182 map agreement notifications/renewals · #183 canonical lifecycle MCP tools.
 → **Disposition:** Volunteer-lifecycle track; #181 ⏫ Wave-1 prerequisite; #171 access bug → triage near Wave-0/1; rest sequence after selection (A) stabilizes.
 
 **Infra / MCP / security ops (5):** #155 supabase CLI v2.100.0 fork-bomb (infra, HIGH) · #162 293-tool contract matrix refresh · #163 Cloudflare BIC blocks MCP OAuth bootstrap (security, HIGH) · #164 restore local Supabase QA stack · #170 corrupted meeting notes via MCP (data-integrity, HIGH).
@@ -380,9 +380,9 @@ Pulled forward from B → A waves: #161, #166, #181, #188, #190, #191, #192  (7)
 ## 7. Recommended first moves (next session)
 
 1. **Answer the Wave-0/Wave-1 decision gates that fan out the most:** G25 (#226 CI strategy), G26 (#374 bypass review),
-   G10 (#315 governance matrix), G7 (#419 XP reorder approval). _(✅ ratified 2026-06-08 in decision pass: G1/G2/G3 shipped, G15=Option A, G19=Option C; G12 Angeline clock-start approved — execution QA/QC-first, send pending.)_
+   G10 (#315 governance matrix), G7 (#419 XP reorder approval). _(✅ ratified 2026-06-08 in decision pass: G1/G2/G3 shipped, G15=Option A, G19=Option C; G12 member E clock-start approved — execution QA/QC-first, send pending.)_
 2. **Ship the ready Wave-0 bugs** (#227, #217, #248, #249) — no decisions needed, immediate trust wins.
 3. **Open a triage pass on the 47** (Appendix B) — at minimum confirm the 7 ⏫ blockers and the calendar/attendance
    reconciliation overlaps before duplicating work in cluster E.
-4. **#334 legal-ops clock — START APPROVED 2026-06-08** (decision pass). Execution: **QA/QC the team's first-layer governance revision (`Downloads/nucleo-juridico-revisado/`) against Parecer 01/2026 BEFORE devolver a Angeline/Aaron** (PM directive). #569-574 triaged — self-contained eng (#569/#571/#572-A·B·C/#573-plumbing/#574-A) runs in parallel; only legal-text/authority slices wait on G12.
+4. **#334 legal-ops clock — START APPROVED 2026-06-08** (decision pass). Execution: **QA/QC the team's first-layer governance revision (`Downloads/nucleo-juridico-revisado/`) against Parecer 01/2026 BEFORE devolver a member E/member G** (PM directive). #569-574 triaged — self-contained eng (#569/#571/#572-A·B·C/#573-plumbing/#574-A) runs in parallel; only legal-text/authority slices wait on G12.
 ```

@@ -16,11 +16,11 @@
 | **P1** | "1 engagement INSERT → grant Drive permission on ALL `initiative_drive_links` of that initiative" (§5.3 trigger) | CPMAI-student, CPMAI-alumni | Student paying for cycle 3 would get permission on `study_group_internal_workspace` + `cpmai_alumni_archive` automatically. Internal team revenue/planning data leaks instantly. No audience filter on the trigger. |
 | **P2** | "External onboarding is 1-at-a-time via modal" (§4.7 + §6.2) | GP-leader | Vassouras T-11d = ~50 people to add (5 comms + 6 curation + 7 Tribo 3 + 3 PMI-RJ + 30 students). 50 modals × manual consent attestation = unusable. |
 | **P3** | "External = `persons.auth_id=NULL`; spec covers external onboarding" (§4) | GP-leader | The Vassouras add list is mostly INTERNAL members (comms, curation, tribe). Spec has ZERO surface for "add existing member to this initiative" — assumes everyone is external. |
-| **P4** | "PM-attested checkbox is sufficient LGPD consent for v1" (§4.4 / ADR-0094 G1.2) | External-partner-liaison, CPMAI-student, Speaker | (a) For 30 students it's mass-forgery exposure (Art. 7 §I); (b) for João Coelho he never sees the consent text he allegedly accepted; (c) for speakers it doesn't cover image rights / voice biometric (Art. 11) / YouTube publication. ANPD would consider weak. |
+| **P4** | "PM-attested checkbox is sufficient LGPD consent for v1" (§4.4 / ADR-0094 G1.2) | External-partner-liaison, CPMAI-student, Speaker | (a) For 30 students it's mass-forgery exposure (Art. 7 §I); (b) for member A he never sees the consent text he allegedly accepted; (c) for speakers it doesn't cover image rights / voice biometric (Art. 11) / YouTube publication. ANPD would consider weak. |
 | **P5** | "Notifications work / external knows they were added" | External-partner-liaison + **BUG-212.A live evidence** | `_enqueue_engagement_welcome` writes to outbox but generates 404 URL. Externals have no Núcleo login path either way. Whole external UX is broken silently. |
 | **P6** | "Engagement is per-initiative, no further sub-scope" | CPMAI-student, CPMAI-alumni | CPMAI cycle 1/2/3 share one program but need cycle-bound material access + cycle-end retention policy. No `cohort_tag` / cycle sub-scope in spec. |
 | **P7** | "Default `default_duration_days` covers all kinds" | Speaker, CPMAI-alumni | Speaker is 1-event (90d wrong); alumni want lifetime (90d wrong). Need `default_duration_mode` enum: `static_days` / `event_date_plus_days` / `cycle_end_plus_days` / `lifetime`. |
-| **P8** | "Engagement state transitions are INSERT (add) or revoke" | GP-leader (Sarah↔Fernando) | No `transition_engagement(p_engagement_id, p_new_kind, p_new_role)` RPC. Sarah-style kind/role swaps force revoke + add, creating 5-50min Drive permission gap window. p205 already shipped a `change-função` button in MCP that spec ignores. |
+| **P8** | "Engagement state transitions are INSERT (add) or revoke" | GP-leader (member B↔member C) | No `transition_engagement(p_engagement_id, p_new_kind, p_new_role)` RPC. member B-style kind/role swaps force revoke + add, creating 5-50min Drive permission gap window. p205 already shipped a `change-função` button in MCP that spec ignores. |
 | **P9** | "`engagement_drive_permissions.UNIQUE (engagement_id, drive_folder_id, status)` is sufficient" (§5.1) | GP-leader | Concurrent INSERTs race; role upgrades (observer→leader) need UPDATE path not insert-then-revoke. Spec is INSERT-only. |
 | **P10** | "Cascade cleanup is member-level (#209)" (§5.6 G2.4) | GP-leader, CPMAI-student | Engagement-level revoke (committee_member ends, but person still member) doesn't fire any cascade. Students offboard at cycle-end but aren't members → cascade query doesn't match. |
 
@@ -88,7 +88,7 @@ Cross-referenced to current spec gap labels (G1-G4) + new (G0 / G5 / G6):
 |---------|-----------------|
 | **No bulk operations anywhere** | Spec is 1-row-at-a-time everywhere. Real ops are bulk (Vassouras 50, CPMAI cycle batch 30). Need bulk RPCs across add/revoke/extend/transition. |
 | **No "internal member" add path** | Spec assumes external = new. But >80% of "add to initiative" is existing members. Single biggest framing miss. |
-| **No transition primitive** | Sarah↔Fernando p205 already needed this. Spec doesn't acknowledge. Force revoke+add breaks Drive permissions. |
+| **No transition primitive** | member B↔member C p205 already needed this. Spec doesn't acknowledge. Force revoke+add breaks Drive permissions. |
 | **No audience filter on Drive trigger §5.3** | CPMAI students would auto-leak into internal workspace. Single biggest LGPD/business risk. |
 | **No cycle/cohort sub-scope** | CPMAI requires it. Vassouras one-off doesn't surface this — bias toward Vassouras-only thinking. |
 | **No external auth primitive** | `auth_id=NULL` means external can't access dashboard. Drive-only UX strands ~half of G1.1 capability tier (`view_initiative_dashboard` unreachable). |
@@ -141,7 +141,7 @@ Output target: each agent ~600 words structured findings; synthesis merges into 
 | Speaker recording without explicit Art. 11/20 consent | HIGH (lawsuit) | Speaker invitation flow MUST capture image + voice + publication consent. Block invite send without it. |
 | Cycle 2 alumni Drive permission auto-revoked on engagement-end | HIGH (business promise broken) | Implement G6.1 + G6.2 BEFORE first cycle completes. Alumni opt-in at cycle-end ceremony. |
 | Cross-initiative person re-uses consent silently | MEDIUM (LGPD Art. 8 §6 specificity) | Implement G1.6 per-engagement consent before adding multi-engagement persons. |
-| Sarah↔Fernando-style transitions break Drive | MEDIUM (operational) | Implement G3.2 transition_engagement RPC + G2.6 UPDATE-in-place path BEFORE pattern recurs. |
+| member B↔member C-style transitions break Drive | MEDIUM (operational) | Implement G3.2 transition_engagement RPC + G2.6 UPDATE-in-place path BEFORE pattern recurs. |
 | `partner_entity` PMI-CE/PMI-RJ mismatch silent | MEDIUM (governance) | Implement G1.7 soft warning before multi-chapter engagements multiply. |
 
 ---

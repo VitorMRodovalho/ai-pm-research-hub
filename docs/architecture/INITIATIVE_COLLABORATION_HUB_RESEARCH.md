@@ -60,7 +60,7 @@ Existing slugs without seeded permissions:
 Current state of Drive integration:
 - ✅ `initiative_drive_links` table exists with soft-unlink (`unlinked_at`/`unlinked_by`)
 - ✅ `link_initiative_to_drive`, `get_initiative_drive_links`, `unlink_initiative_from_drive` RPCs live
-- ✅ `board_drive_links` parallel surface (Mayanna #110)
+- ✅ `board_drive_links` parallel surface (member B #110)
 - ❌ NO service-account integration with Google Drive API
 - ❌ NO auto-creation hook on `create_initiative`
 - ❌ NO permission grant/revoke calls on engagement lifecycle events
@@ -107,7 +107,7 @@ G2 (engagement-level Drive sync) + G4 (Google API governance) must ship together
 #### #205 — `member_emails` + `resolve_member_by_email` (P1, blocks #210)
 - Status: OPEN, not implemented
 - New table `member_emails` (1 member → N emails) + `member_resolve_email(p_email) RETURNS uuid` RPC
-- Use case: Roberto Macêdo has 2 emails (one personal primary + one chapter institutional address); see #205 for verbatim values
+- Use case: member A has 2 emails (one personal primary + one chapter institutional address); see #205 for verbatim values
 - **G1 implication:** external members may also have multiple emails (institutional in Calendar vs personal in `persons.email`). Recommend G1 reuses the `member_emails` pattern, possibly generalizing to `person_emails` if persons need it too.
 - **NOT a hard blocker for G1** — `persons.secondary_emails text[]` already exists. Could be sufficient.
 
@@ -139,7 +139,7 @@ G2 (engagement-level Drive sync) + G4 (Google API governance) must ship together
 - **#212 G3 RELATIONSHIP:** #211 is the natural implementation issue for G3 metadata UI scope. #212 G3 extends with: "Add external collaborator" flow + "Provision Drive folder" button (G1 + G2 integration touchpoints).
 - **Recommend:** keep #211 as-filed; new sub-issue for #212 G3 layers on top.
 
-#### #110 — Mayanna Drive integration (board-level, DONE)
+#### #110 — member B Drive integration (board-level, DONE)
 - Status: Implemented (Opção B per PM decision)
 - Tables: `board_drive_links`
 - RPCs: `link_board_to_drive`, `get_board_drive_links`, `unlink_board_from_drive`

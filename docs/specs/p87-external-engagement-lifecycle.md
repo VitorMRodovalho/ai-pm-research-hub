@@ -2,7 +2,7 @@
 
 **Status:** Spec design (0-deploy planning)
 **Origem:** GitHub issue #97 (consolidação executable)
-**Caso real:** 2026 LATAM LIM (Lima, 13-16/Ago) — Roberto Macêdo lead + Ivan co-speaker
+**Caso real:** 2026 LATAM LIM (Lima, 13-16/Ago) — member A lead + member B co-speaker
 **W1 já shipped:** 22/Abr 2026, sessão `d211ff` — initiative `a68fcc06-...` + 7 milestones + 5 engagements + WhatsApp group via MCP, zero schema change
 **Próximas waves:** W2 (schema hardening), W3 (MCP + automation), W4 (UX wizard)
 
@@ -145,7 +145,7 @@ Criar `docs/adr/ADR-0068-external-speaker-artifact-conventions.md` documentando:
 | Stage | Artefato | Schema target | Visibility |
 |---|---|---|---|
 | Pre-submission | Draft video preview | `meeting_artifacts` | Comitê (privado) |
-| Stage 1 review | Draft slides PPT | `meeting_artifacts` | Reviewers (Fabricio, Sarah) |
+| Stage 1 review | Draft slides PPT | `meeting_artifacts` | Reviewers (member C, member D) |
 | Stage 2 final | Final slides PPT | `meeting_artifacts` | Comitê + curador |
 | Post-event | Gravação oficial PMI | `public_publications` (kind='video') | Público |
 | Post-event | Slides finais públicos | `public_publications` (kind='deck') | Público (CC-BY-SA opcional) |
@@ -297,7 +297,7 @@ W2 pode shippar mesmo durante launch week. W3 espera quiet window. W4 fica para 
 - Initiative: `a68fcc06-7de8-400b-b5b3-60e368fb46ac`
 - Board: `632787ee-9e27-43c9-b6a0-566b52815adc`
 - Partner entity: `8bb97295-4e8e-4e19-98a4-37b72d3305b8`
-- Engagements: 5 IDs (Roberto, Ivan, Vitor, Fabricio, Sarah)
+- Engagements: 5 IDs (member A, member B, Vitor, member C, member D)
 - WhatsApp: `<convite do grupo: fica no banco, fora do repositório>`
 
 ## 10. Sediment para futuras submissões

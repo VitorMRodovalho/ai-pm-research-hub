@@ -19,7 +19,7 @@ The `/admin/selection` diversity tab shows "Nao informado" for all demographic d
 - We DO have `applicant_name` (70/70), `state` (68/70), `chapter` (61/70)
 
 **Data available to infer:**
-- **Gender** can be inferred from first names with high accuracy for Brazilian Portuguese names (e.g., "Ana Carla" = F, "Fabricio" = M)
+- **Gender** can be inferred from first names with high accuracy for Brazilian Portuguese names (e.g., "member A" = F, "member B" = M)
 - **Sector/seniority** cannot be inferred — would need to be collected in future forms or enriched manually
 
 ### 1.2 Certificates & Volunteer Agreement Panel — Missing Visibility
@@ -50,7 +50,7 @@ The `/admin/certificates` page currently shows:
 |---------|-----------------|----------------|
 | **GP (Vitor)** | manager + superadmin | Full diversity metrics across all cycles to report to PMI Board and congress. Needs gender/region/chapter breakdown for DEI reporting. |
 | **Deputy Manager** | deputy_manager designation | Same as GP for operational purposes |
-| **Sponsors (Ivan, Marcio, etc.)** | sponsor + chapter_board | Their chapter's applicant diversity vs approved diversity — to justify selection decisions to their board |
+| **Sponsors (member C, member D, etc.)** | sponsor + chapter_board | Their chapter's applicant diversity vs approved diversity — to justify selection decisions to their board |
 | **Chapter Liaison** | chapter_liaison designation | Similar to sponsor — chapter-level view |
 
 **Key insight:** DEI reporting to PMI requires gender data. Without it, the diversity dashboard is a non-functional shell.
@@ -60,8 +60,8 @@ The `/admin/certificates` page currently shows:
 | Persona | Tier/Designation | What they need |
 |---------|-----------------|----------------|
 | **GP (Vitor)** | manager | Global compliance view: which chapters have 100% signed, which are lagging. Export for governance reporting. |
-| **Chapter Board (Lorena, Emanoela)** | observer + chapter_board | Their chapter's members: who signed, who didn't, counter-sign pending certs, send reminders. Need clear workflow. |
-| **Sponsors (Ivan, Marcio)** | sponsor + chapter_board | Same as chapter board — they are the original signatories for their chapters. |
+| **Chapter Board (member E, member F)** | observer + chapter_board | Their chapter's members: who signed, who didn't, counter-sign pending certs, send reminders. Need clear workflow. |
+| **Sponsors (member C, member D)** | sponsor + chapter_board | Same as chapter board — they are the original signatories for their chapters. |
 | **Members (researchers, etc.)** | researcher/cop_participant | See their own cert status in `/certificates` and `/profile` banner. Sign the agreement in `/volunteer-agreement`. |
 
 ---
@@ -156,18 +156,18 @@ The `/admin/certificates` page currently shows:
 WITH name_gender AS (
   SELECT unnest AS name, gender FROM (VALUES
     -- Feminine names (common PT-BR)
-    ('Ana', 'F'), ('Alessandra', 'F'), ('Andressa', 'F'), ('Deborah', 'F'),
-    ('Estela', 'F'), ('Fabricia', 'F'), ('Francisca', 'F'), ('Lorena', 'F'),
-    ('Maria', 'F'), ('Paula', 'F'), ('Emanoela', 'F'), ('Jessica', 'F'),
+    ('member A', 'F'), ('member G', 'F'), ('member H', 'F'), ('member I', 'F'),
+    ('member J', 'F'), ('member K', 'F'), ('member L', 'F'), ('member E', 'F'),
+    ('member M', 'F'), ('Paula', 'F'), ('member F', 'F'), ('member N', 'F'),
     -- Masculine names (common PT-BR)
-    ('Adalberto', 'M'), ('Alexandre', 'M'), ('Antonio', 'M'), ('Daniel', 'M'),
-    ('Edson', 'M'), ('Erick', 'M'), ('Fabiano', 'M'), ('Fabricio', 'M'),
-    ('Felipe', 'M'), ('Herlon', 'M'), ('Ivan', 'M'), ('Jefferson', 'M'),
-    ('Marcos', 'M'), ('Mario', 'M'), ('Matheus', 'M'), ('Pedro', 'M'),
-    ('Vitor', 'M'), ('Carlos', 'M'), ('Marcio', 'M'), ('Italo', 'M'),
-    ('Joao', 'M'), ('Rafael', 'M'), ('Rodrigo', 'M'), ('Leonardo', 'M'),
-    ('Bruno', 'M'), ('Diego', 'M'), ('Fernando', 'M'), ('Gustavo', 'M'),
-    ('Lucas', 'M'), ('Thiago', 'M'), ('Wagner', 'M')
+    ('member O', 'M'), ('member P', 'M'), ('member Q', 'M'), ('member R', 'M'),
+    ('member S', 'M'), ('member T', 'M'), ('member U', 'M'), ('member B', 'M'),
+    ('member V', 'M'), ('member W', 'M'), ('member C', 'M'), ('member X', 'M'),
+    ('member Y', 'M'), ('member Z', 'M'), ('member 27', 'M'), ('member 28', 'M'),
+    ('Vitor', 'M'), ('member 29', 'M'), ('member D', 'M'), ('member 30', 'M'),
+    ('member 31', 'M'), ('member 32', 'M'), ('member 33', 'M'), ('member 34', 'M'),
+    ('member 35', 'M'), ('member 36', 'M'), ('member 37', 'M'), ('member 38', 'M'),
+    ('member 39', 'M'), ('member 40', 'M'), ('Wagner', 'M')
     -- ... expand as needed
   ) AS t(unnest, gender)
 )

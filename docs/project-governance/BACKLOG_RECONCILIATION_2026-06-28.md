@@ -68,7 +68,7 @@ Important; parallels/follows P0. Legal preconditions whose build mechanism is un
 | 105 | Frontend | `/me/reunioes` widget; backend ready, ~2–3h UI build. |
 | 165 | Gov/Legal | Governance/release backfill p40–p201 (docs hygiene). |
 | 172 | Comms | Reconcile stale May webinar calendar vs live comms surface (#924/#909). |
-| 173 | Onboarding | Rogério Peixoto reintegration as observer (single lifecycle action). |
+| 173 | Onboarding | member A reintegration as observer (single lifecycle action). |
 | 200 | Analytics | Cloudflare traffic tab on `/admin/analytics` (server-side, no client tokens). |
 | 206/207/208 | MCP/AI | Gemini-3.5-Flash eval → YouTube ingest / Meet transcripts; re-ground model claims first. |
 | 210 | Gov/Legal | Calendar recurrence cleanup; blocker (member_resolve_email) now live. |
@@ -107,7 +107,7 @@ Important; parallels/follows P0. Legal preconditions whose build mechanism is un
 | 132 | PM scope decision (chapter_shared_resources table vs Drive folder). |
 | 183 | Approval/agreement RPCs must stabilize; term template held for redesign (#873). |
 | 233 | `status:blocked` + PM spec (canonical source per card, ROI window, quality criteria). |
-| 334 | Angeline (legal-counsel) async clock: ANPD Art.48, Art.18 template, DPO designation, Adendo Privacidade. |
+| 334 | member B (legal-counsel) async clock: ANPD Art.48, Art.18 template, DPO designation, Adendo Privacidade. |
 | 574 (DPO half) | #334 DPO designation act (Slice A is in P1 above). |
 | 617 | External pmigo-plataforma snapshot DB not running. |
 | 634 | DNS zone `pmigo.org.br` on HostGator; deferred until chapter address is primary. |

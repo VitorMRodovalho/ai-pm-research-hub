@@ -1,6 +1,6 @@
 ---
 issue: 160
-title: permissions - resolve Herlon study_group_owner authority state
+title: permissions - resolve member A study_group_owner authority state
 lane: Foundation + Governance
 priority: P1
 effort: M (decision + migration or UX)
@@ -9,11 +9,11 @@ opened: 2026-05-19
 github: https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/160
 ---
 
-# p201 Session Brief - Issue #160: Herlon Authority State
+# p201 Session Brief - Issue #160: member A Authority State
 
 ## Why this matters
 
-Herlon shows as `operational_role='observer'` with empty V4 capabilities,
+member A shows as `operational_role='observer'` with empty V4 capabilities,
 even though he has an active `study_group_owner / leader` engagement for
 CPMAI. The V4 model has the seed in `engagement_kind_permissions`, but
 the engagement row is not authoritative because `requires_agreement=true`
@@ -43,7 +43,7 @@ the UX is misleading and the institutional decision is unresolved.
   picking path (C); no broad UI refactor here
 - Can't touch: scope expansion to other engagement kinds; member_status_transitions;
   other people's `is_authoritative` flag without separate review
-- Gates: `check_schema_invariants()` 16/16; smoke that Herlon's
+- Gates: `check_schema_invariants()` 16/16; smoke that member A's
   capability shape matches the chosen path; no privilege escalation for
   any other member; ADR if the decision changes an invariant
 
@@ -51,7 +51,7 @@ the UX is misleading and the institutional decision is unresolved.
 
 | Path | What changes | Effort | Risk |
 |---|---|---|---|
-| A | Issue + counter-sign agreement/certificate for Herlon's study_group_owner engagement | XS (use admin certificate flow) | Low - one person scope |
+| A | Issue + counter-sign agreement/certificate for member A's study_group_owner engagement | XS (use admin certificate flow) | Low - one person scope |
 | B | Amend `requires_agreement` for `study_group_owner` engagement kind | M | High - changes all current+future study group owners |
 | C | Keep as pending; add UI "leadership pending agreement" badge | S | Low - cosmetic only |
 
@@ -64,7 +64,7 @@ gated by an ADR because it changes a global invariant.
    (status = Resolved + path picked).
 2. If path A: use existing certificate counter-sign flow (`/admin/certificates`)
    or admin RPC; verify `auth_engagements.is_authoritative` flips to true
-   for Herlon's row only.
+   for member A's row only.
 3. If path B: new migration with seed update + ADR justifying the policy
    change + smoke that no other person silently gains authority.
 4. If path C: add UI badge in profile and admin views (engagement card
@@ -90,7 +90,7 @@ gated by an ADR because it changes a global invariant.
   member_id='<herlon>' AND kind='study_group_owner'` returns true.
 - After any path: `SELECT * FROM check_schema_invariants() WHERE
   violation_count > 0` returns empty.
-- `get_caller_capabilities()` for Herlon returns the expected actions
+- `get_caller_capabilities()` for member A returns the expected actions
   (or, for path C, still empty - and the UI now explains why).
 - Smoke: 3 other test members do not unintentionally gain new actions.
 
