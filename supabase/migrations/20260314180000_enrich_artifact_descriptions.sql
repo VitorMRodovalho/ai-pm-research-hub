@@ -2,7 +2,7 @@
 -- Dates already correctly set in initial load; T3 stays NULL
 
 -- ═══════════════════════════════════════════════════════════════
--- T1 — Hayala Curto (Radar Tecnológico do GP)
+-- T1 — member C (Radar Tecnológico do GP)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -31,7 +31,7 @@ UPDATE board_items SET
 WHERE id = '13e404b1-fb70-4e62-811c-e1320b6bde3e';
 
 -- ═══════════════════════════════════════════════════════════════
--- T2 — Débora Moura (Agentes Autônomos)
+-- T2 — member D (Agentes Autônomos)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -55,7 +55,7 @@ UPDATE board_items SET
 WHERE id = '2c850373-64b9-4416-8b18-5dcf4332bb0c';
 
 -- ═══════════════════════════════════════════════════════════════
--- T3 — Marcel Fleming (TMO & PMO do Futuro) — dates stay NULL
+-- T3 — member G (TMO & PMO do Futuro) — dates stay NULL
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -84,7 +84,7 @@ UPDATE board_items SET
 WHERE id = 'e0142a94-a405-4cb0-aade-e8411a3a7b41';
 
 -- ═══════════════════════════════════════════════════════════════
--- T4 — Fernando Maquiaveli (Cultura & Change)
+-- T4 — member H (Cultura & Change)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -142,7 +142,7 @@ UPDATE board_items SET
 WHERE id = 'd1922919-feed-413a-b9cc-3d2dda325546';
 
 -- ═══════════════════════════════════════════════════════════════
--- T5 — Jefferson Pinto (Talentos & Upskilling)
+-- T5 — member B (Talentos & Upskilling)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -186,7 +186,7 @@ UPDATE board_items SET
 WHERE id = '5d9d7541-a09b-4a35-b2e0-0cdeabac65d1';
 
 -- ═══════════════════════════════════════════════════════════════
--- T6 — Fabricio Costa (ROI & Portfólio)
+-- T6 — member E (ROI & Portfólio)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -230,7 +230,7 @@ UPDATE board_items SET
 WHERE id = 'a3230f2b-eca3-4e1e-94c2-99f99a2b1be2';
 
 -- ═══════════════════════════════════════════════════════════════
--- T7 — Marcos Klemz (Governança & Trustworthy AI)
+-- T7 — member F (Governança & Trustworthy AI)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET
@@ -279,7 +279,7 @@ UPDATE board_items SET
 WHERE id = '3ee499ab-c2c0-4d5a-8df7-c9ac8a0aede1';
 
 -- ═══════════════════════════════════════════════════════════════
--- T8 — Ana Carla Cavalcante (Inclusão & Colaboração)
+-- T8 — member A (Inclusão & Colaboração)
 -- ═══════════════════════════════════════════════════════════════
 
 UPDATE board_items SET

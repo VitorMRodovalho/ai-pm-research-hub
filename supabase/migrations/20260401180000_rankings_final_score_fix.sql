@@ -6,5 +6,5 @@
 -- Excluded cancelled/withdrawn from rankings
 --
 -- Anomalies documented:
--- - Letícia Vieira + Fabiano Bressiani (PMI-RS): scores from original import, no planilha data
--- - Maurício Machado + Luciana Dutra: status needs PM validation
+-- - member D + member A (PMI-RS): scores from original import, no planilha data
+-- - member C + member B: status needs PM validation

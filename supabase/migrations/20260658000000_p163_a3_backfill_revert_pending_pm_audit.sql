@@ -6,18 +6,18 @@
 -- from the V4 priority ladder (sync_operational_role_cache). The ladder is
 -- GLOBAL and "highest engagement wins" — it does not respect SCOPE. PM
 -- raised 4 concrete concerns:
---   1. Sarah/Roberto are CURADORES (designation), not tribe leaders. Promoting
+--   1. member B/member C are CURADORES (designation), not tribe leaders. Promoting
 --      operational_role to tribe_leader because of a committee/workgroup
 --      engagement gives them tribe-leader-tier UI access that does not match
 --      their actual functional role.
---   2. Fabricio is vice-GP AND tribe leader. Promoting from tribe_leader to
+--   2. member D is vice-GP AND tribe leader. Promoting from tribe_leader to
 --      manager (volunteer.manager engagement) may strip tribe-scoped privileges
 --      that are wired off `operational_role = tribe_leader` (V3 paths still
 --      live in the codebase).
---   3. Mayanna leads the Time de Comunicação INITIATIVE but is researcher in
+--   3. member E leads the Time de Comunicação INITIATIVE but is researcher in
 --      her tribe. Promoting to operational_role = tribe_leader (global) gives
 --      privileges in tribe contexts where she is not a leader.
---   4. Maria Luiza/Leticia are members of Time de Comunicação initiative;
+--   4. member A/member F are members of Time de Comunicação initiative;
 --      same scope-leak risk.
 --
 -- Restoring prior values from admin_audit_log (changes.from). Audit row

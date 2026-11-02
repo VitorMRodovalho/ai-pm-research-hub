@@ -8,9 +8,9 @@
 -- back-link referencia um id inexistente e viola a FK → o INSERT inteiro da 2ª
 -- candidatura (dual-track) aborta → a app é dropada em TODA sync.
 --
--- O par dual-track existente (William Junio) foi linkado pelo BACKFILL único da
+-- O par dual-track existente (member B) foi linkado pelo BACKFILL único da
 -- migração 20260625000000 (ids já válidos), NÃO pelo trigger — por isso o bug
--- ficou mascarado até o 1º caso NOVO (Ana Sofia Pires Pacheco, app researcher
+-- ficou mascarado até o 1º caso NOVO (member A, app researcher
 -- 296896 ↔ leader 296862): falhando em todo ingest desde >= 2026-06-10.
 --
 -- FIX: converter o trigger para **AFTER INSERT**. Aí NEW.id já é uma row real, e

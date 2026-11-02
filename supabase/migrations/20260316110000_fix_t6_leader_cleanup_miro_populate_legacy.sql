@@ -3,7 +3,7 @@
 -- ============================================================================
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 1. Fix T6 leader: Fabrício Costa → tribe_leader (was deputy_manager)
+-- 1. Fix T6 leader: member E → tribe_leader (was deputy_manager)
 -- ═══════════════════════════════════════════════════════════════════════════
 UPDATE public.members
 SET operational_role = 'tribe_leader'
@@ -26,11 +26,11 @@ UPDATE public.board_items
 SET status = 'archived'
 WHERE board_id = '118b55be-9dcd-4b2d-82c7-5c457fb1fc1e'
   AND title IN (
-    'Mayanna Duarte', 'Italo Nogueira', 'Fabricio Costa', 'Camilo',
-    'Andressa Martins', 'Francisco José', 'Denis Vasconcelos',
-    'Luciana Dutra', 'Rodrigo Grilo', 'Leticia Clemente',
-    'João Coelho Júnior', 'Lucas De Moura Vasconcelos',
-    'Cíntia Simões De Oliveira'
+    'member D', 'member L', 'member E', 'Camilo',
+    'member F', 'member K', 'member I',
+    'member H', 'member J', 'member G',
+    'member A', 'member C',
+    'member B'
   );
 
 -- 2b. Archive meeting stickies

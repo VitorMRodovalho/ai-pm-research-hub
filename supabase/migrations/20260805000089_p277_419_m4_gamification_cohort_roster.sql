@@ -3,8 +3,8 @@
 -- Problem: get_tribe_gamification and get_initiative_gamification (native branch) were the last #419 surfaces
 -- still computing their member cohort off a non-canonical path, so they disagreed with every other surface
 -- after the participants-only revision (mig 088):
---   - get_tribe_gamification:  members.tribe_id = p_tribe_id AND is_active  → tribe-8 = 6 (keeps curator Roberto
---     Macêdo, role=curator/kind=observer/active) while get_tribe_stats / exec_tribe_dashboard / the roster all = 5.
+--   - get_tribe_gamification:  members.tribe_id = p_tribe_id AND is_active  → tribe-8 = 6 (keeps a curator
+--     member, role=curator/kind=observer/active) while get_tribe_stats / exec_tribe_dashboard / the roster all = 5.
 --   - get_initiative_gamification (native, non-tribe branch): engagements WHERE status='active' (no role/kind
 --     filter) → keeps observers, so Mesa Redonda = 7 / LATAM = 5 / Grupo de Estudos = 4 while the converged
 --     get_initiative_stats / exec_cross_initiative_comparison / the roster = 4 / 3 / 3.

@@ -9,7 +9,7 @@
 --   All other fields + body PRESERVED verbatim (chain id/status/gates/signers/
 --   eligible_pending/days_open). Per-gate aggregate untouched.
 --
--- WHY: Bug — Fernando Maquiaveli opening /governance/documents/<chainId>
+-- WHY: Bug — member A opening /governance/documents/<chainId>
 --   (or external-reviewer path) sees "conteúdo indisponível" while export PDF
 --   works. Console shows HTTP 406 on direct PostgREST SELECT to
 --   document_versions.content_html. Cause: ReviewChainIsland.tsx fetches
@@ -44,8 +44,8 @@
 --   gate green. WHY documentation lives in this header instead.
 --
 -- CROSS-REF: HF2 of the p254 hotfix pair (same bundle PR).
---   HF1 (p254): boards initiative-leader gate (CPMAI/Fernando edit cards)
---   HF2 (this):  governance viewer content_html (CPMAI/Fernando read TAP)
+--   HF1 (p254): boards initiative-leader gate (CPMAI/member A edit cards)
+--   HF2 (this):  governance viewer content_html (CPMAI/member A read TAP)
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION public.get_chain_workflow_detail(p_chain_id uuid)

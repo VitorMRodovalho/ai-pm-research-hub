@@ -1,7 +1,7 @@
 -- =====================================================================================
 -- #1326 fix(attendance): get_my_meetings escopa por AUDIÊNCIA real, não pelo proxy initiative_id IS NULL
 --
--- Sintoma (reportado pela membra Ligia Ribeiro, print): a widget "Minhas reuniões" mostrava
+-- Sintoma (reportado pela membra member A, print): a widget "Minhas reuniões" mostrava
 --   entrevistas de candidatos e reuniões de liderança; ao clicar "Marcar presença" ela recebia
 --   "Você não está na audiência prevista para este evento".
 --
@@ -19,7 +19,7 @@
 --   Mantém o branch explícito de tribo (sem regressão para membros de tribo) e o histórico próprio
 --   (nunca esconder uma reunião em que o membro já tem registro de presença). #785 confidential gate mantido.
 --
--- Aterrado (sessão 2026-07-11): para a Ligia (researcher, tribe 14, active) entrevista 24→0,
+-- Aterrado (sessão 2026-07-11): para a member A (researcher, tribe 14, active) entrevista 24→0,
 --   lideranca 7→0, geral 3→4, tribo 0→1. Para um tribe_leader as 7 reuniões de liderança seguem
 --   visíveis (7→7). Eventos sem audience rule deixam de broadcastar para toda a base.
 --

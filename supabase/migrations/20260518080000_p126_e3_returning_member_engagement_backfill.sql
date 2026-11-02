@@ -2,7 +2,7 @@
 -- ADR-0076 Princípio 1 + Decision 8 implicit (active engagement = returning)
 -- Wave 1 PM draft (E3 reduced scope p126; full E3 in next session)
 --
--- Issue C (P1 from p125 pre-mortem): is_returning_member=false para João Coelho
+-- Issue C (P1 from p125 pre-mortem): is_returning_member=false para member A
 -- (cycle 2 cohort active desde 2026-03-05) e outros candidatos active em Núcleo
 -- que se candidatam novamente. Predicate atual só flag offboarded; este patch
 -- estende para active engagement match.
@@ -69,6 +69,6 @@ COMMIT;
 --   1. supabase migration repair --status applied 20260518080000
 --   2. NO PostgREST reload (DML only)
 --   3. Verify backfill: SELECT applicant_name, email, is_returning_member
---      FROM selection_applications WHERE applicant_name ILIKE '%João Coelho%';
+--      FROM selection_applications WHERE applicant_name ILIKE '%member A%';
 --      Expected: is_returning_member = true for active members
 --   4. RPC patch tracked as G-p126-1 (E3 full scope p127+)

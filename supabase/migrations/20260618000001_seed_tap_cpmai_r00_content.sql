@@ -152,13 +152,13 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <tr><th>Código do Projeto</th>
       <td><em>PMI-GO/NIA/2026/CPMAI-T1</em> (a confirmar pelo PMO-GO)</td></tr>
   <tr><th>Patrocinador</th>
-      <td>Ivan Lourenço — Presidente do PMI-GO</td></tr>
+      <td>member F — Presidente do PMI-GO</td></tr>
   <tr><th>Líder da Iniciativa</th>
-      <td>Herlon Alves de Sousa (PMI-CE) — <code>study_group_owner</code> / leader</td></tr>
+      <td>member D (PMI-CE) — <code>study_group_owner</code> / leader</td></tr>
   <tr><th>GP do Núcleo</th>
       <td>Vitor Maia Rodovalho (PMI-GO) — responsável pelo Núcleo IA &amp; GP como um todo; supervisão e mentoria da iniciativa</td></tr>
   <tr><th>Co-GP / Curador do Núcleo</th>
-      <td>Fabricio Costa (PMI-GO)</td></tr>
+      <td>member K (PMI-GO)</td></tr>
   <tr><th>Data de Início (preparação)</th>
       <td>2026-06-01 — captação + divulgação + corpo docente</td></tr>
   <tr><th>Data de Término (T2 encerramento)</th>
@@ -202,7 +202,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <ul>
   <li><strong>Blueprint reproduzível para T3 (2027)</strong> consolidando lições aprendidas T1+T2.</li>
   <li><strong>Bridge multicultural com capítulos lusófonos</strong> (Portugal — pool de mentores PT já mapeado).</li>
-  <li><strong>Versão LATAM em espanhol</strong> (sinergia com a estrutura PMI×AI Latam — Daniel Falcão como canal).</li>
+  <li><strong>Versão LATAM em espanhol</strong> (sinergia com a estrutura PMI×AI Latam — member V como canal).</li>
   <li><strong>Conversa formal com PMI sobre ATP regional</strong> (OKR03 KR3.2 PMI-CE BigDream).</li>
   <li><strong>Cobertura dos 15 capítulos PMI Brasil</strong> (acima da meta de 8) caso a captação T1/T2 exceda projeções.</li>
 </ul>
@@ -308,7 +308,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <li>Mentores e instrutores atuam em regime de <strong>voluntariado</strong>, mantendo custo direto zero para o corpo docente.</li>
   <li>A plataforma Núcleo IA Hub mantém o custo de infraestrutura em <strong>R$ 0/mês</strong> (PaaS free tiers), preservando sustentabilidade financeira.</li>
   <li>O PMI-GO autoriza operar como <strong>capítulo sede financeira</strong> (CNPJ + tesouraria + transparência), com rateio operacional definido pela Diretoria.</li>
-  <li>Daniel Falcão (PMI Latam) viabiliza canal de relacionamento institucional com os <strong>27 holders CPMAI brasileiros</strong> e com a estrutura PMI×AI Latam.</li>
+  <li>member V (PMI Latam) viabiliza canal de relacionamento institucional com os <strong>27 holders CPMAI brasileiros</strong> e com a estrutura PMI×AI Latam.</li>
   <li>O disclaimer "Grupo de Estudos" mantém o projeto em conformidade com PMI Latam, conforme alinhamento prévio.</li>
   <li>O <strong>Ciclo 3 do Núcleo IA</strong> (em andamento) viabiliza a alocação de membros do Núcleo como equipe de apoio voluntária ao GP da iniciativa.</li>
   <li>A estrutura tier Sympla praticada pelos capítulos para PMP/PMI-CP continua válida como balizador de precificação (CPMAI sempre <em>inferior</em>).</li>
@@ -323,7 +323,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <li><strong>Custos diretos zero</strong>: a sustentabilidade financeira é premissa estrutural (mentores voluntários, plataforma R$ 0).</li>
   <li><strong>Idioma principal PT-BR</strong>; aulas com mentores PT-PT ou ES podem ocorrer com tradução / sessão paralela.</li>
   <li><strong>CPMAI® é marca registrada PMI®</strong>: uso obrigatório de disclaimer em todo material visual e textual.</li>
-  <li><strong>NDA de Marcos Klemz</strong>: não atua como mentor do prep, mas pode contribuir com o case LGPD do Núcleo.</li>
+  <li><strong>NDA de member L</strong>: não atua como mentor do prep, mas pode contribuir com o case LGPD do Núcleo.</li>
   <li><strong>Capítulo operador único PMI-GO</strong>: movimentações financeiras transparentes, sem múltiplos CNPJs envolvidos.</li>
   <li><strong>Preço inferior à faixa de PMP/PMI-CP</strong> nos capítulos PMI Brasil via Sympla.</li>
   <li><strong>Cronograma protegido</strong>: 2 turmas no ano-base 2026 (T1 Ago-Set, T2 Out-Nov); deslocamento exige Change Request formal.</li>
@@ -363,21 +363,21 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>Capítulo</th><th>Presidência (confirmada 12/mai/2026)</th><th>Diretoria de Filiação</th><th>Diretoria de Voluntariado</th><th>Status</th></tr></thead>
   <tbody>
-    <tr><td><strong>PMI-GO</strong> (sede)</td><td>Ivan Lourenço Costa · presidencia@pmigo.org.br</td><td>Welma Alves de Melo</td><td><em>a confirmar</em></td><td>🟢 Sede · Sponsor</td></tr>
-    <tr><td><strong>PMI-CE</strong></td><td>Francisca Jessyca Alcântara · presidencia@pmice.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>🟢 Federado (Herlon — Líder da Iniciativa)</td></tr>
-    <tr><td><strong>PMI-DF</strong></td><td>Matheus Rocha, PMP · redacted-068@example.com</td><td>Ricardo André (Certificação)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
-    <tr><td><strong>PMI-MG</strong></td><td>Felipe Borges · presidencia@pmimg.org.br</td><td>Rogério Peixoto (Cert. e Desenv. Prof.)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
-    <tr><td><strong>PMI-RS</strong></td><td>Márcio Santos · presidencia@pmirs.org.br</td><td>Vinícius Piccini (VP Filiação e Voluntariado)</td><td>Vinícius Piccini (VP — mesma área)</td><td>🟢 Federado · Host CBGPL 2026</td></tr>
-    <tr><td>PMI-AM</td><td>João Leite, PMP · presidencia@pmiam.org</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td><strong>PMI-GO</strong> (sede)</td><td>member F · presidencia@pmigo.org.br</td><td>member G</td><td><em>a confirmar</em></td><td>🟢 Sede · Sponsor</td></tr>
+    <tr><td><strong>PMI-CE</strong></td><td>member E · presidencia@pmice.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>🟢 Federado (member D — Líder da Iniciativa)</td></tr>
+    <tr><td><strong>PMI-DF</strong></td><td>member S, PMP · redacted-068@example.com</td><td>member Z (Certificação)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
+    <tr><td><strong>PMI-MG</strong></td><td>member O · presidencia@pmimg.org.br</td><td>member W (Cert. e Desenv. Prof.)</td><td><em>a confirmar</em></td><td>🟢 Federado</td></tr>
+    <tr><td><strong>PMI-RS</strong></td><td>member 27 · presidencia@pmirs.org.br</td><td>member I (VP Filiação e Voluntariado)</td><td>member I (VP — mesma área)</td><td>🟢 Federado · Host CBGPL 2026</td></tr>
+    <tr><td>PMI-AM</td><td>member N, PMP · presidencia@pmiam.org</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-BA</td><td>Michele Barbosa, MSc, PMP · presidencia@pmiba.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-ES</td><td>Scheila Lagass, PMP · presidencia@pmies.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-PB</td><td>Márcio Gomes da Costa · redacted-014@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (15º cap., fundador)</td></tr>
-    <tr><td>PMI-PE</td><td>Rick Lândia Barboza · presidencia@pmipe.org.br</td><td>Juliana Lima (VP Filiação/Vol)</td><td>Juliana Lima (mesma VP)</td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-PR</td><td>Sergio Martines · redacted-077@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-PB</td><td>member B · redacted-014@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (15º cap., fundador)</td></tr>
+    <tr><td>PMI-PE</td><td>Rick Lândia Barboza · presidencia@pmipe.org.br</td><td>member Q (VP Filiação/Vol)</td><td>member Q (mesma VP)</td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-PR</td><td>member 31 · redacted-077@example.com</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-RJ</td><td>Emerson Kühl · presidencia@pmirio.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
     <tr><td>PMI-SC</td><td>Everaldo Artur Grahl · presidencia@pmisc.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-SE</td><td>Gabriel Wasil Jaciuk Raio · presidencia@pmise.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
-    <tr><td>PMI-SP</td><td>Sérgio Ricardo Nascimento · presidencia@pmisp.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (maior das Américas)</td></tr>
+    <tr><td>PMI-SE</td><td>member A · presidencia@pmise.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão</td></tr>
+    <tr><td>PMI-SP</td><td>member H · presidencia@pmisp.org.br</td><td><em>a confirmar</em></td><td><em>a confirmar</em></td><td>⚪ Expansão (maior das Américas)</td></tr>
   </tbody>
 </table>
 <p class="callout">⚠️ Dados de Presidência consolidados em 12/maio/2026 com confiabilidade 🟢 Alta para 13 dos 15 capítulos (fontes: sites oficiais, LinkedIn das diretorias, posts de Integração Nacional PMI-DF mar/2026). 🟡 Média para PMI-CE (eleita biênio 2026-2027 — site /organograma desatualizado) e PMI-RJ (eleição 2026-2027 em transição). Diretorias de Filiação e Voluntariado serão confirmadas por carta institucional do PMI-GO para cada capítulo (próximo passo pós-aprovação TAP).</p>
@@ -386,13 +386,13 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>Instituição</th><th>Representante</th><th>Função</th><th>Contato</th></tr></thead>
   <tbody>
-    <tr><td>PMI-GO — PMO</td><td>Eder Valasco</td><td>Analista PMO / Liaison TAP — comentador e ponte com Diretoria Executiva</td><td><em>a confirmar via PMO-GO</em></td></tr>
-    <tr><td>PMI® América Latina</td><td>Daniel Falcão</td><td>Analista de Negócios — canal de relacionamento Latam + acesso aos 27 holders BR</td><td>via PMI Latam</td></tr>
+    <tr><td>PMI-GO — PMO</td><td>member R</td><td>Analista PMO / Liaison TAP — comentador e ponte com Diretoria Executiva</td><td><em>a confirmar via PMO-GO</em></td></tr>
+    <tr><td>PMI® América Latina</td><td>member V</td><td>Analista de Negócios — canal de relacionamento Latam + acesso aos 27 holders BR</td><td>via PMI Latam</td></tr>
     <tr><td>Núcleo IA &amp; GP — GP do Núcleo</td><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP · PMI×AI Champion · supervisão estratégica da iniciativa</td><td>vitor@vitormr.dev</td></tr>
-    <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>Fabricio Costa</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>redacted-027@example.com</td></tr>
-    <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>redacted-075@example.com · redacted-036@example.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Co-GP</td><td>member K</td><td>Co-GP / Curador · Global Construction Ambassador (PMI Americas)</td><td>redacted-027@example.com</td></tr>
+    <tr><td>Núcleo IA &amp; GP — Líder da Iniciativa</td><td>member D</td><td>Líder da Iniciativa CPMAI Prep Course (PMI-CE)</td><td>redacted-075@example.com · redacted-036@example.com</td></tr>
     <tr><td>Comunidade técnica</td><td>Filiados PMI BR + estudantes + líderes corporativos</td><td>Público-alvo do Grupo de Estudos</td><td>público</td></tr>
-    <tr><td>PMI® Global</td><td>Ricardo Vargas · PMI×AI Champion network</td><td>Diretrizes globais de IA · divulgação</td><td>via PMI Global</td></tr>
+    <tr><td>PMI® Global</td><td>member M · PMI×AI Champion network</td><td>Diretrizes globais de IA · divulgação</td><td>via PMI Global</td></tr>
   </tbody>
 </table>
 </section>
@@ -403,10 +403,10 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>Nome</th><th>Função</th><th>Disponibilidade</th><th>Contato</th></tr></thead>
   <tbody>
-    <tr><td>Herlon Alves de Sousa</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>redacted-075@example.com</td></tr>
+    <tr><td>member D</td><td>Líder da Iniciativa (study_group_owner)</td><td>21-30h/mês</td><td>redacted-075@example.com</td></tr>
     <tr><td>Vitor Maia Rodovalho</td><td>GP do Núcleo IA &amp; GP (supervisão estratégica · ponte com PMI-GO · plataforma)</td><td>4-6h/mês</td><td>vitor@vitormr.dev</td></tr>
-    <tr><td>Fabricio Costa</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>redacted-027@example.com</td></tr>
-    <tr><td>Mayanna Duarte</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>redacted-059@example.com</td></tr>
+    <tr><td>member K</td><td>Co-GP / Curador (revisor)</td><td>2-4h/mês</td><td>redacted-027@example.com</td></tr>
+    <tr><td>member U</td><td>Comms Leader (divulgação + onboarding alunos)</td><td>4-6h/mês</td><td>redacted-059@example.com</td></tr>
     <tr><td>Analista Pedagógico</td><td>Curadoria de conteúdo + simulados <em>(card aberto no board)</em></td><td>6-8h/mês</td><td>TBD</td></tr>
     <tr><td>Time de Apoio (3-5 voluntários do Núcleo)</td><td>Coordenação alunos, logística de aulas, suporte pedagógico — formação como GPs</td><td>2-4h/mês cada</td><td>a recrutar no Ciclo 3</td></tr>
     <tr><td>Corpo docente (3-5 mentores convidados)</td><td>Instrutores e mentores das 8 aulas — voluntariado</td><td>2-4h por aula</td><td>ver Anexo A</td></tr>
@@ -424,17 +424,17 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
       <td><strong>R1.</strong> Escassez de mentores certificados CPMAI no Brasil</td>
       <td>Apenas 27 holders BR (~0% em GO/RS); pool restrito</td>
       <td>Dificuldade compor corpo docente; risco qualidade conteúdo</td>
-      <td>Mitigar: pool de 10 nomes mapeados (BR+PT); gravar contingências; treinar Curadores Pedagógicos; canal Daniel Falcão para acesso aos 27 holders</td>
+      <td>Mitigar: pool de 10 nomes mapeados (BR+PT); gravar contingências; treinar Curadores Pedagógicos; canal member V para acesso aos 27 holders</td>
     </tr>
     <tr>
       <td><strong>R2.</strong> Confusão de marca ("Grupo de Estudos" vs "Curso" / ATP)</td>
       <td>Mercado denomina ofertas similares como "curso CPMAI"; concorrentes pagos (Udemy, ATPs)</td>
       <td>Conflito com PMI Latam; risco reputacional ao PMI-GO</td>
-      <td>Mitigar: disclaimer rigoroso em todo material; treinamento equipe de divulgação; alinhamento prévio com Daniel Falcão</td>
+      <td>Mitigar: disclaimer rigoroso em todo material; treinamento equipe de divulgação; alinhamento prévio com member V</td>
     </tr>
     <tr>
       <td><strong>R3.</strong> Baixa demanda na Turma 1</td>
-      <td>Tema novo no Brasil; concorrência (Sympla Tiago Pimentel PMI-CP, Frederico Peixoto Udemy CPMAI)</td>
+      <td>Tema novo no Brasil; concorrência (Sympla member 28 PMI-CP, Frederico Peixoto Udemy CPMAI)</td>
       <td>Cancelamento de turma ou ROI negativo</td>
       <td>Mitigar: webinar pré-launch como funil; meta 50 / piso 25; divulgação via 5 capítulos parceiros + 10 em expansão; uso do pool de mentores como leads</td>
     </tr>
@@ -446,9 +446,9 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
     </tr>
     <tr>
       <td><strong>R5.</strong> Saída de SME / Analista Pedagógico</td>
-      <td>Histórico Pedro Mendes (saída 2026-05-01)</td>
+      <td>Histórico member T (saída 2026-05-01)</td>
       <td>Lacuna de conteúdo D2/D3</td>
-      <td>Mitigar: card "Analista Pedagógico" aberto no board; redundância via Marcos Klemz (LGPD apenas — NDA); pool de mentores como reserva pedagógica</td>
+      <td>Mitigar: card "Analista Pedagógico" aberto no board; redundância via member L (LGPD apenas — NDA); pool de mentores como reserva pedagógica</td>
     </tr>
     <tr>
       <td><strong>R6.</strong> Compliance financeiro PMI-GO como capítulo operador</td>
@@ -463,7 +463,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
       <td>Aceitar: tratar como "desirable, não bloqueante"; sincronização manual aceitável no T1; reavaliar em T2</td>
     </tr>
     <tr>
-      <td><strong>R8.</strong> NDA de Marcos Klemz limita pool</td>
+      <td><strong>R8.</strong> NDA de member L limita pool</td>
       <td>Compromisso prévio com PMI/ATP</td>
       <td>Não pode atuar como mentor CPMAI</td>
       <td>Aceitar: contribuição restrita ao case LGPD do Núcleo</td>
@@ -601,7 +601,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <li>Aprovar alterações de menor impacto no escopo e cronograma, conforme governança do PMO.</li>
 </ul>
 
-<h3>16.3 Gerente de Projetos da Iniciativa (Herlon Sousa)</h3>
+<h3>16.3 Gerente de Projetos da Iniciativa (member D)</h3>
 <ul>
   <li>Atuar como ponto central de comunicação do projeto, reportando status regularmente à Diretoria de Área e ao Patrocinador.</li>
   <li>Elaborar, atualizar e manter todos os documentos e registros do projeto no formato e local definidos pelo PMO.</li>
@@ -633,7 +633,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <thead><tr><th colspan="3">Aprovações</th></tr><tr><th>Participante</th><th>Assinatura</th><th>Data</th></tr></thead>
   <tbody>
     <tr>
-      <td>Presidente do PMI-GO — <strong>Ivan Lourenço</strong></td>
+      <td>Presidente do PMI-GO — <strong>member F</strong></td>
       <td>____________________</td>
       <td>____ / ____ / ________</td>
     </tr>
@@ -650,11 +650,11 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <thead><tr><th>Tipo</th><th>Nome</th><th>Data</th></tr></thead>
   <tbody>
     <tr><td>Elaboração</td><td>Vitor Maia Rodovalho (GP do Núcleo IA &amp; GP)</td><td>2026-05-12</td></tr>
-    <tr><td>Comentários — Líder da Iniciativa</td><td>Herlon Alves de Sousa</td><td>(aguardando)</td></tr>
-    <tr><td>Comentários — Co-GP / Curador Núcleo</td><td>Fabricio Costa <em>(desirable)</em></td><td>(aguardando)</td></tr>
-    <tr><td>Comentários — PMO-GO (até 2 analistas)</td><td>Eder Valasco + 1 (a indicar pelo PMO)</td><td>(aguardando)</td></tr>
+    <tr><td>Comentários — Líder da Iniciativa</td><td>member D</td><td>(aguardando)</td></tr>
+    <tr><td>Comentários — Co-GP / Curador Núcleo</td><td>member K <em>(desirable)</em></td><td>(aguardando)</td></tr>
+    <tr><td>Comentários — PMO-GO (até 2 analistas)</td><td>member R + 1 (a indicar pelo PMO)</td><td>(aguardando)</td></tr>
     <tr><td>Aprovação Diretoria da Área</td><td>Diretoria de Desenvolvimento Profissional PMI-GO</td><td>(aguardando)</td></tr>
-    <tr><td>Aprovação Final (Diretoria Executiva)</td><td>Ivan Lourenço — Presidente PMI-GO</td><td>(aguardando)</td></tr>
+    <tr><td>Aprovação Final (Diretoria Executiva)</td><td>member F — Presidente PMI-GO</td><td>(aguardando)</td></tr>
   </tbody>
 </table>
 
@@ -664,7 +664,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <tbody>
     <tr>
       <td>R00</td>
-      <td>Versão inicial — consolidação do PM Canvas do Líder da Iniciativa (Herlon, 2026-04-11), dados operacionais do Núcleo IA Hub (initiative <code>2f5846f3</code>), ranking CPMAI v8 (PMI registry 2026-05-11) e diretrizes PMI-GO / PMI-CE OKRs</td>
+      <td>Versão inicial — consolidação do PM Canvas do Líder da Iniciativa (member D, 2026-04-11), dados operacionais do Núcleo IA Hub (initiative <code>2f5846f3</code>), ranking CPMAI v8 (PMI registry 2026-05-11) e diretrizes PMI-GO / PMI-CE OKRs</td>
       <td>Vitor Maia Rodovalho</td>
       <td>2026-05-12</td>
     </tr>
@@ -676,16 +676,16 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <section id="anexo-a-instrutores">
 <h2>Anexo A — Pool Inicial de Instrutores / Mentores Mapeados</h2>
 
-<p class="callout">Lista de prospects compilada em 2026-05-11 via PMI Certifications Registry + LinkedIn. O contato e a confirmação da disponibilidade são responsabilidade do Líder da Iniciativa, em parceria com Daniel Falcão (PMI Latam) quando aplicável.</p>
+<p class="callout">Lista de prospects compilada em 2026-05-11 via PMI Certifications Registry + LinkedIn. O contato e a confirmação da disponibilidade são responsabilidade do Líder da Iniciativa, em parceria com member V (PMI Latam) quando aplicável.</p>
 
 <h3>A.1 Brasil — alta certificação (prioritários)</h3>
 <table>
   <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th><th>Observação</th></tr></thead>
   <tbody>
-    <tr><td>1</td><td>André Barcaui</td><td>linkedin.com/in/andrebarcaui</td><td>Voluntário PMI ativo · múltiplas certs</td></tr>
-    <tr><td>2</td><td>Gino Terentim</td><td>linkedin.com/in/ginoterentim</td><td>Referência nacional GP · PMI-SP</td></tr>
-    <tr><td>3</td><td>Henrique Diniz</td><td>linkedin.com/in/henriquediniztech</td><td>Voluntário PMI ativo · perfil técnico forte</td></tr>
-    <tr><td>4</td><td>Luís Eduardo França</td><td>linkedin.com/in/luiseduardofranca</td><td>Acadêmico · perfil pedagógico</td></tr>
+    <tr><td>1</td><td>member X</td><td>linkedin.com/in/member-1</td><td>Voluntário PMI ativo · múltiplas certs</td></tr>
+    <tr><td>2</td><td>member 31</td><td>linkedin.com/in/member-2</td><td>Referência nacional GP · PMI-SP</td></tr>
+    <tr><td>3</td><td>member 29</td><td>linkedin.com/in/member-3</td><td>Voluntário PMI ativo · perfil técnico forte</td></tr>
+    <tr><td>4</td><td>member C</td><td>linkedin.com/in/member-4</td><td>Acadêmico · perfil pedagógico</td></tr>
   </tbody>
 </table>
 
@@ -693,9 +693,9 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th></tr></thead>
   <tbody>
-    <tr><td>5</td><td>Aline Abrão</td><td>linkedin.com/in/alineabrao</td></tr>
-    <tr><td>6</td><td>Henrique Castro</td><td>linkedin.com/in/henriquecastropmp</td></tr>
-    <tr><td>7</td><td>Ana Calife</td><td>linkedin.com/in/anacalife</td></tr>
+    <tr><td>5</td><td>member Y</td><td>linkedin.com/in/member-5</td></tr>
+    <tr><td>6</td><td>member J</td><td>linkedin.com/in/member-6</td></tr>
+    <tr><td>7</td><td>member 30</td><td>linkedin.com/in/member-7</td></tr>
   </tbody>
 </table>
 
@@ -703,9 +703,9 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>#</th><th>Nome</th><th>LinkedIn</th><th>Observação</th></tr></thead>
   <tbody>
-    <tr><td>8</td><td>Alina Yaneva</td><td>linkedin.com/in/alina-yaneva</td><td>Bridge PMI Portugal</td></tr>
-    <tr><td>9</td><td>Frederico C Batista</td><td>linkedin.com/in/fredericocbatista</td><td>Perfil sênior PT</td></tr>
-    <tr><td>10</td><td>Frederico Peixoto</td><td>linkedin.com/in/peixotofrederico</td><td>Vestas · já tem curso CPMAI em PT no Udemy — referência de mercado</td></tr>
+    <tr><td>8</td><td>member 32</td><td>linkedin.com/in/member-8</td><td>Bridge PMI Portugal</td></tr>
+    <tr><td>9</td><td>member 33</td><td>linkedin.com/in/member-9</td><td>Perfil sênior PT</td></tr>
+    <tr><td>10</td><td>member 34</td><td>linkedin.com/in/member-10</td><td>Vestas · já tem curso CPMAI em PT no Udemy — referência de mercado</td></tr>
   </tbody>
 </table>
 
@@ -713,8 +713,8 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
 <table>
   <thead><tr><th>Nome</th><th>Capítulo</th><th>Certificação</th><th>Status no Núcleo</th><th>Disponibilidade para o projeto</th></tr></thead>
   <tbody>
-    <tr><td>Pedro H. R. Mendes</td><td>PMI-DF</td><td>CPMAI ✅ (2025-10-23)</td><td>Inativo desde 2026-05-01</td><td>Re-engajamento possível</td></tr>
-    <tr><td>Marcos A. Klemz</td><td>PMI-MG</td><td>CPMAI ✅ (2026-03-04)</td><td>Líder Tribo 7 — Governança &amp; Trustworthy AI</td><td><strong>Restringido por NDA</strong> — contribuição apenas no case LGPD</td></tr>
+    <tr><td>member T</td><td>PMI-DF</td><td>CPMAI ✅ (2025-10-23)</td><td>Inativo desde 2026-05-01</td><td>Re-engajamento possível</td></tr>
+    <tr><td>member L</td><td>PMI-MG</td><td>CPMAI ✅ (2026-03-04)</td><td>Líder Tribo 7 — Governança &amp; Trustworthy AI</td><td><strong>Restringido por NDA</strong> — contribuição apenas no case LGPD</td></tr>
   </tbody>
 </table>
 
@@ -740,7 +740,7 @@ SET content_html = $TAPHTML$<!DOCTYPE html>
   <thead><tr><th>Oferta</th><th>Formato</th><th>Carga</th><th>Preço (R$)</th><th>Avaliação</th><th>Diferencial Núcleo</th></tr></thead>
   <tbody>
     <tr>
-      <td><strong>Sympla — Grupo de Estudos PMI-CP Turma 2/2026</strong> (Tiago Pimentel, PMI-MG)</td>
+      <td><strong>Sympla — Grupo de Estudos PMI-CP Turma 2/2026</strong> (member 28, PMI-MG)</td>
       <td>Online, 8 encontros, formato grupo</td>
       <td>~16-24h síncronas</td>
       <td>R$ 200 (filiado MG) · R$ 250 (filiado outros) · R$ 300 (público geral)</td>

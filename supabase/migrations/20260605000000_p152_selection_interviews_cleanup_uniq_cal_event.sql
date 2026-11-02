@@ -1,6 +1,6 @@
 -- p152 W4 followup (2026-05-12) — selection_interviews dedupe + UNIQUE(calendar_event_id).
 --
--- Surfaced em Phase A do W4 calendar sync audit: William Junio tem 4 DB rows
+-- Surfaced em Phase A do W4 calendar sync audit: member A tem 4 DB rows
 -- para 2 cal events distintos (2 duplicatas com mesmo calendar_event_id +
 -- scheduled_at, criadas com diff de microsegundos pelo webhook handler — race
 -- condition entre o detect+insert sem locking idempotente).
@@ -38,4 +38,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS uniq_selection_interviews_calendar_event_id
   WHERE calendar_event_id IS NOT NULL;
 
 COMMENT ON INDEX public.uniq_selection_interviews_calendar_event_id IS
-  'Prevents webhook race-condition duplicates. p152 W4: William Junio had 4 rows for 2 cal events created with microsecond delta. Pattern: webhook retries or notification dup. Partial WHERE clause allows multi-row legacy/manual interviews without calendar_event_id.';
+  'Prevents webhook race-condition duplicates. p152 W4: candidate A had 4 rows for 2 cal events created with microsecond delta. Pattern: webhook retries or notification dup. Partial WHERE clause allows multi-row legacy/manual interviews without calendar_event_id.';

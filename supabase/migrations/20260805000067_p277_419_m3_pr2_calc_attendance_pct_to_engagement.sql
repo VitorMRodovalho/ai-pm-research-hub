@@ -17,7 +17,7 @@
 -- DEFERRED (not this PR): get_public_impact_data hardcoded '2026-03-01' window — it carries NO attendance
 -- rate (only total_events / total_attendance_hours), and the literal equals the current cycle_start so there
 -- is 0 number change today; it is a window-invariant hygiene item (§2.1), tracked separately.
--- FLAGGED (data/intent, NOT mutated here): Roberto Macêdo (member 49836a70, legacy tribe_id=8) reads
+-- FLAGGED (data/intent, NOT mutated here): member A (member 49836a70, legacy tribe_id=8) reads
 -- get_member_tribe=NULL because his active tribe-8 engagement is a NON-'volunteer' kind (he is curator /
 -- publicações / LATAM). Whether he should be a tribe-8 volunteer member is a PM data decision; the V4-consistent
 -- treatment (exclude tribe-8 from his eligible set) is what this convergence applies — strictly more correct

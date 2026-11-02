@@ -1,6 +1,6 @@
 -- #1269 regression guard: AO invariant catching the dual-write leave-tribe orphan.
 --
--- Live QA on 2026-07-10 (Andre Abreu) hit an ACTIVE member stranded in tribe 7: he had already left
+-- Live QA on 2026-07-10 (member A) hit an ACTIVE member stranded in tribe 7: he had already left
 -- (engagement offboarded) but members.tribe_id/initiative_id stayed set because the pre-#1270 demotion
 -- cleared only one side of the dual-write and the bridge re-derived the other. #1270 (mig 396) fixed the
 -- trigger to clear BOTH; this adds the periodic detector (AO) so any residual or bypass orphan is caught.
@@ -736,7 +736,7 @@ BEGIN
   FROM drift;
 
   -- AO (#1269) regression guard for the dual-write leave-tribe orphan surfaced by live QA on
-  -- 2026-07-10 (Andre Abreu, tribe 7). See AG (the opposite direction) and mig 20260805000396 (#1270).
+  -- 2026-07-10 (member A, tribe 7). See AG (the opposite direction) and mig 20260805000396 (#1270).
   RETURN QUERY
   WITH drift AS (
     SELECT m.id AS member_id
@@ -758,7 +758,7 @@ BEGIN
       )
   )
   SELECT 'AO_active_member_stale_tribe_id_after_leave'::text,
-         'an active member whose members.tribe_id points at a research_tribe they already LEFT (a terminal offboarded/expired volunteer engagement on that initiative) while holding NO active research_tribe engagement. The dual-write leave-tribe orphan surfaced by live QA on 2026-07-10 (Andre Abreu, tribe 7): the pre-#1270 demotion path cleared only ONE of members.tribe_id/initiative_id, so the bridge BEFORE trigger re-derived the stale side and the member was stranded in a cannot-leave empty-state while inflating count_tribe_slots. The #1270 fix (mig 20260805000396) now clears BOTH columns on demotion; this invariant is the periodic detector for any residual or bypass orphan (service_role direct write, pre-fix staleness). It deliberately does NOT flag legacy select_tribe members (engagement absent, not terminal) who keep a legitimate tribe_id with no engagement. Opposite-direction complement to AG. Baseline 0.'::text,
+         'an active member whose members.tribe_id points at a research_tribe they already LEFT (a terminal offboarded/expired volunteer engagement on that initiative) while holding NO active research_tribe engagement. The dual-write leave-tribe orphan surfaced by live QA on 2026-07-10 (member A, tribe 7): the pre-#1270 demotion path cleared only ONE of members.tribe_id/initiative_id, so the bridge BEFORE trigger re-derived the stale side and the member was stranded in a cannot-leave empty-state while inflating count_tribe_slots. The #1270 fix (mig 20260805000396) now clears BOTH columns on demotion; this invariant is the periodic detector for any residual or bypass orphan (service_role direct write, pre-fix staleness). It deliberately does NOT flag legacy select_tribe members (engagement absent, not terminal) who keep a legitimate tribe_id with no engagement. Opposite-direction complement to AG. Baseline 0.'::text,
          'high'::text, COUNT(*)::integer,
          (SELECT array_agg(member_id ORDER BY member_id) FROM (SELECT member_id FROM drift LIMIT 10) s)
   FROM drift;

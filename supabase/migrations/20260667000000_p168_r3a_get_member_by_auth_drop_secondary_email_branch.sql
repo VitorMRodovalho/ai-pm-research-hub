@@ -1,7 +1,7 @@
 -- ============================================================================
 -- P168 R3-a — Harden identity-resolver RPCs (remove silent secondary-email auto-claim)
--- Authorization: PM Vitor 2026-05-15 (after R1+R2 closed P168 D=1 incident — Paulo
---   Roberto de Camargo Filho was silently hijacking Paulo Alves' member row via
+-- Authorization: PM Vitor 2026-05-15 (after R1+R2 closed P168 D=1 incident — member B
+--   member A was silently hijacking member B' member row via
 --   email match on members.secondary_emails — see docs/audit/P168_D1_PAULO_ALVES_AUTH_HIJACK_BRIEF.md)
 --
 -- Changes:

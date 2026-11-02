@@ -14,14 +14,14 @@ DECLARE
   b8 uuid := '2865743d-a121-4f75-866a-2736b238f7c0';
 
   -- Leader IDs
-  l1 uuid := 'f64ee70a-5d37-4670-9306-a5efe4666cd3'; -- Hayala Curto
-  l2 uuid := 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'; -- Débora Moura
-  l3 uuid := 'e25c829f-6ba3-47a9-bf15-b72c6b74450d'; -- Marcel Fleming
-  l4 uuid := 'c8b930c3-62ec-4d38-881e-307cd57a44f7'; -- Fernando Maquiaveli
-  l5 uuid := '622ab18b-a8b4-46ff-b151-7bbd34394ed3'; -- Jefferson Pinto
-  l6 uuid := '92d26057-5550-4f15-a3bf-b00eed5f32f9'; -- Fabricio Costa
-  l7 uuid := 'c204ac61-4d39-42f2-8d28-814727b62e90'; -- Marcos Klemz
-  l8 uuid := '63b87315-78ab-43f7-bb05-cc2e89682bbf'; -- Ana Carla Cavalcante
+  l1 uuid := 'f64ee70a-5d37-4670-9306-a5efe4666cd3'; -- member C
+  l2 uuid := 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'; -- member D
+  l3 uuid := 'e25c829f-6ba3-47a9-bf15-b72c6b74450d'; -- member G
+  l4 uuid := 'c8b930c3-62ec-4d38-881e-307cd57a44f7'; -- member H
+  l5 uuid := '622ab18b-a8b4-46ff-b151-7bbd34394ed3'; -- member B
+  l6 uuid := '92d26057-5550-4f15-a3bf-b00eed5f32f9'; -- member E
+  l7 uuid := 'c204ac61-4d39-42f2-8d28-814727b62e90'; -- member F
+  l8 uuid := '63b87315-78ab-43f7-bb05-cc2e89682bbf'; -- member A
 
   -- Tag IDs
   t_pesquisa          uuid := '1e08be00-704c-4e2f-8a76-e66168257df0';
@@ -58,7 +58,7 @@ BEGIN
   SELECT COALESCE(MAX(position), 0) INTO p8 FROM board_items WHERE board_id = b8;
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T1 — Hayala Curto (Radar Tecnológico) — 5 artifacts
+  -- T1 — member C (Radar Tecnológico) — 5 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 1.1 Pesquisa: artefatos GP + IA | pesquisa | Mar/26
@@ -92,7 +92,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_publicacao), (item_id, t_artigo_academico);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T2 — Débora Moura (Agentes Autônomos) — 4 artifacts
+  -- T2 — member D (Agentes Autônomos) — 4 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 2.1 Plano Inicial + Framework EAA | framework | Mar/26
@@ -120,7 +120,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_publicacao), (item_id, t_entrega_final);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T3 — Marcel Fleming (TMO & PMO do Futuro) — 5 artifacts (NULL dates)
+  -- T3 — member G (TMO & PMO do Futuro) — 5 artifacts (NULL dates)
   -- ═══════════════════════════════════════════════════════════════
 
   -- 3.1 Ideação do Projeto Piloto | pesquisa | NULL
@@ -154,7 +154,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_publicacao), (item_id, t_entrega_final);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T4 — Fernando Maquiaveli (Cultura & Change) — 11 artifacts
+  -- T4 — member H (Cultura & Change) — 11 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 4.1 Roadmap de pesquisa T4 | framework | Mar/26
@@ -224,7 +224,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_workshop_artifact);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T5 — Jefferson Pinto (Talentos & Upskilling) — 8 artifacts
+  -- T5 — member B (Talentos & Upskilling) — 8 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 5.1 Taxonomia de competências | framework | Abr/26
@@ -276,7 +276,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_publicacao), (item_id, t_report), (item_id, t_entrega_final);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T6 — Fabricio Costa (ROI & Portfólio) — 8 artifacts
+  -- T6 — member E (ROI & Portfólio) — 8 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 6.1 Pesquisa inicial + escopo | pesquisa | Abr/26
@@ -328,7 +328,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_poc), (item_id, t_entrega_final);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T7 — Marcos Klemz (Governança & Trustworthy AI) — 9 artifacts
+  -- T7 — member F (Governança & Trustworthy AI) — 9 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 7.1 Estruturação pilares Risco/Compliance | framework | Abr/26
@@ -386,7 +386,7 @@ BEGIN
   INSERT INTO board_item_tag_assignments (board_item_id, tag_id) VALUES (item_id, t_publicacao), (item_id, t_report), (item_id, t_entrega_final);
 
   -- ═══════════════════════════════════════════════════════════════
-  -- T8 — Ana Carla Cavalcante (Inclusão & Colaboração) — 6 artifacts
+  -- T8 — member A (Inclusão & Colaboração) — 6 artifacts
   -- ═══════════════════════════════════════════════════════════════
 
   -- 8.1 Artigo revisão crítica cérebro neuroatípico | publicacao, artigo_academico | Mai/26

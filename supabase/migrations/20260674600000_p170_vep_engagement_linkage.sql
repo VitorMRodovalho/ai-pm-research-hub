@@ -2,7 +2,7 @@
 --
 -- Context: PM clarificação — VEP JSON é fonte canônica de identidade (pmi_id,
 -- application_id) E fato (status + datas application/aceite/start/end).
--- Auditoria Marcel Fleming expôs gaps de explicitude:
+-- Auditoria member A expôs gaps de explicitude:
 --   1. engagements.vep_opportunity_id é uuid mas selection_applications é text
 --      → type mismatch impede joins triviais
 --   2. engagements.vep_opportunity_id está NULL em todas as 129 rows (nunca populado)
@@ -20,7 +20,7 @@
 --      engagements.status='expired' AND end_date > CURRENT_DATE = drift (impossible state)
 --
 -- Use cases beneficiados:
---   - Investigação drift líder (Marcel-style): SELECT sa.* FROM engagements e JOIN selection_applications sa ON sa.id = e.selection_application_id
+--   - Investigação drift líder (member A-style): SELECT sa.* FROM engagements e JOIN selection_applications sa ON sa.id = e.selection_application_id
 --   - LGPD/audit: "onde nasceu este dado de membro?" tem FK clara
 --   - Renewal tracking: selection_applications.renews_engagement_id (forward) + engagement.selection_application_id (backward) = ciclo completo
 --   - PMI VEP sync EF: matching idempotente via FK explícito

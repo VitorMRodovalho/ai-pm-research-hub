@@ -7,8 +7,8 @@
 --
 -- Drift confirmado pré-migration (2026-05-16):
 --   Tribe #3 (TMO & PMO do Futuro):
---     V3 cache leader_member_id → Marcel Fleming (operational_role='alumni', is_active=false)
---     V4 engagements active leader → ZERO (Marcel's engagement expired 2026-03-20)
+--     V3 cache leader_member_id → member A (operational_role='alumni', is_active=false)
+--     V4 engagements active leader → ZERO (member A's engagement expired 2026-03-20)
 --   Cron envia digest pra alumni semanalmente desde então.
 --
 -- Cron: `30 12 * * 6` (Sábado 12:30 UTC = 09:30 BRT). Próximo run após esta migration:

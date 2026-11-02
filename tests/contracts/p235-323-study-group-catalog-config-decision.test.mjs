@@ -35,9 +35,9 @@
  *     AND agreement_template IS NULL AND slug NOT IN ('volunteer').
  *
  * PM directives (2026-05-23):
- *   - Do NOT mint Herlon term (Herlon's engagements are ambassador +
+ *   - Do NOT mint member B term (member B's engagements are ambassador +
  *     observer, neither requires_agreement; this migration does not touch).
- *   - Fernando double-engagement (owner + participant same initiative) is
+ *   - member A double-engagement (owner + participant same initiative) is
  *     a separate data-quality carry, NOT a #323 blocker.
  *   - Goal metric: 0 catalog rows violating the invariant post-apply.
  *
@@ -46,7 +46,7 @@
  *   - GH #230 (parent umbrella; close-trigger once #323 ships)
  *   - GH #321 (closed p233, Gap A)
  *   - GH #322 (closed p234, Gap B)
- *   - ADR-0006 line 56 (Herlon as study_group_owner canonical V4 example)
+ *   - ADR-0006 line 56 (member B as study_group_owner canonical V4 example)
  *   - ADR-0008 (per-kind engagement lifecycle)
  *   - ADR-0078 D5 (external_reviewer placeholder slug precedent)
  *   - Migration 20260413500000 (original lifecycle setup)
@@ -104,7 +104,7 @@ test('p235 #323: header documents PM decision + cross-refs #323/ADR-0006/ADR-000
   assert.match(body, /ADR-0078/i, 'Header must cross-ref ADR-0078 (placeholder slug precedent)');
   assert.match(body, /ROLLBACK/i, 'Header must include ROLLBACK section');
   // PM directive may wrap across SQL comment lines — tolerate `\n--    ` between words
-  assert.match(body, /Do NOT mint Herlon[\s\S]{0,40}?term/i, 'Header must carry the PM directive about Herlon');
+  assert.match(body, /Do NOT mint member B[\s\S]{0,40}?term/i, 'Header must carry the PM directive about member B');
 });
 
 test('p235 #323: owner UPDATE assigns placeholder slug with idempotency guard', () => {

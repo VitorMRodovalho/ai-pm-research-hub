@@ -7,16 +7,16 @@
 -- engagements weren't touched stayed stale. A3 invariant detected 6 mems with drift.
 --
 -- 6 affected:
---   Sarah Faria          observer → tribe_leader  (committee/workgroup engagement now mapped)
---   Roberto Macêdo       observer → tribe_leader  (same)
---   Fabricio Costa       tribe_leader → manager   (volunteer manager engagement was already there; trigger missed re-eval)
---   Leticia Clemente     researcher → tribe_leader
---   Maria Luiza          researcher → tribe_leader
---   Mayanna Duarte       researcher → tribe_leader
+--   member B          observer → tribe_leader  (committee/workgroup engagement now mapped)
+--   member F       observer → tribe_leader  (same)
+--   member G       tribe_leader → manager   (volunteer manager engagement was already there; trigger missed re-eval)
+--   member C     researcher → tribe_leader
+--   member E          researcher → tribe_leader
+--   member A       researcher → tribe_leader
 --
--- Excluded: Eder Valasco (no authoritative engagement at all — institutional placeholder; PM TBD).
+-- Excluded: member D (no authoritative engagement at all — institutional placeholder; PM TBD).
 -- Approach: replicate trigger CASE chain via SELECT, UPDATE only mems whose computed value differs
--- AND who have ≥1 authoritative engagement (Eder-class is filtered out).
+-- AND who have ≥1 authoritative engagement (member D-class is filtered out).
 -- Audit: row inserted in admin_audit_log per change.
 --
 -- Rollback: hold prior values from members.updated_at history (none — UPDATE preserves no log

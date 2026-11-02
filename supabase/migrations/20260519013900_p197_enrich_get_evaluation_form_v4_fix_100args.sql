@@ -209,6 +209,6 @@ COMMENT ON FUNCTION public.get_evaluation_form(uuid, text) IS
   'p197 (2026-05-19) enriched payload: adds VEP semantic context (cv_extracted_text, resume_storage_path, '
   'profile_* LinkedIn enrichment, service_history_*, pmi_memberships, returning_member_match), '
   'criteria_with_weights (computed contributions + draft inlined), max_weighted_subtotal, '
-  'and pert_cutoff (cohort of approved active members). Motivated by Fabricio MCP submit anomaly '
-  '2026-05-19 (Luíse Quintana, diff -52 vs first evaluator). Auth unchanged: committee membership '
+  'and pert_cutoff (cohort of approved active members). Motivated by member B MCP submit anomaly '
+  '2026-05-19 (member A, diff -52 vs first evaluator). Auth unchanged: committee membership '
   'OR manage_platform. Built via 6-chunk jsonb_build_object || merge to dodge PG 100-arg cap.';

@@ -2,7 +2,7 @@
 -- ADR-0100 §2.2: member_count = DISTINCT persons with an ACTIVE, NON-OBSERVER ROLE engagement on the
 -- resolved initiative. The live body computed its tribe cohort NINE times via
 --   m.is_active = true AND EXISTS(engagements WHERE kind='volunteer' AND status='active' AND initiative=X)
--- The kind='volunteer' predicate is the bug: it drops the curator Roberto Macêdo (role=curator/kind=observer,
+-- The kind='volunteer' predicate is the bug: it drops the curator member A (role=curator/kind=observer,
 -- is_active=true, current_cycle_active=true, operational_role=researcher, PMI-CE) — so tribe 8's KPI read 5.
 -- Now every cohort site rides public.v_initiative_roster (role<>'observer', the canonical primitive shipped
 -- in PR4-A mig 082). Antes 5 -> depois 6 for tribe 8 (the ONLY tribe that changes; verified per-tribe:

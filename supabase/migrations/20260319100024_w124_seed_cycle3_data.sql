@@ -81,129 +81,129 @@ BEGIN
   -- 4. Applications (62 records: 50 researchers + 12 leaders)
   -- ============================================================
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Alexandre Meirelles', 'redacted-003@example.com', '+5500000000001', '1460040', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/alexandremeirelles/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1460040.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A18Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=SkKACK28o3CjwmFkW9wx1vZCRD5QezMcNRxF8wlbGaE%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Espírito Santo, Brazil Chapter', 'PMP,Pmi-Rmp,Pmo-Cp,Pmi-Pmocp', 'researcher', 'approved', '{}'::text[], NULL, NULL, 134, 11, 145, 1, 1, NULL, now());
+VALUES (v_cycle_id, 'member 42', 'redacted-003@example.com', '+5500000000001', '1460040', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-1/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1460040.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A18Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=SkKACK28o3CjwmFkW9wx1vZCRD5QezMcNRxF8wlbGaE%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Espírito Santo, Brazil Chapter', 'PMP,Pmi-Rmp,Pmo-Cp,Pmi-Pmocp', 'researcher', 'approved', '{}'::text[], NULL, NULL, 134, 11, 145, 1, 1, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Paulo Alves De Oliveira Junior', 'redacted-064@example.com', '+14252491264', '1158211', 'PMI-GO', 'FL', 'United States', 'https://www.linkedin.com/in/pejota/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1158211.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A40Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=g36N8TF2CGbrQAxTeup%2FunewRlG6Ihds2qualGf3uFs%3D', NULL, 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 124, 13, 137, 1, 2, NULL, now());
+VALUES (v_cycle_id, 'member C', 'redacted-064@example.com', '+14252491264', '1158211', 'PMI-GO', 'FL', 'United States', 'https://www.linkedin.com/in/member-2/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1158211.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A40Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=g36N8TF2CGbrQAxTeup%2FunewRlG6Ihds2qualGf3uFs%3D', NULL, 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 124, 13, 137, 1, 2, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ana Carla Cavalcante', 'redacted-005@example.com', '+5500000000002', '12227090', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/anacarlacavalcante/', NULL, NULL, NULL, 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 118, 12, 130, 1, 3, NULL, now());
+VALUES (v_cycle_id, 'member G', 'redacted-005@example.com', '+5500000000002', '12227090', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-3/', NULL, NULL, NULL, 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 118, 12, 130, 1, 3, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Gerson Albuquerque Neto', 'redacted-031@example.com', '+5500000000003', '1751501', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/gersonvalbuquerquen/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1751501.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A30Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=D9IUN89zFTL%2B3vIQ13OheJsup7l9gH8Dq18M%2F%2Bbl4lE%3D', 'Individual Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 110, 9, 119, 2, 4, NULL, now());
+VALUES (v_cycle_id, 'member I', 'redacted-031@example.com', '+5500000000003', '1751501', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-4/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1751501.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A30Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=D9IUN89zFTL%2B3vIQ13OheJsup7l9gH8Dq18M%2F%2Bbl4lE%3D', 'Individual Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 110, 9, 119, 2, 4, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Hayala Curto', 'redacted-035@example.com', '+5500000000004', '367666', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/hayala/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/367666.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A38Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cPGfO1fuK4DMT6jg1Ea5io35evY%2BqqTyOXXHaONva9s%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Central Italy Chapter', 'PMP,Pmi-Sp,Pmi-Rmp', 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 107, 12, 119, 2, 4, NULL, now());
+VALUES (v_cycle_id, 'member T', 'redacted-035@example.com', '+5500000000004', '367666', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 T/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/367666.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A38Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cPGfO1fuK4DMT6jg1Ea5io35evY%2BqqTyOXXHaONva9s%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Central Italy Chapter', 'PMP,Pmi-Sp,Pmi-Rmp', 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 107, 12, 119, 2, 4, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Lídia Do Vale', 'redacted-048@example.com', '+5500000000005', '9978497', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/lidia-alcantara-do-vale/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9978497.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A25Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=33aF8FnYvgBqkUUlxopxm99TUcDybtsdZ%2Fl9SmispFo%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 102, 13, 115, 2, 6, NULL, now());
+VALUES (v_cycle_id, 'member 40', 'redacted-048@example.com', '+5500000000005', '9978497', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-6/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9978497.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A25Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=33aF8FnYvgBqkUUlxopxm99TUcDybtsdZ%2Fl9SmispFo%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 102, 13, 115, 2, 6, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Herlon Alves De Sousa', 'redacted-075@example.com', '+5500000000006', '5592639', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/herlon-sousa-b0b16660/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5592639.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A29Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=bMis7hMuNsMIZq3RZ4IpALUCqRDrOMe8pAfh1OzHc9s%3D', NULL, 'PMP', 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 109, NULL, 109, 3, 7, NULL, now());
+VALUES (v_cycle_id, 'member R', 'redacted-075@example.com', '+5500000000006', '5592639', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-5 R-sousa-b0b16660/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5592639.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A29Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=bMis7hMuNsMIZq3RZ4IpALUCqRDrOMe8pAfh1OzHc9s%3D', NULL, 'PMP', 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 109, NULL, 109, 3, 7, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ricardo Santos', 'redacted-071@example.com', '+5500000000007', '850146', 'PMI-MG', 'RJ', 'Brazil', 'https://www.linkedin.com/in/ricardofrancasantos/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/850146.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A14Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=5et0%2BOdGIAK%2FcCzgdqjK7PZ7AaIsCz9P6rITLY2Tspw%3D', 'Retiree Membership,Minas Gerais, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 95, 11, 106, 3, 8, 'tem problema de horario na quarta a noite', now());
+VALUES (v_cycle_id, 'member 55', 'redacted-071@example.com', '+5500000000007', '850146', 'PMI-MG', 'RJ', 'Brazil', 'https://www.linkedin.com/in/member-7/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/850146.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A14Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=5et0%2BOdGIAK%2FcCzgdqjK7PZ7AaIsCz9P6rITLY2Tspw%3D', 'Retiree Membership,Minas Gerais, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 95, 11, 106, 3, 8, 'tem problema de horario na quarta a noite', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Pedro Henrique Rodrigues Mendes', 'redacted-066@example.com', '+5500000000008', '11909310', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/pedro-henrique-rodrigues-mendes-69769072/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11909310.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A22Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=T9m3rKHhF19dH8241xYppaAirp2%2Bvxn%2BW7EnKFy%2FalU%3D', 'Student Membership,Distrito Federal, Brazil Chapter', 'Cpmai,Pmi-Cpmai', 'researcher', 'approved', '{}'::text[], NULL, NULL, 98, 7, 105, 1, 9, NULL, now());
+VALUES (v_cycle_id, 'member B', 'redacted-066@example.com', '+5500000000008', '11909310', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 B-henrique-rodrigues-mendes-69769072/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11909310.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A22Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=T9m3rKHhF19dH8241xYppaAirp2%2Bvxn%2BW7EnKFy%2FalU%3D', 'Student Membership,Distrito Federal, Brazil Chapter', 'Cpmai,Pmi-Cpmai', 'researcher', 'approved', '{}'::text[], NULL, NULL, 98, 7, 105, 1, 9, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Wellinghton Pereira Barboza', 'redacted-088@example.com', '+50496176336', '6301187', 'PMI-GO', 'MG', 'Brazil', 'https://www.linkedin.com/in/wellinghton-pereira-barboza-mba-pmp%C2%AE-prince2%C2%AE-psm-i%C2%AE-pspo-i%C2%AE-ckms-8833762a4/?locale=en_US', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/6301187.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=9hfqQLqULRHC9BqOHT3TKCSB3u%2BupnbLgBrznKXwKAQ%3D', 'Individual Membership,Goiás, Brazil Chapter,Honduras Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 88, 13, 101, 3, 10, NULL, now());
+VALUES (v_cycle_id, 'member M', 'redacted-088@example.com', '+50496176336', '6301187', 'PMI-GO', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 M-pereira-barboza-mba-pmp%C2%AE-prince2%C2%AE-psm-i%C2%AE-pspo-i%C2%AE-ckms-8833762a4/?locale=en_US', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/6301187.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=9hfqQLqULRHC9BqOHT3TKCSB3u%2BupnbLgBrznKXwKAQ%3D', 'Individual Membership,Goiás, Brazil Chapter,Honduras Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 88, 13, 101, 3, 10, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Marcos Antunes Klemz', 'redacted-055@example.com', '+148988055519', '5428333', 'PMI-MG', 'SC', 'United States', 'https://www.linkedin.com/in/maklemz/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5428333.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A44Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=d0CYYeyoO6%2F%2FigKRe7c5xA9HKpAxkxDAFgXCCOskFEo%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 84, 11, 95, 4, 11, NULL, now());
+VALUES (v_cycle_id, 'member H', 'redacted-055@example.com', '+148988055519', '5428333', 'PMI-MG', 'SC', 'United States', 'https://www.linkedin.com/in/member-8/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5428333.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A44Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=d0CYYeyoO6%2F%2FigKRe7c5xA9HKpAxkxDAFgXCCOskFEo%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'researcher', 'converted', '{convert_to_leader}', 'researcher', 'leader', 84, 11, 95, 4, 11, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Mayanna Duarte', 'redacted-059@example.com', '+5500000000009', '9597956', 'PMI-CE', 'MA', 'Brazil', 'https://www.linkedin.com/in/mayanna-duarte-547173121/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9597956.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A47Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=rKFFG3ghuZ6GLaj%2Bsk9HRipBfrI4346uFwSZRxvQBKs%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 81, 12, 93, 4, 12, NULL, now());
+VALUES (v_cycle_id, 'member 43', 'redacted-059@example.com', '+5500000000009', '9597956', 'PMI-CE', 'MA', 'Brazil', 'https://www.linkedin.com/in/member-5 43-duarte-547173121/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9597956.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A47Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=rKFFG3ghuZ6GLaj%2Bsk9HRipBfrI4346uFwSZRxvQBKs%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 81, 12, 93, 4, 12, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Antonio Marcos Costa', 'redacted-056@example.com', '+5500000000010', '7381882', 'PMI-GO', 'MT', 'Brazil', 'https://www.linkedin.com/in/marcos-costa-eng-automa%C3%A7ao/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7381882.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VxfRRZXSEmfzvvbc2hmTKT1tLY92Ka7PvRWkOPurCHA%3D', 'Student Membership,Goiás, Brazil Chapter', 'PMP,Dasm', 'researcher', 'approved', '{}'::text[], NULL, NULL, 78, 11, 89, 4, 13, NULL, now());
+VALUES (v_cycle_id, 'member J', 'redacted-056@example.com', '+5500000000010', '7381882', 'PMI-GO', 'MT', 'Brazil', 'https://www.linkedin.com/in/member-5 H-costa-eng-automa%C3%A7ao/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7381882.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VxfRRZXSEmfzvvbc2hmTKT1tLY92Ka7PvRWkOPurCHA%3D', 'Student Membership,Goiás, Brazil Chapter', 'PMP,Dasm', 'researcher', 'approved', '{}'::text[], NULL, NULL, 78, 11, 89, 4, 13, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Letícia Vieira', 'redacted-050@example.com', '+5500000000011', NULL, 'PMI-RS', 'RS', 'Brazil', 'https://www.linkedin.com/in/letícia-rodrigues-vieira/', NULL, NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 12.5, 87.5, 1, 14, NULL, now());
+VALUES (v_cycle_id, 'member U', 'redacted-050@example.com', '+5500000000011', NULL, 'PMI-RS', 'RS', 'Brazil', 'https://www.linkedin.com/in/member-5 U-rodrigues-vieira/', NULL, NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 12.5, 87.5, 1, 14, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Thiago Freire', 'redacted-081@example.com', '+5500000000012', '12265640', 'PMI-GO', 'RJ', 'Brazil', 'https://www.linkedin.com/in/thiagorfreire/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12265640.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A54Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=LWvE0jcVQlf9b2y6qCRIyZso%2BmubzMsyzbeSTprCQKY%3D', NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 12, 87, 5, 15, NULL, now());
+VALUES (v_cycle_id, 'member 34', 'redacted-081@example.com', '+5500000000012', '12265640', 'PMI-GO', 'RJ', 'Brazil', 'https://www.linkedin.com/in/member-9/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12265640.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A54Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=LWvE0jcVQlf9b2y6qCRIyZso%2BmubzMsyzbeSTprCQKY%3D', NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 12, 87, 5, 15, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Leonardo Chaves', 'redacted-046@example.com', '+5500000000013', '1445614', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/grandi/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1445614.docx?sv=2024-08-04&se=2026-01-17T16%3A35%3A10Z&sr=b&sp=r&rscd=inline&sig=KIgNDeqpeLUUsmdfmio%2BcVCIXl%2B%2BaLu%2B3HgJe%2BDlPFQ%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,São Paulo, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 74, 12, 86, 5, 16, NULL, now());
+VALUES (v_cycle_id, 'member 41', 'redacted-046@example.com', '+5500000000013', '1445614', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-10/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1445614.docx?sv=2024-08-04&se=2026-01-17T16%3A35%3A10Z&sr=b&sp=r&rscd=inline&sig=KIgNDeqpeLUUsmdfmio%2BcVCIXl%2B%2BaLu%2B3HgJe%2BDlPFQ%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,São member C, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 74, 12, 86, 5, 16, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Fabricia Maciel', 'redacted-052@example.com', '+5500000000014', '2831305', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/fabricia-maciel-b062aa38/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2831305.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=fssptHwGzHOBY4A0H8%2By2bLLsyBOj%2B9IecsUSVwE29Y%3D', NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 74, 12, 86, 5, 16, NULL, now());
+VALUES (v_cycle_id, 'member Y', 'redacted-052@example.com', '+5500000000014', '2831305', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 Y-maciel-b062aa38/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2831305.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=fssptHwGzHOBY4A0H8%2By2bLLsyBOj%2B9IecsUSVwE29Y%3D', NULL, NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 74, 12, 86, 5, 16, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Guilhere Matricarde Matricarde', 'redacted-034@example.com', '+5500000000015', '9116683', 'PMI-CE', 'SP', 'Brazil', 'https://www.linkedin.com/in/guilherme-matheus-matricarde/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9116683.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A07Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=hUVyKdHbmFdF4mfi3IPsuyLoQsTuzPfg9IXTAxpQxuk%3D', 'Individual Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 73, 13, 86, 5, 16, NULL, now());
+VALUES (v_cycle_id, 'Guilhere Matricarde Matricarde', 'redacted-034@example.com', '+5500000000015', '9116683', 'PMI-CE', 'SP', 'Brazil', 'https://www.linkedin.com/in/member-11/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9116683.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A07Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=hUVyKdHbmFdF4mfi3IPsuyLoQsTuzPfg9IXTAxpQxuk%3D', 'Individual Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 73, 13, 86, 5, 16, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Rodolfo Santana', 'redacted-072@example.com', '+5500000000016', '1084916', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/rodolfo-siqueira-santana-msc-pmp/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1084916.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A04Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=B6L%2FCTqWal31Q6Ittsd4q6T5Qhf%2F7Y%2FaDfEN4R4VWa8%3D', 'Individual Membership', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 10, 85, 7, 19, NULL, now());
+VALUES (v_cycle_id, 'member 48', 'redacted-072@example.com', '+5500000000016', '1084916', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 48-siqueira-santana-msc-pmp/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1084916.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A04Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=B6L%2FCTqWal31Q6Ittsd4q6T5Qhf%2F7Y%2FaDfEN4R4VWa8%3D', 'Individual Membership', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 75, 10, 85, 7, 19, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Leandro Mota', 'redacted-045@example.com', '+5500000000017', '2410458', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/leandro-w-m-mota-pmp-41777b27/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2410458.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A33Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=%2FiLu%2BOhLbkxew48lTKc292a8ZmRBtjh%2Bngb3wEq4FWg%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 69, 11, 80, 2, 20, NULL, now());
+VALUES (v_cycle_id, 'member 49', 'redacted-045@example.com', '+5500000000017', '2410458', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 49-w-m-mota-pmp-41777b27/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2410458.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A33Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=%2FiLu%2BOhLbkxew48lTKc292a8ZmRBtjh%2Bngb3wEq4FWg%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 69, 11, 80, 2, 20, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Daniel Bittencourt', 'redacted-021@example.com', '+5500000000018', '8504849', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/daniel-leite-bittencourt/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/8504849.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A16Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=XGnPl6dhpG20yzMqWfL%2BTxSyLZ6GRpWFyzqiaIG6Oh0%3D', 'Individual Membership,Minas Gerais, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 72, 8, 80, 8, 20, 'So não pode as quartas (dia da guarda da filha)', now());
+VALUES (v_cycle_id, 'member 45', 'redacted-021@example.com', '+5500000000018', '8504849', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 Z-leite-bittencourt/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/8504849.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A16Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=XGnPl6dhpG20yzMqWfL%2BTxSyLZ6GRpWFyzqiaIG6Oh0%3D', 'Individual Membership,Minas Gerais, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 72, 8, 80, 8, 20, 'So não pode as quartas (dia da guarda da filha)', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Gustavo Batista Ferreira', 'redacted-023@example.com', '+5500000000019', '5109519', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/gustavo-batista-38280490/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5109519.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qz6kUYV0eipnivYnUPsPWSn9%2FtDsJn9zqzwXq4uIFvU%3D', 'Student Membership,Ceará, Brazil Chapter', 'PMP,Dasm', 'researcher', 'approved', '{}'::text[], NULL, NULL, 67, 11, 78, 6, 22, NULL, now());
+VALUES (v_cycle_id, 'member N', 'redacted-023@example.com', '+5500000000019', '5109519', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-5 N-batista-38280490/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5109519.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qz6kUYV0eipnivYnUPsPWSn9%2FtDsJn9zqzwXq4uIFvU%3D', 'Student Membership,Ceará, Brazil Chapter', 'PMP,Dasm', 'researcher', 'approved', '{}'::text[], NULL, NULL, 67, 11, 78, 6, 22, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Italo Soares Nogueira', 'redacted-037@example.com', '+5500000000020', '8704241', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/italo-soares-nogueira-44933a11b/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/8704241.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A48Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=OEFnXa4IUJ3RnAW8KAqrI4XR0WtOpHZT68Vlklw1OYk%3D', 'Individual Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 66, 11, 77, 6, 23, NULL, now());
+VALUES (v_cycle_id, 'member F', 'redacted-037@example.com', '+5500000000020', '8704241', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 F-soares-nogueira-44933a11b/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/8704241.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A48Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=OEFnXa4IUJ3RnAW8KAqrI4XR0WtOpHZT68Vlklw1OYk%3D', 'Individual Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 66, 11, 77, 6, 23, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Stephania Marta De Souza', 'redacted-079@example.com', '+5500000000021', '10083828', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/stephania-marta/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10083828.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A52Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=FHnZlPHctkXiqd%2FNL4HHppVY3Ot%2FFX28HqptPa59HF4%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 68, 8, 76, 3, 24, 'Não sei, fiquei com receio de alinhamento/espectativa', now());
+VALUES (v_cycle_id, 'member E', 'redacted-079@example.com', '+5500000000021', '10083828', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 E-marta/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10083828.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A52Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=FHnZlPHctkXiqd%2FNL4HHppVY3Ot%2FFX28HqptPa59HF4%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'PMP', 'researcher', 'approved', '{}'::text[], NULL, NULL, 68, 8, 76, 3, 24, 'Não sei, fiquei com receio de alinhamento/espectativa', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Rodrigo Grilo Gomes', 'redacted-073@example.com', '+5500000000022', '3299447', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/rodrigo-grilo-gomes-pmp-64805396/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/3299447.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=w%2F5vpuxxVgddH42k8N0RwH6mD5qkFcrLzI8euegN9bY%3D', 'Individual Membership,Goiás, Brazil Chapter', 'PMP,Pmo-Cp,Pmi-Pmocp', 'researcher', 'approved', '{}'::text[], NULL, NULL, 66, 7, 73, 7, 25, NULL, now());
+VALUES (v_cycle_id, 'member O', 'redacted-073@example.com', '+5500000000022', '3299447', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 O-grilo-gomes-pmp-64805396/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/3299447.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=w%2F5vpuxxVgddH42k8N0RwH6mD5qkFcrLzI8euegN9bY%3D', 'Individual Membership,Goiás, Brazil Chapter', 'PMP,Pmo-Cp,Pmi-Pmocp', 'researcher', 'approved', '{}'::text[], NULL, NULL, 66, 7, 73, 7, 25, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ligia Costa', 'redacted-049@example.com', '+5500000000023', '10060395', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/ligiacostaribeiro/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10060395.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A10Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=5UI%2B1SrcT8CGmyA5OaoRfTXAql6FEHvSNriHyaXvfdo%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 63, 8, 71, 7, 26, NULL, now());
+VALUES (v_cycle_id, 'member 56', 'redacted-049@example.com', '+5500000000023', '10060395', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-12/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10060395.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A10Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=5UI%2B1SrcT8CGmyA5OaoRfTXAql6FEHvSNriHyaXvfdo%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 63, 8, 71, 7, 26, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Edson Costa', 'redacted-022@example.com', NULL, '12262677', 'PMI-CE', NULL, 'Brazil', 'https://www.linkedin.com/in/edson-costa-57a5a7137/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12262677.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A26Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=LBuuE%2B6uvWzh5igtuWbrF9vn2NQdHhAHiPqrl5e4U94%3D', NULL, NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 66, NULL, 66, 8, 27, 'Não retornou contato via Linkedin e nem E-mail', now());
+VALUES (v_cycle_id, 'member 35', 'redacted-022@example.com', NULL, '12262677', 'PMI-CE', NULL, 'Brazil', 'https://www.linkedin.com/in/member-5 35-costa-57a5a7137/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12262677.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A26Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=LBuuE%2B6uvWzh5igtuWbrF9vn2NQdHhAHiPqrl5e4U94%3D', NULL, NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 66, NULL, 66, 8, 27, 'Não retornou contato via Linkedin e nem E-mail', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Erick Oliveira', 'redacted-024@example.com', '+5500000000024', '12236986', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/erick-oliveira-ri/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12236986.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A15Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=pNNeq0lHUZiUt8jgwxecebwTazVSrkQLy31lIu8vRM4%3D', NULL, NULL, 'researcher', 'rejected', '{}'::text[], NULL, NULL, 56, 7, 63, 4, 28, 'Ainda não é o momento dele em maturidade para este projeto, Ainda não vinculado ao PMI, Estudante de Relações Internacionais', now());
+VALUES (v_cycle_id, 'member 52', 'redacted-024@example.com', '+5500000000024', '12236986', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 52-oliveira-ri/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12236986.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A15Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=pNNeq0lHUZiUt8jgwxecebwTazVSrkQLy31lIu8vRM4%3D', NULL, NULL, 'researcher', 'rejected', '{}'::text[], NULL, NULL, 56, 7, 63, 4, 28, 'Ainda não é o momento dele em maturidade para este projeto, Ainda não vinculado ao PMI, Estudante de Relações Internacionais', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Alessandra Dourado', 'redacted-002@example.com', '+5500000000025', '7786524', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/alessandradouradoalves/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7786524.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A36Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VYfjv7Dw0aRGvbwl4tUA4pZYYXJ%2BydTOp9%2BiRSZWvvc%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'Capm', 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 60, NULL, 60, 5, 29, NULL, now());
+VALUES (v_cycle_id, 'member 39', 'redacted-002@example.com', '+5500000000025', '7786524', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-13/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7786524.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A36Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VYfjv7Dw0aRGvbwl4tUA4pZYYXJ%2BydTOp9%2BiRSZWvvc%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'Capm', 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 60, NULL, 60, 5, 29, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Adalberto Neris', 'redacted-001@example.com', '+5500000000026', '12238778', NULL, 'PR', 'Brazil', 'https://www.linkedin.com/in/adalbertoneris/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12238778.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A03Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=UmAIgrK6%2FEwETX%2FjdDaHigwP2CP3TsjAk9keNwennSY%3D', NULL, NULL, 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 50, 9, 59, 1, 30, 'Informou que Não poderá se filiar neste semestre', now());
+VALUES (v_cycle_id, 'member 32', 'redacted-001@example.com', '+5500000000026', '12238778', NULL, 'PR', 'Brazil', 'https://www.linkedin.com/in/member-14/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12238778.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A03Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=UmAIgrK6%2FEwETX%2FjdDaHigwP2CP3TsjAk9keNwennSY%3D', NULL, NULL, 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 50, 9, 59, 1, 30, 'Informou que Não poderá se filiar neste semestre', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Kelly Penga', 'redacted-044@example.com', '+5500000000027', '12275895', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/kelly-penga-8baa2451/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12275895.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A57Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=YaMrQMVw9cvoSbNWgGZu5KrUo4i9OF1A%2BgrvwFjTQlw%3D', NULL, NULL, 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 48, 9, 57, 6, 31, 'Apesar de aprovada, solicitou withdraw', now());
+VALUES (v_cycle_id, 'member 37', 'redacted-044@example.com', '+5500000000027', '12275895', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 37-penga-8baa2451/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12275895.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A57Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=YaMrQMVw9cvoSbNWgGZu5KrUo4i9OF1A%2BgrvwFjTQlw%3D', NULL, NULL, 'researcher', 'withdrawn', '{}'::text[], NULL, NULL, 48, 9, 57, 6, 31, 'Apesar de aprovada, solicitou withdraw', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Grazielle Santos', 'redacted-033@example.com', '+5500000000028', '7370905', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/graziellessantos/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7370905.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A34Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VjXNhFSJduGQGa2CrOBnRb1crisf5Jj%2FlrM8XVETvHI%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 57, NULL, 57, 6, 31, NULL, now());
+VALUES (v_cycle_id, 'member 47', 'redacted-033@example.com', '+5500000000028', '7370905', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-15/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7370905.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A34Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VjXNhFSJduGQGa2CrOBnRb1crisf5Jj%2FlrM8XVETvHI%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 57, NULL, 57, 6, 31, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Vinicyus Saraiva De Sousa', 'redacted-084@example.com', '+5500000000029', '11413480', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/vinicyus-saraiva-de-sousa/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11413480.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A20Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=KqjHMxS8RdfUvRR4HLi1LiagalEP98OaAgDRyaqTE60%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 46, 10, 56, 8, 33, NULL, now());
+VALUES (v_cycle_id, 'member K', 'redacted-084@example.com', '+5500000000029', '11413480', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 K-saraiva-de-sousa/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11413480.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A20Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=KqjHMxS8RdfUvRR4HLi1LiagalEP98OaAgDRyaqTE60%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'approved', '{}'::text[], NULL, NULL, 46, 10, 56, 8, 33, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Natália Souza', 'redacted-061@example.com', '+5500000000030', '11456625', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/natalia-souzas/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11456625.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A01Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cuCDYgTDOONrPPlgazPpZtCAgo9sG3eMIHQMCwO0yks%3D', 'Student Membership,São Paulo, Brazil Chapter,Ceará, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 53, NULL, 53, 9, 34, NULL, now());
+VALUES (v_cycle_id, 'member 44', 'redacted-061@example.com', '+5500000000030', '11456625', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-16/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11456625.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A01Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cuCDYgTDOONrPPlgazPpZtCAgo9sG3eMIHQMCwO0yks%3D', 'Student Membership,São member C, Brazil Chapter,Ceará, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 53, NULL, 53, 9, 34, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Deborah Pontes', 'redacted-016@example.com', '+5500000000031', '2071924', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/deborah-veloso-de-pontes-aa79aa23/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2071924.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A13Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=TGnXjE8y3qQ6C%2Fb7DPWhbXoEr0LI%2FZNbc8mjbxnFYSQ%3D', 'Individual Membership,Ceará, Brazil Chapter', 'PMP', 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 48, NULL, 48, 10, 35, NULL, now());
+VALUES (v_cycle_id, 'member 33', 'redacted-016@example.com', '+5500000000031', '2071924', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-5 33-veloso-de-pontes-aa79aa23/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2071924.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A13Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=TGnXjE8y3qQ6C%2Fb7DPWhbXoEr0LI%2FZNbc8mjbxnFYSQ%3D', 'Individual Membership,Ceará, Brazil Chapter', 'PMP', 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 48, NULL, 48, 10, 35, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Andressa Martins', 'redacted-011@example.com', '+5500000000032', '7573695', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/catoze/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7573695.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A13Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=rn0IFy7cMOv3mgwT%2B8OOrZi5Mu6NushidJWnqOzd89I%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'waitlist', '{}'::text[], NULL, NULL, 43, 5, 48, 9, 35, NULL, now());
+VALUES (v_cycle_id, 'member 31', 'redacted-011@example.com', '+5500000000032', '7573695', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-17/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7573695.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A13Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=rn0IFy7cMOv3mgwT%2B8OOrZi5Mu6NushidJWnqOzd89I%3D', 'Student Membership,Goiás, Brazil Chapter', NULL, 'researcher', 'waitlist', '{}'::text[], NULL, NULL, 43, 5, 48, 9, 35, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Robson Tavares', 'redacted-074@example.com', '+5500000000033', '5809089', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/robson-tavares-b5050467/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5809089.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A45Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=iJ3hgzbSXyA2JzGekVO0n26p2v3GQ7sOVbejAb8p9Yo%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 44, NULL, 44, 9, 37, NULL, now());
+VALUES (v_cycle_id, 'member 51', 'redacted-074@example.com', '+5500000000033', '5809089', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 51-tavares-b5050467/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5809089.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A45Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=iJ3hgzbSXyA2JzGekVO0n26p2v3GQ7sOVbejAb8p9Yo%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 44, NULL, 44, 9, 37, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Patricia Mesquita', 'redacted-063@example.com', '+5500000000034', '12268657', NULL, 'RJ', 'Brazil', 'https://www.linkedin.com/in/patricia-mesquita-2021/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12268657.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A32Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VLIp1Amn%2FLK4ZF9bR3wq808rRpfu8oFZGtrikhYrZCA%3D', NULL, NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 44, NULL, 44, 2, 37, NULL, now());
+VALUES (v_cycle_id, 'member S', 'redacted-063@example.com', '+5500000000034', '12268657', NULL, 'RJ', 'Brazil', 'https://www.linkedin.com/in/member-5 S-mesquita-2021/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12268657.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A32Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=VLIp1Amn%2FLK4ZF9bR3wq808rRpfu8oFZGtrikhYrZCA%3D', NULL, NULL, 'researcher', 'cancelled', '{}'::text[], NULL, NULL, 44, NULL, 44, 2, 37, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Marcio Vidal', 'redacted-060@example.com', NULL, '7772310', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/marciovidal/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7772310.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A19Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=j5pQWr5%2FPnAo7nG36yKcYrbEui97F9CgJdLLqLQ8vBM%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 39, NULL, 39, 11, 39, NULL, now());
+VALUES (v_cycle_id, 'member 30', 'redacted-060@example.com', NULL, '7772310', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-18/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7772310.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A19Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=j5pQWr5%2FPnAo7nG36yKcYrbEui97F9CgJdLLqLQ8vBM%3D', 'Student Membership,Ceará, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 39, NULL, 39, 11, 39, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Fabiano Bressiani', 'fbressiani@unknown.com', NULL, NULL, 'PMI-RS', 'RS', 'Brazil', 'https://www.linkedin.com/in/fbressiani/', NULL, NULL, NULL, 'researcher', 'submitted', '{}'::text[], NULL, NULL, 30, 5, 35, 2, 40, NULL, now());
+VALUES (v_cycle_id, 'member 50', 'anon@removed.local', NULL, NULL, 'PMI-RS', 'RS', 'Brazil', 'https://www.linkedin.com/in/member-19/', NULL, NULL, NULL, 'researcher', 'submitted', '{}'::text[], NULL, NULL, 30, 5, 35, 2, 40, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Gabriela Ferreira', 'redacted-015@example.com', '+5500000000048', '11387109', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/gabrielamcferreira', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11387109.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A59Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=8wvz27uFscnB2qNASy4MBf70tBowX03sFdLfKKZQ3ZM%3D', 'Student Membership,Minas Gerais, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 34, NULL, 34, 10, 41, NULL, now());
+VALUES (v_cycle_id, 'member X', 'redacted-015@example.com', '+5500000000048', '11387109', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-20', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11387109.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A59Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=8wvz27uFscnB2qNASy4MBf70tBowX03sFdLfKKZQ3ZM%3D', 'Student Membership,Minas Gerais, Brazil Chapter', NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 34, NULL, 34, 10, 41, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Vanessa Andrade', 'redacted-082@example.com', NULL, '9028174', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/vanessa-freitas-andrade-aa4845226/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9028174.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=wO4gskNPGuPQVyLmZDlTyuahtwZRYngWrbP4DsMpX2M%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'Dasm', 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 33, NULL, 33, 8, 42, NULL, now());
+VALUES (v_cycle_id, 'member 38', 'redacted-082@example.com', NULL, '9028174', 'PMI-DF', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-5 38-freitas-andrade-aa4845226/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9028174.pdf?sv=2024-08-04&se=2026-01-17T16%3A36%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=wO4gskNPGuPQVyLmZDlTyuahtwZRYngWrbP4DsMpX2M%3D', 'Individual Membership,Distrito Federal, Brazil Chapter', 'Dasm', 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 33, NULL, 33, 8, 42, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ana Paula Afonso Barbosa', 'redacted-006@example.com', '+5500000000035', '9951716', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/ana-paula-afonso-barbosa/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9951716.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A42Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=Nz06MRu2gQfDFFdSeDqMxLEENLgAzkpxgv%2BDDgQDjYw%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 30, NULL, 30, 10, 43, NULL, now());
+VALUES (v_cycle_id, 'member D', 'redacted-006@example.com', '+5500000000035', '9951716', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 D-paula-afonso-barbosa/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/9951716.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A42Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=Nz06MRu2gQfDFFdSeDqMxLEENLgAzkpxgv%2BDDgQDjYw%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 30, NULL, 30, 10, 43, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Jéssica Rodrigues Santa Rosa', 'redacted-042@example.com', '+5500000000036', '12232738', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/jessicasantarosa/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12232738.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A43Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qX%2FWJVlR%2B6nedfHhXZOei7z3OyduR1z1CePkpUa8dBc%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 30, NULL, 30, 10, 43, NULL, now());
+VALUES (v_cycle_id, 'member A', 'redacted-042@example.com', '+5500000000036', '12232738', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-21/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12232738.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A43Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qX%2FWJVlR%2B6nedfHhXZOei7z3OyduR1z1CePkpUa8dBc%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 30, NULL, 30, 10, 43, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Rayara Pinheiro', 'redacted-069@example.com', '+5500000000037', '12290236', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/rayarapinheiro93/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12290236.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A56Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qReReT7ZV4d7%2FaaB8BdBKzyhEFRGnWuZ0meQFfA94VA%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 23, NULL, 23, 12, 45, NULL, now());
+VALUES (v_cycle_id, 'member 28', 'redacted-069@example.com', '+5500000000037', '12290236', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-22/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12290236.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A56Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=qReReT7ZV4d7%2FaaB8BdBKzyhEFRGnWuZ0meQFfA94VA%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 23, NULL, 23, 12, 45, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Maurício Machado', 'redacted-058@example.com', '+5500000000038', '1081185', 'PMI-CE', 'DF', 'Brazil', 'https://www.linkedin.com/in/mauricioabe/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1081185.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A50Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=vVxwib5DvUXTMpI5Qr4XBaXvr38o0GgYsCV%2FVzc0dmA%3D', 'Individual Membership,Ceará, Brazil Chapter', 'PMP', 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 13, 46, 'Já é voluntário, pelo segundo ciclo', now());
+VALUES (v_cycle_id, 'member V', 'redacted-058@example.com', '+5500000000038', '1081185', 'PMI-CE', 'DF', 'Brazil', 'https://www.linkedin.com/in/member-23/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1081185.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A50Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=vVxwib5DvUXTMpI5Qr4XBaXvr38o0GgYsCV%2FVzc0dmA%3D', 'Individual Membership,Ceará, Brazil Chapter', 'PMP', 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 13, 46, 'Já é voluntário, pelo segundo ciclo', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Luciana Dutra Martins', 'redacted-051@example.com', '+5500000000039', '3053549', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/luciana-dutra-martins-51b8b643/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/3053549.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A04Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=g%2F6sjlZgGoVnE5TYA3YdkrqiGVLWR4OQDraBSfdWGq0%3D', 'Individual Membership,Goiás, Brazil Chapter', 'PMP', 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 12, 46, 'Já é voluntário, pelo segundo ciclo', now());
+VALUES (v_cycle_id, 'member P', 'redacted-051@example.com', '+5500000000039', '3053549', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 P-dutra-martins-51b8b643/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/3053549.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A04Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=g%2F6sjlZgGoVnE5TYA3YdkrqiGVLWR4OQDraBSfdWGq0%3D', 'Individual Membership,Goiás, Brazil Chapter', 'PMP', 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 12, 46, 'Já é voluntário, pelo segundo ciclo', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Charanvenkatesh Gorle', 'redacted-013@example.com', '+917780760730', '11895842', 'VOID', NULL, 'India', 'https://www.linkedin.com/in/charanvenkatesh-gorle-a16680232/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11895842.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A39Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=i9n9WDWqj%2B4KsrNqjHa%2B%2FLkN3384QogZrVtrce2hBw8%3D', NULL, NULL, 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 1, 46, 'Desclassificado - barreira linguistica, projecto rodado em Pt-br', now());
+VALUES (v_cycle_id, 'member 53', 'redacted-013@example.com', '+917780760730', '11895842', 'VOID', NULL, 'India', 'https://www.linkedin.com/in/member-5 53-gorle-a16680232/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/11895842.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A39Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=i9n9WDWqj%2B4KsrNqjHa%2B%2FLkN3384QogZrVtrce2hBw8%3D', NULL, NULL, 'researcher', 'submitted', '{}'::text[], NULL, NULL, 22, NULL, 22, 1, 46, 'Desclassificado - barreira linguistica, projecto rodado em Pt-br', now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ana Carla De Oliveira', 'redacted-004@example.com', '+5500000000040', '9950860', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/ana-carla-oliveira-2b22b293/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12227090.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A28Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=39kHAaDhKBT28qUvqba2b38NVGJHv5Mzttpun4sS2rk%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 21, NULL, 21, 13, 49, NULL, now());
+VALUES (v_cycle_id, 'member L', 'redacted-004@example.com', '+5500000000040', '9950860', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 D-carla-oliveira-2b22b293/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12227090.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A28Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=39kHAaDhKBT28qUvqba2b38NVGJHv5Mzttpun4sS2rk%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 21, NULL, 21, 13, 49, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, objective_score_avg, interview_score, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Daniel Canuto', 'redacted-010@example.com', '+5500000000041', '10569967', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/daniel-canuto-2491a9224/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10569967.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A55Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=%2FhtMCEtVmRKa5guEJP37Lpa%2FJbD86k1dnpXnXwm7KYs%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 20, NULL, 20, 14, 50, NULL, now());
+VALUES (v_cycle_id, 'member Z', 'redacted-010@example.com', '+5500000000041', '10569967', 'PMI-GO', 'GO', 'Brazil', 'https://www.linkedin.com/in/member-5 Z-canuto-2491a9224/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/10569967.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A55Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=%2FhtMCEtVmRKa5guEJP37Lpa%2FJbD86k1dnpXnXwm7KYs%3D', NULL, NULL, 'researcher', 'objective_cutoff', '{}'::text[], NULL, NULL, 20, NULL, 20, 14, 50, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Hayala Curto', 'redacted-035@example.com', '+5500000000004', '367666', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/hayala/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/367666.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A38Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cPGfO1fuK4DMT6jg1Ea5io35evY%2BqqTyOXXHaONva9s%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Central Italy Chapter', 'PMP,Pmi-Sp,Pmi-Rmp', 'leader', 'approved', '{}'::text[], NULL, NULL, 96, 1, 1, NULL, now());
+VALUES (v_cycle_id, 'member T', 'redacted-035@example.com', '+5500000000004', '367666', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 T/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/367666.pdf?sv=2024-08-04&se=2026-01-17T16%3A35%3A38Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=cPGfO1fuK4DMT6jg1Ea5io35evY%2BqqTyOXXHaONva9s%3D', 'Student Membership,Minas Gerais, Brazil Chapter,Central Italy Chapter', 'PMP,Pmi-Sp,Pmi-Rmp', 'leader', 'approved', '{}'::text[], NULL, NULL, 96, 1, 1, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Fabricio Costa', 'redacted-027@example.com', '+15035447898', '1971339', 'PMI-GO', 'VA', 'United States', 'https://www.linkedin.com/in/fabriciorcc/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1971339.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A09Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=Bb3aFztGDzP%2FOvhFbPRI7van%2BpSfB1D03Qt5KdaLHbw%3D', 'Individual Membership,Goiás, Brazil Chapter,Washington, Dc Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 88, 1, 2, NULL, now());
+VALUES (v_cycle_id, 'member W', 'redacted-027@example.com', '+15035447898', '1971339', 'PMI-GO', 'VA', 'United States', 'https://www.linkedin.com/in/member-24/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1971339.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A09Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=Bb3aFztGDzP%2FOvhFbPRI7van%2BpSfB1D03Qt5KdaLHbw%3D', 'Individual Membership,Goiás, Brazil Chapter,Washington, Dc Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 88, 1, 2, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Marcel Fleming', 'redacted-030@example.com', '+5500000000042', '1218766', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/marcelfleming', 'Pasta Drive', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 83.5, 2, 3, NULL, now());
+VALUES (v_cycle_id, 'member 29', 'redacted-030@example.com', '+5500000000042', '1218766', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-25', 'Pasta Drive', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 83.5, 2, 3, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Fernando Maquiaveli', 'redacted-028@example.com', '+5500000000043', '1057095', 'PMI-DF', 'SP', 'Brazil', 'https://www.linkedin.com/in/fernandomaquiaveli/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1057095.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A12Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=IRELVdsGfANX7A55carFtxZXDMXAUIq68Kkh2AoIzzo%3D', 'Individual Membership,Distrito Federal, Brazil Chapter,São Paulo, Brazil Chapter', 'PMP,DASSM', 'leader', 'approved', '{}'::text[], NULL, NULL, 81, 1, 4, NULL, now());
+VALUES (v_cycle_id, 'member 27', 'redacted-028@example.com', '+5500000000043', '1057095', 'PMI-DF', 'SP', 'Brazil', 'https://www.linkedin.com/in/member-26/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1057095.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A12Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=IRELVdsGfANX7A55carFtxZXDMXAUIq68Kkh2AoIzzo%3D', 'Individual Membership,Distrito Federal, Brazil Chapter,São member C, Brazil Chapter', 'PMP,DASSM', 'leader', 'approved', '{}'::text[], NULL, NULL, 81, 1, 4, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Jefferson Pinto', 'redacted-040@example.com', '+351936041519', '2353763', 'PMI-DF', '11.0', 'Portugal', 'https://www.linkedin.com/in/jeffersonpp/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2353763.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=T184gNahodosU1RjBcZ5WfUEOwkiK2Pk%2Fr9XZHbOpLQ%3D', 'Student Membership,Portugal Chapter, Distrito Federal, Brazil Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 80, 2, 5, NULL, now());
+VALUES (v_cycle_id, 'member 54', 'redacted-040@example.com', '+351936041519', '2353763', 'PMI-DF', '11.0', 'Portugal', 'https://www.linkedin.com/in/member-27/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/2353763.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A11Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=T184gNahodosU1RjBcZ5WfUEOwkiK2Pk%2Fr9XZHbOpLQ%3D', 'Student Membership,Portugal Chapter, Distrito Federal, Brazil Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 80, 2, 5, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Marcos Antunes Klemz', 'redacted-055@example.com', '+5500000000044', '5428333', 'PMI-MG', 'SC', 'United States', 'https://www.linkedin.com/in/maklemz/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5428333.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=DUbaPmnDJ9J5wjSV0Xt6MVO9XlsiurcWkCRT7HH1j8s%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 71, 3, 6, NULL, now());
+VALUES (v_cycle_id, 'member H', 'redacted-055@example.com', '+5500000000044', '5428333', 'PMI-MG', 'SC', 'United States', 'https://www.linkedin.com/in/member-8/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/5428333.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A05Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=DUbaPmnDJ9J5wjSV0Xt6MVO9XlsiurcWkCRT7HH1j8s%3D', 'Individual Membership,Minas Gerais, Brazil Chapter,Carolina Chapter', 'PMP', 'leader', 'approved', '{}'::text[], NULL, NULL, 71, 3, 6, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Ana Carla Cavalcante', 'redacted-005@example.com', '+5500000000002', '12227090', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/anacarlacavalcante/', NULL, NULL, NULL, 'leader', 'approved', '{}'::text[], NULL, NULL, 68, 1, 7, NULL, now());
+VALUES (v_cycle_id, 'member G', 'redacted-005@example.com', '+5500000000002', '12227090', 'PMI-CE', 'CE', 'Brazil', 'https://www.linkedin.com/in/member-3/', NULL, NULL, NULL, 'leader', 'approved', '{}'::text[], NULL, NULL, 68, 1, 7, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Rodolfo Santana', 'redacted-072@example.com', '+5500000000016', '1084916', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/rodolfo-siqueira-santana-msc-pmp/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1084916.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=iTzMsABLSzEwHx5RBisdz4GCGgulnNZiod2rCX1gv1M%3D', 'Individual Membership', 'PMP', 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 67, 4, 8, NULL, now());
+VALUES (v_cycle_id, 'member 48', 'redacted-072@example.com', '+5500000000016', '1084916', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-5 48-siqueira-santana-msc-pmp/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/1084916.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A08Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=iTzMsABLSzEwHx5RBisdz4GCGgulnNZiod2rCX1gv1M%3D', 'Individual Membership', 'PMP', 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 67, 4, 8, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Telson Alves', 'redacted-080@example.com', '+5500000000045', '6331409', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/telsonvieira/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/6331409.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A07Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=r8T5g9mQWAXdvh6YZP4h%2F2kgkUjay0djJjbH%2BvehnS4%3D', 'Individual Membership,Minas Gerais, Brazil Chapter', 'PMP', 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 57, 5, 9, NULL, now());
+VALUES (v_cycle_id, 'member 36', 'redacted-080@example.com', '+5500000000045', '6331409', 'PMI-MG', 'MG', 'Brazil', 'https://www.linkedin.com/in/member-28/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/6331409.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A07Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=r8T5g9mQWAXdvh6YZP4h%2F2kgkUjay0djJjbH%2BvehnS4%3D', 'Individual Membership,Minas Gerais, Brazil Chapter', 'PMP', 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 57, 5, 9, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Estela Boiani', 'redacted-025@example.com', '+5500000000046', '7844148', NULL, 'SC', 'Brazil', 'https://www.linkedin.com/in/estela-boiani-17737045/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7844148.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A14Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=pPMmlVdgPscCY%2B7zUUdNDOCtd9BEiqYonvCaQY%2B3kk0%3D', NULL, NULL, 'leader', 'rejected', '{}'::text[], NULL, NULL, 54.5, 1, 10, NULL, now());
+VALUES (v_cycle_id, 'member 46', 'redacted-025@example.com', '+5500000000046', '7844148', NULL, 'SC', 'Brazil', 'https://www.linkedin.com/in/member-5 46-boiani-17737045/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/7844148.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A14Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=pPMmlVdgPscCY%2B7zUUdNDOCtd9BEiqYonvCaQY%2B3kk0%3D', NULL, NULL, 'leader', 'rejected', '{}'::text[], NULL, NULL, 54.5, 1, 10, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Adalberto Neris', 'redacted-001@example.com', '+5500000000026', '12238778', NULL, 'PR', 'Brazil', 'https://www.linkedin.com/in/adalbertoneris/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12238778.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A15Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=EjpMeg25txwcMeks0jomQygPjPdtIK6ETMr2kLhryLQ%3D', NULL, NULL, 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 54, 2, 11, NULL, now());
+VALUES (v_cycle_id, 'member 32', 'redacted-001@example.com', '+5500000000026', '12238778', NULL, 'PR', 'Brazil', 'https://www.linkedin.com/in/member-14/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12238778.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A15Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=EjpMeg25txwcMeks0jomQygPjPdtIK6ETMr2kLhryLQ%3D', NULL, NULL, 'leader', 'converted', '{convert_to_researcher}', 'leader', 'researcher', 54, 2, 11, NULL, now());
 INSERT INTO selection_applications (cycle_id, applicant_name, email, phone, pmi_id, chapter, state, country, linkedin_url, resume_url, membership_status, certifications, role_applied, status, tags, converted_from, converted_to, final_score, rank_chapter, rank_overall, feedback, imported_at)
-VALUES (v_cycle_id, 'Fernanda Longato De Moura', 'contato@fernandalongato.com', '+5500000000047', '12268793', NULL, 'SC', 'Brazil', 'https://www.linkedin.com/in/fernandalongato/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12268793.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A03Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=PohRZGtjpfrSH4SZ0%2BEz0UF6WmKorEvtlOFrwZCrdMM%3D', NULL, NULL, 'leader', 'withdrawn', '{}'::text[], NULL, NULL, 43.5, 3, 12, 'Canditada cancelou candidatura', now());
+VALUES (v_cycle_id, 'member Q', 'contato@example.invalid', '+5500000000047', '12268793', NULL, 'SC', 'Brazil', 'https://www.linkedin.com/in/member-29/', 'https://cavprodeastusshared.blob.core.windows.net/vep-resume-storage/12268793.pdf?sv=2024-08-04&se=2026-01-17T15%3A50%3A03Z&sr=b&sp=r&rscd=inline&rsct=application%2Fpdf&sig=PohRZGtjpfrSH4SZ0%2BEz0UF6WmKorEvtlOFrwZCrdMM%3D', NULL, NULL, 'leader', 'withdrawn', '{}'::text[], NULL, NULL, 43.5, 3, 12, 'Canditada cancelou candidatura', now());
   -- ============================================================
   -- 5. Evaluations (159 records: objective + interview + leader_extra)
   -- ============================================================
@@ -211,7 +211,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 5.0}'::jsonb, 67, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-003@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 5.0}'::jsonb, 67, now()
@@ -229,7 +229,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 63, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-064@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 61, now()
@@ -247,7 +247,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 3.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 57, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-005@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 61, now()
@@ -265,7 +265,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 3.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 55, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-031@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 5.0, "gp_knowledge": 3.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 55, now()
@@ -283,7 +283,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 57, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-035@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 4.0, "gp_knowledge": 4.0, "ai_knowledge": 3.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 50, now()
@@ -301,7 +301,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 5.0}'::jsonb, 59, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-048@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 2.0, "ai_knowledge": 4.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 43, now()
@@ -319,7 +319,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 5.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 59, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-075@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 2.0, "gp_knowledge": 4.0, "ai_knowledge": 3.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 50, now()
@@ -331,7 +331,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 5.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 41, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-071@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 3.0, "ai_knowledge": 4.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 54, now()
@@ -349,7 +349,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 1.0, "ai_knowledge": 5.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 47, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-066@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 4.0, "gp_knowledge": 2.0, "ai_knowledge": 4.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 5.0}'::jsonb, 51, now()
@@ -367,7 +367,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 5.0, "ai_knowledge": 3.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 45, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-088@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 2.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 43, now()
@@ -385,7 +385,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 5.0, "ai_knowledge": 1.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 41, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-055@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 2.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 43, now()
@@ -403,7 +403,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 5.0}'::jsonb, 43, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-059@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 2.0, "ai_knowledge": 3.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 38, now()
@@ -421,7 +421,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 35, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-056@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 43, now()
@@ -439,7 +439,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 39, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-081@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 2.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 36, now()
@@ -457,7 +457,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 5.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 41, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-046@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 33, now()
@@ -475,7 +475,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 1.0, "gp_knowledge": 5.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 37, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-052@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 3.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 37, now()
@@ -493,7 +493,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 31, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-034@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 1.0, "gp_knowledge": 4.0, "ai_knowledge": 3.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 42, now()
@@ -511,7 +511,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 37, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-072@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 2.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 2.0}'::jsonb, 38, now()
@@ -529,7 +529,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 5.0, "ai_knowledge": 0.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 34, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-045@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 35, now()
@@ -547,7 +547,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 5.0, "ai_knowledge": 1.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 39, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-021@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 33, now()
@@ -565,7 +565,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 27, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-023@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 2.0, "gp_knowledge": 3.0, "ai_knowledge": 2.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 40, now()
@@ -583,7 +583,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 35, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-037@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 2.0, "ai_knowledge": 2.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 31, now()
@@ -601,7 +601,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 31, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-079@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 2.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 37, now()
@@ -619,7 +619,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 27, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-073@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 2.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 2.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 39, now()
@@ -637,7 +637,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 29, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-049@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 2.0, "ai_knowledge": 1.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 4.0}'::jsonb, 34, now()
@@ -655,7 +655,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 35, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-022@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 3.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 31, now()
@@ -667,7 +667,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 3.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 29, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-024@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 27, now()
@@ -685,7 +685,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 33, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-002@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 27, now()
@@ -697,7 +697,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 23, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-001@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 27, now()
@@ -715,7 +715,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 0.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 24, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-044@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 2.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 24, now()
@@ -733,7 +733,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 3.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 31, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-033@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 26, now()
@@ -745,7 +745,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 23, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-084@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 3.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 2.0}'::jsonb, 23, now()
@@ -763,7 +763,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 3.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 27, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-061@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 2.0, "ai_knowledge": 1.0, "tech_skills": 4.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 26, now()
@@ -775,7 +775,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 25, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-016@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 2.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 23, now()
@@ -787,7 +787,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 3.0, "ai_knowledge": 1.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 21, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-011@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -805,7 +805,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 3.0, "ai_knowledge": 0.0, "tech_skills": 5.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 22, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-074@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -817,7 +817,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 3.0}'::jsonb, 22, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-063@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -829,7 +829,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 3.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 17, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-060@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -841,7 +841,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 12, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-015@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -853,7 +853,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 1.0, "research_exp": null, "gp_knowledge": 3.0, "ai_knowledge": null, "tech_skills": null, "availability": null, "motivation": null}'::jsonb, 11, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-082@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -865,7 +865,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 8, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-006@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -877,7 +877,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 0.0}'::jsonb, 8, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-042@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -889,7 +889,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 12, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-069@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 0.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 2.0}'::jsonb, 11, now()
@@ -901,7 +901,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": null, "research_exp": null, "gp_knowledge": null, "ai_knowledge": null, "tech_skills": null, "availability": null, "motivation": null}'::jsonb, NULL, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-058@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -913,7 +913,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": null, "research_exp": null, "gp_knowledge": null, "ai_knowledge": null, "tech_skills": null, "availability": null, "motivation": null}'::jsonb, NULL, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-051@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -925,7 +925,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": null, "research_exp": null, "gp_knowledge": null, "ai_knowledge": null, "tech_skills": null, "availability": null, "motivation": null}'::jsonb, NULL, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-013@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 2.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 2.0, "availability": 2.0, "motivation": 3.0}'::jsonb, 22, now()
@@ -937,7 +937,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 0.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 1.0, "availability": 1.0, "motivation": 0.0}'::jsonb, 6, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-004@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 1.0, "tech_skills": 1.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 15, now()
@@ -949,7 +949,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 0.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 10, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-010@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'researcher'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'objective', '{"certification": 0.0, "research_exp": 1.0, "gp_knowledge": 1.0, "ai_knowledge": 0.0, "tech_skills": 0.0, "availability": 3.0, "motivation": 1.0}'::jsonb, 10, now()
@@ -961,7 +961,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 4.0, "technical_knowledge": 4.0, "pmi_involvement": 4.0, "language": 3.0}'::jsonb, 42, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-035@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 4.0, "technical_knowledge": 4.0, "pmi_involvement": 4.0, "language": 3.0}'::jsonb, 42, now()
@@ -979,7 +979,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 3.0, "language": 3.0}'::jsonb, 36, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-027@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 5.0, "technical_knowledge": 4.0, "pmi_involvement": 5.0, "language": 3.0}'::jsonb, 40, now()
@@ -997,7 +997,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 33, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-030@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 4.0, "technical_knowledge": 4.0, "pmi_involvement": 5.0, "language": 3.0}'::jsonb, 37.5, now()
@@ -1015,7 +1015,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 5.0, "technical_knowledge": 3.0, "pmi_involvement": 0.0, "language": 3.0}'::jsonb, 36.5, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-028@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 2.0, "leadership": 4.0, "technical_knowledge": 4.0, "pmi_involvement": 3.0, "language": 3.0}'::jsonb, 31.5, now()
@@ -1033,7 +1033,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 3.0, "language": 1.0}'::jsonb, 34, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-040@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 4.0, "leadership": 3.0, "technical_knowledge": 4.0, "pmi_involvement": 5.0, "language": 2.0}'::jsonb, 37, now()
@@ -1051,7 +1051,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 3.0, "language": 3.0}'::jsonb, 30, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-055@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 2.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 5.0, "language": 3.0}'::jsonb, 30, now()
@@ -1069,7 +1069,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 1.0, "leadership": 5.0, "technical_knowledge": 4.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 28, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-005@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 1.0, "leadership": 5.0, "technical_knowledge": 4.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 28, now()
@@ -1087,7 +1087,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 27, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-072@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 3.0, "language": 3.0}'::jsonb, 30, now()
@@ -1105,7 +1105,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 0.0, "language": 1.0}'::jsonb, 23.5, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-080@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 2.0, "leadership": 2.0, "technical_knowledge": 3.0, "pmi_involvement": 3.0, "language": 0.0}'::jsonb, 21.5, now()
@@ -1123,7 +1123,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 5.0, "leadership": 3.0, "technical_knowledge": 3.0, "pmi_involvement": 0.0, "language": 0.0}'::jsonb, 28.5, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-025@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 4.0, "leadership": 4.0, "technical_knowledge": 2.0, "pmi_involvement": 0.0, "language": 0.0}'::jsonb, 26, now()
@@ -1135,7 +1135,7 @@ INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 1.0, "pmi_involvement": 0.0, "language": 1.0}'::jsonb, 19.5, now()
 FROM selection_applications a, members m
 WHERE a.email = 'redacted-001@example.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 4.0, "leadership": 2.0, "technical_knowledge": 2.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 25.5, now()
@@ -1152,13 +1152,13 @@ LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 3.0, "leadership": 3.0, "technical_knowledge": 1.0, "pmi_involvement": 0.0, "language": 3.0}'::jsonb, 21.5, now()
 FROM selection_applications a, members m
-WHERE a.email = 'contato@fernandalongato.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
-AND m.name = 'Fabricio Costa'
+WHERE a.email = 'contato@example.invalid' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
+AND m.name = 'member W'
 LIMIT 1;
 INSERT INTO selection_evaluations (application_id, evaluator_id, evaluation_type, scores, weighted_subtotal, submitted_at)
 SELECT a.id, m.id, 'leader_extra', '{"research_and_gp_exp": 2.0, "leadership": 3.0, "technical_knowledge": 2.0, "pmi_involvement": 1.0, "language": 3.0}'::jsonb, 22, now()
 FROM selection_applications a, members m
-WHERE a.email = 'contato@fernandalongato.com' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
+WHERE a.email = 'contato@example.invalid' AND a.cycle_id = v_cycle_id AND a.role_applied = 'leader'
 AND m.name = 'Vitor Maia Rodovalho'
 LIMIT 1;
 

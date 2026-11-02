@@ -14,10 +14,10 @@
 -- já normalizados.
 --
 -- Resultado backfill p87 (2026-05-01):
---   Mayanna Duarte    → PMI-CE  (de "Sim, capítulo CE.")
---   Vanessa Andrade   → PMI-DF  (de "PMI _DF")
---   Ricardo Santos    → PMI-MG  (de "Eu sou filiado ao capítulo MG e RJ m...")
---   João Uzejka       → PMI-RS  (de "PMIRS" — caso original PM report)
+--   member A    → PMI-CE  (de "Sim, capítulo CE.")
+--   member C   → PMI-DF  (de "PMI _DF")
+--   member B    → PMI-MG  (de "Eu sou filiado ao capítulo MG e RJ m...")
+--   member D       → PMI-RS  (de "PMIRS" — caso original PM report)
 --
 -- 23 outros candidatos com chapter NULL permanecem (chapter_affiliation
 -- texto livre tipo "Não", "Não sou filiado", etc — legitimately não-afiliados).

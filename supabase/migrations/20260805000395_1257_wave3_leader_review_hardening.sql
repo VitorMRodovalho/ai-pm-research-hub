@@ -9,7 +9,7 @@
 --      leader->researcher invites keep their 72h window.
 --   2. review_tribe_request: #1263 atomic tribe switch — on approve, demote any OTHER active tribe
 --      engagement the researcher holds so admission is a clean switch (keeps AH single-active + AG
---      tribe_id at baseline 0). Priscila Oliveira was the live evidence (two active tribe engagements
+--      tribe_id at baseline 0). member A was the live evidence (two active tribe engagements
 --      after a stale pending request was approved into a second tribe).
 --   3. initiative_invitations.metadata (new jsonb column) + process_tribe_request_nudges(): a D-2
 --      leader nudge (dedup once per request via metadata->>'leader_nudged_at') and a GP fallback on

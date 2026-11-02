@@ -10,8 +10,8 @@
 --   - Idempotency on re-approval / reactivation.
 --
 -- Production evidence (p202 SQL audit pack):
---   - 38 approved/converted applications, 1 with no matching member row (Adalberto
---     Neris, application eb9c4795-5a75-4184-83c0-318bace1a1b5, status='converted',
+--   - 38 approved/converted applications, 1 with no matching member row (member A
+--     applicant, application eb9c4795-5a75-4184-83c0-318bace1a1b5, status='converted',
 --     role_applied='leader'). #180 backfills this case via the canonical RPC.
 --   - 16 active+requires_agreement engagements without certificate (operational
 --     queue — surfaced by #177 `get_pending_agreement_engagements()`).

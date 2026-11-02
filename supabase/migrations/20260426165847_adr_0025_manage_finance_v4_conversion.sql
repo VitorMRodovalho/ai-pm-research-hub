@@ -9,11 +9,11 @@
 --   Q4 (timing?) — p59 mesmo (executar agora)
 --
 -- Privilege expansion safety check (verified pre-apply):
---   V3 grant: 2 members (Vitor, Fabricio — superadmin OR manager)
+--   V3 grant: 2 members (Vitor, member F — superadmin OR manager)
 --   V4 grant proposed: 7 members (above + 5 sponsors)
---   Would gain: 5 sponsors (Ivan Lourenço, Márcio Silva dos Santos,
---     Matheus Frederico Rosa Rocha, Felipe Moraes Borges,
---     Francisca Jessica de Sousa de Alcântara) — INTENTIONAL per Q1
+--   Would gain: 5 sponsors (member E, member C,
+--     member A, member D,
+--     member B) — INTENTIONAL per Q1
 --   Would lose: 0 members
 
 -- ============================================================

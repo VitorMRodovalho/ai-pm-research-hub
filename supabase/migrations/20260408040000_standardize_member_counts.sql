@@ -1,10 +1,10 @@
 -- Standardize member counting across all RPCs
 -- Canonical definition: "active member" = is_active = true AND current_cycle_active = true
 -- Previously some RPCs used only is_active (53), others used both (52)
--- After fixing Daniel Bittencourt (observer, not cycle_active → is_active=false), both = 52
+-- After fixing member A (observer, not cycle_active → is_active=false), both = 52
 
--- 1. Daniel Bittencourt: observer, not in current cycle
-UPDATE members SET is_active = false WHERE name = 'Daniel Bittencourt' AND chapter = 'PMI-MG' AND operational_role = 'observer';
+-- 1. member A: observer, not in current cycle
+UPDATE members SET is_active = false WHERE name = 'member A' AND chapter = 'PMI-MG' AND operational_role = 'observer';
 
 -- 2. KPI baseline: 53 → 52
 UPDATE annual_kpi_targets SET baseline_value = 52 WHERE kpi_key = 'active_members' AND cycle = 4;

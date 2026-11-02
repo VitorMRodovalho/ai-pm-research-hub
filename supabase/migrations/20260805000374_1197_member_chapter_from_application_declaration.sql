@@ -9,7 +9,7 @@
 -- On post-signature promotion (guest -> researcher) the invariant
 -- U_active_person_has_primary_chapter_affiliation exclusion lapses and fires: a
 -- registry-chaptered active member with zero primary affiliations (live incident 2026-07-08,
--- Thiago Pimentel; data fixed same day, Thiago + Hector -> 'Outro').
+-- member A; data fixed same day, member A + member B -> 'Outro').
 --
 -- Fix: fallback is 'Outro' — the canonical "active member without a chapter" value (also the
 -- members.chapter column default), which invariant U correctly excludes. The contracting

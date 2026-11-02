@@ -1,6 +1,6 @@
 -- Fix: leave-tribe demotion must also clear members.initiative_id, not only tribe_id.
 --
--- Root cause (found in live QA 2026-07-10, researcher Tiele Lara): withdraw_from_initiative
+-- Root cause (found in live QA 2026-07-10, researcher member A): withdraw_from_initiative
 -- offboards the tribe engagement and the AFTER trigger _sync_tribe_id_from_engagement clears
 -- members.tribe_id -- BUT members carries a dual-write pair (tribe_id + initiative_id, ADR-0005).
 -- The BEFORE-UPDATE bridge trigger sync_tribe_from_initiative re-derives tribe_id from the STILL-SET

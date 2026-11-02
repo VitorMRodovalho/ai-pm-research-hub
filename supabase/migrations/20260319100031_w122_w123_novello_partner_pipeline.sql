@@ -1,5 +1,5 @@
 -- ============================================================================
--- W122: Carlos Novello Recognition Seed (in get_public_impact_data)
+-- W122: member B Recognition Seed (in get_public_impact_data)
 -- W123: Partner Pipeline Management — schema changes, RPCs, data seeding
 -- ============================================================================
 
@@ -354,15 +354,15 @@ GRANT EXECUTE ON FUNCTION public.admin_update_partner_status(uuid, text, text) T
 
 INSERT INTO public.partner_entities (name, entity_type, status, contact_name, contact_email, notes, chapter, partnership_date, updated_at)
 VALUES ('PM AI Revolution', 'community', 'contact',
-  'Sueli Barroso / Ricardo Vargas / Antonio Nieto-Rodriguez',
+  'contato do parceiro A / contato do parceiro B / contato do parceiro C',
   'info@pmairevolution.com',
-  '2026-02-11: Ambassador application submitted. 2026-02-13: Sueli confirmed forwarded to AIPM team. 2026-03-14: Follow-up sent.',
+  '2026-02-11: Ambassador application submitted. 2026-02-13: o contato do parceiro confirmed forwarded to AIPM team. 2026-03-14: Follow-up sent.',
   NULL, CURRENT_DATE, now())
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.partner_entities (name, entity_type, status, contact_name, contact_email, chapter, notes, partnership_date, updated_at)
 VALUES
-  ('IFG — Instituto Federal de Goiás', 'academic', 'prospect', 'Prof. Sirlon Diniz', 'redacted-078@example.com', 'PMI-GO', 'Contato via aplicação Ambassador', CURRENT_DATE, now()),
+  ('IFG — Instituto Federal de Goiás', 'academic', 'prospect', 'contato da instituição', 'redacted-078@example.com', 'PMI-GO', 'Contato via aplicação Ambassador', CURRENT_DATE, now()),
   ('FioCruz', 'research', 'prospect', NULL, NULL, NULL, 'Mencionado na aplicação Ambassador como parceria em negociação', CURRENT_DATE, now()),
   ('AI.Brasil', 'association', 'prospect', NULL, NULL, NULL, 'Associação brasileira de IA', CURRENT_DATE, now()),
   ('CEIA-UFG', 'academic', 'prospect', NULL, NULL, 'PMI-GO', 'Centro de Excelência em IA da UFG', CURRENT_DATE, now()),

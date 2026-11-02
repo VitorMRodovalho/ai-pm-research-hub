@@ -163,7 +163,7 @@ BEGIN
     'security_incident.identity_hijack.opened',
     'member',
     '57fcf33c-25a3-4555-b358-a168a4151794'::uuid,
-    jsonb_build_object('summary', 'Active identity hijack discovered: Paulo Roberto de Camargo Filho silently re-claiming Paulo Alves member row 57fcf33c via secondary_emails branch in get_member_by_auth on every session refresh',
+    jsonb_build_object('summary', 'Active identity hijack discovered: member A silently re-claiming member B member row 57fcf33c via secondary_emails branch in get_member_by_auth on every session refresh',
                        'root_cause', 'get_member_by_auth secondary_emails match + replace-existing-auth_id branch with no ownership verification',
                        'discovery_path', 'invariant D=1 carry investigation -> auth.sessions refreshed_at timing -> profile.astro:1876 unverified writes'),
     jsonb_build_object('severity','p0','status','open','incident_id',v_incident_id,'brief_path','docs/audit/P168_D1_PAULO_ALVES_AUTH_HIJACK_BRIEF.md','timeline_anchor','2026-05-15T22:35Z')
@@ -175,7 +175,7 @@ BEGIN
     'security_incident.identity_hijack.remediated',
     'member',
     '57fcf33c-25a3-4555-b358-a168a4151794'::uuid,
-    jsonb_build_object('summary', 'R1 revoked 101 refresh_tokens + 2 sessions for Paulo Roberto; R2 restored canonical members[57fcf33c] state; R3-a hardened get_member_by_auth + try_auto_link_ghost (migration 20260667000000); OQ3 deleted auth.users[a2407bdc].',
+    jsonb_build_object('summary', 'R1 revoked 101 refresh_tokens + 2 sessions for member A; R2 restored canonical members[57fcf33c] state; R3-a hardened get_member_by_auth + try_auto_link_ghost (migration 20260667000000); OQ3 deleted auth.users[a2407bdc].',
                        'remediation_steps', jsonb_build_array('R1','R2','R3-a','OQ3')),
     jsonb_build_object('severity','p0','status','remediated','incident_id',v_incident_id,'brief_path','docs/audit/P168_D1_PAULO_ALVES_AUTH_HIJACK_BRIEF.md','timeline_anchor','2026-05-15T23:00Z')
   );
@@ -186,7 +186,7 @@ BEGIN
     'security_incident.identity_hijack.closed',
     'member',
     '57fcf33c-25a3-4555-b358-a168a4151794'::uuid,
-    jsonb_build_object('summary', 'R4 deployed (email-verified secondary_emails flow, migration 20260668000000); OQ-A1 backfill prevented Carlos LinkedIn ghost; OQ-B1 added security_incidents log convention. Invariant D back to 0. Vulnerability surface platform-wide closed.',
+    jsonb_build_object('summary', 'R4 deployed (email-verified secondary_emails flow, migration 20260668000000); OQ-A1 backfill prevented member C LinkedIn ghost; OQ-B1 added security_incidents log convention. Invariant D back to 0. Vulnerability surface platform-wide closed.',
                        'closure_steps', jsonb_build_array('R4','R5_subsumed','OQ-A1','OQ-B1')),
     jsonb_build_object('severity','p0','status','closed','incident_id',v_incident_id,'brief_path','docs/audit/P168_D1_PAULO_ALVES_AUTH_HIJACK_BRIEF.md','timeline_anchor','2026-05-16T03:50Z')
   );

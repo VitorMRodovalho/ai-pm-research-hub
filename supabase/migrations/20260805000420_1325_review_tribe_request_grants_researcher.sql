@@ -1,12 +1,12 @@
 -- #1325 fix(members): tribe membership via the picker grants 'researcher', not 'participant'
 --
--- Sintoma (reportado pela membra Ligia Ribeiro): sumiu do ranking público de trilha.
+-- Sintoma (reportado pela membra member A): sumiu do ranking público de trilha.
 -- Causa-raiz (aterrada 2026-07-11): review_tribe_request(approve) inseria o engagement de entrada
 -- com role='participant'. sync_operational_role_cache mapeia volunteer/participant para o fallback
 -- 'guest' (não casa nenhuma regra de researcher/leader), e get_public_trail_ranking exclui
 -- operational_role IN (...,'guest'). Quem entrou por seleção (approve_selection_application) recebe
 -- volunteer/researcher e aparece; quem entrou pelo picker recebia participant e só NÃO caía para
--- guest se tivesse um SEGUNDO vínculo researcher concorrente. Ligia perdeu o researcher da T5
+-- guest se tivesse um SEGUNDO vínculo researcher concorrente. member A perdeu o researcher da T5
 -- (offboard) e ficou só com o participant do picker → guest → fora do ranking.
 --
 -- Fix (owner 2026-07-11, opção B): a membresia numa research_tribe É um papel de pesquisador. O approve

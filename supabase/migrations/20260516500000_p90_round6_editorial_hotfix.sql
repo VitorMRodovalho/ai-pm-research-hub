@@ -1,4 +1,4 @@
--- p90 Round 6 editorial hotfix — Ricardo Santos critique absorption (Phase 1: Editorial-only)
+-- p90 Round 6 editorial hotfix — member A critique absorption (Phase 1: Editorial-only)
 -- Decisions Vitor 2026-05-04:
 --   1. Path A — Vitor handles curador comm via WhatsApp grupo curadoria
 --   3. Termo title: "Termo de Adesão ao Serviço Voluntário"
@@ -105,7 +105,7 @@ BEGIN
     now(),
     now(),
     v_pm_id,
-    'p90 editorial hotfix Ricardo Santos critique (Phase 1): (1) Termo de Compromisso → Termo de Adesão ao Serviço Voluntário; (2) art. 46 Lei 9.610 + fair use → art. 46 da Lei nº 9.610/1998 (drop terminologia EUA); (3) Tributária §4.5(e) simplificada para regra-mãe (sem Anexo Fiscal — verificação caso a caso pelo time financeiro); (4) Glossário §13.4 expandido com Material change + Editorial change definitions; (5) Glossário §13.4 expandido com 12 termos novos (SCC, Adequação, CDT, Beneficial owner, Standby, Aceite expresso, Aceite tácito, Direitos morais, Direitos patrimoniais, Coautoria, Obra sensível, Período de graça INPI). Material fixes (Aceite tácito framework + LGPD UE-UK + Cláusula plataforma) HOLD para Ângelina engagement.'
+    'p90 editorial hotfix member A critique (Phase 1): (1) Termo de Compromisso → Termo de Adesão ao Serviço Voluntário; (2) art. 46 Lei 9.610 + fair use → art. 46 da Lei nº 9.610/1998 (drop terminologia EUA); (3) Tributária §4.5(e) simplificada para regra-mãe (sem Anexo Fiscal — verificação caso a caso pelo time financeiro); (4) Glossário §13.4 expandido com Material change + Editorial change definitions; (5) Glossário §13.4 expandido com 12 termos novos (SCC, Adequação, CDT, Beneficial owner, Standby, Aceite expresso, Aceite tácito, Direitos morais, Direitos patrimoniais, Coautoria, Obra sensível, Período de graça INPI). Material fixes (Aceite tácito framework + LGPD UE-UK + Cláusula plataforma) HOLD para Ângelina engagement.'
   );
 
   -- ====================================================================
@@ -213,7 +213,7 @@ SELECT
     'session', 'p90',
     'session_date', '2026-05-04',
     'phase', 'editorial_only',
-    'reason', 'Ricardo Santos critique absorption (5 of 8 fixes shipped editorial; 4 material HOLD Ângelina)',
+    'reason', 'member A critique absorption (5 of 8 fixes shipped editorial; 4 material HOLD Ângelina)',
     'spec_doc', 'docs/specs/p90-round-6-editorial-material-fixes-matrix.md',
     'curador_comm', 'Vitor handles via WhatsApp grupo curadoria audio explanation',
     'fixes_applied', jsonb_build_array(

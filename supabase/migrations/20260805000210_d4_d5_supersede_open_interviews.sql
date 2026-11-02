@@ -24,7 +24,7 @@
 --     'cancelled' interview status matches none of its open-status branches -> app.status unchanged for all 4.
 --   - Cancelling an orphan fires trg_sync_interview_to_event: _sync_interview_to_event matches the events
 --     row by the orphan's OWN calendar_event_id (each booking has a distinct id) and marks ONLY that stale
---     event 'cancelled' (intentional — corrects Bruna Soares' lingering 'scheduled' event). The completed
+--     event 'cancelled' (intentional — corrects member A' lingering 'scheduled' event). The completed
 --     interview's event (distinct calendar_event_id) is untouched.
 --   - No recursion: the supersede trigger is AFTER INSERT; it closes siblings via UPDATE OF status (not INSERT).
 --

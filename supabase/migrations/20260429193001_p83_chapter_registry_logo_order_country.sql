@@ -1,7 +1,7 @@
 -- p83 Sprint 1A — chapter_registry schema extension
 -- Adiciona colunas necessárias pra tornar listagem de chapters data-driven (frontend dynamic).
 -- Backfill 5 chapters atuais (CE/DF/GO/MG/RS) com logo_url + display_order.
--- Não INSERTa novos chapters; aguarda lista oficial Ivan Lourenço (PMI-GO Pres) antes da expansão 5→15.
+-- Não INSERTa novos chapters; aguarda lista oficial member A (PMI-GO Pres) antes da expansão 5→15.
 -- Rollback: ALTER TABLE chapter_registry DROP COLUMN logo_url, DROP COLUMN display_order, DROP COLUMN country; DROP INDEX idx_chapter_registry_active_order;
 
 ALTER TABLE public.chapter_registry

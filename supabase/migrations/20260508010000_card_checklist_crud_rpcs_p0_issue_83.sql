@@ -1,6 +1,6 @@
 -- Migration: Card/Checklist CRUD RPCs — P0 from issue #83
 -- 2026-05-08 p39
--- Feedback origem: Fabrício Costa (líder Tribo 6) — MCP coverage <40% de board/card/checklist CRUD
+-- Feedback origem: member A (líder Tribo 6) — MCP coverage <40% de board/card/checklist CRUD
 -- Context: fecha P0 do gap analysis (8 tools). 4 tools novos + 4 wrap existentes no MCP layer.
 -- Authority (ADR-0011 V4 pattern):
 --   * Primary gate: public.can_by_member(v_caller_id, 'write_board') — engagement-derived

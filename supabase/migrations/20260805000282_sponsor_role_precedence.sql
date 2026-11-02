@@ -1,14 +1,14 @@
--- Wave 1 (Ivan / LATAM LIM) — sponsor must outrank researcher in the operational_role derivation.
+-- Wave 1 (member A / LATAM LIM) — sponsor must outrank researcher in the operational_role derivation.
 --
 -- Problem: sync_operational_role_cache derives operational_role from auth_engagements with a CASE
 -- precedence where the `researcher` branch (which also catches committee_member / workgroup roles)
--- is checked BEFORE `sponsor`. Ivan Lourenço (host-chapter PMI-GO sponsor, LATAM LIM presenter) is
+-- is checked BEFORE `sponsor`. member A (host-chapter PMI-GO sponsor, LATAM LIM presenter) is
 -- also LEADER of the "GP × Presidência — Governança do Núcleo" committee → he matched `researcher`
 -- and derived operational_role='researcher' → badge "Pesquisador" + the researcher tier (no admin.*).
 --
 -- Blast radius (grounded 2026-06-28): of the 5 members with an authoritative sponsor engagement,
--- 4 (PMI-MG/CE/RS/DF chapter sponsors) already derive 'sponsor' (no committee engagement). ONLY Ivan
--- derived 'researcher'. Moving the `sponsor` branch above `researcher` flips ONLY Ivan; zero collateral.
+-- 4 (PMI-MG/CE/RS/DF chapter sponsors) already derive 'sponsor' (no committee engagement). ONLY member A
+-- derived 'researcher'. Moving the `sponsor` branch above `researcher` flips ONLY member A; zero collateral.
 -- Kept BELOW manager/deputy_manager/tribe_leader so an operational leader who also sponsors stays a leader.
 --
 -- (Wave 2 — separate — will handle chapter_board→chapter_liaison precedence for all sede/chapter

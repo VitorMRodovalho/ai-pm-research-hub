@@ -2,7 +2,7 @@
 --
 -- Context: classifyBadge() falls back to category 'badge' (10 XP) for any Credly badge that matches no
 -- keyword. The fallback is SILENT: the badge scores 10, is filtered out of the members.credly_badges
--- display cache, and nobody is told. That is the class that hid Pedro Henrique's CPMAI at 0 XP (#1149).
+-- display cache, and nobody is told. That is the class that hid member A's CPMAI at 0 XP (#1149).
 --
 -- This migration ships the #1209 backlog (P4 of #1149), GP-approved 2026-07-08 (Tier 1 + Tier 2):
 --   (a) Deterministic recredit of the badges the new keywords promote — mirrors the classify-badge.ts

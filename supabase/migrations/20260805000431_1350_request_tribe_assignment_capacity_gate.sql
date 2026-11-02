@@ -3,7 +3,7 @@
 -- Before: the capacity gate lived ONLY in the approve path (review_tribe_request) and legacy
 -- select_tribe. request_tribe_assignment had NO capacity check, so a researcher could file a
 -- request against a full tribe; it entered as `pending` but was un-approvable (the leader's
--- approve then raised "Tribo lotada (8/8)" -> HTTP 400). Anchor incident: Guilherme Matricarde
+-- approve then raised "Tribo lotada (8/8)" -> HTTP 400). Anchor incident: member A
 -- -> Tribo 6 (ROI & Portfólio), pending since 2026-07-09, stuck because the tribe is 8/8.
 --
 -- After (PM decision 2026-07-12): block the request itself, with the same clear message and the

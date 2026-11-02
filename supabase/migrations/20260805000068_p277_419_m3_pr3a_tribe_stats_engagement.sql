@@ -12,7 +12,7 @@
 --
 -- COHORT NOTE: attendance_rate now uses the V4 get_member_tribe cohort (canonical, ADR-0007); member_count
 -- still uses the legacy members.tribe_id (that is the tribe-roster metric #4, converged later). The two can
--- differ by members whose legacy tribe_id has no active 'volunteer' tribe engagement (e.g. Roberto Macêdo,
+-- differ by members whose legacy tribe_id has no active 'volunteer' tribe engagement (e.g. member A,
 -- tribe 8) — intentional: attendance_rate is V4-canonical, roster is metric 4.
 --
 -- LEFT UNCHANGED (separate concerns, tracked): top_contributors[].rate is a tribe-event-scoped leaderboard

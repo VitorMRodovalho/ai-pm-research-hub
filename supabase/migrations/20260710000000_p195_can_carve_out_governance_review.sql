@@ -13,7 +13,7 @@
 -- cannot — or should not — be required to sign the platform's Volunteer
 -- Term first:
 --   1. Initiative leaders pending agreement counter-sign
---      (e.g., Herlon Alves, study_group_owner × leader; agreement_certificate_id
+--      (e.g., member A, study_group_owner × leader; agreement_certificate_id
 --      NULL until Lorena/PMI-GO counter-signs the term)
 --   2. PMI chapter directors (PMO PMI-GO: Lorena, Eder, etc.)
 --      who participate in governance review as ex-officio observers but
@@ -30,8 +30,8 @@
 -- vs sign is a clean separation.
 --
 -- POST-DEPLOY VALIDATION (verified inline):
---   can_by_member(herlon, 'participate_in_governance_review') = true (was false)
---   can_by_member(herlon, 'manage_event') = false (strict gate preserved)
+--   can_by_member(member A, 'participate_in_governance_review') = true (was false)
+--   can_by_member(member A, 'manage_event') = false (strict gate preserved)
 --
 -- ROLLBACK: re-apply prior can() body without the OR clause for the action carve-out.
 -- ============================================================

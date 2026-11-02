@@ -49,9 +49,9 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Italo%Soares%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
--- Luciana: 0 real badges, delete all bulk entries
+-- member B: 0 real badges, delete all bulk entries
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Luciana%Dutra%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member B%Dutra%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- Marcelo: 0 real badges
@@ -59,9 +59,9 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Marcelo%Ferreira%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
--- Rodrigo Grilo: 0 real badges
+-- member A: 0 real badges
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Rodrigo%Grilo%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member A%Grilo%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- Lídia: 0 real badges
@@ -69,9 +69,9 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Lídia%Vale%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
--- Fabricio: only delete CPMAI_INTRO (the other 6 are real)
+-- member C: only delete CPMAI_INTRO (the other 6 are real)
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Fabricio%Costa%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member C%Costa%')
 AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO');
 
 -- Vitor: only delete CPMAI_INTRO
@@ -102,9 +102,9 @@ DELETE FROM gamification_points
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Italo%Soares%')
 AND reason LIKE 'Curso:%';
 
--- Luciana
+-- member B
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Luciana%Dutra%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member B%Dutra%')
 AND reason LIKE 'Curso:%';
 
 -- Marcelo
@@ -112,9 +112,9 @@ DELETE FROM gamification_points
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Marcelo%Ferreira%')
 AND reason LIKE 'Curso:%';
 
--- Rodrigo Grilo
+-- member A
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Rodrigo%Grilo%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member A%Grilo%')
 AND reason LIKE 'Curso:%';
 
 -- Lídia
@@ -122,9 +122,9 @@ DELETE FROM gamification_points
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Lídia%Vale%')
 AND reason LIKE 'Curso:%';
 
--- Fabricio: only CPMAI_INTRO and CDBA_INTRO "Curso:" entries
+-- member C: only CPMAI_INTRO and CDBA_INTRO "Curso:" entries
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Fabricio%Costa%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member C%Costa%')
 AND reason IN ('Curso: CPMAI_INTRO', 'Curso: CDBA_INTRO');
 
 -- Vitor: same
@@ -456,7 +456,7 @@ AND reason LIKE 'Credly:%';
 
 -- 3.10 CDBA stays as course (15 XP) — should be untouched, verify by not updating
 
--- 3.11 Delete Pedro's CPMAI v7 duplicate (keep only PMI-CPMAI)
+-- 3.11 Delete member D's CPMAI v7 duplicate (keep only PMI-CPMAI)
 DELETE FROM public.gamification_points
 WHERE category = 'cert_cpmai'
 AND reason LIKE '%CPMAI%v7%';

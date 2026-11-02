@@ -39,7 +39,7 @@ INSERT INTO governance_documents (doc_type, title, description, version, parties
  'R2', ARRAY['PMI-GO','PMI-CE'],
  'B2AFB185-4FC7-42C5-82A5-615EC7BDC98A',
  '2025-09-22T16:00:00Z',
- '[{"name":"Vitor Maia Rodovalho","role":"Gerente de Projeto"},{"name":"Ivan Lourenço","role":"Presidente PMI-GO"},{"name":"Cristiano Oliveira","role":"Presidente PMI-CE"}]'::jsonb,
+ '[{"name":"Vitor Maia Rodovalho","role":"Gerente de Projeto"},{"name":"member G","role":"Presidente PMI-GO"},{"name":"member F","role":"Presidente PMI-CE"}]'::jsonb,
  'active', '2025-09-22', NULL),
 
 ('cooperation_agreement',
@@ -48,7 +48,7 @@ INSERT INTO governance_documents (doc_type, title, description, version, parties
  NULL, ARRAY['PMI-GO','PMI-CE'],
  '31896EC7-25BD-4ECE-AB20-6DF2AE2E85EB',
  '2025-12-10T09:21:08Z',
- '[{"name":"Ivan Lourenço","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"Cristiano Oliveira","role":"Presidente CE 2024-2025"},{"name":"Francisca Jessica de Sousa de Alcântara","role":"Presidente CE 2026-2027"}]'::jsonb,
+ '[{"name":"member G","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"member F","role":"Presidente CE 2024-2025"},{"name":"member B","role":"Presidente CE 2026-2027"}]'::jsonb,
  'active', '2025-12-10', 30),
 
 ('cooperation_agreement',
@@ -57,7 +57,7 @@ INSERT INTO governance_documents (doc_type, title, description, version, parties
  NULL, ARRAY['PMI-GO','PMI-DF'],
  '6BAEE8D1-8495-4C36-BFF2-51882EDE389C',
  '2025-12-09T16:39:51Z',
- '[{"name":"Ivan Lourenço","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"Matheus Frederico Rosa Rocha","role":"Presidente PMI-DF"}]'::jsonb,
+ '[{"name":"member G","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"member A","role":"Presidente PMI-DF"}]'::jsonb,
  'active', '2025-12-09', 30),
 
 ('cooperation_agreement',
@@ -66,7 +66,7 @@ INSERT INTO governance_documents (doc_type, title, description, version, parties
  NULL, ARRAY['PMI-GO','PMI-MG'],
  '23371C58-B66F-4BEB-A6E0-DC770DD44974',
  '2025-12-08T14:14:39Z',
- '[{"name":"Ivan Lourenço","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"Felipe Moraes Borges","role":"Presidente PMI-MG"},{"name":"Rogério do Carmo Peixoto","role":"Dir. Certificação PMI-MG"}]'::jsonb,
+ '[{"name":"member G","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"member D","role":"Presidente PMI-MG"},{"name":"member E","role":"Dir. Certificação PMI-MG"}]'::jsonb,
  'active', '2025-12-08', 30),
 
 ('cooperation_agreement',
@@ -75,7 +75,7 @@ INSERT INTO governance_documents (doc_type, title, description, version, parties
  NULL, ARRAY['PMI-GO','PMI-RS'],
  '488F733C-D447-4E08-B271-CA608B05DFDB',
  '2025-12-10T09:15:16Z',
- '[{"name":"Ivan Lourenço","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"Márcio Silva dos Santos","role":"Presidente PMI-RS"}]'::jsonb,
+ '[{"name":"member G","role":"Presidente PMI-GO"},{"name":"Vitor Maia Rodovalho","role":"GP"},{"name":"member C","role":"Presidente PMI-RS"}]'::jsonb,
  'active', '2025-12-10', 30)
 ON CONFLICT DO NOTHING;
 
@@ -147,9 +147,9 @@ INSERT INTO change_requests (cr_number,title,description,cr_type,status,priority
 SELECT v.* FROM (VALUES
 ('CR-014','Quadrantes Estratégicos (4Q organizam 8 tribos)','O C3 organiza 8 tribos em 4 quadrantes: Q1 O Praticante Aumentado (T1), Q2 Gestão de Projetos de IA (T2), Q3 Liderança Organizacional (T3-T6), Q4 Futuro e Responsabilidade (T7-T8). Manual R2 não tem conceito de quadrantes.','structural','submitted','high','high','Mudança arquitectural na organização do conhecimento.','PMBOK 8 ICC: WBS restructuring — agrupamento temático por quadrante.','Adicionar conceito de quadrantes em §2.2. Coluna quadrant na tabela tribes.',ARRAY['GC-multiple'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
 ('CR-015','Plataforma Digital como ferramenta oficial','Manual R2 não menciona plataforma digital. A operação actual depende de plataforma Astro+React+Supabase+Cloudflare com: attendance, gamification, publications, boards, admin, blog, analytics, i18n trilingual, governança. 784 testes, 115 GC entries.','structural','submitted','high','high','Toda operação quotidiana depende da plataforma não documentada no manual.','PMBOK 8 ICC: Tool/technique addition fundamental.','Nova secção §4.5 ou §8 Plataforma Digital: stack, acesso por tier, relação com processos.',ARRAY['GC-001:GC-117'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
-('CR-016','Equipe de Comunicação como designação formal','Plataforma tem: Mayanna (comms_leader), Leticia + Andressa (comms_team), 7 RPCs dedicadas, Board de Comunicação, campanhas Resend. Manual R2 não prevê papel de comunicação.','operational','submitted','medium','medium','Papel operacional activo sem base no manual.','PMBOK 8 ICC: Resource addition.','Adicionar Equipe de Comunicação em §2.1 como papel de suporte. Referência em §3.7.',ARRAY['GC-multiple'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
+('CR-016','Equipe de Comunicação como designação formal','Plataforma tem: member H (comms_leader), member I + member J (comms_team), 7 RPCs dedicadas, Board de Comunicação, campanhas Resend. Manual R2 não prevê papel de comunicação.','operational','submitted','medium','medium','Papel operacional activo sem base no manual.','PMBOK 8 ICC: Resource addition.','Adicionar Equipe de Comunicação em §2.1 como papel de suporte. Referência em §3.7.',ARRAY['GC-multiple'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
 ('CR-017','Trilha de Certificação IA — PMI','C3 tem 7 mini-cursos PMI com badges Credly obrigatórios, meta 70% completa, sync automático pg_cron, leaderboard na homepage. Manual R2 não menciona.','operational','submitted','medium','medium','Componente central do desenvolvimento profissional C3.','PMBOK 8 ICC: Scope addition — development program.','Referenciar em §3.8.2 (Desenvolvimento Contínuo) e §1.5 (metas).',ARRAY['CRON','W139'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
-('CR-018','CPMAI como objectivo de certificação','C3 tem meta de 2 certificados CPMAI. Prep course workspace em desenvolvimento (Pedro + Marcos + Herlon). Manual R2 não menciona PMI-CPMAI.','operational','submitted','medium','medium','Objectivo estratégico de certificação não documentado.','PMBOK 8 ICC: Strategic objective addition.','Referenciar em §1.5 (metas) e §3.8.2.',ARRAY['Pedro-1on1'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
+('CR-018','CPMAI como objectivo de certificação','C3 tem meta de 2 certificados CPMAI. Prep course workspace em desenvolvimento (member K + member L + member M). Manual R2 não menciona PMI-CPMAI.','operational','submitted','medium','medium','Objectivo estratégico de certificação não documentado.','PMBOK 8 ICC: Strategic objective addition.','Referenciar em §1.5 (metas) e §3.8.2.',ARRAY['member K-1on1'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
 ('CR-019','Operação por Ciclos (definição formal)','Manual R2 menciona ciclos casualmente mas não define: duração, transição, handover, selecção entre ciclos, reestruturação de tribos. Na prática: semestrais, com processo seletivo, tribos podem mudar.','operational','submitted','medium','medium','Conceito fundamental sem definição formal.','PMBOK 8 ICC: Process definition.','Nova subsecção em §4 ou §3.8: Ciclos Operacionais.',NULL,'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
 ('CR-020','Canais de Comunicação Actualizados','§4.1 menciona WhatsApp, Slack, Teams. Na prática só WhatsApp é usado com grupos por tribo. Plataforma é canal principal para info assíncrona.','editorial','submitted','low','low','Actualização factual.','PMBOK 8 ICC: Communication plan update.','Actualizar §4.1 com canais reais.',NULL,'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now()),
 ('CR-021','Acordos de Cooperação + Documentos Oficiais','4 Acordos DocuSign (GO↔CE/DF/MG/RS, Dez/2025) não estão referenciados no Manual R2 nem rastreados na plataforma. Todos perpétuos, alinhados com PMI Partnerships Framework. Tabela governance_documents criada.','structural','submitted','high','high','Documentos formais assinados sem rastreamento no manual ou plataforma.','PMBOK 8 ICC: Governance framework + stakeholder documentation.','Novo Apêndice B listando acordos. Processo adesão novos capítulos alinhado com PMI Partnerships Framework 7 passos.',ARRAY['GC-118'],'R2',(SELECT id FROM members WHERE name ILIKE '%Vitor%Rodovalho%' LIMIT 1),'manager',now(),now(),now())

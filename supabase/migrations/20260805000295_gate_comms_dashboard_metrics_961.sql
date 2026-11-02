@@ -7,8 +7,8 @@
 -- Body-only change → CREATE OR REPLACE (signature/attributes unchanged); grant unchanged.
 --
 -- Two-sided live verification (2026-06-29):
---   * Mayanna (comms_leader)  → real data (backlog 41 / overdue 41 / total 99)
---   * Ana Carla (tribe_leader, no comms) → zeros {} (was leaking the full payload before)
+--   * member B (comms_leader)  → real data (backlog 41 / overdue 41 / total 99)
+--   * member A (tribe_leader, no comms) → zeros {} (was leaking the full payload before)
 --   * no-JWT / anon            → zeros {}
 --
 -- Note: the confidential-initiative gate (#785, rls_can_see_*) is a SEPARATE concern;

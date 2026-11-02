@@ -38,7 +38,7 @@ VALUES
 <p>Art. 9 — Revisão</p>
 <p>Este Adendo será revisado anualmente ou quando houver mudança significativa na composição de capítulos, na legislação aplicável ou no escopo de acordos internacionais, seguindo o processo de Change Request do Manual Operacional.</p>
 <p>___________________________________________</p>
-<p><strong>Ivan Lourenço</strong>
+<p><strong>member A</strong>
 Presidente | PMI Brasil–Goiás Chapter (PMI-GO)</p>
 <p>___________________________________________</p>
 <p><strong>[Presidente Capítulo Parceiro]</strong>

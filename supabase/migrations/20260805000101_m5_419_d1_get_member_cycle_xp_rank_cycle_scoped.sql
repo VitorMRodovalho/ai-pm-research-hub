@@ -3,7 +3,7 @@
 -- PROBLEM (live-grounded 2026-06-04, cycle_3 start 2026-03-01):
 --   get_member_cycle_xp DISPLAYS each member's cycle XP (points since cycle_start)
 --   but computed rank_position by LIFETIME XP (ROW_NUMBER() OVER (ORDER BY SUM(points) DESC),
---   no cycle filter, no tiebreak). So the #1 cycle earner (Hayala Curto, 435 cycle XP)
+--   no cycle filter, no tiebreak). So the #1 cycle earner (member A, 435 cycle XP)
 --   surfaced at rank #12 (her all-time total), and tied cycle scores (31 of 60 members
 --   share a cycle-XP value) ranked non-deterministically.
 --

@@ -5,7 +5,7 @@
 -- immediately AFTER `sponsor` (rank 6, above researcher/observer). PM decision 2026-06-28
 -- ("governança sempre vence"): a chapter director who ALSO sits on a committee or observes a
 -- research tribe must display as "Ponto Focal do Capítulo" (chapter_liaison), not Pesquisador
--- / Observador. Kept BELOW sponsor (so Ivan/the 5 sponsors stay sponsor) and below the
+-- / Observador. Kept BELOW sponsor (so member G/the 5 sponsors stay sponsor) and below the
 -- operational leaders (manager/deputy_manager/tribe_leader), mirroring the Wave-1 rationale.
 --
 -- ADR-0023 parity: the same clause move is applied to check_schema_invariants().A3 byte-for-byte
@@ -13,11 +13,11 @@
 -- CREATE OR REPLACE of each, which the parity test reads, stay in lock-step.
 --
 -- Backfill (grounded 2026-06-28): the change flips exactly 6 active members, all chapter directors:
---   observer  -> chapter_liaison : Welma Alves, Lorena Souza, Emanuele Melo, Emanoela Kerkhoff
---   researcher-> chapter_liaison : Roberto Macêdo (PMI-CE), João Uzejka (PMI-RS)
+--   observer  -> chapter_liaison : member F, member E, member D, member A
+--   researcher-> chapter_liaison : member C (PMI-CE), member B (PMI-RS)
 -- The 5 sponsors (sponsor outranks chapter_board) and the 5 existing chapter_liaison are unchanged.
 -- Collateral (intentional): chapter_liaison is excluded from get_public_trail_ranking cohort
--- (mig 284), so Roberto/João leave the trail ranking — correct (chapter directors are not trail
+-- (mig 284), so member C/member B leave the trail ranking — correct (chapter directors are not trail
 -- participants). Each flip writes an admin_audit_log row for forensic traceability (#318 pattern).
 --
 -- Cross-ref: ADR-0023 (ladder parity), docs/reference/V4_AUTHORITY_MODEL.md, handoff pt6.

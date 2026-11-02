@@ -5,7 +5,7 @@
 -- reuniões às 19:00), então cada pessoa pontuou duas vezes por uma noite só.
 --
 -- Grupo A — 2026-03-18 19:00, iniciativa ROI & Portfólio, TRÊS títulos, todos do MESMO recurrence_group
---   bb5a48fe-…, criados em 7 minutos (03:58 / 04:02 / 04:05 de 19/03) por Fabricio Costa e pelo import.
+--   bb5a48fe-…, criados em 7 minutos (03:58 / 04:02 / 04:05 de 19/03) por member A e pelo import.
 --   Keeper = 63a2991f (o mais antigo, com 7 presentes E a única ata do grupo).
 --   Removidos: b63bcc1d ("[Tribo 6] Reuniao Semana 1 - Ciclo 3", 6 presentes) e
 --              b0011160 ("ROI & Portfólio — Reunião Semanal", 6 presentes).

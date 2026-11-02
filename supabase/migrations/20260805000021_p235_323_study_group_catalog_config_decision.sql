@@ -11,7 +11,7 @@
 -- Per PM decision (#323 close, 2026-05-23):
 --   - study_group_owner: KEEP requires_agreement=true, assign placeholder
 --     agreement_template='study_group_owner_agreement_v1'. Owner is a
---     leadership/execution role (ADR-0006 line 56 Herlon canonical example;
+--     leadership/execution role (ADR-0006 line 56 member B canonical example;
 --     ADR-0008 lifecycle "VEP fast-track → Termo → 9m → 5yr retention").
 --     The actual template body and legal workflow are a follow-up — slug is
 --     forward-declared per the placeholder precedent established for
@@ -28,24 +28,24 @@
 --     slug). Placeholder slug = catalog/intent marker, not an active mint
 --     trigger.
 --   - The only active study_group_participant engagement in the live DB is
---     Fernando Maquiaveli (member_id c8b930c3-62ec-4d38-881e-307cd57a44f7)
+--     member A (member_id c8b930c3-62ec-4d38-881e-307cd57a44f7)
 --     with role=leader on initiative "Grupo de Estudos CPMAI™". He also
 --     holds the study_group_owner row on the same initiative — the redundant
 --     double-engagement is a separate data-quality carry, NOT a #323
 --     blocker (PM directive 2026-05-23).
 --   - engagement_kind_permissions for (study_group_participant, role=leader)
 --     is empty. Flipping requires_agreement=false on the kind means
---     Fernando's participant row becomes is_authoritative=true via the
+--     member A's participant row becomes is_authoritative=true via the
 --     auth_engagements derivation, but his role=leader matches NO permission
 --     seed for the participant kind — zero new capabilities granted to him.
 --   - The single permission seeded for (study_group_participant,
 --     role=participant, write_board, scope=initiative) applies prospectively
 --     to future enrollees, granting board write without a termo. This
 --     matches PM's course-enrollee intent.
---   - PM directive (carried verbatim from p230 → p235): "Do NOT mint Herlon
---     term." Herlon's only active engagements are ambassador + observer,
+--   - PM directive (carried verbatim from p230 → p235): "Do NOT mint member B
+--     term." member B's only active engagements are ambassador + observer,
 --     neither requires_agreement. This migration neither references nor
---     affects Herlon.
+--     affects member B.
 --
 -- INVARIANT (catalog forward-defense, #323 AC)
 --   After apply: 0 rows in public.engagement_kinds where
@@ -73,7 +73,7 @@
 --                                'rolled_back_at', now()));
 --     NOTIFY pgrst, 'reload schema';
 --   COMMIT;
---   -- Note: after rollback, Fernando's participant row reverts to
+--   -- Note: after rollback, member A's participant row reverts to
 --   -- is_authoritative=false and re-enters the pending_agreement queue.
 --   -- Owner row is unaffected by either direction (still
 --   -- requires_agreement=true; placeholder slug just disappears).
@@ -83,7 +83,7 @@
 --   - GH #230 (parent umbrella; close-trigger once #323 ships)
 --   - GH #321 (closed p233, Gap A — sync trigger + 30-row phantom backfill)
 --   - GH #322 (closed p234, Gap B — classification leftovers + forward guard)
---   - ADR-0006 line 56 (Herlon as study_group_owner canonical V4 example)
+--   - ADR-0006 line 56 (member B as study_group_owner canonical V4 example)
 --   - ADR-0008 (per-kind engagement lifecycle; study_group_owner +
 --     study_group_participant rows with explicit lifecycle declarations)
 --   - ADR-0078 D5 (external_reviewer placeholder slug precedent — body

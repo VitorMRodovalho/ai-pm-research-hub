@@ -5,7 +5,7 @@
 -- to persons.auth_id. The reference function `try_auto_link_ghost` already does this sync
 -- correctly; pattern is just ported here for symmetry.
 --
--- Incident: Herlon Alves de Sousa (member c8e76355-..., person 84e4db2d-...) triggered
+-- Incident: member A (member c8e76355-..., person 84e4db2d-...) triggered
 -- Step 2 rotation 2026-05-17 15:55:33 UTC when his Google login on redacted-075@example.com
 -- (auth 54f0a110, previously a secondary linked id) rotated to primary. members.auth_id
 -- was updated 0b4c35ca → 54f0a110; persons.auth_id remained 0b4c35ca, violating
@@ -13,7 +13,7 @@
 --
 -- This migration:
 --   1. Recreates get_member_by_auth with persons.auth_id sync inside Step 2 + Step 3.
---   2. Backfills persons.auth_id for Herlon (single existing violation).
+--   2. Backfills persons.auth_id for member A (single existing violation).
 --
 -- Rollback: revert function to prior version (see 20260667000000), revert persons row.
 -- No data loss; backfill is idempotent.
@@ -147,7 +147,7 @@ BEGIN
 END;
 $function$;
 
--- Backfill: sync Herlon's persons.auth_id to current members.auth_id.
+-- Backfill: sync member A's persons.auth_id to current members.auth_id.
 -- Idempotent: only updates if mismatch persists.
 UPDATE public.persons p
    SET auth_id = m.auth_id

@@ -5,7 +5,7 @@
 --
 -- Group V3 (V3-gated → V4 reuse view_internal_analytics):
 --   legacy=11 → v4=10
---   would_lose = [João Uzejka] (chapter_liaison designation drift, ADR-0030 precedent)
+--   would_lose = [member A] (chapter_liaison designation drift, ADR-0030 precedent)
 -- Group NoGate (security hardening — add gate where there was none):
 --   Privilege REDUCTION (any authenticated → 10 V4 ladder)
 

@@ -4,7 +4,7 @@
 -- `admin.voluntarios` (the nav/panel), but get_volunteer_agreement_status — the volunteer roster
 -- RPC — gated ONLY on `manage_member` (GP-only) OR an active `chapter_board` engagement (Path-3,
 -- chapter-scoped to the caller's own chapter). So the sede volunteer director saw volunteers ONLY
--- via an INCIDENTAL chapter_board engagement (Lorena Souza happens to have one → PMI-GO only), and a
+-- via an INCIDENTAL chapter_board engagement (member A happens to have one → PMI-GO only), and a
 -- future director WITHOUT that engagement would see nothing. Not function-anchored.
 --
 -- Fix (V4 Path-2, designation gate): recognize `voluntariado_director` as a read authority on the

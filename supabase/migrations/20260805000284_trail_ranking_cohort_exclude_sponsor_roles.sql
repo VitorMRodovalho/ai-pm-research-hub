@@ -1,16 +1,16 @@
--- Wave 1 follow-through (Ivan): align get_public_trail_ranking's cohort to calc_trail_completion_pct.
+-- Wave 1 follow-through (member A): align get_public_trail_ranking's cohort to calc_trail_completion_pct.
 --
 -- M6 (ADR-0100) contract: the public trail ranking and the home calc_trail_completion_pct must share
 -- ONE cohort (tested by p277-419-m6 "home == ranking"). calc excludes operational_role IN
 -- ('sponsor','chapter_liaison','observer','candidate','visitor','guest'); the ranking did NOT — it
 -- admitted anyone with a tribe OR an active leader/coordinator/manager/participant engagement. Those
--- two definitions coincided until Ivan Lourenço became a sponsor (mig …282): he is also the governance-
+-- two definitions coincided until member A became a sponsor (mig …282): he is also the governance-
 -- committee LEADER, so calc now drops him (sponsor) while the ranking still admitted him (engagement
 -- role='leader') → the home==ranking invariant diverged.
 --
 -- Fix: apply the SAME operational_role exclusion in the ranking. A sponsor / chapter focal point /
 -- observer is not a CPMAI-trail participant, so this is the correct cohort for a trail ranking — and it
--- restores the single-cohort M6 contract. Behaviour: removes Ivan (and any future sponsor/liaison with a
+-- restores the single-cohort M6 contract. Behaviour: removes member A (and any future sponsor/liaison with a
 -- qualifying engagement) from the public trail ranking; researchers/leaders/managers are unaffected.
 
 CREATE OR REPLACE FUNCTION public.get_public_trail_ranking()

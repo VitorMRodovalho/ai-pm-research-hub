@@ -362,7 +362,7 @@ BEGIN
 
   v_batch_intro :=
     '<p>Os 6 documentos de governança foram atualizados (Round 6 — sessões p90/p90.b/p90.c, 04-05/maio/2026) e precisam da sua revisão e re-assinatura nas novas chains.</p>' ||
-    '<p><strong>5 mudanças materiais (M1-M5)</strong> absorvendo críticas Ricardo Santos:</p>' ||
+    '<p><strong>5 mudanças materiais (M1-M5)</strong> absorvendo críticas member A:</p>' ||
     '<ul style="margin:6px 0;padding-left:22px;font-size:13px;">' ||
       '<li><strong>M1</strong> (Termo §15.4 + Adendo Retificativo §3º): aceite tácito refatorado distinguindo Editorial vs Material change (CC art. 111 + 423 favor aderente)</li>' ||
       '<li><strong>M2</strong> (Política IP §2.5.5): LGPD redraft 3 regimes (Brasil / UE-EEE / UK) + future-proof</li>' ||

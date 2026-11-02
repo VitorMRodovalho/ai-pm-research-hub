@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
-// p264 #312-W4e (#381) — Curator draft-read mitigation for Roberto Macêdo + Sarah
-// Faria post-p256 Wave 1a M2 RLS swap. Extends p263 W4d reader
+// p264 #312-W4e (#381) — Curator draft-read mitigation for two curators (member A and
+// member B) post-p256 Wave 1a M2 RLS swap. Extends p263 W4d reader
 // get_governance_document_reader(uuid) with a 3rd bypass dimension
 // "v_is_curator_assigned" — bypass status default-exclusion + version locked_at
 // hard-gate ONLY for members eligible as 'curator' on the doc_type when an
@@ -132,9 +132,9 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
       assert.match(MIGRATION_SQL, /p264/);
     });
 
-    it('header names Roberto Macêdo + Sarah Faria personas (regression provenance)', () => {
-      assert.match(MIGRATION_SQL, /Roberto/);
-      assert.match(MIGRATION_SQL, /Sarah Faria/);
+    it('header names the two curator personas (regression provenance)', () => {
+      assert.match(MIGRATION_SQL, /member B/);
+      assert.match(MIGRATION_SQL, /member A/);
     });
 
     it('header names p256 Wave 1a M2 (origin of regression) + W4d (predecessor reader)', () => {
@@ -173,8 +173,8 @@ describe('p264 #312-W4e — get_governance_document_reader assigned-curator bypa
       assert.match(MIGRATION_SQL,
         /COMMENT ON FUNCTION public\.get_governance_document_reader\(uuid\) IS/);
       assert.match(MIGRATION_SQL, /assigned-curator bypass/);
-      assert.match(MIGRATION_SQL, /Roberto Mac/);
-      assert.match(MIGRATION_SQL, /Sarah Faria/);
+      assert.match(MIGRATION_SQL, /covers member B/);
+      assert.match(MIGRATION_SQL, /\+ member A post-p256/);
     });
   });
 

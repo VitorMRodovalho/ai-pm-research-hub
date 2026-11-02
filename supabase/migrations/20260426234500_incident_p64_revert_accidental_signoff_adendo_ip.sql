@@ -1,8 +1,8 @@
--- INCIDENT p64 — revert Sarah's accidental signoff on Adendo IP
+-- INCIDENT p64 — revert member A's accidental signoff on Adendo IP
 --
 -- Context: 2026-04-26, hotfix incident (auth_org/can_by_member REVOKE) caused
 -- /governance/ip-agreement to render "(conteúdo indisponível)" instead of
--- document content. Sarah Faria (member 19b7ff75-bcb1-4a15-a8e1-006fc6822069,
+-- document content. member A (member 19b7ff75-bcb1-4a15-a8e1-006fc6822069,
 -- curator) clicked the sign button trying to make the document load — this
 -- registered an unintended signoff at 23:04:10 UTC on chain 47362201
 -- (Adendo de Propriedade Intelectual aos Acordos de Cooperação, gate=curator).
@@ -13,7 +13,7 @@
 -- signing because the document body did not render.
 --
 -- PM ratified Opção A (Vitor 2026-04-26): DELETE the approval_signoffs row
--- so Sarah can re-sign after reading the actual content. The original
+-- so member A can re-sign after reading the actual content. The original
 -- audit_log entry (admin_audit_log id e3022999-...) is preserved as evidence
 -- of the incident; this migration adds a new audit_log entry documenting
 -- the revert with full context.
@@ -53,14 +53,14 @@ BEGIN
       'document_id', '41de16e2-4f2e-4eac-b63e-8f0b45b22629',
       'document_title', 'Adendo de Propriedade Intelectual aos Acordos de Cooperação',
       'reverted_member_id', v_member_id,
-      'reverted_member_name', 'Sarah Faria Alcantara Macedo Rodovalho',
+      'reverted_member_name', 'member A',
       'original_signed_at', '2026-04-26 23:04:10.521347+00',
       'original_audit_log_id', 'e3022999-8e9a-4b4d-a23f-7774e905cf43',
       'revert_reason', 'incident_p64_doc_did_not_render',
       'incident_summary',
       'auth_org/can_by_member EXECUTE was REVOKE''d from authenticated by Track Q-D batch 3b migration 20260426145632 at 14:56 UTC. RLS policies could not evaluate, all PostgREST authenticated table reads failed silently. /governance/ip-agreement document_versions read returned null → page rendered "(conteúdo indisponível)". Member tried to load doc by clicking, accidentally triggered signoff. Hotfix migrations 20260426232108 + 20260426232200 restored grants. PM ratified revert per CC Art. 138 (vício de consentimento por erro) + LGPD Art. 9 (informação adequada).',
       'pm_ratify', 'Vitor Maia Rodovalho 2026-04-26',
-      'restoration_path', 'Sarah may re-sign at /governance/ip-agreement?chain_id=47362201-23e0-4e2d-96c5-4019b936331e&gate_kind=curator after reviewing document content'
+      'restoration_path', 'member A may re-sign at /governance/ip-agreement?chain_id=47362201-23e0-4e2d-96c5-4019b936331e&gate_kind=curator after reviewing document content'
     )
   );
 END $$;

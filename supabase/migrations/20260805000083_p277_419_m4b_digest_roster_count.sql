@@ -1,6 +1,6 @@
 -- #419 metric 4 PR4-B — get_weekly_tribe_digest.active_members converges onto the canonical roster.
 -- Was: count(*) FROM members WHERE tribe_id = p_tribe_id AND current_cycle_active = true  (=7 for tribe 8,
---   wrongly counting the OFFBOARDED Maria Luiza whose tribe-8 engagement is status='offboarded' but whose
+--   wrongly counting the OFFBOARDED member A whose tribe-8 engagement is status='offboarded' but whose
 --   members.current_cycle_active is still true). Now: get_initiative_roster_count(v_initiative_id) (=6).
 -- Antes 7 -> depois 6. The weekly leader-digest email (Saturday cron) stops over-reporting the roster.
 -- Same-signature CREATE OR REPLACE; only the active_members line changed (the other 9 aggregates + the 3

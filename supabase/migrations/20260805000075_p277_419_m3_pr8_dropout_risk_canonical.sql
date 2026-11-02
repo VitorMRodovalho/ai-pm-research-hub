@@ -23,8 +23,8 @@
 -- (the workspace banner leader-scopes on r.tribe_id === member.tribe_id, both legacy-sourced).
 -- Eligibility uses the canonical bridge internally; display tribe stays legacy — no contract break.
 --
--- Measured depois (manage_event holder, threshold 3): 0 → 4 flagged (Maria Luiza T8, Andressa Martins T2,
--- Gustavo Batista Ferreira T2, Débora Moura T2-leader). Two T4 researchers excused in-window correctly
+-- Measured depois (manage_event holder, threshold 3): 0 → 4 flagged (member B T8, member C T2,
+-- member A T2, member D T2-leader). Two T4 researchers excused in-window correctly
 -- do NOT flag. Same signature ⇒ CREATE OR REPLACE (GC-097); ACL preserved (authenticated, no anon).
 --
 -- ROLLBACK: re-apply migration 20260319100038_w134c_dropout_risk.sql (restores the dead-type body).

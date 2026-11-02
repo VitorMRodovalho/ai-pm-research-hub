@@ -8,7 +8,7 @@
 DELETE FROM public.tribe_lineage WHERE id IN (4, 5, 6, 7);
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 2. Clean 'tribe_leader' from Fabrício's designations (redundant with operational_role)
+-- 2. Clean 'tribe_leader' from member C's designations (redundant with operational_role)
 -- ═══════════════════════════════════════════════════════════════════════════
 UPDATE public.members
 SET designations = array_remove(designations, 'tribe_leader')
@@ -92,13 +92,13 @@ historical_tribes AS (
 subprojects AS (
   SELECT * FROM (VALUES
     (0, 'cycle_2', 'Hub de Comunicação', 'operational', NULL::integer, NULL::text, false,
-     'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'::uuid, 'Débora Moura', NULL::text, 0::bigint),
+     'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'::uuid, 'member D', NULL::text, 0::bigint),
     (0, 'cycle_3', 'Hub de Comunicação', 'operational', NULL, NULL, true,
-     NULL::uuid, 'Mayanna Duarte', NULL, 0),
+     NULL::uuid, 'member B', NULL, 0),
     (0, 'cycle_3', 'Webinars', 'subproject', NULL, NULL, true,
      NULL::uuid, 'Vitor Maia Rodovalho (GP)', NULL, 0),
     (0, 'cycle_3', 'Comitê de Curadoria', 'subproject', NULL, NULL, true,
-     NULL::uuid, 'Fabrício Costa, Sarah Faria, Roberto Macêdo', NULL, 3)
+     NULL::uuid, 'member C, member A, member E', NULL, 3)
   ) AS t(tribe_number, cycle_code, tribe_name, tribe_type, quadrant, quadrant_name,
          is_active, leader_id, leader_name, leader_photo, member_count)
 ),
@@ -231,16 +231,16 @@ CREATE POLICY project_memberships_write ON public.project_memberships
 -- Seed: Comitê de Curadoria members (C2+C3)
 INSERT INTO public.project_memberships (member_id, cycle_code, project_name, project_type, role, notes)
 SELECT m.id, 'cycle_2', 'Comitê de Curadoria', 'committee', 'reviewer', 'Membro desde C2'
-FROM public.members m WHERE m.name IN ('Fabricio Costa', 'Sarah Faria Alcantara Macedo', 'Roberto Macêdo')
+FROM public.members m WHERE m.name IN ('member C', 'member A', 'member E')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO public.project_memberships (member_id, cycle_code, project_name, project_type, role, notes)
 SELECT m.id, 'cycle_3', 'Comitê de Curadoria', 'committee', 'reviewer', 'Continuidade C2→C3'
-FROM public.members m WHERE m.name IN ('Fabricio Costa', 'Sarah Faria Alcantara Macedo', 'Roberto Macêdo')
+FROM public.members m WHERE m.name IN ('member C', 'member A', 'member E')
 ON CONFLICT DO NOTHING;
 
 -- Seed: Hub de Comunicação C3 lead
 INSERT INTO public.project_memberships (member_id, cycle_code, project_name, project_type, role, notes)
 SELECT m.id, 'cycle_3', 'Hub de Comunicação', 'operational', 'lead', 'Líder operacional C3'
-FROM public.members m WHERE m.name = 'Mayanna Duarte'
+FROM public.members m WHERE m.name = 'member B'
 ON CONFLICT DO NOTHING;

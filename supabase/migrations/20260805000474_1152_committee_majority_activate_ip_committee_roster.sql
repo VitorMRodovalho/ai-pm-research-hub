@@ -1,7 +1,7 @@
 -- #1152 item 2 (go-live 2026-07-21): ATIVAR o gate committee_majority + constituir o roster.
 --
 -- Contexto: committee_majority era STUB (`false`) enquanto o Comitê de Curadoria não existia no dado
--- (`ip_committee` = 0 membros). O owner confirmou o comitê constituído: Sarah, Fabricio, Roberto.
+-- (`ip_committee` = 0 membros). O owner confirmou o comitê constituído: member A, member C, member B.
 --
 -- Fix (2 partes, atômicas nesta migration):
 --   1. DDL: predicado do gate passa de `false` para `'ip_committee' = ANY(designations)` (o valor sugerido
@@ -143,8 +143,8 @@ $function$;
 UPDATE public.members
 SET designations = array_append(designations, 'ip_committee')
 WHERE id IN (
-  '19b7ff75-bcb1-4a15-a8e1-006fc6822069',  -- Sarah Faria Alcantara Macedo Rodovalho (PMI-GO)
-  '92d26057-5550-4f15-a3bf-b00eed5f32f9',  -- Fabricio Costa (PMI-GO)
-  '49836a70-a41e-4a0b-85b0-aa05b13d3f25'   -- Roberto Macedo (PMI-CE)
+  '19b7ff75-bcb1-4a15-a8e1-006fc6822069',  -- member A (PMI-GO)
+  '92d26057-5550-4f15-a3bf-b00eed5f32f9',  -- member C (PMI-GO)
+  '49836a70-a41e-4a0b-85b0-aa05b13d3f25'   -- member B (PMI-CE)
 )
 AND NOT ('ip_committee' = ANY(designations));

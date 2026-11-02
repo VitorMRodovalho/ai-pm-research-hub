@@ -3,9 +3,9 @@
 -- Context: p172 #21 enabled multi-leader per tribe. Gap surfaced p173:
 -- cron iterates tribes table only. Non-tribe initiatives (workgroups,
 -- committees, study_group, congress) with active leaders are invisible
--- to cron. Affected: Herlon (CPMAI study_group), Mayanna/Leticia/Maria Luiza
--- (Hub Comunicação workgroup), Fabricio cross 3 inits (Curadoria/Newsletter/
--- Publicações), Roberto/Sarah (Curadoria/Publicações), Vitor (LATAM LIM).
+-- to cron. Affected: member B (CPMAI study_group), member C/member D/member A
+-- (Hub Comunicação workgroup), member E cross 3 inits (Curadoria/Newsletter/
+-- Publicações), member F/member G (Curadoria/Publicações), Vitor (LATAM LIM).
 --
 -- Refactor: cron iterates initiatives (not tribes). New helpers + new
 -- RPC mirror tribe semantics by initiative_id. Legacy get_weekly_tribe_digest

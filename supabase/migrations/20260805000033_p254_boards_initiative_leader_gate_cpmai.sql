@@ -1,5 +1,5 @@
 -- ============================================================
--- p254 — Boards hotfix: initiative-leader engagement gate (CPMAI/Fernando)
+-- p254 — Boards hotfix: initiative-leader engagement gate (CPMAI/member A)
 -- ------------------------------------------------------------
 -- WHAT: Adds an engagement-derived "initiative leader" predicate to two
 --   board write RPCs so initiative leaders / coordinators / managers / co_gps
@@ -24,7 +24,7 @@
 --      gates so a leader can move + close cards on their initiative's
 --      board. All other gates PRESERVED.
 --
--- WHY: Bug surfaced via CPMAI study group — Fernando Maquiaveli has active
+-- WHY: Bug surfaced via CPMAI study group — member A has active
 --   engagements as study_group_owner (role='leader') on the parent CPMAI
 --   study group AND workgroup_coordinator (role='coordinator') on the
 --   Capilarização CPMAI child workgroup, but cannot edit/move cards on
@@ -35,7 +35,7 @@
 --       initiatives.
 --     - V4 can_by_member('write_board') catalog seeds tribe_leader role,
 --       not study_group_owner / workgroup_coordinator.
---     - No board_members row added manually for Fernando (data-fix path
+--     - No board_members row added manually for member A (data-fix path
 --       PM ruled out as paliativo).
 --   PM rule: the structural fix is "initiative leader by engagement,
 --   regardless of initiative kind". Narrow predicate based on the V4
@@ -43,7 +43,7 @@
 --
 -- ROLES INCLUDED ('leader','coordinator','manager','co_gp'):
 --   - 'leader'      — research-tribe + study-group owner + volunteer leader
---   - 'coordinator' — workgroup_coordinator (Fernando's child engagement)
+--   - 'coordinator' — workgroup_coordinator (member A's child engagement)
 --   - 'manager'     — initiative manager role
 --   - 'co_gp'       — co-GP of initiative
 --

@@ -1,5 +1,5 @@
 -- #1291 refinamento (feedback owner 2026-07-11): curador / membro de comite NAO e "sem tribo em risco".
--- Sarah e Roberto sao curadores (engagement committee_coordinator no Comite de Curadoria). Para um
+-- member B e member A sao curadores (engagement committee_coordinator no Comite de Curadoria). Para um
 -- curador/membro de comite, NAO ter tribo de pesquisa e o estado normal — nao um risco. O sinal SSOT
 -- hoje e um engagement ATIVO numa iniciativa kind='committee' (Comite de Curadoria / Governanca).
 -- Fix: placed := has_tribe OR is_committee; no_tribe risk so dispara para quem nao tem NENHUM dos dois.

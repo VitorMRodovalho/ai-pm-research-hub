@@ -9,14 +9,14 @@
 --   Q4 (timing?) — p59 mesmo
 --
 -- Privilege expansion safety check (verified pre-apply):
---   V3 grant: 3 members (Vitor, Fabricio, Mayanna)
---   V4 grant proposed: 2 members (Vitor, Fabricio)
+--   V3 grant: 3 members (Vitor, member B, member A)
+--   V4 grant proposed: 2 members (Vitor, member B)
 --   Would gain: 0
---   Would lose: 1 (Mayanna Duarte) — DRIFT correction
---     Mayanna has V3 designation comms_leader but no V4 engagement
+--   Would lose: 1 (member A) — DRIFT correction
+--     member A has V3 designation comms_leader but no V4 engagement
 --     volunteer×comms_leader. Per ADR-0026 documented as expected
 --     drift correction — V3 designation cache was not migrated to
---     engagement. If Mayanna is a real comms operator, PM creates
+--     engagement. If member A is a real comms operator, PM creates
 --     engagement post-migration. If not, drift was wrong.
 
 -- ============================================================

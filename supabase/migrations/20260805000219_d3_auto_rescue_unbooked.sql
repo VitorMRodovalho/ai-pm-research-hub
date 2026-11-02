@@ -7,8 +7,8 @@
 -- ao GP. unbooked + no-show unificados (ambos = "convite envelhecido sem slot futuro").
 --
 -- SPEC: docs/specs/SPEC_D3_AUTO_RESCUE_UNBOOKED.md (council GO-with-changes aplicado).
--- Coorte viva (medida 2026-06-18): Hector Rigon (app c78b885b, convite 27/05, 23d, nunca agendou) = o
--- caso indisputável; Edinan/Bruna NÃO (re-convidados há ~2d, dentro do grace).
+-- Coorte viva (medida 2026-06-18): member A (app c78b885b, convite 27/05, 23d, nunca agendou) = o
+-- caso indisputável; member B/member C NÃO (re-convidados há ~2d, dentro do grace).
 --
 -- Decisões PM (2026-06-18): unbooked + no-show unificados (ancora no último convite, não na idade do
 --   problema); cap=1 auto-rescue (1º convite job51 + 1 re-convite; depois escala ao GP).

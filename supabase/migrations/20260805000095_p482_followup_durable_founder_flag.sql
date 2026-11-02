@@ -6,7 +6,7 @@
 -- (alumni / inactive / observer). So a founder / 2024-pilot participant who goes
 -- alumni LOSES the 'founder' designation and drops out of the wall entirely — the
 -- #482 "mute non-active founders" treatment could NEVER fire. Confirmed live: the
--- 2024-pilot alumni (Carlos Magno, Andressa Martins, Giovanni Oliveira Baroni Brandão)
+-- 2024-pilot alumni (member B, member C, member A)
 -- carry no designation and were absent from the wall.
 --
 -- FIX (PM-curated, 2026-06-02): a permanent boolean members.is_founder that SURVIVES

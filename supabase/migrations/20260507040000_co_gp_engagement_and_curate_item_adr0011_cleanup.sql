@@ -1,9 +1,9 @@
 -- ADR-0011 drift cleanup — remove `is_superadmin OR` de curate_item +
--- grant engagement `volunteer × co_gp` a Fabrício Costa (formaliza autoridade
+-- grant engagement `volunteer × co_gp` a member A (formaliza autoridade
 -- org-wide via can_by_member em vez do bypass legacy is_superadmin).
 --
 -- Root cause do drift (data-architect p38 agent `a02262299817c2f16`):
--- Fabrício é `is_superadmin=true` mas `can_by_member(id, 'manage_member')=false`
+-- member A é `is_superadmin=true` mas `can_by_member(id, 'manage_member')=false`
 -- apesar de ter `committee_member × leader` authoritative+active. Permission
 -- `committee_member × leader → manage_member` tem `scope='initiative'` (migration
 -- 20260422010000 linha 61), e o filtro em `can()` body com `p_resource_id=NULL`
@@ -12,7 +12,7 @@
 --
 -- Opção B escolhida: grant `volunteer × co_gp` (scope='organization' via
 -- permission `volunteer × co_gp → manage_member` seeded em 20260413400000).
--- Alinha com realidade operacional de Fabrício (committee_coordinator + 2
+-- Alinha com realidade operacional de member A (committee_coordinator + 2
 -- committee_member roles + curator signoffs em 5 chains IP + is_superadmin
 -- legacy). Zero side effects: permissão é idêntica à que já tinha via
 -- is_superadmin, agora derivada de engagement conforme ADR-0011.
@@ -27,7 +27,7 @@
 BEGIN;
 
 -- =============================================================================
--- 1. INSERT engagement volunteer × co_gp para Fabrício (org-scoped)
+-- 1. INSERT engagement volunteer × co_gp para member A (org-scoped)
 -- =============================================================================
 INSERT INTO public.engagements (
   person_id,
@@ -42,7 +42,7 @@ INSERT INTO public.engagements (
   agreement_certificate_id,
   metadata
 ) VALUES (
-  '199b0514-6868-41fc-a1bb-a189399e94b3',  -- Fabrício Costa person_id
+  '199b0514-6868-41fc-a1bb-a189399e94b3',  -- member A person_id
   '2b4f58ab-7c45-4170-8718-b77ee69ff906',  -- Núcleo IA organization_id
   NULL,                                      -- NULL = org-scoped (não initiative-scoped)
   'volunteer',
@@ -53,7 +53,7 @@ INSERT INTO public.engagements (
   'contract_volunteer',
   '626b05b1-01ac-451c-8d00-eed662b25a22',  -- mesmo cert do volunteer × leader existente
   jsonb_build_object(
-    'granted_reason', 'ADR-0011 drift cleanup — Fabrício atua como co-GP operacional (committee_coordinator de Publications Board + 2 committee_member leaderships + curator signoffs em 5 chains IP p35 + is_superadmin legacy). Engagement formaliza autoridade org-wide via can_by_member em vez do bypass is_superadmin.',
+    'granted_reason', 'ADR-0011 drift cleanup — member A atua como co-GP operacional (committee_coordinator de Publications Board + 2 committee_member leaderships + curator signoffs em 5 chains IP p35 + is_superadmin legacy). Engagement formaliza autoridade org-wide via can_by_member em vez do bypass is_superadmin.',
     'migration', '20260507040000',
     'session', 'p38',
     'data_architect_agent', 'a02262299817c2f16'

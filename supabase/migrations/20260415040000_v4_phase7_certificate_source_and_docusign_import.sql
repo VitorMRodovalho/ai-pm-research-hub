@@ -78,33 +78,33 @@ END;
 $$;
 
 -- Execute imports (27 matched volunteers)
-SELECT public._v4_import_docusign_cert('Alexandre Meirelles',      '2026-02-26', 'Alexandre_Augusto_de_Castro_Meirelles_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Andressa Martins',         '2026-02-25', 'Andressa_Rodrigues_Martins_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Antonio Marcos Costa',     '2026-02-25', 'Antonio_Marcos_Moura_Costa_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Cíntia Simões De Oliveira','2026-03-20', 'Cintia_Simoes_de_Oliveira_PMI_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Denis Vasconcelos',        '2026-02-24', 'Denis_Queiroz_Vasconcelos_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Fabricia Maciel',          '2026-02-25', 'Fabricia_Aparecida_Maciel_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Fernando Maquiaveli',      '2026-02-25', 'Fernando_do_Carmo_Maquiaveli_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Gerson Albuquerque Neto',  '2026-02-25', 'Gerson_Vieira_Albuquerque_Neto_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Hayala Curto',             '2026-02-25', 'Hayala_Nepomuceno_Curto_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Italo Soares Nogueira',    '2026-02-18', 'Italo_Soares_Nogueira_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Jefferson Pinto',          '2026-03-05', 'Jefferson_Pinheiro_Pinto_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Leonardo Chaves',          '2026-02-27', 'Leonardo_Grandinetti_Chaves_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Leticia Clemente',         '2026-02-20', 'Leticia_Cristovam_Clemente_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Letícia Rodrigues Vieira', '2026-02-28', 'Leticia_Rodrigues_Vieira_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Lídia Do Vale',            '2026-02-25', 'Lidia_Rakel_Alcantara_do_Vale_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Ligia Costa',              '2026-02-25', 'Ligia_Costa_Ribeiro_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Lorena Almeida',           '2026-02-20', 'Lorena_Rodrigues_de_Almeida_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Luciana Dutra Martins',    '2026-02-18', 'Luciana_Dutra_Martins_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Marcos Antunes Klemz',     '2026-02-25', 'Marcos_Antunes_Klemz_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Mayanna Duarte',           '2026-03-06', 'Mayanna_Fernanda_Aires_Duarte_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Pedro Henrique Rodrigues Mendes', '2026-02-25', 'Pedro_Henrique_Rodrigues_Mendes_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Ricardo Santos',           '2026-02-25', 'Ricardo_Franca_Santos_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Rodrigo Grilo Gomes',      '2026-02-25', 'Rodrigo_Grilo_Gomes_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Stephania Marta De Souza', '2026-03-04', 'Stephania_Marta_de_Souza_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Thiago Freire',            '2026-02-26', 'Thiago_Ribeiro_e_Freire_assinado_assinado.pdf');
-SELECT public._v4_import_docusign_cert('Vinicyus Saraiva De Sousa','2026-03-04', 'Vinicyus_Saraiva_de_Sousa_assinado_assinado.pdf');
--- Wellinghton Pereira Barboza — no DocuSign match, moved to admin attestation
+SELECT public._v4_import_docusign_cert('member 29',      '2026-02-26', 'Alexandre_Augusto_de_Castro_Meirelles_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member X',         '2026-02-25', 'Andressa_Rodrigues_Martins_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member J',     '2026-02-25', 'Antonio_Marcos_Moura_Costa_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member L','2026-03-20', 'Cintia_Simoes_de_Oliveira_PMI_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 32',        '2026-02-24', 'Denis_Queiroz_Vasconcelos_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member V',          '2026-02-25', 'Fabricia_Aparecida_Maciel_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member W',      '2026-02-25', 'Fernando_do_Carmo_Maquiaveli_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member I',  '2026-02-25', 'Gerson_Vieira_Albuquerque_Neto_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member S',             '2026-02-25', 'Hayala_Nepomuceno_Curto_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member F',    '2026-02-18', 'Italo_Soares_Nogueira_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 33',          '2026-03-05', 'Jefferson_Pinheiro_Pinto_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 28',          '2026-02-27', 'Leonardo_Grandinetti_Chaves_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member T',         '2026-02-20', 'Leticia_Cristovam_Clemente_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member N', '2026-02-28', 'Leticia_Rodrigues_Vieira_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 27',            '2026-02-25', 'Lidia_Rakel_Alcantara_do_Vale_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 35',              '2026-02-25', 'Ligia_Costa_Ribeiro_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member U',           '2026-02-20', 'Lorena_Rodrigues_de_Almeida_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member R',    '2026-02-18', 'Luciana_Dutra_Martins_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member H',     '2026-02-25', 'Marcos_Antunes_Klemz_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 30',           '2026-03-06', 'Mayanna_Fernanda_Aires_Duarte_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member A', '2026-02-25', 'Pedro_Henrique_Rodrigues_Mendes_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member 34',           '2026-02-25', 'Ricardo_Franca_Santos_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member Q',      '2026-02-25', 'Rodrigo_Grilo_Gomes_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member E', '2026-03-04', 'Stephania_Marta_de_Souza_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member Z',            '2026-02-26', 'Thiago_Ribeiro_e_Freire_assinado_assinado.pdf');
+SELECT public._v4_import_docusign_cert('member M','2026-03-04', 'Vinicyus_Saraiva_de_Sousa_assinado_assinado.pdf');
+-- member P — no DocuSign match, moved to admin attestation
 
 -- Drop helper (one-time use)
 DROP FUNCTION public._v4_import_docusign_cert(text, date, text);
@@ -112,8 +112,8 @@ DROP FUNCTION public._v4_import_docusign_cert(text, date, text);
 -- ═══ 3. Admin attestation for remaining volunteers (PMI-CE cycle 2 + edge cases) ═══
 -- These members joined under chapter rules that didn't require DocuSign.
 -- PM (Vitor) attests their participation is authorized. Audit trail preserved.
--- Members: Ana Carla Cavalcante, Débora Moura, Francisco Jose, João Coelho Jr,
---          Maria Luiza, João Uzejka, Paulo Alves, Wellinghton (if DocuSign didn't match)
+-- Members: member G, member 31, member C, member K,
+--          member Y, member O, member B, member P (if DocuSign didn't match)
 
 CREATE OR REPLACE FUNCTION public._v4_admin_attest_cert(
   p_member_name text,
@@ -171,16 +171,16 @@ END;
 $$;
 
 -- PMI-CE cycle 2 members (chapter rules didn't require DocuSign)
-SELECT public._v4_admin_attest_cert('Ana Carla Cavalcante',                  'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
-SELECT public._v4_admin_attest_cert('Débora Moura',                          'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
-SELECT public._v4_admin_attest_cert('Francisco Jose Nascimento De Oliveira', 'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
-SELECT public._v4_admin_attest_cert('João Coelho Júnior',                    'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
-SELECT public._v4_admin_attest_cert('Maria Luiza',                           'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
+SELECT public._v4_admin_attest_cert('member G',                  'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
+SELECT public._v4_admin_attest_cert('member 31',                          'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
+SELECT public._v4_admin_attest_cert('member C', 'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
+SELECT public._v4_admin_attest_cert('member D',                    'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
+SELECT public._v4_admin_attest_cert('member Y',                           'PMI-CE ciclo 2 — regra do capítulo não exigia DocuSign');
 
 -- Other chapters — joined before DocuSign was required
-SELECT public._v4_admin_attest_cert('João Uzejka Dos Santos',                'PMI-RS — ingressou antes da obrigatoriedade do DocuSign');
-SELECT public._v4_admin_attest_cert('Paulo Alves De Oliveira Junior',        'PMI-GO — DocuSign não localizado no arquivo');
-SELECT public._v4_admin_attest_cert('Wellinghton Pereira Barboza',          'PMI-GO — DocuSign não localizado no arquivo');
+SELECT public._v4_admin_attest_cert('member O',                'PMI-RS — ingressou antes da obrigatoriedade do DocuSign');
+SELECT public._v4_admin_attest_cert('member B',        'PMI-GO — DocuSign não localizado no arquivo');
+SELECT public._v4_admin_attest_cert('member P',          'PMI-GO — DocuSign não localizado no arquivo');
 
 DROP FUNCTION public._v4_admin_attest_cert(text, text);
 

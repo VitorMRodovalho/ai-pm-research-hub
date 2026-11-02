@@ -3,7 +3,7 @@
 -- See docs/adr/ADR-0030-view-internal-analytics-v4-action.md
 --
 -- PM ratified Q1-Q4 (2026-04-26 p66):
---   Q1 curator (Path A drop): SIM — drift correction (Sarah perde access)
+--   Q1 curator (Path A drop): SIM — drift correction (member A perde access)
 --   Q2 own-chapter clause (Path Y preserve): SIM
 --   Q3 migrate helper to pure V4: SIM
 --   Q4 timing: p66 mesmo
@@ -12,10 +12,10 @@
 --   legacy_count = 12 (V3 set incl curator + chapter_liaison designations)
 --   v4_count    = 10
 --   would_gain   = []
---   would_lose   = [Sarah Faria (curator-only), João Uzejka (chapter_liaison
+--   would_lose   = [member A (curator-only), member B (chapter_liaison
 --                  designation sem V4 engagement chapter_board×liaison)]
 --   Both are V3-designation-without-V4-engagement drift cases — same pattern
---   as Mayanna in ADR-0026 batch 1. Per ADR Path A: documented as expected
+--   as member C in ADR-0026 batch 1. Per ADR Path A: documented as expected
 --   drift correction. PM may create engagements post-fact if needed.
 
 -- ============================================================

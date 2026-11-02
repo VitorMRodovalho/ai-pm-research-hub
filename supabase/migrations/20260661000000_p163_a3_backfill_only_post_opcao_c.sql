@@ -3,17 +3,17 @@
 --
 -- Após Opção C (capability cache + Tier A/B migration), as gates de UI
 -- não dependem mais de operational_role para autoridade — usam canFor
--- scope-aware. Logo, promover Fabricio de tribe_leader para manager é seguro:
+-- scope-aware. Logo, promover member B de tribe_leader para manager é seguro:
 --   - Manager TIER_PERMISSIONS é SUPERSET de tribe_leader (não há perda)
 --   - Display-only gates (PresentationLayer, tribe/[id] headerLeader) já
 --     mitigados (badge inclui manager; headerLeader prefere tribes.leader_member_id)
 --   - V4 actions canForAdminEntry, canFor('manage_event'), etc. já passam
---     para Fabricio via volunteer.co_gp engagement (org-scoped)
+--     para member B via volunteer.co_gp engagement (org-scoped)
 --
 -- Excluídos do backfill (status quo mantido per PM audit):
---   - Sarah/Roberto (curadores): operational_role permanece observer; autoridade
+--   - member C/member D (curadores): operational_role permanece observer; autoridade
 --     de curadoria via designation curator + can() scoped
---   - Mayanna/Maria Luiza/Leticia (workgroup leaders): operational_role permanece
+--   - member E/member A/member F (workgroup leaders): operational_role permanece
 --     researcher; autoridade no Hub Comunicação via canFor scope=initiative
 --
 -- Audit row inserted distinguished from p163_a3_backfill_post_p162_track_e
@@ -22,7 +22,7 @@
 WITH target AS (
   SELECT m.id, m.name, m.operational_role AS old_role, 'manager'::text AS new_role
   FROM public.members m
-  WHERE m.id = '92d26057-5550-4f15-a3bf-b00eed5f32f9'  -- Fabricio Costa
+  WHERE m.id = '92d26057-5550-4f15-a3bf-b00eed5f32f9'  -- member B
     AND m.operational_role = 'tribe_leader'
     AND EXISTS (
       SELECT 1 FROM public.auth_engagements ae

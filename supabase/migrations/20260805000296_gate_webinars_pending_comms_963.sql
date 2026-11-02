@@ -7,8 +7,8 @@
 -- empty shape; the comms-ops page hides the section on empty, no frontend change needed).
 --
 -- Two-sided live verification (2026-06-29):
---   * Mayanna (comms_leader)            → 3 webinars, meeting_link present
---   * Ana Carla (tribe_leader, no comms) → [] (was leaking meeting_link before)
+--   * member B (comms_leader)            → 3 webinars, meeting_link present
+--   * member A (tribe_leader, no comms) → [] (was leaking meeting_link before)
 --   * no-JWT / anon                      → []
 --
 -- The in-body RPC gate is the boundary (ADR-0106); the MCP tool get_comms_pending_webinars

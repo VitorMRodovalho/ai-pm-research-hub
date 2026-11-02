@@ -4,14 +4,14 @@
 --
 -- PM ratified Q1-Q4 (2026-04-26 p66):
 --   Q1 reuso view_internal_analytics ao invés de nova action: SIM
---   Q2 Roberto Macêdo gain (chapter_board × liaison legítimo): SIM
+--   Q2 member A gain (chapter_board × liaison legítimo): SIM
 --   Q3 defer log_pii_access_batch integration: SIM
 --   Q4 timing: p66 mesmo
 --
 -- Privilege expansion safety check (verified pre-apply):
 --   legacy_count = 9
 --   v4_count = 10
---   would_gain = [Roberto Macêdo] (chapter_board × liaison engagement,
+--   would_gain = [member A] (chapter_board × liaison engagement,
 --                corrige gap V3 onde observer com governance role
 --                institucional não tinha acesso)
 --   would_lose = []

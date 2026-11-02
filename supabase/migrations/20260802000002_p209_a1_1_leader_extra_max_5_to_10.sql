@@ -2,9 +2,9 @@
 --
 -- BUG context (PM-surfaced 2026-05-21, post-PR #225 deploy):
 -- ===========================================================
--- Henrique e Francisleila tiveram scores > 5 em leader_extra criteria. UI
+-- member A e member B tiveram scores > 5 em leader_extra criteria. UI
 -- mostrou "out_of_range" mas o RPC submit_evaluation aceitou silentemente
--- (sem validação de max). Resultado: Francisleila weighted_subtotal=162 com
+-- (sem validação de max). Resultado: member B weighted_subtotal=162 com
 -- scores 7-8 (válidos sob max:10, inválidos sob max:5 do schema atual).
 --
 -- Historical archaeology:
@@ -15,7 +15,7 @@
 -- - leader_extra_criteria foi ESQUECIDO nessa atualização → ficou órfão em max:5
 --   por ~7 semanas (de 2026-04-01 até 2026-05-21).
 -- - Cycle4-2026 leader_extra weights × max=5 = 110 ponderado max declarado;
---   evaluators usaram max=10 escala → 220 ponderado max real (Fabricio's submit).
+--   evaluators usaram max=10 escala → 220 ponderado max real (member C's submit).
 --
 -- Fix: bump max:5 → max:10 em leader_extra_criteria de todos os ciclos ATIVOS
 -- (status IN open/evaluation/interview/decision). Idempotente via jsonb_set.
@@ -23,7 +23,7 @@
 --
 -- Impact on existing submissions:
 -- - Cycle4-2026: 2 leader_extra evals existem. Vitor avaliou William scores 1-4
---   (válidos em ambas escalas, weighted=60). Fabricio avaliou Francisleila scores
+--   (válidos em ambas escalas, weighted=60). member C avaliou member B scores
 --   5-8 (válidos sob max:10 novo schema, weighted=162). Ambos preservados.
 -- - Cycle3-2026-b2: zero leader_extra evals submetidas até agora.
 --

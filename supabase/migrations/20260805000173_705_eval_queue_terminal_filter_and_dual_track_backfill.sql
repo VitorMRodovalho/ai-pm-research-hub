@@ -3,7 +3,7 @@
 -- Bug 1 — get_my_pending_evaluations devolvia applications TERMINAIS (rejected/
 --   approved/withdrawn/...) na fila de pendentes: a query só filtrava por cycle_id
 --   + "ainda não avaliei", SEM predicado de status. Ruído na fila do avaliador +
---   risco de avaliar candidato já decidido (ex.: Maria Araújo leader rejected).
+--   risco de avaliar candidato já decidido (ex.: member A leader rejected).
 -- Bug 3 — progress_pct podia passar de 100% (completed_count > total_count): o
 --   completed_count fazia JOIN com selection_evaluations e contava LINHAS DE
 --   AVALIAÇÃO (fan-out: 2 evals do mesmo avaliador no mesmo app contavam 2), vs
@@ -21,11 +21,11 @@
 --   (mesmo email + ciclo, roles distintos) não se enxergavam (linked_application_id
 --   NULL, promotion_path NULL). Causa: o auto-link rodava em BEFORE INSERT e dava
 --   FK violation no back-link (corrigido em #693 -> AFTER INSERT, mig 20260805000172);
---   pares NOVOS já linkam, mas os criados ANTES (ex.: Maria Araújo, apps de abril,
+--   pares NOVOS já linkam, mas os criados ANTES (ex.: member A, apps de abril,
 --   que escaparam do backfill único de 20260625000000) ficaram órfãos. Backfill
 --   abaixo liga retroativamente os pares LIMPOS 1:1 (exatamente 1 leader + 1
 --   researcher não-linkados por email+ciclo) — idempotente (NULL-guard). Blast
---   radius medido: 1 par (Maria). Distinto de #704 (identidade PMI duplicada =
+--   radius medido: 1 par (member A). Distinto de #704 (identidade PMI duplicada =
 --   2 contas/2 emails da mesma pessoa; aqui é 1 pessoa/1 email com 2 tracks).
 --
 -- ROLLBACK: re-aplicar o corpo anterior de get_my_pending_evaluations de
