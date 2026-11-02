@@ -11,7 +11,7 @@ tags por user-agent de crawler, e `drive-list-folder-files` / SQL para o lado da
 
 ## Entregue
 
-1. **Story v2 corrigido.** A esfera ciano colidia com "Fernando Carvalho" (16 px) e o pill da data
+1. **Story v2 corrigido.** A esfera ciano colidia com "member A" (16 px) e o pill da data
    invadia o rodapé (51 px). Medido antes e depois com `qa_measure.py`: **0 colisões, folga de 37 px**.
    QA visual refeito nas 5 peças, não só na que mudou.
 2. **Drive resolvido.** Pasta `04 - Webinar Tribo ROI & Portfólio ... (04ago2026)` dentro de
@@ -20,11 +20,11 @@ tags por user-agent de crawler, e `drive-list-folder-files` / SQL para o lado da
    A parede de 25/07 era falsa: as EFs `drive-create-subfolder` / `drive-upload-to-folder` já existiam.
 3. **Copy de divulgação**, 8 textos (3 WhatsApp, 3 Instagram, 2 LinkedIn), em
    `docs/_deliverables/2026-08-04_webinar_t6/COPY_DIVULGACAO.md`. Nenhum texto imprime horário POR
-   BLOCO, só "19h00 às 20h30", que é igual nas duas grades do briefing: a decisão pendente do Denis
+   BLOCO, só "19h00 às 20h30", que é igual nas duas grades do briefing: a decisão pendente do member B
    não obriga a reescrever copy nenhuma.
 4. **Airmeet configurado e auditado** (título com acento, Overview, capa, welcome message do evento
    anterior corrigida, lounge banner novo 960x120, waiting screen). Ver `.claude/skills/airmeet-event-ops/`.
-5. **3 speakers cadastrados + convites de backstage disparados** (Denis, Fernando, Clendson):
+5. **3 speakers cadastrados + convites de backstage disparados** (member B, member A, member C):
    "Invite sent" / "Registered".
 
 ## Depois deste handoff (mesma sessão)
@@ -52,18 +52,18 @@ tags por user-agent de crawler, e `drive-list-folder-files` / SQL para o lado da
 ### Decisões de gente (bloqueiam trabalho)
 - **Aval do owner na v2 das peças** (fotos +44%). Se aprovar: re-renderizar, trocar os 5 arquivos em
   `divulgacao/` no Drive e atualizar `~/Downloads/nucleo-webinar-t6-04ago/`.
-- **Denis não respondeu a divergência de horários** (comentário `a22b8ebd-...` no card, de 26/07 02:49).
-  Ele respondeu por WhatsApp só a parte dos e-mails. Programação geral (Fernando 19h10, Clendson 19h45)
+- **member B não respondeu a divergência de horários** (comentário `a22b8ebd-...` no card, de 26/07 02:49).
+  Ele respondeu por WhatsApp só a parte dos e-mails. Programação geral (member A 19h10, member C 19h45)
   x roteiro detalhado (19h05 / 19h40, sem o bloco da tribo). **As peças, o Overview do Airmeet e o
   pack seguiram a programação geral.**
-- **Quem apresenta a tribo: Messias OU Fabricio.** Enquanto não decidir, ficam fora dos speakers do
+- **Quem apresenta a tribo: member D OU member E.** Enquanto não decidir, ficam fora dos speakers do
   Airmeet (só os 3 confirmados estão lá) e as duas linhas seguem no CSV para alguém apagar uma.
-- **Organization / City / Country do Fernando e do Clendson** seguem vazios de propósito. O domínio
-  `nndigital.com.br` sugere a empresa do Fernando, mas sugerir não é saber e isso vai para perfil
-  público. Preencher só com o que o Denis confirmar.
+- **Organization / City / Country do member A e do member C** seguem vazios de propósito. O domínio
+  `nndigital.com.br` sugere a empresa do member A, mas sugerir não é saber e isso vai para perfil
+  público. Preencher só com o que o member B confirmar.
 
 ### Manuais, minutos
-- **Ordem dos speakers na landing** saiu Denis > Clendson > Fernando; a programação tem Fernando
+- **Ordem dos speakers na landing** saiu member B > member C > member A; a programação tem member A
   (19h10) antes. Ajuste por arrastar em "Rearrange speakers". Não automatizei: drag-and-drop.
 - **Dois arquivos v1 sobrando** em `airmeet-speakers/` no Drive (`LEIAME.txt` e
   `Speakers_Airmeet_webinar-t6-04ago2026.csv`), superados por `LEIAME_26jul_ATUALIZADO.txt` e
@@ -72,10 +72,10 @@ tags por user-agent de crawler, e `drive-list-folder-files` / SQL para o lado da
 
 ### Não iniciado
 - **Publicar a copy.** Nada foi agendado nem publicado. Antes disso: aval da v2 (é a imagem que vai no
-  post) e, se possível, a resposta do Denis. Publicação por canal segue a matriz de comms.
+  post) e, se possível, a resposta do member B. Publicação por canal segue a matriz de comms.
 - **`sympla_event_url` e `comms_kickoff_at` seguem NULL** (confirmado em query nesta sessão).
 - **Checklist do card: 13 de 15 abertos.** "Desenvolver material publicitário" (vence 28/07) está de
-  fato pronto mas é do Denis; não marquei item de outra pessoa.
+  fato pronto mas é do member B; não marquei item de outra pessoa.
 
 ### Follow-up de produto
 - **`drive-upload-to-folder` não faz upsert:** reenviar o mesmo nome cria duplicata. Já mordeu duas

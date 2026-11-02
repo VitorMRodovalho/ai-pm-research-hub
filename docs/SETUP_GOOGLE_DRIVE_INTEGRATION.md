@@ -1,6 +1,6 @@
 # Google Drive Integration — Setup Guide (PM action required)
 
-**Issue:** #110 (Mayanna report Item 07)
+**Issue:** #110 (member A report Item 07)
 **Phase 1 status:** ✅ Schema + RPCs + EF skeleton shipped (autonomous, p77 marathon)
 **Phase 2 status:** ✅ Vault seeded, 12 initiatives linked, list EF live (p78)
 **Phase 3 status:** ✅ Upload + create-subfolder EFs LIVE via OAuth refresh flow (Path F adopted, ADR-0064 amended)
@@ -72,7 +72,7 @@ Para CADA pasta Drive que será vinculada a um board:
 1. Acessar Supabase Dashboard: https://supabase.com/dashboard/project/ldrfrvwhxsmgaabwmaik
 2. Project Settings → Vault → "New Secret"
 3. Name: `google_drive_service_account_json`
-4. Description: "Service account JSON para Drive API V3 — issue #110 Mayanna Item 07"
+4. Description: "Service account JSON para Drive API V3 — issue #110 member A Item 07"
 5. Secret: cole o **CONTEÚDO COMPLETO** do JSON baixado no Passo 4
 6. Save
 
@@ -249,7 +249,7 @@ test que faz token refresh smoke periódico.
 
 ## Provenance
 
-- Mayanna usability report (Abril 2026) — Item 07
+- member A usability report (Abril 2026) — Item 07
 - p77 Decision: Opção A (institutional service account) com SPOF controlado
 - Phase 1 ship: p77 ULTRA-marathon
 - Phase 2 ship: p77/p78 (Vault seeded + 12 initiatives linked + list EF live)

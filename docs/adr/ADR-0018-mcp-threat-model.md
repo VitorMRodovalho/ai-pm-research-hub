@@ -7,7 +7,7 @@
 
 ## Contexto
 
-Ana Carla Cavalcante (PMI-CE, Ciclo 3) flaggeou 20/Abr/2026 artigo do The Hacker News sobre **vulnerabilidade de design no MCP**: *"A client-side prompt injection vulnerability in Anthropic's Model Context Protocol (MCP) can be exploited to achieve zero-click command execution by editing settings of a MCP server and forcing execution of a malicious command on the server or local machine where Claude Desktop is running"*.
+member A (PMI-CE, Ciclo 3) flaggeou 20/Abr/2026 artigo do The Hacker News sobre **vulnerabilidade de design no MCP**: *"A client-side prompt injection vulnerability in Anthropic's Model Context Protocol (MCP) can be exploited to achieve zero-click command execution by editing settings of a MCP server and forcing execution of a malicious command on the server or local machine where Claude Desktop is running"*.
 
 Vitor (GP) respondeu (chat 20/Abr 21:29-21:41) que o `nucleo-mcp` não está em risco pela natureza HTTP remota, OAuth 2.1 obrigatório, RLS, canV4 gates, e token refresh. Análise técnica desta ADR **valida** majoritariamente essa resposta e identifica 3 mitigações adicionais de baixo-médio risco que valem implementar.
 
@@ -150,7 +150,7 @@ Token JWT expira 1h. Refresh token no KV 30d. Se member perde acesso (offboarded
 | W3 — MCP anomaly detection cron (issue #81) | 2h | 🟡 | ✅ Shipped 2026-04-24 p44 Track W3 (migration `20260511020000`) |
 | W2 — Cloudflare rate limit (KV counters) | 1 dia | 🟡 | ✅ Shipped 2026-04-24 p44 Track S (`src/lib/mcp-rate-limit.ts`, best-effort due to KV consistency) |
 
-### D7 — Resposta formal à Ana Carla
+### D7 — Resposta formal à member A
 
 Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comunicacional com rigor técnico documentado.
 
@@ -158,7 +158,7 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 
 ### Positivas
 
-- **Resposta técnica à preocupação da Ana** é documentada em ADR formal, não em chat
+- **Resposta técnica à preocupação da member A** é documentada em ADR formal, não em chat
 - **Time mantenedor** tem clareza de quais riscos estão mitigados e quais estão na lista
 - **Convenções permanentes** (D5) evitam que futuros tools adicionem vetores sem querer
 - **Auditoria externa futura** (PMI / DPO / legal) tem análise pronta
@@ -176,7 +176,7 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 
 ## Referências
 
-- Chat WhatsApp Vitor ↔ Ana Carla (20/Abr/2026 20:43-21:41)
+- Chat WhatsApp Vitor ↔ member A (20/Abr/2026 20:43-21:41)
 - Article: `thehackernews.com/2026/04/anthropic-mcp-design-vulnerability.html`
 - Issue #89 Frente 6 (MCP security review)
 - Issue #81 item #5 (MCP anomaly alerting)
@@ -189,7 +189,7 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 **Accepted 2026-04-24 (p44 R+T+W3+S)** — todas as 3 mitigações shipped em uma única sessão.
 
 **Histórico:**
-- 2026-04-21 — Proposed (issue #89 Frente 6, resposta técnica para Ana Carla flag do Hacker News MCP vulnerability)
+- 2026-04-21 — Proposed (issue #89 Frente 6, resposta técnica para member A flag do Hacker News MCP vulnerability)
 - 2026-04-24 p43 — Partially Accepted (D1-D5 análise + convenções em vigor; W1/W2/W3 pendentes)
 - 2026-04-24 p44 — Tracks R (W1) + T (W3 prereq) + W3 (anomaly cron) + S (W2 rate limit) shipped atomically, flip to **Accepted**.
 
@@ -231,4 +231,4 @@ Enviar link para este ADR quando publicado (status = Accepted). Fecha loop comun
 - Smoke validado seeding KV counter em 100 manualmente → HTTP 429 + JSON-RPC error code `-32029` + todos headers esperados
 - **Caveat conhecido**: Cloudflare KV eventual consistency cross-POP significa que burst tight-loop < 60s pode bypassar alguns hits; sustained traffic > 60s trigger 429 consistentemente. Acceptable para defense-in-depth (não é primary guard).
 
-Resposta formal à Ana Carla pode ser enviada agora: "ADR-0018 Accepted — todas as 3 mitigações (W1 + W2 + W3) shipped em 2026-04-24. W2 com caveat de KV eventual consistency documentado."
+Resposta formal à member A pode ser enviada agora: "ADR-0018 Accepted — todas as 3 mitigações (W1 + W2 + W3) shipped em 2026-04-24. W2 com caveat de KV eventual consistency documentado."

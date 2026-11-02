@@ -3,7 +3,7 @@
 **Data:** 31 March 2026
 **Autor:** Claude Opus 4.6 + Vitor Maia Rodovalho (PM)
 **Status:** Spec aprovada, implementacao em andamento
-**Deadline:** Thursday 03/Apr (Joao Uzejka QA baseline test)
+**Deadline:** Thursday 03/Apr (member A QA baseline test)
 **Base spec:** W124_SELECTION_PIPELINE_SPEC.md (schema 100% deployed)
 
 ---
@@ -238,7 +238,7 @@ At approval time:
 - [ ] Interview scheduling UI
 - [ ] Interview scoring UI
 - [ ] Pipeline dashboard enhancements
-- [ ] Joao Uzejka full journey QA test
+- [ ] member A full journey QA test
 
 ---
 
@@ -250,8 +250,8 @@ At approval time:
 | **PMI Global Consultant** | VEP CSV import e o padrao. Opportunity tracking e essencial. Partner chapter validation e requisito formal. Volunteer lifecycle tracking (filiacao) e boa pratica. |
 | **LGPD Advisor** | Membership snapshots: base legal = execucao contrato voluntariado. CVs/essays: retencao ciclo + 1 ano. Scores: anonimizados apos decisao final. |
 | **Tech Lead** | Schema dimensional correto (fatos temporais, nao hardcode). Latest stable dependencies. SECURITY DEFINER RPCs. RLS on all new tables. |
-| **Tribe Leader (Jefferson)** | "Quero ver quem esta sendo avaliado para minha tribo e poder dar input na entrevista" |
-| **Candidato (Joao Uzejka)** | Baseline QA: testar jornada completa import → evaluate → approve → onboard |
+| **Tribe Leader (member B)** | "Quero ver quem esta sendo avaliado para minha tribo e poder dar input na entrevista" |
+| **Candidato (member A)** | Baseline QA: testar jornada completa import → evaluate → approve → onboard |
 
 ---
 

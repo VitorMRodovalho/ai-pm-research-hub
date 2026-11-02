@@ -7,11 +7,11 @@
 ### Reunião Geral de 10/09 (evento `8c3fa194-0ed6-45c3-a109-d3ffcca3b18a`)
 
 - **4 blocos de protagonismo confirmados**, com XP creditado aos quatro:
-  Ramom 21 · Hanae 27 · Messias 23 · Fernando 12.
-- **Presença**: +2 linhas (Hanae e Fernando, que apresentaram e não estavam registrados).
+  Ramom 21 · member C 27 · member D 23 · member B 12.
+- **Presença**: +2 linhas (member C e member B, que apresentaram e não estavam registrados).
   Total agora 32. **Ainda muito abaixo** da lista de convidados (~76).
 - **10 ações registradas** em `meeting_action_items` (antes: zero), com responsável e prazo.
-  Prazos vivos: **13/09** divulgar vagas · **16/09** pesquisa de cultura · **30/09** entrevistas do Fernando.
+  Prazos vivos: **13/09** divulgar vagas · **16/09** pesquisa de cultura · **30/09** entrevistas do member B.
 
 ### O ACHADO da sessão: o portão de XP depende da presença
 
@@ -25,7 +25,7 @@ v_present := EXISTS (SELECT 1 FROM attendance
 IF v_present THEN PERFORM _grant_agenda_block_xp(v_block.id); END IF;
 ```
 
-Resultado medido: `confirmed: 4, credited: 2`. Hanae e Fernando apresentaram, foram confirmados e
+Resultado medido: `confirmed: 4, credited: 2`. member C e member B apresentaram, foram confirmados e
 **não receberam nada**, porque não tinham linha de presença. O único sinal disso é a diferença entre
 dois números no envelope, que ninguém lê.
 
@@ -57,10 +57,10 @@ do próprio Meet. Extrair com `ffmpeg -map 0:s:0` dispensa retranscrever. Tem ar
 | trecho | reservado | real |
 |---|---|---|
 | governança de dados em pequenas empresas (**não reservado**) | — | **~34 min** |
-| Hanae · pesquisa Tribo 4 | 10 | ~8 min |
-| Messias · TEDx, crise do testemunho ocular | 15 | ~11 min |
+| member C · pesquisa Tribo 4 | 10 | ~8 min |
+| member D · TEDx, crise do testemunho ocular | 15 | ~11 min |
 | Ramom · LGPD e ANPD | 30 | **~41 min** |
-| Fernando · onboarding | 20 | **~2 a 5 min** |
+| member B · onboarding | 20 | **~2 a 5 min** |
 
 Os 34 minutos iniciais não reservados comeram o espaço institucional. **Nada foi anunciado**:
 webinar da Tribo 11, acervo trilíngue, cooperação LATAM, o RCE crítico. O prazo de 13/09 sobreviveu
@@ -71,9 +71,9 @@ estavam.
 
 ## Dois sinais de governança que só aparecem lendo o chat
 
-- **Dois gravadores de terceiros na sala**: Tactiq (Marcela) e Fireflies (em nome do Honório), numa
+- **Dois gravadores de terceiros na sala**: Tactiq (member E) e Fireflies (em nome do member F), numa
   reunião cujo tema central foi proteção de dados. Merece decisão do Núcleo.
-- **Ana Carla relatou áudio falhando às 01:33** e já havia dito no grupo que está sempre no trânsito
+- **member A relatou áudio falhando às 01:33** e já havia dito no grupo que está sempre no trânsito
   no horário da call. Duas barreiras somadas na líder de Inclusão.
 
 ## Pendente

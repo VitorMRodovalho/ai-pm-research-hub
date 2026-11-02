@@ -103,10 +103,10 @@ Chart: BarChart horizontal — ranking de tribos por % presença (destaca tribo 
 │ Membro           │ 05/03 │ 12/03 │ 12/03 │ 19/03 │ 19/03 │ 26/03 │ %   │
 │                  │ Geral │ Tribo │ Geral │ Tribo │ Lider │ Tribo │     │
 ├──────────────────┼───────┼───────┼───────┼───────┼───────┼───────┼─────┤
-│ Paulo Alves      │ ✅    │ ✅    │ ✅    │ ✅    │ N/A   │ ✅    │ 100%│
-│ Wellinghton B.   │ ✅    │ ✅    │ ❌    │ ✅    │ N/A   │ ✅    │ 80% │
-│ Vinicyus S.      │ ✅    │ ❌    │ ✅    │ ❌    │ N/A   │ ❌    │ 40% │
-│ Maria L.         │ ❌    │ ✅    │ ❌    │ ✅    │ ✅    │ ✅    │ 67% │
+│ member A      │ ✅    │ ✅    │ ✅    │ ✅    │ N/A   │ ✅    │ 100%│
+│ member B     │ ✅    │ ✅    │ ❌    │ ✅    │ N/A   │ ✅    │ 80% │
+│ member C        │ ✅    │ ❌    │ ✅    │ ❌    │ N/A   │ ❌    │ 40% │
+│ member D           │ ❌    │ ✅    │ ❌    │ ✅    │ ✅    │ ✅    │ 67% │
 └──────────────────┴───────┴───────┴───────┴───────┴───────┴───────┴─────┘
 
 Legenda: ✅ = Presente | ❌ = Ausente | N/A = Não aplicável (não convocado)
@@ -159,7 +159,7 @@ RETURNS JSON:
   "members": [
     {
       "id": "uuid",
-      "name": "Paulo Alves",
+      "name": "member A",
       "total_points": 120,
       "cycle_points": 80,
       "attendance_points": 40,
@@ -218,7 +218,7 @@ RETURNS JSON:
   "members": [
     {
       "id": "uuid",
-      "name": "Paulo Alves",
+      "name": "member A",
       "attendance": {
         "event_uuid_1": "present",   -- ✅
         "event_uuid_2": "present",   -- ✅

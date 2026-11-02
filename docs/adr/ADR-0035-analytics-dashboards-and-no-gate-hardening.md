@@ -42,7 +42,7 @@ fecha security gap.
 Para Group V3 (vs view_internal_analytics):
 - legacy = 11, v4 = 10
 - would_gain = []
-- would_lose = [João Uzejka] — chapter_liaison designation drift (ADR-0030 precedent)
+- would_lose = [member A] — chapter_liaison designation drift (ADR-0030 precedent)
 
 Para Group NoGate (currently zero-auth):
 - legacy = ALL (qualquer authenticated user pode chamar)
@@ -110,7 +110,7 @@ REVOKE EXECUTE ON FUNCTION public.get_cycle_report(integer) FROM PUBLIC, anon;
 - Zero novo V4 action.
 
 ### Para members
-- João Uzejka loses access to get_chapter_dashboard / get_diversity_dashboard
+- member A loses access to get_chapter_dashboard / get_diversity_dashboard
   (chapter_liaison drift, ADR-0030 precedent).
 - Anon callers que dependiam de get_annual_kpis / get_cycle_report sem auth
   perdem acesso. Verified zero anon callers em src/.
@@ -162,7 +162,7 @@ Estimativa: ~30 min (4 fns simples).
 
 - 4 fns convertidas: 2 V3→V4 reuse + 2 no-gate hardening.
 - Zero novo V4 action (full reuse view_internal_analytics).
-- João Uzejka loses get_chapter_dashboard / get_diversity_dashboard (drift).
+- member A loses get_chapter_dashboard / get_diversity_dashboard (drift).
 - Anon callers de get_annual_kpis / get_cycle_report perdem acesso (security closure).
 - Phase B'' tally: 74 → 78 / 246 (~31.7%).
 - 2 no-gate security holes closed (drift signal class #7 #8 type).

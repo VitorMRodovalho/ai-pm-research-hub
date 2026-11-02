@@ -87,7 +87,7 @@ Duas leituras que mudam a prioridade:
 | alta | T5 | SPRINT 8 - Toolkit v1.0 (Gate B) | backlog | 2026-07-26 | — | ferramenta |
 | alta | T5 | SPRINT 9 - Relatório de Avaliação | backlog | 2026-08-03 | — | publicacao |
 | alta | T6 | Artigo LinkedIn Newsletter - Junho | done | — | 2026-07-09 | publicacao |
-| alta | T7 | PMI LATAM Conference 2026 — Proposta submetida (Evilásio + Marcos) | done | — | 2026-08-06 | webinar |
+| alta | T7 | PMI LATAM Conference 2026 — Proposta submetida (member B + member C) | done | — | 2026-08-06 | webinar |
 | alta | T8 | AI Community Day - Webinar | done | — | 2026-07-27 | webinar |
 | alta | T8 | Artigo I Newsletter — Neurodiversidade (PT) | done | — | 2026-07-04 | publicacao |
 | alta | T8 | Artigo II Newsletter — Neurodiversidade (PT) | done | 2026-07-08 | 2026-07-08 | publicacao |
@@ -103,7 +103,7 @@ Duas leituras que mudam a prioridade:
 | alta | T11 | Nivelamento inicial — PMO Services e Outcomes | done | 2026-07-24 | — | pesquisa |
 | alta | T11 | Primeiro conteúdo público — PMO Inteligente, Services e Outcomes | in_progress | 2026-08-17 | — | webinar |
 | alta | T13 | Análise caps 1 e 3 DAMA DMBOK | done | — | 2026-08-04 | pesquisa |
-| media | T1 | Rodada semanal — Rodolfo: revisão das pesquisas e história da tribo | review | — | — | pesquisa |
+| media | T1 | Rodada semanal — member D: revisão das pesquisas e história da tribo | review | — | — | pesquisa |
 | media | T11 | Primeiro Artigo — Tribo 11 (PMO Inteligente) | backlog | — | — | webinar |
 | baixa | T1 | Organizar Pesquisa Qualitativa Pesquisa Quantitativa - Uso de IA para apoio ao GP | todo | — | — | pesquisa |
 | baixa | T1 | Pesquisa Quantitativa - Uso de IA para apoio ao GP | review | — | — | pesquisa |
@@ -111,7 +111,7 @@ Duas leituras que mudam a prioridade:
 | baixa | T2 | Ferramenta de validação do Framework | in_progress | — | — | ferramenta |
 | baixa | T2 | Implementação da Arquitetura no Framework SDK Anthropic + MCP | in_progress | — | — | framework |
 | baixa | T2 | ModelScope‑Agent – Framework Agentic baseado em LLMs open‑source | todo | — | — | framework |
-| baixa | T2 | Resolver doc PI com Débora — webinar 31/05 adiado | backlog | — | — | webinar |
+| baixa | T2 | Resolver doc PI com member E — webinar 31/05 adiado | backlog | — | — | webinar |
 | baixa | T2 | Revisão do Artigo | in_progress | — | — | publicacao |
 | baixa | T4 | Criar o GuIA Cultura & Change | backlog | — | — | ferramenta |
 | baixa | T4 | Estudo de caso - gestao de mudanca em empresa de tecnologia | todo | — | — | pesquisa |
@@ -119,18 +119,18 @@ Duas leituras que mudam a prioridade:
 | baixa | T4 | Publicação para Linkedin: É possível promover publicações compartilhando estudos…? | in_progress | — | — | publicacao |
 | baixa | T8 | Artigo - Newsletter | review | — | — | publicacao |
 | baixa | T9 | Diagnostico Ecossitema de Construção | backlog | — | — | pesquisa |
-| baixa | T11 | Apoio à Matriz (pesos) — João Leite | backlog | — | — | framework |
-| baixa | T11 | Apoio à Revisão de Artigos — Ártico | backlog | — | — | publicacao |
-| baixa | T11 | Curadoria de Referências — Thayanne | backlog | — | — | pesquisa |
-| baixa | T11 | Matriz Services x Outcomes — Rodrigo | backlog | — | — | framework |
-| baixa | T11 | Pesquisa de Services — Ártico | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — Gerson | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — João Leite | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — Marcio | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — Mery | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — Rodrigo | backlog | — | — | pesquisa |
-| baixa | T11 | Pesquisa de Services — Thayanne | backlog | — | — | pesquisa |
-| baixa | T11 | Simulação/Piloto — João Leite | backlog | — | — | poc |
+| baixa | T11 | Apoio à Matriz (pesos) — member A | backlog | — | — | framework |
+| baixa | T11 | Apoio à Revisão de Artigos — member F | backlog | — | — | publicacao |
+| baixa | T11 | Curadoria de Referências — member G | backlog | — | — | pesquisa |
+| baixa | T11 | Matriz Services x Outcomes — member H | backlog | — | — | framework |
+| baixa | T11 | Pesquisa de Services — member F | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member I | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member A | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member J | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member K | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member H | backlog | — | — | pesquisa |
+| baixa | T11 | Pesquisa de Services — member G | backlog | — | — | pesquisa |
+| baixa | T11 | Simulação/Piloto — member A | backlog | — | — | poc |
 | baixa | T12 | Apresentação pública do projeto (webinar ou slot em Reunião Geral) | backlog | — | — | webinar |
 | baixa | T13 | Análise - Linhagem e Rastreabilidade dos Dados | todo | — | — | pesquisa |
 | baixa | T13 | Matriz RACI - Análise por Fases | in_progress | — | — | framework |
@@ -170,7 +170,7 @@ não os classificam.
 | T8 | Target Pilar IV - Estudo de campo Neuro-Advantage com IA | backlog | — | pesquisa |
 | T9 | 1ª webinar - Industria da Construção | in_progress | — | webinar |
 | T10 | Webinar | backlog | — | webinar |
-| T11 | Apoio ao Planejamento do Webinar — Rodrigo | backlog | — | webinar |
+| T11 | Apoio ao Planejamento do Webinar — member H | backlog | — | webinar |
 | T12 | Webinar | backlog | — | webinar |
 | T13 | Webinar | backlog | — | webinar |
 | T14 | Sprint 5 - Webinar | backlog | — | webinar |

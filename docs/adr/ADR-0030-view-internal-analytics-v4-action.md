@@ -11,7 +11,7 @@
     (5 grants + helper + exec_chapter_dashboard convert)
   - Migration `20260427012700_adr_0030_view_internal_analytics_revoke_anon.sql`
     (REVOKE from PUBLIC, anon — defense-in-depth)
-- Drift surfaced: Sarah Faria (curator-only) + João Uzejka (chapter_liaison
+- Drift surfaced: member A (curator-only) + member B (chapter_liaison
   designation sem V4 engagement) perdem access. Per ADR Path A: documented
   como expected drift correction.
 - Cross-references: ADR-0007 (V4 authority), ADR-0011 (V4 auth pattern),
@@ -45,8 +45,8 @@ em audit doc Phase B'' como out-of-scope V3 — ambas sob a categoria
    ```
 
    V3 set (org-portion, ignoring own-chapter): **11 active members**
-   (Vitor SA + Fabricio + Ana + Felipe + Francisca + Ivan + João +
-   Márcio + Matheus + Roberto + Rogério).
+   (Vitor SA + member C + member D + member E + member F + member G + member B +
+   member H + member I + member J + member K).
 
 **2. `exec_role_transitions(p_cycle_code, p_tribe_id, p_chapter)`** —
    leadership conversion analytics across cycles. Caller:
@@ -62,7 +62,7 @@ em audit doc Phase B'' como out-of-scope V3 — ambas sob a categoria
    ```
 
    V3 set: **12 active members** — superset de chapter_dashboard (11)
-   + Sarah (curator).
+   + member A (curator).
 
 ### Por que precisa de nova action
 
@@ -115,11 +115,11 @@ VALUES
 not have a curator kind/role. Curator continues as `members.designations[]`.
 Two paths:
 - **Path A (recommended)**: `view_internal_analytics` ladder gated purely
-  via V4 engagement (drop curator). Drift correction — Sarah (only active
+  via V4 engagement (drop curator). Drift correction — member A (only active
   curator) loses access to internal analytics. Per ADR-0026 batch 1 precedent
-  (Mayanna comms_leader drift), this is documented but accepted.
+  (member L comms_leader drift), this is documented but accepted.
 - **Path B**: gate body includes `OR designations && ARRAY['curator']`
-  fallback. Hybrid V3+V4 — preserves Sarah access, but pollutes V4 purity.
+  fallback. Hybrid V3+V4 — preserves member A access, but pollutes V4 purity.
 
 ### 2. Convert `can_read_internal_analytics()` helper
 
@@ -209,9 +209,9 @@ SELECT
 Aceito: `would_gain = []` AND (`would_lose = []` OR diferença explicada).
 
 Esperado:
-- legacy_count = 12 (V3 set incl curator Sarah)
+- legacy_count = 12 (V3 set incl curator member A)
 - v4_count = 11 ou 12 (depende Path A/B)
-- would_lose path A = [Sarah] (curator drift)
+- would_lose path A = [member A] (curator drift)
 - would_lose path B = []
 
 ---
@@ -225,7 +225,7 @@ Esperado:
 - **MCP consistency**: ferramentas analytics ficam V4-uniform.
 
 ### Para members
-- Path A: Sarah (curator) perde acesso — drift correction.
+- Path A: member A (curator) perde acesso — drift correction.
 - Path B: zero loss, mas hybrid V3+V4 no helper.
 
 ### Para path A/B/C optionality
@@ -240,9 +240,9 @@ Esperado:
 
 ### Q1 — Curator deve ter `view_internal_analytics`?
 
-**Path A** (drop): drift correction — ADR-0026 precedent. Sarah perde
+**Path A** (drop): drift correction — ADR-0026 precedent. member A perde
 acesso a analytics que talvez nunca usou. **Path B** (keep via designation
-fallback): preserva acesso Sarah, mas pollutes V4 purity.
+fallback): preserva acesso member A, mas pollutes V4 purity.
 
 **PM decide**: Path A OU Path B.
 
@@ -293,7 +293,7 @@ Estimativa: ~1.5h.
 ### Outcome (post-apply)
 
 - 2 fns + 1 helper convertidos para V4 pure.
-- Privilege expansion: legacy 12 → V4 10 (Sarah + João dropped per drift).
+- Privilege expansion: legacy 12 → V4 10 (member A + member B dropped per drift).
 - Own-chapter clause em exec_chapter_dashboard preservado (Path Y).
 - Tests + invariantes preservados.
 - Phase B'' tally: 67 → 70 / 213 (~32.9%).

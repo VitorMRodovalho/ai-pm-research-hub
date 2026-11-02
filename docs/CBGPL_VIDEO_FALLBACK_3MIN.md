@@ -77,7 +77,7 @@
 
 **CUE:** Logo AIPM Ambassadors + URL `nucleoia.vitormr.dev`.
 
-> "Vitor Rodovalho e Fabrício Nóbrega são embaixadores AIPM oficialmente — programa de Ricardo Vargas e Antonio Nieto-Rodriguez. Converse conosco em Gramado."
+> "Vitor Rodovalho e member A são embaixadores AIPM oficialmente — programa de Ricardo Vargas e Antonio Nieto-Rodriguez. Converse conosco em Gramado."
 
 ---
 

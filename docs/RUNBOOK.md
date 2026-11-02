@@ -275,5 +275,5 @@ WHERE name ILIKE '%Nome%';
 | Pessoa | Papel | Contato |
 |--------|-------|---------|
 | Vitor Rodovalho | GP (owner de tudo) | WhatsApp + email |
-| Fabrício Costa | Deputy GP | WhatsApp |
-| Ivan Lourenço | Sponsor PMI-GO (DNS HostGator) | WhatsApp |
+| member B | Deputy GP | WhatsApp |
+| member A | Sponsor PMI-GO (DNS HostGator) | WhatsApp |

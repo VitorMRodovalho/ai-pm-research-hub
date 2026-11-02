@@ -16,13 +16,13 @@ Mas nem todo vínculo passa por esse fluxo:
 |-----------------|---------------------|-----------------|
 | `research_tribe_member` | VEP → Selection → Termo → Ciclo 6m → Offboard → Anonymize 5a | Execução de contrato (Lei 9.608) |
 | `research_tribe_leader` | VEP → Selection → Termo → Ciclo 6m → Offboard → Anonymize 5a | Execução de contrato |
-| `study_group_owner` (Herlon CPMAI) | VEP fast-track → Termo → 9m → Offboard → Anonymize 5a | Execução de contrato |
+| `study_group_owner` (member B CPMAI) | VEP fast-track → Termo → 9m → Offboard → Anonymize 5a | Execução de contrato |
 | `study_group_participant` (inscrito CPMAI) | Consent + termo de uso → Curso → Certificado → Delete 2a | Consent + execução |
 | `congress_committee` | Convite → Termo simplificado → 4 semanas → Encerrar | Execução contrato curto |
 | `guest_speaker` (palestrante externo) | Convite → Consent imagem → 30 dias → Delete | Consent |
 | `partner_contact` | Registro pelo manager → Legítimo interesse → Sem fim → Delete on request | Legítimo interesse |
 | `chapter_board_liaison` | Designação pelo chapter → Sem termo Núcleo → Revogável | Relação capítulo |
-| `ambassador` (mérito, Herlon) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent |
+| `ambassador` (mérito, member B) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent |
 
 Hardcodar um lifecycle único no código gera exceções por toda parte. `sign_volunteer_agreement()` assume que o período vem de VEP. Ghost resolution assume que a pessoa é voluntário. Offboard flow assume termo vigente.
 
@@ -95,7 +95,7 @@ LGPD Art. 7 + Art. 15 exigem base legal e prazo de retenção **explícitos por 
 ## Critérios de aceite
 
 - [x] Tabela `engagement_kinds` com 12 kinds + 11 lifecycle columns (ADR-0008) — `20260413500000`
-- [ ] Jurídico (DPO PMI-GO (Ivan Lourenço Costa)) revisou base legal + retenção de cada kind — **PENDENTE humano**
+- [ ] Jurídico (DPO PMI-GO (member A)) revisou base legal + retenção de cada kind — **PENDENTE humano**
 - [ ] `sign_volunteer_agreement()` reescrito para ler template + duração do kind — **POSTERGADO Fase 7**
 - [x] Anonymize cron parametrizado por kind — `anonymize_by_engagement_kind()` em `20260413510000`, cron mensal
 - [x] Notificação de expiração parametrizada — `v4_notify_expiring_engagements()` em `20260413520000`, cron diário 08:00 UTC

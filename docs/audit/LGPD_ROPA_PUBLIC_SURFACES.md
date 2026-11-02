@@ -20,9 +20,9 @@
 > 2026-06-23 mapa-múndi PR #852/#853; 2026-06-11 header DPO;
 > corpo 2026-04-26, p59)
 > **Próxima revisão**: trimestral (cadência sponsor touchpoint)
-> **Sponsor**: PMI-GO (Ivan Lourenço, Presidente)
-> **Encarregado de Dados (DPO)**: Ivan Lourenço Costa (titular) ·
-> Angeline Altair Silva Prado (substituta) — dpo@pmigo.org.br
+> **Sponsor**: PMI-GO (member B, Presidente)
+> **Encarregado de Dados (DPO)**: member B (titular) ·
+> member A (substituta) — dpo@pmigo.org.br
 > (conforme `/privacy` S1/S13 — header corrigido em 2026-06-11 para
 > refletir o DPO formalmente designado na política de privacidade;
 > ver histórico no SPEC-625 §6.2)
