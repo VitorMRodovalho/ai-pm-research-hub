@@ -18,7 +18,7 @@ export interface IssueTokenOpts {
   // default fails the NOT NULL constraint. Caller MUST pass env.ORG_ID
   // explicitly. Discovered after PR #236 (#224 observability) made the
   // hidden 23509 constraint_violation visible — 3 cycle4-2026 candidates
-  // (Emanuelle / Denis / Henrique) had missed welcome emails between
+  // (member A / member B / member C) had missed welcome emails between
   // 2026-05-19 → 2026-05-21 because issueOnboardingToken kept throwing.
   organization_id: string;
 }

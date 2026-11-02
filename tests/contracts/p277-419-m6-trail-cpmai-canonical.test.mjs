@@ -9,9 +9,9 @@
  *
  * CPMAI (D-M6-CPMAI): the GOAL metric counts members who CERTIFIED DURING THE GOAL YEAR
  *   (cpmai_certified AND cpmai_certified_at in [year, year+1)). A pre-goal-year cert (member arrived
- *   already certified — e.g. Pedro 2025-10-23) is on the all-time WALL but NOT the goal. PMI-GO board
+ *   already certified — e.g. member A 2025-10-23) is on the all-time WALL but NOT the goal. PMI-GO board
  *   rule. Canonical helper get_cpmai_certified_goal_count(p_year) repoints exec_portfolio_health,
- *   get_kpi_dashboard, get_annual_kpis. Live: goal-2026 = 1 (Marcos); wall all-time = 2.
+ *   get_kpi_dashboard, get_annual_kpis. Live: goal-2026 = 1 (member B); wall all-time = 2.
  *
  * Static checks lock the canonical bodies + repoints; behavioural checks (DB-gated) assert the depois.
  * NOTE: the GI-1 trail_completion-hardcoded-0 in get_tribe_gamification/get_initiative_gamification is
@@ -134,7 +134,7 @@ test('M6 behavioural: cpmai goal count partitions by cert year (goal != wall)', 
   const { count: wallExact } = await sb
     .from('members').select('id', { count: 'exact', head: true }).eq('cpmai_certified', true);
   assert.ok(typeof goal2026 === 'number', 'goal count is an integer');
-  assert.ok(goal2026 >= 1, 'at least one 2026 certification (Marcos)');
+  assert.ok(goal2026 >= 1, 'at least one 2026 certification (member B)');
   assert.ok((wallExact ?? goal2026) >= goal2026, 'wall (all-time) >= goal (year-windowed)');
 });
 

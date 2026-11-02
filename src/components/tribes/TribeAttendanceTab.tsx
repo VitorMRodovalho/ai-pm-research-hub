@@ -156,7 +156,7 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     if (result) setData(result as AttendanceGrid);
   }, [getSb, tribeId, initiativeId, filter]);
 
-  /* p87 Bug Ana Carla fix (Sprint UX): cycle present↔absent only.
+  /* p87 Bug member A member B fix (Sprint UX): cycle present↔absent only.
      Excused state via long-press modal (handleSetState) — captures reason. */
   const handleToggle = useCallback(async (eventId: string, memberId: string, currentStatus: CellStatus) => {
     if (currentStatus === 'na' || currentStatus === 'scheduled') return;

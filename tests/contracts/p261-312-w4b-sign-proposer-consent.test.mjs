@@ -37,7 +37,7 @@ const MIGRATION_CODE = MIGRATION_SQL
   .join('\n');
 
 const FRONTIERS_DOC_ID    = '18ec4690-4f5a-4cab-904d-451e2c7245bf';
-const FABRICIO_MEMBER_ID  = '92d26057-5550-4f15-a3bf-b00eed5f32f9';
+const PROPOSER_MEMBER_ID  = '92d26057-5550-4f15-a3bf-b00eed5f32f9';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SRK = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -215,7 +215,7 @@ describe('p261 #312-W4b — sign_proposer_consent canonical A2 path', () => {
         .eq('id', FRONTIERS_DOC_ID)
         .single();
       assert.ifError(error);
-      assert.equal(data.proposer_member_id, FABRICIO_MEMBER_ID,
+      assert.equal(data.proposer_member_id, PROPOSER_MEMBER_ID,
         'Frontiers fixture must have proposer_member_id backfilled to member A');
     });
 

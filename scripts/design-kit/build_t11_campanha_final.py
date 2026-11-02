@@ -52,7 +52,7 @@ def _moldura(trat):
 def _medalhao(trat, fmt):
     """v7 MEDALHAO: retrato em recorte CIRCULAR do 3:4 original, com anel laranja.
 
-    Nasce da proposta do Joao, que resolveu bem um problema que nos custou uma rodada: a
+    Nasce da proposta do member A, que resolveu bem um problema que nos custou uma rodada: a
     borda. Ele poe o retrato num disco laranja. Aqui o disco vira ANEL e o retrato e um
     CORTE do original, nao um recorte de fundo, entao nao ha franja de transparencia para
     aparecer contra o laranja. Ganha o mesmo desenho e perde o defeito.
@@ -323,7 +323,7 @@ def linkedin(trat):
     # 1200x627 e BAIXO: o retrato 3:4 nao cabe inteiro e precisa sangrar. O corte tem de
     # cair no TORSO, nunca no queixo, e o rosto precisa ficar dentro da metade superior,
     # que e a parte que sobrevive ao recorte do LinkedIn em alguns clientes.
-    # os dois sobem: no ajuste anterior o corte passava rente ao queixo do Rodrigo, que
+    # os dois sobem: no ajuste anterior o corte passava rente ao queixo do member B, que
     # e o pior lugar para cortar um retrato. agora o corte cai no torso nos dois.
     if trat == "v3":
         dupla = """

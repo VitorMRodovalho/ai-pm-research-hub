@@ -29,7 +29,7 @@ ASSIN = 'Realização <b>Núcleo IA &amp; GP</b> · Capítulos PMI do Brasil'
 
 # Nome, cargo e ordem vem de `build_t11_campanha.DUO`, que e a fonte unica de como estas
 # duas pessoas sao apresentadas em publico. Aqui havia uma SEGUNDA copia da lista, e ela
-# ficou para tras: a correcao de 29/08 (nome e cargo lidos do perfil do proprio Rodrigo)
+# ficou para tras: a correcao de 29/08 (nome e cargo lidos do perfil do proprio member A)
 # entrou nas pecas de campanha e nao entrou nestas telas, que seguiam anunciando o nome
 # errado no ar. Uma lista so, e a divergencia deixa de ser possivel.
 # O derivado e o `-circ`, o MESMO que as pecas v7 usam, e nao o `-400`. Medido em

@@ -7,7 +7,7 @@
  *     engagement insert → onboarding seed → notification → audit).
  *   - `admin_update_application` + `finalize_decisions` delegate to the
  *     canonical RPC on approve transition (no inline approval logic).
- *   - The Herlon-class invariant is preserved: engagement is inserted with
+ *   - The member A-class invariant is preserved: engagement is inserted with
  *     `agreement_certificate_id` LEFT NULL when kind requires_agreement, so
  *     `auth_engagements.is_authoritative` stays FALSE until counter-signature.
  *
@@ -129,7 +129,7 @@ test('approve_selection_application creates engagement with selection_applicatio
     'must use kind=volunteer for selection-derived engagements');
 });
 
-// ─── 7. Herlon-class invariant: engagement created with no certificate when requires_agreement ───
+// ─── 7. member A-class invariant: engagement created with no certificate when requires_agreement ───
 test('approve_selection_application does NOT set agreement_certificate_id (kept NULL until counter-sign)', () => {
   const body = findFunctionBody('approve_selection_application');
   // INSERT clause must NOT name agreement_certificate_id in its column list
@@ -147,7 +147,7 @@ test('approve_selection_application is idempotent on existing active engagement'
   // #1362: the re-point is now set-if-null via COALESCE (same idempotent semantics as the prior
   // `= p_application_id ... WHERE selection_application_id IS NULL`) AND extends the engagement
   // end_date to the newly-approved contract so a promotion never keeps a stale, already-expired
-  // window (the Paulo regression). The WHERE no longer needs the IS NULL guard because COALESCE
+  // window (the member B regression). The WHERE no longer needs the IS NULL guard because COALESCE
   // keeps an existing pointer untouched.
   assert.ok(/UPDATE public\.engagements\s*SET selection_application_id = COALESCE\(selection_application_id, p_application_id\)[\s\S]+?WHERE id = v_existing_engagement_id/.test(body),
     'must backfill selection_application_id on existing engagement when missing (set-if-null via COALESCE)');

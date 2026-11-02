@@ -5805,7 +5805,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // ===== BOARD/CARD/CHECKLIST CRUD (issue #83 P0 — Fabrício feedback, T6 leader) =====
+  // ===== BOARD/CARD/CHECKLIST CRUD (issue #83 P0 — member C feedback, T6 leader) =====
   // Fecha gap MCP coverage <40% → ~95% em Card/Checklist operations.
   // 4 new RPCs (get_card_detail, add/update/delete_checklist_item) + 4 wraps existentes.
 

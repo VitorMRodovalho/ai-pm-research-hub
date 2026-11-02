@@ -18,7 +18,7 @@
  *   - Merit-immutability: champion_award recognizes work the recipient DID; awards are additive and
  *     never transfer completed-work credit.
  *   - Deliberately NOT surfaced (stay raw/frozen): knowledge_insights_* (internal ops backlog, dead,
- *     service-role); counter_sign_certificate (Lorena-only). create_notification spoofing = follow-up.
+ *     service-role); counter_sign_certificate (member A-only). create_notification spoofing = follow-up.
  *
  * Pure static check over supabase/functions/nucleo-mcp/index.ts (no network / no DB) — runs in every
  * offline baseline. A future edit that drops the envelope, a gate, or the confirm-gate fails here.

@@ -4,7 +4,7 @@
  *
  * Causa raiz: a tool montava o conteudo com String(params.decisions).split(",") e
  * String(params.action_items).split(","), um bullet por segmento entre virgulas. Ata em
- * portugues usa virgula dentro da clausula e em lista de responsaveis ("Fabrício, Fernando e
+ * portugues usa virgula dentro da clausula e em lista de responsaveis ("member A, member B e
  * Sávio"), entao decisoes/acoes unicas eram estilhacadas em bullets fragmentados — corrompeu
  * 7 linhas de ata guardada. Conserto: dividir so por NEWLINE (nunca por bare ","), mais uma
  * quarentena pre-escrita que recusa marcador de corrupcao ANTES da escrita, para que um payload

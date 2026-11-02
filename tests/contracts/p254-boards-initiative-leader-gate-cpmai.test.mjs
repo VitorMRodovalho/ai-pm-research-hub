@@ -5,13 +5,13 @@ import { resolve } from 'node:path';
 import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 import { createClient } from '@supabase/supabase-js';
 
-// p254 HF1 — Boards: initiative-leader engagement gate (CPMAI/Fernando).
+// p254 HF1 — Boards: initiative-leader engagement gate (CPMAI/member B).
 // Adds v_is_initiative_leader to update_board_item + move_board_item so an
 // initiative leader / coordinator / manager / co_gp (engagement.role) can
 // edit + move cards on THAT initiative's board, regardless of operational_role
 // or legacy tribe_id wiring. Locks against silent widening (no extra gate,
 // no extra role admitted to whitelist), and live-DB-gated smoke confirms
-// Fernando's CPMAI engagements compute true / common participant computes
+// member A's CPMAI engagements compute true / common participant computes
 // false / other-initiative leader computes false.
 
 const MIGRATION_PATH = 'supabase/migrations/20260805000033_p254_boards_initiative_leader_gate_cpmai.sql';
@@ -46,7 +46,7 @@ const PARTICIPANT_CLASS_ROLES = [
   'reviewer', 'liaison', 'sponsor', 'curator', 'co_presenter', 'founder', 'lead_presenter'
 ];
 
-describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotfix)', () => {
+describe('p254 — boards initiative-leader engagement gate (CPMAI/member B hotfix)', () => {
   describe('migration file presence + header cross-refs', () => {
     it('migration file exists at canonical timestamp', () => {
       assert.ok(existsSync(MIGRATION_PATH));
@@ -261,7 +261,7 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
     // NO .catch() on sb.rpc()/sb.from() — PostgrestBuilder is thenable, not
     // Promise (sediment p252).
 
-    it('Fernando has expected CPMAI engagement footprint (audit pre-condition)', async () => {
+    it('member A has expected CPMAI engagement footprint (audit pre-condition)', async () => {
       const { data, error } = await sb
         .from('engagements')
         .select('initiative_id, role, status')
@@ -275,15 +275,15 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
       }, {});
       assert.ok(
         (byInit[CPMAI_PARENT_INIT] || []).some(r => LEADER_CLASS_ROLES.includes(r)),
-        `Fernando expected leader-class engagement on CPMAI parent; got ${JSON.stringify(byInit[CPMAI_PARENT_INIT])}`
+        `member A expected leader-class engagement on CPMAI parent; got ${JSON.stringify(byInit[CPMAI_PARENT_INIT])}`
       );
       assert.ok(
         (byInit[CPMAI_CHILD_INIT] || []).some(r => LEADER_CLASS_ROLES.includes(r)),
-        `Fernando expected leader-class engagement on CPMAI child; got ${JSON.stringify(byInit[CPMAI_CHILD_INIT])}`
+        `member A expected leader-class engagement on CPMAI child; got ${JSON.stringify(byInit[CPMAI_CHILD_INIT])}`
       );
     });
 
-    it('Fernando computes is_initiative_leader=true on BOTH CPMAI boards (post-fix)', async () => {
+    it('member A computes is_initiative_leader=true on BOTH CPMAI boards (post-fix)', async () => {
       for (const boardId of [CPMAI_DESIGN_BOARD, CPMAI_COMMS_BOARD]) {
         const { data: board } = await sb
           .from('project_boards')
@@ -298,7 +298,7 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/Fernando hotf
           .eq('initiative_id', board.initiative_id)
           .eq('status', 'active');
         const matched = (engs || []).some(e => LEADER_CLASS_ROLES.includes(e.role));
-        assert.ok(matched, `Fernando must compute is_initiative_leader=true on board ${boardId}`);
+        assert.ok(matched, `member A must compute is_initiative_leader=true on board ${boardId}`);
       }
     });
 

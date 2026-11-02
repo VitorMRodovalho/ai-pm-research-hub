@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 
-// SPEC #348 Child #4 — cycle4-2026 reseed: seeds Vitor + Fabricio as
+// SPEC #348 Child #4 — cycle4-2026 reseed: seeds Vitor + member A as
 // role='evaluator' (CHECK-constrained value) on selection_committee with
 // can_interview=true and populates their members.interview_booking_url so
 // the #355 RPC LRD routing ladder picks individual URLs for researcher-track
@@ -23,7 +23,7 @@ const sb = SUPABASE_URL && SUPABASE_SRK ? createClient(SUPABASE_URL, SUPABASE_SR
 // regression against either side flips the literal-match assertion.
 const CYCLE_ID    = '08c1e301-9f7b-4d01-a13c-43ac7775c0f7';
 const VITOR_ID    = '880f736c-3e76-4df4-9375-33575c190305';
-const FABRICIO_ID = '92d26057-5550-4f15-a3bf-b00eed5f32f9';
+const DEPUTY_ID = '92d26057-5550-4f15-a3bf-b00eed5f32f9';
 // Literal que a migration p253 seedou. Continua sendo o valor esperado DENTRO do arquivo de
 // migration (fato histórico), e por isso não muda.
 const VITOR_URL    = 'https://calendar.app.google/q9urWE15HYZRNymd7';
@@ -31,7 +31,7 @@ const VITOR_URL    = 'https://calendar.app.google/q9urWE15HYZRNymd7';
 // resolvem para o MESMO appointment schedule, então isto é higiene de representação e não mudança
 // de destino — ver o cabeçalho daquela migration.
 const VITOR_URL_LIVE = 'https://calendar.app.google/MHAmfkgZCwT9KsoKA';
-const FABRICIO_URL = 'https://calendar.app.google/1jDNjPpoGCkV2V9A6';
+const DEPUTY_URL = 'https://calendar.app.google/1jDNjPpoGCkV2V9A6';
 const CYCLE_GROUP_URL = 'https://calendar.app.google/XPiGWLh9JaLVFKJc6'; // p243 seeded; leader flow
 
 describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
@@ -62,14 +62,14 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
     it('Vitor member id appears verbatim', () => {
       assert.ok(MIGRATION_SQL.includes(VITOR_ID), `expected Vitor id ${VITOR_ID}`);
     });
-    it('Fabricio member id appears verbatim', () => {
-      assert.ok(MIGRATION_SQL.includes(FABRICIO_ID), `expected Fabricio id ${FABRICIO_ID}`);
+    it('member A member id appears verbatim', () => {
+      assert.ok(MIGRATION_SQL.includes(DEPUTY_ID), `expected member A id ${DEPUTY_ID}`);
     });
     it('Vitor calendar URL appears verbatim', () => {
       assert.ok(MIGRATION_SQL.includes(VITOR_URL), `expected ${VITOR_URL}`);
     });
-    it('Fabricio calendar URL appears verbatim', () => {
-      assert.ok(MIGRATION_SQL.includes(FABRICIO_URL), `expected ${FABRICIO_URL}`);
+    it('member A calendar URL appears verbatim', () => {
+      assert.ok(MIGRATION_SQL.includes(DEPUTY_URL), `expected ${DEPUTY_URL}`);
     });
     it('cycle code cycle4-2026 referenced for pre-seed sanity', () => {
       assert.match(MIGRATION_SQL, /cycle_code\s*=\s*'cycle4-2026'/);
@@ -92,7 +92,7 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
       const matches = MIGRATION_SQL.match(/'evaluator',\s*true/g) || [];
       assert.ok(
         matches.length >= 2,
-        `expected >= 2 'evaluator', true tuples for Vitor + Fabricio; got ${matches.length}`
+        `expected >= 2 'evaluator', true tuples for Vitor + member A; got ${matches.length}`
       );
     });
 
@@ -112,10 +112,10 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
         new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${VITOR_ID.replace(/-/g, '-')}`)
       );
     });
-    it('UPDATE members for Fabricio populates personal URL', () => {
+    it('UPDATE members for member A populates personal URL', () => {
       assert.match(
         MIGRATION_SQL,
-        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${FABRICIO_ID.replace(/-/g, '-')}`)
+        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${DEPUTY_ID.replace(/-/g, '-')}`)
       );
     });
   });
@@ -228,15 +228,15 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
       assert.ok(evals.length >= 2, `expected >= 2 evaluator+can_interview rows, got ${evals.length}`);
     });
 
-    it('Vitor + Fabricio member rows carry their respective booking URLs', async () => {
+    it('Vitor + member A member rows carry their respective booking URLs', async () => {
       const { data, error } = await sb
         .from('members')
         .select('id, interview_booking_url')
-        .in('id', [VITOR_ID, FABRICIO_ID]);
+        .in('id', [VITOR_ID, DEPUTY_ID]);
       if (error) return;
       const byId = Object.fromEntries((data || []).map(r => [r.id, r.interview_booking_url]));
       assert.equal(byId[VITOR_ID],    VITOR_URL_LIVE, 'Vitor URL mismatch');
-      assert.equal(byId[FABRICIO_ID], FABRICIO_URL, 'Fabricio URL mismatch');
+      assert.equal(byId[DEPUTY_ID], DEPUTY_URL, 'member A URL mismatch');
     });
 
     it('cycle4-2026 cycle.interview_booking_url unchanged (leader flow preserved)', async () => {

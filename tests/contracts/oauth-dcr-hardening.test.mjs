@@ -7,7 +7,7 @@
  *  FM-01 — /oauth/register must NEVER hand back a client_id GoTrue would reject,
  *          must NOT echo unregistered redirect_uris on the shared-client fallback,
  *          and must 400 when a non-empty redirect_uris request sanitizes to nothing.
- *          (Root of the Leticia class: a cached non-UUID client_id → GoTrue authorize
+ *          (Root of the member A class: a cached non-UUID client_id → GoTrue authorize
  *          400 "invalid client_id format", unrescuable server-side.)
  *
  *  PPX-3 — RFC 9728 protected-resource metadata must be path-aware so /mcp/semantic

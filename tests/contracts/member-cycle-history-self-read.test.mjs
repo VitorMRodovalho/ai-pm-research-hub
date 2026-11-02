@@ -23,7 +23,7 @@
  *
  * Scope: static analysis on migration text. Fast, no DB env required.
  * Live behavior was verified in p188 session via MCP execute_sql JWT-
- * simulated tests (Sarah JWT: own_visible=4, sees_other_member=0).
+ * simulated tests (member A JWT: own_visible=4, sees_other_member=0).
  *
  * Origin: handoff p188 direction B1 (GAP-181.B closure).
  */

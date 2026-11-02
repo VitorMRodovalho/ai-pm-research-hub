@@ -17,7 +17,7 @@
  * Cross-ref:
  *   - src/components/governance/ChainPDFDocument.tsx (parser + renderer)
  *   - src/components/governance/ChainPDFExportIsland.tsx (caller)
- *   - GH #273 (filed during p220 — Welma TAP audit)
+ *   - GH #273 (filed during p220 — member A TAP audit)
  *
  * Static-only bundle (no DB env, no @react-pdf/renderer mount required):
  *   1. Table types declared (TableCell + TableRow + 'table' node variant)

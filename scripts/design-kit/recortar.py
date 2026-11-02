@@ -24,10 +24,10 @@ def recortar(entrada, saida, limiar=78, rampa=46, desconta=.85, suavizar=1.6,
 
     # ESTIMATIVA DO FUNDO. Quatro tentativas antes desta, e cada falha ensinou algo:
     #   cor unica       nao descreve gradiente; 25% da imagem em franja
-    #   faixa superior  a cabeca do Rodrigo comeca no topo do crop, entao a "amostra de
+    #   faixa superior  a cabeca do member A comeca no topo do crop, entao a "amostra de
     #                   fundo" da coluna central era CABELO e sobrava coluna cinza opaca
-    #   coluna inteira  abaixo de ~55% da altura a lateral ja e terno; franja do Joao 3%->25%
-    #   linear esq->dir alisa demais: o fundo do Rodrigo tem FAIXAS VERTICAIS de brilhos
+    #   coluna inteira  abaixo de ~55% da altura a lateral ja e terno; franja do member B 3%->25%
+    #   linear esq->dir alisa demais: o fundo do member A tem FAIXAS VERTICAIS de brilhos
     #                   diferentes, e a reta passava por cima delas deixando listras claras
     # Aqui: perfil POR COLUNA, medido no alto (onde a coluna e fundo), com as colunas
     # contaminadas pela cabeca DESCARTADAS e reconstruidas a partir das vizinhas validas.

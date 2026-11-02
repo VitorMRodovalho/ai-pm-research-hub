@@ -74,7 +74,7 @@ test('bucket B (noshow_not_recovered): noshow + no recovery AFTER last noshow + 
   assert.match(FN, /ns\.last_noshow_at < now\(\) - v_noshow_grace/);
   // recovery qualified temporally — created_at > last noshow (no false-negative for completed-before-noshow)
   assert.match(FN, /si2\.status IN \('scheduled', 'completed'\)[\s\S]*?si2\.created_at > ns\.last_noshow_created/);
-  // future-slot exclusion (excludes legit reschedule like Hanae)
+  // future-slot exclusion (excludes legit reschedule like member A)
   assert.match(FN, /si3\.status IN \('scheduled', 'rescheduled'\)[\s\S]*?si3\.scheduled_at > now\(\)/);
 });
 

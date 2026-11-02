@@ -261,7 +261,7 @@ export default function ReviewChainIsland({ chainId, externalReviewMode = false 
 
     // p255 HF2: read content_html from get_chain_workflow_detail RPC payload.
     // Previously did a direct SELECT on document_versions which 406'd under
-    // RLS for external reviewers / pending signers (Fernando bug). The RPC
+    // RLS for external reviewers / pending signers (member A bug). The RPC
     // already carries the auth context for chain access — content_html
     // joins to the same SECDEF query, no separate fetch needed.
     setContentHtml(dRes.data?.content_html || '<p class="text-[var(--text-muted)] italic">(conteúdo indisponível)</p>');

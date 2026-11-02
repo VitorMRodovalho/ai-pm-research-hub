@@ -230,7 +230,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
 // ==========================================
 
 export const DESIGNATION_PERMISSIONS: Record<Designation, Permission[]> = {
-  // Patrocinador (Wave 1 — Ivan / LATAM LIM). The `sponsor` designation previously granted NOTHING
+  // Patrocinador (Wave 1 — member A / LATAM LIM). The `sponsor` designation previously granted NOTHING
   // here, so a sponsor saw no admin panels even though RLS already lets any authoritative (non-guest)
   // member READ all boards/initiatives (minus confidential #785) and the member directory. This grants
   // the FULL READ surface (admin read panels + board/initiative read-all + member directory + analytics);

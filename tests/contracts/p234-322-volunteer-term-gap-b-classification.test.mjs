@@ -29,7 +29,7 @@
  *
  * PM directives (2026-05-23):
  *   - Status='skipped' (not 'completed'). Reason metadata required.
- *   - Do NOT mint Herlon term.
+ *   - Do NOT mint member A term.
  *   - Goal metric: 0 active members with pending volunteer_term AND no
  *     active requires_agreement engagement post-apply.
  *

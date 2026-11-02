@@ -707,7 +707,7 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
         // or withdrawn. Both are tracked in selection_applications for archive
         // (rich lifecycle data) but must NOT trigger onboarding email — that
         // sent welcomes to 4 unintended recipients on 2026-04-29
-        // (Hayala/AnaCarla/Marcos already PMI leaders; Adalberto declined).
+        // (member A/member C/member D already PMI leaders; member B declined).
         const isPendingApplicant = app._bucket === 'submitted' && app.statusId === 2;
         if (!isPendingApplicant) {
           summary.welcomes_skipped_non_submitted++;

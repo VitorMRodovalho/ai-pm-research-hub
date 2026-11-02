@@ -3,7 +3,7 @@
  *
  * POST /api/calendar-webhook
  *
- * Apps Script attached to Google Calendar (PM Vitor + Fabricio shared with
+ * Apps Script attached to Google Calendar (PM Vitor + member A shared with
  * nucleoia@pmigo.org.br) fires this webhook on event creation when a
  * selection candidate books an interview slot. Webhook syncs the booking
  * into selection_interviews + advances selection_applications.status to

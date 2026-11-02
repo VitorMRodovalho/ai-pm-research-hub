@@ -8,7 +8,7 @@
  *   So an application whose canonical `selection_applications.email` is a
  *   reconciled ALTERNATE of the candidate (legitimate post-member_emails)
  *   was invisible in that candidate's own self-view — even with invariant R
- *   green and the app↔member link intact. Live case: Paulo / app 6259ced2
+ *   green and the app↔member link intact. Live case: member A / app 6259ced2
  *   (point-remediated in PR #446; the RPC narrowness remained for any future case).
  *
  * Fix (migration 20260805000108): expand the match to the caller's primary

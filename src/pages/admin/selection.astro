@@ -1269,7 +1269,7 @@ const SEL_I18N = {
     const deltaText = label === 'within' ? '' : ` ${formatDelta(delta)}`;
     return `<div class="text-[10px] font-bold mt-0.5 px-1.5 py-0.5 rounded ${color}" title="${esc(pertFullTooltip(score, cutoff))}">${esc(labelText)}${esc(deltaText)}</div>`;
   }
-  // p109 Onda 4 Fase 3: quick filters for "Cristiano problem" — sem ceremony pra decidir
+  // p109 Onda 4 Fase 3: quick filters for "member A problem" — sem ceremony pra decidir
   // o que ainda falta avaliar e o que já foi decidido.
   let filterHideDecided = true;       // default ON — esconde approved/rejected/etc
   let filterMyEval: 'all' | 'pending_mine' | 'evaluated_mine' = 'all';
@@ -1709,7 +1709,7 @@ const SEL_I18N = {
 
   /* Issue #116 Part 2 — 6-stage pipeline timeline (modal info tab expanded view).
      Verbose counterpart of pipelineBadges(). Shows stage label + state + detail
-     so committee (Fabricio) can see at-a-glance where each candidate is in flow.
+     so committee (member B) can see at-a-glance where each candidate is in flow.
      States: done (emerald) / current (amber) / pending (gray). */
   function pipelineTimeline(r: any): string {
     const isTerminal = ['approved', 'rejected', 'converted', 'withdrawn', 'cancelled'].includes(r.status);

@@ -68,7 +68,7 @@ test('p230 #318: ALTER TABLE targets public.members', () => {
   );
 });
 
-test('p230 #318: Herlon repair audit row inserted under canonical action', () => {
+test('p230 #318: member A repair audit row inserted under canonical action', () => {
   // The repair UPDATE in the same migration MUST also write an admin_audit_log
   // row so the operational_role change is forensically traceable (the original
   // mutation that produced \'none\' left no audit trail — issue #318 origin).
