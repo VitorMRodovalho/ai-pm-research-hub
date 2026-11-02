@@ -22,6 +22,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   import { getSupabase } from '../lib/supabase';
   import { t } from '../i18n/utils';
   import type { Lang } from '../i18n/utils';
+  import { phoneVisibleNotice } from '../lib/whatsapp-group-notice';
 
   function esc(s: any): string { return String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function fmtDatetime(d: string, lang: Lang): string {
@@ -174,6 +175,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
           <a href="${encodeURI(generalLink)}" target="_blank" rel="noopener noreferrer" class="block w-full text-center mt-3 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-semibold no-underline hover:bg-emerald-700 transition-colors">
             \uD83D\uDCAC ${t('volunteer.success.generalGroupCta', lang)}
           </a>` : ''}
+          ${(tribeLink || generalLink) ? `
+          <p class="text-[11px] text-[var(--text-muted)] mt-2 text-center">${esc(phoneVisibleNotice(lang))}</p>` : ''}
         </div>
 
         <p class="text-xs text-[var(--text-muted)] mt-4">${t('volunteer.success.pending', lang)}</p>

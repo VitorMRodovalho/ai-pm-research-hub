@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { phoneVisibleNotice } from '../../lib/whatsapp-group-notice';
 
 interface TribeDashboardProps {
   /** @deprecated Use initiativeId instead */
@@ -129,8 +130,11 @@ export default function TribeDashboardIsland({ tribeId, initiativeId }: TribeDas
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-[var(--text-secondary)]">
               {meetingLabel && <span>📅 {meetingLabel}</span>}
               {waLink && (
-                <a href={waLink} target="_blank" rel="noopener"
-                   className="text-teal hover:underline">WhatsApp ↗</a>
+                <span>
+                  <a href={waLink} target="_blank" rel="noopener"
+                     className="text-teal hover:underline">WhatsApp ↗</a>
+                  {' '}<span className="text-[var(--text-muted)]">{phoneVisibleNotice(typeof document !== 'undefined' ? document.documentElement.lang : '')}</span>
+                </span>
               )}
               {tribe.drive_url && (
                 <a href={tribe.drive_url} target="_blank" rel="noopener"
