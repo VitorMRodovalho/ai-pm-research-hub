@@ -1,6 +1,6 @@
 # Brief — seu vídeo de boas-vindas de tribo (Ciclo 4)
 
-Este é o passo a passo do que o seu vídeo precisa ter. É o mesmo para todos os líderes. Exemplo pronto (Tribo 06): ver `SCRIPT-tribo06-fabricio-EXEMPLO.md`.
+Este é o passo a passo do que o seu vídeo precisa ter. É o mesmo para todos os líderes. Exemplo pronto (Tribo 06): ver `SCRIPT-tribo06-lider-EXEMPLO.md`.
 
 ## Antes de gravar
 - **Duração:** 4 a 6 minutos (nem 2, nem 13).

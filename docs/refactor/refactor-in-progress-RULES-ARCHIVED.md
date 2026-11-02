@@ -45,7 +45,7 @@ Estruturas novas rodam em paralelo com as antigas por pelo menos 48h (72h para f
 Trabalho de refactor acontece em `refactor/domain-v4` ou branches derivadas. `main` só recebe merge depois de quiet window.
 
 ### 10. Parallel tracks respeitam invariantes
-Trabalho paralelo (ex: Herlon onboarding via VEP formal) não pode criar dívida que o refactor vai pagar depois. Ver `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md` para o padrão de parallel track correto.
+Trabalho paralelo (ex: Herlon onboarding via VEP formal) não pode criar dívida que o refactor vai pagar depois. Ver `docs/refactor/VEP_PARALLEL_TRACK.md` para o padrão de parallel track correto.
 
 ## Features bloqueadas durante o refactor
 
@@ -66,4 +66,4 @@ Ninguém durante a vigência do refactor. Se algo urgente exige exceção, docum
 - `docs/refactor/DOMAIN_MODEL_V4_MASTER.md` — master tracking
 - `docs/adr/ADR-0004` a `ADR-0009` — decisões arquiteturais
 - `.claude/agents/refactor-guardian.md` — agente de auditoria
-- `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md` — exemplo de parallel track
+- `docs/refactor/VEP_PARALLEL_TRACK.md` — exemplo de parallel track

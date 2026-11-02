@@ -8,7 +8,7 @@
 > Caminho absoluto (use este ao referenciar de dentro da sessão do hub, cujo cwd é `~/projects/ai-pm-research-hub`):
 > - `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/ROTEIRO-kickoff-ciclo4.md` — run-of-show do evento.
 > - `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/GUIA-videos-tribo-e-boas-praticas-ciclo4.md` — template do vídeo + gaps do site + boas práticas.
-> - `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/SCRIPT-tribo06-fabricio-EXEMPLO.md` — exemplo de vídeo pronto de gravar.
+> - `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/SCRIPT-tribo06-lider-EXEMPLO.md` — exemplo de vídeo pronto de gravar.
 > - `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/verticais.png` — diagrama das verticais renderizado.
 >
 > Se preferir versionar esses artefatos junto do projeto, copie a pasta para dentro do hub (ex.: `~/projects/ai-pm-research-hub/docs/kickoff-ciclo4/`) e ajuste as referências para relativas.
@@ -186,7 +186,7 @@ flowchart TB
 **Como funciona:** cada líder recebe **uma tarefa no board da iniciativa do Kickoff**, atrelada a ele, cuja entrega é **gravar o vídeo e subir na pasta Drive temporária**. O brief (passos/recomendações do que o vídeo precisa ter) é o mesmo para todos e vira a **descrição do card**.
 
 - **Brief (colar como descrição do card):** `/home/vitormrodovalho/projects/_pmo/youtube/cycle4-assets/BRIEF-video-tribo.md`
-- **Exemplo pronto (referência):** `SCRIPT-tribo06-fabricio-EXEMPLO.md`
+- **Exemplo pronto (referência):** `SCRIPT-tribo06-lider-EXEMPLO.md`
 - **Pasta Drive temporária (upload dos vídeos):** https://drive.google.com/drive/folders/1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m
 - **Convenção de nome do arquivo:** `TriboNN-Tema-Nome.mp4` (vertical: `Vertical-Tema-Nome.mp4`)
 

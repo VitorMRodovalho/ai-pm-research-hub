@@ -50,7 +50,7 @@
 | Diretório | Tipo | Exemplos |
 |---|---|---|
 | [adr/](adr/) | Decisões arquiteturais | ADR-0001..0084 |
-| [refactor/](refactor/) | Refactor master docs | DOMAIN_MODEL_V4_MASTER, HERLON_VEP_PARALLEL_TRACK |
+| [refactor/](refactor/) | Refactor master docs | DOMAIN_MODEL_V4_MASTER, VEP_PARALLEL_TRACK |
 | [strategy/](strategy/) | Strategy audits | ARM_PILLARS_AUDIT_P107, p134_omega_a_* |
 | [research/](research/) | Web research | p134_sympla_landscape, p134_airmeet_landscape, p134_nfse_nacional_2026 |
 | [council/](council/) | Council reviews | p134_omega_a_council_consolidated, p134_omega_a_product-leader_synthesis |

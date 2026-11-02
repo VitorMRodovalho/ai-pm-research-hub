@@ -361,4 +361,4 @@ Features iniciadas antes de 2026-04-11 que permanecem autorizadas durante o refa
 - ADR index: `docs/adr/README.md`
 - Guardrails de sessão: `.claude/rules/refactor-in-progress.md`
 - Agente de auditoria: `.claude/agents/refactor-guardian.md`
-- Parallel track member F: `docs/refactor/HERLON_VEP_PARALLEL_TRACK.md`
+- Parallel track member F: `docs/refactor/VEP_PARALLEL_TRACK.md`

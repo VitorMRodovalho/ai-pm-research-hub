@@ -340,7 +340,7 @@ este arquivo:
 
 | # | mudança | migration | decisão |
 |---|---|---|---|
-| 1 | `sponsor` sobe acima de `researcher` | `20260805000282_ivan_sponsor_role_precedence.sql` | Wave 1. Medido: dos 5 sponsors autoritativos, só 1 mudava de papel. |
+| 1 | `sponsor` sobe acima de `researcher` | `20260805000282_sponsor_role_precedence.sql` | Wave 1. Medido: dos 5 sponsors autoritativos, só 1 mudava de papel. |
 | 2 | `chapter_board` sobe acima de `researcher`/`observer` | `20260805000285_onda2_ws1_chapter_board_outranks_research_observer.sql` | PM 2026-06-28, "governança sempre vence". |
 | 3 | degrau `institutional_auditor` acrescentado (12º) | `20260805000292_onda2_fu3_institutional_auditor.sql` | Onda 2 FU-3 (#952), ADR-0111. Dormente por construção. |
 | 4 | `co_gp` deixa de resultar `manager` e passa a `deputy_manager` | `20260822032921_activate_deputy_manager_tier_for_co_gp.sql` | PM 2026-08-21, direção A: o tier `deputy_manager` era inalcançável (0 pessoas, sempre) apesar de ter 21 permissões próprias. |
