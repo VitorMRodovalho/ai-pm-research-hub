@@ -48,3 +48,13 @@ Mecânica: cada corpo recebeu **apenas** o bloco de gate, injetado via `replace(
 - **Sem seed-expansion:** não toca `engagement_kind_permissions`; é um eixo ortogonal (como #785), aplicado dentro das RPCs SECDEF.
 - **Auditabilidade:** o estado de recusa é determinístico e consultável (quem é candidato × quem tem acesso). Um log de evento de recusa não foi embutido nas RPCs (são `STABLE`, não podem escrever); se exigido, virá por mecanismo de auditoria separado.
 - **Trade-off:** enquanto o fast-follow não fecha as superfícies irmãs, um candidato-com-acesso poderia chamá-las direto via PostgREST. Aceito porque há **0 instâncias** e o gate de scores (o dado mais sensível ao COI) já está ativo.
+
+## Alinhamento (02/11/2026, #2946): approved e converted são terminais
+
+**O que estava errado.** O §3 da Decisão diz que o impedimento acaba quando a candidatura vira terminal, com approved na lista. O helper `selection_coi_recused` tratava como terminais só `rejected`, `withdrawn` e `cancelled`. Assim, quem já tinha sido aprovado no ciclo seguia impedido das visões de seleção daquele ciclo enquanto ele estivesse aberto. Medido em 02/11/2026 no ciclo aberto: 74 membros ativos recusados, e 73 deles só por candidatura aprovada.
+
+**Decisão do GP (02/11/2026).** Alinhar o helper ao §3: `approved` e `converted` (aprovado que virou membro) passam a ser terminais para a recusa. Os outros status do domínio (`screening`, `objective_eval`, `objective_cutoff`, `interview_*`, `final_eval` e `waitlist`) seguem recusando, porque a decisão cobre só esses dois.
+
+**O que muda.** Só a lista de status, no corpo do helper. A assinatura, os atributos, a isenção de `manage_platform`, o casamento por `members.email` e `member_emails` e os privilégios ficam iguais. As funções que chamam o helper passam a seguir a regra sem mudança nelas.
+
+**Guarda.** O guard `tests/contracts/2946-coi-terminais.test.mjs` compara o conjunto de terminais dentro do bloco que decide, no corpo vigente. O `onda2-ws4-selection-coi-recusal.test.mjs` passou a ler o corpo vigente, e não mais qualquer migration.
