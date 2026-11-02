@@ -66,11 +66,11 @@ This runbook documents **Path A** (canonical) for the 5 cycle4 apps.
 
 | Applicant | obj_avg | email (redacted) | Idempotency |
 |---|---|---|---|
-| Henrique Diniz S. Silva | 227.00 | `h.***ok.com` | OK: not sent yet |
-| João Coelho Júnior | 171.00 | `j_***uff.br` | OK: not sent yet |
-| Francisleila Melo Santos | 164.00 | `fr***am.com` | OK: not sent yet |
-| Cristiano de Oliveira Santos Filho | 163.00 | `co***il.com` | OK: not sent yet |
-| Edinan Soares | 157.50 | `ed***com.br` | OK: not sent yet |
+| member E S. Silva | 227.00 | `h.***ok.com` | OK: not sent yet |
+| member B | 171.00 | `j_***uff.br` | OK: not sent yet |
+| member C | 164.00 | `fr***am.com` | OK: not sent yet |
+| member A | 163.00 | `co***il.com` | OK: not sent yet |
+| member D | 157.50 | `ed***com.br` | OK: not sent yet |
 
 ## 2. Dispatch SQL (Path A — canonical, run from authenticated MCP-Claude session)
 
@@ -80,27 +80,27 @@ the 5 statements below. Each is **idempotent** (no-op if
 envelope.
 
 ```sql
--- Henrique Diniz S. Silva (obj_avg 227.00)
+-- member E S. Silva (obj_avg 227.00)
 SELECT public.notify_selection_cutoff_approved(
   'bcc54dfc-ac79-4a26-a05f-eeb571d48fd9'::uuid
 );
 
--- João Coelho Júnior (obj_avg 171.00)
+-- member B (obj_avg 171.00)
 SELECT public.notify_selection_cutoff_approved(
   'cef2b25e-4bc0-4e0e-a642-a3f3fec68549'::uuid
 );
 
--- Francisleila Melo Santos (obj_avg 164.00)
+-- member C (obj_avg 164.00)
 SELECT public.notify_selection_cutoff_approved(
   '72ea1a45-8dc8-4b0b-b4cb-f1427968ff22'::uuid
 );
 
--- Cristiano de Oliveira Santos Filho (obj_avg 163.00)
+-- member A (obj_avg 163.00)
 SELECT public.notify_selection_cutoff_approved(
   'f82f5ec7-1a76-4960-8c0d-5a94b502ffc3'::uuid
 );
 
--- Edinan Soares (obj_avg 157.50)
+-- member D (obj_avg 157.50)
 SELECT public.notify_selection_cutoff_approved(
   '77fdb870-5398-4c52-abda-b292b594b558'::uuid
 );

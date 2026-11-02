@@ -50,7 +50,7 @@ Fonte: arte oficial "Projects with Purpose — Latam Brazil Chapter in Action" +
 
 **PMI-GO = sede (signatário do termo, sempre).** 14 parceiros: Amazônia, Bahia, Ceará, Distrito Federal, Espírito Santo, Minas Gerais, Paraíba, Paraná, Pernambuco, Rio de Janeiro, Rio Grande do Sul, Santa Catarina, São Paulo, Sergipe.
 
-**Regra de escolha de capítulo (novo requisito):** o membro pode ser filiado a até 4 capítulos (fato do PMI, não declaração). Na jornada ele ESCOLHE por qual entra no projeto — mas só pode escolher entre os **capítulos PMI Brasil** participantes. Capítulos não-brasileiros (ex.: Portugal, Angola — Henrique Diniz) podem ser EXIBIDOS, mas não SELECIONÁVEIS.
+**Regra de escolha de capítulo (novo requisito):** o membro pode ser filiado a até 4 capítulos (fato do PMI, não declaração). Na jornada ele ESCOLHE por qual entra no projeto — mas só pode escolher entre os **capítulos PMI Brasil** participantes. Capítulos não-brasileiros (ex.: Portugal, Angola — member C) podem ser EXIBIDOS, mas não SELECIONÁVEIS.
 
 ## 4. Inventário de gaps (organizado por épico)
 
@@ -91,15 +91,15 @@ Severidade: 🔴 alta / 🟡 média / 🟢 baixa. Fonte: `ux`=ux-leader, `cand`=
 
 ### ÉPICO D — Candidatos "enterrados" no funil (operacional, gente parada AGORA)
 Coorte vivo `[live]` (16 apps em estados de entrevista):
-- 🔴 **Hector Rigon** (84d, convite há 20d, nunca agendou, sem cobrança); **Djeimiys Wille** (55d, idem); **Edinan Soares** (84d, **no-show 05/06 não recuperado**, sem novo convite); **Bruna Zomer** (entrevista **cancelada** mas status app = `interview_scheduled` → **drift**).
-- 🟡 Cristiano Filho (82d, cancelada→re-convidado há 2d, recuperando); Francisco (26d, `interview_pending` sem convite, envelhecendo).
+- 🔴 **member B** (84d, convite há 20d, nunca agendou, sem cobrança); **member D** (55d, idem); **member A** (84d, **no-show 05/06 não recuperado**, sem novo convite); **member E** (entrevista **cancelada** mas status app = `interview_scheduled` → **drift**).
+- 🟡 member F (82d, cancelada→re-convidado há 2d, recuperando); member H (26d, `interview_pending` sem convite, envelhecendo).
 
 | # | Gap | Sev | Fonte |
 |---|-----|-----|-------|
 | D1 | Sem painel unificado "candidatos que precisam de ação minha HOJE". Dados existem (`get_selection_dashboard`) mas sem agregação por tipo de problema na home do GP. | 🔴 | gp |
 | D2 | Sem auto-dispatch de convite com SLA: `interview_pending` sem `cutoff_approved_email_sent_at` envelhece em silêncio. Wave 2b do #411 (cron que varre pending-sem-convite) NÃO encontrada nas migrations; só existe cron de overdue. | 🔴 | gp |
 | D3 | No-show não recuperado: `selection_rescue_stuck_interview` existe mas não é acionada automaticamente/em lote. | 🟡 | gp |
-| D4 | Drift de status app↔entrevista (Bruna: app `interview_scheduled` vs interview `cancelled`). Integridade. | 🟡 | gp, gr |
+| D4 | Drift de status app↔entrevista (member E: app `interview_scheduled` vs interview `cancelled`). Integridade. | 🟡 | gp, gr |
 | D5 | "Convite enviado mas nunca agendado" pode não ter `selection_interviews` row → não cai no chip `interview_stuck` → invisível no filtro. Auditar. | 🟡 | gp |
 | D6 | Sem dono/SLA/cobrança por candidato (assignee). `interviewer_ids` existe como proxy. | 🟢 | gp |
 | D7 | **Oferta VEP não aceita (topo do funil)**: aprovado na seleção mas sem dar o ACEITE da oferta no VEP → não vira member, fica invisível. Falta lembrete automático da plataforma após X dias, com passo a passo (volunteer.pmi.org → My Info & Activity → Accept Position) e aviso de que o e-mail oficial vem de `donotreply at pmi.org` (checar spam). | 🔴 | pm |
@@ -152,7 +152,7 @@ Coorte vivo `[live]` (16 apps em estados de entrevista):
 |---|-----|-----|-------|
 | I1 | Oferta VEP recusada/expirada (Declined/OfferExpired/OfferNotExtended): o que acontece? Comunicação ao candidato? (liga a #693 terminal status). | 🟡 | pm |
 | I2 | Reprovado que reaplica (returning): `get_application_returning_context` existe — a jornada reconhece e acolhe o retorno? | 🟢 | gr |
-| I3 | Dual-track (mesma pessoa em 2 trilhas: líder + pesquisador): risco de dupla avaliação/contagem (caso Ana). | 🟡 | gr |
+| I3 | Dual-track (mesma pessoa em 2 trilhas: líder + pesquisador): risco de dupla avaliação/contagem (caso member I). | 🟡 | gr |
 | I4 | Membro sem membresia ativa que destrava DEPOIS (filiação resolvida via re-sync C5): como retoma a jornada do ponto onde parou? | 🟡 | pm |
 | I5 | **Identidade duplicada (#704)**: mesma pessoa sob 2 contas PMI → 2º person silencioso no onboarding (= G1). | 🟡 | gr |
 | I6 | Filiação privada (capítulo oculto em community.pmi.org) → sync retorna errado/vazio (= C5). | 🟡 | pm |
@@ -184,7 +184,7 @@ Coorte vivo `[live]` (16 apps em estados de entrevista):
 
 ## 7. Agrupamento sugerido para waves (ordenação a validar com o PM)
 - **Wave 1 — "Destravar e orientar" (rápida, alto impacto humano):** A1+A2 (cockpit único: consolidar os 4 componentes + redirect)+A3, B1 (race condition do botão), B7 (corrigir cópia gov.br→in-platform, barato), **G3 (gate de tier do guest — dependência: sem isso o pré-onboarding não alcança o /workspace/checklist)**, D7 (lembrete de aceite de oferta), F1+F6 (WhatsApp + e-mail de aprovação), J3, G2 (claim context). Desbloqueia/clarifica os 19 + recém-chegados.
-- **Wave 2 — "Funil sem enterrados":** D1–D5 (painel de ação + auto-dispatch + rescue + drift + visibilidade no chip), E1+E2 (apto-a-assinar + notif), J1+J4 (mapa de comunicações + cadência de lembretes do funil). Resolve Hector/Djeimiys/Edinan/Bruna e previne recorrência.
+- **Wave 2 — "Funil sem enterrados":** D1–D5 (painel de ação + auto-dispatch + rescue + drift + visibilidade no chip), E1+E2 (apto-a-assinar + notif), J1+J4 (mapa de comunicações + cadência de lembretes do funil). Resolve member B/member D/member A/member E e previne recorrência.
 - **Wave 3 — "Capítulo & governança + assinatura":** C1–C6 (modelo multi-capítulo, escolha restrita a Brasil, termo PMI-GO explícito, registry seed, sync de filiação privada), **B8 (auditoria da assinatura in-platform nos 2 lados + loop de rejeição/retorno)**, E3+E4 (visibilidade cross-capítulo).
 - **Jornada SEPARADA (fora deste discovery, detalhar depois):** Seleção de tribo (mão dupla — candidato escolhe + líder aceita; tribos novas; doubt-clearing) — ver callout no Épico H.
 - **Wave 4 — "Termo v2 + comunidade + pós-promoção":** B2–B5 (farol visível, clareza, adendo, gate de membresia), F2+F3+F4 (Credly guide, metas 2026, gamificação first-mission), H1+H3–H6 (jornada dos primeiros dias), J2+J5 (matriz de canais + tom Disney).

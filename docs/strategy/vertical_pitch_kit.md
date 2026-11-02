@@ -27,7 +27,7 @@ Campos a preencher por vertical: `credencial-âncora` · `parceiro` · `público
 
 - **Credencial-âncora:** PMI-CP (Construction Professional)
 - **Parceiro:** Global Construction Ambassadors
-- **Liderança & protagonistas (já a bordo, jun/2026):** Henrique Diniz (Brasil) e Fabrício Costa (EUA) são Construction Global Ambassadors. **Henrique se inscreveu e foi aceito para liderar a vertical no Núcleo**, com uma trilha na temática **Giga Projetos e IA**. É a vertical com liderança mais avançada (prova viva), o que a move para o topo da ordem de ativação (ver abaixo). *(Nomes conferidos na base do Núcleo: Henrique Diniz S. Silva, PMI-DF; Fabricio Costa, PMI-GO, founder/ambassador.)*
+- **Liderança & protagonistas (já a bordo, jun/2026):** member A (Brasil) e member B (EUA) são Construction Global Ambassadors. **member A se inscreveu e foi aceito para liderar a vertical no Núcleo**, com uma trilha na temática **Giga Projetos e IA**. É a vertical com liderança mais avançada (prova viva), o que a move para o topo da ordem de ativação (ver abaixo). *(Nomes conferidos na base do Núcleo: member A S. Silva, PMI-DF; member B, PMI-GO, founder/ambassador.)*
 - **Público & dor:** líderes de megaprojetos/infra — projetos longos, documentação massiva, risco de prazo/custo, contratos e RFIs intermináveis, dados fragmentados entre stakeholders.
 - **Tese de IA:** (a) análise de risco e cronograma em megaprojetos; (b) leitura/sumarização de contratos, RFIs e submittals em escala; (c) gêmeos digitais e dados de campo como insumo de decisão. *(IA como alavanca para os 3 pilares do programa: segurança, eficiência e sustentabilidade.)*
 - **Gancho de timing:** mote do PMI **"Megaprojects demand mega skills"** (megaprojeto = >US$1bi, multi-ano, multi-stakeholder); o **Construction Ambassadors** é iniciativa global que advoga por segurança, eficiência e **sustentabilidade** na construção (A/E/C) — IA é a alavanca natural dos três. Hub: `pmicp.us`.
@@ -86,7 +86,7 @@ Campos a preencher por vertical: `credencial-âncora` · `parceiro` · `público
 
 ## Ordem sugerida de ativação (por prontidão + força do gancho)
 
-> **Atualizado 2026-06-12:** a **Construção sobe para #1**. Deixou de "depender da janela com os Ambassadors": agora é a única vertical com **liderança aceita** (Henrique Diniz) e **dois Global Ambassadors** (BR/EUA) já a bordo, com trilha Giga Projetos e IA. Prontidão real bate gancho potencial — ativa-se primeiro onde já há líder.
+> **Atualizado 2026-06-12:** a **Construção sobe para #1**. Deixou de "depender da janela com os Ambassadors": agora é a única vertical com **liderança aceita** (member A) e **dois Global Ambassadors** (BR/EUA) já a bordo, com trilha Giga Projetos e IA. Prontidão real bate gancho potencial — ativa-se primeiro onde já há líder.
 
 1. **Construção** (líder aceito + 2 Ambassadors BR/EUA; trilha Giga Projetos e IA) — prova viva, a mais pronta para ativar.
 2. **PMO** (PMI-PMOCP recém-lançada + PMOGA absorvida) — máximo alinhamento institucional.

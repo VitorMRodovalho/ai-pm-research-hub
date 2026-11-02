@@ -16,10 +16,10 @@ Do not treat this as one large implementation issue. Use this plan as a sequenci
 | Issue | Current recommendation | Why |
 |---|---|---|
 | #260 | P0 active, first workstream | Candidate-facing selection notifications, cutoff booking, stale interviews, and Resend replay safety can affect live applicants. |
-| #251 | Ready investigation leaf, run before fixes | Henrique visibility and William dual-track evaluation state need production read-only evidence before data/code remediation. |
+| #251 | Ready investigation leaf, run before fixes | member A visibility and member B dual-track evaluation state need production read-only evidence before data/code remediation. |
 | #116 | QA / close-candidate unless smoke fails | Calendar webhook/token gate appears mostly shipped; needs real booking evidence or a narrow failure fix. |
 | #179 | QA/spec gate for approval contract | Canonical approval orchestration is the contract that prevents approved candidates from becoming partial members. |
-| #230 | Active lifecycle bug, sequence after #179 evidence | Herlon shows the volunteer agreement generation/nudge path can be missing after selection approval. |
+| #230 | Active lifecycle bug, sequence after #179 evidence | member C shows the volunteer agreement generation/nudge path can be missing after selection approval. |
 | #229 | Phase 2 active/defer after P0 trust work | Phase 1 PERT leader_extra separation shipped; remaining UI/analytics/MCP cleanup is important but should follow communications and visibility fixes. |
 | #254 | Spec-only, blocked by #221/#218 stance | Video screening reconciliation is valid, but AI/video work must stay behind LGPD Art. 11 consent remediation. |
 | #243 | Spec-only, not implementation now | Calibration profile is valuable, but should not delay Cycle 4 operational fixes. |
@@ -36,8 +36,8 @@ Do not treat this as one large implementation issue. Use this plan as a sequenci
 **Do first. No writes.**
 
 Deliver:
-- SQL evidence for Henrique Diniz and William Junio across `selection_applications`, linked applications, status, role, cycle, and VEP raw fields.
-- Evaluation-state evidence for William: submitted evaluator, missing evaluator/invite, objective vs leader_extra, and pending RPC behavior.
+- SQL evidence for member A and member B across `selection_applications`, linked applications, status, role, cycle, and VEP raw fields.
+- Evaluation-state evidence for member B: submitted evaluator, missing evaluator/invite, objective vs leader_extra, and pending RPC behavior.
 - Notification audit for `selection_*`: candidate-facing vs admin-facing, digest consumed vs transactional sent, weekly digest linkage, and rows eligible for replay/manual closure.
 - Stale interview audit: past scheduled rows with no conducted/completed/cancelled state.
 
@@ -96,7 +96,7 @@ Deliver:
 
 Exit criteria:
 - Approved candidates have an observable path to member/person/engagement/onboarding/agreement state.
-- Herlon and any similar backlog are handled by batch plan, not one-off hidden fixes.
+- member C and any similar backlog are handled by batch plan, not one-off hidden fixes.
 
 ### 5. PERT / leader_extra Phase 2
 
@@ -131,7 +131,7 @@ Issue: #251
 Registry status: ready-leaf
 Lane: QA / Foundation
 Branch/worktree: agent/selection-cycle4-trust-audit
-In scope: read-only SQL evidence for Henrique visibility, William dual-track rows, evaluation assignments, pending RPC cycle selection, and UI filter hypothesis.
+In scope: read-only SQL evidence for member A visibility, member B dual-track rows, evaluation assignments, pending RPC cycle selection, and UI filter hypothesis.
 Out of scope: production data writes, UI changes, notification replay.
 Acceptance evidence: SQL result summary; root cause classification; remediation issue split if data/code fix is needed.
 Required gate: no writes; redact candidate PII in public comments.
@@ -179,7 +179,7 @@ Issue: #179 + #230
 Registry status: active after #260/#251 evidence
 Lane: Foundation / Governance
 Branch/worktree: agent/selection-approval-agreement-lifecycle
-In scope: approval-to-member/person/engagement/onboarding/agreement state audit; Herlon-like backlog count; auto-generate vs manual queue decision.
+In scope: approval-to-member/person/engagement/onboarding/agreement state audit; member C-like backlog count; auto-generate vs manual queue decision.
 Out of scope: broad certificate redesign, unrelated engagement kinds.
 Acceptance evidence: lifecycle audit; PM decision; migration or UI queue plan; rollback/runbook if implementation proceeds.
 Required gate: serialize Foundation migrations; PM approval for agreement-generation behavior.

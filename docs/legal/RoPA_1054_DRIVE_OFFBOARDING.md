@@ -9,7 +9,7 @@
 > `20260805000425`); o go-live da revogacao automatica (kill-switch) permanece
 > pendente de aprovacao do owner/DPO.
 > **Controladora:** PMI Goias (CNPJ 06.065.645/0001-99). **Operadora:** plataforma
-> nucleoia.vitormr.dev. **DPO:** Ivan Lourenco Costa (titular) - Angeline Altair
+> nucleoia.vitormr.dev. **DPO:** member A (titular) - member B
 > Silva Prado (substituta) - dpo@pmigo.org.br.
 > **Refs:** ADR-0014 (politica de retencao de logs) - decisao de conselho Tier-3
 > `docs/council/decisions/2026-07-02-1039-drive-auto-revoke-alumni-only.md` (legal

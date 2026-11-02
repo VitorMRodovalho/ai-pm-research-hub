@@ -12,7 +12,7 @@
 4. **Conclusão (E) — abrangência:** **todos os ativos** (47 ativos não-guest), não os 29 pesquisadores+.
 5. **NIA mascote:** reintroduzida como **medalhão/selo** — a carinha ("NIA foto de rosto", transparente) dentro do selo dourado + fitinha navy da categoria. (A pose "baile de gala" de corpo inteiro foi descartada por destoar; a forma digna é como selo.)
 6. **Ornamentos de canto (círculos PMI):** **REMOVIDOS** (decoração abstrata sem significado + colidiam com logo/"CAPÍTULO-SEDE").
-7. **Assinaturas:** Vitor Maia Rodovalho, PMP — **Gestor do Núcleo**; **Fabricio R. C. Costa** — **Co-Gestor do Núcleo**. (Era "do Projeto"; virou "do Núcleo" porque é um programa com várias iniciativas e tribos de pesquisa.)
+7. **Assinaturas:** Vitor Maia Rodovalho, PMP — **Gestor do Núcleo**; **member A R. C. Costa** — **Co-Gestor do Núcleo**. (Era "do Projeto"; virou "do Núcleo" porque é um programa com várias iniciativas e tribos de pesquisa.)
 8. **Pontuação no box:** **mantida** (ex.: "547 pontos") — reconfirmar se quiser só a posição.
 9. **URL de verificação:** **`nucleoia.pmigo.org.br/verify/<código>`** (domínio do capítulo, não o pessoal). Aterrado ao vivo: o domínio já resolve (→ `ai-pm-research-hub.pages.dev`) e cai na mesma página via redirect.
 10. **Sede + federação:** PMI-GO como **CAPÍTULO-SEDE** no topo + **faixa dos 15 capítulos** no rodapé.
@@ -28,25 +28,25 @@
 ---
 
 ## 0. Pendência a reconciliar — 1 certificado JÁ emitido (template ANTIGO)
-Na etapa de amostra emiti **1 certificado real** com o template atual (sem logo, 1 assinatura só): **Fernando Maquiaveli · `CERT-2026-C51E0A`** (cert_id `2969e372-2e1f-4a6f-8d25-59bdea6f0ae1`). Como o template vai mudar, decisão: **revogar+reemitir** com o novo layout, ou **atualizar**. (Ver decisão #9.)
+Na etapa de amostra emiti **1 certificado real** com o template atual (sem logo, 1 assinatura só): **member B · `CERT-2026-C51E0A`** (cert_id `2969e372-2e1f-4a6f-8d25-59bdea6f0ae1`). Como o template vai mudar, decisão: **revogar+reemitir** com o novo layout, ou **atualizar**. (Ver decisão #9.)
 
 ---
 
 ## 1. Categorias propostas + destinatários (aterrados ao vivo)
 
-**Regra transversal:** a **gestão da plataforma fica fora do ranking dos membros** — exclui **Vitor** (Ciclo 654 / Vitalício 1264) e **Fabricio** (Ciclo 310 / Vitalício 1090). Eles **assinam** os certificados (GP + Co-GP), não recebem.
+**Regra transversal:** a **gestão da plataforma fica fora do ranking dos membros** — exclui **Vitor** (Ciclo 654 / Vitalício 1264) e **member A** (Ciclo 310 / Vitalício 1090). Eles **assinam** os certificados (GP + Co-GP), não recebem.
 
 | # | Categoria | Tipo DB sugerido | Destinatários (ao vivo) |
 |---|---|---|---|
-| **A** | Champion Individual — **Ciclo 3** (Top 5) | `excellence` | Fernando 547 · Marcos 526 · Débora 515 · Jefferson 495 · Hayala 460 |
-| **B** | Champion Individual — **Vitalício / Hall da Lenda** (Top 5) | `excellence` | Débora 1080 · Fernando 1052 · Paulo 1050 · Jefferson 850 · Ítalo 820 |
-| **C** | Champion de **Tribo — Ciclo 3** | `excellence` | **T05 Talentos & Upskilling** (1º) → replicado aos ativos: Jefferson (líder), Ligia, Paulo |
+| **A** | Champion Individual — **Ciclo 3** (Top 5) | `excellence` | member B 547 · member F 526 · member C 515 · member D 495 · member G 460 |
+| **B** | Champion Individual — **Vitalício / Hall da Lenda** (Top 5) | `excellence` | member C 1080 · member B 1052 · member E 1050 · member D 850 · member H 820 |
+| **C** | Champion de **Tribo — Ciclo 3** | `excellence` | **T05 Talentos & Upskilling** (1º) → replicado aos ativos: member D (líder), member I, member E |
 | **D** | Champion de **Tribo — Vitalício** | `excellence` | **T05** também é 1º no vitalício → mesmos 3 |
 | **E** | **Conclusão do Ciclo 3** (fim de ciclo) | `completion`/`participation` | escopo a definir: **47** ativos não-guest **ou 29** pesquisadores+ (ver decisão #2) |
 
-**Sobreposições:** Fernando, Débora e Jefferson aparecem em A **e** B; Jefferson e Paulo também em C/D → decisão #5 (2 certs cada vs combinar).
+**Sobreposições:** member B, member C e member D aparecem em A **e** B; member D e member E também em C/D → decisão #5 (2 certs cada vs combinar).
 
-**Nota importante — `champions_awarded` é OUTRA coisa:** a tabela de champions tem **3 registros ativos** (Jefferson ×1, Débora ×2), todos `surface=deliverable/artifact` (atas ricas, 50 pts cada). É reconhecimento **por entregável**, não o "champion do ciclo/tribo". As categorias A–D acima derivam do **ranking de gamificação**, não dessa tabela. (Decidir se os champions-de-entregável entram no programa também.)
+**Nota importante — `champions_awarded` é OUTRA coisa:** a tabela de champions tem **3 registros ativos** (member D ×1, member C ×2), todos `surface=deliverable/artifact` (atas ricas, 50 pts cada). É reconhecimento **por entregável**, não o "champion do ciclo/tribo". As categorias A–D acima derivam do **ranking de gamificação**, não dessa tabela. (Decidir se os champions-de-entregável entram no programa também.)
 
 ---
 
@@ -56,7 +56,7 @@ O template ATUAL (`src/lib/certificates/pdf.ts`, tipo `excellence`) é minimalis
 - **Logo PMI-GO** no topo (hoje só o Termo de Voluntário usa logo).
 - **Faixa dourada de categoria** ("🏆 Top 5 do Ciclo 3" / "🏅 Hall da Lenda" / "🥇 Tribo Campeã" / "🎓 Conclusão do Ciclo").
 - **Box de destaque** com a conquista + **pontuação** ("1º lugar · Ranking do Ciclo 3 · 547 pontos").
-- **DUAS assinaturas:** Vitor Maia Rodovalho, PMP (Gestor) + **Fabricio R. C. Costa (Co-Gestor)** — ambos têm `signature_url` no banco (imagens reais entram na emissão).
+- **DUAS assinaturas:** Vitor Maia Rodovalho, PMP (Gestor) + **member A R. C. Costa (Co-Gestor)** — ambos têm `signature_url` no banco (imagens reais entram na emissão).
 - **Selo/medalha** dourado decorativo.
 - Tribo: **lista nominal do time** em destaque.
 - Linha de **verificação** (código + URL).
@@ -72,19 +72,19 @@ O template ATUAL (`src/lib/certificates/pdf.ts`, tipo `excellence`) é minimalis
 4. **Tribo (C/D):** 2 certs separados (ciclo + vitalício) ou 1 combinado? Destinatários = líder + pesquisadores ativos (3) — confirma?
 5. **Sobreposições (A∩B, tribo):** 2 certs por pessoa (decisão "A" anterior) — confirma?
 6. **Tipos DB:** `excellence` p/ champions; `completion` ou `participation` p/ fim de ciclo — ok?
-7. **Assinaturas:** Fabricio como Co-GP — confirmado; forma do nome ("Fabricio R. C. Costa" vs completo "Fabricio Rodrigues do Carmo Costa")?
+7. **Assinaturas:** member A como Co-GP — confirmado; forma do nome ("member A R. C. Costa" vs completo "member A")?
 8. **Template dev:** aprovar o incremento no `pdf.ts` (mockup) como alvo — sim?
-9. **Fernando já emitido (`CERT-2026-C51E0A`):** revogar+reemitir com novo template, ou atualizar?
+9. **member B já emitido (`CERT-2026-C51E0A`):** revogar+reemitir com novo template, ou atualizar?
 10. **Escrita:** revisar o texto/copy de cada categoria (tom, redação).
 
 ---
 
 ## 4. Números-âncora (ao vivo 2026-07-03)
 - Ciclo 3: início 2026-03-01, em curso. Ranking por soma do ledger `gamification_points` dentro da janela.
-- **Ranking Ciclo (gestão fora):** Fernando 547 · Marcos 526 · Débora 515 · Jefferson 495 · Hayala 460 (Vitor 654 e Fabricio 310 excluídos).
-- **Ranking Vitalício (gestão fora):** Débora 1080 · Fernando 1052 · Paulo 1050 · Jefferson 850 · Ítalo 820 (Vitor 1264 e Fabricio 1090 excluídos).
-- **Tribo #1 (ciclo e vitalício):** T05 Talentos & Upskilling (ativos: Jefferson líder, Ligia, Paulo).
+- **Ranking Ciclo (gestão fora):** member B 547 · member F 526 · member C 515 · member D 495 · member G 460 (Vitor 654 e member A 310 excluídos).
+- **Ranking Vitalício (gestão fora):** member C 1080 · member B 1052 · member E 1050 · member D 850 · member H 820 (Vitor 1264 e member A 1090 excluídos).
+- **Tribo #1 (ciclo e vitalício):** T05 Talentos & Upskilling (ativos: member D líder, member I, member E).
 - Roster: 47 ativos não-guest · 29 pesquisadores+.
 - champions_awarded: 3 ativos (por-entregável, não usados nas categorias A–D).
 
-member_ids: Fernando `c8b930c3…` · Marcos `c204ac61…` · Débora `a8c9af17…` · Jefferson `622ab18b…` · Hayala `f64ee70a…` · Paulo `57fcf33c…` · Ítalo `c1f428b5…` · Ligia `f7b73a72…`.
+member_ids: member B `c8b930c3…` · member F `c204ac61…` · member C `a8c9af17…` · member D `622ab18b…` · member G `f64ee70a…` · member E `57fcf33c…` · member H `c1f428b5…` · member I `f7b73a72…`.

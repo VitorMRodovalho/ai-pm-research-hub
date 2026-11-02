@@ -1,5 +1,5 @@
 LEGENDAS CORRIGIDAS - colar por cima das que estao no ar
-Corrige o cargo do Clendson. A imagem do post nao muda; so a legenda.
+Corrige o cargo do member C. A imagem do post nao muda; so a legenda.
 
 LinkedIn: https://www.linkedin.com/feed/update/urn:li:share:7487510200724152320/
 Instagram: https://www.instagram.com/p/DbTJ-JrE-rA/
@@ -14,11 +14,11 @@ No dia 4 de agosto a tribo ROI & Portfólio do Núcleo IA & GP faz o seu primeir
 
 Então convidamos duas pessoas para tratar dos dois lados, na prática:
 
-Fernando Carvalho, Diretor de Operações, vai mostrar como monta prompts para análise de cenário, com um exemplo real de entrada, saída e decisão tomada. E onde a IA apoia priorização, riscos e interdependências, incluindo as limitações que ele encontrou e como contornou.
+member B, Diretor de Operações, vai mostrar como monta prompts para análise de cenário, com um exemplo real de entrada, saída e decisão tomada. E onde a IA apoia priorização, riscos e interdependências, incluindo as limitações que ele encontrou e como contornou.
 
-Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados enviados a uma IA pública, da diferença entre IA pública, privada e on-premise, do que nunca deve entrar nessas ferramentas, e de como escrever uma política de uso de IA que as pessoas consigam seguir. A provocação dele: "IA sem governança é como uma porta aberta no servidor".
+member C, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados enviados a uma IA pública, da diferença entre IA pública, privada e on-premise, do que nunca deve entrar nessas ferramentas, e de como escrever uma política de uso de IA que as pessoas consigam seguir. A provocação dele: "IA sem governança é como uma porta aberta no servidor".
 
-A mediação é do Denis Vasconcelos, da tribo ROI & Portfólio.
+A mediação é do member A, da tribo ROI & Portfólio.
 
 📅 Terça, 4 de agosto, 19h00 às 20h30 (horário de Brasília)
 💻 Online, gratuito, aberto ao público e com gravação
@@ -43,10 +43,10 @@ Essa é uma das perguntas do nosso próximo webinar. E a resposta interessa tant
 💻 Online, gratuito e com gravação
 
 No palco:
-▪️ Fernando Carvalho, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts que funcionam, um exemplo real de ponta a ponta e o que a IA ainda não resolve.
-▪️ Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você envia para uma IA, a diferença entre pública, privada e on-premise, e como montar uma política de uso que as pessoas consigam seguir.
+▪️ member B, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts que funcionam, um exemplo real de ponta a ponta e o que a IA ainda não resolve.
+▪️ member C, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você envia para uma IA, a diferença entre pública, privada e on-premise, e como montar uma política de uso que as pessoas consigam seguir.
 
-Mediação: Denis Vasconcelos, da tribo ROI & Portfólio.
+Mediação: member A, da tribo ROI & Portfólio.
 
 Primeiro webinar da tribo ROI & Portfólio do Núcleo IA & GP, iniciativa dos capítulos do PMI no Brasil, sediada no PMI-GO.
 

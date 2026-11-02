@@ -56,8 +56,7 @@ cycle's active cohort."** It is set `true` only on the way *into* a cycle
 (`approve_selection_application`, `update_onboarding_step`).
 
 **#483 fix:** before #483, no writer reset CCA on the way *out* — offboarding left
-it `true`, so 3 offboarded members (Andressa Martins, Maria Luiza, Herlon Alves de
-Sousa) carried `current_cycle_active=true` while `is_active=false`. The B-trigger
+it `true`, so 3 offboarded members (member B, member C, member A) carried `current_cycle_active=true` while `is_active=false`. The B-trigger
 now resets CCA to `false` for any terminal status (coercion #3), and migration
 `20260805000117` one-time-cleared the existing drift.
 

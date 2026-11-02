@@ -20,16 +20,16 @@ A diferença está na plataforma: tudo o que o Núcleo faz acontece em uma infra
 
 Vargas é voz de referência em IA aplicada a GP no Brasil. Quando ele aponta a direção, chapters e líderes de projeto escutam. O keynote dele abre uma janela: enquanto a comunidade ouve sobre *como poderia ser*, o Núcleo pode mostrar *como já é*. Sem hype — com métricas, com código aberto, com governança documentada.
 
-É também a oportunidade de formalizar o que já começou. Vitor M. Rodovalho e Fabrício Nóbrega foram aceitos como **AIPM Ambassadors** oficiais — programa coordenado pelo próprio Ricardo Vargas junto a Antonio Nieto-Rodriguez — e o CBGPL é o palco natural para aprofundar essa ponte entre a pesquisa brasileira e a agenda global de IA em GP.
+É também a oportunidade de formalizar o que já começou. Vitor M. Rodovalho e member D foram aceitos como **AIPM Ambassadors** oficiais — programa coordenado pelo próprio Ricardo Vargas junto a Antonio Nieto-Rodriguez — e o CBGPL é o palco natural para aprofundar essa ponte entre a pesquisa brasileira e a agenda global de IA em GP.
 
 ## O que vai acontecer em Gramado
 
 Durante os três dias do congresso, o Núcleo terá presença com:
 
-- **Comitê presencial** — Ivan (sponsor PMI-GO), Vitor (GP), Fabrício (líder de tribo), representação PMI-RS.
+- **Comitê presencial** — member E (sponsor PMI-GO), Vitor (GP), member D (líder de tribo), representação PMI-RS.
 - **Demo ao vivo no palco Arena** — 20 minutos mostrando a plataforma, a governança pública, e a IA operacional.
 - **One-pagers e material impresso** — para chapters que queiram replicar a iniciativa.
-- **Conversas diretas com Ricardo Vargas e Mario Trentim** — continuidade do relacionamento com o PMI Board.
+- **Conversas diretas com Ricardo Vargas e member B** — continuidade do relacionamento com o PMI Board.
 
 Quem estiver em Gramado, venha falar com a gente. Quem não for, essa é a oportunidade de acompanhar a iniciativa:
 

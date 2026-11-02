@@ -39,8 +39,8 @@ VALUES (
 
 <h2>O que mudou para você</h2>
 <h3>Antes e depois: um exemplo concreto</h3>
-<p><strong>Antes:</strong> Maria era pesquisadora da Tribo 5. Um administrador precisava definir manualmente que ela era "researcher" no sistema. Se ela fosse convidada para ser palestrante em um webinar, alguém precisava mudar o cargo dela — e lembrar de voltar depois.</p>
-<p><strong>Depois:</strong> Maria tem um vínculo de pesquisadora na Tribo 5 e outro de palestrante no webinar. Cada vínculo tem suas próprias permissões, base legal LGPD e prazo de retenção de dados. Quando o webinar termina, o vínculo de palestrante expira automaticamente — e com ele, o acesso e a obrigação de reter seus dados.</p>
+<p><strong>Antes:</strong> member B era pesquisadora da Tribo 5. Um administrador precisava definir manualmente que ela era "researcher" no sistema. Se ela fosse convidada para ser palestrante em um webinar, alguém precisava mudar o cargo dela — e lembrar de voltar depois.</p>
+<p><strong>Depois:</strong> member B tem um vínculo de pesquisadora na Tribo 5 e outro de palestrante no webinar. Cada vínculo tem suas próprias permissões, base legal LGPD e prazo de retenção de dados. Quando o webinar termina, o vínculo de palestrante expira automaticamente — e com ele, o acesso e a obrigação de reter seus dados.</p>
 
 <h3>Perguntas frequentes</h3>
 <ul>
@@ -63,7 +63,7 @@ VALUES (
 <li><strong>Anonimização (Art. 18 IV):</strong> cron mensal aplica anonimização por tipo de vínculo, respeitando o prazo de retenção configurado (30 dias para palestrantes, 2 anos para candidatos, 5 anos para voluntários).</li>
 <li><strong>Consentimento (Art. 18 IX):</strong> gate de consentimento na primeira autenticação, com registro de base legal por tipo de vínculo (contrato para voluntários, consentimento para palestrantes, interesse legítimo para contatos de parceiros).</li>
 </ul>
-<p>A base legal de cada tipo de vínculo está configurada conforme o Art. 7 da LGPD: contrato voluntário (Art. 7 V), consentimento (Art. 7 I) e interesse legítimo (Art. 7 IX). <strong>A revisão jurídica da configuração por tipo de vínculo está em andamento com o DPO do PMI-GO</strong> (Ivan Lourenço Costa), que avaliará se cada combinação de base legal e prazo de retenção está adequada ao contexto específico do Núcleo.</p>
+<p>A base legal de cada tipo de vínculo está configurada conforme o Art. 7 da LGPD: contrato voluntário (Art. 7 V), consentimento (Art. 7 I) e interesse legítimo (Art. 7 IX). <strong>A revisão jurídica da configuração por tipo de vínculo está em andamento com o DPO do PMI-GO</strong> (member A), que avaliará se cada combinação de base legal e prazo de retenção está adequada ao contexto específico do Núcleo.</p>
 
 <h2>Para os curiosos: por dentro da arquitetura</h2>
 <p><em>Esta seção é técnica. Se você não é de tecnologia, pode pular direto para "O que vem pela frente" sem perder nada.</em></p>
@@ -98,7 +98,7 @@ VALUES (
 <h2>O que vem pela frente</h2>
 <ul>
 <li><strong>Congresso CBGPL:</strong> a plataforma vai gerenciar submissões, avaliações e agenda do congresso — usando o mesmo motor de iniciativas.</li>
-<li><strong>Grupo de estudos CPMAI:</strong> já migrado para o modelo genérico. Herlon (GP) e Pedro (SME) lideram o grupo do 2º semestre de 2026.</li>
+<li><strong>Grupo de estudos CPMAI:</strong> já migrado para o modelo genérico. member C (GP) e member D (SME) lideram o grupo do 2º semestre de 2026.</li>
 <li><strong>Pilotos multi-org:</strong> capítulos interessados em replicar a plataforma podem entrar em contato.</li>
 </ul>
 
@@ -127,8 +127,8 @@ VALUES (
 
 <h2>What changed for you</h2>
 <h3>Before and after: a concrete example</h3>
-<p><strong>Before:</strong> Maria was a researcher in Tribe 5. An administrator had to manually define her as a "researcher" in the system. If she was invited to speak at a webinar, someone had to change her role — and remember to change it back afterwards.</p>
-<p><strong>After:</strong> Maria has a researcher engagement in Tribe 5 and a speaker engagement for the webinar. Each engagement has its own permissions, LGPD legal basis, and data retention period. When the webinar ends, the speaker engagement expires automatically — and with it, the access and the obligation to retain her data.</p>
+<p><strong>Before:</strong> member B was a researcher in Tribe 5. An administrator had to manually define her as a "researcher" in the system. If she was invited to speak at a webinar, someone had to change her role — and remember to change it back afterwards.</p>
+<p><strong>After:</strong> member B has a researcher engagement in Tribe 5 and a speaker engagement for the webinar. Each engagement has its own permissions, LGPD legal basis, and data retention period. When the webinar ends, the speaker engagement expires automatically — and with it, the access and the obligation to retain her data.</p>
 
 <h3>Frequently asked questions</h3>
 <ul>
@@ -151,7 +151,7 @@ VALUES (
 <li><strong>Anonymization (Art. 18 IV):</strong> monthly cron applies anonymization by engagement type, respecting the configured retention period (30 days for speakers, 2 years for candidates, 5 years for volunteers).</li>
 <li><strong>Consent (Art. 18 IX):</strong> consent gate on first authentication, with legal basis recorded per engagement type (contract for volunteers, consent for speakers, legitimate interest for partner contacts).</li>
 </ul>
-<p>The legal basis for each engagement type is configured per LGPD Art. 7: volunteer contract (Art. 7 V), consent (Art. 7 I), and legitimate interest (Art. 7 IX). <strong>The legal review of per-engagement-type configuration is in progress with the PMI-GO DPO</strong> (Ivan Lourenco Costa), who will assess whether each legal basis and retention period combination is appropriate for the specific context.</p>
+<p>The legal basis for each engagement type is configured per LGPD Art. 7: volunteer contract (Art. 7 V), consent (Art. 7 I), and legitimate interest (Art. 7 IX). <strong>The legal review of per-engagement-type configuration is in progress with the PMI-GO DPO</strong> (member A), who will assess whether each legal basis and retention period combination is appropriate for the specific context.</p>
 
 <h2>For the curious: inside the architecture</h2>
 <p><em>This section is technical. If you are not in tech, feel free to skip ahead to "What''s next" without missing anything.</em></p>
@@ -186,7 +186,7 @@ VALUES (
 <h2>What''s next</h2>
 <ul>
 <li><strong>CBGPL Congress:</strong> the platform will manage submissions, evaluations, and scheduling — using the same initiative engine.</li>
-<li><strong>CPMAI Study Group:</strong> already migrated to the generic model. Herlon (PM) and Pedro (SME) lead the H2 2026 cohort.</li>
+<li><strong>CPMAI Study Group:</strong> already migrated to the generic model. member C (PM) and member D (SME) lead the H2 2026 cohort.</li>
 <li><strong>Multi-org pilots:</strong> chapters interested in replicating the platform can get in touch.</li>
 </ul>
 
@@ -215,8 +215,8 @@ VALUES (
 
 <h2>Qué cambió para ti</h2>
 <h3>Antes y después: un ejemplo concreto</h3>
-<p><strong>Antes:</strong> María era investigadora de la Tribu 5. Un administrador necesitaba definir manualmente que ella era "researcher" en el sistema. Si era invitada como ponente en un webinar, alguien tenía que cambiar su rol — y recordar revertirlo después.</p>
-<p><strong>Después:</strong> María tiene un vínculo de investigadora en la Tribu 5 y otro de ponente en el webinar. Cada vínculo tiene sus propios permisos, base legal LGPD y plazo de retención de datos. Cuando el webinar termina, el vínculo de ponente expira automáticamente — y con él, el acceso y la obligación de retener sus datos.</p>
+<p><strong>Antes:</strong> member B era investigadora de la Tribu 5. Un administrador necesitaba definir manualmente que ella era "researcher" en el sistema. Si era invitada como ponente en un webinar, alguien tenía que cambiar su rol — y recordar revertirlo después.</p>
+<p><strong>Después:</strong> member B tiene un vínculo de investigadora en la Tribu 5 y otro de ponente en el webinar. Cada vínculo tiene sus propios permisos, base legal LGPD y plazo de retención de datos. Cuando el webinar termina, el vínculo de ponente expira automáticamente — y con él, el acceso y la obligación de retener sus datos.</p>
 
 <h3>Preguntas frecuentes</h3>
 <ul>
@@ -239,7 +239,7 @@ VALUES (
 <li><strong>Anonimización (Art. 18 IV):</strong> cron mensual aplica anonimización por tipo de vínculo, respetando el plazo de retención configurado (30 días para ponentes, 2 años para candidatos, 5 años para voluntarios).</li>
 <li><strong>Consentimiento (Art. 18 IX):</strong> gate de consentimiento en la primera autenticación, con registro de base legal por tipo de vínculo (contrato para voluntarios, consentimiento para ponentes, interés legítimo para contactos de socios).</li>
 </ul>
-<p>La base legal de cada tipo de vínculo está configurada conforme al Art. 7 de la LGPD: contrato voluntario (Art. 7 V), consentimiento (Art. 7 I) e interés legítimo (Art. 7 IX). <strong>La revisión jurídica de la configuración por tipo de vínculo está en curso con el DPO del PMI-GO</strong> (Ivan Lourenço Costa), quien evaluará si cada combinación de base legal y plazo de retención es adecuada al contexto específico del Núcleo.</p>
+<p>La base legal de cada tipo de vínculo está configurada conforme al Art. 7 de la LGPD: contrato voluntario (Art. 7 V), consentimiento (Art. 7 I) e interés legítimo (Art. 7 IX). <strong>La revisión jurídica de la configuración por tipo de vínculo está en curso con el DPO del PMI-GO</strong> (member A), quien evaluará si cada combinación de base legal y plazo de retención es adecuada al contexto específico del Núcleo.</p>
 
 <h2>Para los curiosos: dentro de la arquitectura</h2>
 <p><em>Esta sección es técnica. Si no eres de tecnología, puedes saltar directamente a "Qué viene después" sin perderte nada.</em></p>
@@ -274,7 +274,7 @@ VALUES (
 <h2>Qué viene después</h2>
 <ul>
 <li><strong>Congreso CBGPL:</strong> la plataforma gestionará envíos, evaluaciones y agenda — usando el mismo motor de iniciativas.</li>
-<li><strong>Grupo de estudios CPMAI:</strong> ya migrado al modelo genérico. Herlon (GP) y Pedro (SME) lideran el grupo del 2do semestre de 2026.</li>
+<li><strong>Grupo de estudios CPMAI:</strong> ya migrado al modelo genérico. member C (GP) y member D (SME) lideran el grupo del 2do semestre de 2026.</li>
 <li><strong>Pilotos multi-org:</strong> capítulos interesados en replicar la plataforma pueden ponerse en contacto.</li>
 </ul>
 

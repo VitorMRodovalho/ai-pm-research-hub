@@ -11,8 +11,8 @@
 | # | Decisão | Escolha |
 |---|---|---|
 | D1 | Capacidade de tribo | **SSOT em `platform_settings.max_researchers_per_tribe` (=10)** — hardcode 6 morto na mig 335; fluxo híbrido ganhou cap. Ajuste futuro = editar a setting. |
-| D2 | Estrutura de tribos C4 | **Por tema: tribo NOVA se tema inédito** (Henrique e Messias → novas); tema com overlap → assume tribo existente ou co-lidera. Caso a caso na alocação do dia 9. |
-| D3 | Sucessor da T2 (Agentes Autônomos) | **Shortlist: Honorio (funil, tema aderente) + sondar interno da T2 (5 ativos)**. Decisão até 11/07 (janela §4). T2 fica temporariamente sem líder (exceção consciente do freeze). |
+| D2 | Estrutura de tribos C4 | **Por tema: tribo NOVA se tema inédito** (member A e member F → novas); tema com overlap → assume tribo existente ou co-lidera. Caso a caso na alocação do dia 9. |
+| D3 | Sucessor da T2 (Agentes Autônomos) | **Shortlist: member G (funil, tema aderente) + sondar interno da T2 (5 ativos)**. Decisão até 11/07 (janela §4). T2 fica temporariamente sem líder (exceção consciente do freeze). |
 | D4 | Pacote ops imediato | **Executado 04/07** (ver §2) incluindo remarcação da Reunião de Liderança #7 19h→18h (pré-kickoff). ⚠️ Owner ajusta o convite correspondente no Google Calendar. |
 
 ## §2 Executado em 04/07 (produção)
@@ -47,15 +47,15 @@
 - **Deadline de seleção de tribo**: `home_schedule.selection_deadline_at` **já está em
   17/07 23:59 BRT** ✔ (§2.5 item 2 concluído na sessão de 03/07; o freeze doc ainda cita o valor
   antigo).
-- **Funil de líderes C4** (vivo 04/07): approved = Henrique Diniz (#1, 512,55) e Messias Reis
-  (#3); final_eval = João Henrique, Honorio; entrevista = Jhonathan (scheduled), Adailson, Felipe
-  (pending). Track pesquisador com vocação de liderança (doc interno 04/07): Luana Andrade
-  (**#1 geral, 298,5**; T5/T8 fit) e Luiz Ramom (280,5; T7 fit) — aprovados como pesquisadores,
+- **Funil de líderes C4** (vivo 04/07): approved = member A (#1, 512,55) e member F
+  (#3); final_eval = member C, member G; entrevista = member H (scheduled), member I, member J
+  (pending). Track pesquisador com vocação de liderança (doc interno 04/07): member D
+  (**#1 geral, 298,5**; T5/T8 fit) e member E (280,5; T7 fit) — aprovados como pesquisadores,
   sem candidatura formal a líder ainda.
-- **Elegibilidade a resolver**: João Henrique (PMI-SP), Felipe (PMI-ES), Messias (sem capítulo) —
-  fora dos 5 capítulos federados; Luana (PMI-MG intenção não concretizada).
-- **Tribos C3**: 7 ativas + T3 inativa. Líderes continuantes: Hayala (T1), Fernando (T4),
-  Jefferson (T5), Fabricio (T6), Marcos (T7), Ana Carla (T8). Débora (T2) sai na virada.
+- **Elegibilidade a resolver**: member C (PMI-SP), member J (PMI-ES), member F (sem capítulo) —
+  fora dos 5 capítulos federados; member D (PMI-MG intenção não concretizada).
+- **Tribos C3**: 7 ativas + T3 inativa. Líderes continuantes: member K (T1), member L (T4),
+  member M (T5), member N (T6), member O (T7), member B (T8). member P (T2) sai na virada.
   Alocados em tribos: 25 pesquisadores + 9 sem tribo.
 - **Criação de tribo nova** = `admin_upsert_tribe` + `admin_upsert_legacy_tribe` + row em
   `initiatives kind='research_tribe'` com `legacy_tribe_id` (`create_initiative` BLOQUEIA
@@ -77,10 +77,10 @@
    continuantes + append `'cycle_4'` em `members.cycles`. Executar via migration governada com
    query de coorte (termo ativo end_date ≥ 2026-12-01 e não-entrante) — e capturar antes/depois.
    *(Issue de follow-up: RPC `admin_roll_cycle_membership` para institucionalizar — §6.1.)*
-4. **Exit Débora** (freeze §2.3b): `admin_offboard_member(p_new_status=>'alumni',
+4. **Exit member P** (freeze §2.3b): `admin_offboard_member(p_new_status=>'alumni',
    p_reason_category=>'end_of_cycle')` — sem `p_reassign_to` ainda (sucessor D3 até 11/07);
    board_items dela ficam para reassign na nomeação. NÃO revogar Drive antes do offboard.
-5. **Alocação dos 2 líderes C4 aprovados** (Henrique, Messias — assinam PRIMEIRO na campanha
+5. **Alocação dos 2 líderes C4 aprovados** (member A, member F — assinam PRIMEIRO na campanha
    §2.5): criar as tribos novas (D2; ver §5.1) + alocação direta (líder não usa select_tribe).
 6. **Entrantes**: conforme assinam o termo → `request_tribe_assignment` (janela até 17/07;
    cap SSOT ativo). Kickoff 19h no Meet `bpx-bcze-zbt` (banner + hero já apontam).
@@ -97,9 +97,9 @@ Checklist por tribo: `admin_upsert_tribe` (nome, quadrant 1–4 conforme tema, q
 leader_member_id, meeting_link) → `admin_upsert_legacy_tribe` (cycle_code='cycle_4') → row em
 `initiatives` (kind='research_tribe', legacy_tribe_id, board auto se has_board) → verificar
 dual-write (`members.tribe_id` via trigger) → Drive folder + link.
-Mapeamento inicial (dos temas do funil): Henrique → Q3 (AI & PM Centre lusófono; ponte Q2) ·
-Messias → Q2 (modelo de complexidade). Aderências a EXISTENTES (não criar): Honorio→T2 (agentes),
-Ramom→T7 (governança pública), Luana→T5/T8 (multiplicação), João H↔Felipe (overlap PMO/evolução —
+Mapeamento inicial (dos temas do funil): member A → Q3 (AI & PM Centre lusófono; ponte Q2) ·
+member F → Q2 (modelo de complexidade). Aderências a EXISTENTES (não criar): member G→T2 (agentes),
+Ramom→T7 (governança pública), member D→T5/T8 (multiplicação), member C H↔member J (overlap PMO/evolução —
 diferenciar escopo ou co-liderança se ambos aprovarem).
 
 ### §5.2 Passos extra de onboarding do líder (dev — issue própria)
@@ -115,10 +115,10 @@ diferenciar escopo ou co-liderança se ambos aprovarem).
    e o refinamento de tema dos novos líderes.
 
 ### §5.3 Sucessão T2 (D3)
-Até 11/07: acelerar final_eval do Honorio + sondagem dos 5 ativos da T2. Nomeado o sucessor:
+Até 11/07: acelerar final_eval do member G + sondagem dos 5 ativos da T2. Nomeado o sucessor:
 se vindo do funil → `promote_to_leader_track` + assinar termo + alocação direta; se interno →
 caminho alternativo (sem application C4 — gap conhecido do promote; tratar via engagement
-role='leader' direto + cache trigger). Reassign dos board_items da Débora na nomeação.
+role='leader' direto + cache trigger). Reassign dos board_items da member P na nomeação.
 Protocolo formal de handover = issue #1020 (pending-successor state) — usar este caso como piloto.
 
 ## §6 Gaps sistêmicos a fechar (semântica/tabelas — sustentabilidade)

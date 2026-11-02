@@ -9,18 +9,18 @@
 ## 1. Grounding ao vivo (verificado nesta sessão — não recitado)
 
 ### Autoridade / acesso (74 não-guests)
-- Só **2** resolvem `can_by_member('manage_comms')`: **Fabricio Costa** e **Vitor** (ambos `operational_role=manager`).
+- Só **2** resolvem `can_by_member('manage_comms')`: **member D** e **Vitor** (ambos `operational_role=manager`).
 - `manage_comms` é concedido em V4 por engagement `kind=volunteer × role ∈ {co_gp, comms_leader, deputy_manager, manager}`, `scope=organization`. `comms_leader` é **role** dentro de `volunteer`, não um kind.
 - O gate da página `/admin/comms` (`canAccessAdminRoute`, `src/lib/admin/constants.ts:175-182`) é **client-side** (ADR-0106) e passa por: tier `admin` **OU** designação V3 `['comms_leader','comms_member']` **OU** operational_role permitido.
 
 ### Roster real do time de comms (iniciativa **"Hub de Comunicação"**, `workgroup_member`, initiative-scoped)
 | Membro | Designação V3 | `manage_comms` | Vê a página hoje | Estado |
 |--------|---------------|----------------|------------------|--------|
-| Mayanna Duarte (líder) | `comms_leader` | ❌ | ✅ (designação) | vê página, **writes rejeitados** |
-| Letícia Clemente (coord.) | `comms_member` | ❌ | ✅ (designação) | vê página, **writes rejeitados** |
-| João Coelho Júnior | — | ❌ | ❌ | **travado** (`comms-denied`) |
+| member B (líder) | `comms_leader` | ❌ | ✅ (designação) | vê página, **writes rejeitados** |
+| member C (coord.) | `comms_member` | ❌ | ✅ (designação) | vê página, **writes rejeitados** |
+| member A | — | ❌ | ❌ | **travado** (`comms-denied`) |
 
-> A premissa "time inteiro vê tela de negado" (achado D6-F1) foi **REFUTADA** na verificação: 2 de 3 veem via designação; só João é negado.
+> A premissa "time inteiro vê tela de negado" (achado D6-F1) foi **REFUTADA** na verificação: 2 de 3 veem via designação; só member A é negado.
 
 ### Segurança — RPCs de comms (pg_proc, verificado)
 - `comms_channel_status`, `comms_metrics_latest_by_channel`, `comms_top_media`: **`SECURITY DEFINER` + GRANT `authenticated` + SEM gate interno** → leitura aberta aos **74 autenticados, incl. 23 guests de pré-onboarding**.
@@ -35,7 +35,7 @@
 
 ## 2. A virada da auditoria (acoplamento acesso × segurança)
 
-O problema central **não** é "ninguém vê". É que a **camada de leitura está escancarada**: qualquer autenticado (incl. guests) puxa IDs de infra + saúde de token chamando o RPC direto; o gate da página é cosmético. Mayanna/Letícia já leem; João está travado por **inconsistência** do gate.
+O problema central **não** é "ninguém vê". É que a **camada de leitura está escancarada**: qualquer autenticado (incl. guests) puxa IDs de infra + saúde de token chamando o RPC direto; o gate da página é cosmético. member B/member C já leem; member A está travado por **inconsistência** do gate.
 
 → Fechar o vazamento (gate nos RPCs) **trava o time** no mesmo instante, a menos que provisionemos antes. **PR-1 (provisionar) e PR-2 (gatear) são um par P0 atômico.**
 
@@ -64,7 +64,7 @@ O problema central **não** é "ninguém vê". É que a **camada de leitura est�
 
 ### PR-1 — Provisionar acesso (P0)
 - **READ (`view_comms_analytics`):** time de comms (Hub de Comunicação) + gerência + diretorias/patrocinadores/pontos focais.
-- **WRITE (`manage_comms`):** managers (Fabricio, Vitor) + **Mayanna** (líder, rotaciona token).
+- **WRITE (`manage_comms`):** managers (member D, Vitor) + **member B** (líder, rotaciona token).
 - **Mecanismo de grant = decisão de implementação aberta** (ver §5) — fechar via procedimento V4 de 4 etapas (`docs/reference/V4_AUTHORITY_MODEL.md`). **NÃO** mexer em `engagement_kind_permissions` (combo `volunteer×comms_leader×manage_comms×organization` já seedado em `20260426170038`).
 - ⚠️ Sutileza de escopo: o time está engajado como `workgroup_member` *initiative-scoped*; `manage_comms` é *org-scoped* (`initiative_id=NULL`). Provisionar exige escolher o mecanismo certo (§5), não só trocar um role.
 - Re-aterrar `can_by_member` ao vivo no apply (regra de grounding).
@@ -126,7 +126,7 @@ Opções a avaliar (procedimento V4 + possível consulta `data-architect`):
 ## 6. Apêndice — achados (37 total; 8 HIGH verificados, 1 refutado, 16 medium)
 
 **HIGH verificados** (severidade ajustada pós-verificação):
-- D1-01 (→med) provisionamento exato Mayanna · D1-07 (→med) RPCs ungated = raiz do vazamento · D2-01 (→med) `comms_channel_status` vaza IDs de infra · D3-01 (→med) reach soma unidades incompatíveis · D3-02 (→med) engagement não-ponderado rotulado como ponderado · D5-1 (→low) UI ignora auto-refresh · D5-2 (→low) READ acoplado a WRITE · D6-F2 (→med) LinkedIn 2ª classe.
+- D1-01 (→med) provisionamento exato member B · D1-07 (→med) RPCs ungated = raiz do vazamento · D2-01 (→med) `comms_channel_status` vaza IDs de infra · D3-01 (→med) reach soma unidades incompatíveis · D3-02 (→med) engagement não-ponderado rotulado como ponderado · D5-1 (→low) UI ignora auto-refresh · D5-2 (→low) READ acoplado a WRITE · D6-F2 (→med) LinkedIn 2ª classe.
 
 **REFUTADO:** D6-F1 (time inteiro travado — falso, 2/3 veem via designação).
 

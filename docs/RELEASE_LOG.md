@@ -98,8 +98,8 @@ Hotfixes para `/attendance` e `/admin/curatorship`: `get_attendance_grid` retorn
 - API log confirmou o 400 em `POST /rest/v1/rpc/get_attendance_grid`; Postgres log no mesmo timestamp confirmou `column reference "status" is ambiguous`.
 - `pg_get_functiondef` confirmou a função live com `cs2.status` e `cs3.status`.
 - Chamada SQL simulando usuário autenticado retornou JSON com `summary`, `events` e `tribes`.
-- Simulação de Marcos Klemz na Tribo 7 para o evento `4b31e97d-2b63-4548-91af-65adbec6fb46` retorna `today_status='absent'`.
-- DB confirma Roberto Macêdo e Sarah Faria com `curate_content=true` e `participate_in_governance_review=true`.
+- Simulação de member F na Tribo 7 para o evento `4b31e97d-2b63-4548-91af-65adbec6fb46` retorna `today_status='absent'`.
+- DB confirma member B e member C com `curate_content=true` e `participate_in_governance_review=true`.
 - `check_schema_invariants()` permaneceu 16/16 em 0 violações.
 
 ### Rollback
@@ -119,7 +119,7 @@ Backfill resumido das principais entregas entre o baseline pós-V4 (`2026-04-17`
 - **p168-p173 — Attendance/selection sync + VEP linkage + multi-leader digest:** ATT-1/2/3, canonical impact hours, VEP→engagement FK, invariant Q, leader digest expansion.
 - **p176-p181 — RPC drift capture and tier cleanup:** broad RPC body drift sweeps, LGPD gates, `has_min_tier` V4 replacement and removal.
 - **p190-p195 — Cross-initiative metrics and selection storage:** ADR-0085 metric scoping, governance-review carve-outs, selection resume/profile storage improvements.
-- **p196-p198 — Curation FSM and committee workspace:** ADR-0086, peer/leader review flow, Curadoria workspace seed and live Débora case.
+- **p196-p198 — Curation FSM and committee workspace:** ADR-0086, peer/leader review flow, Curadoria workspace seed and live member G case.
 - **p200-p201 — Curator V4 action and p201 hardening:** ADR-0087 `curate_content` sweep, document_* RLS carry identified, MCP/docs audit, Cloudflare 1010 diagnosis, attendance/curatorship hotfixes.
 
 ### Validation
@@ -339,7 +339,7 @@ Sessão de qualidade estrutural pós-cutover V4. 24 commits em um dia cobrindo t
 Advisor delta: **88 findings → 17** (14 ERRORS → 12, 58 WARN → 5, 16 INFO → 0).
 
 #### Certificate Integrity Audit
-- **gov.br signer backfill + IP instruments** (`099309c`, mig `20260417010000`) — `scripts/extract-govbr-signers.py` extraiu PKCS7/CMS de 92 PDFs. Institutional signer é **LORENA DE SOUZA PAULA** (89/92 docs, dir. voluntários PMI-GO), não Ivan. 26 DSGN certs corrigidos (issued_by + counter_signed_by); 6 TERM counter-signed com gov.br data. 4 variantes `pdf.ts` (gov.br migrated, attestation, platform+gov.br, platform).
+- **gov.br signer backfill + IP instruments** (`099309c`, mig `20260417010000`) — `scripts/extract-govbr-signers.py` extraiu PKCS7/CMS de 92 PDFs. Institutional signer é **member H DE SOUZA PAULA** (89/92 docs, dir. voluntários PMI-GO), não member A. 26 DSGN certs corrigidos (issued_by + counter_signed_by); 6 TERM counter-signed com gov.br data. 4 variantes `pdf.ts` (gov.br migrated, attestation, platform+gov.br, platform).
 
 #### P1 UX Batch (16/Abr afternoon)
 - **Event type/nature via future scope** (`d325cb4`, mig `20260423010000`) — `update_future_events_in_group` aceita p_type/p_nature com CHECK.
@@ -350,7 +350,7 @@ Advisor delta: **88 findings → 17** (14 ERRORS → 12, 58 WARN → 5, 16 INFO 
 #### Upgrades + docs
 - **Opus 4.7 upgrade** (`5357b58`) — Claude Opus 4.7 model + 18 npm packages updated.
 - **Docs drift sync** (`4dea931`) — i18n dup (3 dicts), ADR README, INDEX.md, CLAUDE.md 22 EFs.
-- **Ata Trentim + briefing liderança** (`1cdfbfd`) — ata reunião 15/Abr + briefing 16/Abr.
+- **Ata member I + briefing liderança** (`1cdfbfd`) — ata reunião 15/Abr + briefing 16/Abr.
 
 ### Validation
 - `npm test` ✅ 1184 pass / 0 fail
@@ -405,7 +405,7 @@ Advisor delta: **88 findings → 17** (14 ERRORS → 12, 58 WARN → 5, 16 INFO 
 - Migration `20260421020000_unify_meeting_notes.sql`.
 
 #### Other fixes + releases
-- **Comms permissions** (`4e01ec5`, `a694737`) — `canEditAny` inclui comms members em global boards. Mayanna/Letícia/Maria Luiza gerenciam cards + status dropdown.
+- **Comms permissions** (`4e01ec5`, `a694737`) — `canEditAny` inclui comms members em global boards. member J/member K/member E gerenciam cards + status dropdown.
 - **#75 closed** (`318c98d`) — announcements filtradas do /blog; releases em /changelog.
 - **CBGPL one-pager** (`ecc6c37`) — 52 members, 74 tools, 7 tribes.
 - **Blog V4 SQL + IP email draft** (`101e8d0`) — material de apoio CR-050.
@@ -416,10 +416,10 @@ Advisor delta: **88 findings → 17** (14 ERRORS → 12, 58 WARN → 5, 16 INFO 
 - MCP smoke ✅ 74 tools (60R+14W) — nucleo-mcp v2.10.0
 - 4 migrations aplicadas (20260419010000/020000/030000, 20260421010000, 20260421020000)
 - Wiki health report ✅ 0 issues em 29 pages
-- CR-050 artefatos prontos para ativação quando Ivan aprovar
+- CR-050 artefatos prontos para ativação quando member A aprovar
 
 ### Notes
-- Activation do draft template depende do CR-050 approval pelos 5 chapter presidents — Ivan validou direção por WhatsApp, aguardando reunião 16/Abr.
+- Activation do draft template depende do CR-050 approval pelos 5 chapter presidents — member A validou direção por WhatsApp, aguardando reunião 16/Abr.
 - Meeting artifacts table (12 rows legacy) mantida mas bypassed — deprecation em sessão futura.
 - Phase 6 (platform transfer para nucleo-ia-gp org) questionada pelo PM e deferred — platform code = engineering artifact (Vitor's infra), wiki = institutional memory.
 
@@ -511,7 +511,7 @@ Refatoração arquitetural completa do modelo de domínio. 6 ADRs (0004-0009), 7
 - `operational_role` é cache mantido por trigger, lido pelo frontend para UI gating
 
 ### Pending (non-blocking, human-dependent)
-- Revisão jurídica: DPO PMI-GO (Ivan Lourenço Costa) — validar base legal + retenção por engagement_kind
+- Revisão jurídica: DPO PMI-GO (member A) — validar base legal + retenção por engagement_kind
 
 ---
 
@@ -575,7 +575,7 @@ Fecha o ciclo LGPD Art. 18 end-to-end (P1+P2+P3), entrega CR-047 Dual Ranking pa
 - `npx astro build` ✅ 0 errors
 - `npm test` ✅ 779 pass
 - Dry-run anonimização: 0 candidatos (projeto < 2y, ativa naturalmente)
-- CR-047 validado com dados reais (Marcos, Hayala duplicate bug corrigido com DISTINCT ON)
+- CR-047 validado com dados reais (member F, member L duplicate bug corrigido com DISTINCT ON)
 
 ### Known Deferred
 - **PDF server-side Puppeteer:** requer Cloudflare Browser Rendering paid (~$5/mo) ou API externa. Fluxo client-side atual (blob URL + instruction banner) funciona.
@@ -822,10 +822,10 @@ End-to-end stabilization sprint: data quality, CI hardening, ops documentation, 
 - **1. Data Sanitation** (12 fixes across 4 blocks)
   - Synced `members.tribe_id` from `tribe_selections` — 32 NULL rows backfilled
   - Created `trg_sync_tribe_id` trigger to prevent future drift
-  - Fixed Andressa Martins tribe_id (8→2, stale value)
+  - Fixed member D tribe_id (8→2, stale value)
   - Set operational_role for 2 chapter_liaisons + 4 sponsors (was `none`)
   - Deactivated 2 departed members (`current_cycle_active→false`)
-  - Reactivated 3 founders (Ivan=sponsor, Roberto=liaison, Sarah=active)
+  - Reactivated 3 founders (member A=sponsor, member B=liaison, member C=active)
   - Post-sanitation: 0 inconsistencies, 43/67 with tribe_id, 2 active with role=none
 
 - **2. Branch Protection** (GitHub API)
@@ -841,7 +841,7 @@ End-to-end stabilization sprint: data quality, CI hardening, ops documentation, 
 
 - **4. Comms Migration Readiness**
   - Verified 54 imported items across 5 columns (28 backlog, 2 todo, 3 in_progress, 1 review, 20 done)
-  - Team permissions verified: Mayanna (comms_leader), Leticia (comms_member), Andressa (comms_member)
+  - Team permissions verified: member J (comms_leader), member K (comms_member), member D (comms_member)
   - Created `board-attachments` storage bucket (5MB, pdf/png/jpg/docx/xlsx/pptx) with RLS policies
   - Documented in `docs/COMMS_MIGRATION_CHECKLIST.md`
 
@@ -982,7 +982,7 @@ Task Force: conectar TribeKanbanIsland (dnd-kit) como UI única, refatorar Nav c
   - Seção "🌍 Governança": Publicações (`/publications`), Portfólio Executivo (`/admin/portfolio`).
   - Links ocultos se usuário não tiver permissão.
 - **3. Migration data merge healing**
-  - `20260315000005_data_merge_healing.sql`: T4 (Débora) quadro Cultura/Ciclo 2 atrelado; T6 (Fabrício) cards consolidados em um quadro; T8 (Ana) quadro oficial de entregas criado.
+  - `20260315000005_data_merge_healing.sql`: T4 (member G) quadro Cultura/Ciclo 2 atrelado; T6 (member M) cards consolidados em um quadro; T8 (member N) quadro oficial de entregas criado.
 - **4. Edição de horário de reunião**
   - Botão lápis ao lado do horário (quando canEdit); modal para editar texto (ex: "Quintas, 19h"); `supabase.from('tribes').update({ meeting_schedule })`.
 

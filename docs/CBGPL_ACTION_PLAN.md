@@ -24,9 +24,9 @@ O **21º CBGPL** (Congresso Brasileiro de Gestão, Projetos e Liderança) aconte
 | Speaker | Tema | Relevância para Núcleo |
 |---------|------|----------------------|
 | **Ricardo Vargas** | "Copiloto IA para Projetos: Gêmeos Digitais" | **DIRETA** — Núcleo é implementação real disto |
-| **Mario Trentim** | Keynote (TBD) · PMI Board | Aliado potencial, conhece governança PMI |
-| **Carolina Latorre** | Diretora PMI América Latina | Visibilidade regional |
-| **Carolina Boros** | Chefe PMO Banco Central | Referência em PMO governo |
+| **member A** | Keynote (TBD) · PMI Board | Aliado potencial, conhece governança PMI |
+| **member E** | Diretora PMI América Latina | Visibilidade regional |
+| **member D** | Chefe PMO Banco Central | Referência em PMO governo |
 
 ### Preços (Lote 4 — atual, até 24/Apr)
 | Tipo | Palestras (29-30) |
@@ -67,26 +67,26 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 - **Gestão** (Strategic Business Acumen) — KPIs, portfólio, governança
 - **Impacto Social** — voluntariado, pesquisa colaborativa, open-source
 
-### Opções de Participação (decidir com Ivan)
+### Opções de Participação (decidir com member G)
 
 | Opção | Custo | Benefícios | Recomendação |
 |-------|-------|-----------|--------------|
 | **A: Apenas congressistas** | ~R$ 2.400 (3×R$ 789,50 vol.) | Networking, assistir palestras, abordagem informal | Mínimo viável |
 | **B: Bronze** | R$ 9k + ingressos | Balcão, 20min case na Arena, logo, 2 credenciais | **Recomendado** — case de 20min é o diferencial |
 | **C: Prata** | R$ 17,5k | Stand 6m², 5 credenciais, vídeo 15", case Arena | Se houver budget |
-| **D: Sem custo via PMI-GO** | R$ 0 | Ivan negocia slot como co-realizador | Ideal se possível |
+| **D: Sem custo via PMI-GO** | R$ 0 | member G negocia slot como co-realizador | Ideal se possível |
 
-**Recomendação:** Opção D primeiro (Ivan como presidente do PMI-GO co-realizador pode negociar espaço). Se não, Opção B (Bronze) dá 20min de case na Arena por R$ 9k.
+**Recomendação:** Opção D primeiro (member G como presidente do PMI-GO co-realizador pode negociar espaço). Se não, Opção B (Bronze) dá 20min de case na Arena por R$ 9k.
 
 ### Comitê de Presença (3-5 pessoas)
 
 | Persona | Papel | Responsabilidade |
 |---------|-------|-----------------|
-| **Ivan** | Sponsor institucional | Abertura, legitimação, networking C-level, negociação de espaço |
+| **member G** | Sponsor institucional | Abertura, legitimação, networking C-level, negociação de espaço |
 | **Vitor** | Tech Lead / Demo | Apresentação técnica, demo ao vivo, Q&A técnico |
-| **Líder de Tribo - Débora** | Pesquisador | Falar sobre metodologia, experiência prática, resultados |
+| **Líder de Tribo - member H** | Pesquisador | Falar sobre metodologia, experiência prática, resultados |
 | (se disponível) | Operacional | Coordenação, materiais, logística |
-| **Rep. PMI-RS** (Márcio como presidente?) | Sponsor multi-capítulo | Mostrar que é inter-capitular (evento é em RS!) |
+| **Rep. PMI-RS** (member F como presidente?) | Sponsor multi-capítulo | Mostrar que é inter-capitular (evento é em RS!) |
 
 ### Pitch — 3 Níveis
 
@@ -113,13 +113,13 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 
 | Material | Responsável | Prazo | Status |
 |----------|-------------|-------|--------|
-| Deck Canva (7-10 slides) | Vitor + Ivan (base DAHDId1Obyw) | 15/Apr | A fazer |
+| Deck Canva (7-10 slides) | Vitor + member G (base DAHDId1Obyw) | 15/Apr | A fazer |
 | One-pager PDF (A4, 2 lados) | Vitor | 15/Apr | A fazer |
 | QR code (nucleoia.vitormr.dev ou pmigo.org.br/nucleo-ia) | Vitor | 08/Apr | A fazer |
 | FAQ interno (20 perguntas) | Vitor | 15/Apr | A fazer |
 | Vídeo fallback (3min, demo gravada) | Vitor | 22/Apr | A fazer |
 | Blog post "Núcleo IA no CBGPL" | Vitor | 15/Apr | A fazer |
-| Anúncio vagas pesquisadores | Ivan + Marcio + Ricardo | 22/Apr | A fazer |
+| Anúncio vagas pesquisadores | member G + member I + member B | 22/Apr | A fazer |
 
 ### FAQ — 20 Perguntas Prováveis (draft)
 
@@ -160,17 +160,17 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 | Audiência não conhece GP voluntário | Média | Médio | Contextualizar: 500k+ voluntários PMI global |
 | Vargas "rouba" atenção do tema IA | Baixa | Baixo | Pitch focado em "implementação prática" |
 | Poucos do Núcleo disponíveis | Média | Alto | Mínimo 2 pessoas (Vitor + 1) |
-| Sem slot na programação | Média | Alto | Ivan e Márcio negociam como co-realizadores |
+| Sem slot na programação | Média | Alto | member G e member F negociam como co-realizadores |
 
 
 ### Cronograma — 4 Semanas
 
 #### Semana 1 (02-08/Apr) — Estratégia
-- [ ] Ivan confirma formato de participação (D, B, ou A)
+- [ ] member G confirma formato de participação (D, B, ou A)
 - [ ] Definir comitê (quem vai a Gramado)
 - [ ] Reservar hospedagem (Wish Serrano ou Olivas Clube parceiro)
 - [ ] Gerar QR code para nucleoia.vitormr.dev
-- [ ] Ivan sonda slot com PMI-RS (co-realizador)
+- [ ] member G sonda slot com PMI-RS (co-realizador)
 
 #### Semana 2 (09-15/Apr) — Conteúdo
 - [ ] Deck Canva finalizado (base DAHDId1Obyw)
@@ -199,7 +199,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 ## Integração Artia API (PMO PMI-GO)
 
 ### Contexto
-- Rodrigo (PMO) compartilhou credenciais
+- member J (PMO) compartilhou credenciais
 - Docs: https://documenter.getpostman.com/view/10208526/TVCZaWK4
 - Auth: Base64 (client_id:secret)
 - Objetivo: sincronizar KPIs do Núcleo → portfólio Artia do PMO
@@ -229,7 +229,7 @@ O Núcleo se posiciona na interseção de **3 das 4 vertentes** do congresso:
 - **119 candidaturas** no C3 (57 únicos → 75 matched) — demonstra demanda
 - **4 artigos publicados** no ProjectManagement.com (audiência >1M), 31 no pipeline
 - **4 cooperation agreements** assinados (Docusign, Dec 2025) + 3 em negociação
-- **"Carlos Novello" LATAM Award finalist** — Vitor, nomeado e finalista para Voluntário do Ano 2025
+- **"member C" LATAM Award finalist** — Vitor, nomeado e finalista para Voluntário do Ano 2025
 - **4 quadrantes de pesquisa** (R3): Augmented Practitioner, AI Project Management, Organizational Leadership, Future & Responsibility
 - **7-stage article production pipeline** com curation committee = peer review
 - **Zero infrastructure cost** — all free tiers
@@ -256,5 +256,5 @@ O deck pode seguir a estrutura do Lessons Learned adaptada:
 - Conexão internacional fortalece narrativa do congresso: "modelo replicável globalmente"
 
 ## Próximos Passos Imediatos
-1. Congresso: Ivan validar formato de participação + seguir §4.3 para aprovação formal
+1. Congresso: member G validar formato de participação + seguir §4.3 para aprovação formal
 2. Deck: usar estrutura curada acima, dados da plataforma em real-time
