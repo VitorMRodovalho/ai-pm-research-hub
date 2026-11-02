@@ -120,7 +120,7 @@ Sequência de promoção:
 3. ✅ Council 4 lentes em paralelo (p151 — concluído 2026-05-12)
 4. ✅ PM aceita 10 decisões consolidadas em §3 desta ADR
 5. ⏳ Spec amendments p151b — 11 itens bloqueantes incorporados (ver §11)
-6. ⏳ Material change Termo Adesão v2.7→v2.8 ratificada (curadores + Ângelina + Ivan DPO)
+6. ⏳ Material change Termo Adesão v2.7→v2.8 ratificada (curadores + Ângelina + member A DPO)
 7. ⏳ DPA Anthropic confirma cobertura para transcrição de vídeo como input ao modelo (ou adendo)
 8. ⏳ ADR-0079 → ACCEPTED com decisões registradas
 9. ⏳ Implementação inicia (sessões p153+)
@@ -147,7 +147,7 @@ ADR fica PROPOSED · AWAITING-RATIFICATION até **todos** os 11 itens abaixo ser
 ### Consent/Legal (security + legal — M0 precede M1)
 
 - [ ] **#8** Coluna `consent_subjective_video_scoring_at` + `consent_subjective_video_scoring_revoked_at` em `selection_applications` + tela de consent dedicada na jornada de upload — M0 + frontend
-- [ ] **#9** Material change Termo de Adesão v2.7→v2.8 incluindo: (a) análise IA de conteúdo de vídeo com scoring; (b) disclosure de processamento por terceiro (Anthropic como operador); (c) direitos titular (acesso, revogação, revisão) — Doc + workflow ratificação curadores + Ângelina (LGPD) + Ivan (DPO)
+- [ ] **#9** Material change Termo de Adesão v2.7→v2.8 incluindo: (a) análise IA de conteúdo de vídeo com scoring; (b) disclosure de processamento por terceiro (Anthropic como operador); (c) direitos titular (acesso, revogação, revisão) — Doc + workflow ratificação curadores + Ângelina (LGPD) + member A (DPO)
 - [ ] **#10** Banner UI obrigatório `<aside>` não-dismissable no modal Vídeos: "Score gerado por IA — sinal de apoio. Decisão final é exclusivamente do Comitê de Curadoria." — Frontend `selection.astro` modal Vídeos
 - [ ] **#11** Confirmação DPA Anthropic cobre transcrição de vídeo como input ao modelo (ou adendo DPA antes de deploy) — Verificação documental + adendo se necessário
 

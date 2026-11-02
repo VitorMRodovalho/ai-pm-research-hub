@@ -25,7 +25,7 @@ por 5 falhas no `validate`, das quais **2 ja existem na main** e 3 seguem sem no
 | Esperado | Feito | Estado |
 | --- | --- | --- |
 | Recomendacao de abordagem | Card gerado por RPC, nao estatico; enquadramento de checklist, nao de faltas | ✅ aprovado pelo GP |
-| Card com voce como dono e o lider junto | T6: dono `author` = Vitor, `contributor` = Messias | ✅ |
+| Card com voce como dono e o lider junto | T6: dono `author` = Vitor, `contributor` = member A | ✅ |
 | Atividades = pendencias encontradas | 8 passos com a evidencia no proprio texto | ✅ |
 | Verificar reuniao/link/gravacao/ata | J1-J5 cobrem os quatro | ✅ |
 | Ata rende atualizacao pros cards | J5 mede `meeting_action_items` ligados a atas publicadas | ✅ |
@@ -78,15 +78,15 @@ piloto da T6 (4 de 8 passos). Comando: `sync_tribe_journey_card(<initiative_id>,
 **D3 - triagem dos 34 checkboxes do GP x Presidencia.**
 `docs/governance/GP_PRESIDENCIA_COMENTARIOS_PARA_ATIVIDADES.md`, coluna `Manter?`.
 **Por que nao apliquei:** os comentarios sao de 03/08 e 06/08 e ha supersessao dentro do
-proprio quadro - o de 06/08 do card `[9]` revoga parte do de 03/08 ("Ivan APROVOU... bola
-agora com o Aaron"). Transcrever os 34 hoje criaria duplicatas e ressuscitaria acoes ja
+proprio quadro - o de 06/08 do card `[9]` revoga parte do de 03/08 ("member B APROVOU... bola
+agora com o member C"). Transcrever os 34 hoje criaria duplicatas e ressuscitaria acoes ja
 concluidas. So quem acompanhou o quadro nas ultimas duas semanas sabe o estado real.
 
 **D4 - baseline em quadro de governanca.** 0 dos 23 cards tem. Se e intencional, o quadro
 fica fora do portfolio por definicao e isso precisa estar escrito - hoje nao esta.
 
 **D5 - responsavel real dos cards parados.** ~8 cards marcados "PARKED - sem retorno do
-Ivan", follow-up vencido ha semanas, mas o assignee e o GP. Manter assim mede a coisa
+member B", follow-up vencido ha semanas, mas o assignee e o GP. Manter assim mede a coisa
 errada; reatribuir mede a certa mas muda a leitura politica. Decisao sua, nao de dado.
 
 **D6 - iniciativas nao-tribo.** Com `--all` (workgroups, comites, congressos) o gap A vai a

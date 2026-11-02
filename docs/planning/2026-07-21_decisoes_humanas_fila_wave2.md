@@ -13,7 +13,7 @@
 | # | Decisao | Quem decide | Bloqueia | Minha recomendacao | Urgencia |
 |---|---------|-------------|----------|--------------------|----------|
 | 1 | #1008 - ratificacao do nome "AI Community Day" + PDU/certificado | Presidencia PMI-GO + legal-counsel + c-level | Divulgacao de qualquer material publico do ACD | Postura conservadora: ratificacao escrita ANTES de publicar; certificado sem claim de PDU | Alta (dependencia externa; recorrente) |
-| 2 | #1152 - mapa funcao->gate (Ivan vs Lorena) + committee_majority stub | Voce + confirmacao Ivan/Lorena | Trilha de lock da Politica (Termo e contornavel) | Ratificar leitura do issue: Lorena = contraparte pos-aprovacao, nao gate de versao; policy com cadeia custom explicita | Media |
+| 2 | #1152 - mapa funcao->gate (member A vs member B) + committee_majority stub | Voce + confirmacao member A/member B | Trilha de lock da Politica (Termo e contornavel) | Ratificar leitura do issue: member B = contraparte pos-aprovacao, nao gate de versao; policy com cadeia custom explicita | Media |
 | 3 | #1424 Fase D - reclassificar tipos imediatos para digest | Voce (produto/UX) | Nada critico (A/B/C sao a alavanca real) | ADIAR D ate a medicao de sabado 25/07; nao mover certificado/welcome | Baixa-media |
 | 4 | #1358 - "stakeholder de capitulo" vs "ponto focal do nucleo" | Voce (tem a lista nominal) | Corretude de rosters/campanhas (grupos WhatsApp C4) | Adotar o split de 3 categorias; voce confirma o mapa nominal; eu implemento (so rotulo, sem mudar autoridade) | Media |
 | 5 | #1014 - mecanismo de convite de signup direcionado | Voce (produto) + security-engineer | Remediacao do dia-9 a cada virada de ciclo | Comecar por "nudge-to-signup" (a); magic-link (b) so se nudge nao bastar | Media (workaround manual existe) |
@@ -67,44 +67,44 @@ forward** - a consulta escrita a PMI-GO/PMI Latam vira politica-padrao para ACDs
 
 ---
 
-## 2. #1152 - Mapa funcao->gate (fusao Ivan/Lorena) + committee_majority stub
+## 2. #1152 - Mapa funcao->gate (fusao member A/member B) + committee_majority stub
 
-**Quem decide:** Voce, com confirmacao de Ivan/Lorena sobre a semantica da contraparte. **Meu papel:**
+**Quem decide:** Voce, com confirmacao de member A/member B sobre a semantica da contraparte. **Meu papel:**
 propor o mapa e implementar em `_can_sign_gate` apos ratificado (seguindo o procedimento de 4 etapas
 do `docs/reference/V4_AUTHORITY_MODEL.md` antes de qualquer DDL de gate).
 
 **Contexto (aterrado no corpo do issue, schema live 06/07):** o gate `president_go` do
 `volunteer_term_template` hoje e satisfeito por duas funcoes distintas via predicado de designacao
-sobreposto: Ivan (`legal_signer`, presidente/SEDE) e Lorena (`voluntariado_director`, diretora de
+sobreposto: member A (`legal_signer`, presidente/SEDE) e member B (`voluntariado_director`, diretora de
 voluntariado). O carve-out `voluntariado_director` dentro de `president_go` funde **aprovacao da
 versao do documento** com **assinatura da contraparte da entidade em cada Termo executado**.
 
-**Decisao 2a - a funcao da Lorena e gate de versao ou contraparte por-instrumento?**
-- Cenario A (leitura do issue): a assinatura da Lorena e a **contraparte da entidade promotora em
+**Decisao 2a - a funcao da member B e gate de versao ou contraparte por-instrumento?**
+- Cenario A (leitura do issue): a assinatura da member B e a **contraparte da entidade promotora em
   cada Termo executado** (mecanica pos-aprovacao, por adesao individual), NAO um gate de aprovacao de
   versao. Remover o carve-out `voluntariado_director` de `president_go`.
 - Cenario B: manter como esta (ambos satisfazem o gate de versao).
 - **Recomendacao: A.** Aprovar a VERSAO do template (vira vigente) e um ato de governanca documental;
   assinar a contraparte de cada Termo executado e outra coisa (por-adesao, pos-aprovacao). Alinha com
-  [[reference-volunteer-term-countersign-lorena]] (a contra-assinatura e ato exclusivo da Lorena,
+  [[reference-volunteer-term-countersign-lorena]] (a contra-assinatura e ato exclusivo da member B,
   roteado como fila, nao como gate). Corrige tambem um cheiro de segregacao de funcoes.
 
 **Decisao 2b - segregacao de funcoes.**
 - Cenario A: proibir que a mesma pessoa aprove o template E assine a contraparte.
 - Cenario B: nao restringir.
 - **Recomendacao: A.** Controle interno basico. Custo zero na pratica (ja sao pessoas diferentes:
-  Ivan aprova, Lorena assina a contraparte). Trava o precedente antes de virar problema.
+  member A aprova, member B assina a contraparte). Trava o precedente antes de virar problema.
 
 **Decisao 2c - committee_majority stub trava o lock da Politica.**
 `resolve_default_gates('policy')` devolve `committee_majority` (retorna FALSE ate o roster do Comite
 de Curadoria ser definido em §7.1) no gate 1, entao a Politica nunca atinge maioria e fica presa.
 - Cenario A: destravar o roster do Comite de Curadoria (§7.1) agora.
-- Cenario B: travar a policy com uma cadeia custom explicita (ex.: Ivan `president_go` +
+- Cenario B: travar a policy com uma cadeia custom explicita (ex.: member A `president_go` +
   `partner_consultation` consultivo), deixando `committee_majority` de fora ate §7.1 existir.
 - **Recomendacao: B, a menos que o Comite ja esteja de fato constituido.** Um stub que retorna FALSE
   nunca atinge maioria: depender dele bloqueia a trilha da Politica indefinidamente. Uma cadeia
   custom e honesta sobre quem realmente aprova hoje. Nao afeta a Onda 1 (Termo), que segue contornavel
-  (threshold 1, Ivan assina a SEDE).
+  (threshold 1, member A assina a SEDE).
 
 ---
 
@@ -206,5 +206,5 @@ Nada aqui e executado sem a sua decisao. Depois que voce fechar cada ponto, a di
 - **Eu executo (codigo/SPEC/rascunho):** #1152 (apos ratificar o mapa), #1358 (com o mapa nominal),
   #1014 (SPEC do mecanismo escolhido), #485, e os rascunhos do #1008.
 - **Voce roteia externamente:** #1008 (Presidencia PMI-GO + legal-counsel + c-level), #1152
-  (confirmacao Ivan/Lorena sobre a contraparte).
+  (confirmacao member A/member B sobre a contraparte).
 - **Gate duro:** nenhum material do #1008 sai antes de PMI-GO ratificar o nome + legal revisar a linguagem.

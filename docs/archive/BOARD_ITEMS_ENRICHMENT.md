@@ -25,7 +25,7 @@
 - POST 8: depoimentos format description
 - POST 11: pílulas series description
 - POST 16 (webinar): highlights + metrics description
-- Pesquisadores Blocos I-IV: template, author (Mayanna), Canva IDs, dates
+- Pesquisadores Blocos I-IV: template, author (member A), Canva IDs, dates
 - Briefing, Ferramentas, Insights, Referências posts/vídeos: purpose descriptions
 - Reuniões (ideação + estratégica): cadence descriptions
 - Backlog items: calendário, série comunidade, chamada vagas, fechamento ciclo
@@ -79,7 +79,7 @@ All items tagged `ciclo-2`, `cultura-change`, `trello-import`.
 
 ### Tags applied (21 new):
 - 20 pipeline guide cards tagged `pipeline-guide`, `processo`
-- 1 actual article enriched: "IA no GP: Análise Comparativa" → full description with authors (Débora, Letícia, João, Francisco, Cíntia), Google Doc link, EAA framework mention, PMI submission confirmation date
+- 1 actual article enriched: "IA no GP: Análise Comparativa" → full description with authors (member B, member C, João, member D, member E), Google Doc link, EAA framework mention, PMI submission confirmation date
 
 ---
 

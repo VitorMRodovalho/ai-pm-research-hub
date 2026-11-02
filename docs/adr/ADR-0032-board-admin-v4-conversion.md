@@ -10,8 +10,8 @@
   - Migration `20260427122732_adr_0032_board_admin_v4_reader_convert.sql` (1 reader Opção A)
   - Migration `20260427122737_adr_0032_board_admin_revoke_anon.sql` (defense-in-depth)
 - Privilege expansion outcomes:
-  - Group W (writers): legacy 8 → V4 10. would_gain = [Herlon, Mayanna] (initiative leaders, scope-restricted via `can_by_member(_, _, 'initiative', _)`). would_lose = []
-  - Group R (reader): legacy 5 → V4 10. would_gain = 7 admin/governance roles. would_lose = [Sarah curator, Mayanna comms_leader] — Path A drift correction
+  - Group W (writers): legacy 8 → V4 10. would_gain = [member A, member B] (initiative leaders, scope-restricted via `can_by_member(_, _, 'initiative', _)`). would_lose = []
+  - Group R (reader): legacy 5 → V4 10. would_gain = 7 admin/governance roles. would_lose = [member C curator, member B comms_leader] — Path A drift correction
 - pg_policy precondition (Q-D charter, p65): zero RLS refs verified pre-apply.
 - Cross-references: ADR-0007, ADR-0011, ADR-0027 (Opção B reuse precedent),
   ADR-0030 (view_internal_analytics — action being reused for reader),
@@ -45,7 +45,7 @@ OR (v_caller.operational_role = 'tribe_leader' AND v_caller.tribe_id = v_board_t
 | `admin_restore_project_board(uuid, text)` | admin UI | DESTRUCTIVE inverse |
 | `admin_update_board_columns(uuid, jsonb)` | /admin/board/[id] (per RPC inventory) | UPDATE columns config |
 
-**Legacy V3 set: 8 active members** (6 tribe_leaders + Fabricio + Vitor SA)
+**Legacy V3 set: 8 active members** (6 tribe_leaders + member D + Vitor SA)
 
 #### Group R (Reader — 1 fn) — list archived items
 
@@ -60,7 +60,7 @@ OR designations IN ('co_gp', 'curator', 'comms_leader')
 |---|---|
 | `admin_list_archived_board_items(uuid, integer)` | `/admin/governance-v2.astro` (curator-visible page from Bug A) |
 
-**Legacy V3 set: 5 active members** (Fabricio, Mayanna, Roberto, Sarah, Vitor SA)
+**Legacy V3 set: 5 active members** (member D, member B, Roberto, member C, Vitor SA)
 
 ### Por que 2 estratégias diferentes
 
@@ -79,7 +79,7 @@ OR designations IN ('co_gp', 'curator', 'comms_leader')
 
 | Reuse candidate | V4 set vs legacy | Drift |
 |---|---|---|
-| `view_internal_analytics` | 10 (incl Roberto, sem Sarah/Mayanna) | Drift correction: Sarah curator + Mayanna comms_leader perdem (mesmo padrão ADR-0030) |
+| `view_internal_analytics` | 10 (incl Roberto, sem member C/member B) | Drift correction: member C curator + member B comms_leader perdem (mesmo padrão ADR-0030) |
 | `write_board` | 35 | Too broad — read-only grant a participant é cesto demais |
 
 → **Group R reuses `view_internal_analytics`** (Opção B precedent) com drift correction documented.
@@ -195,23 +195,23 @@ END;
 #### 5. Privilege expansion check — Group R
 
 ```
-legacy reader = 5: Fabricio, Mayanna, Roberto, Sarah, Vitor SA
+legacy reader = 5: member D, member B, Roberto, member C, Vitor SA
 v4 view_internal_analytics = 10
-would_gain = [Ana, Felipe, Francisca, Ivan, Márcio, Matheus, Rogério] (7 admin/governance roles)
-would_lose = [Mayanna (comms_leader designation sem V4 engagement),
-              Sarah (curator designation sem V4 engagement)]
+would_gain = [Ana, Felipe, member E, member F, member G, member H, member I] (7 admin/governance roles)
+would_lose = [member B (comms_leader designation sem V4 engagement),
+              member C (curator designation sem V4 engagement)]
 ```
 
 **Implications**:
 - 7 admin/governance roles ganham acesso a archived board items listing — adequado per role institucional
-- Sarah/Mayanna drift loss — mesmo padrão de ADR-0030 (Path A drift correction)
-- **MAS**: `/admin/governance-v2.astro` é Bug A's curator-visible page. Sarah loses listing capability there. UX consideration.
+- member C/member B drift loss — mesmo padrão de ADR-0030 (Path A drift correction)
+- **MAS**: `/admin/governance-v2.astro` é Bug A's curator-visible page. member C loses listing capability there. UX consideration.
 
 ### Alternative para Group R: keep V3 OR new action
 
 Dois caminhos alternativos para R, dependendo do PM weight:
 
-- **R-Opção A** (proposed): reuse `view_internal_analytics` + drift correction Sarah/Mayanna
+- **R-Opção A** (proposed): reuse `view_internal_analytics` + drift correction member C/member B
 - **R-Opção B**: new action `view_archived_boards` com ladder incluindo curator + comms_leader designations (hybrid V3+V4)
 - **R-Opção C**: keep V3 (defer)
 
@@ -229,7 +229,7 @@ R-Opção A é mais consistente com p66 padrão; R-Opção B preserva curator UX
 
 ### Para members
 - **Group W writers**: privilege expansion neutra/intencional (TBD pre-apply check).
-- **Group R reader Opção A**: 7 admin/governance gain access; Sarah + Mayanna lose.
+- **Group R reader Opção A**: 7 admin/governance gain access; member C + member B lose.
 - **Group R reader Opção B**: zero loss + 7 gain; mas hybrid V3+V4.
 
 ### Para path A/B/C optionality
@@ -252,15 +252,15 @@ Privilege expansion check pendente — pre-apply verifica.
 
 **Recomendação**: SIM, com check pre-apply.
 
-### Q3 — Group R: Opção A (reuse view_internal_analytics, accept Sarah/Mayanna drift) OU Opção B (new action `view_archived_boards`)?
+### Q3 — Group R: Opção A (reuse view_internal_analytics, accept member C/member B drift) OU Opção B (new action `view_archived_boards`)?
 
 **Trade-off**:
-- Opção A: simpler, follows ADR-0030 drift precedent. Sarah loses curator board listing access em /admin/governance-v2.
-- Opção B: preserves Sarah/Mayanna access. New action sprawl.
+- Opção A: simpler, follows ADR-0030 drift precedent. member C loses curator board listing access em /admin/governance-v2.
+- Opção B: preserves member C/member B access. New action sprawl.
 
-**Recomendação**: **Opção A com PM accept Sarah curator drift** — Sarah já lost view_internal_analytics em ADR-0030, drift consistent.
+**Recomendação**: **Opção A com PM accept member C curator drift** — member C já lost view_internal_analytics em ADR-0030, drift consistent.
 
-OU se UX em /admin/governance-v2 é importante para Sarah → Opção B.
+OU se UX em /admin/governance-v2 é importante para member C → Opção B.
 
 ### Q4 — Implementation timing
 
@@ -287,7 +287,7 @@ Estimativa: ~1.5h (mais complexa que ADR-0031 — 4 fns + new action + scope wor
 
 - 4 fns V3 convertidas: 3 writers via novo `manage_board_admin` (resource-scoped) + 1 reader via Opção B reuse `view_internal_analytics`.
 - 1 nova V4 action (`manage_board_admin`) com 8 grants.
-- Group W gain Herlon + Mayanna (initiative leaders, scope-restricted to own initiative).
-- Group R gain 7 admin/governance roles + lose Sarah/Mayanna (Path A drift correction).
+- Group W gain member A + member B (initiative leaders, scope-restricted to own initiative).
+- Group R gain 7 admin/governance roles + lose member C/member B (Path A drift correction).
 - Phase B'' tally: 62 → 66 / 246 (~26.8%).
 - First use of resource-scoped `can_by_member(_, action, 'initiative', id)` in p66 — precedent para ADRs futuras.

@@ -46,7 +46,7 @@ ficou de fora da `20260904175905`.
 
 ## A segunda, e ela depende de terceiros
 
-**As agendas do Fabricio e do Fernando.** O GP pediu em 04/09 para os dois abrirem. A verificação é
+**As agendas do member A e do Fernando.** O GP pediu em 04/09 para os dois abrirem. A verificação é
 reabrir os quatro links de agendamento **em navegador** (fetch devolve 200 com a agenda vazia: são
 3.501 bytes de casca em JS) e recontar contra a linha de base registrada na `#2188`:
 

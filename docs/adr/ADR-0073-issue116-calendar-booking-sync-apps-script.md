@@ -3,16 +3,16 @@
 **Status**: Accepted (Decision 3 path B = Apps Script smoke; A = #92 full bidirectional remains future state)
 **Date**: 2026-05-06
 **Decider**: PM Vitor Maia Rodovalho
-**Trigger**: Issue #116 CRITICAL (Fabricio WhatsApp 2026-05-01) + plano ABCD bloco D
+**Trigger**: Issue #116 CRITICAL (member A WhatsApp 2026-05-01) + plano ABCD bloco D
 
 ---
 
 ## Context
 
-Candidatos do processo seletivo bookam entrevistas via Calendar link público (`https://calendar.app.google/gh9WjefjcmisVLoh7`). Apps Script "auto-add guests" (p82) adiciona Fabricio como attendee. Mas **selection_interviews** permanece vazia — ninguém chamava `schedule_interview` RPC.
+Candidatos do processo seletivo bookam entrevistas via Calendar link público (`https://calendar.app.google/gh9WjefjcmisVLoh7`). Apps Script "auto-add guests" (p82) adiciona member A como attendee. Mas **selection_interviews** permanece vazia — ninguém chamava `schedule_interview` RPC.
 
 Resultado pré-fix:
-- Fabricio vê 2 entrevistas amanhã no Calendar dele
+- member A vê 2 entrevistas amanhã no Calendar dele
 - Plataforma cega: `selection_applications.status='interview_pending'` ainda
 - Wave 5d (#86 reschedule) não funciona — sem row em `selection_interviews`
 - Comitê sem registro auditável de quem está marcado
@@ -114,7 +114,7 @@ function onCalendarUpdated(e) {
 
 ### Ownership
 
-- **Apps Script project**: PM Vitor (owner) + Fabricio (editor) + plataforma email service-account (executor recommended for production)
+- **Apps Script project**: PM Vitor (owner) + member A (editor) + plataforma email service-account (executor recommended for production)
 - **Secret rotation**: PM atualiza `site_config.arm116_calendar_webhook_secret` via SQL editor + atualiza `ARM116_SECRET` no Apps Script. Recomendado a cada 90 dias OU em case of compromise.
 - **Logs**: `Logger.log` em Apps Script (Stackdriver) + `admin_audit_log` no DB
 - **Disable**: deletar trigger no Apps Script project; RPC permanece no DB
@@ -123,7 +123,7 @@ function onCalendarUpdated(e) {
 
 ### Positive
 
-- Fabricio bug resolvido: bookings aparecem em `selection_interviews` automaticamente
+- member A bug resolvido: bookings aparecem em `selection_interviews` automaticamente
 - Wave 5d reschedule flow agora funciona (precondição satisfeita)
 - Audit trail completo de bookings
 - Status promotion automatica para `interview_scheduled`

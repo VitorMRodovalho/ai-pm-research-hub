@@ -4,7 +4,7 @@
 **Created:** 2026-05-26 (session p270)
 **Origin:** PM identified two production bugs on /admin/selection during cycle4-2026 dispatch:
 1. The RPC `notify_selection_cutoff_approved` (shipped p228 W2 leaf 4 + p251 #355) has **zero UI call sites**. Only invocable via DO-block manual dispatch — that's why 7 above_band researchers sat with welcome-email-only for 21 days.
-2. Candidates whose scheduled interview lapses (evaluator never accepted Google Calendar invite) get **no automatic re-invite** — they stay in `interview_scheduled` with `conducted_at IS NULL` indefinitely. Found 3 such cases in cycle4 (Rafael, Bruna, Luciana — interviews scheduled 2026-05-14, none conducted, no cancel/reschedule, candidates in the dark for 12 days).
+2. Candidates whose scheduled interview lapses (evaluator never accepted Google Calendar invite) get **no automatic re-invite** — they stay in `interview_scheduled` with `conducted_at IS NULL` indefinitely. Found 3 such cases in cycle4 (Rafael, member A, member B — interviews scheduled 2026-05-14, none conducted, no cancel/reschedule, candidates in the dark for 12 days).
 
 Both gaps were closed in-session as one-shot DO-blocks (10 candidates total: 7 above_band + 3 stuck-scheduled). This SPEC codifies the permanent UI + automation layer so the manual path is no longer load-bearing.
 
@@ -69,7 +69,7 @@ Each wave is a separable PR with its own merge gate. Sub-issues per wave for vis
 | Gate | Pass criteria |
 |---|---|
 | Bulk button | "📧 Enviar convite (N)" appears in bulk bar when ≥1 selected (alongside existing bulk-approve/reject/waitlist at selection.astro:374-377) |
-| Pre-confirm | `confirm()` shows count + first 3 names (e.g., "Enviar convite para 5 candidatos: LUIZ, Luana, Andre, e mais 2?") |
+| Pre-confirm | `confirm()` shows count + first 3 names (e.g., "Enviar convite para 5 candidatos: LUIZ, member C, Andre, e mais 2?") |
 | Loop | Iterates selection, calls F1 RPC per app, aggregates `{sent, skipped_already_sent, error_count}` |
 | Result toast | Aggregate: "Enviados: X · Já dispatchados: Y · Erros: Z" |
 | Idempotency safety | Skipped already-sent rows do NOT count as errors (delegated to RPC's `already_sent` reason) |
@@ -153,7 +153,7 @@ PM accepts each wave when:
 | Bulk dispatch spam (PM clicks bulk by accident) | M | 2-step confirm with named preview + LIMIT 50 cap |
 | Cron re-sends to candidate who already booked outside platform | L | RPC's idempotency gate (`cutoff_approved_email_sent_at IS NOT NULL`) blocks; new gate also checks `latest_interview.status = 'scheduled' AND scheduled_at > now()` before rescue cron acts |
 | F4 atomic rescue partial-fails (cancel succeeds but notify fails) | L | RPC `selection_rescue_stuck_interview` wraps in PL/pgSQL block; on notify failure, savepoint rollback so cancel doesn't persist orphaned |
-| Cron LRD picker dispatches all to one evaluator (LRD bug) | L | LRD already proved working today: 7 above_band split between 2 evaluators (Vitor 6 + Fabricio 1) on first dispatch |
+| Cron LRD picker dispatches all to one evaluator (LRD bug) | L | LRD already proved working today: 7 above_band split between 2 evaluators (Vitor 6 + member D 1) on first dispatch |
 | In_band candidates accidentally invited | M | Strict `>= pert_target_score` predicate in cron; in_band requires explicit PM bulk-action via F3 |
 | New SECDEF RPC missing FK source assertions | M | SEDIMENT-239b.A applied: contract test for `selection_rescue_stuck_interview` asserts `actor_id := v_caller.id` (not `auth.uid()`), preserving FK to `members(id)` |
 

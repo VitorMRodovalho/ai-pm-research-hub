@@ -33,7 +33,7 @@ Ondas 1 (A1/A2 + invariante M, main `387f20d3`) e 2 (corte active-only retroativ
 ## Mandato desta sessão (Onda 3 - Plano B0 do relatório)
 1. **Re-aterrar ANTES (obrigatório):** re-rodar ao vivo `cycle_start` (esperado 2026-07-09), o batch de 11/07 (esperado
    ~560/58/5620), os 525/5250/48 pré-ciclo, e um antes/depois NOMINAL de quem muda de posição no ranking do ciclo
-   (o relatório cita Ana C. 280->50, Jefferson P. 280->30, Marcos A. 260->20, Fabricio C. 230->10 - RE-ATERRAR).
+   (o relatório cita member C 280->50, member A 280->30, member D 260->20, member B 230->10 - RE-ATERRAR).
 2. **Adicionar `gamification_points.occurred_at timestamptz`** = data REAL do fato (não do lançamento). DDL via
    `apply_migration`; nullable; index se necessário.
 3. **Backfill `occurred_at`:** presença via `attendance.event_id -> events.date`; demais categorias via a fonte

@@ -518,7 +518,7 @@ Cada chapter = controlador independente. Núcleo = operador. **DPA por chapter A
 NÃO bloqueia Ω-A/B/C técnicos. Bloqueia emissão Termos voluntários PMI-CE. Decisão Opção C (híbrida) bem fundamentada — CF art. 5 XXXVI + Lei 9.610/98 art. 49. **member E deve validar mecanismo "ciência prévia" como substituto consentimento expresso**.
 
 **7. Política IP v2.7 Wave 1-5**:
-NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + member C Path B firewall legalmente vinculante**. IP Policy v3 (Q3/2026) = veículo firewall definitivo.
+NÃO bloqueia técnico Ω-A. **Bloqueia transferência IP cross-chapter + Path B firewall legalmente vinculante**. IP Policy v3 (Q3/2026) = veículo firewall definitivo.
 
 ---
 

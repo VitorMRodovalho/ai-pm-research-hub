@@ -61,7 +61,7 @@ Deprecar `members.initiative_id` em **3 fases progressivas**, mantendo o trigger
 **Critério de done Fase A:**
 - Grep `members\.initiative_id\|m\.initiative_id\|mem\.initiative_id` no `src/` retorna apenas refs em `admin/types.ts` + deprecation comments.
 - TribeKanbanIsland + BoardEngine + qualquer dashboard com filtro "members of tribe X" carrega via V4 (`get_initiative_members` ou similar).
-- Smoke: para member com 2 engagements (e.g. Fabricio em research_tribe + workgroup), UIs mostram membership correta em ambas.
+- Smoke: para member com 2 engagements (e.g. member A em research_tribe + workgroup), UIs mostram membership correta em ambas.
 
 **Tempo estimado:** ~2-3h.
 

@@ -13,7 +13,7 @@ Hoje `members` é uma tabela catch-all que mistura perfis distintos:
 | Perfil | Base legal LGPD | Termo | Hoje |
 |--------|-----------------|-------|------|
 | Voluntário ativo (Vitor, Pedro) | Execução de contrato de voluntariado (Lei 9.608) | Assinado e vigente | `members` |
-| Embaixador / mérito (Herlon) | Consent para uso de nome | Pode estar vencido | `members` com designation ambassador |
+| Embaixador / mérito (member A) | Consent para uso de nome | Pode estar vencido | `members` com designation ambassador |
 | Chapter board (diretor PMI-CE) | Relação com capítulo, não Núcleo | N/A | `members` com designation chapter_board |
 | Partner contact (CTO de empresa parceira) | Legítimo interesse / consent | N/A | `members.partner_contact` (hack) |
 | Palestrante externo de webinar | Consent para publicação | N/A | Sem modelo |
@@ -22,7 +22,7 @@ Hoje `members` é uma tabela catch-all que mistura perfis distintos:
 
 LGPD Art. 7º exige **base legal específica por finalidade**. Mesclar perfis distintos em uma tabela com booleans viola o princípio da minimização e fragmenta o inventário de dados pessoais, dificultando o atendimento de direitos do titular (Art. 18) e o mapeamento de fluxos (KR4.1 PMI-CE).
 
-Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, sem termo vigente) e ativo para virar `study_group_owner` no CPMAI (novo engagement com VEP + termo novo). Essas são duas realidades distintas sobre a mesma pessoa — não um membro com dois flags.
+member A é o exemplo canônico: ele é um `ambassador` (engagement de mérito, sem termo vigente) e ativo para virar `study_group_owner` no CPMAI (novo engagement com VEP + termo novo). Essas são duas realidades distintas sobre a mesma pessoa — não um membro com dois flags.
 
 ## Decisão
 
@@ -51,7 +51,7 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
    ```
 3. **`members` vira uma view de compatibilidade** — `SELECT * FROM persons JOIN engagements ... WHERE status='active' AND kind IN (kinds considerados "membro voluntário")`. Todo código legado continua funcionando. Novo código usa `persons` + `engagements`.
 4. **Base legal LGPD é propriedade do `engagement_kind`** (ver ADR-0008). Cada kind declara: que base legal usa, se exige termo, qual template de termo, qual lifecycle, qual retenção pós-offboard.
-5. **Herlon como caso de teste**: após implementação, ele terá duas linhas em `engagements`:
+5. **member A como caso de teste**: após implementação, ele terá duas linhas em `engagements`:
    - `kind=ambassador, status=active, legal_basis=consent, end_date=null, agreement=null` (mérito, sem termo)
    - `kind=study_group_owner, status=pending, legal_basis=contract_volunteer, vep_opportunity_id=<nova>, agreement=<assinatura pendente>` (papel operacional CPMAI)
 
@@ -67,7 +67,7 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 
 **Negativas / custos:**
 - Refactor grande. Todas as queries que hoje fazem `SELECT * FROM members WHERE operational_role=...` precisam virar join via engagements.
-- Ghost resolution (o que fizemos hoje para o Herlon) precisa ser repensado: hoje o ghost fica em `auth.users` sem link para `members`. Após refactor, fica sem link para `persons`.
+- Ghost resolution (o que fizemos hoje para o member A) precisa ser repensado: hoje o ghost fica em `auth.users` sem link para `members`. Após refactor, fica sem link para `persons`.
 - View de compatibilidade precisa ser rápida — potencial impacto de performance se mal indexada.
 - Rewrite do `sign_volunteer_agreement()` para escrever em engagements ao invés de campos de members.
 
@@ -95,7 +95,7 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 - [ ] View `members_compat` mantém todo código legado funcionando — **POSTERGADO Fase 7** (130+ FKs impedem conversão)
 - [x] `sign_volunteer_agreement()` popula `engagements.agreement_certificate_id` — migration `20260415020000` (Fase 7, 2026-04-13)
 - [x] Ghost resolution atualiza `persons.auth_id` — backfill de members.auth_id em `20260413310000`; fluxo novos logins pendente (dívida no master doc)
-- [ ] Herlon tem 2 engagements distintos (ambassador + study_group_owner) — **PENDENTE** aguarda VEP formal
+- [ ] member A tem 2 engagements distintos (ambassador + study_group_owner) — **PENDENTE** aguarda VEP formal
 - [ ] Export LGPD gera JSON por engagement com base legal — **POSTERGADO Fase 7**
 - [ ] MCP tools migram para `getPerson() + getActiveEngagements()` — **POSTERGADO Fase 7**
 
@@ -105,21 +105,21 @@ Herlon é o exemplo canônico: ele é um `ambassador` (engagement de mérito, se
 
 O seed inicial de `engagement_kinds` (cutover V4, 2026-04-13) gravou a linha de `ambassador` com `requires_agreement=true`, contradizendo o modelo canônico descrito na linha 55 deste ADR (`kind=ambassador, status=active, legal_basis=consent, end_date=null, agreement=null` — mérito, sem termo). A própria coluna `description` da linha já alertava: "Reconhecimento honorário / mérito. Sem termo obrigatório."
 
-A drift foi descoberta durante investigação do issue #160 (Herlon authority state): 12 dos 16 engagements no backlog de "pending agreement" eram ambassadors que o design nunca exigiu termo. Ambassadors não possuem nenhuma linha em `engagement_kind_permissions` — o flag não concedia capacidades V4, apenas mantinha o cache de `auth_engagements.is_authoritative=false` indevidamente.
+A drift foi descoberta durante investigação do issue #160 (member A authority state): 12 dos 16 engagements no backlog de "pending agreement" eram ambassadors que o design nunca exigiu termo. Ambassadors não possuem nenhuma linha em `engagement_kind_permissions` — o flag não concedia capacidades V4, apenas mantinha o cache de `auth_engagements.is_authoritative=false` indevidamente.
 
-**Histórico**: A migration `20260419010000` (linhas 99-104) havia explicitamente re-setado `requires_agreement=true` com a justificativa "Formal external role: keep consent, require agreement". Essa justificativa conflacionou dois usos distintos de "consent": (a) consent como base legal LGPD Art. 7 I, que por Art. 8 exige documentação por escrito; (b) consent no sentido coloquial de aceitar uma recognição de mérito, sem instrumento escrito. Por **ADR-0008 §lifecycle table (linha 25)** — `ambassador (mérito, Herlon) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent` — ambassador é caso (b). Esta reconciliação supera a decisão de 20260419010000.
+**Histórico**: A migration `20260419010000` (linhas 99-104) havia explicitamente re-setado `requires_agreement=true` com a justificativa "Formal external role: keep consent, require agreement". Essa justificativa conflacionou dois usos distintos de "consent": (a) consent como base legal LGPD Art. 7 I, que por Art. 8 exige documentação por escrito; (b) consent no sentido coloquial de aceitar uma recognição de mérito, sem instrumento escrito. Por **ADR-0008 §lifecycle table (linha 25)** — `ambassador (mérito, member A) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent` — ambassador é caso (b). Esta reconciliação supera a decisão de 20260419010000.
 
 **Fix:** Migration `20260803000001_p217_160_ambassador_catalog_fix.sql` aplicou `UPDATE engagement_kinds SET requires_agreement=false WHERE slug='ambassador'`. Efeitos:
 - 12 engagements ambassador (8 membros distintos) flip para `is_authoritative=true` via a branch `OR NOT COALESCE(ek.requires_agreement, false)` da view `auth_engagements`.
 - Zero side-effects de capacidade V4 (0 linhas em `engagement_kind_permissions` para esse kind).
-- Backlog real de termo cai de 16 → 4 (Herlon study_group_owner + Fernando study_group_participant + Vitor volunteer x2).
+- Backlog real de termo cai de 16 → 4 (member A study_group_owner + Fernando study_group_participant + Vitor volunteer x2).
 
 **Forward-defense:** Teste `tests/contracts/engagement-kinds-catalog-invariants.test.mjs` impede que migrations futuras re-introduzam a drift (cobre UPDATE, INSERT multi-row e ON CONFLICT DO UPDATE).
 
 **Falso-positivo conhecido pós-fix:** `validate_privacy_policy_consistency()` (RPC em migration `20260418010000` linhas 268-276) gera severity=`error` para qualquer kind onde `legal_basis='consent' AND NOT requires_agreement`, com mensagem "Consent-based kind does not require agreement. LGPD Art. 8 requires explicit consent documentation." Pós-fix, ambassador trip essa branch — falso positivo, porque a RPC assume conservadoramente que consent = LGPD Art. 7 I, mas para ambassador é consent coloquial (caso b acima). RPC atualmente é dormente (não exposta via MCP, não chamada por nenhuma página/teste). Documentado para impedir que sessão futura "corrija" ambassador de volta para `requires_agreement=true` baseado no alerta da RPC. Follow-up rastreado em P162 WATCH-217.A (refactorar RPC para excluir kinds de mérito, ou adicionar `is_merit_only` boolean).
 
 **Cross-ref:**
-- Issue #160 (parcialmente fechado para os 8 ambassadors; 1 study_group_owner Herlon segue rastreado em OPP-160.B)
+- Issue #160 (parcialmente fechado para os 8 ambassadors; 1 study_group_owner member A segue rastreado em OPP-160.B)
 - ADR-0008 §lifecycle table linha 25 (canônico operacional: "Nomeação → Sem termo")
 - Migration 20260419010000 linhas 99-104 (decisão prévia overridden por esta reconciliação)
 - P162 DECISION-160 (#133), RESOLVED-160.A (#134), OPP-160.B (#135), WATCH-217.A (#136 — false-positive)

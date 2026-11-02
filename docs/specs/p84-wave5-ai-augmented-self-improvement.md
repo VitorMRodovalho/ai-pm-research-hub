@@ -5,7 +5,7 @@
 - **PM approval:** opt-in interview topics + cap 2 re-analyses + hybrid model (AI-shared + committee-secret)
 - **Scope:** PMI Journey v4 Phase C extension. Two related but distinct features:
   - **Wave 5b**: Self-improvement loop (candidate enriches application after AI gap detection)
-  - **Wave 5d**: Interview slot change / reschedule feature (Thayanne case + future)
+  - **Wave 5d**: Interview slot change / reschedule feature (member A case + future)
 - **Council Tier 2 to invoke:** ai-engineer + ux-leader + legal-counsel (parallel)
 
 ---
@@ -14,13 +14,13 @@
 
 **Wave 5b — Gap detection without action loop**
 
-Hoje (post-CBGPL launch p82): após consent, gemini-2.5-flash analisa aplicação em ~10s e gera `red_flags` + `areas_to_probe` + `fit_for_role.score`. Esses sinais ficam **invisíveis para o candidato** — só o comitê os vê em `/admin/selection/[id]`. Candidatos com aplicação genérica (ex: Thayanne 2026-04-30: score 1/5, "aplicação extremamente genérica") ficam sem oportunidade de fortalecer **antes** da decisão humana — tornando a IA um *gate* implícito, não um *coach*.
+Hoje (post-CBGPL launch p82): após consent, gemini-2.5-flash analisa aplicação em ~10s e gera `red_flags` + `areas_to_probe` + `fit_for_role.score`. Esses sinais ficam **invisíveis para o candidato** — só o comitê os vê em `/admin/selection/[id]`. Candidatos com aplicação genérica (ex: member A 2026-04-30: score 1/5, "aplicação extremamente genérica") ficam sem oportunidade de fortalecer **antes** da decisão humana — tornando a IA um *gate* implícito, não um *coach*.
 
 PM mantra: "human-in-the-loop, IA assiste". Aplicação atual viola parcialmente porque o sinal IA não retorna ao candidato. Resultado: aplicações pobres → entrevistas pobres → comitê decide com pouca evidência → candidato sente julgamento sem chance.
 
 **Wave 5d — Calendar booking sem visibilidade na plataforma**
 
-Hoje: candidato agenda via link público Calendar (`gh9WjefjcmisVLoh7`). Apps Script auto-add guests mas **não cria row em `selection_interviews`**. Quando avaliador declina (ex: PM declined Thayanne 2026-04-30 12:38 BRT), Google envia auto-email mas plataforma não fica sabendo + não envia comunicação adicional + candidata não recebe oportunidade clara de re-bookar via plataforma. Silent gap.
+Hoje: candidato agenda via link público Calendar (`gh9WjefjcmisVLoh7`). Apps Script auto-add guests mas **não cria row em `selection_interviews`**. Quando avaliador declina (ex: PM declined member A 2026-04-30 12:38 BRT), Google envia auto-email mas plataforma não fica sabendo + não envia comunicação adicional + candidata não recebe oportunidade clara de re-bookar via plataforma. Silent gap.
 
 ## 2. Decisão de produto (PM 2026-04-30)
 
@@ -123,7 +123,7 @@ Comitê vê painel:
   - Email contém: link `/pmi-onboarding/[token]` → ao abrir mostra banner "Reagende sua entrevista" + iframe Calendar booking page (`gh9WjefjcmisVLoh7`)
   - Token reissued se expirou (7-day window pode renovar +7d)
 - **Candidato re-bookou**: futuro Calendar webhook OR Apps Script → marca status back to `scheduled`
-- **Para Thayanne**: PM marca via /admin → email auto disparado → ela recebe via plataforma (não manual)
+- **Para member A**: PM marca via /admin → email auto disparado → ela recebe via plataforma (não manual)
 
 ## 4. Schema changes (migration)
 

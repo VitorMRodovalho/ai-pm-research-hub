@@ -61,11 +61,11 @@ C (gamificacao #1448/#1449), D (#1004 LGPD C3->C4), E (#1170 dedup), F (#1170 re
 
 3. **[Wave 2 - proximo TECNICO se #1008 travar em decisao humana: #1152 (bug/governance)]**
    Mapear funcao->gate explicitamente. `_can_sign_gate` funde no gate `president_go` do
-   `volunteer_term_template` duas funcoes distintas: Ivan (`legal_signer`, aprova a VERSAO do doc)
-   e Lorena (`voluntariado_director`, assina a CONTRAPARTE da entidade em cada Termo executado,
+   `volunteer_term_template` duas funcoes distintas: member A (`legal_signer`, aprova a VERSAO do doc)
+   e member B (`voluntariado_director`, assina a CONTRAPARTE da entidade em cada Termo executado,
    pos-aprovacao). O carve-out `voluntariado_director` dentro de `president_go` e a fusao indevida +
    cheiro de segregacao de funcoes. Achado 2: `committee_majority` e STUB (retorna false) e travaria
-   o lock de `policy` no gate 1. Impacto do Achado 1: contornavel (threshold 1, Ivan assina a SEDE),
+   o lock de `policy` no gate 1. Impacto do Achado 1: contornavel (threshold 1, member A assina a SEDE),
    mas corrigir a semantica antes de virar precedente. Pedido: documentar o mapa funcao->gate em
    `docs/reference/V4_AUTHORITY_MODEL.md` + refletir em `_can_sign_gate`. **ANTES de mexer em
    `engagement_kind_permissions` ou gates: rodar o procedimento de 4 etapas do V4_AUTHORITY_MODEL.md**
@@ -82,7 +82,7 @@ C (gamificacao #1448/#1449), D (#1004 LGPD C3->C4), E (#1170 dedup), F (#1170 re
 - **#1170 residuo opcional (DDL):** redesenhar `_test_detect_inactive_with_threshold` com
   subtransacao-abort para tirar o `DELETE arm9 < 6 dias` amplo (landmine latente). So se quiser.
 - **#1004 follow-up nao-LGPD:** 25 engagements terminados com `end_date` NULL (backfill opcional).
-- **Leticia** pendente: reconectar em `/mcp/semantic` (client_id nao-UUID cacheado, fix client-side).
+- **member C** pendente: reconectar em `/mcp/semantic` (client_id nao-UUID cacheado, fix client-side).
 - **EPIC #1383** fecha a mao ~31/07 (wiki OK; falta so uso >= 2 semanas via `mcp_usage_log`).
 - #1440 (rate-limit `/oauth/register`), #1403 (watch spec MCP 2026-07-28).
 - Trap: `gh secret set` pelo shell `!` grava VAZIO - usar web UI. Branches: NUNCA deletar

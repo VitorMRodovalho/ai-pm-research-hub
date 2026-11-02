@@ -14,8 +14,8 @@ This spec proposes the schema, routing logic, and migration path for moving cycl
 PM unblocked the Cycle 4 cutoff dispatch by populating `selection_cycles.interview_booking_url` with a Núcleo group calendar link:
 
 - `cycle4-2026.interview_booking_url = 'https://calendar.app.google/XPiGWLh9JaLVFKJc6'` (populated 2026-05-24 16:38 UTC)
-- 5 above-target dispatches executed via `notify_selection_cutoff_approved(app_id)` (Henrique 227, João 171, Francisleila 164, Cristiano 163, Edinan 157.50; emails sent 16:39:48-16:40:23 UTC).
-- The Núcleo link routes to dual interview (Vitor + Fabricio). This is the implicit assumption for ALL Cycle 4 tracks today.
+- 5 above-target dispatches executed via `notify_selection_cutoff_approved(app_id)` (member A 227, João 171, member B 164, member C 163, member D 157.50; emails sent 16:39:48-16:40:23 UTC).
+- The Núcleo link routes to dual interview (Vitor + member E). This is the implicit assumption for ALL Cycle 4 tracks today.
 
 **v1 does NOT remove this column.** The cycle-level URL remains the fallback and the leader-track default. Existing behavior is preserved for cycles that don't opt into per-evaluator routing.
 
@@ -35,7 +35,7 @@ PM unblocked the Cycle 4 cutoff dispatch by populating `selection_cycles.intervi
 ### 2.2 Live Cycle 4 evaluator state (de facto vs de jure)
 
 - `selection_committee` rows for cycle4-2026: **0**
-- Actual evaluators (from `selection_evaluations`): Vitor (51 evals) + Fabricio (40 evals)
+- Actual evaluators (from `selection_evaluations`): Vitor (51 evals) + member E (40 evals)
 - Implication: PM has been operating via service-role JWT injection (SEDIMENT-226.C pattern) because committee seed was never executed (p226 carry deprioritized). v1 must NOT depend on committee seed being populated to work — graceful fallback to cycle URL when committee is empty.
 
 ### 2.3 Email template binding (today)
@@ -205,7 +205,7 @@ UPDATE selection_applications SET cutoff_approved_email_sent_at = now() WHERE id
 
 ### 5.2 Why LRD round-robin (and not random, not least-loaded)
 
-- **Least-loaded by open interviews** would be ideal but requires a `selection_interviews.status IN ('scheduled','pending')` query per dispatch + agreement on what "loaded" means. v1 can't ship without more signal on Fabricio/Vitor's true off-platform commitments.
+- **Least-loaded by open interviews** would be ideal but requires a `selection_interviews.status IN ('scheduled','pending')` query per dispatch + agreement on what "loaded" means. v1 can't ship without more signal on member E/Vitor's true off-platform commitments.
 - **Random** is fast but yields visible streaks (3 in a row to Vitor) that look unfair to candidates/evaluators. PM has been manually balancing — random would feel like a regression.
 - **LRD (round-robin by last dispatch timestamp from `selection_dispatch_url_log`)** is deterministic, fair across time, and observable (PM can audit the log). Cost: 1 LEFT JOIN LATERAL per dispatch (sub-ms with the proposed index). Streaks self-correct after each dispatch. Tied evaluators (never used) break by member_id for stable order.
 
@@ -234,7 +234,7 @@ PM directive: "leader → Núcleo/dupla". This is intentional dual-interview sem
 
 ### 6.2 Live smoke (post-deploy)
 
-- Seed cycle4-2026 committee (Vitor + Fabricio, both role=researcher + can_interview=true).
+- Seed cycle4-2026 committee (Vitor + member E, both role=researcher + can_interview=true).
 - Seed `members.interview_booking_url` for both (use existing Núcleo link as placeholder OR PM-provided personal links).
 - Dispatch a new test cutoff → verify LRD picks one, `selection_dispatch_url_log` row created.
 - Dispatch a second test cutoff → verify LRD picks the OTHER (round-robin advanced).
@@ -263,11 +263,11 @@ Decision: Least-recently-dispatched round-robin via `selection_dispatch_url_log`
 
 Decision: New column `members.interview_booking_url text` (nullable, no DB CHECK). Validation lives at admin form level via simple `^https?://` regex. Naming is symmetric with `selection_cycles.interview_booking_url` (grep parity).
 
-**Rejected alternatives:** `members.calendar_booking_url` (breaks grep symmetry); DB CHECK constraint (traps future deep-link providers); junction table `member_booking_pools` (overkill — Vitor + Fabricio have 1 pool each today).
+**Rejected alternatives:** `members.calendar_booking_url` (breaks grep symmetry); DB CHECK constraint (traps future deep-link providers); junction table `member_booking_pools` (overkill — Vitor + member E have 1 pool each today).
 
-### Q3 — Cycle 4 reseed approach → **Seed committee Vitor+Fabricio evaluator, URLs NULL** ✓
+### Q3 — Cycle 4 reseed approach → **Seed committee Vitor+member E evaluator, URLs NULL** ✓
 
-Decision: SPEC #348 Child #4 = one-shot DML migration seeding `selection_committee` rows for Vitor + Fabricio (`role='evaluator'`, `can_interview=true`); does NOT populate `members.interview_booking_url`. Routing falls back to `cycle.interview_booking_url` until PM populates personal URLs. Zero immediate behavior change. Keeps SPEC #348 schema-pure + 1 leaf of DML.
+Decision: SPEC #348 Child #4 = one-shot DML migration seeding `selection_committee` rows for Vitor + member E (`role='evaluator'`, `can_interview=true`); does NOT populate `members.interview_booking_url`. Routing falls back to `cycle.interview_booking_url` until PM populates personal URLs. Zero immediate behavior change. Keeps SPEC #348 schema-pure + 1 leaf of DML.
 
 **p251 #355 correction (PM Option A 2026-05-24):** Q3 originally said `role='researcher'`, but `selection_committee.role` is the committee POSITION (`evaluator`/`lead`/`observer`), not the candidate track — the literal `'researcher'` would violate the existing CHECK constraint. PM ratified the live-schema interpretation: filter is `role IN ('evaluator','lead')` and Child #4 seeds with `role='evaluator'`. The `role_applied` column on `selection_applications` carries the track (`researcher`/`leader`), distinct from committee position. SPEC §5.1 query amended in same commit as the Child #2 migration.
 
@@ -282,7 +282,7 @@ If Q1=LRD + Q2=interview_booking_url + Q3=committee-only-no-personal-URL:
 1. Child #1 (foundation): migration §4.1 (DDL) + contract tests §6.1 offline assertions
 2. Child #2 (RPC body): `CREATE OR REPLACE FUNCTION notify_selection_cutoff_approved` with the decision tree from §5.1 + DB-gated contract assertions
 3. Child #3 (admin UI): `/admin/members/[id]` edit field for `interview_booking_url` + i18n keys × 3 langs
-4. Child #4 (cycle4 reseed): one-shot DML migration seeding `selection_committee` rows for Vitor + Fabricio (researcher); does NOT touch `interview_booking_url` (PM populates later)
+4. Child #4 (cycle4 reseed): one-shot DML migration seeding `selection_committee` rows for Vitor + member E (researcher); does NOT touch `interview_booking_url` (PM populates later)
 
 Each child is independently shippable. Child #2 is gated on Child #1. Child #3 + #4 can ship in parallel after Child #2 lands.
 
@@ -304,6 +304,6 @@ Each child is independently shippable. Child #2 is gated on Child #1. Child #3 +
 ## 10. PM A/B/C/D streak
 
 This SPEC is a spec-only deliverable per PM boot directive 2026-05-24:
-> "Seguir para #348 booking routing/calendar registry spec: registrar decisão de curto prazo: link Núcleo usado no Cycle 4; desenhar v1 com booking_url por avaliador/comitê; researcher -> Vitor/Fabricio individual; leader -> Núcleo/dupla; deixar reschedule/cancel fora do v1."
+> "Seguir para #348 booking routing/calendar registry spec: registrar decisão de curto prazo: link Núcleo usado no Cycle 4; desenhar v1 com booking_url por avaliador/comitê; researcher -> Vitor/member E individual; leader -> Núcleo/dupla; deixar reschedule/cancel fora do v1."
 
 All directive constraints honored: v0 decision documented (§1), v1 schema designed (§4), researcher/leader routing differentiated (§5), reschedule/cancel out of v1 (§3 OUT). Implementation deferred to children per §8.

@@ -307,7 +307,7 @@ Alinhar com o formato que os outros 2 pilotos vão usar.
 
 ### W108 — Financial Sustainability Framework (Design Phase)
 **Prioridade:** Baixa (design only, sem implementação)
-**Contexto:** Deputy PM Fabricio cobra início de pensamento sobre sustentabilidade.
+**Contexto:** Deputy PM member A cobra início de pensamento sobre sustentabilidade.
 PMI é sem fins lucrativos mas recursos são necessários para manutenção.
 **Escopo (apenas documentação):**
 - Mapear possibilidades: parcerias acadêmicas, licenças de ferramentas IA, 

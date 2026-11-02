@@ -182,7 +182,7 @@ Chains em `under_review` aguardando signoff curadores. Necessário Vitor comunic
 ## 5. Próximos passos recomendados
 
 1. ☐ **Vitor envia áudio + sumário grupo WhatsApp curadoria** — ver `docs/specs/p90-comms/curador_whatsapp_message.md`
-2. ☐ **Vitor abre canal Ângelina via Ivan** — ver `docs/specs/p90-comms/angelina_brief.md`
+2. ☐ **Vitor abre canal Ângelina via member A** — ver `docs/specs/p90-comms/angelina_brief.md`
 3. ☐ **Vitor decide Q6** — Anexo Técnico Plataforma criado agora (shell stub) OR junto com Phase 2 Ângelina?
 4. ☐ **Curadores assinam chains v4** — após receberem áudio Vitor
 5. ☐ **Phase 2 Ângelina** — 4 material fixes + Anexo Técnico (sessão futura)

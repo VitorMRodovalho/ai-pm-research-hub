@@ -140,5 +140,5 @@ Cron registered: `drive-discover-atas-daily` schedule `0 3 * * *` active=true.
 ## Provenance
 
 - Phase 4 design: p78 autonomous marathon
-- PM authorization sequence: A (Phase 4) → B (autonomous backlog) → C (Mayanna UI #113)
+- PM authorization sequence: A (Phase 4) → B (autonomous backlog) → C (member A UI #113)
 - Pattern 43 saturation: 4th reuse — observability template estabilizado

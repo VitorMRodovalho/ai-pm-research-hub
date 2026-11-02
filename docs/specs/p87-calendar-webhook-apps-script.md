@@ -13,7 +13,7 @@
 
 ## Overview
 
-PM Vitor's Google Calendar (`vitor@vitormr.dev`) and Fabricio's calendar (`redacted-027@example.com`) are both shared with `nucleoia@pmigo.org.br` (free/busy permission, p87 confirmed). Apps Script attached ao Calendar **nucleoia@pmigo.org.br** triggers on event creation and POSTs to the webhook with booking metadata.
+PM Vitor's Google Calendar (`vitor@vitormr.dev`) and member A's calendar (`redacted-027@example.com`) are both shared with `nucleoia@pmigo.org.br` (free/busy permission, p87 confirmed). Apps Script attached ao Calendar **nucleoia@pmigo.org.br** triggers on event creation and POSTs to the webhook with booking metadata.
 
 Webhook handler:
 1. Validates shared secret header
@@ -53,7 +53,7 @@ const WEBHOOK_SECRET = PropertiesService.getScriptProperties().getProperty('WEBH
 // public.members.email no Núcleo plataforma.
 const EMAIL_ALIAS = {
   'vitor@vitormr.dev': 'vitor@vitormr.dev',
-  // 'redacted-026@example.com': 'redacted-027@example.com'  // adicionar se Fabricio tiver Gmail pessoal distinto do institucional
+  // 'redacted-026@example.com': 'redacted-027@example.com'  // adicionar se member A tiver Gmail pessoal distinto do institucional
 };
 
 /**
@@ -100,7 +100,7 @@ function syncEventToWebhook(ev) {
   const guests = ev.getGuestList(true);  // includes owner
   const guestEmails = guests.map(g => g.getEmail()).filter(e => e);
 
-  // Identify candidate (non-team email) — exclude PM/Fabricio
+  // Identify candidate (non-team email) — exclude PM/member A
   const teamEmails = [
     'vitor@vitormr.dev',
     'redacted-027@example.com',
