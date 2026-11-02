@@ -24,7 +24,7 @@
 
 ---
 
-## P1: PESQUISADOR (João, PMI-MG, Tribo 5 — Talentos & Upskilling)
+## P1: PESQUISADOR (member C, PMI-MG, Tribo 5 — Talentos & Upskilling)
 
 ### Jornada esperada
 
@@ -62,13 +62,13 @@ Ver XP e posição no ranking
 |---|---|---|---|
 | G1.1 | **Sem botão "Pegar para mim"** — Pesquisador precisa abrir card, ir no MemberPicker, buscar seu nome, adicionar. Deveria ter um clique. | Média | CXO |
 | G1.2 | **Sem fluxo guiado de peer review na tribo** — O Manual define 7 etapas mas o board da tribo não tem colunas correspondentes por default. O pesquisador não sabe qual é o próximo passo. | Alta | Product Lead |
-| G1.3 | **Sem notificações** — Quando alguém atribui um card ao João, ele não sabe. Sem email, sem badge, sem nada. Ele descobre na reunião. | Alta | CXO |
-| G1.4 | **Sem visão "Meus Cards"** — João quer ver rapidamente tudo que está atribuído a ele, across all boards. Hoje precisa navegar board por board. | Média | Product Lead |
-| G1.5 | **Onboarding incompleto** — João novo no ciclo 3 não tem guia de "por onde começar". A página /onboarding existe mas está vazia ou genérica. | Média | CXO |
+| G1.3 | **Sem notificações** — Quando alguém atribui um card ao member C, ele não sabe. Sem email, sem badge, sem nada. Ele descobre na reunião. | Alta | CXO |
+| G1.4 | **Sem visão "Meus Cards"** — member C quer ver rapidamente tudo que está atribuído a ele, across all boards. Hoje precisa navegar board por board. | Média | Product Lead |
+| G1.5 | **Onboarding incompleto** — member C novo no ciclo 3 não tem guia de "por onde começar". A página /onboarding existe mas está vazia ou genérica. | Média | CXO |
 
 ---
 
-## P2: LÍDER DE TRIBO (Jefferson, PMI-DF, Tribo 5 — Talentos & Upskilling)
+## P2: LÍDER DE TRIBO (member D, PMI-DF, Tribo 5 — Talentos & Upskilling)
 
 ### Jornada esperada
 
@@ -178,7 +178,7 @@ Monitorar PostHog → Sync Credly → Verificar Edge Functions
 
 ---
 
-## P5: SPONSOR / PRESIDENTE DE CAPÍTULO (Ivan, PMI-GO)
+## P5: SPONSOR / PRESIDENTE DE CAPÍTULO (member E, PMI-GO)
 
 ### Jornada
 
@@ -195,7 +195,7 @@ Receber relatório do GP → Aprovar/questionar direcionamento
 | Entender os números | ⚠️ | **Sem contexto de "esperado para este ponto do ano"** — vê 0/10 artigos e não sabe se é normal |
 | Ver relatório executivo | ✅ | /admin/cycle-report (precisa login) |
 | Comparar com acordo formal | ⚠️ | O KPI_AGREEMENT.md existe mas **não está acessível na plataforma** — é um arquivo no GitHub |
-| Ver progresso do seu capítulo vs outros | ❌ | **NÃO EXISTE view por capítulo**. Ivan quer: "quantos membros do PMI-GO estão ativos? Quantos artigos vieram do GO?" |
+| Ver progresso do seu capítulo vs outros | ❌ | **NÃO EXISTE view por capítulo**. member E quer: "quantos membros do PMI-GO estão ativos? Quantos artigos vieram do GO?" |
 | Aprovar decisões estratégicas | ❌ | **Sem workflow de aprovação na plataforma**. Decisões são via WhatsApp/reunião. |
 
 ### Gaps (P5)
@@ -208,7 +208,7 @@ Receber relatório do GP → Aprovar/questionar direcionamento
 
 ---
 
-## P6: CHAPTER LIAISON / PONTO FOCAL (Ana Cristina, PMI-DF)
+## P6: CHAPTER LIAISON / PONTO FOCAL (member A, PMI-DF)
 
 ### Jornada
 
@@ -236,7 +236,7 @@ Reportar para presidente do capítulo → Facilitar novos membros
 
 ---
 
-## P7: TIME DE COMUNICAÇÃO (Mayanna, líder)
+## P7: TIME DE COMUNICAÇÃO (member F, líder)
 
 ### Jornada
 
@@ -267,7 +267,7 @@ Registrar métricas → Publicar material → Ver impacto
 
 ---
 
-## P8: CURADOR (Fabricio Costa, Comitê de Curadoria)
+## P8: CURADOR (member B, Comitê de Curadoria)
 
 ### Jornada
 

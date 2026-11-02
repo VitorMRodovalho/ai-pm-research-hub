@@ -32,7 +32,7 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 | **Frontend** | Astro 6 + SvelteKit islands + React islands + Tailwind |
 | **Backend** | Supabase (sa-east-1) — PostgreSQL + Auth + Storage + 19 Edge Functions |
 | **Deploy** | Cloudflare Workers (`nucleoia.vitormr.dev` — custom domain) |
-| **MCP** | nucleo-mcp v2.2.1 — 23 tools (17R + 6W) via `@modelcontextprotocol/sdk@1.12.1` |
+| **MCP** | nucleo-mcp v2.2.1 — 23 tools (17R + 6W) via `@modelcontextprotocol/person-1@example.invalid` |
 | **Auth** | Custom OAuth 2.1 in Workers (DCR, PKCE, KV) → Supabase JWT |
 | **Email** | Resend via `nucleoia@pmigo.org.br` (DNS verified) |
 | **Analytics** | PostHog (project 334261, 2 dashboards, posthog-proxy EF v2) |
@@ -64,7 +64,7 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 | Persona | Count | Cobertura MCP | Notas |
 |---|---|---|---|
 | Pesquisador | 32 | 75% (12R) | Não vê certificates via MCP ainda — tool 20 adicionada |
-| Líder de Tribo | 7 | 85% (16R+5W) | Funcional. Débora e Marcos usam URL legado (redirect funciona) |
+| Líder de Tribo | 7 | 85% (16R+5W) | Funcional. member B e member C usam URL legado (redirect funciona) |
 | Comms | 3 | 45% (13R) | Webinars pending section ativa |
 | GP (Vitor + deputy) | 2 | 90% (17R+6W) | tribe_id=null (transversal) — 5 tools tribe-scoped retornam "No tribe" |
 | Sponsor | 5 | 0% | **Zero auth** — nenhum logou na plataforma |
@@ -77,7 +77,7 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 
 ### P0 — Bugs / Dívida Técnica
 1. Attendance cross-tribe — "Supabase client unavailable" em /tribe/N (1-2h Code)
-2. 2 correcções attendance — Guilherme + Gustavo (UI fix)
+2. 2 correcções attendance — member D + member E (UI fix)
 3. Migration repair — 6 RPCs session 26/Mar (5 min)
 4. i18n server-side locale — EN broken desde 24/Mar (1-2h Code)
 5. MCP OAuth connector — em smoke test, NÃO re-investigar
@@ -87,16 +87,16 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 7. S3.2 Designation filter everywhere (2-3h Code)
 8. Phase 2 smoke-test.sh GC-097 (2h Code)
 9. pg_cron verification (30 min Code)
-10. URL migration notice — Débora + Marcos
+10. URL migration notice — member B + member C
 
 ### P2 — Precisa de Input Externo
-11. Mario Trentim demo — 2026-04-03 10:00 ET (prep ready)
-12. Brantlee Underhill outreach — pós-Mario
-13. nucleoia.pmigo.org.br CNAME — esperando Ivan
-14. Relatório C2→C3 — adiado, esperando Ivan
-15. R3 Manual batch approve — 29+ CRs, esperando Ivan
+11. member A demo — 2026-04-03 10:00 ET (prep ready)
+12. Brantlee Underhill outreach — pós-member A
+13. nucleoia.pmigo.org.br CNAME — esperando member F
+14. Relatório C2→C3 — adiado, esperando member F
+15. R3 Manual batch approve — 29+ CRs, esperando member F
 16. S2.3 Executive sponsor view — 5 sponsors sem auth
-17. PMI-GO institutional page — conteúdo enviado para Ivan
+17. PMI-GO institutional page — conteúdo enviado para member F
 
 ### P3 — Sprint 3+ / Ciclo 4
 18-26: Pre-onboarding gamification, Playwright e2e, sustainability frontend, W107 pilot, BoardEngine polish, admin modularization, security definer views, legacy_tribes cleanup, git history cleanup
@@ -138,5 +138,5 @@ Product Leader e Spec Writer do Núcleo IA & GP. Tu analisas, decides e produzes
 
 **Imediato (Code pode fazer agora):** P0 items 1-4 (bugs técnicos)
 **Próxima spec (tu produzes):** P1 item 6 (PostHog custom events) ou P1 item 7 (designation filters)
-**Preparação (tu fazes):** Item 11 (Mario demo checklist — 2026-04-03)
+**Preparação (tu fazes):** Item 11 (member A demo checklist — 2026-04-03)
 **Decisão pendente (Vitor):** Item 16 (quando onboardar sponsors)

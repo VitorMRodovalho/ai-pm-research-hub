@@ -45,7 +45,7 @@ Council 3-lens convergence (product-leader + accountability-advisor + security-e
 
 ## Acceptance criteria
 
-- gender/age base legal audit decision documented + signed off (Vitor + Ivan DPO)
+- gender/age base legal audit decision documented + signed off (Vitor + member A DPO)
 - Se proceed: E4a RPC implementa k≥5 server-side com RAISE EXCEPTION para cells <5
 - pii_access_log entry per RPC call: target_member_id=NULL, context='diversity_aggregate', reason=cycle_id, fields_accessed=dimensions[]
 - E4b dashboard NOT in p125 scope — register in backlog Cycle 4

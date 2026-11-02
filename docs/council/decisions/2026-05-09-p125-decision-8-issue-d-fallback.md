@@ -27,7 +27,7 @@ Issue D fix proposto via `agreement_certificate_id` source. Mas live audit revel
 - 58/94 (62%) precisam fallback — PMI VEP serviceEndDateUTC é fonte secundária disponível imediata
 - audit trail via `metadata->>'end_date_source'` = ('agreement', 'pmi_vep', 'estimated', 'manual') permite E3 cron filtrar por confidence level
 - Não é "estimated guess" — é dado real do PMI (mesmo que opportunity-window-based vs term agreement)
-- João Coelho case: PMI serviceEndDate provavelmente cobrirá mesmo sem agreement_certificate
+- member A case: PMI serviceEndDate provavelmente cobrirá mesmo sem agreement_certificate
 
 ## Council inputs
 

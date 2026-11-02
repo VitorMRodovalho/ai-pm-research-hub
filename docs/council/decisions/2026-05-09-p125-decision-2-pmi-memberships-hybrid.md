@@ -8,7 +8,7 @@
 
 ## Context
 
-PMI candidates may have multi-chapter membership (49/97 candidates; 5 chapters extreme case Fernando Maquiaveli). E1 schema needs to capture (a) submission-time snapshot (committee evaluates), (b) canonical live registry (E3 cron compliance queries expiry).
+PMI candidates may have multi-chapter membership (49/97 candidates; 5 chapters extreme case member A). E1 schema needs to capture (a) submission-time snapshot (committee evaluates), (b) canonical live registry (E3 cron compliance queries expiry).
 
 ## Options considered
 
@@ -31,7 +31,7 @@ PMI candidates may have multi-chapter membership (49/97 candidates; 5 chapters e
 ## Council inputs
 
 - data-architect (autor da síntese): "C with snapshot + canonical separation; ADR-0007 invariant (engagements ≠ pmi_memberships) preserved"
-- legal-counsel: "armazenar chapter_name sem normalização para chapter_registry — Fernando Maquiaveli's Silicon Valley não existe ali"
+- legal-counsel: "armazenar chapter_name sem normalização para chapter_registry — member A's Silicon Valley não existe ali"
 - security-engineer: RLS at-creation default-deny obrigatório; `view_pii` action gate
 
 ## Implementation owner

@@ -4,7 +4,7 @@
 **Decided by:** Vitor Rodovalho (PM)
 **Status:** Accepted
 **Reversibility:** Low (decisão sobre 10 indivíduos em ciclo ativo; reverter pós-comunicação aos candidatos = friction alta)
-**Path impact (Trentim A/B/C):** preserva (process integrity preservada via gate forward-only; "Núcleo absorve falha processual" é institutional consistent)
+**Path impact (member A A/B/C):** preserva (process integrity preservada via gate forward-only; "Núcleo absorve falha processual" é institutional consistent)
 
 ## Context
 

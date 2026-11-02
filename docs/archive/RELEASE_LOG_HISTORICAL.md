@@ -10,10 +10,10 @@ End-to-end stabilization sprint: data quality, CI hardening, ops documentation, 
 - **1. Data Sanitation** (12 fixes across 4 blocks)
   - Synced `members.tribe_id` from `tribe_selections` — 32 NULL rows backfilled
   - Created `trg_sync_tribe_id` trigger to prevent future drift
-  - Fixed Andressa Martins tribe_id (8→2, stale value)
+  - Fixed member G tribe_id (8→2, stale value)
   - Set operational_role for 2 chapter_liaisons + 4 sponsors (was `none`)
   - Deactivated 2 departed members (`current_cycle_active→false`)
-  - Reactivated 3 founders (Ivan=sponsor, Roberto=liaison, Sarah=active)
+  - Reactivated 3 founders (member S=sponsor, member T=liaison, member F=active)
   - Post-sanitation: 0 inconsistencies, 43/67 with tribe_id, 2 active with role=none
 
 - **2. Branch Protection** (GitHub API)
@@ -29,7 +29,7 @@ End-to-end stabilization sprint: data quality, CI hardening, ops documentation, 
 
 - **4. Comms Migration Readiness**
   - Verified 54 imported items across 5 columns (28 backlog, 2 todo, 3 in_progress, 1 review, 20 done)
-  - Team permissions verified: Mayanna (comms_leader), Leticia (comms_member), Andressa (comms_member)
+  - Team permissions verified: member H (comms_leader), member U (comms_member), member G (comms_member)
   - Created `board-attachments` storage bucket (5MB, pdf/png/jpg/docx/xlsx/pptx) with RLS policies
   - Documented in `docs/COMMS_MIGRATION_CHECKLIST.md`
 
@@ -170,7 +170,7 @@ Task Force: conectar TribeKanbanIsland (dnd-kit) como UI única, refatorar Nav c
   - Seção "🌍 Governança": Publicações (`/publications`), Portfólio Executivo (`/admin/portfolio`).
   - Links ocultos se usuário não tiver permissão.
 - **3. Migration data merge healing**
-  - `20260315000005_data_merge_healing.sql`: T4 (Débora) quadro Cultura/Ciclo 2 atrelado; T6 (Fabrício) cards consolidados em um quadro; T8 (Ana) quadro oficial de entregas criado.
+  - `20260315000005_data_merge_healing.sql`: T4 (member V) quadro Cultura/Ciclo 2 atrelado; T6 (member W) cards consolidados em um quadro; T8 (member D) quadro oficial de entregas criado.
 - **4. Edição de horário de reunião**
   - Botão lápis ao lado do horário (quando canEdit); modal para editar texto (ex: "Quintas, 19h"); `supabase.from('tribes').update({ meeting_schedule })`.
 
@@ -583,11 +583,11 @@ Corrigir desconexões de dados apontadas em produção para alocação de comuni
 
 ### Delivered
 - Nova migration: `supabase/migrations/20260314123000_tribe_alignment_comms_legacy_notion_fix.sql`
-  - garante tribo de comunicação ativa e alocação de Mayanna/Leticia/Andressa;
-  - define líder da tribo de comunicação (Mayanna, quando encontrada);
+  - garante tribo de comunicação ativa e alocação de member H/member U/member G;
+  - define líder da tribo de comunicação (member H, quando encontrada);
   - reforça continuidade explícita `legacy 3 -> atual 6` e `legacy 6 -> atual 2`;
   - remapeia boards Trello do stream `tribo3_priorizacao` para tribo 6;
-  - reativa/realinha boards manuais do stream Italo/Fabricio em tribo 6;
+  - reativa/realinha boards manuais do stream member X/member W em tribo 6;
   - vincula boards de comunicação ao domínio/tribo de comunicação;
   - cria/garante lane Notion para tribo 8 e associa itens `notion_import_staging` com hint compatível.
 
@@ -2259,9 +2259,9 @@ Complete rewrite of conversion analysis using a unified temporal dimension. All 
 ### Results (2026-03-10)
 
 **Ciclo 3 (45 members, 43 with VRMS data):**
-- **8 Novos Membros PMI**: Thiago Freire, Erick Oliveira, Ana Carla Cavalcante, Fabricia Maciel, Ricardo Santos (reactivation as Retiree), Gerson Albuquerque Neto, Paulo Alves De Oliveira Junior, Guilherme Matricarde
-- **10 Novos Filiados ao Capítulo**: Same 8 above + Rodolfo Santana (had Individual Membership, added PMI-MG) + Jefferson Pinto (had Portugal Chapter, added PMI-DF)
-- 2 members without VRMS data (Maria Luiza, Vitor Rodovalho)
+- **8 Novos Membros PMI**: member R, member K, member D, member P, member I (reactivation as Retiree), member B, member A, member N
+- **10 Novos Filiados ao Capítulo**: Same 8 above + member J (had Individual Membership, added PMI-MG) + member M (had Portugal Chapter, added PMI-DF)
+- 2 members without VRMS data (member O, Vitor Rodovalho)
 
 **Ciclos 1-2 (3 + 24 members):**
 - C1: 3 members, all without VRMS data (pilot members, no CSV exports available)
@@ -2273,11 +2273,11 @@ Complete rewrite of conversion analysis using a unified temporal dimension. All 
 - C2 → C3: 12/24 continued
 
 **Enrichment (5 actionable updates):**
-- Lucas Vasconcelos: pmi_id=9925958, state=CE
-- Herlon Sousa: pmi_id=5592639, state=CE, fuller name
-- Werley Miranda: pmi_id=6570792, state=GO
-- Letícia Vieira: fuller name (LETÍCIA RODRIGUES VIEIRA)
-- Guilherme Matricarde: name correction
+- member L: pmi_id=9925958, state=CE
+- member Q: pmi_id=5592639, state=CE, fuller name
+- member E: pmi_id=6570792, state=GO
+- member C: fuller name (member C)
+- member N: name correction
 
 ### Outputs
 - `data/ingestion-logs/kpi_cycle3_exact_conversion.json`
@@ -2720,7 +2720,7 @@ legacy data ingestion infrastructure, LGPD hardening, and navigation consolidati
 - Admin UI: lifecycle controls in Reports panel (select-based, Superadmin gated)
 
 ### S-COM1: Communications Team Integration
-- SQL backfill: Mayanna Duarte -> comms_leader; Leticia/Andressa -> comms_member
+- SQL backfill: member H -> comms_leader; member U/member G -> comms_member
 - TeamSection.astro: recognizes comms_leader/comms_member (backward compat with comms_team)
 - Profile.astro: comms designation labels and colors
 - RPC hardening: sync-attendance-points and sync-credly-all gated to Tier 4+
@@ -3410,7 +3410,7 @@ Prepare a deterministic, idempotent data-cleanup pack for legacy member inconsis
   - `docs/migrations/hf5-audit-data-patch.sql` (pre/post audit)
   - `docs/migrations/hf5-apply-data-patch.sql` (idempotent patch)
 - patch behaviors:
-  - restores Sarah LinkedIn only when blank and only from an existing matching non-empty source
+  - restores member F LinkedIn only when blank and only from an existing matching non-empty source
   - aligns `members.operational_role/designations` with active `member_cycle_history` snapshot
   - enforces deputy hierarchy consistency (`deputy_manager` must include `co_gp`; `manager` must not carry `co_gp`)
 
@@ -3420,7 +3420,7 @@ Prepare a deterministic, idempotent data-cleanup pack for legacy member inconsis
 
 ### Follow up still required
 - execute audit -> apply -> audit in production SQL editor
-- if Sarah LinkedIn remains blank after run, apply a one-off manual update with canonical URL
+- if member F LinkedIn remains blank after run, apply a one-off manual update with canonical URL
 
 ## 2026-03-08 — Wave 3 Sprint Increment (S8b Internal i18n, Attendance Shell)
 

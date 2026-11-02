@@ -3,7 +3,7 @@
 **Author:** Claude Chat (Product Leader)
 **For:** Claude Code (Executor)
 **Date:** 2026-03-29
-**Deadline:** Demo Mario Trentim — 3/Abr 10:00 ET
+**Deadline:** Demo member A — 3/Abr 10:00 ET
 **Execution order:** F1 → F5 → F4 → F2
 **Note:** F3 (Board Webinar Badge) deferred to Sprint 5 — low demo impact.
 

@@ -269,16 +269,16 @@ Análise de retenção e dropout com dados históricos. Fase 1 = documento com i
 **R4.1.1 — Análise de Retenção (documento, não código)**
 Com os 783 registros existentes, gerar:
 - Curva de retenção kickoff → mês 1 → mês 2...
-- Retenção por tribo (T3/Fabricio tinha 100% em 29 reuniões)
+- Retenção por tribo (T3/member C tinha 100% em 29 reuniões)
 - Dropout timeline médio
 - Comparativo C1 vs C2
 
 **R4.3.1 — Quick Win já calculado**
 Kickoff C3 (41) → Geral 12/mar (23) = 44% dropout na 1ª semana:
 - 4 sponsors/fundadores (esperado, roles não-operacionais)
-- 2 líderes de tribo (Fabricio + Marcel — provavelmente pontual)
-- 5 veteranos C2 (Débora, Denis, Cíntia, Francisco, Maria Luiza — sinal de alerta)
-- 7 novatos C3 (Leandro, Gustavo, Vinicyus, Ana Carla, Rodrigo, Stephania, Letícia V — risco real)
+- 2 líderes de tribo (member C + member D — provavelmente pontual)
+- 5 veteranos C2 (member E, member F, member G, member H, member A — sinal de alerta)
+- 7 novatos C3 (member I, member J, member K, member B, member L, member M, member N V — risco real)
 
 **R4.2.1 — Fase 2: Visualização (futuro)**
 - Heatmap de presença (membro × reunião)

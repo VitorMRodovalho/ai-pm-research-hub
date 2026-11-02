@@ -39,7 +39,7 @@ Pre-mortem Risk 4: cron compliance D-60/D-30/D-7 sobre TWO timelines (engagement
 - E3 Wave 1 PM drafting: ADR-0013 declara dry-run protocol explicitamente
 - E3 Wave 2 council review: ux-leader + product-leader sign-off no template + dry-run plan
 - Dry-run window: 2 weeks pre go-live
-- Pilot list: Vitor + 2 chapter leads consenting (provavelmente Fabricio + 1 outro)
+- Pilot list: Vitor + 2 chapter leads consenting (provavelmente member A + 1 outro)
 - Chapter VP secretarial briefing: meeting 1 week pre go-live, present templates + timing logic
 
 ## Acceptance criteria

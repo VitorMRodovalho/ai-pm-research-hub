@@ -4,7 +4,7 @@ session: p59
 type: decision-log
 authors: PM (Vitor Rodovalho) + accountability-advisor + security-engineer
 status: APPROVED — autonomous PM authority + accountability-advisor governance trigger
-sponsor_disclosure: scheduled Monday 2026-04-28 (PMI-GO president Ivan Lourenço)
+sponsor_disclosure: scheduled Monday 2026-04-28 (PMI-GO president member A)
 ---
 
 # Tracks Q-D + R — Security Hardening Workstream Decision Log
@@ -149,7 +149,7 @@ functions whose ACL changed.
 **Council assessment:** PASS — no path-foreclosing decisions detected.
 
 The defensive nature of the work (REVOKE + COMMENT, no functional
-change) preserves all three Trentim paths:
+change) preserves all three member B paths:
 - **Path A (PMI institutional spinoff)**: improved audit-readiness +
   -85% advisor reduction = stronger institutional posture
 - **Path B (commercial)**: cleaner data governance = stronger DD
@@ -167,7 +167,7 @@ reusable across paths.
 **Cadence proposal:** Quarterly sponsor touchpoints (90-day cycle)
 aligned with research cycle quarters where possible.
 
-**Next touchpoint:** Monday 2026-04-28 — Vitor + Ivan Lourenço call.
+**Next touchpoint:** Monday 2026-04-28 — Vitor + member A call.
 
 **Disclosure pattern (this and future):**
 1. Briefing as pre-read (sent Sunday EOD before Monday call)
@@ -231,7 +231,7 @@ record for Tracks Q-D + R**. It establishes:
 **Approval chain:**
 - Authored: PM (Vitor Rodovalho), 2026-04-26
 - Council validation: security-engineer + accountability-advisor, 2026-04-26
-- Sponsor disclosure: scheduled Monday 2026-04-28 (Ivan Lourenço)
+- Sponsor disclosure: scheduled Monday 2026-04-28 (member A)
 - Post-disclosure ciência: pending Monday call
 
 **Reproducible by any auditor:** all artifacts in GitHub at commits

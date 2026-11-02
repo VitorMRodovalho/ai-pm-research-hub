@@ -9,7 +9,7 @@
 |---|------|--------|-------|
 | 1 | Claude Code MCP OAuth on Linux | Open | OAuth flow doesn't open browser. Headers workaround ignored. |
 | 2 | 3 events with 0 attendance | Investigate | Cultura & Change 24/Mar + 07/Abr, Inclusao 02/Abr — did meetings happen? |
-| 3 | Wellinghton 10% attendance | Operational | Detractor in Tribo 5. Leader (Jefferson) aware. |
+| 3 | member E 10% attendance | Operational | Detractor in Tribo 5. Leader (member F) aware. |
 
 ---
 
@@ -28,13 +28,13 @@
 
 | # | Item | Blocker | Notes |
 |---|------|---------|-------|
-| 8 | Mario Trentim demo | No response | Nudge needed |
-| 9 | Marcio PMI-RS login | Never logged in | auth_id=null, last_seen_at=null. Follow up. |
-| 10 | Emanoela Kerkhoff login | Never logged in | PMI-RS observer, no auth |
-| 11 | Lorena Souza login | Never logged in | PMI-GO chapter_board, no auth |
-| 12 | nucleoia.pmigo.org.br CNAME | Waiting Ivan | HostGator DNS |
-| 13 | R3 Manual batch approve | Waiting Ivan | 11 CRs pending |
-| 14 | Jefferson board cards | 0 cards by researchers | Need nudge |
+| 8 | member B demo | No response | Nudge needed |
+| 9 | member G PMI-RS login | Never logged in | auth_id=null, last_seen_at=null. Follow up. |
+| 10 | member C login | Never logged in | PMI-RS observer, no auth |
+| 11 | member D login | Never logged in | PMI-GO chapter_board, no auth |
+| 12 | nucleoia.pmigo.org.br CNAME | Waiting member H | HostGator DNS |
+| 13 | R3 Manual batch approve | Waiting member H | 11 CRs pending |
+| 14 | member F board cards | 0 cards by researchers | Need nudge |
 
 ---
 
@@ -45,7 +45,7 @@
 | 15 | Nature filter in attendance grid | get_attendance_grid too complex for quick add. get_events_with_attendance already returns nature. |
 | 16 | ~~Gamification dashboard Sprint 2~~ | ✅ Done 10/Abr. Leaderboard + admin onboarding % column. |
 | 17 | Executive sponsor view | 5 sponsors no auth |
-| 18 | Conforto approach via Alexandre | Jefferson aligned. Roteiro needed. |
+| 18 | Conforto approach via member I | member F aligned. Roteiro needed. |
 
 ---
 
@@ -57,7 +57,7 @@
 - Multi-tag: 7 tribe tags + cycle backfill + auto-tag trigger + compound filters
 - Mobile: date headers, eligible events filter, no duplicate dates
 - Atas: 10 meeting minutes inserted, expandable inline on click
-- 10 YouTube links for Tribo 2/6 (Debora recordings)
+- 10 YouTube links for Tribo 2/6 (member J recordings)
 - Attendance backfill: 10 meetings with corrected attendance
 - i18n: 15 broken /en/ /es/ routes fixed (page-as-component → redirect)
 - Artia: responsible fixed (PMI Goias → GP Projeto Nucleo IA) for all 10 activities
@@ -71,7 +71,7 @@
 - Crons: timeout 5s→30s for all EF-calling jobs
 - Recurrence group backfill: 22 groups, ~200 events
 - Blog: v2.9.2 post published, MCP post updated 53→59→60
-- Paulo Alves excused April (Harvard + Microsoft)
+- member A excused April (Harvard + Microsoft)
 
 ### Session 08/Apr — v2.9.0→v2.9.1
 - Artia full integration (GraphQL API, 34 activities, 9 KPIs, status sync)
@@ -85,4 +85,4 @@
 ### Session 07/Apr — canWriteBoard, 10 atas
 - canWriteBoard: researchers create/move cards via MCP
 - 10 meeting artifacts, legacy card Ciclo 2
-- 5 framework cards assigned, Emanoela created
+- 5 framework cards assigned, member C created

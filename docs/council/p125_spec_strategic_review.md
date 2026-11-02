@@ -52,11 +52,11 @@ Achado adicional cycle 3 b2 ao vivo: **0/40 apps com `age_band`, 0/103 com `cons
 **Agents:** legal-counsel + accountability-advisor
 - ADR único cobrindo: finalidade declarada Phase B, base legal por field, papéis PMI Global vs Núcleo (operador-controlador), retenção bifurcada, k-anonymity rules, multi-chapter data theory
 - Sem ADR único, cada wave futura reabre as mesmas perguntas
-- Ivan (DPO) assina UMA vez
+- member D (DPO) assina UMA vez
 
 ### C6 — service_history 1:N table sem summary cache
 **Agents:** data-architect (anti-overengineering) + security-engineer (anti-perpetual-retention)
-- Avg 1.76 / app, max 20 (LEONARDO CHAVES) — JSONB GIN index não resolve nada em 200 rows
+- Avg 1.76 / app, max 20 (member B) — JSONB GIN index não resolve nada em 200 rows
 - Summary column = trigger sync mandatório (ADR-0012) = complexidade desproporcional
 - **Decisão híbrida**: tabela 1:N durante ciclo + post-cycle anonymize cron movendo para summary anonimizado
 
@@ -82,13 +82,13 @@ Achado adicional cycle 3 b2 ao vivo: **0/40 apps com `age_band`, 0/103 com `cons
 - **product-leader**: opção C ("Block on PMI API: only set end_date if serviceEndDateUTC non-null")
 - **data-architect**: agreement_certificate_id é canonical para term agreement; PMI serviceEndDateUTC reflete opportunity window (calendário diferente)
 
-**Síntese PM**: data-architect mais correto. PMI returns `serviceEndDateUTC` baseado no posting opportunity (e.g., 31/Jul/2026 do VEP), não no termo Núcleo (31/Dez/2026). João Coelho tem termo expirando ~Junho/2026 que vem do termo assinado, não do VEP. Pipeline: E2 worker tenta agreement_certificate primeiro; só usa PMI dates se `agreement_certificate_id IS NULL`. ADR-0007 invariante: NULL end_date = "currently active" semantic preserved.
+**Síntese PM**: data-architect mais correto. PMI returns `serviceEndDateUTC` baseado no posting opportunity (e.g., 31/Jul/2026 do VEP), não no termo Núcleo (31/Dez/2026). member A tem termo expirando ~Junho/2026 que vem do termo assinado, não do VEP. Pipeline: E2 worker tenta agreement_certificate primeiro; só usa PMI dates se `agreement_certificate_id IS NULL`. ADR-0007 invariante: NULL end_date = "currently active" semantic preserved.
 
 ### D3 — PMI Global papel: controlador conjunto vs operador-controlador
 - **legal-counsel**: instrumento formal Núcleo↔PMI Global (DPA) ideal, B-side documentação interna como operador
 - **accountability-advisor**: theory narrower — "candidato submeteu seus próprios dados como parte do ato de candidatura"
 
-**Síntese PM**: combinar — operar como **operador dos dados VEP** (candidatura é o ato, candidato é parte) E **controlador dos dados coletados em plataforma própria nucleoia.vitormr.dev**. Documentar explicitamente no ADR (Decisão 7 abaixo). Não bloquear E1 esperando DPA com PMI Global; documentar internamente + Ivan DPO assina.
+**Síntese PM**: combinar — operar como **operador dos dados VEP** (candidatura é o ato, candidato é parte) E **controlador dos dados coletados em plataforma própria nucleoia.vitormr.dev**. Documentar explicitamente no ADR (Decisão 7 abaixo). Não bloquear E1 esperando DPA com PMI Global; documentar internamente + member D DPO assina.
 
 ---
 
@@ -120,7 +120,7 @@ Tabela atual: `(accessor_id, target_member_id, fields_accessed[], context, reaso
 
 **Recomendação**: A para v0.1 (E4a CSV only); B se E4b dashboard for retomado em Cycle 4.
 
-### R5 — Trentim Path B firewall (accountability-advisor)
+### R5 — member E Path B firewall (accountability-advisor)
 Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como "asset comercial" — se Path B (consulting) materializar, aparece como talent intelligence database. 5 chapter presidents que ratificaram IP Policy NÃO ratificaram esse uso. **ADR clause obrigatória**: "data persisted under este modelo é para selection + operational governance only; commercial use requires new CR approved by all 5 ratifying chapters."
 
 ---
@@ -188,13 +188,13 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 
 **Reversibility:** high (E4a CSV é additive RPC + admin-only; E4b dashboard é separate work).
 
-### Decision 7 — Retenção bifurcada + Trentim Path B firewall
+### Decision 7 — Retenção bifurcada + member E Path B firewall
 **Options:**
 - A) Anonymize cron 5y para todos (status quo)
 - B) Bifurcado: 5y para active members; 12 months para non-selected applicants; 90 days para profileAboutMe + bio fields independent of selection
 - C) 5y for all, com profileAboutMe explicit short retention (90d)
 
-**Recommend: B + ADR clause Trentim firewall.** Convergência legal-counsel + security-engineer. Implementação: cron bifurca lógica entre active member (5y) vs applicant-rejected (12m) vs free-text bio (90d). ADR clause obrigatória: "data persisted under este modelo = selection + operational governance only; commercial use requires new CR all 5 ratifying chapters."
+**Recommend: B + ADR clause member E firewall.** Convergência legal-counsel + security-engineer. Implementação: cron bifurca lógica entre active member (5y) vs applicant-rejected (12m) vs free-text bio (90d). ADR clause obrigatória: "data persisted under este modelo = selection + operational governance only; commercial use requires new CR all 5 ratifying chapters."
 
 **Reversibility:** medium (cron logic reversível; mas dados anonimizados antes de 5y são unrecoverable).
 
@@ -207,7 +207,7 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 2. Verificar `check_schema_invariants()` adiciona ≥1 invariante selection-domain (recomendado: `I_pmi_memberships_snapshot_exists` em status='approved' ou `I_service_history_orphans` cascade race)
 3. RLS habilitado at-creation em `pmi_chapter_memberships` + `selection_application_service_history` (default-deny via Supabase exposes anon read all)
 4. CASCADE on `persons` delete: anonymize_cron_5y faz UPDATE ou DELETE? Se UPDATE, novo cron-extension obrigatório
-5. NÃO normalizar `chapter_name` para FK contra `chapter_registry` — Fernando Maquiaveli's "Silicon Valley" não existe registry
+5. NÃO normalizar `chapter_name` para FK contra `chapter_registry` — member C's "Silicon Valley" não existe registry
 
 ### E2 Wave 2 (senior-software-engineer + ai-engineer + code-reviewer)
 1. Phase A / Phase B split explícito no mapper — duas paths separadas de persistência
@@ -217,7 +217,7 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 
 ### E3 Wave 2 (product-leader + ux-leader + stakeholder-persona + security-engineer)
 1. "Enrich AI triage" tem bounded change list (specific fields: profile_state, profile_chapter_list, profile_service_history_count, profile_industry, profile_designation; explicitly EXCLUDE profileAboutMe per Decision 3 + isOpenToVolunteer per security-engineer R7)
-2. is_returning_member fix tem regression test (João Coelho case flips false→true)
+2. is_returning_member fix tem regression test (member A case flips false→true)
 3. Booking gate alignment não introduz nova feature — só fecha bypass
 4. Cron compliance D-60/D-30/D-7 sobre engagements.end_date + pmi_chapter_memberships.expiry_date — DOIS templates distintos (não messaging conflict candidate)
 5. Apps Script Calendar webhook auth chain documented end-to-end (já hotfix Wave 0)
@@ -238,10 +238,10 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 | Gate | Status | Owner |
 |---|---|---|
 | C1 Hotfix Wave 0 paralelo | Pendente PM decision | Vitor |
-| C2 profilePrivate VEP-only | Pendente PM decision | Vitor + Ivan DPO |
+| C2 profilePrivate VEP-only | Pendente PM decision | Vitor + member D DPO |
 | C3 profileAboutMe excluded Cycle 3 | Pendente PM decision | Vitor |
 | C4 Cycle 3 freeze | Pendente PM decision dated | Vitor |
-| C5 Single ADR multi-entregável | Pendente PM decision | Vitor + Ivan DPO sign |
+| C5 Single ADR multi-entregável | Pendente PM decision | Vitor + member D DPO sign |
 | C6 service_history table only | Pendente PM decision | Vitor |
 | C7 E4a only + R2 audit precondition | Pendente PM decision | Vitor |
 | Wave 1 of E1 ready | **NO** until decisions 1-7 lock | Vitor |
@@ -272,7 +272,7 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 | data-architect | 4 cross-deliverable contradictions, 5 schema decisions | Hybrid storage; agreement_certificate_id source; check_schema_invariants coverage; persons.chapter clarification |
 | security-engineer | 3 mandatory locks before E1 ship | profileAboutMe risk; k-anonymity cross-tab inhibition; isOpenToVolunteer ternary blacklist-by-silence; resumeUrl false permanence |
 | legal-counsel | 2 hard blockers + 5 PM decisions | Phase B base legal Art. 7 IX; controlador conjunto theory; retention bifurcated; Art. 33 transferência internacional Anthropic |
-| accountability-advisor | 3 institutional thresholds crossed | Cross-chapter authorization narrower theory; mid-cycle freeze owner naming; Trentim Path B firewall ADR clause; access tier policy |
+| accountability-advisor | 3 institutional thresholds crossed | Cross-chapter authorization narrower theory; mid-cycle freeze owner naming; member E Path B firewall ADR clause; access tier policy |
 | platform-guardian | YELLOW (1 ADR-0011 read-function pattern; 1 false-negative on pii_access_log) | Schema ready for greenfield E1; backlog candidate `get_tribe_attendance_grid` |
 
 ---

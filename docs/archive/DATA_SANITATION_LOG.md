@@ -38,13 +38,13 @@ WHERE ts.member_id = m.id
 
 ---
 
-### Fix 1b: Andressa Martins — tribe_id correction (1 row)
+### Fix 1b: member L — tribe_id correction (1 row)
 
 **Status:** APPLIED — 2026-03-12 16:10 UTC (GP approved)
 
 ```sql
 UPDATE members SET tribe_id = 2, updated_at = now()
-WHERE name = 'Andressa Martins' AND tribe_id = 8;
+WHERE name = 'member L' AND tribe_id = 8;
 -- tribe_selections had tribe_id=2, members had stale tribe_id=8
 ```
 
@@ -57,18 +57,18 @@ WHERE name = 'Andressa Martins' AND tribe_id = 8;
 ```sql
 -- Chapter liaisons
 UPDATE members SET operational_role = 'chapter_liaison', updated_at = now()
-WHERE name = 'Ana Cristina Fernandes Lima' AND operational_role = 'none';
+WHERE name = 'member C' AND operational_role = 'none';
 
 UPDATE members SET operational_role = 'chapter_liaison', updated_at = now()
-WHERE name = 'Rogério Peixoto' AND operational_role = 'none';
+WHERE name = 'member O' AND operational_role = 'none';
 
 -- Sponsors (chapter presidents)
 UPDATE members SET operational_role = 'sponsor', updated_at = now()
 WHERE name IN (
-  'Felipe Moraes Borges',
-  'Matheus Frederico Rosa Rocha',
-  'Márcio Silva dos Santos',
-  'Francisca Jessica de Sousa de Alcântara'
+  'member H',
+  'member D',
+  'member I',
+  'member A'
 ) AND operational_role = 'none';
 ```
 
@@ -81,7 +81,7 @@ WHERE name IN (
 ```sql
 UPDATE members SET current_cycle_active = false, updated_at = now()
 WHERE is_active = false AND current_cycle_active = true
-  AND name IN ('Cristiano Oliveira', 'Herlon Alves de Sousa');
+  AND name IN ('member M', 'member J');
 ```
 
 ---
@@ -92,13 +92,13 @@ WHERE is_active = false AND current_cycle_active = true
 
 ```sql
 UPDATE members SET is_active = true, operational_role = 'sponsor', updated_at = now()
-WHERE name = 'Ivan Lourenço';
+WHERE name = 'member Q';
 
 UPDATE members SET is_active = true, operational_role = 'chapter_liaison', updated_at = now()
-WHERE name = 'Roberto Macêdo';
+WHERE name = 'member P';
 
 UPDATE members SET is_active = true, updated_at = now()
-WHERE name = 'Sarah Faria Alcantara Macedo' AND is_active = false;
+WHERE name = 'member E' AND is_active = false;
 ```
 
 ---
@@ -135,50 +135,50 @@ CREATE TRIGGER trg_sync_tribe_id
 Most designations already existed. Only changes needed:
 
 ```sql
--- Ivan Lourenço: add ambassador (already had sponsor, founder)
+-- member Q: add ambassador (already had sponsor, founder)
 UPDATE members SET designations = array_cat(
   COALESCE(designations, '{}'::text[]), ARRAY['ambassador']::text[]
 ), updated_at = now()
-WHERE name = 'Ivan Lourenço' AND NOT (designations @> ARRAY['ambassador']);
+WHERE name = 'member Q' AND NOT (designations @> ARRAY['ambassador']);
 -- 1 row
 
--- Andressa, Carlos Magno, Fabricio: add pilot-2024 to cycles
+-- member L, member K, member N: add pilot-2024 to cycles
 UPDATE members SET cycles = array_cat(
   COALESCE(cycles, '{}'::text[]), ARRAY['pilot-2024']::text[]
 ), updated_at = now()
-WHERE name IN ('Andressa Martins', 'Carlos Magno do HUB Cerrado', 'Fabricio Costa')
+WHERE name IN ('member L', 'member K do HUB Cerrado', 'member N')
   AND NOT (COALESCE(cycles, '{}'::text[]) @> ARRAY['pilot-2024']);
 -- 3 rows
 ```
 
 **Already correct (no update needed):**
-- Sarah Faria: already had `[ambassador, founder, curator]`
-- Roberto Macêdo: already had `[chapter_liaison, ambassador, curator]`
-- Fabricio Costa: already had `[ambassador, founder, curator, co_gp]`
+- member E: already had `[ambassador, founder, curator]`
+- member P: already had `[chapter_liaison, ambassador, curator]`
+- member N: already had `[ambassador, founder, curator, co_gp]`
 - Vitor Maia Rodovalho: already had `[ambassador, founder]` + `pilot-2024` in cycles
 
-**Not in members table:** Giovanni Oliveira Baroni Brandão, Marcos Moura Costa (did not continue past pilot).
+**Not in members table:** member B, member G (did not continue past pilot).
 
 ---
 
-### Fix 6: Founder corrections — Antonio Marcos + Giovanni (2026-03-12)
+### Fix 6: Founder corrections — member F + member B (2026-03-12)
 
-**Status:** APPLIED — 2026-03-12 21:30 UTC (GP confirmed Antonio Marcos Costa = Marcos Moura Costa from governance manual)
+**Status:** APPLIED — 2026-03-12 21:30 UTC (GP confirmed member F = member G from governance manual)
 
 ```sql
--- Antonio Marcos Costa: add pilot-2024 to cycles (already had founder designation)
+-- member F: add pilot-2024 to cycles (already had founder designation)
 UPDATE members SET cycles = array_cat(
   COALESCE(cycles, '{}'::text[]), ARRAY['pilot-2024']::text[]
 ), updated_at = now()
-WHERE name = 'Antonio Marcos Costa'
+WHERE name = 'member F'
   AND NOT (COALESCE(cycles, '{}'::text[]) @> ARRAY['pilot-2024']);
 
--- Giovanni Oliveira Baroni Brandão: historical founder record (did not continue)
+-- member B: historical founder record (did not continue)
 INSERT INTO members (name, email, operational_role, designations, cycles,
   is_active, current_cycle_active, chapter)
 VALUES (
-  'Giovanni Oliveira Baroni Brandão',
-  'giovanni.brandao@historical.nucleo',
+  'member B',
+  'member person-1@example.invalid',
   'none', ARRAY['founder'], ARRAY['pilot-2024'],
   false, false, 'PMI-GO'
 ) ON CONFLICT DO NOTHING;
@@ -189,4 +189,4 @@ VALUES (
 ### Remaining (not sanitation issues)
 
 - **10 active members without tribe_id**: Cross-tribe roles (liaisons, sponsors, GP) or haven't selected a tribe yet.
-- Antonio Marcos Costa: now identified as founder Marcos Moura Costa. Has `pilot-2024` + current cycles. `operational_role` still `none` — GP may assign later.
+- member F: now identified as founder member G. Has `pilot-2024` + current cycles. `operational_role` still `none` — GP may assign later.

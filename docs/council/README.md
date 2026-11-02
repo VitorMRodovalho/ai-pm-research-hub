@@ -2,7 +2,7 @@
 
 **Status:** Active since 2026-04-18 (sessão p27)
 **Approved by:** Vitor Rodovalho (PM, Núcleo IA)
-**Rationale:** Preservar optionality dos 3 caminhos Trentim (A PMI-internal / B consulting / C community) enquanto plataforma escala para multi-capítulos e prepara LIM/Detroit/whitepaper.
+**Rationale:** Preservar optionality dos 3 caminhos member A (A PMI-internal / B consulting / C community) enquanto plataforma escala para multi-capítulos e prepara LIM/Detroit/whitepaper.
 
 ## O que é
 
@@ -68,7 +68,7 @@ Invocar `/council-review [topic]` em milestones:
 - Pre-launch: entrada de novo capítulo, CPMAI launch, feature major
 - Pre-submission: LIM abstract, whitepaper, PMI Global Summit
 - Audit periódico: Q1/Q2 platform sweep, governance review anual
-- Pivot consideration: mudança de path Trentim A↔B↔C
+- Pivot consideration: mudança de path member A A↔B↔C
 
 Output agregado em `docs/council/YYYY-MM-DD-topic.md`.
 
@@ -89,7 +89,7 @@ Toda decisão major resultante de council review vira entrada em `docs/council/d
 **Status:** Proposed | Accepted | Deprecated | Superseded
 **Context:** 1-2 parágrafos
 **Council members consulted:** agent-1, agent-2
-**Path impact (Trentim A/B/C):** preserva / neutro / fecha
+**Path impact (member A A/B/C):** preserva / neutro / fecha
 
 ## Recommendation
 [council's merged view]

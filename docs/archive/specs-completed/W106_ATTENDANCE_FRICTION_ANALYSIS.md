@@ -12,7 +12,7 @@ O Núcleo tem um problema de retenção previsível e tratável. A cada ciclo, ~
 - Retenção C2 (kickoff → final): 30 → 17 (~57%)
 - Dropout C3 (kickoff → 1ª geral, 7 dias): 41 → 23 (44% faltaram)
 - Horas de impacto acumuladas: **877h** (49% da meta anual de 1.800h)
-- Core team (≥75% presença): apenas 3 pessoas (Vitor, Fabricio, Andressa)
+- Core team (≥75% presença): apenas 3 pessoas (Vitor, member L, member C)
 
 ---
 
@@ -75,50 +75,50 @@ Geral C3 #1 (12/Mar): 23 presentes
 
 | Nome | Tribo | Score C1/C2 | Risco |
 |------|-------|-------------|-------|
-| Fabricio Costa | ROI & Portfólio | 58 | BAIXO — #1 histórico, provavelmente pontual |
-| Gustavo Batista | Agentes Autônomos | 31 | MÉDIO — 2º semestre C2 mais irregular |
-| Débora Moura | Agentes Autônomos | 24 | MÉDIO — líder de tribo C2, perfil de engajamento em tribo > geral |
-| Rodrigo Grilo | ROI & Portfólio | 22 | MÉDIO — caiu em jun-ago C1 mas voltou |
-| Francisco José | Inclusão & Comunicação | 20 | MÉDIO — mais ativo em tribo do que geral |
-| Cíntia Simões | Cultura & Change | 16 | ALTO — participação declinante no C2 |
+| member L | ROI & Portfólio | 58 | BAIXO — #1 histórico, provavelmente pontual |
+| member V | Agentes Autônomos | 31 | MÉDIO — 2º semestre C2 mais irregular |
+| member W | Agentes Autônomos | 24 | MÉDIO — líder de tribo C2, perfil de engajamento em tribo > geral |
+| member J | ROI & Portfólio | 22 | MÉDIO — caiu em jun-ago C1 mas voltou |
+| member T | Inclusão & Comunicação | 20 | MÉDIO — mais ativo em tribo do que geral |
+| member P | Cultura & Change | 16 | ALTO — participação declinante no C2 |
 
-**Recomendação:** Veteranos com score >20 provavelmente voltam sozinhos. Cíntia (16, tendência de queda) é o caso que merece atenção do líder da T4.
+**Recomendação:** Veteranos com score >20 provavelmente voltam sozinhos. member P (16, tendência de queda) é o caso que merece atenção do líder da T4.
 
 **Retornantes (1-10 presenças) — 3 pessoas:**
 
 | Nome | Tribo | Score | Risco |
 |------|-------|-------|-------|
-| Denis Vasconcelos | ROI & Portfólio | 8 | ALTO — irregular no C2, requer acompanhamento |
-| Maria Luiza | Inclusão & Comunicação | 5 | ALTO — participou pouco no C2 |
-| Ana Carla Cavalcante | Inclusão & Comunicação | 1 | CRÍTICO — líder T8, quase nenhum histórico |
+| member D | ROI & Portfólio | 8 | ALTO — irregular no C2, requer acompanhamento |
+| member R | Inclusão & Comunicação | 5 | ALTO — participou pouco no C2 |
+| member A | Inclusão & Comunicação | 1 | CRÍTICO — líder T8, quase nenhum histórico |
 
-**Recomendação:** Ana Carla é líder da T8 e tem 1 presença histórica. Isso é um sinal de alarme para a tribo inteira. Requer intervenção direta do GP.
+**Recomendação:** member A é líder da T8 e tem 1 presença histórica. Isso é um sinal de alarme para a tribo inteira. Requer intervenção direta do GP.
 
 **Novatos C3 (0 presenças anteriores) — 5 pessoas:**
 
 | Nome | Tribo | Risco |
 |------|-------|-------|
-| Vinicyus Saraiva | Governança & Trustworthy AI | ALTO |
-| Marcel Fleming | TMO & PMO do Futuro | ALTO — é líder da T3! |
-| Letícia R. Vieira | TMO & PMO do Futuro | ALTO |
-| Stephania Marta | ROI & Portfólio | ALTO |
-| Leandro Mota | Radar Tecnológico | ALTO |
+| member I | Governança & Trustworthy AI | ALTO |
+| member S | TMO & PMO do Futuro | ALTO — é líder da T3! |
+| member X | TMO & PMO do Futuro | ALTO |
+| member B | ROI & Portfólio | ALTO |
+| member E | Radar Tecnológico | ALTO |
 
-**Recomendação:** Marcel Fleming é líder da T3 e faltou à 1ª geral. Dois líderes de tribo (Marcel + Ana Carla) faltaram — isso compromete a cohesão das tribos. Padrão histórico mostra que novatos que faltam à 1ª reunião regular têm <30% de chance de se manterem ativos.
+**Recomendação:** member S é líder da T3 e faltou à 1ª geral. Dois líderes de tribo (member S + member A) faltaram — isso compromete a cohesão das tribos. Padrão histórico mostra que novatos que faltam à 1ª reunião regular têm <30% de chance de se manterem ativos.
 
 ### Quem NÃO foi ao kickoff NEM à geral (desaparecidos)
 
 | Nome | Tribo | Tipo | Ação |
 |------|-------|------|------|
-| Andressa Martins | Agentes Autônomos | Veterana (54!) | Confirmar se está ativa no C3 |
-| Italo Soares | ROI & Portfólio | Veterano (51!) | Confirmar se está ativo no C3 |
-| Lídia Do Vale | TMO & PMO do Futuro | Veterana (34) | Era líder T4 C2 — confirmar status C3 |
-| Ricardo Santos | Agentes Autônomos | Novo | Possível desistência silenciosa |
-| Wellinghton Barboza | Talentos & Upskilling | Novo | Possível desistência silenciosa |
-| Leonardo Chaves | Radar Tecnológico | Novo | Possível desistência silenciosa |
-| Lorena Almeida | Radar Tecnológico | Retornante (4) | Possível desistência silenciosa |
+| member C | Agentes Autônomos | Veterana (54!) | Confirmar se está ativa no C3 |
+| member N | ROI & Portfólio | Veterano (51!) | Confirmar se está ativo no C3 |
+| member O | TMO & PMO do Futuro | Veterana (34) | Era líder T4 C2 — confirmar status C3 |
+| member F | Agentes Autônomos | Novo | Possível desistência silenciosa |
+| member Q | Talentos & Upskilling | Novo | Possível desistência silenciosa |
+| member K | Radar Tecnológico | Novo | Possível desistência silenciosa |
+| member M | Radar Tecnológico | Retornante (4) | Possível desistência silenciosa |
 
-**Alerta crítico:** Andressa (54) e Italo (51) são o #2 e #4 em presença histórica. Se eles saíram do C3, é uma perda enorme. Confirmar com urgência.
+**Alerta crítico:** member C (54) e member N (51) são o #2 e #4 em presença histórica. Se eles saíram do C3, é uma perda enorme. Confirmar com urgência.
 
 ---
 
@@ -126,10 +126,10 @@ Geral C3 #1 (12/Mar): 23 presentes
 
 | Bucket | Membros | % | Perfil |
 |--------|---------|---|--------|
-| A: ≥75% (Core) | 3 | 6% | Vitor, Fabricio, Andressa — "espinha dorsal" |
-| B: 50-74% (Regular) | 5 | 10% | Italo, Mayanna, Marcos Costa, Rodrigo, Lídia |
-| C: 25-49% (Occasional) | 1 | 2% | Gustavo |
-| D: 1-24% (At risk) | 15 | 31% | João Coelho, Leticia, Débora, Luciana... |
+| A: ≥75% (Core) | 3 | 6% | Vitor, member L, member C — "espinha dorsal" |
+| B: 50-74% (Regular) | 5 | 10% | member N, member Y, member H, member J, member O |
+| C: 25-49% (Occasional) | 1 | 2% | member V |
+| D: 1-24% (At risk) | 15 | 31% | member G, member X, member W, member Z... |
 | E: 0% (Ghost/C3-only) | 26 | 52% | Novatos C3 + inativos |
 
 **Insight:** A distribuição é bimodal — tem um grupo pequeno muito engajado (8 pessoas, Buckets A+B) e uma cauda longa de baixo engajamento. Não existe "classe média" de engajamento. Isso é típico de comunidades voluntárias.
@@ -149,9 +149,9 @@ Geral C3 #1 (12/Mar): 23 presentes
 
 *Retenção medida como % de membros que participam de >50% das reuniões da tribo.
 
-**T6 destaque:** Maior média por reunião e mais reuniões registradas. Débora (líder C2) conseguiu manter cohesão. Membros fixos: Débora, João Coelho, Letícia, Francisco — todos com 10+ presenças de tribo.
+**T6 destaque:** Maior média por reunião e mais reuniões registradas. member W (líder C2) conseguiu manter cohesão. Membros fixos: member W, member G, member X, member T — todos com 10+ presenças de tribo.
 
-**T5 alerta:** Apenas 5 reuniões registradas, avg 2.6. Roberto Macêdo liderava mas a tribo era pequena. No C3, T5 (Talentos & Upskilling) não tem dados de tribo ainda.
+**T5 alerta:** Apenas 5 reuniões registradas, avg 2.6. member U liderava mas a tribo era pequena. No C3, T5 (Talentos & Upskilling) não tem dados de tribo ainda.
 
 **T1, T2, T7, T8:** Sem dados de tribo no C1/C2 (tribos novas ou reestruturadas no C3). T1 (Radar Tecnológico) teve sua 1ª reunião em 09/Mar — ainda em fase de formação.
 
@@ -205,13 +205,13 @@ Com base nos dados de C1 e C2, o dropout segue 3 ondas previsíveis:
 ## 9. Recomendações Prioritárias
 
 ### Imediata (esta semana)
-1. **Contatar Marcel Fleming e Ana Carla Cavalcante** — dois líderes de tribo que faltaram à 1ª geral. Se líderes somem, a tribo desmorona.
-2. **Confirmar status de Andressa (54) e Italo (51)** — veteranos ausentes de ambos os eventos C3.
+1. **Contatar member S e member A** — dois líderes de tribo que faltaram à 1ª geral. Se líderes somem, a tribo desmorona.
+2. **Confirmar status de member C (54) e member N (51)** — veteranos ausentes de ambos os eventos C3.
 3. **WhatsApp individual para os 5 novatos** que faltaram à geral — janela de recuperação é de ~2 semanas.
 
 ### Curto prazo (W134a → dashboard)
 4. **Implementar o lançamento de presença** para que os dados continuem sendo capturados sem planilha.
-5. **Configurar alertas de 3 faltas consecutivas** — teria detectado Cíntia, Denis e Maria Luiza no C2 antes de sumirem.
+5. **Configurar alertas de 3 faltas consecutivas** — teria detectado member P, member D e member R no C2 antes de sumirem.
 
 ### Médio prazo (W134b → dashboard completo)
 6. **Visão "Você vs Tribo vs Geral"** para cada membro — cria accountability social.

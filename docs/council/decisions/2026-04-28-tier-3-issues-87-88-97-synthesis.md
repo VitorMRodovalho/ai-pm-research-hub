@@ -154,7 +154,7 @@ cenário comercial vs acadêmico antes de aceitar parecer. Council Tier 3
 ❌ "AI-augmented PMI chapter ops" — narrow demais
 ✅ **"How community-led organizations run institutional operations at scale without full-time staff"**
 
-Audience: PMI publications, HBR LatAm, SSIR. Caso 1 = LIM 2026. Próxima ação: gravar debrief 30min com Roberto+Ivan na semana seguinte ao evento (audio = whitepaper draft).
+Audience: PMI publications, HBR LatAm, SSIR. Caso 1 = LIM 2026. Próxima ação: gravar debrief 30min com member A+member B na semana seguinte ao evento (audio = whitepaper draft).
 
 ---
 

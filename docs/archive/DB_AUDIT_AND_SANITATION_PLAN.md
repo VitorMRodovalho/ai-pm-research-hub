@@ -76,7 +76,7 @@ WHERE type = 'other' AND (title ILIKE '%PMI%Congress%' OR title ILIKE '%PMI%Nati
 
 ```sql
 -- Add a tag or note for placeholder emails (don't change the email, it may be used for dedup)
--- Just document: Carlos Magno, Rafael Camilo, Vitor Lopes, Vitoria Araujo
+-- Just document: member B, member C, member E, member F
 -- These are operational_role = 'guest' or 'none' — acceptable.
 -- ACTION: No change needed, just awareness.
 ```
@@ -217,17 +217,17 @@ Claude Code should create a help_journey entry for the comms team and/or a stati
 - How blog posts work
 - Where Canva designs are linked
 
-### 4B. Add Mayanna and Letícia assignee_ids to their active board_items
+### 4B. Add member G and member H assignee_ids to their active board_items
 
 ```sql
--- Get Mayanna's and Letícia's UUIDs
--- Mayanna: bb499ca6-254d-43bc-b38a-81ee986dbe3d
--- Letícia: (query needed)
--- Andressa: (query needed)
+-- Get member G's and member H's UUIDs
+-- member G: bb499ca6-254d-43bc-b38a-81ee986dbe3d
+-- member H: (query needed)
+-- member I: (query needed)
 
--- Assign Hub de Comunicação active items to Mayanna (primary content creator)
--- Items in DESIGN, REDAÇÃO, REVISÃO → Mayanna or Andressa
--- Items in PUBLICAÇÃO → Letícia
+-- Assign Hub de Comunicação active items to member G (primary content creator)
+-- Items in DESIGN, REDAÇÃO, REVISÃO → member G or member I
+-- Items in PUBLICAÇÃO → member H
 ```
 
 ---
@@ -236,8 +236,8 @@ Claude Code should create a help_journey entry for the comms team and/or a stati
 
 ### 5A. Tribes dimension check (DONE in this session)
 - ✅ All 8 tribes have aligned leader_member_id ↔ operational_role
-- ✅ T3 fixed: Marcel Fleming
-- ✅ T8 fixed: Ana Carla Cavalcante
+- ✅ T3 fixed: member D
+- ✅ T8 fixed: member A
 
 ### 5B. Members → Tribes referential integrity
 - ✅ 43 active researchers/leaders have tribe assignments
@@ -268,7 +268,7 @@ Phase 1 — Safe data fixes (no schema changes):
   1. Deduplicate Hub de Comunicação (7 items → archived)
   2. Reclassify events (47 "other" → proper types)
   3. Add Canva URLs as attachments to board_items
-  4. Assign Mayanna/Letícia/Andressa to Hub de Comunicação items
+  4. Assign member G/member H/member I to Hub de Comunicação items
 
 Phase 2 — Enrichment:
   5. Create comms team onboarding help_journey
@@ -292,8 +292,8 @@ Phase 4 — Documentation:
 | Source | Access | Content found |
 |--------|--------|---------------|
 | Supabase | ✅ Direct SQL | Full DB audit |
-| Notion (Vitor workspace) | ✅ | T8 Neuro-Advantage Framework + research page |
-| Notion (Ana Carla workspace) | ❌ 404 | Needs guest invite or reconnection |
+| Notion (member E workspace) | ✅ | T8 Neuro-Advantage Framework + research page |
+| Notion (member A workspace) | ❌ 404 | Needs guest invite or reconnection |
 | Miro board (Ciclo 2) | ✅ | 32 frames, 6 tribes, 300+ items |
 | Google Drive (T8) | ✅ | 3 folders, 1 empty doc, 2 proposals |
 | Google Drive (Ciclo 2 articles) | ✅ | 3 articles (ClickUp Brain, ML Pred, EAA Framework) |

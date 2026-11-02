@@ -18,21 +18,21 @@ Aplicação técnica de pre-mortem (Klein 2007): assumir o spec já falhou, list
 
 ### Risk 1 — gender/age dimension de E4 ships com base legal inadequada
 
-**Failure mode (Agosto/2026):** /admin/diversity dashboard ou CSV export gera relatório agregando `gender` e `age_band`. Auditor LGPD interno (Ivan DPO) ou ANPD pergunta: "Qual a base legal específica para tratamento desses campos para finalidade de analytics agregada?" Núcleo não tem resposta documentada — campos foram capturados sob consentimento genérico do Termo Voluntariado v2 (que não menciona analytics). E4 vira evidência de processamento sem base.
+**Failure mode (Agosto/2026):** /admin/diversity dashboard ou CSV export gera relatório agregando `gender` e `age_band`. Auditor LGPD interno (member C DPO) ou ANPD pergunta: "Qual a base legal específica para tratamento desses campos para finalidade de analytics agregada?" Núcleo não tem resposta documentada — campos foram capturados sob consentimento genérico do Termo Voluntariado v2 (que não menciona analytics). E4 vira evidência de processamento sem base.
 
 **Probabilidade:** ALTA — confirmado live:
 - gender populated: 70/103 cycle 3 apps (68%)
 - **age_band populated: 0/103 (0%)** — column unused
 - **consent_record_id linked: 0/103 (0%)** — base legal não rastreável per-row
 
-**Impacto:** ALTO — exposição regulatória + audit failure + Ivan DPO at risk. Reverter dashboard pós-launch é fácil; reverter o conhecimento de que dados foram processados sem base é impossível.
+**Impacto:** ALTO — exposição regulatória + audit failure + member C DPO at risk. Reverter dashboard pós-launch é fácil; reverter o conhecimento de que dados foram processados sem base é impossível.
 
 **Mitigation per entregável:**
 - **PRECONDIÇÃO E4a (gate):** mini-audit antes de qualquer Wave de E4 — query `SELECT COUNT(*) WHERE gender IS NOT NULL` cross-checked com `consent_record_id` linkage + cobertura do consent text (Termo voluntário v2) sobre analytics. Se inadequado → defer E4 inteiro para Cycle 4 com novo consent.
 - **E1:** ADR único declara base legal por field. gender/age explicitamente flagged como "pendente audit pré-build E4".
 - **E4 (se prosseguir):** começar com dimensions seguras (geo, certifications, multi-chapter) e tratar gender/age como adições posteriores condicionais à base legal validada.
 
-**Owner:** Vitor (PM) + Ivan (DPO) sign-off antes de E4 começar.
+**Owner:** Vitor (PM) + member C (DPO) sign-off antes de E4 começar.
 
 **Reversibility se acontecer:** baixa — uma vez RPC SECDEF processou gender em produção sem base, log existe forever no `pii_access_log`.
 
@@ -83,7 +83,7 @@ Aplicação técnica de pre-mortem (Klein 2007): assumir o spec já falhou, list
 
 ### Risk 4 — Cron compliance D-60/D-30/D-7 misfires → candidate UX disaster + opt-outs cascade
 
-**Failure mode (Agosto/2026):** Cron dispara dois templates distintos baseados em DOIS prazos (engagements.end_date vs pmi_chapter_memberships.expiry_date) na mesma janela. Candidato João recebe **2026-08-01**: "Seu termo Núcleo expira em 60 dias (30/Set/2026)" + "Sua membership PMI Goiás expira em 30 dias (31/Aug/2026)". Mensagens distintas mas chegam na mesma semana, plataforma idêntica, parecendo conflito ou redundância. João liga PMI-GO confuso. Chapter VP secretarial não foi briefed. Brand damage cascata. Re-engagement futura prejudicada.
+**Failure mode (Agosto/2026):** Cron dispara dois templates distintos baseados em DOIS prazos (engagements.end_date vs pmi_chapter_memberships.expiry_date) na mesma janela. Candidato member A recebe **2026-08-01**: "Seu termo Núcleo expira em 60 dias (30/Set/2026)" + "Sua membership PMI Goiás expira em 30 dias (31/Aug/2026)". Mensagens distintas mas chegam na mesma semana, plataforma idêntica, parecendo conflito ou redundância. member A liga PMI-GO confuso. Chapter VP secretarial não foi briefed. Brand damage cascata. Re-engagement futura prejudicada.
 
 **Probabilidade:** MÉDIA — TWO timelines coordinating é receita conhecida para confusion. Sem chapter VP coordination, alta chance de overlap message indesejado.
 
@@ -104,7 +104,7 @@ Aplicação técnica de pre-mortem (Klein 2007): assumir o spec já falhou, list
 
 ### Risk 5 — Issue D fix não fixou nada porque 58/94 active engagements não têm `agreement_certificate_id` para sourcing end_date
 
-**Failure mode (Agosto/2026):** E2 worker tenta backfill `engagements.end_date` from `agreement_certificate_id`-derived data (per Decision 2 of Step 0). Para 36/94 (38%) active engagements: funciona. Para **58/94 (62%) active sem agreement_certificate**: end_date permanece NULL. Cron compliance (E3) skip esses 58 — exatamente os volunteers historic-mais-vulneráveis (legacy Cycle 1/Cycle 2 sem termo formal). Termo vencendo Junho/2026 invisível para João Coelho cuja engagement não tem agreement_certificate. Issue D, allegedly resolvida em E1, é parcialmente aberta.
+**Failure mode (Agosto/2026):** E2 worker tenta backfill `engagements.end_date` from `agreement_certificate_id`-derived data (per Decision 2 of Step 0). Para 36/94 (38%) active engagements: funciona. Para **58/94 (62%) active sem agreement_certificate**: end_date permanece NULL. Cron compliance (E3) skip esses 58 — exatamente os volunteers historic-mais-vulneráveis (legacy Cycle 1/Cycle 2 sem termo formal). Termo vencendo Junho/2026 invisível para member A cuja engagement não tem agreement_certificate. Issue D, allegedly resolvida em E1, é parcialmente aberta.
 
 **Probabilidade:** ALTA — dados verificados live: 36/94 active têm agreement_certificate, **58/94 não têm**.
 
@@ -131,7 +131,7 @@ Aplicação técnica de pre-mortem (Klein 2007): assumir o spec já falhou, list
 Se Vitor ou curator copiar bio do admin UI para shared doc enviado externamente. Mitigação: RLS + view_pii action gate + admin UI redaction. Probabilidade BAIXA dado access-tier policy + user awareness; impacto MÉDIO se acontecer. Watch-out E2 Wave 2.
 
 ### R7 — Multi-chapter data leak inter-chapter
-Fabricio Costa's DC affiliation visível para Goiás president via dashboard. Mitigado por Decision 6 access tier (PM+DPO only durante active cycle). Probabilidade BAIXA com lock; impacto ALTO se vazar. Watch-out E4 Wave 2.
+member B's DC affiliation visível para Goiás president via dashboard. Mitigado por Decision 6 access tier (PM+DPO only durante active cycle). Probabilidade BAIXA com lock; impacto ALTO se vazar. Watch-out E4 Wave 2.
 
 ### R8 — Re-engagement email storm via isOpenToVolunteer ternary
 19 Unknown receberem mensagem inadequada "noticed you're not open" / 78 True spam. Mitigação: Decision implícita (tratar isOpenToVolunteer como ternário, não booleano). Probabilidade MÉDIA, impacto MÉDIO. Watch-out E3 Wave 2.
