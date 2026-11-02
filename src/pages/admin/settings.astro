@@ -52,6 +52,8 @@ const SETTINGS_I18N = {
   slaRescheduleInitialHelp: t('admin.settings.slaRescheduleInitialHelp', lang),
   slaRescheduleRepeatLabel: t('admin.settings.slaRescheduleRepeatLabel', lang),
   slaRescheduleRepeatHelp: t('admin.settings.slaRescheduleRepeatHelp', lang),
+  whatsappInviteInvalid: t('admin.invalidWhatsAppUrl', lang),
+  configSaved: t('common.saved', lang),
 };
 ---
 
@@ -89,6 +91,11 @@ const SETTINGS_I18N = {
             <label class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">Webhook URL</label>
             <input type="url" id="cfg-webhook-url" placeholder="https://..." class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
             <p class="text-[.6rem] text-[var(--text-muted)] mt-1">{t('admin.settings.webhookHint', lang)}</p>
+          </div>
+          <div>
+            <label for="cfg-whatsapp-onboarding" class="text-[.68rem] font-semibold text-[var(--text-secondary)] block mb-1">{t('admin.settings.whatsappOnboardingLabel', lang)}</label>
+            <input type="url" id="cfg-whatsapp-onboarding" placeholder="https://chat.whatsapp.com/..." autocomplete="off" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-[.78rem]">
+            <p class="text-[.6rem] text-[var(--text-muted)] mt-1">{t('admin.settings.whatsappOnboardingHint', lang)}</p>
           </div>
           <button id="cfg-save" class="w-full px-4 py-2.5 bg-navy text-white rounded-lg text-[.78rem] font-semibold cursor-pointer border-0 hover:opacity-90 transition-all">
             {t('admin.settings.saveBtn', lang)}
@@ -226,6 +233,7 @@ const SETTINGS_I18N = {
 <script>
   import { hasPermission } from '../../lib/permissions';
   import { rpcChecked } from '../../lib/rpc-checked';
+  import { isWhatsAppGroupInvite } from '../../lib/whatsapp-invite';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__SETTINGS_I18N) || {
@@ -238,6 +246,8 @@ const SETTINGS_I18N = {
     fillRequired: 'Preencha código, nome, abreviação e data início',
     cycleUpdated: 'Ciclo atualizado', cycleCreated: 'Ciclo criado', save: 'Salvar',
     saveError: 'Erro ao salvar.', loadError: 'Erro ao carregar.',
+    whatsappInviteInvalid: 'Link do WhatsApp inválido. Use o formato: https://chat.whatsapp.com/...',
+    configSaved: 'Salvo com sucesso!',
     noResults: 'Nenhum resultado encontrado.',
     platformResearchersLabel: 'Integrantes por tribo',
     platformResearchersDesc: 'Limite de integrantes por tribo — o líder ocupa uma vaga (8 = líder + 7 pesquisadores)',
@@ -288,10 +298,15 @@ const SETTINGS_I18N = {
       (document.getElementById('cfg-group-term') as HTMLInputElement).value = cfg.group_term ?? 'Núcleo';
       (document.getElementById('cfg-cycle-default') as HTMLInputElement).value = cfg.cycle_default ?? '';
       (document.getElementById('cfg-webhook-url') as HTMLInputElement).value = cfg.webhook_url ?? '';
+      loadedOnboardingInvite = typeof cfg.whatsapp_group_onboarding === 'string' ? cfg.whatsapp_group_onboarding : '';
+      (document.getElementById('cfg-whatsapp-onboarding') as HTMLInputElement).value = loadedOnboardingInvite;
     } catch (e: any) {
       console.error('Load config:', e);
     }
   }
+
+  // The onboarding group invite as last loaded, so a save only rewrites it when it changed.
+  let loadedOnboardingInvite = '';
 
   async function saveConfig() {
     if (!sb || !hasPermission(MEMBER, 'system.global_config')) return;
@@ -301,11 +316,24 @@ const SETTINGS_I18N = {
       const groupTerm = (document.getElementById('cfg-group-term') as HTMLInputElement).value.trim() || 'Núcleo';
       const cycleDefault = (document.getElementById('cfg-cycle-default') as HTMLInputElement).value.trim();
       const webhookUrl = (document.getElementById('cfg-webhook-url') as HTMLInputElement).value.trim();
+      const onboardingInvite = (document.getElementById('cfg-whatsapp-onboarding') as HTMLInputElement).value.trim();
+      const inviteChanged = onboardingInvite !== loadedOnboardingInvite;
+
+      // A changed invite must be a group invite before anything is written: the reader serves no other shape.
+      if (inviteChanged && !isWhatsAppGroupInvite(onboardingInvite)) {
+        (window as any).toast?.(T.whatsappInviteInvalid, 'error');
+        return;
+      }
 
       // #2708: a recusa lança e o catch abaixo avisa; antes a tela ficava muda.
       await rpcChecked(sb, 'set_site_config', { p_key: 'group_term', p_value: groupTerm });
       await rpcChecked(sb, 'set_site_config', { p_key: 'cycle_default', p_value: cycleDefault || null });
       await rpcChecked(sb, 'set_site_config', { p_key: 'webhook_url', p_value: webhookUrl || null });
+      if (inviteChanged) {
+        await rpcChecked(sb, 'set_site_config', { p_key: 'whatsapp_group_onboarding', p_value: onboardingInvite });
+        loadedOnboardingInvite = onboardingInvite;
+      }
+      (window as any).toast?.(T.configSaved, 'success');
     } catch (e: any) {
       console.error('Save config:', e);
       (window as any).toast?.((document.getElementById('ai18n-sav')?.textContent || 'Error: ') + (e.message || 'unknown'), 'error');

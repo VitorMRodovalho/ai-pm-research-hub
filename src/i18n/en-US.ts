@@ -2689,6 +2689,8 @@ const enUS: Record<string, string> = {
   'admin.settings.cycleDefaultLabel': 'Default cycle (ID)',
   'admin.settings.cycleDefaultHint': 'Default cycle ID when not set (optional)',
   'admin.settings.webhookHint': 'URL for external notifications (optional)',
+  'admin.settings.whatsappOnboardingLabel': 'Onboarding WhatsApp group invite',
+  'admin.settings.whatsappOnboardingHint': 'Group invite link (https://chat.whatsapp.com/...). Shown on the pre-onboarding card to approved candidates. When the group changes, paste the new invite here.',
   'admin.settings.saveBtn': 'Save settings',
   'admin.settings.platformLimits': 'Platform Limits',
   'admin.settings.platformLimitsHint': 'Configurable limits. Changes require justification and are logged in the audit trail.',
