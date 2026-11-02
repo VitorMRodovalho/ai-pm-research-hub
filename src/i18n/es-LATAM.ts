@@ -1293,7 +1293,7 @@ const esLATAM: Record<string, string> = {
   'governance.docs.intake.fieldDocType': 'Tipo de documento',
   'governance.docs.intake.fieldDocTypeHint': 'Determina gates, modo de toma de conocimiento y visibilidad por defecto. No se puede cambiar luego sin migrar versiones.',
   'governance.docs.intake.fieldAuthor': 'Autor / Proponente',
-  'governance.docs.intake.fieldAuthorPlaceholder': 'Ej.: Fabricio Costa',
+  'governance.docs.intake.fieldAuthorPlaceholder': 'Ej.: Fulano de Tal',
   'governance.docs.intake.fieldAuthorHint': 'Texto libre — quien propuso/autora el documento. Puede ser distinto del ejecutor del intake (usted). Para vincular un miembro específico, use el campo Avanzado.',
   'governance.docs.intake.fieldVisibility': 'Clase de visibilidad',
   'governance.docs.intake.fieldVisibilityHint': 'Determina quién verá el documento una vez activo. La visibilidad más restringida siempre prevalece.',

@@ -2,7 +2,7 @@
 
 **De:** nó PMO (~/projects) · **Para:** sessão do projeto `ai-pm-research-hub`
 **Data:** 2026-07-04 · **Evento alvo:** 9 de julho de 2026 (encerramento Ciclo 3 + abertura Ciclo 4)
-**Objetivo do handoff:** criar a iniciativa no hub, com Fabrício como líder e Fernando Maquiaveli como coordenador, e engajar todos os líderes (atuais e novos) nas ações abaixo.
+**Objetivo do handoff:** criar a iniciativa no hub, com member B como líder e member F como coordenador, e engajar todos os líderes (atuais e novos) nas ações abaixo.
 
 > ⚠️ **Localização dos insumos:** estes arquivos vivem no **nó PMO (Pai)**, não no repo do hub.
 > Caminho absoluto (use este ao referenciar de dentro da sessão do hub, cujo cwd é `~/projects/ai-pm-research-hub`):
@@ -19,8 +19,8 @@
 
 - **Nome:** Kickoff Ciclo 4 + Onboarding dos Líderes
 - **Tipo:** iniciativa transversal (não é tribo temática)
-- **Líder:** **Fabrício Costa**
-- **Coordenador:** **Fernando Maquiaveli**
+- **Líder:** **member B**
+- **Coordenador:** **member F**
 - **Janela:** 04/07 a 11/07/2026 (pré-evento → evento 09/07 → onboarding pós-evento)
 - **Drive/artefatos:** vincular à pasta do Ciclo 4 (`link_initiative_to_drive`)
 
@@ -29,20 +29,20 @@
 **Líderes de tribo atuais (Ciclo 3):**
 | Tribo | Líder | Situação p/ Ciclo 4 |
 |---|---|---|
-| T1 Radar Tecnológico | Hayala Curto | mantém; revisar datas |
-| T2 Agentes & Equipes Híbridas | **em transição** (Débora Moura passa o bastão) | **novo líder precisa gravar vídeo** |
-| ~~T3 TMO/PMO do Futuro~~ | ~~Marcel Fleming~~ | **DESCONTINUADA** — Marcel pediu desligamento ao longo do Ciclo 3 (offboard). Não entra no Ciclo 4. (Por isso está ausente da seleção no site: correto, não é bug.) |
-| T4 Cultura & Change | Fernando Maquiaveli | mantém (e vira coordenador da iniciativa) |
-| T5 Talentos & Upskilling | Jefferson Pinto | ajuste de âmbito (power skills) → regravar vídeo |
-| T6 ROI & Portfólio | Fabrício Costa | mantém (e vira líder da iniciativa) |
-| T7 Governança & Trustworthy AI | Marcos Klemz | mantém; tribo desfalcada, precisa de gente |
-| T8 Inclusão & Colaboração | Ana Carla Cavalcante | mantém; revisar datas |
+| T1 Radar Tecnológico | member I | mantém; revisar datas |
+| T2 Agentes & Equipes Híbridas | **em transição** (member D passa o bastão) | **novo líder precisa gravar vídeo** |
+| ~~T3 TMO/PMO do Futuro~~ | ~~member G~~ | **DESCONTINUADA** — member G pediu desligamento ao longo do Ciclo 3 (offboard). Não entra no Ciclo 4. (Por isso está ausente da seleção no site: correto, não é bug.) |
+| T4 Cultura & Change | member F | mantém (e vira coordenador da iniciativa) |
+| T5 Talentos & Upskilling | member C | ajuste de âmbito (power skills) → regravar vídeo |
+| T6 ROI & Portfólio | member B | mantém (e vira líder da iniciativa) |
+| T7 Governança & Trustworthy AI | member H | mantém; tribo desfalcada, precisa de gente |
+| T8 Inclusão & Colaboração | member A | mantém; revisar datas |
 
 **Novos líderes / embaixadores de vertical entrando (Ciclo 4):**
 > O Núcleo já tem os nomes corretos e o acesso desses novos líderes na plataforma. Grafias abaixo são referência (da reunião de 25/06); use `search_members` para puxar o registro oficial ao engajar.
 | Vertical | Líder | 
 |---|---|
-| Construção | Henrique Diniz (+ 2 embaixadores LATAM) |
+| Construção | member E (+ 2 embaixadores LATAM) |
 | PMO | Messias |
 | Ágil / Negócio | Jonathá |
 | ESG / Sustentabilidade | Felipe (PMI Minas Gerais) |
@@ -56,10 +56,10 @@ Registrar cada linha como card/action item, com **responsável e data baseline**
 ### Frente 1 — Condução do evento (09/07)
 | # | Atividade | Responsável | Baseline |
 |---|---|---|---|
-| 1.1 | Fechar run-of-show (usar `ROTEIRO-kickoff-ciclo4.md`) | Fabrício + Vitor | 07/07 |
-| 1.2 | Preparar bloco "Verticais" + diagrama (seção 4) | Fabrício | 08/07 |
+| 1.1 | Fechar run-of-show (usar `ROTEIRO-kickoff-ciclo4.md`) | member B + Vitor | 07/07 |
+| 1.2 | Preparar bloco "Verticais" + diagrama (seção 4) | member B | 08/07 |
 | 1.3 | Confirmar falas das diretorias (GO/CE/DF/MG/RS) | Vitor | 07/07 |
-| 1.4 | Kit de boas-vindas do buddy ("7 primeiros dias") | Fernando (coord.) | 08/07 |
+| 1.4 | Kit de boas-vindas do buddy ("7 primeiros dias") | member F (coord.) | 08/07 |
 
 ### Frente 2 — Vídeos de boas-vindas das tribos (template da Parte A)
 Detalhe operacional (brief + 1 tarefa por líder + destino Drive) na **seção 6** abaixo.
@@ -67,16 +67,16 @@ Detalhe operacional (brief + 1 tarefa por líder + destino Drive) na **seção 6
 |---|---|---|---|
 | 2.1 | Gravar/atualizar vídeo (4-6 min, template) e subir no Drive | **cada líder de tribo** (ver seção 6) | 08/07 |
 | 2.2 | Prioridade de regravação: T2 (novo líder), T5 (ajuste de âmbito), tribos com datas alteradas | líderes T2/T5/T6 | 08/07 |
-| 2.3 | Vídeos dos novos líderes de vertical | Henrique/Messias/Jonathá/Felipe | 08/07 |
-| 2.4 | Revisão de padrão (duração, lower third, áudio) antes de subir | Fernando (coord.) | 08/07 |
+| 2.3 | Vídeos dos novos líderes de vertical | member E/Messias/Jonathá/Felipe | 08/07 |
+| 2.4 | Revisão de padrão (duração, lower third, áudio) antes de subir | member F (coord.) | 08/07 |
 
 ### Frente 3 — Correções do site (gaps da Parte B) — antes do kickoff
 | # | Atividade | Responsável | Baseline |
 |---|---|---|---|
 | 3.1 | Ajustar teto por tribo no site para **7** (era "10") | Vitor / plataforma | 07/07 |
-| 3.2 | Confirmar remoção da Tribo 03 do site (Marcel desligado — correto) e realocar interessados | plataforma | 07/07 |
+| 3.2 | Confirmar remoção da Tribo 03 do site (member G desligado — correto) e realocar interessados | plataforma | 07/07 |
 | 3.3 | Alinhar cadências divergentes (T2 8h30×20h30; T6 "a definir") | líderes T2/T6 | 07/07 |
-| 3.4 | Desdobrar verticais na home + publicar diagrama | plataforma + Fabrício | 08/07 |
+| 3.4 | Desdobrar verticais na home + publicar diagrama | plataforma + member B | 08/07 |
 | 3.5 | Data única de seleção (site = vídeo = fala) | Vitor | 07/07 |
 | 3.6 | Ligar números da home ao dado vivo do MCP | plataforma | 08/07 |
 > Estas 6 linhas = conteúdo do **[LL]** da seção 4 abaixo.
@@ -86,7 +86,7 @@ Detalhe operacional (brief + 1 tarefa por líder + destino Drive) na **seção 6
 |---|---|---|---|
 | 4.1 | Registrar roadmap da tribo com baseline + forecast (cards) | cada líder | 11/07 |
 | 4.2 | Publicar cadência semanal fixa (dia+hora) por tribo | cada líder | 09/07 |
-| 4.3 | Definir pares Team Buddy p/ ~40 novos | Fernando (coord.) | 09/07 |
+| 4.3 | Definir pares Team Buddy p/ ~40 novos | member F (coord.) | 09/07 |
 | 4.4 | Rodar toda reunião com ata + action items (responsável+prazo) | cada líder | recorrente |
 
 ---
@@ -95,8 +95,8 @@ Detalhe operacional (brief + 1 tarefa por líder + destino Drive) na **seção 6
 
 Executar de dentro da sessão `ai-pm-research-hub` (onde os schemas MCP carregam):
 
-1. **Criar a iniciativa** pelo fluxo de iniciativa do hub (UI/plataforma). Definir Fabrício como líder.
-2. **Engajar o coordenador e os líderes:** `invite_to_initiative` / `manage_initiative_engagement` para Fernando (coordenador) e cada líder do roster (seção 1). Confirmar novos nomes com `search_members` antes.
+1. **Criar a iniciativa** pelo fluxo de iniciativa do hub (UI/plataforma). Definir member B como líder.
+2. **Engajar o coordenador e os líderes:** `invite_to_initiative` / `manage_initiative_engagement` para member F (coordenador) e cada líder do roster (seção 1). Confirmar novos nomes com `search_members` antes.
 3. **Vincular Drive:** `link_initiative_to_drive` (pasta do Ciclo 4).
 4. **Criar as ações** (seção 2) como action items com responsável + data: `create_action_item` (ou cards em board da iniciativa via `create_board_card` + `update_card_forecast` para baseline/forecast).
 5. **Acompanhamento:** `list_initiative_engagements`, `list_meeting_action_items`, `get_my_board_status`; marcar concluído com `resolve_action_item` / `complete_checklist_item`.
@@ -120,7 +120,7 @@ apontou inconsistências a corrigir antes do evento e um padrão a adotar para o
 
 ## Gaps do site (corrigir antes de 09/07)
 - [ ] Teto por tribo: ajustar home de "Máx. 10" para **7** (decisão da liderança).
-- [ ] Tribo 03 (TMO/PMO, Marcel) fora do Ciclo 4: Marcel pediu desligamento no C3. Ausência da seleção está correta; confirmar realocação de eventuais interessados.
+- [ ] Tribo 03 (TMO/PMO, member G) fora do Ciclo 4: member G pediu desligamento no C3. Ausência da seleção está correta; confirmar realocação de eventuais interessados.
 - [ ] Cadência da Tribo 02 divergente: vídeo diz qui 8h30, site diz qui 20h30.
 - [ ] Tribo 06 com cadência "A definir com o time" — precisa de dia+hora.
 - [ ] Verticais (construção/PMO/ESG/ágil) ainda finas na home; desdobrar + publicar diagrama.
@@ -156,7 +156,7 @@ flowchart TB
   Q --> Q3["Q3 · Liderança Organizacional"]:::q
   Q --> Q4["Q4 · Futuro e Responsabilidade"]:::q
 
-  V --> VC["Construção<br/>(embaixador: Fabrício + Henrique)"]:::v
+  V --> VC["Construção<br/>(embaixador: member B + member E)"]:::v
   V --> VP["PMO"]:::v
   V --> VE["ESG / Sustentabilidade<br/>(Felipe · PMI-MG)"]:::v
   V --> VA["Ágil / Negócio"]:::v
@@ -194,19 +194,19 @@ flowchart TB
 
 | Card | Responsável | Tribo/Vertical | Nome do arquivo | Baseline |
 |---|---|---|---|---|
-| Gravar vídeo de boas-vindas | Hayala Curto | T1 · Radar Tecnológico | `T01-Radar-Hayala.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member I | T1 · Radar Tecnológico | `T01-Radar-member I.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | *novo líder da T2* | T2 · Agentes & Equipes Híbridas | `T02-Agentes-<nome>.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Fernando Maquiaveli | T4 · Cultura & Change | `T04-Cultura-Fernando.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Jefferson Pinto | T5 · Talentos & Upskilling | `T05-Talentos-Jefferson.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Fabrício Costa | T6 · ROI & Portfólio | `T06-ROI-Fabricio.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Marcos Klemz | T7 · Governança & Trustworthy AI | `T07-Governanca-Marcos.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Ana Carla Cavalcante | T8 · Inclusão & Colaboração | `T08-Inclusao-AnaCarla.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Henrique Diniz | Vertical · Construção | `Vertical-Construcao-Henrique.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member F | T4 · Cultura & Change | `T04-Cultura-member F.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member C | T5 · Talentos & Upskilling | `T05-Talentos-member C.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member B | T6 · ROI & Portfólio | `T06-ROI-Fabricio.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member H | T7 · Governança & Trustworthy AI | `T07-Governanca-member H.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member A | T8 · Inclusão & Colaboração | `T08-Inclusao-AnaCarla.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member E | Vertical · Construção | `Vertical-Construcao-member E.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | Messias | Vertical · PMO | `Vertical-PMO-Messias.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | Jonathá | Vertical · Ágil/Negócio | `Vertical-Agil-Jonatha.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | Felipe (PMI-MG) | Vertical · ESG | `Vertical-ESG-Felipe.mp4` | 08/07 |
 
-> T3 (Marcel) não entra: desligamento no Ciclo 3.
+> T3 (member G) não entra: desligamento no Ciclo 3.
 
 ### Wiring no hub (MCP)
 1. Criar o board da iniciativa (ou usar o board do Kickoff) e **vincular à pasta Drive**: `link_board_to_drive` (folder `1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m`) → uploads viram descoberta automática.

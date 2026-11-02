@@ -45,14 +45,14 @@ Example output:
 ```json
 [
   {
-    "member_name": "Maria Silva",
+    "member_name": "Fulano de Tal",
     "showcase_type": "tool_review",
     "title": "Claude Code para gestao de projetos",
     "duration_min": 15,
     "notes": "Demonstracao de como usar Claude Code para automatizar tarefas de GP"
   },
   {
-    "member_name": "Joao Santos",
+    "member_name": "Ciclana de Tal",
     "showcase_type": "quick_insight",
     "title": "Prompts eficazes para analise de riscos",
     "duration_min": 5,

@@ -1346,7 +1346,7 @@ const ptBR: Record<string, string> = {
   'governance.docs.intake.fieldDocType': 'Tipo de documento',
   'governance.docs.intake.fieldDocTypeHint': 'Define gates, modo de ciência e default de visibilidade. Não pode ser trocado depois sem migrar versões.',
   'governance.docs.intake.fieldAuthor': 'Autor / Proponente',
-  'governance.docs.intake.fieldAuthorPlaceholder': 'Ex.: Fabricio Costa',
+  'governance.docs.intake.fieldAuthorPlaceholder': 'Ex.: Fulano de Tal',
   'governance.docs.intake.fieldAuthorHint': 'Texto livre — quem propôs/autora o documento. Pode diferir do executor do intake (você). Para vincular um member específico, use o campo Avançado.',
   'governance.docs.intake.fieldVisibility': 'Classe de visibilidade',
   'governance.docs.intake.fieldVisibilityHint': 'Determina quem verá o documento após ativo. Mais restrito ganha sempre.',

@@ -47,7 +47,7 @@
 2. **#625 remaining BIG leaves — EPIC A (gamification roster) and C2 (V4-native /admin/members page).** These are the next leaves the PM is choosing between; the CODE team offered them and is awaiting the PM's pick. **Do not start the gamification roster migration or the admin/members filter rework.** Their *small* decision-free sub-parts ARE released to you (§C: C1-b refactor, alumni×inactive UI). The `tribe_selections` "destiny" decision (clean-on-offboard trigger vs retire) is a PM call — do not implement it.
 3. **TAP / governance ratification chain `fa5fd11d`** (volunteer_term / CPMAI R01) — a live SEQUENTIAL signing chain awaiting **human signatures** (Vitor signs gate 1 next). Do not edit the chain, the gates, `_can_sign_gate`, `sign_ip_ratification`, or `resolve_default_gates`. The `_can_sign_gate` body was just hardened by #654/#666/#672 — treat it as frozen this window.
 4. **Untracked WIP in the working tree:** `docs/drafts/v2.7_p153_tap_cpmai_r01.html` (TAP R01 draft, has an uncommitted B1 edit) and `docs/strategy/deck/__pycache__/` (deck build artifacts). **Do not commit, move, or delete these** — they belong to other processes. Stage files explicitly; never `git add -A`.
-5. **Graziele Brescansin onboarding** (new Diretoria de Filiação, `auth_id=NULL`, needs an auth invite to use the #659 panel) — outward-facing, pending PM. Do not send invites or touch member identity rows.
+5. **member A onboarding** (new Diretoria de Filiação, `auth_id=NULL`, needs an auth invite to use the #659 panel) — outward-facing, pending PM. Do not send invites or touch member identity rows.
 6. **Legal-ops / governance-decision issues** (#570, #571, #572, #573, #574, #334, #335, #638, #639, #641, #642, #646, #645, #634, #632, #633, #661, #660-epic) — these need PM/legal/strategic decisions or live institutional context. **Not pickup-ready for solo work.** Leave them.
 7. **Never merge a Dependabot PR** (#611 policy — see §D) and never merge the stale PRs (#289/#154/#142) without re-grounding.
 
@@ -182,7 +182,7 @@ node scripts/audit-rpc-body-drift.mjs   # if you touched any RPC body — expect
 
 1. **Fill a per-session handoff:** `cp _handoff/TEMPLATE.md _handoff/codex-<YYYY-MM-DD>.md`, complete every section (Scope/lane, What changed + evidence, Gates run, Numbers observed + their source query, Open threads, Lessons, "what Claude must re-verify"). **Commit it.**
 2. **Branch + PR per change.** One concern per commit. Gates (§E) must pass before you open the PR. Let CI run.
-3. **Commit attribution (LAST line of body):** `Assisted-By: Codex (OpenAI) <noreply@openai.com>`. **NEVER `Co-Authored-By:`.** Human is sole author of record. No AI footers.
+3. **Commit attribution (LAST line of body):** `Assisted-By: Codex (OpenAI) <person-1@example.invalid>`. **NEVER `Co-Authored-By:`.** Human is sole author of record. No AI footers.
 4. **Do NOT post `[LL]` issues or comments.** Record lessons in your handoff file's "Lessons learned" section; Tuesday's Claude reconciles them into #588 + memory.
 5. **Never force-push, never `--no-verify`, never merge Dependabot, never `--admin`-bypass.** Stay in your p201 lane.
 6. **If a gate fails and you can't fix it:** stop, write what you found in the handoff, leave the branch unmerged. A red main = revert before anything else.

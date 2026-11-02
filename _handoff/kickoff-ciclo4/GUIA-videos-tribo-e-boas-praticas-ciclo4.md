@@ -15,14 +15,14 @@ Três entregas num documento só:
 
 | Tribo (líder) | Duração | Fez bem | Gap principal |
 |---|---|---|---|
-| T1 Radar (Hayala) | 7min | Cronograma mês a mês; conceito de arquitetura de agentes | Cadência "a definir"; denso para novato |
-| T2 Agentes (Débora) | 8min | Melhor narrativa problema→pivô; analogia EAP→EAA | Longo; numeração confusa ("era tribo 6, agora 2"); **cadência diverge do site** (vídeo diz qui 8h30, site diz qui 20h30) |
-| T3 TMO/PMO (Marcel) | 3min | Conciso; "por que maturidade importa" | **Tribo sumiu da seção de seleção do site**; sem stat de dor; sem cadência |
-| T4 Cultura (Fernando) | 3min | Hook forte ("sem cultura, a IA escala o caos"); pilares; modelo de concisão | Cadência só "semanal" (sem dia/hora) |
-| T5 Talentos (Jefferson) | 4min | Boas perguntas de reflexão; cadência seg 20h | Ruído de áudio na gravação |
-| T6 ROI (Fabrício) | 11min | Melhor storytelling ("caixa preta → caixa de vidro") | **Longo demais**; cadência "a definir com o time" |
-| T7 Governança (Marcos) | 2min | Stat forte (83% querem, 29% prontos) | **Curto/corrido**; sem entregáveis detalhados; sem CTA/cadência |
-| T8 Inclusão (Ana Carla) | 13min | Paixão e dados; framework de 5 pilares | **Longuíssimo**; data-dump; enterra a proposta |
+| T1 Radar (member B) | 7min | Cronograma mês a mês; conceito de arquitetura de agentes | Cadência "a definir"; denso para novato |
+| T2 Agentes (member C) | 8min | Melhor narrativa problema→pivô; analogia EAP→EAA | Longo; numeração confusa ("era tribo 6, agora 2"); **cadência diverge do site** (vídeo diz qui 8h30, site diz qui 20h30) |
+| T3 TMO/PMO (member D) | 3min | Conciso; "por que maturidade importa" | **Tribo sumiu da seção de seleção do site**; sem stat de dor; sem cadência |
+| T4 Cultura (member E) | 3min | Hook forte ("sem cultura, a IA escala o caos"); pilares; modelo de concisão | Cadência só "semanal" (sem dia/hora) |
+| T5 Talentos (member F) | 4min | Boas perguntas de reflexão; cadência seg 20h | Ruído de áudio na gravação |
+| T6 ROI (member G) | 11min | Melhor storytelling ("caixa preta → caixa de vidro") | **Longo demais**; cadência "a definir com o time" |
+| T7 Governança (member H) | 2min | Stat forte (83% querem, 29% prontos) | **Curto/corrido**; sem entregáveis detalhados; sem CTA/cadência |
+| T8 Inclusão (member A) | 13min | Paixão e dados; framework de 5 pilares | **Longuíssimo**; data-dump; enterra a proposta |
 
 **Gaps comuns a quase todos (é isso que o template resolve):**
 1. **Sem padrão de duração** (variou de 2 a 13 min). Alvo: **4 a 6 min**.
@@ -37,7 +37,7 @@ Três entregas num documento só:
 
 ## O roteiro-padrão (fill-in-the-blank, alvo 4 a 6 min)
 
-Cada bloco tem tempo-alvo, objetivo e o que dizer. Mantenha a ordem: ela é a mesma pirâmide que já funcionou nos melhores vídeos (Fernando, Fabrício), só que enxuta e completa.
+Cada bloco tem tempo-alvo, objetivo e o que dizer. Mantenha a ordem: ela é a mesma pirâmide que já funcionou nos melhores vídeos (member E, member G), só que enxuta e completa.
 
 ### Beat 0 — Gancho evergreen · 0:00 a 0:15
 - Saudação atemporal: "Bom dia, boa tarde ou boa noite, a depender de quando você assiste." (o T5 já fazia isso; evita datar o vídeo)
@@ -81,7 +81,7 @@ Este bloco é novo e obrigatório. É onde o vídeo comunica a Parte C e alinha 
 
 - **Duração:** 4 a 6 min. Acima de 7, corta. Abaixo de 3, está incompleto.
 - **Lower third padrão:** `Quadrante X · [Vertical] · Tribo NN — Nome | Líder: <nome>`. Resolve a confusão de numeração.
-- **Evergreen vs datado:** grave 80% atemporal. O que muda a cada ciclo (cadência exata, janela de seleção) fica num **card de encerramento regravável** ou no lower third, não na narração. Alternativa aprovada pela liderança: **regravar** o vídeo a cada ciclo quando o escopo/data/líder muda (caso Débora, Marcos, Jefferson e as tribos com datas remarcadas).
+- **Evergreen vs datado:** grave 80% atemporal. O que muda a cada ciclo (cadência exata, janela de seleção) fica num **card de encerramento regravável** ou no lower third, não na narração. Alternativa aprovada pela liderança: **regravar** o vídeo a cada ciclo quando o escopo/data/líder muda (caso member C, member H, member F e as tribos com datas remarcadas).
 - **Áudio:** gravar em ambiente silencioso (várias gravações do C3 tinham ruído de fundo). Fone com microfone ajuda.
 - **Slides:** usar o template de marca do Núcleo; card final com foto + LinkedIn.
 - **Fecho visual:** mesmo botão do site ("Escolher esta Tribo") para dar continuidade da tela para a ação.
@@ -97,7 +97,7 @@ A home, lida de cima a baixo, é uma narrativa descendente coerente: **propósit
 ## Gaps e inconsistências a corrigir antes do kickoff
 
 1. **Teto de pessoas.** Ajustar o site de "Máx. 10" para **7** por tribo (decisão da liderança de 25/06: "senão você gasta mais tempo gerenciando que produzindo"). Alinhar site × fala × vídeos.
-2. **Tribo 03 (TMO/PMO, Marcel) fora do Ciclo 4.** Marcel pediu desligamento ao longo do Ciclo 3, então a ausência da tribo na seleção do site está **correta** (não é bug). Confirmar realocação de quem tivesse interesse no tema.
+2. **Tribo 03 (TMO/PMO, member D) fora do Ciclo 4.** member D pediu desligamento ao longo do Ciclo 3, então a ausência da tribo na seleção do site está **correta** (não é bug). Confirmar realocação de quem tivesse interesse no tema.
 3. **Cadência "A definir com o time" na Tribo 06** (site e vídeo). Toda tribo precisa de dia+hora antes do kickoff.
 4. **Cadência da Tribo 02 divergente:** vídeo diz "quintas 8h30", site diz "Quintas 20h30". Alinhar a fonte da verdade.
 5. **Verticais ainda finas.** A home tem o eixo "para quem · comunidades por contexto de atuação", mas a grande novidade do Ciclo 4 (construção, PMO, ESG, ágil, cada uma com tribos e certificação) ainda não está desdobrada em conteúdo. É o item que mais precisa de reforço, porque é a manchete do ciclo. Sugerido: um diagrama "Núcleo → verticais → tribos" (resolve a confusão que apareceu na própria liderança).

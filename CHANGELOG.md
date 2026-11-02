@@ -76,7 +76,7 @@ LOW-191.C transition aid.
 ### Operational
 - 7 tribe leaders notified about 59 pending attendance events
 - 5 sponsors notified about 11 pending CR votes
-- Demo script updated for Mario Trentim meeting (03/Apr)
+- Demo script updated for a partner meeting (03/Apr)
 - 4 migrations synced (repair --status applied)
 - MCP EF redeployed: v2.9.0, 56 tools, SDK 1.28.0
 

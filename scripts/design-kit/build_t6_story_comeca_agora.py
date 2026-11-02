@@ -66,7 +66,7 @@ h1 {{ font-size:146px; margin-top:34px; }}
 .sala {{ margin-top:26px; font-size:34px; color:{CYAN}; font-weight:700; }}
 .dupla {{ display:flex; gap:56px; margin-top:64px; }}
 .p {{ width:286px; }}
-/* "Fernando Carvalho" cabe em 1 linha e "Clendson Goncalves, MSc." em 2: sem altura
+/* "Fulano de Tal" cabe em 1 linha e "Ciclano de Tal Souza, MSc." em 2: sem altura
    reservada, o cargo de um fica abaixo do cargo do outro e a dupla desalinha. */
 .pn {{ font-family:'InterD'; font-weight:900; font-size:31px; color:{WHITE};
       margin-top:20px; line-height:1.1; letter-spacing:-.015em; text-wrap:balance;

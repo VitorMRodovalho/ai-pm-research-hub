@@ -48,7 +48,7 @@ Funcionou. Mantemos o esqueleto e corrigimos o que travou.
 
 - **[NOVO C4] Verticais por setor** (construção, PMO, ESG, ágil) — a manchete do ciclo. Além dos 4 quadrantes/tribos, o Núcleo passa a ter verticais setoriais, cada uma conectada a uma subinstituição do PMI, com embaixadores, certificação própria e potencial de parceria institucional. Amplia temas, capilaridade e alocação de gente.
 - **[NOVO C4] Team Buddy** — cerca de 40 novos pesquisadores entram com um "buddy" da liderança dando suporte.
-- **[NOVO C4] Transição de liderança de tribos** (ex.: saída da Débora, novo líder assume) — apresentar os novos líderes.
+- **[NOVO C4] Transição de liderança de tribos** (ex.: saída da member A, novo líder assume) — apresentar os novos líderes.
 - **[NOVO C4] Ciclos semestrais formalizados** — o Ciclo 3 "vira semestre", como empresa.
 - **[NOVO C4] AI Day 16/jul** — evento aberto (round table no Airmeet e/ou série de vídeos por tribo). Anunciar como próximo passo.
 - **[NOVO C4] Livro 2026 (coletânea)** + relatório geral — iniciativa com líder próprio fazendo a interlocução entre tribos.
@@ -99,12 +99,12 @@ Funcionou. Mantemos o esqueleto e corrigimos o que travou.
 - Amarrar em PMI NEXT / MORE / Infinity (base da pesquisa que gerou os quadrantes).
 - [LIÇÃO] Explicitar o modelo de ciclo semestral + baseline/target/actual: "a data do dia 1 fica registrada; cada tribo mantém sua data-alvo viva."
 
-### Bloco 6 — A grande novidade: Verticais · ~12 min · Fabrício (+ Vitor)
+### Bloco 6 — A grande novidade: Verticais · ~12 min · member B (+ Vitor)
 **Objetivo:** apresentar o modelo de verticais e por que ele amplia o Núcleo.
 - [NOVO C4] Explicar: além dos quadrantes/tribos, agora há verticais setoriais (construção, PMO, ESG, ágil). Dentro de cada vertical há tribos.
 - Benefícios a destacar: mais temas e diversidade, melhor alocação de quem tem interesse setorial, conexão com subinstituições do PMI (embaixadores, certificações), parcerias institucionais e capilaridade em eventos fora do eixo "gestão de projetos".
 - Citar os líderes/embaixadores que já estão entrando por vertical.
-- [LIÇÃO] Tratar a objeção do Marcos ("já apanhamos para tocar o feijão com arroz"): deixar claro que verticais não sobrecarregam as tribos atuais; elas escalam à medida que os ~40 novos entram, e cada vertical pode virar tribos próprias com líderes próprios.
+- [LIÇÃO] Tratar a objeção do member C ("já apanhamos para tocar o feijão com arroz"): deixar claro que verticais não sobrecarregam as tribos atuais; elas escalam à medida que os ~40 novos entram, e cada vertical pode virar tribos próprias com líderes próprios.
 
 ### Bloco 7 — Quadrantes e tribos: a palavra dos líderes · ~15 min
 **Objetivo:** cada frente se apresenta e "vende" seu tema.

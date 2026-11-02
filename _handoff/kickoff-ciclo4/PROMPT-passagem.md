@@ -15,16 +15,16 @@ Você está no projeto `ai-pm-research-hub`. Vamos operacionalizar o **Kickoff d
 - `verticais.png` / `verticais.mmd` — diagrama das verticais.
 
 **Fatos que valem (não re-derivar):**
-- Iniciativa: **"Kickoff Ciclo 4 + Onboarding dos Líderes"**. Líder = **Fabrício Costa**. Coordenador = **Fernando Maquiaveli**.
-- Teto por tribo = **7** (não 10). Tribo 03 (Marcel) **fora** (desligamento no C3).
+- Iniciativa: **"Kickoff Ciclo 4 + Onboarding dos Líderes"**. Líder = **member C**. Coordenador = **member B**.
+- Teto por tribo = **7** (não 10). Tribo 03 (member D) **fora** (desligamento no C3).
 - Pasta Drive temporária dos vídeos: **https://drive.google.com/drive/folders/1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m** (id `1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m`).
 - Convenção de nome do vídeo: `TriboNN-Tema-Nome.mp4` / `Vertical-Tema-Nome.mp4`. Baseline dos vídeos: **08/07**.
 - O **[LL] já foi registrado** no #588 (não duplicar).
 - Roster de líderes e a tabela de 1 card por líder estão na **seção 6** do HANDOFF.
 
 **Faça, nesta ordem (confirmando comigo antes de qualquer ação externa/irreversível):**
-1. **Roster:** rode `search_members` para resolver os registros oficiais de: novo líder da **T2** (Débora passou o bastão, nome a definir comigo), e os líderes de vertical Henrique Diniz (Construção), Messias (PMO), Jonathá (Ágil/Negócio), Felipe/PMI-MG (ESG). Me traga o que encontrou antes de convidar.
-2. **Iniciativa:** crie "Kickoff Ciclo 4 + Onboarding dos Líderes" (Fabrício líder). Engaje Fernando como coordenador e todos os líderes do roster: `invite_to_initiative` / `manage_initiative_engagement`. Vincule a pasta do Ciclo 4 com `link_initiative_to_drive`.
+1. **Roster:** rode `search_members` para resolver os registros oficiais de: novo líder da **T2** (member E passou o bastão, nome a definir comigo), e os líderes de vertical member A (Construção), Messias (PMO), Jonathá (Ágil/Negócio), Felipe/PMI-MG (ESG). Me traga o que encontrou antes de convidar.
+2. **Iniciativa:** crie "Kickoff Ciclo 4 + Onboarding dos Líderes" (member C líder). Engaje member B como coordenador e todos os líderes do roster: `invite_to_initiative` / `manage_initiative_engagement`. Vincule a pasta do Ciclo 4 com `link_initiative_to_drive`.
 3. **Board + Drive:** crie/associe o board da iniciativa e vincule à pasta Drive dos vídeos com `link_board_to_drive` (folder `1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m`).
 4. **Cards de vídeo (1 por líder):** para cada linha da tabela da seção 6, `create_board_card` + `update_card_fields` (responsável = líder, due = 08/07, descrição = conteúdo de `BRIEF-video-tribo.md`).
 5. **Cards das 4 frentes:** crie as ações das Frentes 1, 3 e 4 (seção 2 do HANDOFF) como `create_action_item`/cards, com responsável e data baseline; use `update_card_forecast` para baseline+forecast dos artefatos de roadmap.
