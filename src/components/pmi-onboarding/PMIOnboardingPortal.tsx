@@ -117,6 +117,15 @@ const PILLARS: Array<{ key: VideoScreening['pillar']; questionIndex: number }> =
   { key: 'culture_alignment', questionIndex: 5 },
 ];
 
+// #2948: o servidor só emite o link de agendamento nestes status: fora deles,
+// request_interview_booking_link_via_token devolve NOT_IN_INTERVIEW_STAGE. O botão segue a mesma
+// lista, lida do status que o servidor devolveu, nunca de um status montado no cliente.
+const INTERVIEW_BOOKING_STATUSES = ['interview_pending', 'interview_scheduled', 'interview_noshow'];
+// #2948: antes da avaliação objetiva, a escolha pela entrevista fica registrada e não promove a
+// candidatura (#2004). O convite com o link vai por e-mail se ela passar no corte
+// (notify_selection_cutoff_approved). objective_cutoff fica fora: é status final.
+const BEFORE_OBJECTIVE_STATUSES = ['submitted', 'screening', 'objective_eval'];
+
 // #1595 — o literal do Google saiu daqui. Este era o quarto caminho do link cru, e o único do lado
 // do CANDIDATO: quem clicava não passava por gate, não entrava no rodízio do LRD e não deixava linha
 // em selection_dispatch_url_log. O destino agora vem de request_interview_booking_link_via_token,
@@ -220,6 +229,15 @@ export default function PMIOnboardingPortal({
     try {
       const { data, error } = await sb.rpc('request_interview_booking_link_via_token', { p_token: token });
       if (error) throw error;
+      // #2948: fora do estágio de entrevista não é falha: a tela estava com um status velho. Ela
+      // passa a usar o status que o servidor devolveu, e o bloco mostra o texto da escolha registrada.
+      // Sem o status na resposta, segue para a mensagem de erro abaixo.
+      const serverStatus = (data as any)?.application_status;
+      if ((data as any)?.failure_code === 'NOT_IN_INTERVIEW_STAGE' && payload && typeof serverStatus === 'string') {
+        tab?.close();
+        setPayload({ ...payload, application: { ...payload.application, status: serverStatus } });
+        return;
+      }
       const url = (data as any)?.success === true ? (data as any)?.booking_url : null;
       if (!url) {
         tab?.close();
@@ -250,6 +268,9 @@ export default function PMIOnboardingPortal({
   const accountState = payload.account_state ?? null;
   const videoScreenings = payload.video_screenings ?? [];
   const isInterviewMode = videoScreenings.length >= 5 && videoScreenings.every(v => v.status === 'opted_out');
+  // #2948: as duas vêm de app.status, que é o do payload do servidor ou o que uma RPC devolveu.
+  const canBookInterview = INTERVIEW_BOOKING_STATUSES.includes(app.status);
+  const awaitingObjective = BEFORE_OBJECTIVE_STATUSES.includes(app.status);
   const hasVoiceConsent = Boolean(app.has_voice_biometric_consent && !app.has_voice_biometric_revoked);
   const videosUploadedCount = videoScreenings.filter(v => ['uploaded','transcribing','transcribed'].includes(v.status)).length;
 
@@ -537,7 +558,7 @@ export default function PMIOnboardingPortal({
     setOptInterviewBusy(true);
     setErrorMsg(null);
     try {
-      const { error } = await sb.rpc('opt_out_all_pillars', { p_token: token });
+      const { data, error } = await sb.rpc('opt_out_all_pillars', { p_token: token });
       if (error) throw new Error(error.message);
       const optedScreenings: VideoScreening[] = PILLARS.map(p => ({
         pillar: p.key,
@@ -545,11 +566,16 @@ export default function PMIOnboardingPortal({
         status: 'opted_out',
         uploaded_at: null,
       }));
+      // #2948: o opt-out não promove a candidatura (#2004). O status que vale é o que o servidor
+      // devolve em app_status_after; a tela não inventa um.
+      const statusAfter = (data as any)?.app_status_after;
       setPayload({
         ...payload,
         video_screenings: optedScreenings,
-        application: { ...app, status: 'interview_pending' },
+        application: { ...app, status: typeof statusAfter === 'string' ? statusAfter : app.status },
       });
+      setBookingUrl(null);
+      setBookingError(null);
       setUploadState({});
       setCollapsedPillar({});
       setOptInterviewConfirm(false);
@@ -564,13 +590,18 @@ export default function PMIOnboardingPortal({
     setRevertInterviewBusy(true);
     setErrorMsg(null);
     try {
-      const { error } = await sb.rpc('revert_interview_optout', { p_token: token });
+      const { data, error } = await sb.rpc('revert_interview_optout', { p_token: token });
       if (error) throw new Error(error.message);
+      // #2948: mesma regra do opt-out: o status vem de app_status_after, não de uma cópia no cliente
+      // da regra do servidor.
+      const statusAfter = (data as any)?.app_status_after;
       setPayload({
         ...payload,
         video_screenings: [],
-        application: { ...app, status: app.status === 'interview_pending' ? 'screening' : app.status },
+        application: { ...app, status: typeof statusAfter === 'string' ? statusAfter : app.status },
       });
+      setBookingUrl(null);
+      setBookingError(null);
       setRevertInterviewConfirm(false);
       setCollapsedPillar({});
     } catch (e: any) {
@@ -1120,11 +1151,19 @@ export default function PMIOnboardingPortal({
                 <div className="text-lg font-semibold text-purple-900">
                   ✓ {T('pmi.onboarding.interviewSelectedTitle')}
                 </div>
-                <p className="text-sm text-purple-800 mt-1">
-                  {T('pmi.onboarding.interviewSelectedBody')}
-                </p>
+                {canBookInterview && (
+                  <p className="text-sm text-purple-800 mt-1">
+                    {T('pmi.onboarding.interviewSelectedBody')}
+                  </p>
+                )}
+                {awaitingObjective && (
+                  <p data-testid="interview-choice-registered" className="text-sm text-purple-800 mt-1">
+                    {T('pmi.onboarding.interviewRegisteredBody')}
+                  </p>
+                )}
               </div>
             </div>
+            {canBookInterview && (<>
             <button
               type="button"
               onClick={requestBookingLink}
@@ -1150,6 +1189,7 @@ export default function PMIOnboardingPortal({
             <p className="text-xs text-purple-700 mt-3">
               {T('pmi.onboarding.interviewScheduleHint')}
             </p>
+            </>)}
             <button
               type="button"
               onClick={() => setRevertInterviewConfirm(true)}
@@ -1346,7 +1386,9 @@ export default function PMIOnboardingPortal({
               <p className="text-sm text-gray-700 mb-4">
                 {videosUploadedCount > 0
                   ? T('pmi.onboarding.interviewConfirmBodyWithVideos').replace('{count}', String(videosUploadedCount))
-                  : T('pmi.onboarding.interviewConfirmBody')}
+                  : canBookInterview
+                    ? T('pmi.onboarding.interviewConfirmBody')
+                    : T('pmi.onboarding.interviewConfirmBodyRegistered')}
               </p>
               <div className="flex flex-col sm:flex-row-reverse gap-2">
                 <button
