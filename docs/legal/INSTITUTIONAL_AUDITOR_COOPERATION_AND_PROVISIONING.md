@@ -11,8 +11,8 @@
 > `20260805000292_onda2_fu3_institutional_auditor.sql`.
 >
 > **Controladora:** PMI Goiás (CNPJ 06.065.645/0001-99), capítulo sede do Programa Núcleo IA.
-> **Operadora:** plataforma `nucleoia.vitormr.dev`. **DPO:** Ivan Lourenço Costa (titular) ·
-> Angeline Altair Silva Prado (substituta) — dpo@pmigo.org.br. **Nota de impedimento:** o DPO
+> **Operadora:** plataforma `nucleoia.vitormr.dev`. **DPO:** member B (titular) ·
+> member A (substituta) — dpo@pmigo.org.br. **Nota de impedimento:** o DPO
 > titular acumula o cargo de presidente do PMI-GO (papel `sponsor` sede, regulado no §5); a
 > ratificação do RoPA/LIA (§3) deve ser feita pela **DPO substituta** ou por advogado licenciado
 > independente, para preservar a independência do encarregado (Art. 41, §2º, II LGPD) — ver §8.
@@ -192,7 +192,7 @@ independente (impedimento do titular, §8).
   apresentar **objeção formal**, o GP **suspende o provisionamento** e escalona ao DPO + presidência
   PMI-GO antes de prosseguir. Arquivar o e-mail enviado + timestamp + resposta (ou não-resposta após o
   prazo) como artefato de auditoria.
-- **P3 — Ratificação do RoPA/LIA** (§3) pela **DPO substituta** (Angeline Altair Silva Prado) ou por
+- **P3 — Ratificação do RoPA/LIA** (§3) pela **DPO substituta** (member A) ou por
   advogado licenciado independente — dada a sobreposição de cargo do DPO titular (presidente/sponsor),
   ver §8 e nota de impedimento no cabeçalho.
 - **P4 — `end_date` definido** (≤ 365 dias, alinhado ao prazo do acordo) e a **pessoa nomeada** do
@@ -309,7 +309,7 @@ alinhado ao mandato/acordo. Para `institutional_auditor` é **CHECK no banco** (
 
 ## 8. Pendências para o DPO / advogado licenciado
 
-1. **Ratificar** o RoPA/LIA (§3) — **pela DPO substituta** (Angeline Altair Silva Prado) ou advogado
+1. **Ratificar** o RoPA/LIA (§3) — **pela DPO substituta** (member A) ou advogado
    licenciado independente, dado o impedimento do DPO titular (acumula presidência/sponsor, Art. 41,
    §2º, II LGPD). Registrar o impedimento na trilha de governança.
 2. **Definir** o prazo do SLA de reassignment de `sponsor` (sugestão: 15 dias úteis da posse).

@@ -6,7 +6,7 @@
 >
 > **Status:** RASCUNHO para ratificação do DPO/jurídico (gerado 2026-06-11 com o build do F1).
 > **Controladora:** PMI Goiás (CNPJ 06.065.645/0001-99). **Operadora:** plataforma
-> nucleoia.vitormr.dev. **DPO:** Ivan Lourenço Costa (titular) · Angeline Altair Silva Prado
+> nucleoia.vitormr.dev. **DPO:** member B (titular) · member A
 > (substituta) — dpo@pmigo.org.br.
 > **Refs:** SPEC_625 §6 · migrations `20260805000148` (loop) + `20260805000149` (ateste) ·
 > ADR-0076 (PMI data / LIA / opt-out).
@@ -18,7 +18,7 @@
 | Campo | Conteúdo |
 |---|---|
 | **Operação** | Verificação e registro do status de filiação PMI dos membros do Programa Núcleo IA (ativa/inativa, capítulo, vencimento). |
-| **Agente que trata** | Diretoria de Filiação do PMI-GO (cargo; titular atual: Welma Alves de Melo), agindo como **agente autorizado nominal da controladora** (não operadora — Guia ANPD de Agentes de Tratamento, 2021). |
+| **Agente que trata** | Diretoria de Filiação do PMI-GO (cargo; titular atual: member C), agindo como **agente autorizado nominal da controladora** (não operadora — Guia ANPD de Agentes de Tratamento, 2021). |
 | **Categorias de dado (Art. 5)** | Identificação (nome, e-mail), `pmi_id`, capítulo, status/vencimento de filiação PMI. **Sem dado sensível (Art. 5, II).** |
 | **Titulares** | Membros e pré-onboarding do Programa (todos os capítulos federados). |
 | **Finalidade** | Confirmar elegibilidade (filiação PMI ativa) exigida pelo Termo de Voluntariado; **e** monitorar a proximidade do vencimento da filiação para acionar o radar de renovação (notificações D-30/D-7 ao titular, com opt-out). |

@@ -110,7 +110,7 @@ INSERT INTO persons (
 ) VALUES (
   '<nucleo-ia-org-id>',
   NULL,                                       -- no Núcleo login
-  'João Coelho Júnior',
+  'member A Júnior',
   'joao.coelho@<chapter-domain>',
   'accepted',
   now(),
@@ -418,7 +418,7 @@ Single audit table. Single approval gate. Single revoke EF. Both member-level (#
 │  ▸ Colaboradores externos (G3 + G1)                        │
 │    [+ Adicionar colaborador externo]                       │
 │    ┌──────────────────────────────────────────────────┐   │
-│    │ João Coelho Júnior                                │   │
+│    │ member A Júnior                                │   │
 │    │   partner_contact / liaison · Expira em 90 dias  │   │
 │    │   PMI-RJ Diretoria · Drive: ✓ granted            │   │
 │    │   [Estender prazo] [Revogar]                     │   │

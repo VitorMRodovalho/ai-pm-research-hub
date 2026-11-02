@@ -78,7 +78,7 @@ These are documented as **E3 Wave 1 acceptance criteria**, not blockers for E2.
 - E3 entregável (Pipelines de seleção):
   - Decision 4 cycle freeze logic in pmi-ai-triage EF
   - `prompt_version` column in `ai_processing_log` migration
-  - Fix `is_returning_member` (Issue C — João Coelho cycle 2 cohort)
+  - Fix `is_returning_member` (Issue C — member A cycle 2 cohort)
   - Align booking gate (Issue B)
   - Deploy Apps Script Calendar webhook (Issue A — 30 days zero sync)
   - Cron compliance D-60/D-30/D-7 (Decision 9 — 2-week dry-run staging)

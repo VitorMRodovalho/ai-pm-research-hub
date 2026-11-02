@@ -1,7 +1,7 @@
 # Research — Airmeet Developer Docs Deep-Dive
 
 **Session:** p134 Ω-A Wave 2 (council research, complement to `p134_airmeet_landscape.md`) · **Date:** 2026-05-09
-**Audience:** PM Vitor — to be assertive when asking Natália Tavares (head PMI Latam) for Airmeet integration access for CPMAI Latam.
+**Audience:** PM Vitor — to be assertive when asking member A (head PMI Latam) for Airmeet integration access for CPMAI Latam.
 **Method:** WebFetch (now permitted) on Airmeet KB articles + targeted WebSearch. All endpoint paths quoted verbatim from official docs.
 
 ---
@@ -12,7 +12,7 @@
 2. **Model 2 (Team member with limited role) = PARTIALLY SUPPORTED but inadequate for our integration**. The "Event Executive" role IS event-scoped (only sees assigned events) but **cannot access the Integrations tab to generate API keys**. Generating keys requires Owner / Admin / Manager (community-wide) — so giving Núcleo a "limited team member" role does NOT enable our automated webhook + API workflow.
 3. **Model 3 (Sub-community CPMAI Latam) = STRUCTURALLY THE CLEANEST**. Airmeet "Community" is the top-level account boundary. PMI Latam can spin up a separate Airmeet community (own license OR sub-account if Airmeet sales agrees) where Núcleo is Admin. **Confirmed: there is no "transfer event between communities" API** — events live where they're created. So sub-community needs to be set up upfront for CPMAI events that are CPMAI-native, with Núcleo as Admin from day 1.
 4. **Recording API = `GET /airmeet/{id}/session-recordings?sessionIds=<id>` returns CloudFront signed URL valid 6h**. Combined with 60-day account-creation-date retention → MUST mirror to YouTube within 7d via cron. Available on all paid tiers (Premium Webinar, Conference, Enterprise).
-5. **Recommendation revisada: pedir Modelo 1.5 (híbrido)** — "Natália, podemos receber acesso de **Manager** dentro da community PMI Latam, OU vocês geram um par de Access Key + Secret Key para nos enviarem (escopo community PMI Latam, somente leitura via API)?" — segundo é menor friction, primeiro é mais governável.
+5. **Recommendation revisada: pedir Modelo 1.5 (híbrido)** — "member A, podemos receber acesso de **Manager** dentro da community PMI Latam, OU vocês geram um par de Access Key + Secret Key para nos enviarem (escopo community PMI Latam, somente leitura via API)?" — segundo é menor friction, primeiro é mais governável.
 
 ---
 
@@ -44,7 +44,7 @@
 
 | Credential / Role | Scope | Read API | Write API | Generates API keys | Use case for Núcleo |
 |---|---|---|---|---|---|
-| **Owner** | Whole community | Yes (full) | Yes (full) | Yes | Natália / PMI Latam holder |
+| **Owner** | Whole community | Yes (full) | Yes (full) | Yes | member A / PMI Latam holder |
 | **Admin** | Whole community except remove/replace owner | Yes (full) | Yes (full) | Yes | Could be Núcleo PM if PMI Latam grants — wide privilege |
 | **Manager** | Whole community except billing | Yes (full) | Yes (full) | Yes | **Best fit for Núcleo as institutional partner** |
 | **Event Executive** | ONLY events explicitly assigned by Admin | Yes (within event) | Limited | **NO** | Useful for Núcleo team members co-running specific events; **does NOT enable automated integration** |
@@ -168,11 +168,11 @@ GET /platform-integration/v1/sample-payload?triggerMetaInfoId=<id>
 
 | Option | What it means | Cost / friction | Núcleo posture |
 |---|---|---|---|
-| **A. Núcleo joins PMI Latam community as Manager** | Single community, Vitor / 1-2 Núcleo members get Manager seat | Zero new license; depends on Natália agreeing | Most natural, but exposes ALL PMI Latam events to Núcleo (privacy concern for Natália's team) |
+| **A. Núcleo joins PMI Latam community as Manager** | Single community, Vitor / 1-2 Núcleo members get Manager seat | Zero new license; depends on member A agreeing | Most natural, but exposes ALL PMI Latam events to Núcleo (privacy concern for member A's team) |
 | **B. Núcleo joins as Event Executive** | Per-event scoping, but cannot generate API keys | Zero | **Insufficient** for automated integration |
-| **C. PMI Latam generates an API Key + Secret + sends to Núcleo** | Community-wide API access via key, no UI access | Zero | **Cleanest for integration**; Natália controls revocation; Núcleo sees everything via API though |
+| **C. PMI Latam generates an API Key + Secret + sends to Núcleo** | Community-wide API access via key, no UI access | Zero | **Cleanest for integration**; member A controls revocation; Núcleo sees everything via API though |
 | **D. Núcleo gets its own Airmeet community (separate license)** | Independent account; CPMAI events held in Núcleo's community; PMI Latam attends as visitors / co-marketing | License cost ($167+/mo Premium Webinar; ~$18K/yr Enterprise for 2000-attendee CPMAI Latam) | **Independent path**; defer until volume justifies |
-| **E. PMI Latam creates a sub-account via Airmeet sales** | Airmeet enterprise contracts sometimes allow sub-accounts | Negotiation needed; cost unclear | Possible if Natália has CSM contact |
+| **E. PMI Latam creates a sub-account via Airmeet sales** | Airmeet enterprise contracts sometimes allow sub-accounts | Negotiation needed; cost unclear | Possible if member A has CSM contact |
 
 **Recommendation:** **Option C** is the smallest ask with biggest enable. Combine with Option B (Vitor as Event Executive on specific co-events for UI access during the event itself).
 
@@ -209,7 +209,7 @@ https://streaming.airmeet.com/recordings/<community>/<event>/<session>.mp4?Polic
 
 ## 8. Enterprise tier API access
 
-**Confirmation from search results:** *"API access is available in the Social Webinar and Conference Plans."* (Conference is the modern name for Enterprise tier in 2026 Airmeet pricing.) So **API access is included in Premium Webinar (~$167/mo annual) AND Enterprise** — Natália's team's Enterprise license definitely includes it.
+**Confirmation from search results:** *"API access is available in the Social Webinar and Conference Plans."* (Conference is the modern name for Enterprise tier in 2026 Airmeet pricing.) So **API access is included in Premium Webinar (~$167/mo annual) AND Enterprise** — member A's team's Enterprise license definitely includes it.
 
 **Enterprise-only API features:**
 - **Transcript download** (separate from recording — confirmed in KB)
@@ -222,11 +222,11 @@ https://streaming.airmeet.com/recordings/<community>/<event>/<session>.mp4?Polic
 
 ---
 
-## Recomendação revisada para pedido a Natália
+## Recomendação revisada para pedido a member A
 
 **Script literal, em PT, para Vitor:**
 
-> "Natália, para a integração CPMAI Latam → Núcleo (auto-emissão de certificados, mirror de gravação dentro do prazo de 60 dias), o ideal técnico é receber **um par de Access Key + Secret Key da community PMI Latam** (geramos no Integrations tab, leva 30 segundos). Com isso o Worker do Núcleo:
+> "member A, para a integração CPMAI Latam → Núcleo (auto-emissão de certificados, mirror de gravação dentro do prazo de 60 dias), o ideal técnico é receber **um par de Access Key + Secret Key da community PMI Latam** (geramos no Integrations tab, leva 30 segundos). Com isso o Worker do Núcleo:
 >
 > 1. Recebe webhook quando alguém se registra ou entra em um evento CPMAI
 > 2. Calcula attendance (tempo em sessão)
@@ -241,7 +241,7 @@ https://streaming.airmeet.com/recordings/<community>/<event>/<session>.mp4?Polic
 
 **Por que esse pedido específico:**
 - Reconhece que Airmeet API keys são community-wide (não vale a pena pedir o impossível "escopo só CPMAI")
-- Dá DOIS caminhos de baixo custo (chave OU Manager seat) → Natália escolhe o que prefere
+- Dá DOIS caminhos de baixo custo (chave OU Manager seat) → member A escolhe o que prefere
 - Demonstra conhecimento técnico → credibilidade
 - Inclui o "you revoke anytime" → tira fricção de risco
 - Adiciona o Event Executive como cherry on top (UI access para dias de evento) sem ser load-bearing
@@ -252,7 +252,7 @@ https://streaming.airmeet.com/recordings/<community>/<event>/<session>.mp4?Polic
 
 1. **Webhook signature verification** — Airmeet KB silente. Email `support@airmeet.com` antes de prod. Workaround: pass shared secret in webhook URL path + IP allowlist.
 2. **Rate limits** — não documentado publicamente. Pedir limits oficiais ao CSM da PMI Latam quando integrarmos.
-3. **Sub-account model on Enterprise** — não documentado. Natália pode perguntar ao CSM dela se PMI Latam pode criar uma "sub-community" formal — would solve governance cleanly.
+3. **Sub-account model on Enterprise** — não documentado. member A pode perguntar ao CSM dela se PMI Latam pode criar uma "sub-community" formal — would solve governance cleanly.
 4. **Transcript endpoint exact path** — Enterprise-only mas KB não publica path. CSM pode compartilhar.
 5. **Recording webhook latency** — quanto tempo de fato leva do `event.finished` até `recording.available` disparar? Crítico para SLA do certificate flow.
 6. **Custom field exposure** — `participants` endpoint expõe `user_profile[]` com `fieldId`. Mapping `fieldId → human-readable name` requires cross-call to `/custom-fields`. Plan accordingly.

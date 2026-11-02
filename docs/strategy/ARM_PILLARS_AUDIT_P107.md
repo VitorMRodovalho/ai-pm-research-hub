@@ -547,8 +547,8 @@ PM ratificou Onda 3 AI Build (decisão 2 confirmada: B = Sonnet 4.6 + prompt cac
 
 | Caso | App | Score | Confidence | Latency | Resultado |
 |------|-----|-------|-----------|---------|-----------|
-| Rich data | LUIZ RAMOM (5385c motivation, MBAs FGV+CP3P+mestrado, 14a setor público) | **6** | medium | 7.0s | ✓ "sólida, track record moderado" — calibração precisa |
-| Thin data | THAYANNE (91c motivation) | **1** | high | 4.3s | ✓ "genérica, sem evidência" — modelo confidence alto na avaliação baixa |
+| Rich data | member A (5385c motivation, MBAs FGV+CP3P+mestrado, 14a setor público) | **6** | medium | 7.0s | ✓ "sólida, track record moderado" — calibração precisa |
+| Thin data | member B (91c motivation) | **1** | high | 4.3s | ✓ "genérica, sem evidência" — modelo confidence alto na avaliação baixa |
 
 input_tokens 5587, output 185, ai_processing_log row completed. cache_creation/read=0 (rubric < Sonnet 4.6 2048 mínimo). Custo real ~$0.020/call → ~$1.60/ciclo n=80 (dentro estimativa $1-2 ADR).
 
@@ -558,7 +558,7 @@ input_tokens 5587, output 185, ai_processing_log row completed. cache_creation/r
 - Invariants 13/13 = 0 violations (no regressions)
 - 1 EF deployed (pmi-ai-triage v1)
 - 1 EF redeployed (nucleo-mcp v2.68.0, 282 tools — was 279)
-- ai_processing_log com 2+ rows (LUIZ RAMOM completed + THAYANNE completed + 1 failed pre-fix)
+- ai_processing_log com 2+ rows (member A completed + member B completed + 1 failed pre-fix)
 - 2 selection_applications com ai_triage_* populated
 
 ### ARM maturidade pós-Onda 3

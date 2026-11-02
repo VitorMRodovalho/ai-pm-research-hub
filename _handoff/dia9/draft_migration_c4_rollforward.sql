@@ -1,6 +1,6 @@
 -- DRAFT (preparado 04/07/2026) — aplicar SÓ NO DIA 9, via apply_migration + arquivo local + repair (Q-C).
 -- Nome sugerido: <timestamp>_c4_roll_forward_member_cycle_history.sql
--- Coorte medida 04/07: 31 continuantes − Débora = 30. RE-ATERRAR no dia 9 (BEFORE abaixo).
+-- Coorte medida 04/07: 31 continuantes − member A = 30. RE-ATERRAR no dia 9 (BEFORE abaixo).
 
 -- ============ BEFORE (capturar e colar no PR/handoff) ============
 -- SELECT count(*) FROM member_cycle_history WHERE cycle_code='cycle_3' AND cycle_end IS NULL;  -- esperado 63
@@ -16,7 +16,7 @@ WHERE cycle_code = 'cycle_3' AND cycle_end IS NULL;
 
 -- 2) Roll-forward dos continuantes → row cycle_4 (snapshot atual).
 --    Critério (plano §4.3): member ativo + histórico C3 + engagement volunteer ativo com
---    end_date NULL ou ≥ 2026-12-01. EXCLUI Débora (exit no dia 9, runbook passo 4).
+--    end_date NULL ou ≥ 2026-12-01. EXCLUI member A (exit no dia 9, runbook passo 4).
 WITH coorte AS (
   SELECT DISTINCT m.id, m.name, m.operational_role, m.designations, m.tribe_id, m.chapter
   FROM members m
@@ -26,7 +26,7 @@ WITH coorte AS (
     AND e.kind = 'volunteer' AND e.status = 'active' AND e.revoked_at IS NULL
     AND (e.end_date IS NULL OR e.end_date >= DATE '2026-12-01')
   WHERE m.is_active = true
-    AND m.id <> 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'  -- Débora Moura (exit end_of_cycle)
+    AND m.id <> 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'  -- member A (exit end_of_cycle)
 )
 INSERT INTO member_cycle_history
   (member_id, member_name_snapshot, cycle_code, cycle_label, cycle_start, cycle_end,

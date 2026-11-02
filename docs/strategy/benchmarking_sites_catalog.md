@@ -37,7 +37,7 @@
 |---|-----|-------------------|----------------|
 | 1 | https://aibrasil.ai/ | Hub/comunidade de IA Brasil | Posicionamento de comunidade de IA; jornada de entrada |
 | 2 | https://experience2026.aibrasil.ai/ | Landing de evento (Experience 2026) | Página de evento: agenda, speakers, conversão de inscrição |
-| 5 | https://pedro.aibrasil.ai/ | Subdomínio pessoal/figura (Pedro) | Personal brand dentro de ecossistema; funil individual |
+| 5 | https://pedro.aibrasil.ai/ | Subdomínio pessoal/figura (member A) | Personal brand dentro de ecossistema; funil individual |
 | 6 | https://aibrasil.ai.eco.br/ | Variante de domínio AI Brasil (.eco.br) | Comparar com #1; co-branding / multi-domínio |
 | 7 | https://fmu.ai.eco.br/ | Parceria FMU × AI Brasil (.eco.br) | Co-branding instituição de ensino × comunidade IA |
 
@@ -147,7 +147,7 @@
 5. **Um CTA primário, repetido sem ser intrusivo.** Experience 2026 ("Comprar ingresso" ~6×), Alura ("Ver planos"). Hoje competimos 5 CTAs primários sem hierarquia — eleger **"Seja protagonista"** como funil único e repeti-lo; parceiro = caminho secundário.
 6. **Escada como progressão visível por tier** (Alura: imersão→Plus→Pro→Ultra; FIAP: nível→formato→especialização). Modela a costura Champion → Grupo CPMAI → PMI-CPMAI com "conclusão = status".
 7. **Agenda/eventos com narrativa passado→futuro + prova social antes da data** (Experience 2026). Substrato p/ os requisitos emergentes **R-AGENDA-HOME** e **R-NEWS**.
-8. **Figura nomeada encarna a comunidade** (Pedro/AI Brasil). Temos protagonistas reais (líderes, CPMAI) **enterrados** em Team/CPMAI — promovê-los como rosto.
+8. **Figura nomeada encarna a comunidade** (member A/AI Brasil). Temos protagonistas reais (líderes, CPMAI) **enterrados** em Team/CPMAI — promovê-los como rosto.
 9. **Menu curto e agrupado** (PM3, Inteli, Alun "A Tese"). Nosso nav é lista plana de âncoras e **omite `#verticals` e `#partners`** (as que convertem) enquanto inclui conteúdo de membro.
 
 ### Anti-padrões a evitar

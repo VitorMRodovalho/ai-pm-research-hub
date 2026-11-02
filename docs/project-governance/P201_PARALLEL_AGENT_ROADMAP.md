@@ -111,9 +111,9 @@ Próximo passo:
 
 ### P1 — Permission/Tiers/RLS
 
-- Resolver estado de autoridade pendente de Herlon (`study_group_owner/leader`).
+- Resolver estado de autoridade pendente de member E (`study_group_owner/leader`).
 - Auditar gates `hasPermission(...)` em superfícies sensíveis e migrar para `canFor(...)` quando a decisão é V4/scoped.
-- Criar smoke tests de personas: Roberto, Sarah, Marcos, Herlon, leader genérico, curator, chapter_liaison.
+- Criar smoke tests de personas: member F, member G, member D, member E, leader genérico, curator, chapter_liaison.
 
 ### P1 — MCP Contract Matrix
 
@@ -164,7 +164,7 @@ Issues abertas:
 | Issue | Título | Lane |
 |---|---|---|
 | #159 | `gov: p201 parallel agent operating model` | Governance |
-| #160 | `permissions: resolve Herlon study_group_owner authority state` | Foundation/Governance |
+| #160 | `permissions: resolve member E study_group_owner authority state` | Foundation/Governance |
 | #161 | `permissions: audit sensitive UI gates against V4 canFor` | Frontend/Foundation |
 | #162 | `mcp: generate 293-tool contract matrix and refresh tool reference` | MCP/AI |
 | #163 | `infra/security: Cloudflare BIC blocks MCP OAuth bootstrap` | Infra/Security |
@@ -172,11 +172,11 @@ Issues abertas:
 | #165 | `docs: complete governance and release backfill p40-p201` | Governance |
 | #166 | `architecture: semantic layer roadmap for facts dimensions snapshots` | Foundation/Governance |
 | #168 | `ops: triage WhatsApp action intake into governed backlog` | Governance/QA |
-| #169 | `event/initiative: João Coelho IA & Competências 02 Jun 2026` | Governance/Frontend/Foundation |
+| #169 | `event/initiative: member C IA & Competências 02 Jun 2026` | Governance/Frontend/Foundation |
 | #170 | `mcp: investigate corrupted meeting notes inserted via Claude/MCP` | MCP/AI/Foundation |
-| #171 | `access: Ana Carla cannot read governance document` | Governance/Security |
+| #171 | `access: member B cannot read governance document` | Governance/Security |
 | #172 | `webinars/comms: repact webinar calendar and Sympla lead time` | Governance/Frontend |
-| #173 | `member lifecycle: Rogério Peixoto reintegration as observer in Tribe 07` | Foundation/Governance |
+| #173 | `member lifecycle: member A reintegration as observer in Tribe 07` | Foundation/Governance |
 | #177 | `governance: issue current volunteer agreements for special engagement kinds` | Foundation/Governance |
 | #179 | `selection: canonical approval orchestration for volunteer lifecycle` | Foundation/Frontend |
 | #180 | `authority: ensure approved volunteers enter authoritative V4 graph` | Foundation/Governance |
@@ -205,7 +205,7 @@ O programa p201 estará encerrado quando:
 
 1. Todas as issues P1 tiverem owner e status.
 2. MCP contract matrix existir e for reexecutável.
-3. Persona smoke tests cobrirem Roberto, Sarah, Marcos e Herlon.
+3. Persona smoke tests cobrirem member F, member G, member D e member E.
 4. Cloudflare MCP bootstrap for validado sem `1010`.
 5. `supabase start` tiver decisão documentada ou correção.
 6. Docs principais não tiverem drift de contagem contra pins canônicos.
