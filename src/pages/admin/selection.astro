@@ -317,6 +317,8 @@ const SEL_I18N = {
   // p152 Wave 1.0: shadow VEP filter button toggle text
   hideShadowVep: t('admin.selection.hideShadowVep', lang),
   showShadowVep: t('admin.selection.showShadowVep', lang),
+  pilotBadge: t('admin.selection.pilotBadge', lang),
+  pilotBadgeHint: t('admin.selection.pilotBadgeHint', lang),
   // p152 Wave 3.7: hidden-by-filter inline count
   hiddenByFilter: t('admin.selection.hiddenByFilter', lang),
   // p153 GAP-152.3: VEP status raw badge inline (selection list row name cell)
@@ -503,6 +505,8 @@ const SEL_I18N = {
           <span class="text-[var(--text-muted)] font-semibold">{t('admin.selection.quickFilters', lang)}</span>
           <button id="filter-hide-decided" class="px-3 py-1 rounded-full font-semibold border border-navy/30 text-navy bg-navy/10 cursor-pointer hover:bg-navy/20" data-active="true" title={t('admin.selection.hideStatusesHint', lang)}>{t('admin.selection.hideDecided', lang)}</button>
           <button id="filter-hide-shadow-vep" class="px-3 py-1 rounded-full font-semibold border border-amber-500/30 text-amber-700 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20" data-active="true" title={t('admin.selection.hideShadowVepHint', lang)}>{t('admin.selection.hideShadowVep', lang)}</button>
+          <!-- #2393 fatia 3: só as candidaturas de vaga piloto da linha, que ficam fora da avaliação geral -->
+          <button id="filter-pilot-only" class="px-3 py-1 rounded-full font-semibold border border-teal-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-teal-500/10" data-active="false" title={t('admin.selection.pilotOnlyHint', lang)}>{t('admin.selection.pilotOnly', lang)}</button>
           <button id="filter-interview-today" class="px-3 py-1 rounded-full font-semibold border border-purple-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-purple-500/10" data-active="false" title={t('admin.selection.interviewTodayHint', lang)}>{t('admin.selection.interviewToday', lang)}</button>
           <!-- p279 #411 W1b: F2 toolbar filter chips — surface the interview-invite lifecycle gaps -->
           <button id="filter-no-interview" class="px-3 py-1 rounded-full font-semibold border border-sky-500/30 text-[var(--text-secondary)] bg-[var(--surface-card)] cursor-pointer hover:bg-sky-500/10" data-active="false" title={t('admin.selection.noInterviewHint', lang)}>{t('admin.selection.noInterview', lang)}</button>
@@ -1091,6 +1095,8 @@ const SEL_I18N = {
     },
     hideShadowVep: '🔁 Ocultar shadow VEP',
     showShadowVep: '🔁 Mostrar shadow VEP',
+    pilotBadge: 'Piloto da linha',
+    pilotBadgeHint: 'Vaga piloto da linha: fora da avaliação geral do comitê (ADR-0134).',
     hiddenByFilter: 'ocultos por filtro',
     vepBadge: {
       submitted: 'VEP·Subm', active: 'VEP·Ativ', withdrawn: 'VEP·Saiu',
@@ -1269,6 +1275,8 @@ const SEL_I18N = {
   let filterMyEval: 'all' | 'pending_mine' | 'evaluated_mine' = 'all';
   // p152 Wave 1.0: hide shadow VEP (active member re-imported via bulk VEP) — default ON
   let filterHideShadowVep = true;
+  // #2393 fatia 3: só as candidaturas de vaga piloto da linha (default OFF)
+  let filterPilotOnly = false;
   // p152 W3+: "Entrevistas hoje" quick filter (default OFF; PM ativa no dia)
   let filterInterviewToday = false;
   // p279 #411 W1b: F2 chips — surface the interview-invite lifecycle gaps (default OFF)
@@ -1978,6 +1986,8 @@ const SEL_I18N = {
       if (filterMyEval === 'evaluated_mine' && r.my_eval_status !== 'submitted') return false;
       // p152 Wave 1.0: shadow VEP = email matches active member created before this app, terminal status
       if (filterHideShadowVep && r.extra_flags?.is_shadow_vep === true) return false;
+      // #2393 fatia 3: a trilha vem do painel (evaluation_track); sem ela, a linha é da avaliação geral
+      if (filterPilotOnly && r.evaluation_track !== 'line_pilot') return false;
       // p152 W3+: "Entrevistas hoje" — uses meta.has_interview_today (canonical SP-tz check in RPC)
       if (filterInterviewToday && r.meta?.has_interview_today !== true) return false;
       // p279 #411 W1b: "Sem entrevista" — candidates without an active interview who are not yet decided
@@ -2392,7 +2402,9 @@ const SEL_I18N = {
       const oppTitle = oppId ? (opportunityTitles[oppId] || '') : '';
       const oppCell = !oppId
         ? '<span class="text-[var(--text-muted)]">—</span>'
-        : `<span class="font-mono">${esc(oppId)}</span>${oppTitle ? `<div class="text-[10px] text-[var(--text-muted)] truncate max-w-[160px]">${esc(oppTitle)}</div>` : ''}`;
+        : `<span class="font-mono">${esc(oppId)}</span>${oppTitle ? `<div class="text-[10px] text-[var(--text-muted)] truncate max-w-[160px]">${esc(oppTitle)}</div>` : ''}`
+          // #2393 fatia 3: selo da vaga piloto da linha, que fica fora da avaliação geral do comitê
+          + (r.evaluation_track === 'line_pilot' ? `<div><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700" title="${esc(T.pilotBadgeHint || '')}">${esc(T.pilotBadge || 'Piloto da linha')}</span></div>` : '');
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
       // Wave 3a-0 #740 — chapter SSOT. The old display preferred `chapter_canonical`,
@@ -6000,6 +6012,16 @@ const SEL_I18N = {
       btn.classList.toggle('text-amber-700', filterHideShadowVep);
       btn.classList.toggle('text-[var(--text-secondary)]', !filterHideShadowVep);
       btn.textContent = filterHideShadowVep ? T.hideShadowVep : T.showShadowVep;
+      applyFilters();
+    });
+
+    // #2393 fatia 3: "Só piloto da linha" (default OFF)
+    document.getElementById('filter-pilot-only')?.addEventListener('click', (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      filterPilotOnly = !filterPilotOnly;
+      btn.dataset.active = filterPilotOnly ? 'true' : 'false';
+      btn.classList.toggle('bg-teal-500/10', filterPilotOnly);
+      btn.classList.toggle('bg-[var(--surface-card)]', !filterPilotOnly);
       applyFilters();
     });
 

@@ -1,0 +1,309 @@
+---
+// Superfície do líder da vaga (ADR-0134 §6, #2393 fatia 3).
+//
+// Lista as candidaturas das vagas de linha que o líder pode ler e abre o detalhe de cada uma. Usa SÓ
+// list_opening_applications e get_opening_application, que já fazem o portão (view_opening_applications na
+// iniciativa da vaga, iniciativa confidencial e organização), a recusa por conflito de interesse e o registro
+// obrigatório em pii_access_log. Não chama get_selection_dashboard, nenhuma avaliação e nenhuma IA (D2 (a)):
+// a página não mostra nota de avaliador nem saída de IA.
+//
+// Cada leitura da lista grava um registro por candidatura listada, então a lista só é pedida quando a
+// pessoa abre a página, nunca em pré-carga. O item de menu não existe nesta fatia: a entrada é o link do
+// aviso ao líder e o endereço direto, e quem decide o acesso é a RPC.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+
+const STATUS_KEYS = ['submitted', 'screening', 'objective_eval', 'interview_pending', 'interview_scheduled',
+  'interview_done', 'final_eval', 'approved', 'converted', 'rejected', 'objective_cutoff', 'cancelled',
+  'withdrawn', 'waitlist'];
+
+const MV_I18N = {
+  heading: t('myOpenings.heading', lang),
+  loading: t('myOpenings.loading', lang),
+  loginRequired: t('myOpenings.loginRequired', lang),
+  empty: t('myOpenings.empty', lang),
+  recused: t('myOpenings.recused', lang),
+  errorLoad: t('myOpenings.errorLoad', lang),
+  omitted: t('myOpenings.omitted', lang),
+  filteredBy: t('myOpenings.filteredBy', lang),
+  showAll: t('myOpenings.showAll', lang),
+  countLabel: t('myOpenings.countLabel', lang),
+  viewBtn: t('myOpenings.viewBtn', lang),
+  backToList: t('myOpenings.backToList', lang),
+  colName: t('myOpenings.col.name', lang),
+  colChapter: t('myOpenings.col.chapter', lang),
+  colRole: t('myOpenings.col.role', lang),
+  colStatus: t('myOpenings.col.status', lang),
+  colDate: t('myOpenings.col.date', lang),
+  sectionContact: t('myOpenings.section.contact', lang),
+  sectionProfile: t('myOpenings.section.profile', lang),
+  sectionAnswers: t('myOpenings.section.answers', lang),
+  sectionOther: t('myOpenings.section.other', lang),
+  noAnswer: t('myOpenings.noAnswer', lang),
+  fieldEmail: t('myOpenings.field.email', lang),
+  fieldLinkedin: t('myOpenings.field.linkedin', lang),
+  fieldCredly: t('myOpenings.field.credly', lang),
+  fieldLocation: t('myOpenings.field.location', lang),
+  fieldChapter: t('myOpenings.field.chapter', lang),
+  fieldChapterAffiliation: t('myOpenings.field.chapterAffiliation', lang),
+  fieldRole: t('myOpenings.field.role', lang),
+  fieldStatus: t('myOpenings.field.status', lang),
+  fieldDate: t('myOpenings.field.date', lang),
+  fieldCycle: t('myOpenings.field.cycle', lang),
+  fieldCertifications: t('myOpenings.field.certifications', lang),
+  fieldAcademic: t('myOpenings.field.academic', lang),
+  fieldMotivation: t('myOpenings.field.motivation', lang),
+  fieldReason: t('myOpenings.field.reason', lang),
+  fieldTheme: t('myOpenings.field.theme', lang),
+  fieldAreas: t('myOpenings.field.areas', lang),
+  fieldAvailability: t('myOpenings.field.availability', lang),
+  fieldLeadership: t('myOpenings.field.leadership', lang),
+  fieldNonPmi: t('myOpenings.field.nonPmi', lang),
+  roleResearcher: t('myEvals.role.researcher', lang),
+  roleLeader: t('myEvals.role.leader', lang),
+  status: Object.fromEntries(STATUS_KEYS.map((k) => [k, t(`meStatus.statusBadge.${k}`, lang)])),
+  locale: lang === 'es-LATAM' ? 'es' : lang,
+};
+---
+<BaseLayout title={t('myOpenings.title', lang)} activePage="my-openings" lang={lang}>
+  <div class="max-w-[960px] mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-2xl font-bold text-navy">{MV_I18N.heading}</h1>
+      <p class="text-sm text-[var(--text-secondary)] mt-1">{t('myOpenings.subtitle', lang)}</p>
+      <p class="text-xs text-[var(--text-muted)] mt-1">{t('myOpenings.logNote', lang)}</p>
+    </header>
+
+    <div id="mv-loading" class="text-center py-16">
+      <p class="text-[var(--text-muted)] text-sm">{MV_I18N.loading}</p>
+    </div>
+
+    <div id="mv-notice" class="hidden bg-gray-50 border border-gray-200 rounded-2xl p-6 text-center">
+      <p class="text-sm text-[var(--text-muted)]" id="mv-notice-msg">{MV_I18N.empty}</p>
+    </div>
+
+    <section id="mv-list" class="hidden">
+      <div id="mv-filter" class="hidden mb-4 text-sm text-[var(--text-secondary)]"></div>
+      <div id="mv-omitted" class="hidden mb-4 text-xs text-[var(--text-muted)]"></div>
+      <div id="mv-groups"></div>
+    </section>
+
+    <section id="mv-detail" class="hidden">
+      <button id="mv-back" type="button" class="mb-4 text-sm font-semibold text-navy hover:underline">&larr; {MV_I18N.backToList}</button>
+      <div id="mv-detail-body"></div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script is:inline define:vars={{ MV_I18N }}>
+  window.__MY_OPENINGS_I18N = typeof MV_I18N !== 'undefined' ? MV_I18N : {};
+</script>
+<script>
+  const I: Record<string, any> = (typeof window !== 'undefined' && (window as any).__MY_OPENINGS_I18N) || {};
+
+  let sb: any = null;
+  let bootRetries = 0;
+  const vagaFiltro = new URLSearchParams(window.location.search).get('vaga');
+
+  const $ = (id: string) => document.getElementById(id);
+  const esc = (s: unknown) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  const urlSegura = (s: unknown) => (/^https?:\/\//i.test(String(s ?? '')) ? String(s) : '');
+
+  function showOnly(which: 'loading' | 'notice' | 'list' | 'detail') {
+    ['mv-loading', 'mv-notice', 'mv-list', 'mv-detail'].forEach((id) => {
+      $(id)?.classList.toggle('hidden', id !== `mv-${which}`);
+    });
+  }
+
+  function showNotice(msg: string) {
+    const el = $('mv-notice-msg');
+    if (el) el.textContent = msg;
+    showOnly('notice');
+  }
+
+  // As duas recusas do servidor viram aviso neutro, ANTES do ramo de erro: Unauthorized não revela se a
+  // vaga ou a candidatura existe, e o conflito de interesse diz só que a leitura está impedida.
+  function recusa(data: any): boolean {
+    if (data?.error === 'Unauthorized') { showNotice(I.empty); return true; }
+    if (data?.error === 'recused_conflict_of_interest') { showNotice(I.recused); return true; }
+    return false;
+  }
+
+  const statusLabel = (s: string) => (I.status && I.status[s]) || String(s || '—').replace(/_/g, ' ');
+  const roleLabel = (r: string) => (r === 'researcher' ? I.roleResearcher : r === 'leader' ? I.roleLeader : r || '—');
+  const dataCurta = (d: unknown) => {
+    if (!d) return '—';
+    const dt = new Date(String(d));
+    return Number.isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString(I.locale || 'pt-BR');
+  };
+
+  /* ── lista ───────────────────────────────────────── */
+  async function loadList() {
+    showOnly('loading');
+    const { data, error } = await sb.rpc('list_opening_applications', { p_opportunity_id: vagaFiltro || null });
+    if (recusa(data)) return;
+    if (error || data?.error) {
+      showNotice(I.errorLoad);
+      return;
+    }
+
+    const apps: any[] = Array.isArray(data?.applications) ? data.applications : [];
+    const filtro = $('mv-filter');
+    if (filtro) {
+      filtro.classList.toggle('hidden', !vagaFiltro);
+      if (vagaFiltro) {
+        filtro.innerHTML = `${esc(I.filteredBy)} <span class="font-mono">${esc(vagaFiltro)}</span>. <a href="${esc(window.location.pathname)}" class="font-semibold text-navy hover:underline">${esc(I.showAll)}</a>`;
+      }
+    }
+    const omitidas = Number(data?.omitted_conflict_of_interest ?? 0);
+    const omit = $('mv-omitted');
+    if (omit) {
+      omit.classList.toggle('hidden', omitidas === 0);
+      omit.textContent = `${I.omitted} ${omitidas}`;
+    }
+
+    if (apps.length === 0) {
+      showNotice(I.empty);
+      return;
+    }
+
+    const grupos = new Map<string, { titulo: string; itens: any[] }>();
+    for (const a of apps) {
+      const k = String(a.opportunity_id ?? '');
+      if (!grupos.has(k)) grupos.set(k, { titulo: a.opening_title || '', itens: [] });
+      grupos.get(k)!.itens.push(a);
+    }
+
+    const host = $('mv-groups');
+    if (!host) return;
+    host.innerHTML = [...grupos.entries()].map(([vaga, g]) => `
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-5">
+        <div class="mb-3">
+          <p class="font-bold text-navy">${esc(g.titulo)}</p>
+          <p class="text-xs text-[var(--text-muted)]"><span class="font-mono">${esc(vaga)}</span> · ${esc(I.countLabel)} ${g.itens.length}</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead><tr class="text-left text-xs text-[var(--text-muted)]">
+              <th class="py-1 pr-3">${esc(I.colName)}</th><th class="py-1 pr-3">${esc(I.colChapter)}</th>
+              <th class="py-1 pr-3">${esc(I.colRole)}</th><th class="py-1 pr-3">${esc(I.colStatus)}</th>
+              <th class="py-1 pr-3">${esc(I.colDate)}</th><th></th>
+            </tr></thead>
+            <tbody>${g.itens.map((a) => `
+              <tr class="border-t border-[var(--border)]">
+                <td class="py-2 pr-3 font-semibold text-navy">${esc(a.applicant_name)}</td>
+                <td class="py-2 pr-3">${esc(a.chapter || '—')}</td>
+                <td class="py-2 pr-3">${esc(roleLabel(a.role_applied))}</td>
+                <td class="py-2 pr-3">${esc(statusLabel(a.status))}</td>
+                <td class="py-2 pr-3">${esc(dataCurta(a.application_date))}</td>
+                <td class="py-2 text-right"><button type="button" data-mv-app="${esc(a.application_id)}"
+                  class="px-3 py-1.5 rounded-xl bg-navy text-white text-xs font-semibold hover:opacity-90">${esc(I.viewBtn)}</button></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`).join('');
+
+    host.querySelectorAll<HTMLButtonElement>('button[data-mv-app]').forEach((btn) => {
+      btn.addEventListener('click', () => openDetail(btn.dataset.mvApp as string));
+    });
+    showOnly('list');
+  }
+
+  /* ── detalhe ─────────────────────────────────────── */
+  const CAMPOS_OUTROS: [string, string][] = [
+    ['certifications', 'fieldCertifications'], ['academic_background', 'fieldAcademic'],
+    ['motivation_letter', 'fieldMotivation'], ['reason_for_applying', 'fieldReason'],
+    ['proposed_theme', 'fieldTheme'], ['areas_of_interest', 'fieldAreas'],
+    ['availability_declared', 'fieldAvailability'], ['leadership_experience', 'fieldLeadership'],
+    ['non_pmi_experience', 'fieldNonPmi'],
+  ];
+
+  const texto = (v: unknown) => {
+    if (v === null || v === undefined || v === '') return '';
+    if (Array.isArray(v)) return v.join(', ');
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  };
+
+  const linha = (rotulo: string, valor: string) => `
+    <div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(rotulo)}</p>
+    <p class="text-sm text-[var(--text-primary)] whitespace-pre-line">${valor ? esc(valor) : `<span class="text-[var(--text-muted)]">${esc(I.noAnswer)}</span>`}</p></div>`;
+
+  async function openDetail(applicationId: string) {
+    showOnly('loading');
+    const { data, error } = await sb.rpc('get_opening_application', { p_application_id: applicationId });
+    if (recusa(data)) return;
+    if (error || data?.error) {
+      showNotice(I.errorLoad);
+      return;
+    }
+
+    const perguntas = data?.essay_questions && typeof data.essay_questions === 'object' ? data.essay_questions : {};
+    const usados = new Set<string>();
+    const respostas = Object.values(perguntas).map((q: any) => {
+      const campo = String(q?.field ?? '');
+      if (campo) usados.add(campo);
+      return linha(q?.question || campo, texto(campo ? data[campo] : ''));
+    }).join('');
+    const outros = CAMPOS_OUTROS.filter(([campo]) => !usados.has(campo))
+      .map(([campo, rotulo]) => linha(I[rotulo], texto(data[campo]))).join('');
+
+    const local = [data.applicant_city, data.state, data.country].filter(Boolean).join(', ');
+    const linkedin = urlSegura(data.linkedin_url);
+    const credly = urlSegura(data.credly_url);
+
+    const body = $('mv-detail-body');
+    if (!body) return;
+    body.innerHTML = `
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
+        <p class="text-xs text-[var(--text-muted)]"><span class="font-mono">${esc(data.opportunity_id)}</span> · ${esc(data.opening_title)}</p>
+        <h2 class="text-xl font-bold text-navy mt-1">${esc(data.applicant_name)}</h2>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">${esc(roleLabel(data.role_applied))} · ${esc(statusLabel(data.status))} · ${esc(I.fieldCycle)} ${esc(data.cycle_code || '—')} · ${esc(I.fieldDate)} ${esc(dataCurta(data.application_date))}</p>
+      </div>
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionContact)}</h3>
+        ${linha(I.fieldEmail, texto(data.email))}
+        <div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(I.fieldLinkedin)}</p>
+          <p class="text-sm">${linkedin ? `<a href="${esc(linkedin)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(linkedin)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.noAnswer)}</span>`}</p></div>
+        <div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(I.fieldCredly)}</p>
+          <p class="text-sm">${credly ? `<a href="${esc(credly)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(credly)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.noAnswer)}</span>`}</p></div>
+      </div>
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionProfile)}</h3>
+        ${linha(I.fieldLocation, local)}
+        ${linha(I.fieldChapter, texto(data.chapter))}
+        ${linha(I.fieldChapterAffiliation, texto(data.chapter_affiliation))}
+      </div>
+      <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionAnswers)}</h3>
+        ${respostas || `<p class="text-sm text-[var(--text-muted)]">${esc(I.noAnswer)}</p>`}
+      </div>
+      ${outros ? `<div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
+        <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionOther)}</h3>${outros}</div>` : ''}`;
+    showOnly('detail');
+  }
+
+  /* ── boot ────────────────────────────────────────── */
+  function boot() {
+    sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.();
+    if (!sb || !member) {
+      bootRetries += 1;
+      if (bootRetries >= 20) { showNotice(I.loginRequired); return; }
+      setTimeout(boot, 200);
+      return;
+    }
+    // Voltar só reexibe a lista já carregada: pedir de novo gravaria outro registro por candidatura.
+    $('mv-back')?.addEventListener('click', () => { showOnly('list'); });
+    loadList();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
+  } else {
+    boot();
+  }
+</script>
