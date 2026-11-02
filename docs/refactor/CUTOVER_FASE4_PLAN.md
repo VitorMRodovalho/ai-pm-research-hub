@@ -2,7 +2,7 @@
 
 - **Data alvo:** 2026-04-15
 - **Pré-requisito:** 48h quiet window completa (shadow desde 2026-04-13)
-- **Shadow validation:** 70/71 mirrors_ok=true. 1 divergência aprovada (Marcel Fleming — melhoria de segurança)
+- **Shadow validation:** 70/71 mirrors_ok=true. 1 divergência aprovada (member A — melhoria de segurança)
 
 ## Sumário das mudanças
 
@@ -72,7 +72,7 @@ A migração de RLS policies para subquery em `auth_engagements` é **postergada
    ├── npm test → 1077 pass / 0 fail
    ├── npx astro build → 0 erros
    ├── curl MCP smoke → HTTP 200 + serverInfo v2.9.5
-   └── SQL shadow re-validation → 70/71 mirrors_ok (Marcel = divergência aprovada)
+   └── SQL shadow re-validation → 70/71 mirrors_ok (member A = divergência aprovada)
 
 2. EDITAR index.ts (15 min)
    ├── Adicionar canV4() async function
@@ -93,7 +93,7 @@ A migração de RLS policies para subquery em `auth_engagements` é **postergada
    ├── Via Claude.ai: create_meeting_notes (write gate)
    ├── Via Claude.ai: create_board_card (write_board gate)
    ├── Via Claude.ai: get_my_profile (read — sem gate)
-   └── Verificar que Marcel Fleming NÃO consegue write
+   └── Verificar que member A NÃO consegue write
 
 6. COMMIT (5 min)
    └── Commit atômico: "feat(refactor/v4-f4): Cutover canWrite→can() no MCP (ADR-0007)"
@@ -156,7 +156,7 @@ Rollback completo conforme "ação imediata" acima. Investigar offline. Não ten
 
 | Membro | Legado | V4 | Decisão PM |
 |--------|--------|----|------------|
-| Marcel Fleming | canWrite=true (tribe_leader) | can()=false (engagement expired) | **Aprovada** — Marcel solicitou desligamento, current_cycle_active=false. V4 está correto; legado era permissivo demais. |
+| member A | canWrite=true (tribe_leader) | can()=false (engagement expired) | **Aprovada** — member A solicitou desligamento, current_cycle_active=false. V4 está correto; legado era permissivo demais. |
 
 ## Impacto nos MCP hosts externos
 

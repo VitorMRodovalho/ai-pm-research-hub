@@ -51,7 +51,7 @@ Referência normativa: Manual de Governança e Operações R2 (DocuSign B2AFB185
 
 A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "governança vence" (`chapter_board → chapter_liaison` acima de `researcher`/`observer`), `admin.full → system.global_config`, `voluntariado_director` sede program-wide, recusa de COI presidente-candidato na seleção, e o chapter-scope das RPCs de PII de membro (FU-2). Esta entrada (FU-4) fecha a **camada de governança/processo** da Onda 2.
 
-**Justificativa:** Minimização LGPD (parceiro externo recebe só agregado não identificável; PII individual nunca sai); separação **read ≠ write** (tornar um papel read-only exige split, não revoke — armadilha de action que gateia ambos); autoridade **function-anchored** (sobrevive à rotação de cargos — o bug Ivan da Onda 1 foi designação sem rank na ladder); accountability institucional para o LIM **sem** expor dado pessoal. Tabela por-usuário foi rejeitada por unanimidade do conselho (regressão "Path-4", quebra o invariante function-anchored, cria drift com `engagement_kind_permissions`).
+**Justificativa:** Minimização LGPD (parceiro externo recebe só agregado não identificável; PII individual nunca sai); separação **read ≠ write** (tornar um papel read-only exige split, não revoke — armadilha de action que gateia ambos); autoridade **function-anchored** (sobrevive à rotação de cargos — o bug member S 1 foi designação sem rank na ladder); accountability institucional para o LIM **sem** expor dado pessoal. Tabela por-usuário foi rejeitada por unanimidade do conselho (regressão "Path-4", quebra o invariante function-anchored, cria drift com `engagement_kind_permissions`).
 
 **Impacto técnico:** Migrations `20260805000291` (FU-1) e `20260805000292` (FU-3); ADR-0110, ADR-0111 (+ ADR-0023 Amendment C paridade A3, ADR-0109 COI); docs legais novo `INSTITUTIONAL_AUDITOR_COOPERATION_AND_PROVISIONING.md` (RoPA/LIA + protocolo de provisionamento + template de ciência dos parceiros) e Anexo R3 `641_MANUAL_R3_DATA_PROTECTION_ANNEX_DRAFT.md` §5.3; `PERMISSIONS_MATRIX.md` (persona `institutional_auditor`); testes de contrato `institutional-auditor-aggregate-scope` + `role-ladder-parity`. Action `view_aggregate_analytics` honrada por exatamente 8 RPCs (`get_cycle_report`, `get_annual_kpis`, `get_selection_pipeline_metrics`, `get_diversity_dashboard`, `get_portfolio_items`, `get_in_dashboard`, `get_comms_to_adoption_funnel`, `exec_role_transitions`).
 
@@ -87,7 +87,7 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 - **`designations[]`** — reconhecimentos que transcendem ciclos (acumuláveis)
 - **`is_superadmin`** — acesso técnico à plataforma (independente de papel)
 
-**Justificativa:** O campo `role` não comportava pessoas com múltiplas funções (ex: Fabricio Costa é deputy_manager + tribe_leader + embaixador + fundador + curador). O modelo anterior forçava a escolha de um único papel, gerando perda de informação e inconsistências.
+**Justificativa:** O campo `role` não comportava pessoas com múltiplas funções (ex: member W é deputy_manager + tribe_leader + embaixador + fundador + curador). O modelo anterior forçava a escolha de um único papel, gerando perda de informação e inconsistências.
 
 **Impacto técnico:** Colunas `role` e `roles` eliminadas da tabela `members` (ver GC-005). Funções `compute_legacy_role()` e `compute_legacy_roles()` criadas para backward-compatibility com RPCs existentes. 3 views e 3 RLS policies recriadas para o novo modelo.
 
@@ -121,12 +121,12 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 ### GC-002 — Deputy PM (Nível 2.5)
 **Data:** 2026-03-07 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 
-**Decisão:** Criar o `operational_role = 'deputy_manager'` para formalizar o papel de Co-Gerente de Projeto. Fabricio Costa designado Deputy PM no Ciclo 3, com designações acumuladas: `co_gp`, `tribe_leader` (T06), `ambassador`, `founder`, `curator`.
+**Decisão:** Criar o `operational_role = 'deputy_manager'` para formalizar o papel de Co-Gerente de Projeto. member W designado Deputy PM no Ciclo 3, com designações acumuladas: `co_gp`, `tribe_leader` (T06), `ambassador`, `founder`, `curator`.
 
 **Esclarecimento de terminologia:**
 - `deputy_manager` é o **operational_role** (o que a pessoa faz na hierarquia)
 - `co_gp` é a **designação** (reconhecimento formal de que co-gerencia o projeto)
-- São complementares: o deputy_manager pode existir sem ser co_gp em teoria, mas na prática atual Fabricio acumula ambos
+- São complementares: o deputy_manager pode existir sem ser co_gp em teoria, mas na prática atual member W acumula ambos
 
 **Justificativa:** Com a expansão para 5 capítulos e 44+ colaboradores, a gestão necessita de um braço operacional com acesso admin completo. O Deputy PM é visualmente diferenciado do GP na plataforma mas tem o mesmo nível de permissão técnica (superadmin).
 
@@ -142,13 +142,13 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 
 | Capítulo | Patrocinador (Presidente) | Ponto Focal (chapter_liaison) |
 |---|---|---|
-| PMI-GO | Ivan Lourenço | — (presidente acompanha diretamente) |
-| PMI-CE | Jéssica Alcântara | Roberto Macêdo |
-| PMI-DF | Matheus Frederico Rosa Rocha | Ana Cristina Fernandes Lima |
-| PMI-MG | Felipe Moraes Borges | Rogério Peixoto |
-| PMI-RS | Márcio Silva dos Santos | — (em definição) |
+| PMI-GO | member N | — (presidente acompanha diretamente) |
+| PMI-CE | member Q | member O |
+| PMI-DF | member A | member B |
+| PMI-MG | member E | member V |
+| PMI-RS | member D | — (em definição) |
 
-**Nota histórica:** Cristiano Oliveira foi presidente do PMI-CE durante o Ciclo 2 e início do Ciclo 3. Com a transição de presidência para Jéssica Alcântara, Cristiano passou a atuar como embaixador do Núcleo pelo PMI-CE.
+**Nota histórica:** member P foi presidente do PMI-CE durante o Ciclo 2 e início do Ciclo 3. Com a transição de presidência para member Q, member P passou a atuar como embaixador do Núcleo pelo PMI-CE.
 
 **Justificativa:** Os capítulos PMI-CE, PMI-DF e PMI-MG indicaram representantes operacionais que não são presidentes. Sem a designação formal, esses representantes eram registrados como `sponsor`, confundindo a hierarquia institucional.
 
@@ -161,9 +161,9 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 **Decisão:** Criar a designação `comms_team` para membros do time de comunicação. O time é responsável pela gestão de canais de comunicação, engajamento digital, comunicação institucional e disseminação de conteúdo.
 
 **Composição Ciclo 3:**
-- Mayanna Duarte — Líder de Comunicação (comms_leader)
-- Letícia Clemente — Pesquisadora + Comunicação (dual-role: researcher + comms_team)
-- Andressa Martins — Pesquisadora + Comunicação (dual-role: researcher + comms_team)
+- member T — Líder de Comunicação (comms_leader)
+- member H — Pesquisadora + Comunicação (dual-role: researcher + comms_team)
+- member U — Pesquisadora + Comunicação (dual-role: researcher + comms_team)
 
 **Canais sob gestão:**
 - Instagram: @nucleo.ia.gp
@@ -173,7 +173,7 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 
 **Ferramenta operacional:** BoardEngine — Hub de Comunicação (board específico na plataforma com 54 itens importados do Trello, DnD com @dnd-kit)
 
-**Justificativa:** O time de comunicação existe desde o Ciclo 2 mas não estava registrado na plataforma. O papel da Mayanna vai além de postagens — ela é gestora de comunicação institucional, reforçando prazos, coordenando engajamento e representando o Núcleo nas redes.
+**Justificativa:** O time de comunicação existe desde o Ciclo 2 mas não estava registrado na plataforma. O papel da member T vai além de postagens — ela é gestora de comunicação institucional, reforçando prazos, coordenando engajamento e representando o Núcleo nas redes.
 
 ---
 
@@ -241,7 +241,7 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 
 **Decisão:** Cada avaliador pontua isoladamente, sem visualizar notas dos demais até que todos tenham submetido. Divergências acima de 3 pontos sinalizadas automaticamente para calibração.
 
-**Justificativa:** No Ciclo 3, ambos avaliadores pontuavam na mesma planilha — ao scrollar, um via as notas do outro (viés de ancoragem). Exemplo concreto: candidato Hayala Curto recebeu 0 de um avaliador e 3 do outro em Carta de Motivação. Avaliação blind é padrão ouro em peer review acadêmico (IEEE, ACM, PMI Global).
+**Justificativa:** No Ciclo 3, ambos avaliadores pontuavam na mesma planilha — ao scrollar, um via as notas do outro (viés de ancoragem). Exemplo concreto: candidato member I recebeu 0 de um avaliador e 3 do outro em Carta de Motivação. Avaliação blind é padrão ouro em peer review acadêmico (IEEE, ACM, PMI Global).
 
 **Impacto técnico:** RPC `get_evaluation_form` retorna apenas draft do próprio avaliador. `get_evaluation_results` disponível somente após todas submissões. Implementado em W124 Phase 2.
 
@@ -252,7 +252,7 @@ A Onda 2 também incluiu (PRs #951/#953/#954, ADR-0109): correção da ladder "g
 
 **Decisão:** Processo seletivo unificado. Candidato aplica uma vez com perguntas opcionais para líder. Conversão pesquisador→líder via 3 gates: pré-recomendação do sistema (score ≥ percentil 90 ou tag do avaliador) + aprovação do GP + aceite formal do candidato.
 
-**Justificativa:** No Ciclo 3, 3 candidatos a pesquisador foram identificados informalmente como potenciais líderes (Alexandre Meirelles, Paulo Alves, Ana Carla Cavalcante) e convertidos via notas na planilha. A proposta formaliza uma prática existente, reduz fricção para o candidato (aplica uma vez) e elimina risco de perder bons líderes que não se candidataram por insegurança.
+**Justificativa:** No Ciclo 3, 3 candidatos a pesquisador foram identificados informalmente como potenciais líderes (member G, member X, member C) e convertidos via notas na planilha. A proposta formaliza uma prática existente, reduz fricção para o candidato (aplica uma vez) e elimina risco de perder bons líderes que não se candidataram por insegurança.
 
 **Impacto técnico:** Campo `role_applied` suporta 'researcher'|'leader'|'both'. Campos de conversão em `selection_applications`. Status 'converted' no pipeline.
 
@@ -741,7 +741,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Decisao:** Hub de Comunicacao e Publicacoes boards acessiveis via avatar dropdown e /workspace.
 
-**Justificativa:** Comms team (Mayanna, Leticia, Andressa) nao conseguia acessar boards globais pela navegacao. Boards orphaned em `/admin/board/[id]` sem entry points.
+**Justificativa:** Comms team (member T, member Z, member U) nao conseguia acessar boards globais pela navegacao. Boards orphaned em `/admin/board/[id]` sem entry points.
 
 **Impacto tecnico:** Dois novos NavItems em `navigation.config.ts` com `drawerSection: 'producao'`. Dois novos cards em workspace subprojects section. Aceito por membros com designations comms_leader, comms_member, curator, co_gp.
 
@@ -881,7 +881,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Decisao:** Reclassificacao de todas as 210 entradas de gamificacao em taxonomia refinada: trail (20 XP, 7 cursos PMI obrigatorios), cert_pmi_senior (50), cert_cpmai (45), cert_pmi_mid (40), cert_pmi_practitioner (35), cert_pmi_entry (30), specialization (25), knowledge_ai_pm (20), course (15, apenas CDBA), badge (10). Hierarquia de 5 niveis de certificacao substituindo sistema flat anterior.
 
-**Justificativa:** Sistema anterior classificava tudo como "course" a 15 XP. Nova taxonomia valoriza corretamente certificacoes PMI Senior vs Entry, separa trilha obrigatoria de cursos complementares, e distingue especializacoes de badges comunitarios. CDBA_INTRO removido da trilha obrigatoria (sem Credly badge). Duplicata CPMAI v7 de Pedro Henrique resolvida.
+**Justificativa:** Sistema anterior classificava tudo como "course" a 15 XP. Nova taxonomia valoriza corretamente certificacoes PMI Senior vs Entry, separa trilha obrigatoria de cursos complementares, e distingue especializacoes de badges comunitarios. CDBA_INTRO removido da trilha obrigatoria (sem Credly badge). Duplicata CPMAI v7 de member F resolvida.
 
 **Impacto tecnico:** CHECK constraint expandido para 13 categorias. sync_attendance_points trail-aware com verificacao dual-category. gamification_leaderboard VIEW com learning_points, cert_points, badge_points. get_member_cycle_xp com cycle_learning e cycle_certs. Frontend: CATEGORY_META expandido, TRAIL_TOTAL=7, pontos legend atualizado.
 
@@ -1224,9 +1224,9 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
-### GC-091 — P0 Field Triage (Jefferson, Fabricio, Vitor)
+### GC-091 — P0 Field Triage (member L, member W, Vitor)
 **Data:** 2026-03-18 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
-**Decisao:** Corrigir 8 colunas inexistentes em RPCs detectadas em campo por Jefferson (T8), Fabricio (deputy), e Vitor (GP). Resolver ambiguidade em create_event (2 overloads), admin RPCs com schema mismatch, e broken links no admin sidebar.
+**Decisao:** Corrigir 8 colunas inexistentes em RPCs detectadas em campo por member L (T8), member W (deputy), e Vitor (GP). Resolver ambiguidade em create_event (2 overloads), admin RPCs com schema mismatch, e broken links no admin sidebar.
 **Impacto tecnico:** Systematic column reference cleanup em todos os admin RPCs. Legacy admin_list_members 6-param overload removida.
 
 ---
@@ -1406,7 +1406,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 **Data:** 2026-03-20 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 **Decisao:** Criar infraestrutura de Change Management para governança: tabela manual_sections (33 seções R2 com hierarquia, títulos bilíngues PT/EN, refs de página), 12 novos campos em change_requests (cr_type, impact_level, manual_section_ids, approval workflow, implementation tracking, version tracking), 5 RPCs SECURITY DEFINER, 13 CRs candidatos (draft), RLS manual_sections read-only.
 **Justificativa:** Necessário para o fluxo de aprovação de Change Requests conforme Manual R2 Seção 7.
-**Impacto tecnico:** manual_sections table. change_requests com 12 novos campos. 5 novas RPCs. João Santos (PMI-RS) designado como chapter_liaison.
+**Impacto tecnico:** manual_sections table. change_requests com 12 novos campos. 5 novas RPCs. member M (PMI-RS) designado como chapter_liaison.
 
 ---
 
@@ -1461,7 +1461,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ### GC-124 — Member Offboarding System
 **Data:** 2026-03-23 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
-**Decisao:** Implementar sistema de offboarding de membros com transições observer/alumni/inactive. Marcel → alumni, Leandro/Maurício → observer.
+**Decisao:** Implementar sistema de offboarding de membros com transições observer/alumni/inactive. member 27 → alumni, member J/member 28 → observer.
 **Justificativa:** Necessário para manter dados limpos e distinguir membros ativos de inativos/alumni.
 **Impacto tecnico:** member_status_transitions table. RPCs de transição. Configurable tribe limits + unified audit log RPCs.
 
@@ -1540,12 +1540,12 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 ---
 
-### GC-135 — Offboarding Daniel Bittencourt → Observer
+### GC-135 — Offboarding member K → Observer
 **Data:** 2026-03-26 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 
-**Decisao:** Daniel Bittencourt transicionado de researcher para observer por desligamento voluntario (novo desafio profissional). Mantém is_active=true para acesso de leitura à plataforma, current_cycle_active=false.
+**Decisao:** member K transicionado de researcher para observer por desligamento voluntario (novo desafio profissional). Mantém is_active=true para acesso de leitura à plataforma, current_cycle_active=false.
 
-**Justificativa:** Desligamento voluntário comunicado pelo membro. Segue padrão GC-124 (Marcel→alumni, Leandro/Maurício→observer).
+**Justificativa:** Desligamento voluntário comunicado pelo membro. Segue padrão GC-124 (member 27→alumni, member J/member 28→observer).
 
 **Impacto tecnico:** UPDATE members SET operational_role='observer', current_cycle_active=false. Transição registada em member_status_transitions (reason_category='professional'). Tribo 2 mantém 6 membros ativos — acima do mínimo operacional.
 
@@ -1556,7 +1556,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Decisao:** Implementar pipeline digital completo de selecao com suporte a recrutamento mid-cycle. Ciclo de pesquisa != ciclo de selecao — selecao ocorre em batches assincronos sem disrupcao do time ativo. Batch 2 (Mid-Cycle 2026) aberto para 8 novos candidatos da vaga PMI VEP 64967.
 
-**Justificativa:** 2 membros convertidos para observers (Marcel, Leandro) + 1 tribe leader inativando (Daniel). Necessidade de recrutar substituicoes sem afetar qualidade de entrega pactuada. CBGP em ~28 dias trara mais candidatos.
+**Justificativa:** 2 membros convertidos para observers (member 27, member J) + 1 tribe leader inativando (member K). Necessidade de recrutar substituicoes sem afetar qualidade de entrega pactuada. CBGP em ~28 dias trara mais candidatos.
 
 **Impacto tecnico:**
 - Schema: `partner_chapters` (dinamico, 5 capitulos), `selection_membership_snapshots` (fatos temporais), `vep_opportunity_id` em selection_applications
@@ -1569,11 +1569,11 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 ### GC-137 — VEP Import Logic: Inactive/Observer Member Protection
 **Data:** 2026-04-01 · **Autor:** Vitor Maia Rodovalho (GP) · **Status:** Implementado
 
-**Decisao:** O import de CSV do PMI VEP deve detectar e pular membros inativos/offboarded/observers, nao apenas membros ativos. Caso Leandro Mota: offboarded em 18/Mar como observer, porem VEP status "Submitted" no CSV — import criava aplicacao duplicada.
+**Decisao:** O import de CSV do PMI VEP deve detectar e pular membros inativos/offboarded/observers, nao apenas membros ativos. Caso member J: offboarded em 18/Mar como observer, porem VEP status "Submitted" no CSV — import criava aplicacao duplicada.
 
 **Justificativa:** O VEP mantem o status "Submitted" para candidatos que nao tiveram offer extended ou que reaplied, independente do status interno na plataforma. A protecao deve ser bidirecional: checar tanto o VEP status quanto o status interno do membro.
 
-**Impacto tecnico:** `import_vep_applications` RPC atualizada: check `members` table por email com ANY status (active, inactive, offboarded). Membros inativos/offboarded geram log em `data_anomaly_log` (tipo `selection_import_skipped_inactive`) para auditoria. Leandro removido do Batch 2.
+**Impacto tecnico:** `import_vep_applications` RPC atualizada: check `members` table por email com ANY status (active, inactive, offboarded). Membros inativos/offboarded geram log em `data_anomaly_log` (tipo `selection_import_skipped_inactive`) para auditoria. member J removido do Batch 2.
 
 **Change Request:** Manual de Governanca R2 Secao 3 — adicionar regra: "Candidatos que ja possuem registro de membro (ativo, inativo ou observer) na plataforma devem ser revisados manualmente pelo GP antes de reingressar no pipeline de selecao, mesmo que reaplicem via VEP."
 
@@ -1588,7 +1588,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 - Voluntarios inativados **dentro do ciclo corrente** (offboarded_at >= data de abertura do ciclo) → sinalizados para **revisao manual do GP** antes de reingressar. Previne anomalia de alguem sair e voltar sem avaliacao.
 - Voluntarios com VEP status "Active" (ja aceitaram oferta) → skipados no import, apenas snapshot de membership atualizado.
 
-**Justificativa:** Caso Leandro Mota: offboarded em 18/Mar (ciclo corrente abriu em Jan/2026) como observer por decisao pessoal. VEP manteve status "Submitted" no CSV. Import deveria bloquear (inativado no ciclo corrente) mas nao bloquear ex-voluntarios de ciclos anteriores que legitimamente retornam. Validado com PMI Global Consultant: "Nao perca talentos por burocracia — so bloqueie anomalias do ciclo corrente."
+**Justificativa:** Caso member J: offboarded em 18/Mar (ciclo corrente abriu em Jan/2026) como observer por decisao pessoal. VEP manteve status "Submitted" no CSV. Import deveria bloquear (inativado no ciclo corrente) mas nao bloquear ex-voluntarios de ciclos anteriores que legitimamente retornam. Validado com PMI Global Consultant: "Nao perca talentos por burocracia — so bloqueie anomalias do ciclo corrente."
 
 **Impacto tecnico:** RPC `import_vep_applications` atualizada com check `offboarded_at >= cycle.open_date`. Membros do ciclo corrente inativados geram log `selection_import_flagged_current_cycle` em `data_anomaly_log` (severity=high). Resultado do import mostra "Revisao GP" como categoria separada.
 
@@ -1613,7 +1613,7 @@ Candidatos não aprovados recebem feedback estruturado e são elegíveis para re
 
 **Decisao:** A pagina /attendance faz default do filtro de tribo para a tribo do usuario logado quando o usuario nao e GP-level (manager/deputy_manager/superadmin).
 
-**Justificativa:** Report do Jefferson Pinto (tribe leader, Talentos & Upskilling): via eventos de todas as tribos na pagina /attendance. Tribe leaders acessam a rota admin global em vez da aba Presenca tribe-scoped. Confirmado que o layout e filtros padrao "Todas as Tribos" nao era adequado para users non-GP.
+**Justificativa:** Report do member L (tribe leader, Talentos & Upskilling): via eventos de todas as tribos na pagina /attendance. Tribe leaders acessam a rota admin global em vez da aba Presenca tribe-scoped. Confirmado que o layout e filtros padrao "Todas as Tribos" nao era adequado para users non-GP.
 
 **Impacto tecnico:** Apos popular o dropdown de tribos em /attendance, verifica `isGPLevel()` e `MEMBER.tribe_id`. Se non-GP com tribo, pre-seleciona a tribo e re-renderiza a lista de eventos.
 
@@ -1650,7 +1650,7 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 
 **Decisão:** Reforçar que `can()` / `can_by_member()` e `get_caller_capabilities()` são a fonte canônica para autoridade operacional, enquanto `operational_role` e `designations` permanecem como cache/UX e compatibilidade. Gates de UI sensíveis devem migrar gradualmente de `hasPermission()`/tier local para `canFor()` quando a decisão depender de escopo ou capacidade V4.
 
-**Justificativa:** Casos p201 mostraram desalinhamento entre autoridade real e UI: Roberto/Sarah tinham `curate_content=true` no banco, mas a ilha de curadoria negava acesso por depender de `hasPermission('admin.curation')`. Herlon mostrou o caso inverso: liderança visual de iniciativa sem autoridade por acordo pendente.
+**Justificativa:** Casos p201 mostraram desalinhamento entre autoridade real e UI: member O/member Y tinham `curate_content=true` no banco, mas a ilha de curadoria negava acesso por depender de `hasPermission('admin.curation')`. member 29 mostrou o caso inverso: liderança visual de iniciativa sem autoridade por acordo pendente.
 
 **Impacto técnico:** `CuratorshipBoardIsland` e `AdminNav` passaram a aceitar `canFor('curate_content')` / `canFor('participate_in_governance_review')`. Relatório consolidado em `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md`.
 
@@ -1661,7 +1661,7 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 
 **Decisão:** Formalizar Curadoria como domínio operacional com ação V4 `curate_content`, separando a designação histórica `curator` da autoridade runtime. O Comitê de Curadoria usa engagements/capabilities para autorização, com fallback legado apenas durante transição.
 
-**Justificativa:** ADR-0087 fez sweep parcial de 14 funções para `curate_content`; a auditoria p201 confirmou que documentos e UI ainda podiam divergir. A governança requer que curadores como Roberto e Sarah acessem a superfície conforme capacidade real, não por leitura defasada de tier.
+**Justificativa:** ADR-0087 fez sweep parcial de 14 funções para `curate_content`; a auditoria p201 confirmou que documentos e UI ainda podiam divergir. A governança requer que curadores como member O e member Y acessem a superfície conforme capacidade real, não por leitura defasada de tier.
 
 **Impacto técnico:** Atualização de gates frontend; backlog mantém `document_*` RLS V3 carry como item separado para ADR/decisão futura. Ver `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` itens #29 e #43.
 
@@ -1672,7 +1672,7 @@ Opção P3 ratificada (5 convert + 32 drop) com precondition: ADR-0029 retiremen
 
 **Decisão:** Em grades de presença, evento elegível de hoje/passado sem marcação deve ser exibido como falta (`absent`) até que a presença seja registrada. Evento futuro continua `scheduled`; evento cancelado continua `na`.
 
-**Justificativa:** O relato do Marcos Klemz mostrou que a reunião da Tribo 7 de 2026-05-19 aparecia como traço/N/A para todos, embora devesse aparecer como falta até marcação. Em paralelo, `get_attendance_grid` tinha regressão por `status` ambíguo após inclusão de `events.status`.
+**Justificativa:** O relato do member R mostrou que a reunião da Tribo 7 de 2026-05-19 aparecia como traço/N/A para todos, embora devesse aparecer como falta até marcação. Em paralelo, `get_attendance_grid` tinha regressão por `status` ambíguo após inclusão de `events.status`.
 
 **Impacto técnico:** Migrations `20260722010000_p201_fix_attendance_grid_status_ambiguity.sql` e `20260722020000_p201_fix_tribe_attendance_empty_event_absent.sql`; registros em `docs/RELEASE_LOG.md` e `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` itens #41/#42.
 

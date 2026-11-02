@@ -14,11 +14,11 @@ Estado real hoje:
 
 | Pessoa | operational_role | designations | resolve `manage_comms`? | vê os readers de comms? |
 |---|---|---|---|---|
-| Fabricio Costa | manager | founder, co_gp, … | ✅ (via manager) | ✅ |
+| member D | manager | founder, co_gp, … | ✅ (via manager) | ✅ |
 | Vitor Maia Rodovalho | manager | founder, … | ✅ (via manager) | ✅ |
-| **Mayanna Duarte** | researcher | **comms_leader** | ❌ | ✅ (via designação) |
-| **João Coelho Júnior** | researcher | **comms_member** | ❌ | ✅ (via designação) |
-| **Leticia Clemente** | researcher | **comms_member** | ❌ | ✅ (via designação) |
+| **member B** | researcher | **comms_leader** | ❌ | ✅ (via designação) |
+| **member A** | researcher | **comms_member** | ❌ | ✅ (via designação) |
+| **member C** | researcher | **comms_member** | ❌ | ✅ (via designação) |
 
 Por quê os 3 do time de comms JÁ leem os indicadores:
 - **Readers** (`comms_channel_status`, `comms_top_media`, `comms_metrics_latest_by_channel`) gateiam em `can_view_comms_analytics()`, cujo corpo é:
@@ -32,7 +32,7 @@ Por quê os 3 do time de comms JÁ leem os indicadores:
 
 ## 1. Dimensão Acesso/Permissões — o que REALMENTE resta
 
-**1.a — Dependência do array V3 `designations` no gate de leitura.** `can_view_comms_analytics()` depende do array legado `designations` (cache V3), exatamente o vetor de drift que o V4 (`can()` derivado de engagements) busca eliminar (ADR-0026/Mayanna). Funciona hoje (carve-out deliberado de #963), mas é frágil: se a designação for limpa sem um engagement equivalente, o acesso some silenciosamente.
+**1.a — Dependência do array V3 `designations` no gate de leitura.** `can_view_comms_analytics()` depende do array legado `designations` (cache V3), exatamente o vetor de drift que o V4 (`can()` derivado de engagements) busca eliminar (ADR-0026/member B). Funciona hoje (carve-out deliberado de #963), mas é frágil: se a designação for limpa sem um engagement equivalente, o acesso some silenciosamente.
 - **Opção A (mínima, recomendada p/ agora):** manter o carve-out por designação; documentar como dívida conhecida. Zero migração.
 - **Opção B (higiene V4):** provisionar `volunteer × comms_leader` para os 3 (procedimento V4 de 4 etapas, NÃO seed em `engagement_kind_permissions`) e, num passo futuro, remover o `OR designations` do gate. Alinha com V4, mas é trabalho maior e toca o gate.
 

@@ -8,7 +8,7 @@
 
 ## Decisão de redação: nenhuma copy imprime horário por bloco
 
-A grade por palestrante está sub judice com o Denis (programação geral 19h10/19h45 x roteiro detalhado
+A grade por palestrante está sub judice com o member A (programação geral 19h10/19h45 x roteiro detalhado
 19h05/19h40). Toda a copy abaixo usa só **19h00 às 20h30**, que é igual nas duas grades. Assim a decisão
 dele não obriga a reescrever nada. Quem imprime horário por bloco são as peças gráficas e o pack do
 Airmeet, não o texto.
@@ -52,17 +52,17 @@ Demais regras, que já valiam:
 > prático: como a IA entra na análise de cenário e na priorização de portfólio, e o que você precisa
 > saber antes de jogar dado da sua empresa dentro de uma IA pública.
 >
-> *Fernando Carvalho*, Diretor de Operações, mostra como monta prompts para análise de cenário, com
+> *member B*, Diretor de Operações, mostra como monta prompts para análise de cenário, com
 > exemplo real de entrada, saída e decisão tomada, além do que a IA já apoia em priorização, riscos e
 > interdependências. E também onde ela não ajuda.
 >
-> *Clendson Gonçalves, MSc.*, Arquiteto de Cibersegurança, Dados e IA e professor universitário,
+> *member C, MSc.*, Arquiteto de Cibersegurança, Dados e IA e professor universitário,
 > responde a pergunta que quase ninguém
 > faz antes de colar um documento no chat: o que acontece com esse dado depois. IA pública, privada e
 > on-premise, o que nunca deve ser inserido, e como montar uma política de uso de IA que as pessoas
 > consigam seguir.
 >
-> Mediação com *Denis Vasconcelos*, da tribo ROI & Portfólio.
+> Mediação com *member A*, da tribo ROI & Portfólio.
 >
 > Inscrição:
 > https://pmilatam.airmeet.com/e/8d047420-8895-11f1-8e9b-61808b940348
@@ -71,8 +71,8 @@ Demais regras, que já valiam:
 
 > ⏰ *Amanhã*, terça, 19h00 (Brasília): Aplicações Práticas de IA.
 >
-> Análise de cenário e gestão de portfólio com IA, com o Fernando Carvalho, e segurança da informação no
-> uso de IA, com o Clendson Gonçalves. Mediação do Denis Vasconcelos.
+> Análise de cenário e gestão de portfólio com IA, com o member B, e segurança da informação no
+> uso de IA, com o member C. Mediação do member A.
 >
 > Online, gratuito, com gravação. Se não conseguir assistir ao vivo, inscreva-se de todo jeito que a
 > gravação vai para quem se inscreveu.
@@ -102,13 +102,13 @@ Demais regras, que já valiam:
 > 💻 Online, gratuito e com gravação
 >
 > No palco:
-> ▪️ Fernando Carvalho, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts
+> ▪️ member B, Diretor de Operações: análise de cenário e gestão de portfólio com IA. Prompts
 > que funcionam, um exemplo real de ponta a ponta e o que a IA ainda não resolve.
-> ▪️ Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você
+> ▪️ member C, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário: o que acontece com o dado que você
 > envia para uma IA, a diferença entre pública, privada e on-premise, e como montar uma política de uso
 > que as pessoas consigam seguir.
 >
-> Mediação: Denis Vasconcelos, da tribo ROI & Portfólio.
+> Mediação: member A, da tribo ROI & Portfólio.
 >
 > Primeiro webinar da tribo ROI & Portfólio do Núcleo IA & GP, iniciativa dos capítulos do PMI no
 > Brasil, sediada no PMI-GO.
@@ -118,8 +118,8 @@ Demais regras, que já valiam:
 > #IA #InteligenciaArtificial #GestaoDeProjetos #PMI #Portfolio #SegurancaDaInformacao #GovernancaDeIA
 > #PMO #NucleoIAeGP
 
-**Camada manual no app** (o publisher por API não faz): marcar o Fernando e o Clendson na imagem, e
-colab de post com os perfis deles e dos capítulos, se eles tiverem conta. Precisa dos @ com o Denis.
+**Camada manual no app** (o publisher por API não faz): marcar o member B e o member C na imagem, e
+colab de post com os perfis deles e dos capítulos, se eles tiverem conta. Precisa dos @ com o member A.
 
 ## I2. Story (peça `t6-story-1080x1920.png`)
 
@@ -156,16 +156,16 @@ Se sair pela API, o story vai sem link tocável: nesse caso trocar a última lin
 >
 > Então convidamos duas pessoas para tratar dos dois lados, na prática:
 >
-> Fernando Carvalho, Diretor de Operações, vai mostrar como monta prompts para análise de cenário, com um
+> member B, Diretor de Operações, vai mostrar como monta prompts para análise de cenário, com um
 > exemplo real de entrada, saída e decisão tomada. E onde a IA apoia priorização, riscos e
 > interdependências, incluindo as limitações que ele encontrou e como contornou.
 >
-> Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados
+> member C, MSc., Arquiteto de Cibersegurança, Dados e IA e professor universitário, vai tratar do que acontece com os dados
 > enviados a uma IA pública, da diferença entre IA pública, privada e on-premise, do que nunca deve
 > entrar nessas ferramentas, e de como escrever uma política de uso de IA que as pessoas consigam
 > seguir. A provocação dele: "IA sem governança é como uma porta aberta no servidor".
 >
-> A mediação é do Denis Vasconcelos, da tribo ROI & Portfólio.
+> A mediação é do member A, da tribo ROI & Portfólio.
 >
 > 📅 Terça, 4 de agosto, 19h00 às 20h30 (horário de Brasília)
 > 💻 Online, gratuito, aberto ao público e com gravação
@@ -186,9 +186,9 @@ monta menção de página, exige anotação de URN). Vale pedir aos capítulos p
 
 > Amanhã, 19h00.
 >
-> Análise de cenário e gestão de portfólio com IA, com Fernando Carvalho, Diretor de Operações.
-> Segurança da informação no uso de IA, com Clendson Gonçalves, MSc., arquiteto de cibersegurança,
-> dados e IA, e professor universitário. A mediação será feita pelo Denis Vasconcelos, da tribo
+> Análise de cenário e gestão de portfólio com IA, com member B, Diretor de Operações.
+> Segurança da informação no uso de IA, com member C, MSc., arquiteto de cibersegurança,
+> dados e IA, e professor universitário. A mediação será feita pelo member A, da tribo
 > ROI & Portfólio.
 >
 > Link do evento: https://pmilatam.airmeet.com/e/8d047420-8895-11f1-8e9b-61808b940348
@@ -233,16 +233,16 @@ no fuso do visitante (confirmado 7:00 PM UTC-03:00 às 8:30 PM UTC-03:00 com loc
 > outro, o caminho mais rápido para ter esse ganho é também o mais fácil de vazar informação sem
 > perceber. Convidamos duas pessoas para tratar dos dois lados, na prática.
 >
-> **Análise de cenário e gestão de portfólio com IA**, com Fernando Carvalho, Diretor de Operações. Como
+> **Análise de cenário e gestão de portfólio com IA**, com member B, Diretor de Operações. Como
 > montar prompts para análise de cenário, com um exemplo real de entrada, saída e decisão tomada. Onde a
 > IA apoia priorização, riscos e interdependências, e as limitações que ele encontrou e como contornou.
 >
-> **Segurança da informação no uso de IA**, com Clendson Gonçalves, MSc., Arquiteto de Cibersegurança, Dados e IA e
+> **Segurança da informação no uso de IA**, com member C, MSc., Arquiteto de Cibersegurança, Dados e IA e
 > professor universitário. O que acontece com os dados enviados a uma IA pública, a diferença entre IA pública,
 > privada e on-premise, o que nunca deve entrar nessas ferramentas, e como escrever uma política de uso
 > de IA que as pessoas consigam seguir.
 >
-> Mediação de Denis Vasconcelos, da tribo ROI & Portfólio.
+> Mediação de member A, da tribo ROI & Portfólio.
 >
 > Terça, 4 de agosto, 19h00 às 20h30 (horário de Brasília). Online, gratuito, aberto ao público e com
 > gravação para quem se inscreveu. Sessão em português.

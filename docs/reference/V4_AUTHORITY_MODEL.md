@@ -27,7 +27,7 @@ Este doc descreve os três caminhos, dá exemplos concretos de cada um, e fornec
 
 **Exemplo concreto:**
 - Vitor tem `volunteer × manager` engagement → `can_by_member(vitor, 'manage_member')` retorna `true` porque a seed `('volunteer','manager','manage_member','organization')` existe.
-- Fabricio tem `volunteer × co_gp` → mesmo resultado para `manage_platform`.
+- member C tem `volunteer × co_gp` → mesmo resultado para `manage_platform`.
 
 **Como auditar:**
 ```sql
@@ -46,9 +46,9 @@ SELECT kind, role, scope FROM engagement_kind_permissions WHERE action = 'X';
 
 **Exemplo concreto (#1152 — aprovar a VERSÃO ≠ assinar a CONTRAPARTE do instrumento):**
 - `president_go` aprova a **versão** do documento (torná-la vigente) e exige SEMPRE `legal_signer`
-  (SEDE/board PMI-GO). Ivan Lourenço (`chapter_board` + `legal_signer`, PMI-GO) satisfaz.
-- Lorena Souza tem `['chapter_board', 'voluntariado_director']` mas NÃO `legal_signer`. Em
-  `_can_sign_gate(lorena, chain, 'president_go', 'volunteer_term_template')` → **`false`** (o carve-out
+  (SEDE/board PMI-GO). member A (`chapter_board` + `legal_signer`, PMI-GO) satisfaz.
+- member B tem `['chapter_board', 'voluntariado_director']` mas NÃO `legal_signer`. Em
+  `_can_sign_gate(member B, chain, 'president_go', 'volunteer_term_template')` → **`false`** (o carve-out
   `voluntariado_director` foi REMOVIDO em #1152/#1155, mig `20260805000353`; corpo vivo hoje):
   ```sql
   v_member.chapter = 'PMI-GO' AND 'chapter_board' = ANY(designations)
@@ -56,10 +56,10 @@ SELECT kind, role, scope FROM engagement_kind_permissions WHERE action = 'X';
   ```
 - Por quê: aprovar a versão do template (governança documental) é ato distinto de assinar a
   **contraparte** da entidade promotora em cada Termo EXECUTADO junto ao voluntário. A contra-assinatura
-  da Lorena é mecânica **pós-aprovação**, por-adesão (roteada via `signature_flow` / fila), NÃO um gate
+  da member B é mecânica **pós-aprovação**, por-adesão (roteada via `signature_flow` / fila), NÃO um gate
   de versão. Fundir os dois era o defeito do #1152 (e um cheiro de segregação de funções). Ver
-  memória `reference-volunteer-term-countersign-lorena`.
-- `can_by_member(lorena, 'manage_member')` retorna `false` corretamente — ela NÃO deve poder ativar/desativar membros (operação GP-only).
+  memória `reference-volunteer-term-countersign-member B`.
+- `can_by_member(member B, 'manage_member')` retorna `false` corretamente — ela NÃO deve poder ativar/desativar membros (operação GP-only).
 
 **Como auditar:**
 ```sql
@@ -86,8 +86,8 @@ WHERE (v_is_manage_member OR m.chapter = v_caller_chapter)
 **Exemplo concreto:**
 - `get_volunteer_agreement_status()`:
   - Gate de entrada: `manage_member OR (chapter_board engagement active)`
-  - Lorena entra (tem `chapter_board × board_member` ativo)
-  - Resultado: `members WHERE (v_is_manage_member OR m.chapter = v_caller_chapter)` → para Lorena, retorna apenas membros PMI-GO
+  - member B entra (tem `chapter_board × board_member` ativo)
+  - Resultado: `members WHERE (v_is_manage_member OR m.chapter = v_caller_chapter)` → para member B, retorna apenas membros PMI-GO
   - Mesmo membros de PMI-CE não aparecem na resposta — invisível por design
 
 **Como auditar:**
@@ -108,7 +108,7 @@ WHERE pronamespace='public'::regnamespace
 | Ativar/desativar membro globalmente | 1 (`manage_member`) | — |
 | Anonimizar membro (LGPD Art.18) | 1 (`manage_member`) | — |
 | Aprovar VERSÃO de termo voluntariado (`president_go`) | 2 (designation `legal_signer` + `chapter_board` + chapter='PMI-GO') — #1152: NÃO `voluntariado_director` | — |
-| Assinar CONTRAPARTE de cada Termo executado (Lorena) | pós-aprovação, por-adesão via `signature_flow` — NÃO é gate de versão | — |
+| Assinar CONTRAPARTE de cada Termo executado (member B) | pós-aprovação, por-adesão via `signature_flow` — NÃO é gate de versão | — |
 | Assinar IP Adendo como curator | 2 (designation `curator`) — gate kind `curator` | — |
 | Comentar em document chain | 1 (`participate_in_governance_review`) | — (ADR-0041) |
 | Ler PII de membros | 1 (`view_pii`) | 3 (RPC scope-filtered como `get_chapter_dashboard`) |
@@ -144,7 +144,7 @@ A tabela abaixo é o retrato do corpo vivo (auditado 2026-07-21); atualize junto
 
 **Distinção-chave (#1152): aprovação de VERSÃO ≠ contraparte do INSTRUMENTO.** Gates aprovam a versão
 do documento (torná-la vigente). Assinar a contraparte da entidade promotora em cada Termo executado
-(Lorena, `voluntariado_director`) é mecânica pós-aprovação, por-adesão, via `signature_flow` — **não** é
+(member B, `voluntariado_director`) é mecânica pós-aprovação, por-adesão, via `signature_flow` — **não** é
 um `gate_kind`. Nunca reintroduzir `voluntariado_director` em `president_go`.
 
 **Resíduo aberto #1152 (Achado 2) — `committee_majority` no default de `policy`.** `resolve_default_gates('policy')`
@@ -237,7 +237,7 @@ Ex: para `manage_member`, buscar `prosrc ILIKE '%volunteer%'` ou `%agreement%` p
 - Em actions destrutivas (`manage_member`, `manage_platform`): privilege escalation. Member lifecycle vira acessível a chapter board → quebra invariante "anonimização é GP-only" (LGPD Art. 18).
 - Em actions read: ainda assim cria duplo path (RPC composto OR + seed combo) — drift de governance, harder to reason about.
 
-**Caso de exemplo (não fazer):** p122e proposed Solution C foi seed `chapter_board × board_member → manage_member`. Solution era WRONG porque (a) member lifecycle é GP-only by design, (b) Lorena já tinha tudo via paths 2+3 (`voluntariado_director` designation para sign + `get_volunteer_agreement_status` para read).
+**Caso de exemplo (não fazer):** p122e proposed Solution C foi seed `chapter_board × board_member → manage_member`. Solution era WRONG porque (a) member lifecycle é GP-only by design, (b) member B já tinha tudo via paths 2+3 (`voluntariado_director` designation para sign + `get_volunteer_agreement_status` para read).
 
 **Como evitar:** rodar o procedimento de audit acima ANTES de redigir proposta de seed.
 

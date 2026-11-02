@@ -2,8 +2,8 @@
 name: golden-circle
 description: Narrativa institucional do Núcleo IA & GP inspirada no Golden Circle de Simon Sinek (WHY/HOW/WHAT). Eixo único de produção de conteúdo (webinar, podcast, artigo, post, congresso, grupo de estudos) — cada peça reforça WHY/HOW/WHAT.
 status: draft
-owners: [vitor-maia-rodovalho, fernando-maquiaveli]
-source: 1-on-1 Fernando 2026-05-22 (events.id=6e6df533-e7d3-4f05-9b65-d3852a371ae9)
+owners: [vitor-maia-rodovalho, member A-maquiaveli]
+source: 1-on-1 member A 2026-05-22 (events.id=6e6df533-e7d3-4f05-9b65-d3852a371ae9)
 target_destination: nucleo-ia-gp/wiki/narrativa-institucional/golden-circle.md
 related:
   - ADR-0001 (princípios estruturais Núcleo)
@@ -15,8 +15,8 @@ last_updated: 2026-05-22
 
 # Golden Circle — Núcleo IA & GP
 
-> **Status:** rascunho · co-construção em andamento (Vitor + Fernando)
-> **Origem:** 1-on-1 GP × Fernando Maquiaveli 2026-05-22 · Fernando trouxe o framing inicial
+> **Status:** rascunho · co-construção em andamento (Vitor + member A)
+> **Origem:** 1-on-1 GP × member A 2026-05-22 · member A trouxe o framing inicial
 > **Inspiração:** Simon Sinek · *Start With Why* · padrão Gartner / IDC / PMI
 
 ## Por que existe este documento
@@ -66,7 +66,7 @@ Este documento é o eixo. Tudo que produzirmos (webinar, podcast, artigo, congre
 - Frameworks abertos · repo `nucleo-ia-gp/frameworks` (CC-BY-SA / MIT)
 - Wiki narrativa · repo `nucleo-ia-gp/wiki` (Obsidian vault sincronizado para `wiki_pages` via FTS)
 - Publicações & Submissões · workgroup ativo
-- Cultura & Change · workgroup ativo (liderança Fernando)
+- Cultura & Change · workgroup ativo (liderança member A)
 - Congresso Global Núcleo IA (planejamento em curso)
 - Newsletter "Frontiers AI Project Management" · board ativo
 - Mesas redondas / palestras / podcasts pela tribe Inclusão & Comunicação
@@ -87,19 +87,19 @@ Se algum dos 3 testes falha → revisar antes de publicar OU registrar como pont
 
 ---
 
-## Refinamento pendente · co-construção Vitor + Fernando
+## Refinamento pendente · co-construção Vitor + member A
 
-- [ ] Validar com Fabricio (Co-GP/Curador) — leitura da consistência com voz do Núcleo
-- [ ] Validar com Mayanna (Comms) — aplicabilidade no template editorial
+- [ ] Validar com member B (Co-GP/Curador) — leitura da consistência com voz do Núcleo
+- [ ] Validar com member C (Comms) — aplicabilidade no template editorial
 - [ ] Versão inglês para PMI×AI Champion communications (depois do PT-BR estabilizar)
 - [ ] Cross-link com narrativas dos capítulos parceiros (PMI-GO sede, PMI-CE, PMI-DF, PMI-MG, PMI-RS) — alinhamento sem perda de identidade
-- [ ] Decidir quando consagrar (move para `published`) — sugestão: após primeira ratificação pelo Comitê Diretor do Núcleo (Vitor + Fabricio + tribe leaders)
+- [ ] Decidir quando consagrar (move para `published`) — sugestão: após primeira ratificação pelo Comitê Diretor do Núcleo (Vitor + member B + tribe leaders)
 
 ## Backlog (capturado durante o 1-on-1)
 
 - Aplicar Golden Circle como filtro narrativo no Congresso Global Núcleo IA (planejar slide de abertura com WHY/HOW/WHAT).
 - Aplicar como filtro de aceite de submissões do workgroup Publicações.
-- Aplicar como tone-guide no roteiro do Open Call: copiloto operacional CPMAI (Mayanna).
+- Aplicar como tone-guide no roteiro do Open Call: copiloto operacional CPMAI (member C).
 
 ---
 
