@@ -43,7 +43,7 @@ admin UI). Transition state machine for governance documents
 (draft→under_review→approved→active→superseded).
 
 V4 conversion: pure `manage_platform`. Zero drift (V3 set = V4 set =
-{Vitor + Fabricio}).
+{Vitor + member A}).
 
 #### B. `update_event_duration(p_event_id uuid, p_duration_actual integer, p_updated_by uuid)` — Security drift correction
 
@@ -104,7 +104,7 @@ current frontend audience exactly).
 
 V4 fix: add `can_by_member(v_caller_id, 'manage_event')` gate at top. Pre-fix
 audience = unbounded authenticated. Post-fix audience = 8 members (Vitor +
-Fabricio + 6 tribe_leaders, equal to V3 frontend gate). Pure security
+member A + 6 tribe_leaders, equal to V3 frontend gate). Pure security
 tightening.
 
 ### pg_policy precondition (Q-D charter mandatory)
@@ -116,7 +116,7 @@ Word-boundary regex `\m` scan on `pg_policy.polqual` + `polwithcheck` for all
 
 | Fn | V3 set | V4 set | Δ gain | Δ loss |
 |---|---|---|---|---|
-| `update_governance_document_status` | 2 (Vitor + Fabricio) | 2 (same) | 0 | 0 |
+| `update_governance_document_status` | 2 (Vitor + member A) | 2 (same) | 0 | 0 |
 | `update_event_duration` | 8 (admin + 6 tribe_leaders) | 8 (same) | 0 | 0 |
 | `get_dropout_risk_members` | unbounded (NO GATE!) | 8 | n/a | TIGHTENS to leadership |
 
@@ -343,7 +343,7 @@ Matches ADR-0030..0037 precedent.
 
 ### Deferred (out of this batch — for explicit PM ratify)
 - `create_cost_entry` / `create_revenue_entry` → V4 `manage_finance` would
-  expand audience by **+5 sponsors** (Felipe, Francisca, Ivan, Márcio, Matheus
+  expand audience by **+5 sponsors** (Felipe, member B, member C, member D, member E
   — all `sponsor × sponsor` engagements per V4 catalog). V4 catalog explicitly
   grants sponsor manage_finance, but the V3 RPC was narrower (manager/deputy/SA
   only). Sponsor-tier finance write is a meaningful policy change requiring

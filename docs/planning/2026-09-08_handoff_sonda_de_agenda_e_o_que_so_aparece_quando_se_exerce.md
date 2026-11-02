@@ -101,23 +101,23 @@ despachos com estado de agenda: 0
 | --- | ---: |
 | GP | 23 |
 | institucional | 19 |
-| Fabricio | 13 |
+| member A | 13 |
 | Fernando | 13 |
 
 ## O rodízio: bloqueio posto e retirado no mesmo dia
 
-De manhã, a agenda do Fabricio tinha **0 horários** de 30/08 a 10/10, e ele era a **posição 1 do
+De manhã, a agenda do member A tinha **0 horários** de 30/08 a 10/10, e ele era a **posição 1 do
 LRD**, e o próximo despacho de researcher iria para porta fechada. Registrado um blackout pela RPC
 canônica `set_interviewer_routing_block`, com auditoria, e provado por contrafactual que o rodízio
 passou a eleger o Fernando.
 
-À tarde o Fabricio ajustou ("Feito" no grupo) e a sonda mediu **13 dias**. O blackout foi removido
+À tarde o member A ajustou ("Feito" no grupo) e a sonda mediu **13 dias**. O blackout foi removido
 por `clear_interviewer_routing_block`: a premissa caiu, e mantê-lo puniria quem já corrigiu.
 
 ## ⚠️ Uma decisão do dia cuja PREMISSA MUDOU
 
 De manhã você decidiu **deixar os tokens dos 3 presos vencerem** e tratar só no conserto
-estrutural. Naquele momento a agenda do Fabricio estava fechada e o cenário era ruim.
+estrutural. Naquele momento a agenda do member A estava fechada e o cenário era ruim.
 
 Ao fechar o dia: **3 candidaturas em `interview_pending`, 0 reservas, token vencendo 09/09 às
 11:00 BRT**, e agora **as quatro agendas estão abertas**. A decisão continua sendo sua, mas o

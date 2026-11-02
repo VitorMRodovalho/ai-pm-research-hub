@@ -52,12 +52,12 @@
 3. Phase 5 A3-A6 completion (target 10/Mai, 3-5 sessions)
 4. Council decision log population (start with retrospective of Tier 3 audit items → A/B/C decisions)
 
-### Optionality impact (Trentim A/B/C)
-- **A (PMI internal spinoff)**: CBGPL plants seed with presidents. Trentim 29/Abr meeting should include direct "next concrete step for Path A" question.
+### Optionality impact (member A A/B/C)
+- **A (PMI internal spinoff)**: CBGPL plants seed with presidents. member A 29/Abr meeting should include direct "next concrete step for Path A" question.
 - **B (consulting)**: LIM + CPMAI + whitepaper pipeline. Each week of LIM delay closes submission window.
 - **C (community-led)**: Already active via CBGPL expansion. No net-new decision required.
 
-**Closure risk**: Not submitting LIM → closes B partially. Starting multi-chapter technical onboarding before validating interest → closes A. Launching CPMAI without formal IP agreement with Herlon/Pedro → ambiguity risk (flag for legal-counsel).
+**Closure risk**: Not submitting LIM → closes B partially. Starting multi-chapter technical onboarding before validating interest → closes A. Launching CPMAI without formal IP agreement with member B/Pedro → ambiguity risk (flag for legal-counsel).
 
 ---
 

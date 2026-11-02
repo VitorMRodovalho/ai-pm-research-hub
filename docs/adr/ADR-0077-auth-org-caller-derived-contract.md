@@ -144,7 +144,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path TO 'public', 'pg_temp'
 AS $$ SELECT '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid $$;
 ```
 
-Após rollback, RF-1 ghost exposure volta a abrir em 30+ tabelas. Tratar como incidente LGPD: registrar em `pii_access_log`, comunicar DPO (Ivan), planejar fix corrigido em <24h.
+Após rollback, RF-1 ghost exposure volta a abrir em 30+ tabelas. Tratar como incidente LGPD: registrar em `pii_access_log`, comunicar DPO (member A), planejar fix corrigido em <24h.
 
 ## Anti-patterns (para PR review)
 

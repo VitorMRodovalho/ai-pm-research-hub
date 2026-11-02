@@ -31,7 +31,7 @@ por trás estão corrigidos e estáveis. Duas partes (audiências e superfícies
 ### Parte A - Gamificação "Minha Pontuação, auditável" (membro; admin vendo qualquer membro)
 - Painel com **CICLO vs VITALÍCIO** claramente separados e rotulados (o header de chips hoje mistura escopos sem rótulo).
 - Breakdown por pilar **expansível até a linha de CADA fato** (evento/atividade) com **data real** (`occurred_at`), o
-  **ciclo** a que pertence e os **pontos**. Responde direto ao "de onde vêm estes pontos e em qual ciclo" (o caso Jefferson).
+  **ciclo** a que pertence e os **pontos**. Responde direto ao "de onde vêm estes pontos e em qual ciclo" (o caso member A).
 - Rótulo explícito "certificações contam vitalício" (pilar certificações sempre conta no perfil, #1448).
 - Export.
 - **Fato de infra:** não existe RPC de ledger fato-a-fato hoje. Existem `get_member_xp_pillars(member, cycle_code, scope)`

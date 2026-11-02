@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-The communications team (Mayanna, Letícia, Andressa) operates across **7 disconnected tools** creating significant friction. The portal's Communication Engine (W131) can absorb 80% of their workflow, eliminating tool-switching and data loss.
+The communications team (member A, member B, member C) operates across **7 disconnected tools** creating significant friction. The portal's Communication Engine (W131) can absorb 80% of their workflow, eliminating tool-switching and data loss.
 
 ---
 
@@ -26,23 +26,23 @@ The communications team (Mayanna, Letícia, Andressa) operates across **7 discon
 ## Friction Points Identified
 
 ### F1: Link Hunting (191 signals)
-**Pattern:** "é tão difícil achar as mensagens, eu tava até agora procurando esse link" (Andressa, 7/23)
+**Pattern:** "é tão difícil achar as mensagens, eu tava até agora procurando esse link" (member C, 7/23)
 **Evidence:** Links get buried in WhatsApp. Vitor lost all history when switching phones. Team repeatedly asks "where is X?"
 **Portal fix:** All links live in board_items, global_links table, or campaign_templates. Searchable, persistent.
 
 ### F2: Access Chaos (24 signals)
 **Pattern:** "pedi acesso" / "sem acesso ao Canva" / "fiz a solicitação"
-**Evidence:** Lidia had to request Drive access. Leticia was without Canva access. Roberto had to request doc access.
+**Evidence:** member D had to request Drive access. member B was without Canva access. Roberto had to request doc access.
 **Portal fix:** Single auth (Google OAuth). Role-based access. No per-tool permissions.
 
 ### F3: Approval Bottleneck (31 signals)
 **Pattern:** "segue para validação" → silence → "tudo ok? Podemos postar?" → more silence
-**Evidence:** Mayanna creates content during lunch break, asks for validation, waits hours. Template reviews stall workflow.
+**Evidence:** member A creates content during lunch break, asks for validation, waits hours. Template reviews stall workflow.
 **Portal fix:** Campaign template system with built-in preview + GP approval workflow. Status visible to all.
 
 ### F4: Context Fragmentation
 **Pattern:** Brief is in WhatsApp audio, data is in Drive, design is in Canva, status is in Trello, publishing is on IG/LinkedIn.
-**Evidence:** Andressa: "fiquei um bom tempo tentando entender o que, de fato, era pra fazer" (3/2/26)
+**Evidence:** member C: "fiquei um bom tempo tentando entender o que, de fato, era pra fazer" (3/2/26)
 **Portal fix:** BoardEngine card has description, attachments, assignee, status, due date — all in one place.
 
 ### F5: Template/Format Confusion (59 signals)
@@ -56,7 +56,7 @@ The communications team (Mayanna, Letícia, Andressa) operates across **7 discon
 **Portal fix:** Blog posts table + campaign_templates + board_items create a unified content registry.
 
 ### F7: Publishing Timing Pressure
-**Pattern:** "mas já queria postar logo hoje pra não perder o timing" (Mayanna, 3/5/26)
+**Pattern:** "mas já queria postar logo hoje pra não perder o timing" (member A, 3/5/26)
 **Evidence:** Content created hastily to catch timing windows. No editorial calendar visibility.
 **Portal fix:** Campaign scheduling with planned send dates. Blog posts with publish dates.
 
@@ -66,13 +66,13 @@ The communications team (Mayanna, Letícia, Andressa) operates across **7 discon
 
 | Member | Messages | Role pattern |
 |--------|----------|-------------|
-| Mayanna | 655 (highest) | Content creator + coordinator. Does 70% of content creation. Creates during lunch breaks. |
-| Letícia | 630 | Publisher (has IG/LinkedIn access). Less available recently ("turistando"). |
-| Andressa | 301 | Designer (Canva). Creates templates and visual assets. Starting Masters program (reduced availability). |
+| member A | 655 (highest) | Content creator + coordinator. Does 70% of content creation. Creates during lunch breaks. |
+| member B | 630 | Publisher (has IG/LinkedIn access). Less available recently ("turistando"). |
+| member C | 301 | Designer (Canva). Creates templates and visual assets. Starting Masters program (reduced availability). |
 | Vitor | 628 | GP review + strategic direction. Provides specs, references, approval. |
-| Fabricio | 89 | Occasional input, strategic comments. |
+| member E | 89 | Occasional input, strategic comments. |
 
-**Key insight:** Mayanna is the engine. She creates content, inserts researcher info, writes copy, and publishes when others are unavailable. Any friction reduction benefits her most.
+**Key insight:** member A is the engine. She creates content, inserts researcher info, writes copy, and publishes when others are unavailable. Any friction reduction benefits her most.
 
 ---
 
@@ -144,9 +144,9 @@ Use board_items with due_dates to create a visible publication schedule in /work
 
 ## Key Quotes Supporting Migration
 
-> "é tão difícil achar as mensagens" — Andressa (7/23/25)
+> "é tão difícil achar as mensagens" — member C (7/23/25)
 > "Troquei de celular e perdi a documentação" — Vitor (7/14/25)  
 > "onde está sendo salvo o material de comunicação deste ano? não achei na pasta do nucleo" — Vitor (3/5/26)  
-> "no trello" — Mayanna (3/5/26)
+> "no trello" — member A (3/5/26)
 > "sem friccao de dado sendo gerado fora, e publicacoes descentralizadas" — Vitor (3/7/26, when showing portal)
-> "vale um post sobre isso (nosso sistema próprio), muitoooo bom!" — Mayanna (3/7/26)
+> "vale um post sobre isso (nosso sistema próprio), muitoooo bom!" — member A (3/7/26)

@@ -2,7 +2,7 @@
 
 **Status:** Active since 2026-04-18 (sessão p27)
 **Approved by:** Vitor Rodovalho (PM, Núcleo IA)
-**Rationale:** Preservar optionality dos 3 caminhos member A (A PMI-internal / B consulting / C community) enquanto plataforma escala para multi-capítulos e prepara LIM/Detroit/whitepaper.
+**Rationale:** Preservar optionality dos 3 caminhos (A PMI-internal / B consulting / C community) enquanto plataforma escala para multi-capítulos e prepara LIM/Detroit/whitepaper.
 
 ## O que é
 

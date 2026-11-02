@@ -29,7 +29,7 @@ Constraint `hub_resources_asset_type_check` expanded from 4 to 9 types:
 |-------|----------|--------------|
 | T2 (Agentes) | 1 | agente, agent, equipes híbridas |
 | T3 (TMO/PMO) | 5 | risco, risk, doc compartilhado |
-| T6 (Portfólio) | 2 | Mayanna/Luciana/Denis authorship |
+| T6 (Portfólio) | 2 | member A/member B/member C authorship |
 | T7 (Governança) | 2 | XAI, explainable, transparency |
 
 134 items remain legitimately cross-tribe (institutional: governance docs, certificates, presentations, general articles). These correctly have tribe_id = NULL.

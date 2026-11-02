@@ -145,7 +145,7 @@ de `platform.alert_sweep_run` antes de mexer em qualquer coisa.
 
 - **#1556**, irmã da Wave 0, segue aberta.
 - **#1637** Dependabot `astro` 6→7: não mergear (política #611); major não é higiene de rotina.
-- **#1205** só fecha com o William no `/profile` LOGADO.
+- **#1205** só fecha com o member A no `/profile` LOGADO.
 
 ## Regras da casa
 

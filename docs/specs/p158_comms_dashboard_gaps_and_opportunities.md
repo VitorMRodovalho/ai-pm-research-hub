@@ -50,7 +50,7 @@ UI render (`/admin/comms` "Mídia Social"):
 ### Gap 2.4 — Funnel social → site → adoption ausente
 **Hoje**: KPIs medem alcance externo; adoção (membros logados) está em `/admin/adoption` separado.
 **Falta**: Dashboard cruzado — "X visualizações vídeo Y → Z visitas /trail-pmi-ai → W aplicações VEP". Atribuição UTM já existe em `selection_applications.referral_source`.
-**Impacto**: PM não consegue justificar ROI de produção de conteúdo (custo vs aplicações). Conversa com Lorena/Comms sobre prioridade fica anedótica.
+**Impacto**: PM não consegue justificar ROI de produção de conteúdo (custo vs aplicações). Conversa com member A/Comms sobre prioridade fica anedótica.
 
 ### Gap 2.5 — AI summary / sentiment por canal
 **Hoje**: AI usado em `pmi-ai-triage` (selection) + `pmi-ai-analyze` (qualitative).
@@ -116,7 +116,7 @@ Top Content cards mostram likes/comments mas não o **engagement rate** (likes+c
   - Última semana de posts (caption + engagement + permalink)
   - Comments amostra
 - Output JSON: themes, sentiment overall, top performing format, suggested next post topic
-- Schedule weekly cron Mon 8h → email Lorena + PM. Dashboard "AI Insights" tab no /admin/comms.
+- Schedule weekly cron Mon 8h → email member A + PM. Dashboard "AI Insights" tab no /admin/comms.
 
 ---
 
@@ -157,7 +157,7 @@ Pendente verificação prod (após PM F5):
 | **Imediato** | hotfix#7 (já shipped) | done p158 |
 | **Próxima sessão (~2-3h)** | QW-1 + QW-2 + QW-4 (per-channel tabs + KPI subtítulos + ER overlay) | ~3h fecha hygiene visual |
 | **Sessão dedicada (~6h)** | MP-1 funnel social→adoption | maior valor estratégico — justifica ROI Comms |
-| **Sprint dedicado (~10h)** | MP-4 AI weekly digest comms | alta alavanca tempo Lorena/Comms |
+| **Sprint dedicado (~10h)** | MP-4 AI weekly digest comms | alta alavanca tempo member A/Comms |
 | **Quarterly** | ST-1 editorial calendar OR ST-2 AI moderation | sobre qual stack escolher — separar discussão |
 
 ---

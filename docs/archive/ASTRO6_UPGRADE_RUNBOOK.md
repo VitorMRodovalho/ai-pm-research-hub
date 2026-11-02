@@ -316,7 +316,7 @@ npx playwright test
 ### Step 9: Role-based smoke test (20 min)
 Test as each persona:
 - [ ] Logged out → homepage, blog, about
-- [ ] Observer (Sarah) → limited access, no errors
+- [ ] Observer (member A) → limited access, no errors
 - [ ] Researcher → workspace, tribe dashboard, BoardEngine
 - [ ] Tribe Leader → tribe management, attendance
 - [ ] Superadmin (Vitor) → admin panel, all dashboards

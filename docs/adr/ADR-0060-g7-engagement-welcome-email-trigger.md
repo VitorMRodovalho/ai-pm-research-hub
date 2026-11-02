@@ -16,7 +16,7 @@ Council Tier 3 review (4 agents): 3 de 4 convergiram em "ship G7 esta semana, is
 - **c-level-advisor**: G7 hygiene + costs nada (substrate ready)
 - **startup-advisor**: G7 sim, mas W2/G4 só com sinal de 2º congresso
 
-Audit runtime confirmado em sessão p74: nenhum trigger de welcome existia. Roberto, Ivan, Vitor, Fabricio, Sarah todos foram adicionados ao LATAM LIM como engagements sem nenhuma notificação automática.
+Audit runtime confirmado em sessão p74: nenhum trigger de welcome existia. Roberto, member A, Vitor, member B, member C todos foram adicionados ao LATAM LIM como engagements sem nenhuma notificação automática.
 
 Substrate técnico já pronto:
 - `pg_net` extension instalada

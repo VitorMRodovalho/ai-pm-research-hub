@@ -13,7 +13,7 @@ Após múltiplos deploys (Fase 2 e 3 do CXO Task Force), três problemas persist
 
 1. **Header da Tribo** exibia fundo escuro/transparente apesar do código fonte ter `bg-white`
 2. **Warnings Radix** no console: `DialogContent requires a DialogTitle`
-3. **Kanban vazio** para Tribo 2 (Débora) — 0 cards apesar de 193 items importados do Miro
+3. **Kanban vazio** para Tribo 2 (member A) — 0 cards apesar de 193 items importados do Miro
 
 ---
 
@@ -47,7 +47,7 @@ Após múltiplos deploys (Fase 2 e 3 do CXO Task Force), três problemas persist
 1. Board da T2 (`10d4c04a-...`) tem **0 items** — nenhum dado importado diretamente
 2. Board da T6 (`118b55be-...`) tem **193 items** (importação Miro)
 3. A RPC `list_legacy_board_items_for_tribe` retornava **0 items** para T2
-4. **Causa raiz:** `member_cycle_history` da Débora no Ciclo 2 tinha `tribe_id = NULL`:
+4. **Causa raiz:** `member_cycle_history` da member A no Ciclo 2 tinha `tribe_id = NULL`:
 
 ```json
 {
@@ -116,10 +116,10 @@ Adicionados em `TribeKanbanIsland.tsx` para auditoria em produção:
 | ReadLints em ficheiros editados | 0 erros |
 | Query direta T2 board items | 0 (esperado) |
 | Query direta T6 board items | 193 |
-| Débora `member_cycle_history` pós-fix | `tribe_id = 6` no cycle_2 |
+| member A `member_cycle_history` pós-fix | `tribe_id = 6` no cycle_2 |
 | Registros NULL tribe_id + tribe_name pós-fix | 0 |
 | RPC via service_role_key | 0 (esperado — `auth.uid()` é NULL com service role) |
-| Validação manual da lógica RPC | Débora → T6 (cycle_2) → board T6 → 193 items |
+| Validação manual da lógica RPC | member A → T6 (cycle_2) → board T6 → 193 items |
 | Deploy Cloudflare (bg-red-500 test) | CPO confirmou vermelho visível |
 | Deploy Cloudflare (bg-white revert) | Push `8b89c67` enviado |
 
@@ -130,7 +130,7 @@ Adicionados em `TribeKanbanIsland.tsx` para auditoria em produção:
 A RPC `list_legacy_board_items_for_tribe` usa `auth.uid()` para identificar o caller. Isso significa:
 
 - **Não é testável** via `service_role_key` (retorna sempre 0)
-- **Depende de login real** — só funciona quando Débora (ou superadmin/manager) está autenticada
+- **Depende de login real** — só funciona quando member A (ou superadmin/manager) está autenticada
 - O CPO confirmou que os 193 cards apareceram no F12 em produção com utilizador autenticado
 
 **Se o Kanban continuar vazio para algum utilizador:**
