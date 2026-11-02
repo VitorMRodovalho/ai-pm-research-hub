@@ -1,6 +1,6 @@
 -- #1316 (parte C) — get_application_returning_context: derivar contexto de retornante do estado VIVO
 --
--- Sintoma: um membro ATIVO que re-candidata (ex. Luciana Dutra, Ciclo 1 Goiás via 62106, hoje
+-- Sintoma: um membro ATIVO que re-candidata (ex. member A, Ciclo 1 Goiás via 62106, hoje
 --   researcher ativa) aparece no pipeline como "rejeitado" sem sinalizar que já é membro ativo.
 --   Causa: `is_returning_member`/`previous_cycles` são lidos das COLUNAS gravadas em
 --   selection_applications, que ficam false/null para quem entrou FORA do fluxo de selection_application

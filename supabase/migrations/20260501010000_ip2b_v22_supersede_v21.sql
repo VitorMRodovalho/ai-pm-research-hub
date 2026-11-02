@@ -72,25 +72,25 @@ VALUES
 <p><strong>CR-050 — Sumário Executivo da Revisão</strong></p>
 <p>Propriedade Intelectual no Núcleo de IA &amp; GP</p>
 <p><em>Preparado por Vitor Rodovalho · 16 de Abril de 2026</em></p>
-<p>Apoio à reunião Ivan Lourenço × Vitor Rodovalho · 16h</p>
+<p>Apoio à reunião member B × Vitor Rodovalho · 16h</p>
 <p><strong>TL;DR —</strong> O pacote CR-050 foi revisado em profundidade
-após contribuição técnica do Roberto Macêdo (Curador PMI-CE), análise
+após contribuição técnica do member A (Curador PMI-CE), análise
 sistêmica dos efeitos cruzados (v2.0), auditoria jurídica
 pré-ratificação com 6 ajustes P1 + 7 ajustes P2 (v2.1) e curadoria final
-pré-submissão ao jurídico do Ivan endereçando RF-2 (IRRF) + RF-3 (GDPR
+pré-submissão ao jurídico do member B endereçando RF-2 (IRRF) + RF-3 (GDPR
 UE) + 5 alinhamentos cross-doc (v2.2). Quatro documentos operacionais
 (Termo, Adendo Retificativo, Adendo de Cooperação, Política) + este
-Sumário estão prontos para submissão ao advogado do Ivan. Todas as
+Sumário estão prontos para submissão ao advogado do member B. Todas as
 referências legais foram validadas nas fontes oficiais. O pacote cobre
-escopo internacional (relevante para o Fabricio e para o programa AIPM
+escopo internacional (relevante para o member C e para o programa AIPM
 Ambassadors), inclui mecanismo de opt-out para publicação em periódicos
 exclusivos, define governança de registro, custeio e royalties (com
 retenção IRRF detalhada em sub-alíneas operacionais), corrige
 enquadramento jurídico de software, e agora opera o GDPR para
 voluntários UE com base legal, mecanismo de transferência internacional
 e catálogo de direitos.</p>
-<p>1. Contribuição do Roberto Macêdo (PMI-CE)</p>
-<p>Revisão feita durante a manhã de 16/Abr. Roberto identificou dois
+<p>1. Contribuição do member A (PMI-CE)</p>
+<p>Revisão feita durante a manhã de 16/Abr. member A identificou dois
 pontos diretos e levantou dois pontos de governança. Todos os quatro
 foram incorporados ao pacote revisado.</p>
 <p>Ponto 1 — Conflito com periódicos exclusivos</p>
@@ -117,7 +117,7 @@ correto (9.610 para obras gerais, 9.609 para software, 9.279 para
 propriedade industrial, tratados internacionais para registros em outras
 jurisdições).</p>
 <p>Ponto 3 — Governança de registro e custeio</p>
-<p>Roberto perguntou: quem analisa viabilidade? Quem paga INPI,
+<p>member A perguntou: quem analisa viabilidade? Quem paga INPI,
 Biblioteca Nacional, honorários de agente de PI? Sem resposta clara, a
 política vira letra morta.</p>
 <p><strong>Solução incorporada:</strong> Seção 4 nova da Política cria
@@ -180,7 +180,7 @@ revisado para “Encarregado pela Proteção de Dados Pessoais (Encarregado)
 do PMI-GO”. Política de privacidade do PMI-GO é referência operacional,
 com prevalência da disposição mais protetiva em caso de ambiguidade.</p>
 <p>9. Jurisdições estrangeiras</p>
-<p>Você mora em Leesburg/VA. Fabricio pode estar em qualquer lugar.
+<p>Você mora em Leesburg/VA. member C pode estar em qualquer lugar.
 Pesquisadores brasileiros apresentam em LIM Summit (Peru). PMI é
 americano. AIPM Ambassadors é programa internacional. A política não
 pode ser só brasileira.</p>
@@ -196,7 +196,7 @@ princípio-âncora na política, cada acordo vira negociação do zero.</p>
 <p><strong>Solução:</strong> Seção 10 nova da Política estabelece que
 acordos internacionais herdam a Política como baseline. Divergências
 tratadas por adendo específico. Negociação pelos representantes
-designados (você e Fabricio no caso Ambassadors) com aprovação prévia do
+designados (você e member C no caso Ambassadors) com aprovação prévia do
 presidente PMI-GO e notificação aos 4 demais presidentes (15 dias).</p>
 <p>3. Correção Crítica de Referência Jurídica</p>
 <p>O draft v1 da política citava <strong>“Art. 49 §4º”</strong> da Lei
@@ -232,7 +232,7 @@ tracks, ineditismo, royalties, acordos internacionais. v2.1 incorporou
 P1+P2 do parecer jurídico. v2.2 detalha IRRF em sub-alíneas operacionais
 (§4.5.4 e.1–e.4) e reescreve §2.5 para GDPR operacional
 (2.5.1–2.5.7).</td>
-<td>Revisão jurídica do Ivan → aprovação via CR-050 no manual</td>
+<td>Revisão jurídica do member B → aprovação via CR-050 no manual</td>
 </tr>
 <tr class="even">
 <td>2</td>
@@ -242,7 +242,7 @@ parágrafo de ressalvas; Cláusula 9 atualizada (Encarregado + §2 direitos
 do titular); Cláusula 11 revogação imagem; Cláusula 13 nova (lei
 aplicável e jurisdição); v2.2 inclui Cláusula 14 (consentimento GDPR
 Art. 49(1)(a), renderizada condicionalmente para residentes UE).</td>
-<td>Revisão jurídica do Ivan → aprovação 5 presidentes → uso no Ciclo
+<td>Revisão jurídica do member B → aprovação 5 presidentes → uso no Ciclo
 4</td>
 </tr>
 <tr class="odd">
@@ -253,7 +253,7 @@ original, declara prevalência, retifica Cláusula 2 com nova redação.
 Art. 4 incorpora escopo internacional. v2.2 inclui Art. 8 (consentimento
 GDPR Art. 49(1)(a), renderizado condicionalmente para residentes
 UE).</td>
-<td>Revisão jurídica do Ivan → assinatura individual pelos voluntários
+<td>Revisão jurídica do member B → assinatura individual pelos voluntários
 ativos</td>
 </tr>
 <tr class="even">
@@ -264,8 +264,8 @@ saída de capítulo, direitos morais, crédito, registro e titularidade,
 escopo internacional, vigência, revisão. v2.2 explicita “4.0
 Internacional” nas licenças CC-BY/CC-BY-SA e adiciona parágrafo único no
 Art. 2 sobre re-licenciamento Track B para periódicos.</td>
-<td>Circular para 5 presidentes (Jessica/CE, Matheus/DF, Felipe/MG,
-Márcio/RS) + Ivan/GO</td>
+<td>Circular para 5 presidentes (member P/CE, member D/DF, member E/MG,
+member F/RS) + member B/GO</td>
 </tr>
 </tbody>
 </table>
@@ -364,9 +364,9 @@ residentes UE; (iv) 5 alinhamentos cross-doc (Encarregado, CC-BY 4.0
 Internacional, Track B re-licensing, standby itálico, versioning).
 Parecer em
 <code>docs/council/2026-04-20-legal-counsel-v2.1-to-v2.2-curation.md</code>.</p></li>
-<li><p><strong>Etapa 2 — Validação jurídica pelo advogado do Ivan
+<li><p><strong>Etapa 2 — Validação jurídica pelo advogado do member B
 (próxima):</strong> Submissão do pacote v2.2 ao jurídico indicado pelo
-Ivan Lourenço (PMI-GO) durante a fase de comment/approval do chain de
+member B (PMI-GO) durante a fase de comment/approval do chain de
 ratificação. Foco da revisão: validação dos textos propostos para IRRF
 (Política §4.5.4 sub-alíneas) e GDPR (Política §2.5 + consentimento
 condicional no Termo/Adendo), além da validação dos riscos residuais
@@ -377,8 +377,8 @@ aplicabilidade continuada de Art. 49 GDPR à luz do EDPB Guidelines
 as opções mapeadas e o texto parcialmente resolvido — reduzindo o escopo
 de revisão a validação e refinamento final.</p></li>
 <li><p><strong>Etapa 3 — Aprovação política pelos 5 presidentes
-(paralelo):</strong> Circulação do v2.2 aos presidentes Ivan/GO,
-Jessica/CE, Matheus/DF, Felipe/MG, Márcio/RS via plataforma. Comentários
+(paralelo):</strong> Circulação do v2.2 aos presidentes member B/GO,
+member P/CE, member D/DF, member E/MG, member F/RS via plataforma. Comentários
 e questionamentos registrados em thread por cláusula. Aprovação
 sequencial (curador → líder → president_go → 4 demais presidentes) com
 silêncio positivo para marcas/patentes.</p></li>
@@ -401,15 +401,15 @@ não condicionantes da formalização.</p></li>
 Confirmar que os 10 pontos endereçados fazem sentido como pacote. Não
 precisa entrar em texto específico.</p></li>
 <li><p><strong>(2) Escopo internacional</strong> — 5 min. Decisão de
-tratar o programa como transnacional agora (não depois). Pergunta: Ivan
+tratar o programa como transnacional agora (não depois). Pergunta: member B
 vê algum obstáculo estatutário do PMI-GO?</p></li>
 <li><p><strong>(3) Registro e custeio</strong> — 5 min. Decisão:
 orçamento anual do Núcleo para PI administrado pelo PMI-GO. Pergunta:
 qual o teto sugerido para o primeiro ciclo?</p></li>
 <li><p><strong>(4) Política de royalties</strong> — 5 min. Decisão de
-deixar aberto agora e resolver caso a caso. Pergunta: Ivan concorda ou
+deixar aberto agora e resolver caso a caso. Pergunta: member B concorda ou
 quer bounds mínimos?</p></li>
-<li><p><strong>(5) Encaminhamento jurídico</strong> — 5 min. Ivan indica
+<li><p><strong>(5) Encaminhamento jurídico</strong> — 5 min. member B indica
 advogado. Prazo acordado: até 25/Abr para ter pacote validado antes do
 CBGPL.</p></li>
 <li><p><strong>(6) Comunicação aos 4 presidentes</strong> — 5 min.
@@ -445,8 +445,8 @@ CR-050</em></p>
 <p>Capítulos: PMI-GO (sede), PMI-CE, PMI-DF, PMI-MG, PMI-RS</p>
 <p><strong>Nota de versão:</strong> Esta versão consolida o draft v1.0
 com as revisões do CR-050 decorrentes da análise colaborativa com o
-Presidente do PMI-GO (Ivan Lourenço), com o Diretor Curador PMI-CE
-(Roberto Macêdo) e com o Gerente de Projeto do Núcleo (Vitor Rodovalho),
+Presidente do PMI-GO (member B), com o Diretor Curador PMI-CE
+(member A) e com o Gerente de Projeto do Núcleo (Vitor Rodovalho),
 incorporando as considerações de conflito com periódicos exclusivos,
 enquadramento jurídico correto para software e documentos, governança de
 registro, política de uso e royalties, escopo internacional e
@@ -462,7 +462,7 @@ interpretativa sobre AI training vs. citação acadêmica de material PMI
 (Seção 11); (v) nota sobre aplicabilidade do GDPR para voluntários
 residentes na União Europeia (Seção 2).</p>
 <p><strong>Nota v2.1 → v2.2 (20/Abr/2026):</strong> Incorporados os
-ajustes da curadoria final pré-submissão ao jurídico do Ivan (parecer
+ajustes da curadoria final pré-submissão ao jurídico do member B (parecer
 <code>2026-04-20-legal-counsel-v2.1-to-v2.2-curation.md</code>): (i)
 reescrita operacional da Seção 2.5 (aplicação do GDPR para voluntários
 residentes na União Europeia), substituindo a nota de intenção futura
@@ -1044,7 +1044,7 @@ VOLUNTÁRIO como titular de dados pessoais perante o PMI-GO como
 controlador (LGPD Art. 7º V e Art. 18); (vii) parágrafo único da
 Cláusula 11 sobre revogação do consentimento ao uso de imagem.</p>
 <p><strong>Nota v2.1 → v2.2 (20/Abr/2026):</strong> Incorporados os
-ajustes da curadoria final pré-submissão ao jurídico do Ivan: (i)
+ajustes da curadoria final pré-submissão ao jurídico do member B: (i)
 alinhamento terminológico do Encarregado pela Proteção de Dados Pessoais
 no §1 da Cláusula 9 (remoção do acrônimo “DPO” e uso consistente de
 “Encarregado” conforme art. 5º, VIII, LGPD); (ii) inclusão da Cláusula
@@ -1385,7 +1385,7 @@ voluntários); (vi) reformulação do Art. 5 para substituir explicitamente
 a Cláusula 4 do Termo Original, incorporando as hipóteses (a), (b) e (c)
 de não-violação.</p>
 <p><strong>Nota v2.1 → v2.2 (20/Abr/2026):</strong> Incorporados os
-ajustes da curadoria final pré-submissão ao jurídico do Ivan: (i)
+ajustes da curadoria final pré-submissão ao jurídico do member B: (i)
 padronização tipográfica do termo “suspensão temporária
 (<em>standby</em>)” no Art. 3 subcláusula 2.6.2; (ii) inclusão do Art. 8
 (Consentimento para Transferência Internacional de Dados), renderizado
@@ -1681,7 +1681,7 @@ marcas e patentes (consistente com §1 da Cláusula 4.2.1 da Política
 v2.1), dando segurança jurídica à notificação de 15 dias conforme art.
 111 do Código Civil.</p>
 <p><strong>Nota v2.1 → v2.2 (20/Abr/2026):</strong> Incorporados os
-ajustes da curadoria final pré-submissão ao jurídico do Ivan: (i)
+ajustes da curadoria final pré-submissão ao jurídico do member B: (i)
 explicitação da versão “Internacional” nas licenças Creative Commons
 referenciadas no Art. 2 (CC-BY 4.0 Internacional e CC-BY-SA 4.0
 Internacional); (ii) inclusão de ressalva no Art. 2 sobre o
@@ -1789,7 +1789,7 @@ significativa na composição de capítulos, na legislação aplicável ou no
 escopo de acordos internacionais, seguindo o processo de Change Request
 do Manual Operacional.</p>
 <p>___________________________________________</p>
-<p><strong>Ivan Lourenço</strong> Presidente | PMI Brasil–Goiás Chapter
+<p><strong>member B</strong> Presidente | PMI Brasil–Goiás Chapter
 (PMI-GO)</p>
 <p>___________________________________________</p>
 <p><strong>[Presidente Capítulo Parceiro]</strong> Presidente | PMI

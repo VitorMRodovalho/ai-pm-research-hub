@@ -17,7 +17,7 @@ WHERE cycle_code = 'cycle_3' AND cycle_end IS NULL;
 
 -- 2) roll-forward continuers -> cycle_4 snapshot row.
 --    Criterion: active member + C3 history + active volunteer engagement with
---    end_date NULL or >= 2026-12-01. Excludes Débora Moura (exit end_of_cycle).
+--    end_date NULL or >= 2026-12-01. Excludes member A (exit end_of_cycle).
 WITH coorte AS (
   SELECT DISTINCT m.id, m.name, m.operational_role, m.designations, m.tribe_id, m.chapter
   FROM public.members m
@@ -27,7 +27,7 @@ WITH coorte AS (
     AND e.kind = 'volunteer' AND e.status = 'active' AND e.revoked_at IS NULL
     AND (e.end_date IS NULL OR e.end_date >= DATE '2026-12-01')
   WHERE m.is_active = true
-    AND m.id <> 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'  -- Débora Moura
+    AND m.id <> 'a8c9af17-d9f8-4a0e-85bc-a0b13b0f8ad7'  -- member A
 )
 INSERT INTO public.member_cycle_history
   (member_id, member_name_snapshot, cycle_code, cycle_label, cycle_start, cycle_end,

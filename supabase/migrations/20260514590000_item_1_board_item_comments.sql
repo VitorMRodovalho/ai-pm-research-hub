@@ -1,4 +1,4 @@
--- Mayanna report Item 01 (BUG ALTA): comentários no card.
+-- member A report Item 01 (BUG ALTA): comentários no card.
 -- Schema novo + 4 RPCs + RLS + MCP tools.
 -- Habilita Item 06 (@menções) automaticamente.
 
@@ -165,7 +165,7 @@ REVOKE ALL ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) FROM
 GRANT EXECUTE ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) TO authenticated;
 
 COMMENT ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) IS
-'Mayanna Item 01: comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate). Authority: rls_is_member OR write_board OR comms in communication domain.';
+'member A Item 01: comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate). Authority: rls_is_member OR write_board OR comms in communication domain.';
 
 CREATE OR REPLACE FUNCTION public.list_card_comments(p_board_item_id uuid)
 RETURNS jsonb

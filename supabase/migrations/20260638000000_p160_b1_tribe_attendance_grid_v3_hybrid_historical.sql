@@ -4,8 +4,8 @@
 -- the tribe's initiative. V3-era members had members.initiative_id set (the hybrid
 -- design per ADR-0080 / sediment feedback_members_initiative_id_v3_v4_hybrid_design)
 -- but never had engagement rows backfilled. Result: 5+ alumni/observer of tribo 5
--- with real attendance rows in tribo 5 events (Diego Menezes, Marcelo Ferreira,
--- Rogério Côrtes, Alexandre Meirelles, Wellinghton Pereira Barboza) silently
+-- with real attendance rows in tribo 5 events (member B, member E,
+-- member C, member D, member A) silently
 -- absent from the presence grid.
 --
 -- PM complaint (2026-05-14): "pessoas que participaram das tribos na pagina
@@ -21,8 +21,8 @@
 --    Restricting to ge.tribe_id excludes cross-tribe 'geral'/'kickoff'/'lideranca'
 --    attendance from counting as tribe-membership evidence.
 --
--- Smoke (cycle 3 tribo 5): Alexandre Meirelles + Wellinghton Pereira Barboza
--- now surface in historical roster. The 3 Cycle 2 alumni (Diego/Rogério/Marcelo)
+-- Smoke (cycle 3 tribo 5): member D + member A
+-- now surface in historical roster. The 3 Cycle 2 alumni (member B/member C/member E)
 -- still don't show because their attendance is outside the current cycle window
 -- (grid_events.date >= cycle_start filter). Backlog: optional p_all_cycles flag
 -- to expose all-time strategic view.

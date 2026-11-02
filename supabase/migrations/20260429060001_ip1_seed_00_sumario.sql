@@ -15,10 +15,10 @@ VALUES
 <p><strong>CR-050 — Sumário Executivo da Revisão</strong></p>
 <p>Propriedade Intelectual no Núcleo de IA &amp; GP</p>
 <p><em>Preparado por Vitor Rodovalho · 16 de Abril de 2026</em></p>
-<p>Apoio à reunião Ivan Lourenço × Vitor Rodovalho · 16h</p>
-<p><strong>TL;DR —</strong> O pacote CR-050 foi revisado em profundidade após contribuição técnica do Roberto Macêdo (Curador PMI-CE) e análise sistêmica dos efeitos cruzados entre as decisões. Dez pontos de melhoria foram identificados e todos endereçados. Quatro documentos revisados estão prontos para validação jurídica (termo, adendo retificativo, adendo de cooperação, política). Todas as referências legais foram validadas nas fontes oficiais. O pacote agora cobre escopo internacional (relevante para o Fabricio e para o programa AIPM Ambassadors). Inclui mecanismo de opt-out para publicação em periódicos exclusivos. Define governança de registro, custeio e royalties. Corrige enquadramento jurídico de software. Timeline CBGPL preservada.</p>
-<p>1. Contribuição do Roberto Macêdo (PMI-CE)</p>
-<p>Revisão feita durante a manhã de 16/Abr. Roberto identificou dois pontos diretos e levantou dois pontos de governança. Todos os quatro foram incorporados ao pacote revisado.</p>
+<p>Apoio à reunião member B × Vitor Rodovalho · 16h</p>
+<p><strong>TL;DR —</strong> O pacote CR-050 foi revisado em profundidade após contribuição técnica do member A (Curador PMI-CE) e análise sistêmica dos efeitos cruzados entre as decisões. Dez pontos de melhoria foram identificados e todos endereçados. Quatro documentos revisados estão prontos para validação jurídica (termo, adendo retificativo, adendo de cooperação, política). Todas as referências legais foram validadas nas fontes oficiais. O pacote agora cobre escopo internacional (relevante para o member C e para o programa AIPM Ambassadors). Inclui mecanismo de opt-out para publicação em periódicos exclusivos. Define governança de registro, custeio e royalties. Corrige enquadramento jurídico de software. Timeline CBGPL preservada.</p>
+<p>1. Contribuição do member A (PMI-CE)</p>
+<p>Revisão feita durante a manhã de 16/Abr. member A identificou dois pontos diretos e levantou dois pontos de governança. Todos os quatro foram incorporados ao pacote revisado.</p>
 <p>Ponto 1 — Conflito com periódicos exclusivos</p>
 <p>Periódicos de peso (Elsevier IJPM, RAUSP, Nature, etc.) exigem ineditismo e cessão exclusiva. A licença "irrevogável" do draft v1 conflitaria com essa exigência. Pesquisadores seriam forçados a escolher entre contribuir com o Núcleo ou publicar em canal top — exatamente o que a política deve evitar.</p>
 <p><strong>Solução incorporada:</strong> Cláusula 2.6 do termo (v2) cria mecanismo de suspensão temporária da licença por obra específica, com prazo de 24 meses renováveis e reativação automática ao fim do embargo. O Núcleo preserva direitos sobre obras anteriores, simultâneas e derivadas. Voluntário inclui nota de agradecimento ao Núcleo ou, se vedado, registra na página de perfil de autor.</p>
@@ -26,7 +26,7 @@ VALUES
 <p>A Cláusula 2.5 do draft v1 invocava a Lei 9.279 (propriedade industrial) para tratar software e frameworks. Erro técnico: software é direito autoral sob a Lei 9.609; frameworks e documentos são direito autoral sob a Lei 9.610. A Lei 9.279 cobre só patentes, marcas, desenho industrial.</p>
 <p><strong>Solução incorporada:</strong> Cláusula 2.5 reescrita em quatro subcláusulas — cada tipo de obra com o enquadramento legal correto (9.610 para obras gerais, 9.609 para software, 9.279 para propriedade industrial, tratados internacionais para registros em outras jurisdições).</p>
 <p>Ponto 3 — Governança de registro e custeio</p>
-<p>Roberto perguntou: quem analisa viabilidade? Quem paga INPI, Biblioteca Nacional, honorários de agente de PI? Sem resposta clara, a política vira letra morta.</p>
+<p>member A perguntou: quem analisa viabilidade? Quem paga INPI, Biblioteca Nacional, honorários de agente de PI? Sem resposta clara, a política vira letra morta.</p>
 <p><strong>Solução incorporada:</strong> Seção 4 nova da Política cria fluxo Curadoria → parecer técnico → GP + Presidente PMI-GO → notificação aos demais presidentes (15 dias). Custos arcados pelo orçamento anual do Núcleo administrado pelo PMI-GO. Desconto de 50% do INPI para entidades sem fins lucrativos (Portaria INPI/PR nº 10/2025) torna os custos administráveis. Plano B para restrição orçamentária: patrocínio, cotitularidade, publicação defensiva, renúncia ao registro mantendo proteção automática.</p>
 <p>Ponto 4 — Uso pós-registro e política de royalties</p>
 <p>Marcas sem uso caducam em 5 anos (Lei 9.279 Art. 143). Patentes sem exploração podem sofrer licença compulsória (Art. 68). Se o Núcleo registra algo, precisa ter política de uso explícita. E royalties, se houver, precisam de destino definido.</p>
@@ -46,11 +46,11 @@ VALUES
 <p>LGPD Art. 5º VIII usa o termo "encarregado" para o que o GDPR chama de DPO. Documento jurídico brasileiro deve usar o termo legal correto. E o Núcleo não precisa de encarregado próprio — usa o do PMI-GO (capítulo sede).</p>
 <p><strong>Solução:</strong> Seção 2 nova da Política formaliza. Track C revisado para "Encarregado pela Proteção de Dados Pessoais (DPO) do PMI-GO". Política de privacidade do PMI-GO é referência operacional, com prevalência da disposição mais protetiva em caso de ambiguidade.</p>
 <p>9. Jurisdições estrangeiras</p>
-<p>Você mora em Leesburg/VA. Fabricio pode estar em qualquer lugar. Pesquisadores brasileiros apresentam em LIM Summit (Peru). PMI é americano. AIPM Ambassadors é programa internacional. A política não pode ser só brasileira.</p>
+<p>Você mora em Leesburg/VA. member C pode estar em qualquer lugar. Pesquisadores brasileiros apresentam em LIM Summit (Peru). PMI é americano. AIPM Ambassadors é programa internacional. A política não pode ser só brasileira.</p>
 <p><strong>Solução:</strong> Seção 1 nova da Política estabelece lei aplicável brasileira + tratamento nacional da Convenção de Berna + proteção de direitos morais no padrão mais protetivo entre Brasil e jurisdição local + foro Goiânia-GO como padrão, com protocolo reforçado opcional (ICC, PMI Ethics, foro bilíngue) para casos internacionais.</p>
 <p>10. Acordos internacionais futuros</p>
 <p>O programa AIPM Ambassadors (Vargas + Nieto-Rodriguez) vai demandar acordo institucional PMI-GO × entidade internacional. Sem princípio-âncora na política, cada acordo vira negociação do zero.</p>
-<p><strong>Solução:</strong> Seção 10 nova da Política estabelece que acordos internacionais herdam a Política como baseline. Divergências tratadas por adendo específico. Negociação pelos representantes designados (você e Fabricio no caso Ambassadors) com aprovação prévia do presidente PMI-GO e notificação aos 4 demais presidentes (15 dias).</p>
+<p><strong>Solução:</strong> Seção 10 nova da Política estabelece que acordos internacionais herdam a Política como baseline. Divergências tratadas por adendo específico. Negociação pelos representantes designados (você e member C no caso Ambassadors) com aprovação prévia do presidente PMI-GO e notificação aos 4 demais presidentes (15 dias).</p>
 <p>3. Correção Crítica de Referência Jurídica</p>
 <p>O draft v1 da política citava <strong>"Art. 49 §4º"</strong> da Lei 9.610 como base para o prazo de 5 anos de cessão de obras futuras. Essa referência <strong>não existe</strong> nessa configuração no texto legal. O dispositivo correto é o <strong>Art. 51</strong> ("A cessão dos direitos de autor sobre obras futuras abrangerá, no máximo, o período de cinco anos"). Se o pacote tivesse ido ao advogado com a referência errada, teria prejudicado a credibilidade de todo o trabalho. Corrigido no draft v2.</p>
 <p>4. Instrumentos do Pacote CR-050 (v2)</p>
@@ -86,7 +86,7 @@ VALUES
 <td>4</td>
 <td>Adendo de IP aos Acordos de Cooperação Bilateral v2.0</td>
 <td>9 artigos (originalmente 7) — obras coletivas, uso irrevogável, saída de capítulo, direitos morais, crédito, registro e titularidade, escopo internacional, vigência, revisão</td>
-<td>Circular para 5 presidentes (Jessica/CE, Matheus/DF, Felipe/MG, Márcio/RS) + Ivan/GO</td>
+<td>Circular para 5 presidentes (member P/CE, member D/DF, member E/MG, member F/RS) + member B/GO</td>
 </tr>
 </tbody>
 </table>
@@ -152,8 +152,8 @@ VALUES
 <p>A ratificação do pacote CR-050 segue fluxo on-platform (plataforma <code>nucleoia.vitormr.dev</code>) com rastreabilidade legal, assinaturas digitais e gates de aprovação sequenciais. Sem timeline hard-coded: cada etapa avança conforme a anterior se conclui.</p>
 <ul>
 <li><p><strong>Etapa 1 — Auditoria jurídica pré-ratificação (concluída 19/Abr/2026):</strong> Revisão completa dos 5 documentos v2. Resultado: APROVADO COM RESSALVAS — 6 ajustes P1 + 7 ajustes P2 incorporados no v2.1. Parecer em <code>docs/council/2026-04-19-legal-counsel-ip-review.md</code>.</p></li>
-<li><p><strong>Etapa 2 — Validação jurídica por advogado humano (pendente):</strong> Ivan Lourenço (PMI-GO) indica advogado licenciado para revisar o v2.1. Foco: (i) validação dos ajustes P1-A a P1-F; (ii) consulta especializada para Red Flag RF-2 (tributação de royalties) e RF-3 (GDPR para voluntários UE).</p></li>
-<li><p><strong>Etapa 3 — Aprovação política pelos 5 presidentes (paralelo):</strong> Circulação do v2.1 aos presidentes Ivan/GO, Jessica/CE, Matheus/DF, Felipe/MG, Márcio/RS via plataforma. Comentários e questionamentos registrados em thread por cláusula. Aprovação sequencial (curador → líder → president_go → 4 demais presidentes) com silêncio positivo para marcas/patentes.</p></li>
+<li><p><strong>Etapa 2 — Validação jurídica por advogado humano (pendente):</strong> member B (PMI-GO) indica advogado licenciado para revisar o v2.1. Foco: (i) validação dos ajustes P1-A a P1-F; (ii) consulta especializada para Red Flag RF-2 (tributação de royalties) e RF-3 (GDPR para voluntários UE).</p></li>
+<li><p><strong>Etapa 3 — Aprovação política pelos 5 presidentes (paralelo):</strong> Circulação do v2.1 aos presidentes member B/GO, member P/CE, member D/DF, member E/MG, member F/RS via plataforma. Comentários e questionamentos registrados em thread por cláusula. Aprovação sequencial (curador → líder → president_go → 4 demais presidentes) com silêncio positivo para marcas/patentes.</p></li>
 <li><p><strong>Etapa 4 — Ratificação pelos 52 voluntários ativos:</strong> Após aprovação política, disparo do Adendo Retificativo para os 52 voluntários. Cadência de lembretes D-14/-7/-3/-1. Magic-link para external signers (se houver).</p></li>
 <li><p><strong>Etapa 5 — Vigência plena:</strong> Entrada em vigor do Termo R3-C3-IP v2.1 para o Ciclo 4 (novos voluntários) e do Adendo de Cooperação v2.1 integrado aos 4 acordos bilaterais existentes.</p></li>
 <li><p><strong>Eventos públicos paralelos:</strong> CBGPL (28/Abr/2026) é momento de comunicação institucional, não gate da ratificação. LIM Summit, PMI Global Congress e outros são oportunidades de apresentação, não condicionantes da formalização.</p></li>
@@ -162,10 +162,10 @@ VALUES
 <p>Sugestão de agenda focada — 30 min:</p>
 <ul>
 <li><p><strong>(1) Validação da direção geral</strong> — 5 min. Confirmar que os 10 pontos endereçados fazem sentido como pacote. Não precisa entrar em texto específico.</p></li>
-<li><p><strong>(2) Escopo internacional</strong> — 5 min. Decisão de tratar o programa como transnacional agora (não depois). Pergunta: Ivan vê algum obstáculo estatutário do PMI-GO?</p></li>
+<li><p><strong>(2) Escopo internacional</strong> — 5 min. Decisão de tratar o programa como transnacional agora (não depois). Pergunta: member B vê algum obstáculo estatutário do PMI-GO?</p></li>
 <li><p><strong>(3) Registro e custeio</strong> — 5 min. Decisão: orçamento anual do Núcleo para PI administrado pelo PMI-GO. Pergunta: qual o teto sugerido para o primeiro ciclo?</p></li>
-<li><p><strong>(4) Política de royalties</strong> — 5 min. Decisão de deixar aberto agora e resolver caso a caso. Pergunta: Ivan concorda ou quer bounds mínimos?</p></li>
-<li><p><strong>(5) Encaminhamento jurídico</strong> — 5 min. Ivan indica advogado. Prazo acordado: até 25/Abr para ter pacote validado antes do CBGPL.</p></li>
+<li><p><strong>(4) Política de royalties</strong> — 5 min. Decisão de deixar aberto agora e resolver caso a caso. Pergunta: member B concorda ou quer bounds mínimos?</p></li>
+<li><p><strong>(5) Encaminhamento jurídico</strong> — 5 min. member B indica advogado. Prazo acordado: até 25/Abr para ter pacote validado antes do CBGPL.</p></li>
 <li><p><strong>(6) Comunicação aos 4 presidentes</strong> — 5 min. Alinhar quem manda, quando, com que formato. Sugestão: circular após validação jurídica, não antes.</p></li>
 </ul>
 <p><em>CR-050 v2.1 | Núcleo de Estudos e Pesquisa em IA &amp; GP | nucleoia.vitormr.dev</em></p>

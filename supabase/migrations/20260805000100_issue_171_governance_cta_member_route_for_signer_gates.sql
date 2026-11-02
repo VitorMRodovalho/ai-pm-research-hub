@@ -5,7 +5,7 @@
 -- external_signer} to a member route and dumped every OTHER gate — including leader_awareness
 -- (tribe leaders), curator, chapter_witness, president_go/president_others — into an
 -- /admin/governance/documents/ ELSE branch. Non-admin signers landing on the admin shell read
--- it as "I can't access this" (reported by Ana Carla Cavalcante, a tribe_leader, for her
+-- it as "I can't access this" (reported by member A, a tribe_leader, for her
 -- leader_awareness gate). The /admin route is functionally accessible (same ReviewChainIsland),
 -- but the persona-correct surface is /governance/documents/<chain> (BaseLayout, no admin sidebar;
 -- ReviewChainIsland renders sign buttons for any eligible gate regardless of externalReviewMode).

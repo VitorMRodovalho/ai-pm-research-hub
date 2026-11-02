@@ -7,10 +7,10 @@
 -- FSM. As a result: 0 notifications, /admin/curatorship empty, 0 reviews
 -- ever logged in curation_review_log (1.5 months of production silence).
 --
--- Concrete case (Débora Moura, 2026-05-18 23:52):
+-- Concrete case (member A, 2026-05-18 23:52):
 --   1. Marked 4 checklist items as done
 --   2. Moved card "Artigo — Agentes Autônomos em GP" backlog→done
---   3. Assigned Fabricio/Sarah/Roberto as curation_reviewer
+--   3. Assigned member B/member C/member D as curation_reviewer
 --   4. Card stayed in curation_status='draft' (intent invisible to backend)
 --
 -- Fix: AFTER INSERT trigger on board_item_assignments that detects the

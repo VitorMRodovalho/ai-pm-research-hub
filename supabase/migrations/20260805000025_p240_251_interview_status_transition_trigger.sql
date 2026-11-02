@@ -3,8 +3,8 @@
 --       Closes the gap between the calendar webhook (#116), manual schedule,
 --       mark_interview_status, and submit_interview_scores — all of which
 --       touch selection_interviews but don't reliably advance the parent app.
--- WHY:  PM-reported 2026-05-24 (#251 reopened p240): Luíse Quintana +
---       William Junio (researcher) + 8 others in cycle4-2026 were labelled
+-- WHY:  PM-reported 2026-05-24 (#251 reopened p240): member A +
+--       member B (researcher) + 8 others in cycle4-2026 were labelled
 --       'Aguardando Entrevista' in /admin/selection despite having completed
 --       interviews + submitted interview evals. Root cause: mark_interview_status
 --       has precondition status IN ('interview_scheduled','interview_done')

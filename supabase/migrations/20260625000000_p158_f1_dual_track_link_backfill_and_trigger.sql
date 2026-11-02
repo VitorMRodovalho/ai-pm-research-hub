@@ -8,8 +8,8 @@
 -- PM ask 14/05: full linking so (a) sibling questionnaires merge in candidate view, (b) decisions
 -- per-role are possible (approve as researcher, reject as leader), (c) IA sentiment sees both
 -- essays. Audit at p158 boot found 2 orphan pairs needing backfill:
---   - William Junio (cycle4-2026, both submitted, scoring only on leader app)
---   - Rodolfo Santana — actually has 3 apps total. Apps 1+2 (leader converted + researcher
+--   - member B (cycle4-2026, both submitted, scoring only on leader app)
+--   - member A — actually has 3 apps total. Apps 1+2 (leader converted + researcher
 --     approved, both VEP 269580) are already linked via the legacy 'triaged_to_leader' path.
 --     App 3 (leader rejected, VEP 269582, 36 days later) is a direct_leader resubmission, NOT a
 --     dual_track sibling — backfill filter (a1.linked NULL AND a2.linked NULL) correctly skipped

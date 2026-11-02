@@ -40,9 +40,9 @@
 -- token anterior". Medido:
 --
 --   quem                          | interviews | dispatch_rows | prior_tokens | gate_attempts pass
---   Nestor Collato (noshow)       |     2      |       0       |      0       |        0
---   Anastasia Kukova (scheduled)  |     1      |       0       |      0       |        0
---   Marcelo Figueiredo (scheduled)|     1      |       0       |      0       |        0
+--   member C (noshow)       |     2      |       0       |      0       |        0
+--   member A (scheduled)  |     1      |       0       |      0       |        0
+--   member B (scheduled)|     1      |       0       |      0       |        0
 --
 -- Nenhum dos três tem a prova — eles entraram pela porta paralela, que é a razão de a issue
 -- existir. Exigir a prova produziria o MESMO resultado que reaplicar os gates (recusar os 3), que é

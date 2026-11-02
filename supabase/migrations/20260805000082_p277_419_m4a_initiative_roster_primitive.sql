@@ -1,9 +1,9 @@
 -- #419 metric 4 (tribe_roster / member_count) — PR4-A: the canonical roster primitive.
 -- ADR-0100 §2.2: member_count = DISTINCT persons with an ACTIVE, NON-OBSERVER ROLE engagement on the
 -- resolved initiative. Filters on ROLE (role<>'observer'), NEVER on kind — kind='volunteer' is the bug
--- that drops the curator (Roberto Macêdo, role=curator/kind=observer). An active engagement IS the
+-- that drops the curator (member A, role=curator/kind=observer). An active engagement IS the
 -- current-cycle cohort (engagements has no cycle_id); members.current_cycle_active is the drifting gate
--- that over-counts (the digest's offboarded Maria).
+-- that over-counts (the digest's offboarded member B).
 --
 -- ADDITIVE ONLY — no surface RPC is touched in PR4-A. The tribe/initiative-keyed RPCs converge onto this
 -- in the follow-up PRs (4-B initiative RPCs, 4-C tribe RPCs incl. exec_tribe_dashboard 5->6 +
@@ -13,7 +13,7 @@
 -- resolve_tribe_id(uuid)->integer also already exists. Reused, NOT duplicated.
 --
 -- Live canonical per-tribe (verified): t1=4 t2=5 t4=5 t5=3 t6=6 t7=4 t8=6 (t3 has no active research_tribe
--- roster). Tribe 8 = 6 INCLUDING the curator Roberto (the row the volunteer-kind predicate drops to 5).
+-- roster). Tribe 8 = 6 INCLUDING the curator member A (the row the volunteer-kind predicate drops to 5).
 
 CREATE OR REPLACE VIEW public.v_initiative_roster AS
   SELECT DISTINCT

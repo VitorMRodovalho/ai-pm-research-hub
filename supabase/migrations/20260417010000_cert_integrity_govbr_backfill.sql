@@ -10,8 +10,8 @@
 --   Script: scripts/extract-govbr-signers.py
 --   Data: scripts/docusign-signers-extracted.json
 -- Context: All VEP terms were signed via gov.br assinatura eletronica avancada.
---   Institutional signer: LORENA DE SOUZA PAULA (dir. voluntarios PMI-GO) for 89/92 docs.
---   Exceptions: IVAN LOURENCO COSTA signed for Adaildo, Emanuele, and Lorena de Souza Paula herself.
+--   Institutional signer: member A (dir. voluntarios PMI-GO) for 89/92 docs.
+--   Exceptions: member B signed for member H, member I, and member A herself.
 -- Rollback:
 --   UPDATE certificates SET issued_by = NULL WHERE verification_code LIKE 'DSGN-%' AND issued_by IN (...);
 --   UPDATE certificates SET counter_signed_by = '880f736c-3e76-4df4-9375-33575c190305' WHERE verification_code LIKE 'DSGN-%';
@@ -19,15 +19,15 @@
 -- ============================================================================
 
 -- Key member IDs (verified)
--- Lorena de Souza Paula (PMI-GO, chapter_board, dir. voluntarios): 11b8c3a7-18bc-4834-918b-53fbb5131301
--- Ivan Lourenco Costa (PMI-GO, sponsor, presidente): c0c633b6-71d7-47a4-b1c2-abb5ec2896eb
+-- member A (PMI-GO, chapter_board, dir. voluntarios): 11b8c3a7-18bc-4834-918b-53fbb5131301
+-- member B (PMI-GO, sponsor, presidente): c0c633b6-71d7-47a4-b1c2-abb5ec2896eb
 -- Vitor Maia Rodovalho (manager): 880f736c-3e76-4df4-9375-33575c190305
 
 -- ═══ PART 1: Fix 26 DSGN certs — issued_by + counter_signed_by from gov.br ═══
 
--- 1a. Set issued_by AND correct counter_signed_by = Lorena for ALL DSGN (majority)
+-- 1a. Set issued_by AND correct counter_signed_by = member A for ALL DSGN (majority)
 UPDATE certificates SET
-  issued_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',  -- Lorena de Souza Paula
+  issued_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',  -- member A
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   updated_at = now()
 WHERE verification_code LIKE 'DSGN-%'
@@ -36,7 +36,7 @@ WHERE verification_code LIKE 'DSGN-%'
 -- 1b. Enrich content_snapshot with gov.br institutional signer metadata
 UPDATE certificates SET
   content_snapshot = content_snapshot || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_signature_type', 'assinatura_eletronica_avancada_govbr',
     'govbr_extracted_at', now()::text,
     'govbr_source', 'scripts/extract-govbr-signers.py'
@@ -49,12 +49,12 @@ WHERE verification_code LIKE 'DSGN-%'
 -- These members signed on the platform but also have gov.br hardcopy.
 -- gov.br is source of truth. Set counter_signed from gov.br data.
 
--- Vitor Maia Rodovalho — gov.br signed 18/Fev by Lorena
+-- Vitor Maia Rodovalho — gov.br signed 18/Fev by member A
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-18T17:28:20+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-18T17:28:20+00:00',
     'govbr_volunteer_signed_at', '2026-02-18T15:39:28+00:00',
     'govbr_pdf', 'Vitor_Maia_Rodovalho_assinado_assinado.pdf',
@@ -63,12 +63,12 @@ UPDATE certificates SET
   updated_at = now()
 WHERE verification_code = 'TERM-2026-7654C7';
 
--- Fabricio Costa — gov.br signed 25/Fev by Lorena
+-- member F — gov.br signed 25/Fev by member A
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-25T16:47:38+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-25T16:47:38+00:00',
     'govbr_volunteer_signed_at', '2026-02-25T16:20:55+00:00',
     'govbr_pdf', 'Fabricio_Rodrigues_do_Carmo_Costa_assinado_assinado.pdf',
@@ -77,12 +77,12 @@ UPDATE certificates SET
   updated_at = now()
 WHERE verification_code = 'TERM-2026-0B3C32';
 
--- Guilherme Matricarde — gov.br signed 25/Fev by Lorena
+-- member G — gov.br signed 25/Fev by member A
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-25T12:20:43+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-25T12:20:43+00:00',
     'govbr_volunteer_signed_at', '2026-02-23T11:03:28+00:00',
     'govbr_pdf', 'Guilherme_Matheus_Matricarde_assinado_assinado.pdf',
@@ -91,12 +91,12 @@ UPDATE certificates SET
   updated_at = now()
 WHERE verification_code = 'TERM-2026-6AD03E';
 
--- Gustavo Batista Ferreira — gov.br signed 27/Fev by Lorena
+-- member C — gov.br signed 27/Fev by member A
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-27T11:13:16+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-27T11:13:16+00:00',
     'govbr_volunteer_signed_at', '2026-02-27T02:18:48+00:00',
     'govbr_pdf', 'Gustavo_Batista_Ferreira_assinado_assinado.pdf',
@@ -105,12 +105,12 @@ UPDATE certificates SET
   updated_at = now()
 WHERE verification_code = 'TERM-2026-8A57BC';
 
--- Rodolfo Santana — gov.br signed 25/Fev by Lorena
+-- member D — gov.br signed 25/Fev by member A
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-25T12:27:29+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-25T12:27:29+00:00',
     'govbr_volunteer_signed_at', '2026-02-24T00:06:41+00:00',
     'govbr_pdf', 'Rodolfo_Siqueira_Santana_assinado_assinado.pdf',
@@ -119,13 +119,13 @@ UPDATE certificates SET
   updated_at = now()
 WHERE verification_code = 'TERM-2026-F221E6';
 
--- Denis Vasconcelos (TERM) — has DSGN + TERM. Mark TERM with gov.br data.
+-- member E (TERM) — has DSGN + TERM. Mark TERM with gov.br data.
 -- DSGN is source of truth. TERM is supplementary platform record.
 UPDATE certificates SET
   counter_signed_by = '11b8c3a7-18bc-4834-918b-53fbb5131301',
   counter_signed_at = '2026-02-18T17:17:57+00:00'::timestamptz,
   content_snapshot = COALESCE(content_snapshot, '{}'::jsonb) || jsonb_build_object(
-    'govbr_institutional_signer', 'LORENA DE SOUZA PAULA',
+    'govbr_institutional_signer', 'member A',
     'govbr_institutional_signed_at', '2026-02-18T17:17:57+00:00',
     'govbr_pdf', 'Denis_Queiroz_Vasconcelos_assinado_assinado.pdf',
     'govbr_note', 'Member also has DSGN-2ef46510 (source of truth). This TERM is supplementary.'
@@ -145,7 +145,7 @@ VALUES (
     'description', 'Backfill issued_by + counter_signed_by from gov.br digital certificate extraction',
     'dsgn_certs_fixed', 26,
     'term_certs_countersigned', 6,
-    'institutional_signer_majority', 'LORENA DE SOUZA PAULA (11b8c3a7)',
+    'institutional_signer_majority', 'member A (11b8c3a7)',
     'source_script', 'scripts/extract-govbr-signers.py',
     'source_json', 'scripts/docusign-signers-extracted.json',
     'total_pdfs_analyzed', 92,

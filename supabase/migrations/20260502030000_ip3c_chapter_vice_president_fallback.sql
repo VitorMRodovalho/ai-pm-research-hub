@@ -1,8 +1,8 @@
 -- Phase IP-3c refinement (PM correction 2026-04-18 p33d):
--- * PMI-GO não tem chapter_liaison registrado (Ivan-presidente se envolve direto com o Núcleo).
+-- * PMI-GO não tem chapter_liaison registrado (member B-presidente se envolve direto com o Núcleo).
 -- * Regra travada: quando chapter NÃO tem chapter_liaison, vice-presidente do capítulo
 --   atua como PREPOSTO de testemunha para governance_documents.
--- * Seed Emanuele Melo (VP PMI-GO) — email redacted-083@example.com — como member ativo
+-- * Seed member A (VP PMI-GO) — email redacted-083@example.com — como member ativo
 --   com designation 'chapter_vice_president'. PII complementar (linkedin/phone/photo)
 --   via UI admin — não neste migration.
 -- * Seed engagements (chapter_board + observer) para satisfazer invariante A3.
@@ -32,7 +32,7 @@ BEGIN
     v_member_id := v_existing_member;
   ELSE
     INSERT INTO public.persons (organization_id, name, email)
-    VALUES (v_pmigo_org, 'Emanuele Melo', 'redacted-083@example.com')
+    VALUES (v_pmigo_org, 'member A', 'redacted-083@example.com')
     RETURNING id INTO v_person_id;
 
     INSERT INTO public.members (
@@ -40,7 +40,7 @@ BEGIN
       operational_role, member_status, is_active, designations
     ) VALUES (
       v_pmigo_org, v_person_id, NULL,
-      'Emanuele Melo',
+      'member A',
       'redacted-083@example.com',
       'PMI-GO',
       'observer',
@@ -51,7 +51,7 @@ BEGIN
     RETURNING id INTO v_member_id;
   END IF;
 
-  -- Seed engagements to satisfy invariant A3 (match Lorena/Emanoela pattern)
+  -- Seed engagements to satisfy invariant A3 (match member C/member D pattern)
   IF v_person_id IS NULL THEN
     SELECT person_id INTO v_person_id FROM public.members WHERE id = v_member_id;
   END IF;

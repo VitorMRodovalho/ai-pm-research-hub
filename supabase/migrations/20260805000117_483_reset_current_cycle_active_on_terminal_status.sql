@@ -4,8 +4,8 @@
 -- is_active -> false, operational_role, designations -> '{}' — but NEVER clears
 -- current_cycle_active (CCA). The sync_member_status_consistency() BEFORE-trigger
 -- coerces is_active / role / designations on the same UPDATE OF member_status,
--- yet also left CCA untouched. Result: 3 offboarded members (Andressa Martins,
--- Maria Luiza, Herlon Alves de Sousa — all offboarded 2026-05-31) carried
+-- yet also left CCA untouched. Result: 3 offboarded members (member C,
+-- member B, member A — all offboarded 2026-05-31) carried
 -- current_cycle_active=true, contradicting "active in the current cycle" and
 -- corrupting every consumer that keys on CCA (e.g. the get_gamification_leaderboard
 -- / get_public_leaderboard cohort's `current_cycle_active=true` branch).

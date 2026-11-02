@@ -22,8 +22,8 @@
 --
 -- Two-sided live verification (2026-06-29, prod):
 --   broadcast_history:
---     * Leticia Clemente (comms_member)      → comms_gate=true,  26/26 broadcasts visible
---     * Gerson Albuquerque Neto (no desig)   → comms_gate=false, 0 rows (was leaking all 26)
+--     * member B (comms_member)      → comms_gate=true,  26/26 broadcasts visible
+--     * member A (no desig)   → comms_gate=false, 0 rows (was leaking all 26)
 --   campaign_send_one_off EXECUTE grants after revoke → {postgres, service_role} only.
 --
 -- The in-body RPC gate is the boundary (ADR-0106). A broader systemic finding — other

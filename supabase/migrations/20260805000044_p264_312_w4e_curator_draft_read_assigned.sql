@@ -9,8 +9,8 @@
 --
 -- WHY: p256 Wave 1a M2 (20260805000036) deliberately swapped
 -- document_versions_read_published RLS to require manage_member as the SOLE
--- admin bypass (locked_at IS NOT NULL HARD-GATE outside the OR). Roberto Macêdo
--- (member 49836a70…) and Sarah Faria (19b7ff75…) — both curators with
+-- admin bypass (locked_at IS NOT NULL HARD-GATE outside the OR). member B
+-- (member 49836a70…) and member A (19b7ff75…) — both curators with
 -- curate_content + participate_in_governance_review but NOT manage_member —
 -- lose draft visibility through the W4d reader: status='draft' /
 -- 'pending_proposer_consent' / 'withdrawn' / 'revoked' all return null
@@ -38,8 +38,8 @@
 -- follow-up (OPP-264.A — not in this migration).
 --
 -- SPEC: SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md §19.5 (Wave 1b carry — curator
--- draft-access mitigation Roberto/Sarah) + §16.5 (QA persona smoke 5 —
--- Roberto/Sarah curatorship paths sem depender de admin) + §11 (smoke matrix
+-- draft-access mitigation member B/member A) + §16.5 (QA persona smoke 5 —
+-- member B/member A curatorship paths sem depender de admin) + §11 (smoke matrix
 -- entries 3-5). Issue #381 spec Pattern B with PM-ratified refinement.
 --
 -- SCOPE LOCK (per p236 + p256 + p263 + #381 dispatch):
@@ -286,8 +286,8 @@ COMMENT ON FUNCTION public.get_governance_document_reader(uuid) IS
   'Enforces visibility_class + status default-exclusion (4-status set per W4c) + '
   'version locked_at hard-gate. W4e (p264 #381) adds assigned-curator bypass '
   '(open approval_chain on doc + caller curator-eligible for doc_type via '
-  'preview_gate_eligibles_cache or _can_sign_gate fallback) — covers Roberto '
-  'Macêdo + Sarah Faria post-p256 M2 RLS swap. Returns null-envelope for '
+  'preview_gate_eligibles_cache or _can_sign_gate fallback) — covers member B '
+  '+ member A post-p256 M2 RLS swap. Returns null-envelope for '
   'not-found / blocked / unlocked-for-member (privacy-preserving error parity). '
   '#312-W4e (p264).';
 

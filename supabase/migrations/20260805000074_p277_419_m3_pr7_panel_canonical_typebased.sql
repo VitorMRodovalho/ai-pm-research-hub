@@ -22,7 +22,7 @@
 --     the numbers drifted. PM decision B: TYPE-BASED is canonical (simplest, least maintenance, already shipped
 --     on 5 surfaces). This rewrites the panel onto _attendance_eligible_events — panel operational avg now 76.2%
 --     (== home calc_attendance_pct 76.2 == get_attendance_engagement_summary('global') 76.19). MEASURED
---     antes->depois: panel op avg 70.5 -> 76.2; Roberto Macêdo (curator) 0 -> 22.2 (the old panel excluded
+--     antes->depois: panel op avg 70.5 -> 76.2; member A (curator) 0 -> 22.2 (the old panel excluded
 --     curators from its mandatory denominator → 0; the type-based panel computes his rate but still labels him
 --     'curator' in typology + excludes him from the cohort aggregate, consistent with his home/member-detail
 --     22.2%); 34 -> 41 rows with nonzero combined_pct. The exact 18-col TABLE shape, the D2 active-member gate,

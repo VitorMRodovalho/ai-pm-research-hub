@@ -1,9 +1,9 @@
--- p230 #318 — A3 invariant defense-in-depth + Herlon cache repair
+-- p230 #318 — A3 invariant defense-in-depth + member A cache repair
 --
 -- Context
 --   Issue #318: PR #317 CI ratchet revealed A3 violation
 --     (member_status='active' AND operational_role='none')
---     for Herlon Alves de Sousa (c8e76355-6004-4dab-af84-a5c4f525ae9a).
+--     for member A (c8e76355-6004-4dab-af84-a5c4f525ae9a).
 --   ARM-9 (detect_inactive_members) was suspected because of timing
 --   proximity (18s before the row's updated_at), but auditing all 7
 --   public functions that write members.operational_role + every BEFORE
@@ -27,7 +27,7 @@
 --   check-invariants CI ratchet hard-fails on it; the new CHECK makes
 --   the same rule load-bearing at write time.
 --
---   Repair Herlon's row using the V4 canonical cache ladder (which
+--   Repair member A's row using the V4 canonical cache ladder (which
 --   computes 'observer' from his authoritative engagements: active
 --   observer + active ambassador, study_group_owner already offboarded
 --   2026-04-15). The repair must precede the ALTER TABLE so the constraint
@@ -35,7 +35,7 @@
 --
 -- Rollback
 --   1. ALTER TABLE public.members DROP CONSTRAINT chk_a3_active_role_not_none;
---   2. There is no inverse for the Herlon repair — the audit row inserted
+--   2. There is no inverse for the member A repair — the audit row inserted
 --      here documents the old/new values for forensic purposes.
 --
 -- Cross-ref
@@ -47,7 +47,7 @@
 BEGIN;
 
 -- Step 1 — Repair every (active + 'none') member via the V4 cache ladder.
--- Today only Herlon matches, but the WHERE clause is general so that any
+-- Today only member A matches, but the WHERE clause is general so that any
 -- straggler discovered between audit and apply is also corrected.
 WITH derived AS (
   SELECT

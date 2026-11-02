@@ -1,7 +1,7 @@
 -- ============================================================================
--- p87 Bug Ana Carla — bulk_mark_excused + override_existing param
+-- p87 Bug member A — bulk_mark_excused + override_existing param
 -- ============================================================================
--- Trigger: tribe_leader Ana Carla report mobile bug — bulk excused silently
+-- Trigger: tribe_leader member A report mobile bug — bulk excused silently
 -- skipped events com attendance já marcada (filter NOT EXISTS excused=false).
 -- Fix: opt-in override via p_override_existing param. Default false (preserves
 -- current safe behavior).

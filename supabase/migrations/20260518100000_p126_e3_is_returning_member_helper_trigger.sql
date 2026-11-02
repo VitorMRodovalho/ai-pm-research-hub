@@ -90,7 +90,7 @@ COMMIT;
 -- Post-apply checklist:
 --   1. supabase migration repair --status applied 20260518100000
 --   2. NOTIFY pgrst, 'reload schema'
---   3. Smoke test: INSERT row para applicant com active engagement (e.g., João Coelho email)
+--   3. Smoke test: INSERT row para applicant com active engagement (e.g., member A email)
 --      Expected: trigger sets is_returning_member=true even if INSERT statement passes false
 --   4. Smoke test: INSERT row para email novo (no member match)
 --      Expected: is_returning_member=false (helper returns false on no match)

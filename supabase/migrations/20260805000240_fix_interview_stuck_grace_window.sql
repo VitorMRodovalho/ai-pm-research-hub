@@ -8,7 +8,7 @@
 --      banner (selection.astro), the "Stuck scheduled" filter chip, the
 --      quick-stat, and the GP "Entrevista vencida" action card. It was true the
 --      MOMENT the scheduled start passed — so an interview literally IN PROGRESS
---      (e.g. Hanae Monma, 18:00–18:30 EDT, flagged "expirada" at 18:01) showed the
+--      (e.g. member A, 18:00–18:30 EDT, flagged "expirada" at 18:01) showed the
 --      rescue banner whose "Reenviar" button CANCELS the live booking. The two
 --      crons that act on the same concept already use a grace:
 --      _selection_stuck_scheduled_rescue_cron reads sla_policies

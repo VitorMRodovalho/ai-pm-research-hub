@@ -2,7 +2,7 @@
 -- #472 correction #3 — admin "record offline interview" path (durable B1 fix)
 -- ----------------------------------------------------------------------------
 -- Off-platform interviews (a GP-created calendar event the Apps-Script push never
--- synced — e.g. João Coelho 08/05) leave the candidate with NO selection_interviews
+-- synced — e.g. member A 08/05) leave the candidate with NO selection_interviews
 -- row, stuck in a pre-interview status, unscoreable via the UI. Since a Calendar
 -- PULL is infeasible (corr-1: no Calendar scope; DwD blocked by ADR-0064), the
 -- ADMIN is the ingress for off-platform interviews.

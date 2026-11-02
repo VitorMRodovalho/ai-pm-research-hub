@@ -17,7 +17,7 @@
 --
 -- The intent to process without Art. 11 consent IS the violation, independent
 -- of OpenAI 429 quota having intervened. DROP the trigger first; rebuilds
--- come after Angeline's Art. 48 written determination + Termo de Speaker
+-- come after member A's Art. 48 written determination + Termo de Speaker
 -- ratification (sequence per accountability §2.1 A1).
 --
 -- Rollback: re-CREATE the trigger via Phase 3 migration once consent gate is
@@ -31,6 +31,6 @@ DROP TRIGGER IF EXISTS trg_video_ai_analysis_on_upload ON public.pmi_video_scree
 
 -- Audit comment on the now-orphaned helper function until Phase 3 updates body
 COMMENT ON FUNCTION public._trg_video_ai_analysis_on_upload() IS
-  'p207 issue #221 (2026-05-20): trigger BODY preserved but trigger DROPPED for LGPD Art. 11 RETROACTIVE remediation. Function no longer fires automatically. Will be re-attached at Phase 3 (consent_voice_biometric_at gate) after Angeline Art. 48 determination.';
+  'p207 issue #221 (2026-05-20): trigger BODY preserved but trigger DROPPED for LGPD Art. 11 RETROACTIVE remediation. Function no longer fires automatically. Will be re-attached at Phase 3 (consent_voice_biometric_at gate) after member A Art. 48 determination.';
 
 NOTIFY pgrst, 'reload schema';

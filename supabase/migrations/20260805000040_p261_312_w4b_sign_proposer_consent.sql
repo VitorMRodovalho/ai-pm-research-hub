@@ -1,7 +1,7 @@
 -- WHAT: Wave 1b leaf #312-W4b (p261 — #377 SHIPS) — proposer consent canonical A2 path
 --   1) ALTER governance_documents ADD COLUMN proposer_member_id uuid REFERENCES members(id)
 --      ON DELETE RESTRICT — preserves history, blocks orphan deletion of named proposer.
---   2) Backfill Frontiers fixture (18ec4690-) with Fabricio Costa member_id (92d26057-)
+--   2) Backfill Frontiers fixture (18ec4690-) with member A member_id (92d26057-)
 --      from p259 fixture payload (validated but not persisted by p256 M3).
 --   3) CREATE OR REPLACE create_governance_document_intake(jsonb) — minimum-diff extension
 --      to persist proposer_member_id from payload into the new column.

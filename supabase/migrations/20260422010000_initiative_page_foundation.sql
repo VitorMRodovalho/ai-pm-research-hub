@@ -85,22 +85,22 @@ DECLARE
 BEGIN
   -- Validate all persons exist
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_mayanna) THEN
-    RAISE EXCEPTION 'Missing persons record for Mayanna (%)' , v_mayanna;
+    RAISE EXCEPTION 'Missing persons record for member B (%)' , v_mayanna;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_leticia) THEN
-    RAISE EXCEPTION 'Missing persons record for Leticia (%)' , v_leticia;
+    RAISE EXCEPTION 'Missing persons record for member C (%)' , v_leticia;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_mluiza) THEN
-    RAISE EXCEPTION 'Missing persons record for Maria Luiza (%)' , v_mluiza;
+    RAISE EXCEPTION 'Missing persons record for member A (%)' , v_mluiza;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_fabricio) THEN
-    RAISE EXCEPTION 'Missing persons record for Fabricio (%)' , v_fabricio;
+    RAISE EXCEPTION 'Missing persons record for member D (%)' , v_fabricio;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_roberto) THEN
-    RAISE EXCEPTION 'Missing persons record for Roberto (%)' , v_roberto;
+    RAISE EXCEPTION 'Missing persons record for member E (%)' , v_roberto;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM persons WHERE id = v_sarah) THEN
-    RAISE EXCEPTION 'Missing persons record for Sarah (%)' , v_sarah;
+    RAISE EXCEPTION 'Missing persons record for member F (%)' , v_sarah;
   END IF;
 
   -- Create initiatives (idempotent — check by title+kind)
@@ -135,28 +135,28 @@ BEGIN
 
   -- ─── 1f. Seed engagements (idempotent — skip if active engagement exists) ──
   -- Hub de Comunicacao
-  -- Mayanna = leader (comms_leader)
+  -- member B = leader (comms_leader)
   IF NOT EXISTS (SELECT 1 FROM engagements WHERE person_id = v_mayanna AND initiative_id = v_comms_id AND status = 'active') THEN
     INSERT INTO engagements (person_id, initiative_id, kind, role, status, legal_basis, metadata, organization_id)
     VALUES (v_mayanna, v_comms_id, 'committee_member', 'leader', 'active', 'legitimate_interest',
             '{"source":"committee_seed","migrated_from":"designation:comms_leader"}'::jsonb, v_org_id);
   END IF;
 
-  -- Leticia = participant (comms_member)
+  -- member C = participant (comms_member)
   IF NOT EXISTS (SELECT 1 FROM engagements WHERE person_id = v_leticia AND initiative_id = v_comms_id AND status = 'active') THEN
     INSERT INTO engagements (person_id, initiative_id, kind, role, status, legal_basis, metadata, organization_id)
     VALUES (v_leticia, v_comms_id, 'committee_member', 'participant', 'active', 'legitimate_interest',
             '{"source":"committee_seed","migrated_from":"designation:comms_member"}'::jsonb, v_org_id);
   END IF;
 
-  -- Maria Luiza = participant (comms_member)
+  -- member A = participant (comms_member)
   IF NOT EXISTS (SELECT 1 FROM engagements WHERE person_id = v_mluiza AND initiative_id = v_comms_id AND status = 'active') THEN
     INSERT INTO engagements (person_id, initiative_id, kind, role, status, legal_basis, metadata, organization_id)
     VALUES (v_mluiza, v_comms_id, 'committee_member', 'participant', 'active', 'legitimate_interest',
             '{"source":"committee_seed","migrated_from":"designation:comms_member"}'::jsonb, v_org_id);
   END IF;
 
-  -- Fabricio, Roberto, Sarah = coordinators (curator/co_gp/liaison oversight)
+  -- member D, member E, member F = coordinators (curator/co_gp/liaison oversight)
   IF NOT EXISTS (SELECT 1 FROM engagements WHERE person_id = v_fabricio AND initiative_id = v_comms_id AND status = 'active') THEN
     INSERT INTO engagements (person_id, initiative_id, kind, role, status, legal_basis, metadata, organization_id)
     VALUES (v_fabricio, v_comms_id, 'committee_coordinator', 'coordinator', 'active', 'legitimate_interest',

@@ -1,12 +1,12 @@
 -- p152 W4 P3 (2026-05-12) — Interview reminder 1h before cron.
 --
 -- Anti-no-show: 1h-before email reduces no-show rate ~30-50% per industry
--- benchmark. Bruna Zomer no-show hoje 18:00 motivou implementação. Cron
+-- benchmark. member C no-show hoje 18:00 motivou implementação. Cron
 -- */15min offset (5,20,35,50) finds interviews 30-90min ahead, status=scheduled,
 -- reminder_sent_at_1h NULL.
 --
--- Smoke 12/05 23:20 UTC: cron fired auto, dispatched para Bruna Soares
--- (00:00 UTC) + Flavio Oliveira (00:30 UTC). Ambos receberam reminder.
+-- Smoke 12/05 23:20 UTC: cron fired auto, dispatched para member A
+-- (00:00 UTC) + member B (00:30 UTC). Ambos receberam reminder.
 -- Idempotency: re-run manual @ 23:21 retornou 0 (reminder_sent_at_1h marker).
 
 ALTER TABLE public.selection_interviews

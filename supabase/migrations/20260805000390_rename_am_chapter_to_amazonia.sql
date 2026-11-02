@@ -1,5 +1,5 @@
 -- Renomeia o capítulo PMI-AM para "PMI Amazônia" a pedido do presidente do capítulo
--- João Leite (Presidente PMI Amazônia), 2026-07-09: "o nosso é PMI Amazônia, não é só Amazonas".
+-- member A (Presidente PMI Amazônia), 2026-07-09: "o nosso é PMI Amazônia, não é só Amazonas".
 --
 -- O capítulo cobre a região Amazônia, não só o estado do Amazonas. Corrige TODAS as telas:
 --   - legal_name (dropdowns/tooltips, via get_active_chapters)

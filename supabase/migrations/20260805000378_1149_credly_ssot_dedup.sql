@@ -4,8 +4,8 @@
 -- GROUNDING (2026-07-08, execute_sql read-only — re-grounded from the 2026-07-06 audit):
 --   • gamification_points (the REAL XP surface) matches gamification_rules 100% on points for all
 --     10 Credly categories. The one XP defect is P1: the CPMAI credential family (v7 / +E / PLUS /
---     PMI-CPMAI) pays one row PER BADGE NAME — Henrique Diniz holds 4 family badges = 4 × 45 XP for
---     ONE certification (Marcos/Pedro hold 1 each, correct).
+--     PMI-CPMAI) pays one row PER BADGE NAME — member A holds 4 family badges = 4 × 45 XP for
+--     ONE certification (member B/member C hold 1 each, correct).
 --   • members.credly_badges (display-only jsonb cache, rewritten on each sync) is stale for members
 --     not re-synced since the classifier last changed: 2 × legacy category 'master_cert'@50 (not a
 --     rule slug) + 9 × knowledge_ai_pm@15 (rule says 20). Display only — nothing sums these points;
@@ -14,7 +14,7 @@
 -- POLICY (Vitor, 2026-07-06, verified against pmi.org: v7≡PMI-CPMAI rebrand 2025-09-30, +E =
 -- optional add-on exam, PLUS co-issued with v7): ONE cert_cpmai XP credit per member. Canonical =
 -- the PMI-CPMAI-branded badge (current official credential), else the most recently issued.
--- Effect: Henrique 4→1 rows (keeps "PMI Certified Professional in Managing AI (PMI-CPMAI)™", −135 XP).
+-- Effect: member A 4→1 rows (keeps "PMI Certified Professional in Managing AI (PMI-CPMAI)™", −135 XP).
 --
 -- Forward fix ships in the same PR: _shared/classify-badge.ts (CATEGORY_POINTS single pricing table
 -- + selectCanonicalCpmai) and the collapse in sync-credly-all + verify-credly, so a future re-sync

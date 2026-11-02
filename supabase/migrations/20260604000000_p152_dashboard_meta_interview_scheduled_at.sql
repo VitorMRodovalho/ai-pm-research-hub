@@ -9,7 +9,7 @@
 --   interview_next_at (timestamptz) — MIN(scheduled_at) where status='scheduled'/'rescheduled'
 --     AND scheduled_at >= now() - 12h (próxima entrevista upcoming; tolerates same-day).
 --     Earlier MAX-based attempt missed candidates with multiple future interviews
---     (Bruna Zomer: today 18:00 + May 14 18:30 — MAX returned May 14, hiding today).
+--     (member A: today 18:00 + May 14 18:30 — MAX returned May 14, hiding today).
 --   has_interview_today (boolean) — EXISTS check for today in America/Sao_Paulo tz.
 --     Dedicated boolean = canonical signal for the "Entrevistas hoje" filter.
 --

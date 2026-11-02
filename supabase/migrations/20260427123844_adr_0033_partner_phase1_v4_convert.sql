@@ -7,7 +7,7 @@
 --   legacy_count = 11
 --   v4_count = 10
 --   would_gain = []
---   would_lose = [João Uzejka Dos Santos] — chapter_liaison designation
+--   would_lose = [member A] — chapter_liaison designation
 --                sem V4 engagement chapter_board × liaison (mesma drift pattern
 --                ADR-0030)
 

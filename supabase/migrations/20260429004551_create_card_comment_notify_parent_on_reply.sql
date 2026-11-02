@@ -1,4 +1,4 @@
--- Mayanna report (28/Abr p79 round 3): "Opção de menção quando comentário é respondido não".
+-- member A report (28/Abr p79 round 3): "Opção de menção quando comentário é respondido não".
 -- Root cause: create_card_comment já notifica @mentions e card assignee, mas não notifica
 -- o autor do parent_comment quando alguém responde. Sem isso, replies viram silent.
 --
@@ -144,6 +144,6 @@ REVOKE ALL ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) FROM
 GRANT EXECUTE ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) TO authenticated;
 
 COMMENT ON FUNCTION public.create_card_comment(uuid, text, uuid, uuid[]) IS
-'Mayanna Items 01+06+round-3: comentário em board_item. Notifica (immediate) @menções + parent comment author (em replies); notifica (digest) card assignee.';
+'member A Items 01+06+round-3: comentário em board_item. Notifica (immediate) @menções + parent comment author (em replies); notifica (digest) card assignee.';
 
 NOTIFY pgrst, 'reload schema';

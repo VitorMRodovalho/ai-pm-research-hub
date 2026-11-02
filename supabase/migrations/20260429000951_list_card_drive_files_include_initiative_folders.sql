@@ -1,4 +1,4 @@
--- Mayanna report (28/Abr p79): "Não há drive integrado ou pasta de arquivos da comunicação".
+-- member A report (28/Abr p79): "Não há drive integrado ou pasta de arquivos da comunicação".
 -- Root cause: CardDriveFiles esconde-se com 0 arquivos. Hub Comunicação initiative tem 2 Drive
 -- folders linked (folder + atas) via initiative_drive_links, mas UI não expõe.
 --
@@ -90,6 +90,6 @@ REVOKE ALL ON FUNCTION public.list_card_drive_files(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.list_card_drive_files(uuid) TO authenticated;
 
 COMMENT ON FUNCTION public.list_card_drive_files(uuid) IS
-'Mayanna Item 07: lista arquivos do card + folder links da iniciativa + folder links do board. Card-files via board_item_files, folders via initiative_drive_links + board_drive_links (unlinked_at IS NULL).';
+'member A Item 07: lista arquivos do card + folder links da iniciativa + folder links do board. Card-files via board_item_files, folders via initiative_drive_links + board_drive_links (unlinked_at IS NULL).';
 
 NOTIFY pgrst, 'reload schema';

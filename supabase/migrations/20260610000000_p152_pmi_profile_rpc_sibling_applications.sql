@@ -1,6 +1,6 @@
 -- p152 W4 OPP-152.7-lite (2026-05-12) — sibling applications na PMI Profile tab.
 --
--- Strategic: PM observation 12/05 — William Junio aplicou pra researcher (id
+-- Strategic: PM observation 12/05 — member A aplicou pra researcher (id
 -- 6187b0b2) + leader (97a6df7d). Booking flow ties interviews to ONE
 -- application (leader). Researcher fica sem evidência de entrevista. PM ask:
 -- "uma oportunidade para entrevistas posteriores entao, pq facilita vc manter

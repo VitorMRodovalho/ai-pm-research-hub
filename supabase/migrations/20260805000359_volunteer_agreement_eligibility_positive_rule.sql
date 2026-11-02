@@ -3,7 +3,7 @@
 -- Root cause: get_volunteer_agreement_status derived the eligible set from a NEGATIVE
 -- blocklist on operational_role (NOT IN sponsor/chapter_liaison/observer/candidate/visitor)
 -- + current_cycle_active. That blocklist leaks: `guest` slips through, so external reviewers
--- (external_reviewer engagements — e.g. Angeline Prado, Mario Trentim) and synthetic test rows
+-- (external_reviewer engagements — e.g. member B, member A) and synthetic test rows
 -- were counted as "must sign the volunteer term", even though they are not active volunteers.
 --
 -- Fix: replace the blocklist with the POSITIVE rule the domain actually means — eligible =

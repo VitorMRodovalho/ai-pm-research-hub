@@ -11,7 +11,7 @@
 --     status='converted' is INTENTIONALLY scoped out — that status reflects
 --     a dual-track conversion offer (researcher → leader); it is a stateful
 --     intermediate not an authority assertion. The single converted-without-
---     member case in production (Adalberto Neris, application
+--     member case in production (member A, application
 --     eb9c4795-5a75-4184-83c0-318bace1a1b5) has `conversion_reason =
 --     'Aplicou como pesquisador e líder, convertido mas não ativo'` —
 --     explicit non-active state, documented in the row.
@@ -26,7 +26,7 @@
 -- application without orchestrating member/person, R + S will surface it
 -- in the next invariant audit (boot + close per platform-guardian).
 --
--- HERLON-CLASS INVARIANT (out-of-scope, computed at view level)
+-- member B-CLASS INVARIANT (out-of-scope, computed at view level)
 -- ─────────────────────
 -- "Approved volunteers stay non-authoritative until counter-signature" is
 -- ALREADY enforced by `auth_engagements.is_authoritative` — a COMPUTED column

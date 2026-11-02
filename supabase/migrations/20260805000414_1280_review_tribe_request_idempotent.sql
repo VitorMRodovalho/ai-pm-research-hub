@@ -2,7 +2,7 @@
 --
 -- O approve demovia volunteer ativo em OUTRAS research_tribes (tribe switch, initiative_id <> alvo)
 -- mas INSERIA incondicionalmente na tribo alvo. Se o convidado já tinha uma engagement volunteer
--- ativa na MESMA initiative alvo (ex.: stub retroativo do backfill #1247, incidente David Gentil),
+-- ativa na MESMA initiative alvo (ex.: stub retroativo do backfill #1247, incidente member A),
 -- o approve criava uma SEGUNDA row ativa → violava AH_research_tribe_single_active_engagement
 -- (a invariante só DETECTAVA pós-fato; o write-path não IMPEDIA).
 --

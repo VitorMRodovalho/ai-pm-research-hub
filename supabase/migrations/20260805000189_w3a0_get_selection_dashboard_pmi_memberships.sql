@@ -9,7 +9,7 @@
 -- WHY: Issue #740 Wave 3a-0 (chapter SSOT). The existing `chapter_canonical`
 --      key is the FIRST non-"PMI Global" token of the free-text
 --      service_history_chapters string — an ARBITRARY, order-dependent guess
---      that is demonstrably wrong for multi-chapter members (e.g. Henrique Diniz
+--      that is demonstrably wrong for multi-chapter members (e.g. member A
 --      is from Pernambuco/PMI-PE but service_history happens to list "Goiás,
 --      Brazil Chapter" first → the column shows PMI-GO). pmi_memberships is the
 --      reliable, complete multi-chapter list (ingest fixed in worker

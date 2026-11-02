@@ -5,10 +5,10 @@
 -- The three curation-queue VIEW RPCs gated on `write_board` / `write`, but a pure
 -- curator's authority is designation-derived (`curator` designation → `curate_content`)
 -- and does NOT include `write_board`. So curators with operational_role <> manager
--- (Roberto Macêdo, Sarah Rodovalho — curate_content=true, write_board=false) were denied
+-- (member A, member B — curate_content=true, write_board=false) were denied
 -- at the RPC layer ("Curatorship access required"), even though the client gate
 -- (hasPermission 'admin.curation' via curator designation) correctly let them through.
--- The only curator who worked (Fabricio Costa) is incidentally also a manager (write_board).
+-- The only curator who worked (member C) is incidentally also a manager (write_board).
 --
 -- FIX (additive, zero-regression): gate = curate_content OR (existing write_board/write).
 --   - Unblocks the 2 pure curators (curate_content=true).

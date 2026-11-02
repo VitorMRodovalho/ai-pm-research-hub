@@ -8,4 +8,4 @@
 -- 3. cycle4-2026 tags added for annual contract members
 -- 4. exec_portfolio_health: year_start = Jan 1 (not kickoff)
 -- 5. ChaptersSection: count dynamic from CHAPTERS array
--- 6. Antonio Marcos Costa: cycle1-2025 + cycle2-2025 added (= Marcos Moura)
+-- 6. member A: cycle1-2025 + cycle2-2025 added (= member B)

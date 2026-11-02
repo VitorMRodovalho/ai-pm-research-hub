@@ -20,13 +20,13 @@
 --
 -- Impact:
 --   - Immediate: 0 cache rows change (trigger fires only on engagement INSERT/UPDATE/DELETE).
---   - Latent risk removed: next trigger fire for 5 mems (Sarah/Roberto/Mayanna/Maria Luiza/Leticia)
+--   - Latent risk removed: next trigger fire for 5 mems (member A/member C/member D/member B/member E)
 --     no longer promotes them to tribe_leader.
---   - Backfill in this migration: 2 mems (Sarah/Roberto) observer → researcher to align with V4
+--   - Backfill in this migration: 2 mems (member A/member C) observer → researcher to align with V4
 --     engagement reality (curators with committee/workgroup engagements).
---   - A3 invariant drift expected after migration: 6 → 1 (Eder edge case remains; orthogonal).
+--   - A3 invariant drift expected after migration: 6 → 1 (member F edge case remains; orthogonal).
 --
--- Rollback: revert to p162 Track E body (migration 20260652) + UPDATE Sarah/Roberto observer.
+-- Rollback: revert to p162 Track E body (migration 20260652) + UPDATE member A/member C observer.
 -- The 18 gates from ADR-0083 already migrated to canFor — rollback of trigger alone would re-introduce
 -- privilege expansion for any new V4-kind leader. So rollback should be coordinated.
 
@@ -321,18 +321,18 @@ END;
 $function$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
--- Part 3 — Backfill seletivo Sarah + Roberto (PM-approved 2026-05-15)
+-- Part 3 — Backfill seletivo member A + member C (PM-approved 2026-05-15)
 -- ─────────────────────────────────────────────────────────────────────────────
--- Sarah Faria: curator (designation) + ambassador + founder. 4 V4 engagements (committee/workgroup/observer).
+-- member A: curator (designation) + ambassador + founder. 4 V4 engagements (committee/workgroup/observer).
 --              cache observer (revert p163) → researcher reflete realidade de curadora ativa.
--- Roberto Macêdo: curator + chapter_liaison + ambassador. 5 V4 engagements (chapter_board/committee/workgroup/observer/speaker).
+-- member C: curator + chapter_liaison + ambassador. 5 V4 engagements (chapter_board/committee/workgroup/observer/speaker).
 --                 cache observer (revert p163) → researcher reflete realidade de curador PMI-CE.
 -- Privilege delta: workspace.access + board.view_own_tribe + event.view_own_tribe + gamification.* + content.submit_publication.
 -- No scope-leak risk (canFor scoped after ADR-0083 Tier A/B).
 WITH backfill AS (
   SELECT id, name, operational_role AS old_role
   FROM public.members
-  WHERE name IN ('Sarah Faria Alcantara Macedo Rodovalho','Roberto Macêdo')
+  WHERE name IN ('member A','member C')
     AND operational_role = 'observer'
     AND member_status = 'active'
 ),
@@ -365,7 +365,7 @@ NOTIFY pgrst, 'reload schema';
 --    20260652000000 (p162 Track E v2). The CASE chain includes V4-kind leadership → tribe_leader.
 -- 2. CREATE OR REPLACE FUNCTION public.check_schema_invariants() — revert A3 CASE to v2 (parity rule).
 -- 3. UPDATE public.members SET operational_role = 'observer', updated_at = now()
---      WHERE name IN ('Sarah Faria Alcantara Macedo Rodovalho','Roberto Macêdo')
+--      WHERE name IN ('member A','member C')
 --        AND operational_role = 'researcher';
 -- Note: ADR-0083 Tier A/B gates already migrated to canFor — rollback of trigger alone re-introduces
 -- privilege expansion for any new V4-kind leader. Coordinate rollback with frontend revert if needed.

@@ -1,7 +1,7 @@
 -- p152 W4 followup (2026-05-12) — has_interview_today & interview_next_at devem
 -- considerar APENAS status='scheduled' (não 'rescheduled' ou 'completed').
 --
--- Bug: PM observou que Luíse Quintana aparecia no filter "Entrevistas hoje" mesmo
+-- Bug: PM observou que member A aparecia no filter "Entrevistas hoje" mesmo
 -- após o reschedule do 12/05 row para 14/05 21:00 SP. Root cause: o filter
 -- incluía status IN ('scheduled', 'rescheduled') — a row 12/05 estava marked
 -- rescheduled (correto historicamente) mas ainda tinha scheduled_at=hoje,

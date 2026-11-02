@@ -1,5 +1,5 @@
 -- Seed Newsletter — Frontiers AI Project Management initiative.
--- Owner: Fabricio Costa (PhD doctorando + curator), per PM directive p78.
+-- Owner: member A (PhD doctorando + curator), per PM directive p78.
 -- Drive folder: 11FKEzzU29fAGlhmNTgL6iuEpUCwOt1w_
 -- Board: scope=global + domain_key=communication (newsletter is comms-domain workstream).
 -- Engagement kind=workgroup_coordinator, role=coordinator, legitimate_interest.
@@ -22,7 +22,7 @@ BEGIN
   VALUES (
     'workgroup',
     'Newsletter — Frontiers AI Project Management',
-    'Pipeline editorial recorrente do Núcleo IA — newsletter sobre AI Project Management. Coordena conteúdo entre tribos/iniciativas, curadoria, e publicação periódica. Owner: Fabricio Costa (PhD doctorando + curator).',
+    'Pipeline editorial recorrente do Núcleo IA — newsletter sobre AI Project Management. Coordena conteúdo entre tribos/iniciativas, curadoria, e publicação periódica. Owner: member A (PhD doctorando + curator).',
     v_org_id, 'active',
     jsonb_build_object('cadence_hint', 'monthly', 'channel_hint', 'email + linkedin')
   )
@@ -54,5 +54,5 @@ BEGIN
   )
   ON CONFLICT (initiative_id, drive_folder_id, link_purpose) DO NOTHING;
 
-  RAISE NOTICE 'Newsletter initiative created: % (board %, Fabricio coordinator engagement, Drive linked)', v_initiative_id, v_board_id;
+  RAISE NOTICE 'Newsletter initiative created: % (board %, member A coordinator engagement, Drive linked)', v_initiative_id, v_board_id;
 END $$;

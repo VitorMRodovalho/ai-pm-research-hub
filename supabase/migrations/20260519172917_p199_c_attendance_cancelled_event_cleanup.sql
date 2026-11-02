@@ -1,7 +1,7 @@
--- p199-c (BUG-paulo-attendance-cancellation, 2026-05-19): semantic alignment
+-- p199-c (BUG-member A-attendance-cancellation, 2026-05-19): semantic alignment
 -- between event cancellation and attendance rows + uniformity of mark RPCs
 --
--- Bug reported by PM (2026-05-19 ~16:30): Paulo Alves Jr aparecia com
+-- Bug reported by PM (2026-05-19 ~16:30): member A Jr aparecia com
 -- attendance row no evento Talentos & Upskilling 2026-05-04 (cancelado as
 -- 16:09:31), e PM nao conseguia "tirar presenca" via /attendance UI.
 --
@@ -22,7 +22,7 @@
 -- 2. Refactors mark_member_present(p_present=false) para DELETE row
 --    (alinha com admin_bulk_mark_attendance e expectativa semantica do PM).
 -- 3. Backfill: DELETE rows existentes em cancelled events (1 row hoje:
---    Paulo Alves Jr, fb8f75ae).
+--    member A Jr, fb8f75ae).
 --
 -- Rationale para DELETE-on-cancel:
 -- Semanticamente, evento cancelado "nao ocorreu". Attendance rows para
@@ -43,7 +43,7 @@
 --   -- Revert mark_member_present para UPSERT-with-false body (ver prior
 --   --   body em supabase_migrations.schema_migrations antes desta versao)
 --   -- Backfill nao eh reversivel -- as rows deletadas nao tinham dado
---   -- util (Paulo: present=false, marked_by=NULL, excused=false)
+--   -- util (member A: present=false, marked_by=NULL, excused=false)
 
 -- 1) Trigger function: cleanup attendance on event cancellation
 CREATE OR REPLACE FUNCTION public._cleanup_cancelled_event_attendance()

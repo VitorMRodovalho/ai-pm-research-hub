@@ -15,7 +15,7 @@
 --   3. DELETE selection_portal event duplicado (placeholder)
 --   4. Trigger fires no UPDATE → re-sync com calendar_import event (idempotent, link existing)
 --
--- Para Alexandre Meirelles (2 calendar_import events Jan 29 + Jan 31): pick o MAIS TARDIO
+-- Para member A (2 calendar_import events Jan 29 + Jan 31): pick o MAIS TARDIO
 -- (Jan 31) como o real (provavelmente o earlier foi reschedule cancelado).
 --
 -- Rollback: não trivial (perderíamos histórico de dates). Faça snapshot antes:
@@ -47,7 +47,7 @@ BEGIN
           AND e_real.source = 'calendar_import'
      )
   LOOP
-    -- Find the real event (prefer latest date for ambiguous cases like Alexandre Meirelles)
+    -- Find the real event (prefer latest date for ambiguous cases like member A)
     SELECT id, date, time_start
       INTO v_real_event_id, v_real_date, v_real_time
       FROM public.events

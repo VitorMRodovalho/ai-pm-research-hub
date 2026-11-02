@@ -3,7 +3,7 @@
 -- (get_member_by_auth Step 3 only matches the primary email), so the platform shows
 -- "Conta não cadastrada" with no way out. This adds a verification-gated claim flow.
 --
--- SECURITY INVARIANT (the R3-a / Paulo Alves hijack lesson): proof-of-possession is
+-- SECURITY INVARIANT (the R3-a / member A hijack lesson): proof-of-possession is
 -- ALWAYS sent to the MEMBER's registered email — never to the claimant's address or
 -- session. Only someone who controls the member's inbox can complete the claim.
 -- Rollback: DROP FUNCTION request_account_claim(text), confirm_account_claim(text);

@@ -1,4 +1,4 @@
--- Drive Integration Phase 1: schema + RPCs (Mayanna Item 07).
+-- Drive Integration Phase 1: schema + RPCs (member A Item 07).
 -- Service account model: institutional account nucleoia@pmigo.org.br (Workspace)
 -- + backup admin vitor@vitormr.dev. Service Account email é adicionado
 -- a cada pasta shared como Editor — no Domain-Wide Delegation needed.
@@ -107,7 +107,7 @@ REVOKE ALL ON FUNCTION public.link_board_to_drive(uuid, text, text, text) FROM P
 GRANT EXECUTE ON FUNCTION public.link_board_to_drive(uuid, text, text, text) TO authenticated;
 
 COMMENT ON FUNCTION public.link_board_to_drive(uuid, text, text, text) IS
-'Mayanna Item 07: vincula uma pasta Drive a um board. Authority: manage_member OR board_admin. Reuse-on-duplicate (idempotent).';
+'member A Item 07: vincula uma pasta Drive a um board. Authority: manage_member OR board_admin. Reuse-on-duplicate (idempotent).';
 
 CREATE OR REPLACE FUNCTION public.get_board_drive_links(p_board_id uuid)
 RETURNS jsonb

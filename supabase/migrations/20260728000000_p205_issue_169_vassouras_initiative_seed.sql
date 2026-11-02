@@ -11,23 +11,23 @@
 --   2. initiative kind='congress' (precedent: LATAM LIM 2026), title
 --      "IA & Competências 2026 — Mesa Redonda Universidade de Vassouras"
 --   3. 3 engagements for confirmed participants:
---      - João Coelho Júnior — workgroup_coordinator/coordinator (initiative leader)
+--      - member A — workgroup_coordinator/coordinator (initiative leader)
 --      - Vitor Maia Rodovalho — speaker/speaker (confirmed)
---      - Sarah Rodovalho — speaker/speaker (confirmed; profile: System
+--      - member D — speaker/speaker (confirmed; profile: System
 --        Engineering / data center infrastructure perspective)
 --   4. event row 2026-06-02 19:10 BRT, type='evento_externo'
 --
 -- What this does NOT seed (left for board/UI after merge, per privacy/scope):
---   - Ana Carla, Letícia — proposed speakers TBD; board checklist will track
+--   - member B, member C — proposed speakers TBD; board checklist will track
 --   - WhatsApp planning URL — operational private data; admin fills via UI
 --     into initiative.metadata.whatsapp_url after merge (repo is public)
---   - Fabricio Costa engagement — confirmed UNAVAILABLE per WhatsApp
+--   - member E engagement — confirmed UNAVAILABLE per WhatsApp
 --   - Students / PMI-RJ chapter board contacts — board cards drive intake
 --     (visitor_leads or observer engagements when individuals are identified)
 --   - Sympla registration / sponsorship metadata — decisions pending
 --
 -- Privacy constraint (P201_WHATSAPP_ACTION_INTAKE_MAP §4):
---   Sarah's employment history must NOT appear in any public artifact.
+--   member D's employment history must NOT appear in any public artifact.
 --   Profile descriptor used here is the public-safe shape: "System Engineering
 --   PhD focus; infrastructure / data center perspective."
 --
@@ -74,11 +74,11 @@ SELECT
   'academic',
   'Polo regional da Universidade de Vassouras em Saquarema (RJ). Curso de Engenharia de Software. Parceria operacional para a mesa redonda "IA & Competências" em 2026-06-02 (online + presencial). Potencial para colaboração recorrente em ensino de gestão de projetos via plataforma Núcleo IA.',
   '2026-05-19'::date,
-  'João Coelho Júnior',
+  'member A',
   'active',
   'PMI-RJ',
   '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid,
-  'Cross-chapter (PMI-CE liaison via João Coelho Júnior; PMI-RJ chapter board engaged via chapter Presidente). MOU stage TBD. Contact email omitted from public migration; admin fills via UI.'
+  'Cross-chapter (PMI-CE liaison via member A; PMI-RJ chapter board engaged via chapter Presidente). MOU stage TBD. Contact email omitted from public migration; admin fills via UI.'
 WHERE NOT EXISTS (
   SELECT 1 FROM public.partner_entities
   WHERE name = 'Universidade de Vassouras — Polo Saquarema'
@@ -124,20 +124,20 @@ SELECT
     'chapters_involved', jsonb_build_array('PMI-CE', 'PMI-RJ'),
     'collaborators', jsonb_build_object(
       'leader_person_id', '6eeafafb-c592-4a71-b51c-7be557a93e8f',
-      'leader_name', 'João Coelho Júnior',
+      'leader_name', 'member A',
       'gp_person_id', 'd6e3622a-ebb6-43e1-86a6-5391c9350685',
       'gp_name', 'Vitor Maia Rodovalho'
     ),
     'confirmed_speakers', jsonb_build_array(
       jsonb_build_object('person_id', 'd6e3622a-ebb6-43e1-86a6-5391c9350685', 'name', 'Vitor Maia Rodovalho', 'angle', 'GP + IA aplicada / gestão de projetos'),
-      jsonb_build_object('person_id', 'a1966b77-ff29-4ea9-b965-4c85a3bb17ac', 'name', 'Sarah Rodovalho', 'angle', 'System Engineering PhD; infraestrutura / data centers')
+      jsonb_build_object('person_id', 'a1966b77-ff29-4ea9-b965-4c85a3bb17ac', 'name', 'member D', 'angle', 'System Engineering PhD; infraestrutura / data centers')
     ),
     'proposed_speakers_pending_confirmation', jsonb_build_array(
-      jsonb_build_object('person_id', 'efa17598-f9f3-4282-b761-dec7d0a4b049', 'name', 'Ana Carla Cavalcante'),
-      jsonb_build_object('person_id', 'da5856a8-2428-41a9-b011-548c518795b5', 'name', 'Letícia Rodrigues Vieira')
+      jsonb_build_object('person_id', 'efa17598-f9f3-4282-b761-dec7d0a4b049', 'name', 'member B'),
+      jsonb_build_object('person_id', 'da5856a8-2428-41a9-b011-548c518795b5', 'name', 'member C')
     ),
     'confirmed_unavailable', jsonb_build_array(
-      jsonb_build_object('person_id', '199b0514-6868-41fc-a1bb-a189399e94b3', 'name', 'Fabricio Costa', 'reason', 'agenda na data')
+      jsonb_build_object('person_id', '199b0514-6868-41fc-a1bb-a189399e94b3', 'name', 'member E', 'reason', 'agenda na data')
     ),
     'logistics_external', jsonb_build_object(
       'sponsorship_status', 'partial — camisas + sorteio + coffee-break confirmados via patrocínios locais; bolsa de pós em discussão',
@@ -147,8 +147,8 @@ SELECT
     ),
     'whatsapp_url', null,
     'open_questions', jsonb_build_array(
-      'Confirmação Ana Carla como palestrante',
-      'Decisão sobre Letícia (alternativa) ou cobertura via Sarah',
+      'Confirmação member B como palestrante',
+      'Decisão sobre member C (alternativa) ou cobertura via member D',
       'Sympla on/off para inscrição',
       'Co-broadcast canal Núcleo (confirmar técnica day-of)',
       'PMI-RJ Diretoria de Filiação no loop (pitch institucional)'
@@ -163,7 +163,7 @@ WHERE NOT EXISTS (
 -- 3. engagements — 3 confirmed participants
 -- ----------------------------------------------------------------------------
 
--- 3a. João Coelho Júnior — workgroup_coordinator/coordinator (initiative leader)
+-- 3a. member A — workgroup_coordinator/coordinator (initiative leader)
 INSERT INTO public.engagements (
   id, person_id, organization_id, initiative_id, kind, role, status, start_date,
   legal_basis, granted_by, granted_at, metadata
@@ -183,7 +183,7 @@ SELECT
   jsonb_build_object(
     'capacity', 'initiative_leader',
     'source', 'p205_issue_169_seed',
-    'note', 'Operacional leader for the external co-organized event. Does not modify João existing researcher engagement.'
+    'note', 'Operacional leader for the external co-organized event. Does not modify member A existing researcher engagement.'
   )
 WHERE NOT EXISTS (
   SELECT 1 FROM public.engagements
@@ -224,7 +224,7 @@ WHERE NOT EXISTS (
     AND status = 'active'
 );
 
--- 3c. Sarah Rodovalho — speaker (confirmed)
+-- 3c. member D — speaker (confirmed)
 INSERT INTO public.engagements (
   id, person_id, organization_id, initiative_id, kind, role, status, start_date,
   legal_basis, granted_by, granted_at, metadata
@@ -314,8 +314,8 @@ INSERT INTO public.board_items (id, board_id, title, description, status, curati
   assignee_id, position, due_date, organization_id, created_by, labels)
 SELECT '6e9af7a8-1696-4169-a1a1-c0e160600101'::uuid,
   '6e9af7a8-1696-4169-a1a1-c0e160600004'::uuid,
-  'Lineup de palestrantes — confirmar Ana, decidir Letícia',
-  'Confirmar Ana Carla Cavalcante como palestrante (pitch + agenda check). Decidir slot da Letícia (alternativa) vs. cobertura via Sarah. Se Ana ou outro palestrante drop, mapear substituto. Atualizar metadata.confirmed_speakers da iniciativa quando aceitar.',
+  'Lineup de palestrantes — confirmar member B, decidir member C',
+  'Confirmar member B como palestrante (pitch + agenda check). Decidir slot da member C (alternativa) vs. cobertura via member D. Se member B ou outro palestrante drop, mapear substituto. Atualizar metadata.confirmed_speakers da iniciativa quando aceitar.',
   'todo', 'draft',
   '293fcaf8-7dda-46f7-8e3b-1daf4c54f420'::uuid,
   1, '2026-05-26'::date, '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid,
@@ -354,7 +354,7 @@ INSERT INTO public.board_items (id, board_id, title, description, status, curati
 SELECT '6e9af7a8-1696-4169-a1a1-c0e160600104'::uuid,
   '6e9af7a8-1696-4169-a1a1-c0e160600004'::uuid,
   'Operação day-of: patrocínios + logística local',
-  'Coordenado por João + time local. Camisas evento (confirmar produção/entrega). Coffee-break (confirmar fornecedor). Sorteio carteira de motorista (regulamento + fluxo de inscrição). Bolsa de pós-graduação (pedido do coordenador acadêmico — em andamento).',
+  'Coordenado por member A + time local. Camisas evento (confirmar produção/entrega). Coffee-break (confirmar fornecedor). Sorteio carteira de motorista (regulamento + fluxo de inscrição). Bolsa de pós-graduação (pedido do coordenador acadêmico — em andamento).',
   'todo', 'draft',
   '293fcaf8-7dda-46f7-8e3b-1daf4c54f420'::uuid,
   4, '2026-06-01'::date, '2b4f58ab-7c45-4170-8718-b77ee69ff906'::uuid,

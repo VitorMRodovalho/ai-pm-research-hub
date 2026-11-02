@@ -1,6 +1,6 @@
 -- Fix descriptions that didn't match by ID (match by title + board instead)
 
--- T1 — Hayala Curto (board_id = '430df293-6676-4507-b893-98421a1397ca')
+-- T1 — member A (board_id = '430df293-6676-4507-b893-98421a1397ca')
 UPDATE board_items SET
   title = 'Pesquisa: Artefatos de GP Potencializáveis com IA',
   description = 'Levantamento de quais entregas da Gestão de Projetos podem ser potencializadas pelo uso de IA e como isso tem sido feito atualmente. Matriz de avaliação com foco em arquitetura agêntica. Entrevistas com profissionais e revisão de literatura sobre automação de artefatos de GP.'
@@ -26,7 +26,7 @@ UPDATE board_items SET
   description = 'Artigo acadêmico consolidando os resultados da pesquisa sobre artefatos de GP potencializáveis por IA. Inclui a matriz de classificação, os 2 pilotos agênticos e análise comparativa. Alvo: submissão para publicação PMI ou periódico indexado.'
 WHERE board_id = '430df293-6676-4507-b893-98421a1397ca' AND title = 'Artigo Acadêmico';
 
--- T3 — Marcel Fleming (board_id = '50474fd3-adbc-4980-ba2e-6dffec420321')
+-- T3 — member E (board_id = '50474fd3-adbc-4980-ba2e-6dffec420321')
 UPDATE board_items SET
   title = 'Ideação do Projeto Piloto TMO/PMO',
   description = 'Fase de ideação: definir escopo, problema central e hipóteses do projeto piloto sobre TMO (Transformation Management Office) e PMO do Futuro com IA. Inclui benchmark de PMOs que já usam IA, definição de métricas de sucesso e seleção de ferramentas candidatas.'
@@ -52,7 +52,7 @@ UPDATE board_items SET
   description = 'Relatório ou artigo acadêmico consolidando resultados do piloto TMO/PMO do Futuro. Estrutura: contexto e problema, revisão de literatura, modelo proposto, resultados da PoC, análise comparativa, conclusões e próximos passos. Alvo: publicação PMI ou periódico de gestão de projetos.'
 WHERE board_id = '50474fd3-adbc-4980-ba2e-6dffec420321' AND title LIKE 'Relatório / Artigo Final%';
 
--- T5 — Jefferson Pinto (board_id = 'bb0c431c-3269-4b03-b24e-cf406b59ee77')
+-- T5 — member D (board_id = 'bb0c431c-3269-4b03-b24e-cf406b59ee77')
 UPDATE board_items SET
   title = 'Taxonomia de Competências em IA para GP',
   description = 'Definição da taxonomia de competências que profissionais de gestão de projetos precisam desenvolver para trabalhar com IA. Baseada em frameworks PMI (PMBOK, PMIef) e complementada com competências específicas de IA. Categorias: técnicas, comportamentais, estratégicas.'
@@ -93,7 +93,7 @@ UPDATE board_items SET
   description = 'Relatório final consolidando o toolkit completo de talentos e upskilling em IA para GP. Inclui: taxonomia validada, matriz atualizada, rubricas refinadas, resultados do webinário, recomendações para organizações. Entrega final da tribo — publicação e distribuição ampla.'
 WHERE board_id = 'bb0c431c-3269-4b03-b24e-cf406b59ee77' AND title = 'Relatório Final';
 
--- T6 — Fabricio Costa (board_id = '118b55be-9dcd-4b2d-82c7-5c457fb1fc1e') — 2 items that didn't match
+-- T6 — member B (board_id = '118b55be-9dcd-4b2d-82c7-5c457fb1fc1e') — 2 items that didn't match
 UPDATE board_items SET
   title = '2º Webinar — Resultados e Plataforma Final',
   description = 'Segundo webinar da tribo apresentando resultados consolidados e demo da plataforma final de mensuração de ROI. Comparativo com resultados do 1º webinar. Sessão hands-on para participantes testarem a plataforma.'
@@ -104,7 +104,7 @@ UPDATE board_items SET
   description = 'Versão final da plataforma de mensuração de ROI de IA em portfólios. Features completas: cálculo multi-métrica, comparativo temporal, exportação de relatórios, integração com dashboards existentes. Documentação técnica e de usuário. Entrega final da tribo.'
 WHERE board_id = '118b55be-9dcd-4b2d-82c7-5c457fb1fc1e' AND title LIKE 'Plataforma final%' AND cycle = 3;
 
--- T7 — Marcos Klemz (board_id = '38cc997c-9345-4ee1-acb5-ed2ddf33b734')
+-- T7 — member C (board_id = '38cc997c-9345-4ee1-acb5-ed2ddf33b734')
 UPDATE board_items SET
   title = 'Estruturação dos Pilares Risco/Compliance para IA',
   description = 'Definição e estruturação dos pilares fundamentais de risco e compliance para projetos de IA em organizações. Mapeamento regulatório (LGPD, EU AI Act, NIST AI RMF), identificação de gaps em frameworks de GP existentes, proposta de extensão para incluir governança de IA.'

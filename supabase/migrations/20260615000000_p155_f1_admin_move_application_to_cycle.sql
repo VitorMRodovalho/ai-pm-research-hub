@@ -1,7 +1,7 @@
 -- p155 F1: RPC admin_move_application_to_cycle
 -- Purpose: move a selection_application from one cycle to another, preserving children (evaluations,
 -- interviews, AI runs etc which FK by application_id) but clearing rankings (recomputed at target).
--- Driver: PM directive p155 (2026-05-13) — Luciana Carpes Pranke cycle3-2026-b2 → cycle4-2026 pool.
+-- Driver: PM directive p155 (2026-05-13) — member A cycle3-2026-b2 → cycle4-2026 pool.
 -- Gate: manage_platform (V4 can_by_member). Audit: data_anomaly_log (same pattern as admin_update_application).
 -- Rollback: SELECT admin_move_application_to_cycle(<app_id>, <prior_cycle_id>, 'rollback');
 
@@ -92,4 +92,4 @@ $function$;
 REVOKE EXECUTE ON FUNCTION public.admin_move_application_to_cycle(uuid, uuid, text) FROM PUBLIC, anon;
 
 COMMENT ON FUNCTION public.admin_move_application_to_cycle(uuid, uuid, text) IS
-  'Move a selection_application from one open cycle to another. Children (evaluations, interviews, AI runs) preserved via FK on application_id. Rankings cleared (must run recalculate_cycle_rankings + calculate_rankings on both cycles after). Gated by manage_platform. Audit in data_anomaly_log. p155 F1 (2026-05-13) for Luciana Carpes Pranke cycle3-2026-b2 → cycle4-2026.';
+  'Move a selection_application from one open cycle to another. Children (evaluations, interviews, AI runs) preserved via FK on application_id. Rankings cleared (must run recalculate_cycle_rankings + calculate_rankings on both cycles after). Gated by manage_platform. Audit in data_anomaly_log. p155 F1 (2026-05-13) for member A cycle3-2026-b2 → cycle4-2026.';

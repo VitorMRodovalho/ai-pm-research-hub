@@ -58,13 +58,13 @@ export const PERMITIDOS = new Set([
   'security@supabase.io', 'onboarding@resend.dev', 'support@airmeet.com',
   'noreply@anthropic.com', 'noreply@openai.com', 'git@github.com',
   // — organizacoes parceiras, caixa de papel —
-  'info@pmairevolution.com', 'contato@fernandalongato.com',
+  'info@pmairevolution.com',
   // — placeholders de UI e de teste que nao estao em dominio reservado —
   'seu@email.com', 'you@email.com', 'tu@email.com', 'other@email.com', 'otro@email.com',
   'outro@email.com', 'voce@exemplo.com', 'tu@ejemplo.com', 'sua-conta@dominio.ics',
   'a@b.com', 'a@b.org', 'c@d.com', 'e@x.com', 'x@x.com', 'x@y.com', 'z@w.com', 'bad@host.com',
   // — marcadores de anonimizacao ja aplicada —
-  'anon@removed.local', 'fbressiani@unknown.com', 'giovanni.brandao@historical.nucleo',
+  'anon@removed.local',
   // — id de evento do Google Calendar, que tem forma de e-mail —
   'bsb4n49e06al6cj95mdivgqkp8@google.com',
 ]);

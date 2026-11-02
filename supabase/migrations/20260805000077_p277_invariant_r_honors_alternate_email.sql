@@ -5,12 +5,12 @@
 -- reset its email to the candidate's PMI email (differing from the member's primary email).
 -- For a VEP-reconciled approved candidate this tripped R_approved_application_has_member
 -- (R matched only members.email primary). Live case: app 6259ced2 (redacted-067@example.com,
--- cycle3) → member Paulo Alves de Oliveira Junior (57fcf33c, redacted-064@example.com),
+-- cycle3) → member member A Junior (57fcf33c, redacted-064@example.com),
 -- reconciled 2026-05-15; the 2026-05-30 import broke the primary-email match → R=1.
 -- FIX (PM-ratified, durable option): R's drift CTE now ALSO accepts a match via
 -- member_emails (any alternate email), so a member whose app email is one of their
 -- recorded emails satisfies "approved application has a member". The pejota81 alternate
--- was backfilled onto Paulo via the canonical member_add_alternate_email() RPC (one-time
+-- was backfilled onto member A via the canonical member_add_alternate_email() RPC (one-time
 -- data correction, not hardcoded here per the no-generated-ids-in-data-migration rule).
 -- All other 22 invariants are byte-identical to the prior body (sourced from migration
 -- 20260805000046; Phase-C md5 parity verified). R's description + status='approved' scope +
@@ -416,7 +416,7 @@ $function$;
 
 NOTIFY pgrst, 'reload schema';
 
--- Sanity: after extension (+ the Paulo alternate already committed), R must be 0.
+-- Sanity: after extension (+ the member A alternate already committed), R must be 0.
 DO $sanity$
 DECLARE v_r integer;
 BEGIN

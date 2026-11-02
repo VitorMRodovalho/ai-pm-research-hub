@@ -3,7 +3,7 @@
 -- Bug: function used `final_score = COALESCE(objective_score_avg, 0) + v_pert_score`,
 -- but objective_score_avg is a legacy column that stays NULL when scoring goes through
 -- compute_application_scores (which writes to research_score). Result: final_score
--- was clobbered with just the interview pert (e.g. Matheus: should be 153, was 48).
+-- was clobbered with just the interview pert (e.g. member A: should be 153, was 48).
 --
 -- Trigger trg_recompute_application_scores (AFTER INSERT/UPDATE/DELETE on
 -- selection_evaluations) already recomputes final_score correctly via
@@ -14,7 +14,7 @@
 -- 1. Remove `final_score = ...` from the UPDATE — keep interview_score + status.
 -- 2. Re-fetch v_app after the trigger has run, so notification uses the corrected research_score.
 --
--- Scope: bug only affected 1 candidate in production (Matheus Teixeira, cycle3-2026-b2),
+-- Scope: bug only affected 1 candidate in production (member A, cycle3-2026-b2),
 -- pre-decision (no rank/decision/promotion). Already manually recomputed via
 -- compute_application_scores during diagnosis. This migration prevents recurrence for
 -- future interview submissions.

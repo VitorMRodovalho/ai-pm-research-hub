@@ -1,4 +1,4 @@
--- Mayanna Item 02 — assignee dropdown was missing comms team.
+-- member A Item 02 — assignee dropdown was missing comms team.
 -- Fix: get_board_members now includes members with active engagement on
 -- the board's initiative (workgroup_member, committee_member, etc).
 --

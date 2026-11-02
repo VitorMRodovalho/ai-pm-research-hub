@@ -1,6 +1,6 @@
 -- p170 — Curator exclusion + split panel typology
 --
--- PM clarification 2026-05-16: Roberto Macêdo + Sarah têm designation='curator'.
+-- PM clarification 2026-05-16: member A + member B têm designation='curator'.
 -- Curators são cross-tribe observers — NÃO têm obrigatoriedade de:
 --   - tribe meetings (não participam de tribo específica como researcher)
 --   - general meetings (opcional, podem participar como observer)
@@ -181,6 +181,6 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.get_attendance_panel(date, date) IS
-  'p170 — typology column + curator-aware dropout_risk. PM 2026-05-16: curators (Roberto, Sarah) excluded de mandatory; dropout_risk SEMPRE false pra curators.';
+  'p170 — typology column + curator-aware dropout_risk. PM 2026-05-16: curators (member A, member B) excluded de mandatory; dropout_risk SEMPRE false pra curators.';
 
 NOTIFY pgrst, 'reload schema';

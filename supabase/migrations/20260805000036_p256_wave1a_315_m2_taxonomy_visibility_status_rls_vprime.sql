@@ -21,7 +21,7 @@
 -- no longer bypasses via `manager`/`deputy_manager` operational_role OR
 -- `curate_content` capability. Only `manage_member` is the admin bypass; the
 -- locked_at IS NOT NULL is HARD-GATE outside the OR. Effect: 2 curators
--- (Roberto Macêdo, Sarah Faria) who have curate_content but not manage_member
+-- (member B, member A) who have curate_content but not manage_member
 -- lose direct SELECT on UNLOCKED drafts via DocumentVersionEditor. Mitigation:
 -- the chain review flow uses get_chain_workflow_detail (SECDEF) — unaffected.
 -- Wave 1b will ship dedicated curator-draft-access policy or RPC.

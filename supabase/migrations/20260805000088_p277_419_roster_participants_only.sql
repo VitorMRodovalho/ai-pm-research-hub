@@ -5,8 +5,8 @@
 -- engagement KIND is participatory; kind='observer' is the explicit non-participation marker. So the
 -- canonical roster excludes observers on BOTH axes: role<>'observer' AND kind<>'observer'.
 --
--- This drops the 4 people who sit on the role-vs-kind boundary (all kind='observer'): Roberto Macêdo
--- (tribe-8, role=curator) + three observer-kind reviewers — Welma (Grupo CPMAI), Fabricio + Sarah
+-- This drops the 4 people who sit on the role-vs-kind boundary (all kind='observer'): member A
+-- (tribe-8, role=curator) + three observer-kind reviewers — Welma (Grupo CPMAI), member B + member C
 -- (LATAM LIM). It KEEPS the active external_reviewer (Mario, kind=external_reviewer) and all speakers.
 --
 -- This unifies member_count and attendance-eligibility onto the SAME (kind) axis: get_member_tribe
@@ -19,7 +19,7 @@
 -- updated). Verified-live antes→depois: tribe-8 6→5 (get_tribe_stats / exec_tribe_dashboard / digest /
 -- exec_cross all follow); native LATAM 5→3, Grupo CPMAI 4→3; Mesa Redonda 4→4 (its observers were
 -- already role=observer); all other tribes/initiatives unchanged. exec_tribe_dashboard tribe-8
--- tribe_total_xp 2815→2535 (Roberto's XP leaves the cohort).
+-- tribe_total_xp 2815→2535 (member A's XP leaves the cohort).
 --
 -- Re-asserts the mig-085 anon lockdown (CREATE OR REPLACE VIEW can reset reloptions/grants — the
 -- pg_default_acl trap): security_invoker=true + REVOKE anon/PUBLIC + GRANT authenticated/service_role.

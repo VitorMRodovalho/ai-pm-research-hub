@@ -1,7 +1,7 @@
 -- p129 S1 Item #7: Invariant 12 + trigger for score consistency
 -- Driver: ARM_PILLARS_AUDIT_P107 (R2) — score caches in selection_applications can
 -- diverge silently from selection_evaluations. Confirmed drift in 2 rows (cycle 2:
--- Hayala Curto, Ana Carla Cavalcante).
+-- member B, member A).
 --
 -- Implements:
 --   1. helper _recompute_application_pert(app_id) — recalculates PERT scores from

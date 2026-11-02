@@ -1,29 +1,29 @@
 -- #1997 -- quem nao tem conta na plataforma para de ser cobrado por uma jornada que
 -- nao tem como abrir, e o admin passa a enxergar essa diferenca.
 --
--- CASO QUE EXPOE. Farhad Abdollahyan, aprovado como LIDER em 14/08 (cycle4-2026), engajamento
+-- CASO QUE EXPOE. member D, aprovado como LIDER em 14/08 (cycle4-2026), engajamento
 -- volunteer/leader ativo, 16 passos de onboarding atribuidos, 0 concluidos, members.auth_id NULL.
 -- Tres passos dele ja estao 'overdue' -- e um deles se chama literalmente `platform_access`,
 -- com SLA vencido em 21/08. O detector marcou atraso no passo "conseguir acesso a plataforma"
 -- e cobrou a pessoa por isso via notificacao in-app, que exige exatamente o acesso que falta.
 --
 -- NAO E CASO ISOLADO, E TEM RELOGIO. Medido 26/08: 4 pessoas sem auth_id carregam jornada ativa
--- (Farhad 16 passos, Thiago Sousa 12, Rafael dos Santos 12, Hector Rigon 7; 0 concluidos nas
+-- (member D 16 passos, member A 12, member B 12, member C 7; 0 concluidos nas
 -- quatro). Dessas, 3 tem 12 passos com SLA armado:
---     28/08 21:15 UTC  2 passos  Farhad            (kick_off, profile_complete)
---     29/08 01:35 UTC  2 passos  Rafael + Thiago   (join_whatsapp)
---     02/09 01:35 UTC  4 passos  Rafael + Thiago   (accept_terms, platform_access)
---     09/09 01:35 UTC  4 passos  Rafael + Thiago   (kick_off, profile_complete)
+--     28/08 21:15 UTC  2 passos  member D            (kick_off, profile_complete)
+--     29/08 01:35 UTC  2 passos  member B + member A   (join_whatsapp)
+--     02/09 01:35 UTC  4 passos  member B + member A   (accept_terms, platform_access)
+--     09/09 01:35 UTC  4 passos  member B + member A   (kick_off, profile_complete)
 -- O cron `detect-onboarding-overdue-daily` (jobid 39, `0 13 * * *`) roda todo dia as 13:00 UTC,
 -- entao a primeira leva reproduz o defeito em 29/08 as 10:00 BRT. Estoque atual de 'overdue':
--- 107 passos, 3 deles de quem nao tem conta (as 3 do Farhad).
+-- 107 passos, 3 deles de quem nao tem conta (as 3 do member D).
 --
 -- O QUE E, E O QUE NAO E. A notificacao `selection_onboarding_overdue` cai no ELSE de
 -- `_delivery_mode_for` e sai como 'digest_weekly'. Ela NAO some por falta de conta: o digest
 -- semanal (`generate_weekly_member_digest_cron`) nao filtra por auth_id, e gente sem conta
 -- recebe o e-mail do digest -- medido, 15 envios a 8 pessoas sem auth_id. O que a falta de
 -- conta impede e o DESTINO: o link e `/workspace`, que 302 vem de `/onboarding` (o endereco
--- que TODOS os e-mails de aprovacao mandam abrir) e exige sessao. As 3 do Farhad, alias,
+-- que TODOS os e-mails de aprovacao mandam abrir) e exige sessao. As 3 do member D, alias,
 -- seguem com digest_delivered_at NULL desde 18/08 -- mas isso vale para 3 pessoas COM conta
 -- na mesma leva, porque o gate `v_has_content` do digest nao olha notificacoes pendentes.
 -- Esse segundo defeito e de outra caixa e fica fora daqui, registrado no handoff.
@@ -39,7 +39,7 @@
 --     notificacao que aponta para `/guia-pre-onboarding` -- pagina PUBLICA, feita para anon,
 --     cujo passo 2 e exatamente "entre na plataforma com o MESMO e-mail do PMI". E UM aviso por
 --     PESSOA, nao por passo: a mensagem de quem esta impedido e sempre a mesma, e repeti-la por
---     etapa vencida so empilha ruido identico (o Farhad ja acumulou 3 assim). A RPC passa a
+--     etapa vencida so empilha ruido identico (o member D ja acumulou 3 assim). A RPC passa a
 --     devolver `blocked_no_account_steps` e `blocked_no_account_people` como serie propria,
 --     ao lado de `notifications_sent`.
 --

@@ -1,10 +1,10 @@
--- GC-152: Fix timeline data — correct tribes/chapters per cycle + Carlos Magno email
+-- GC-152: Fix timeline data — correct tribes/chapters per cycle + member A email
 -- Root: Pilot had 0 tribes (conceptual only), C1 had 2 chapters (GO+CE not just GO),
 -- C3 has 7 active tribes (not 8 — T3 inactivated)
 
--- Fix Carlos Magno email
+-- Fix member A email
 UPDATE members SET email = 'redacted-053@example.com'
-WHERE name ILIKE '%carlos magno%' AND email LIKE '%placeholder%';
+WHERE name ILIKE '%member A%' AND email LIKE '%placeholder%';
 
 -- Recreate get_cycle_evolution with correct data
 DROP FUNCTION IF EXISTS get_cycle_evolution();

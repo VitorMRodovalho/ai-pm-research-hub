@@ -1,12 +1,12 @@
 -- ============================================================================
--- p87 hotfix — pre_eval_pause email template + Danilo Nascimento status revert
+-- p87 hotfix — pre_eval_pause email template + member B status revert
 -- ============================================================================
 --
--- Trigger: Vice-GP Fabricio Costa reportou via WhatsApp 2026-05-01 09:42 BRT
+-- Trigger: Vice-GP reportou via WhatsApp 2026-05-01 09:42 BRT
 -- 2 entrevistas marcadas para 2026-05-02 sem que tivesse sido feita análise
--- inicial pela comissão (Vitor + Fabricio). Sweep p87 confirmou:
---   - Thayanne Monteiro: AI fit_for_role=1/5, 0 par-revisões humanas
---   - Danilo Nascimento: AI fit_for_role=3/5, 0 par-revisões, status flipped
+-- inicial pela comissão (Vitor + member C). Sweep p87 confirmou:
+--   - member A: AI fit_for_role=1/5, 0 par-revisões humanas
+--   - member B: AI fit_for_role=3/5, 0 par-revisões, status flipped
 --     para interview_pending sem precondições
 --   - 0 rows futuras em selection_interviews — Calendar bookings não chegam
 --     ao DB (#116)
@@ -17,10 +17,10 @@
 --
 -- Esta migration é idempotente:
 --   - INSERT do template usa ON CONFLICT (slug) DO NOTHING
---   - UPDATE Danilo só toca se status='interview_pending' (já reverted live)
+--   - UPDATE member B só toca se status='interview_pending' (já reverted live)
 --
 -- Rollback: DELETE FROM campaign_templates WHERE slug='pre_eval_pause';
---           (Danilo revert é one-way — não recupera estado pre-hotfix)
+--           (member B revert é one-way — não recupera estado pre-hotfix)
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -60,7 +60,7 @@ VALUES (
 ON CONFLICT (slug) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 2. Danilo Nascimento status revert
+-- 2. member B status revert
 --    interview_pending → submitted (sem score, sem par-revisão = não pronto)
 --    Idempotente: condição WHERE só toca se ainda for interview_pending
 -- ----------------------------------------------------------------------------
@@ -85,6 +85,6 @@ BEGIN
   SELECT COUNT(*) INTO v_template_count FROM campaign_templates WHERE slug = 'pre_eval_pause';
   SELECT status INTO v_danilo_status FROM selection_applications WHERE id = 'd05ddb44-3dea-4d9e-946e-485215122373';
 
-  RAISE NOTICE 'p87 hotfix migration applied: pre_eval_pause template count=%, Danilo status=%',
+  RAISE NOTICE 'p87 hotfix migration applied: pre_eval_pause template count=%, member B status=%',
     v_template_count, COALESCE(v_danilo_status, 'NOT_FOUND');
 END $$;

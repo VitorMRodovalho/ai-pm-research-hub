@@ -8,37 +8,37 @@
 
 begin;
 
--- ─── Step 1: Mayanna Duarte → comms_leader (Cycle 3 - members) ───
+-- ─── Step 1: member A → comms_leader (Cycle 3 - members) ───
 update public.members
 set designations = array_remove(coalesce(designations, '{}'::text[]), 'comms_team')
-where lower(name) like '%mayanna%duarte%'
+where lower(name) like '%member A%duarte%'
   and coalesce(designations, '{}') @> ARRAY['comms_team'];
 
 update public.members
 set designations = array_append(coalesce(designations, '{}'::text[]), 'comms_leader')
-where lower(name) like '%mayanna%duarte%'
+where lower(name) like '%member A%duarte%'
   and not (coalesce(designations, '{}') @> ARRAY['comms_leader']);
 
--- ─── Step 2: Leticia Clemente → comms_member ───
+-- ─── Step 2: member B → comms_member ───
 update public.members
 set designations = array_remove(coalesce(designations, '{}'::text[]), 'comms_team')
-where lower(name) like '%leticia%clemente%'
+where lower(name) like '%member B%clemente%'
   and coalesce(designations, '{}') @> ARRAY['comms_team'];
 
 update public.members
 set designations = array_append(coalesce(designations, '{}'::text[]), 'comms_member')
-where lower(name) like '%leticia%clemente%'
+where lower(name) like '%member B%clemente%'
   and not (coalesce(designations, '{}') @> ARRAY['comms_member']);
 
--- ─── Step 3: Andressa Martins → comms_member ───
+-- ─── Step 3: member C → comms_member ───
 update public.members
 set designations = array_remove(coalesce(designations, '{}'::text[]), 'comms_team')
-where lower(name) like '%andressa%martins%'
+where lower(name) like '%member C%martins%'
   and coalesce(designations, '{}') @> ARRAY['comms_team'];
 
 update public.members
 set designations = array_append(coalesce(designations, '{}'::text[]), 'comms_member')
-where lower(name) like '%andressa%martins%'
+where lower(name) like '%member C%martins%'
   and not (coalesce(designations, '{}') @> ARRAY['comms_member']);
 
 -- ─── Step 4: Cleanup any remaining comms_team in members ───
@@ -60,42 +60,42 @@ begin
     set designations = array_remove(coalesce(mch.designations, '{}'::text[]), 'comms_team')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%mayanna%duarte%'
+      and lower(m.name) like '%member A%duarte%'
       and coalesce(mch.designations, '{}') @> ARRAY['comms_team'];
 
     update public.member_cycle_history mch
     set designations = array_append(coalesce(mch.designations, '{}'::text[]), 'comms_leader')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%mayanna%duarte%'
+      and lower(m.name) like '%member A%duarte%'
       and not (coalesce(mch.designations, '{}') @> ARRAY['comms_leader']);
 
     update public.member_cycle_history mch
     set designations = array_remove(coalesce(mch.designations, '{}'::text[]), 'comms_team')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%leticia%clemente%'
+      and lower(m.name) like '%member B%clemente%'
       and coalesce(mch.designations, '{}') @> ARRAY['comms_team'];
 
     update public.member_cycle_history mch
     set designations = array_append(coalesce(mch.designations, '{}'::text[]), 'comms_member')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%leticia%clemente%'
+      and lower(m.name) like '%member B%clemente%'
       and not (coalesce(mch.designations, '{}') @> ARRAY['comms_member']);
 
     update public.member_cycle_history mch
     set designations = array_remove(coalesce(mch.designations, '{}'::text[]), 'comms_team')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%andressa%martins%'
+      and lower(m.name) like '%member C%martins%'
       and coalesce(mch.designations, '{}') @> ARRAY['comms_team'];
 
     update public.member_cycle_history mch
     set designations = array_append(coalesce(mch.designations, '{}'::text[]), 'comms_member')
     from public.members m
     where mch.member_id = m.id
-      and lower(m.name) like '%andressa%martins%'
+      and lower(m.name) like '%member C%martins%'
       and not (coalesce(mch.designations, '{}') @> ARRAY['comms_member']);
 
     -- Cleanup remaining comms_team in history

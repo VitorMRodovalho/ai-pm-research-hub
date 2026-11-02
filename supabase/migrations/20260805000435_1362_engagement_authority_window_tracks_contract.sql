@@ -1,7 +1,7 @@
 -- #1362: an approved-application engagement's authority window must track its Núcleo contract,
 -- not the researcher-era cycle close.
 --
--- Regression (2026-07-13): the VEP JSON import re-fired sync_operational_role_cache on Paulo Jr
+-- Regression (2026-07-13): the VEP JSON import re-fired sync_operational_role_cache on member A Jr
 -- (pmi 1158211), a researcher promoted to tribe leader, and he dropped to `guest`. Root cause:
 -- operational_role derives from auth_engagements.is_authoritative, which requires
 -- `end_date IS NULL OR end_date >= CURRENT_DATE`. His leader engagement pointed at the leader
