@@ -120,7 +120,7 @@ test('#1495: as regras aprovam a copy D-1 escrita no padrão do time', () => {
   const d1 = [
     'Amanha, 19h00.',
     '',
-    'Analise de cenario e gestao de portfolio com IA, com Fernando Carvalho, Diretor de Operacoes.',
+    'Analise de cenario e gestao de portfolio com IA, com Fulano de Tal, Diretor de Operacoes.',
     '',
     'Link do evento: https://pmilatam.airmeet.com/e/8d047420',
   ].join('\n');

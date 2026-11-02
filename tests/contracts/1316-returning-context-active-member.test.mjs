@@ -1,7 +1,7 @@
 /**
  * Contract: #1316 (parte C) — get_application_returning_context deriva contexto do estado VIVO.
  *
- * Um membro ATIVO que re-candidata (ex. Luciana Dutra, Ciclo 1 Goiás via 62106) aparecia no pipeline
+ * Um membro ATIVO que re-candidata (ex. member A, Ciclo 1 Goiás via 62106) aparecia no pipeline
  * como "rejeitado" sem sinalizar que já é membro ativo, porque o painel de contexto era gated na coluna
  * gravada `selection_applications.is_returning_member` (false p/ quem entrou fora do fluxo de seleção —
  * 34/99 engagements ativos têm selection_application_id=null; 81 apps casam membro ativo, 7 rejected).

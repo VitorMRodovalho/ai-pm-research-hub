@@ -63,7 +63,7 @@ com o texto ocupando só 410, e é o segundo que colide.
 Dois erros reais que só a medição pegou:
 
 - **story de divulgação (26/07):** ampliar o retrato de 200 para 270 px empurrou a coluna de texto até
-  x≈970, e a esfera ciano de `right/top` fixos caiu por cima de "Fernando Carvalho";
+  x≈970, e a esfera ciano de `right/top` fixos caiu por cima de "member A";
 - **story "começa agora" (29/07):** o CTA terminava em y=1670 **exatos**, o limite da zona segura do
   story. Passa no render e pode ser comido pela barra de resposta no aparelho. A zona segura do
   Instagram Stories é ~250 px em cima e embaixo; deixe folga real.

@@ -115,7 +115,7 @@
 //   + pert_cutoff + cohort_position + validation) + new params criterion_notes_json/ai_suggestion_id;
 //   get_evaluation_form description updated to reflect p197 SQL-side payload enrichment (cv_extracted_text,
 //   profile_*, service_history_*, pmi_memberships, returning_member_match, criteria_with_weights,
-//   pert_cutoff). Motivated by Fabricio MCP submit anomaly 2026-05-19 (Luíse Quintana, diff -52 vs first
+//   pert_cutoff). Motivated by an MCP submit anomaly 2026-05-19 (member A, diff -52 vs first
 //   evaluator) — evaluator lacked semantic context to validate score scale before submitting. Tool count
 //   unchanged 289 (only descriptions/params/handlers enriched).
 // v2.71.0 (p193 OPP-192.D): get_tribes_comparison upgraded to V4 — wraps
@@ -3496,7 +3496,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: get_application_gate_attempts (p87 Sprint A.3.c — Issue #117)
-  mcp.tool("get_application_gate_attempts", "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI, retired by #1640 / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS / P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY, #2012), caller name, payload snapshot (consent/eval_count/score/status/authority_path at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).", {
+  mcp.tool("get_application_gate_attempts", "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI, retired by #1640 / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS / P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY, #2012), caller name, payload snapshot (consent/eval_count/score/status/authority_path at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (past incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).", {
     application_id: z.string().describe("UUID of the selection_applications row")
   }, async (params: any) => {
     const start = Date.now();
@@ -4897,7 +4897,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // ===== Mayanna Item 07 — Drive integration Phase 1 + 1b =====
+  // ===== member B Item 07 — Drive integration Phase 1 + 1b =====
   // Setup PM action: docs/SETUP_GOOGLE_DRIVE_INTEGRATION.md
 
   // TOOL: link_initiative_to_drive — vincula pasta Drive a tribo/iniciativa (Phase 1b)
@@ -5248,7 +5248,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
     return ok(data);
   });
 
-  // TOOL: create_card_comment — Mayanna Item 01 (BUG ALTA)
+  // TOOL: create_card_comment — member B Item 01 (BUG ALTA)
   mcp.tool("create_card_comment", "Cria comentário em board_item. Suporta thread (parent_comment_id) + @menções (notification immediate aos mencionados). Authority: rls_is_member OR write_board OR comms team em board domain='communication'. Mention IDs em mentioned_member_ids[] geram notification transactional_immediate; assignee do card recebe digest_weekly.", {
     board_item_id: z.string().describe("Card UUID"),
     body: z.string().describe("Comment body (markdown allowed)"),
@@ -11551,7 +11551,7 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   // schemas documented values the RPC/CHECK reject on every call — masked as ok:true).
   // Kept RAW on purpose:
   //   - counter_sign_certificate — countersign is the Dir. de Voluntariados' exclusive act
-  //     (Lorena; reference-volunteer-term-countersign-lorena). NEVER auto-countersign via MCP.
+  //     (member A; reference-volunteer-term-countersign). NEVER auto-countersign via MCP.
   //   - (#1397 REMEDIATED) review_change_request / approve_change_request are now absorbed into
   //     change_request action='review'/'approve'. The unilateral 'implement' branch was retired
   //     (approved→implemented is 2-of-N only, ADR-0044), the quorum numerator is sponsor-only, and

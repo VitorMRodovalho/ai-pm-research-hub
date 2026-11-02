@@ -9,7 +9,7 @@
  * app and is blind to the platform pipeline. But that freeze also swallowed
  * EXPLICIT terminal decisions, so a VEP-declined application lingered at e.g.
  * 'screening' and the candidate surfaced under the wrong, dead application (live
- * case: Ana Sofia Pires Pacheco, leader app OfferNotExtended stuck at screening).
+ * case: member A, leader app OfferNotExtended stuck at screening).
  *
  * Fix surface:
  *   - cloudflare-workers/pmi-vep-sync/src/db.ts resolveReimportStatus (3rd arg

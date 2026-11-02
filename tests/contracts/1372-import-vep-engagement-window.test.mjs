@@ -1,11 +1,11 @@
 /**
  * Contract: #1372 — the VEP import must not fan a per-vaga end_date across a person's engagements.
  *
- * Recurrence of #1362 (2026-07-13): a NEW VEP import (135 apps) re-demoted Paulo Jr (pmi 1158211)
+ * Recurrence of #1362 (2026-07-13): a NEW VEP import (135 apps) re-demoted member A Jr (pmi 1158211)
  * from tribe_leader to `guest`. Root cause = ONE bug, not two: the pmi-vep-sync worker's
  * setEngagementEndDateSource wrote `end_date` on ALL of a person's active engagements
  * (person-scoped), but PMI VEP `serviceEndDateUTC` is a PER-VAGA fact (one selection application =
- * one Núcleo service contract). Processing Paulo's researcher application (contract ended
+ * one Núcleo service contract). Processing member A's researcher application (contract ended
  * 2026-06-30) stamped that stale end_date onto:
  *   - his promoted-leader engagement (contract 2027-06-30)  -> expires-before-contract -> guest
  *   - his July workgroup engagements                        -> end_date < start_date (invalid window)
@@ -23,7 +23,7 @@
  * Live proof (prod ldrfrvwhxsmgaabwmaik, 2026-07-13, this session — re-run before merge):
  *   - Invariants 0/0 (no active engagement expires before contract; none with end<start).
  *   - 0 existing end<start rows across all statuses before adding the CHECK.
- *   - Paulo operational_role = tribe_leader.
+ *   - member A operational_role = tribe_leader.
  */
 
 import test from 'node:test';

@@ -384,7 +384,7 @@ const SELECTION_TERMINAL_STATUSES = new Set([
  * candidate back. But a HARD terminal decision is authoritative and must pull the
  * candidate OUT of the active funnel even mid-pipeline — otherwise a VEP-declined
  * application lingers at e.g. 'screening' and the candidate surfaces under the
- * wrong, dead application (live case: Ana Sofia leader app OfferNotExtended stuck
+ * wrong, dead application (live case: member B leader app OfferNotExtended stuck
  * at 'screening'). Matched case-insensitively. Kept in sync with the DB-side
  * heal `reconcile_vep_terminal_status` (migration 20260805000171).
  */
@@ -502,8 +502,8 @@ export async function upsertSelectionApplication(
       // would otherwise overwrite a reconciled email↔member link back to the raw
       // PMI email — silently breaking invariant R_approved_application_has_member
       // and red-lighting CI for unrelated PRs on every cycle import (live case:
-      // Paulo Alves, app 6259ced2, clobbered pejota81 over the reconciled
-      // paulo-junior on the 2026-05-30 sync). Writing back the existing value is a
+      // member A, app 6259ced2, clobbered a handle over the reconciled
+      // member A-junior on the 2026-05-30 sync). Writing back the existing value is a
       // deliberate no-op that preserves the reconciliation across every future sync;
       // non-reconciled rows refresh email from PMI exactly as before.
       email: existing.vep_reconciled_at ? existing.email : payload.email,

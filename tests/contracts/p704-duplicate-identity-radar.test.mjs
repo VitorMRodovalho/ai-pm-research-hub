@@ -3,7 +3,7 @@
  *
  * selection_applications dedups by (vep_application_id, vep_opportunity_id) — per VEP
  * ACCOUNT, never per PERSON. One human with two PMI registrations (distinct pmi_id +
- * email + name) appears as independent candidates. The anchor case (Ana) has DIFFERENT
+ * email + name) appears as independent candidates. The anchor case (member A) has DIFFERENT
  * names per account ("Fulano Alfa" vs "Fulano Beta Gama Alfa"), so group-by-name finds
  * nothing — detection needs multi-signal fuzzy matching.
  *
@@ -64,7 +64,7 @@ test('#704 static: migration 20260805000175 exists and defines the gated radar',
 });
 
 // ── ALGORITHM (deterministic, no DB) ────────────────────────────────────────────
-test('#704 algorithm: anchor case (Ana) is a strong cross-account match', () => {
+test('#704 algorithm: anchor case (member A) is a strong cross-account match', () => {
   // The two accounts: distinct name/email/pmi_id, same person.
   assert.equal(isStrongPair('Fulano Alfa', 'Fulano Beta Gama Alfa'), true,
     'Fulano Alfa ⇄ Fulano Beta Gama Alfa must match on first+last token');
@@ -80,7 +80,7 @@ test('#704 algorithm: coincidental BR surnames are NOT strong matches (no false 
 
 test('#704 algorithm: normalization is accent + case insensitive', () => {
   assert.equal(normName('José da SILVA'), 'jose da silva');
-  assert.equal(isStrongPair('João Conceição', 'joao  conceicao'), true, 'accents/case/spacing normalized');
+  assert.equal(isStrongPair('Zé Fulano Exemplo', 'ze  fulano  exemplo'), true, 'accents/case/spacing normalized');
 });
 
 // ── DB-AWARE: gate is closed to non-authenticated callers ───────────────────────

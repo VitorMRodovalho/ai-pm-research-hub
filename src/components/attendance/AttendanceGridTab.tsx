@@ -331,7 +331,7 @@ export default function AttendanceGridTab() {
   }, [memberReady]);
 
   /* Toggle attendance cell — click handler for managers */
-  /* p87 bug Ana Carla fix (2026-05-01, Sprint UX):
+  /* p87 bug member A fix (2026-05-01, Sprint UX):
      Cycle SHORTENED: na/absent → present, present → absent, excused → absent.
      Excused only set via long-press modal (handleSetExcused) to capture reason.
      Confirms before destroying persisted reason on excused → absent. */

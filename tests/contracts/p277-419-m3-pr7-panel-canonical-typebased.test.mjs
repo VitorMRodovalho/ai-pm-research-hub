@@ -8,8 +8,8 @@
  * (orphan since PR5a) DROPPED.
  *
  * Live smoke (MEASURED): panel operational avg 70.5 → 76.2 (== home calc_attendance_pct 76.2 == engagement_global
- * 76.19). Roberto Macêdo (curator, excluded from the old panel's mandatory denom) 0 → 22.2 (now consistent with
- * home/member-detail). Non-priv researcher (Ligia) gets exactly 1 own row + own_combined 94.7 / cohort_avg 76.2 /
+ * 76.19). member A (curator, excluded from the old panel's mandatory denom) 0 → 22.2 (now consistent with
+ * home/member-detail). Non-priv researcher (member B) gets exactly 1 own row + own_combined 94.7 / cohort_avg 76.2 /
  * cohort_size 40 / percentile 92. anon → 0 rows. summary gone. Phase-C md5 file==live (25a00caced…).
  *
  * Migration: supabase/migrations/20260805000074_p277_419_m3_pr7_panel_canonical_typebased.sql
