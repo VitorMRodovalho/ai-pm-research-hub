@@ -11,7 +11,7 @@ Você está no projeto `ai-pm-research-hub`. Vamos operacionalizar o **Kickoff d
 - `ROTEIRO-kickoff-ciclo4.md` — run-of-show do evento.
 - `GUIA-videos-tribo-e-boas-praticas-ciclo4.md` — template de vídeo + gaps do site + boas práticas de registro.
 - `BRIEF-video-tribo.md` — descrição a colar em cada card de vídeo.
-- `SCRIPT-tribo06-fabricio-EXEMPLO.md` — exemplo de vídeo pronto (referência).
+- `SCRIPT-tribo06-lider-EXEMPLO.md` — exemplo de vídeo pronto (referência).
 - `verticais.png` / `verticais.mmd` — diagrama das verticais.
 
 **Fatos que valem (não re-derivar):**

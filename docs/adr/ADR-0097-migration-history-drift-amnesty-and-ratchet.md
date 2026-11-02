@@ -38,7 +38,7 @@ Extrapolation: ~485 DDL recoverable / ~140 DML / ~35 EMPTY / ~35 hotfix nos 694.
 
 ### 15 orphan files (local sem tracked row) — 3 clusters
 
-1. **p64 cluster (Apr 26-27, 3 files)**: `20260426234500_incident_p64_revert_sarah_accidental_signoff_adendo_ip.sql` + Pacote M ADR-0028→0029 work + audit helper
+1. **p64 cluster (Apr 26-27, 3 files)**: `20260426234500_incident_p64_revert_accidental_signoff_adendo_ip.sql` + Pacote M ADR-0028→0029 work + audit helper
 2. **p125-E1/E2/p126-E3 cluster (May 18, 11 files)**: série completa do selection PMI 3D + service history + anonymize cron + returning member trigger — sprint inteiro não registrado
 3. **TAP CPMAI R00 seed (Jun 18, 1 file, ~60KB)**: seed data 863 linhas aplicado direct via dashboard
 

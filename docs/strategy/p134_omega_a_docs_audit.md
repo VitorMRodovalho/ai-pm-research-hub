@@ -146,7 +146,7 @@ INDEX referencia apenas: README, ARCHITECTURE, CLAUDE, adr/, RUNBOOK, GOVERNANCE
 | `docs/specs/` | 19 docs incl SPEC_ADR_0022_W1, SPEC_ENGAGEMENT_WELCOME_EMAIL, p84-wave5-*, p87-*, p91-selection-journey-audit, p94-sync-artia-7blocks, PMI_JOURNEY_V4_REVIEW, COMMS_PAGES_REDESIGN_SPEC, DATA_COLLECTION_GOVERNANCE | Specs de feature por onda |
 | `docs/drafts/` | 8 docs incl IP policy v2.7 handoff, p131_email_*, blog-mcp-framework-outline | Drafts em curso (HTML staging per pattern p128) |
 | `docs/audit/` | 22 docs incl RPC_BODY_DRIFT_AUDIT_P50, ROUTE_INVENTORY, TABLE_INVENTORY, TECHNICAL_DEBT_INVENTORY, MASTER_SUMMARY, LGPD_ROPA_PUBLIC_SURFACES, MPP_AUDIT_P74, SPEC_VS_DEPLOYED_*×4 | Audits cross-session |
-| `docs/refactor/` | 5 docs (DOMAIN_MODEL_V4_MASTER, CUTOVER_FASE4_PLAN, HERLON_VEP_PARALLEL_TRACK, PHASE5_C4_BLAST_RADIUS, TRIBE_ID_READERS_AUDIT) | Histórico do V4 refactor |
+| `docs/refactor/` | 5 docs (DOMAIN_MODEL_V4_MASTER, CUTOVER_FASE4_PLAN, VEP_PARALLEL_TRACK, PHASE5_C4_BLAST_RADIUS, TRIBE_ID_READERS_AUDIT) | Histórico do V4 refactor |
 | `docs/reference/` | 1 doc (V4_AUTHORITY_MODEL.md) | **Load-bearing** — citado em `.claude/rules/database.md` para audit anti-false-positive |
 | `docs/research/` | 2 docs (peer_review_briefing_cycle3_2026_b2, raises_the_bar_validation) | Validações peer review |
 | `docs/reports/` | 2 docs (HANDOVER_2026-04-23_DEV_TEAM, USABILITY_HUB_COMMS_MAYANA_2026-04-22) | Reports estratégicos |

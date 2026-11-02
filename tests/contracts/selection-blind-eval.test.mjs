@@ -219,7 +219,7 @@ test('submit_evaluation delegates final_score derivation to canonical compute_ap
   // (was overriding the trigger-driven canonical compute_application_scores call).
   // Interview + leader_extra branches now PERFORM the canonical RPC explicitly.
   // The trigger trg_recompute_application_scores on selection_evaluations also calls it.
-  // See docs/audit/OPP_246_A_FRANCISLEILA_FINAL_SCORE_DRIFT.md.
+  // See docs/audit/OPP_246_A_FINAL_SCORE_DRIFT.md.
   const body = findFunctionBody('submit_evaluation');
   assert.ok(
     /PERFORM\s+public\.compute_application_scores\(p_application_id\)/i.test(body),
