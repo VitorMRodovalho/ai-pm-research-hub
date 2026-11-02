@@ -166,14 +166,14 @@ Additional implicit safeguards:
 ## Privilege expansion
 
 V3 → V4:
-- V3: `is_superadmin = true` (Vitor + Fabricio)
+- V3: `is_superadmin = true` (Vitor + member A)
 - V4: `manage_platform` audience = `volunteer × {manager, deputy_manager,
-  co_gp}` (Vitor + Fabricio + any future deputy_manager/co_gp)
+  co_gp}` (Vitor + member A + any future deputy_manager/co_gp)
 
-Net change in *who can act on Manual*: zero (Vitor + Fabricio are the
+Net change in *who can act on Manual*: zero (Vitor + member A are the
 current set). Net change in *requirement*: 2-of-N enforcement means a
 single actor can no longer unilaterally publish a manual version. Both
-Vitor AND Fabricio (or future additional manage_platform holders) must
+Vitor AND member A (or future additional manage_platform holders) must
 participate.
 
 ---

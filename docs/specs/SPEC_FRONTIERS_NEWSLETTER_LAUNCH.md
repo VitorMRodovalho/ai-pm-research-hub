@@ -12,7 +12,7 @@
 >
 > **Mantido neste repo** como histórico das decisões pré-Wave-4f (rastro do plano Apr-21 → May-25, contexto narrativo da #96). NÃO usar como playbook executável.
 
-> **Status (histórico):** Pre-aprovação — todos os SQL blocks abaixo são **DRAFT**, NÃO devem ser aplicados em prod até Gate 0 da [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) estar 100% verde (CR-050 v2.2 ratificada + Termo R3-C4/aditivo + busca marca + decisões 1-6 do GP+Fabrício).
+> **Status (histórico):** Pre-aprovação — todos os SQL blocks abaixo são **DRAFT**, NÃO devem ser aplicados em prod até Gate 0 da [issue #96](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) estar 100% verde (CR-050 v2.2 ratificada + Termo R3-C4/aditivo + busca marca + decisões 1-6 do GP+member A).
 >
 > **Propósito:** ter Gate 1 (integração plataforma) executável em <30min uma vez que Gate 0 cair. Esta spec é o playbook técnico — copia-cola direto após decisões.
 >
@@ -264,7 +264,7 @@ ROLLBACK;
 --
 -- Pré-requisitos:
 -- - Gate 0 da #96 fechado (CR-050 ratificada + Termo R3-C4 + decisão de marca)
--- - Decisões 1, 2, 6 do GP+Fabrício preenchidas
+-- - Decisões 1, 2, 6 do GP+member A preenchidas
 -- ============================================================================
 
 INSERT INTO public.publication_series (
@@ -348,7 +348,7 @@ Após executar todos os SQL blocks aprovados:
 - [ ] Rodar `mcp_smoke()` — sem regressão
 - [ ] Atualizar Content Pipeline Playbook (`docs/editorial/CONTENT_PIPELINE_PLAYBOOK.md`) com seção dedicada Frontiers (já preparada com TBD)
 - [ ] Comunicar superadmins via meeting agendado: "publication_ideas existe — pipeline editorial agora tem source-of-truth"
-- [ ] Adicionar `frontiers-newsletter` ao backlog editorial do Fabrício como 1ª série a popular
+- [ ] Adicionar `frontiers-newsletter` ao backlog editorial do member A como 1ª série a popular
 - [ ] Marcar #94 W2 como completo + atualizar status de #96 Gate 1
 - [ ] Ativar `check_idea_originality` (#95 W2) **antes** da issue #1 do Frontiers ser criada — ver Comment 5 da #94
 

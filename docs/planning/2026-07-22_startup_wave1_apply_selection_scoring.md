@@ -20,7 +20,7 @@ Sessão de execução no ai-pm-research-hub — **Onda 1** do roadmap de correç
 ## Mandato desta sessão (Onda 1)
 1. **Re-aterrar ANTES (grounding obrigatório):** re-rodar ao vivo e capturar o "antes":
    - `count(*) FILTER (research_score NOT NULL AND objective_score_avg NULL)` no ciclo (esperado ~17).
-   - rank vivo vs armazenado do researcher (esperado: Francisco J. armazenado #39 / vivo #7; 13 NULL-stored).
+   - rank vivo vs armazenado do researcher (esperado: member A armazenado #39 / vivo #7; 13 NULL-stored).
 2. **Aplicar as 2 migrations** (regras da casa, `.claude/rules/database.md`):
    - `apply_migration` (byte-igual ao arquivo) para 475 e depois 476.
    - Cada apply via MCP cria PHANTOM tracking-row com versão de DATA REAL (`202607*`), que ordena ANTES do
@@ -33,7 +33,7 @@ Sessão de execução no ai-pm-research-hub — **Onda 1** do roadmap de correç
    Isso nula os 17 e recomputa research/leader/final com a nova regra.
 4. **Re-aterrar DEPOIS (antes→depois ao vivo):**
    - os 17 viraram research_score NULL (e saíram do ranking).
-   - `get_selection_rankings` agora inclui os 13+3 antes ocultos e Francisco J. aparece ~#7.
+   - `get_selection_rankings` agora inclui os 13+3 antes ocultos e member A aparece ~#7.
    - conferir que nenhuma app de 2+ avaliadores mudou de score (divergência deve ser 0).
 5. **`npx astro build` + `npm test`** (com SUPABASE_URL + SERVICE_ROLE_KEY → roda os DB-aware). 0 fail.
    - Não pinar baseline; a fonte é rodar o comando.

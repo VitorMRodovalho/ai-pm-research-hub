@@ -12,7 +12,7 @@
 
 When a member submits an artifact for curation from a restricted tribe/team Drive folder, the
 Curation Committee **cannot open it** — tribe folders are access-controlled by design (incident
-Fabricio/Roberto). #201 surfaces the link in the curation modal, but curators hit Drive
+member A/Roberto). #201 surfaces the link in the curation modal, but curators hit Drive
 "access denied". The platform lacked a mechanism for **temporary, auditable, least-privilege**
 access to the submitted artifact without permanently opening the whole tribe folder.
 
@@ -29,7 +29,7 @@ Grounded facts at build time (live, `ldrfrvwhxsmgaabwmaik`):
   `curation_pending`.
 - The submitted artifact lives in **`board_item_files`** (`drive_file_id`, `drive_file_url`).
   `board_items.attachments` (jsonb) is a legacy Storage/links lane — not Drive, out of scope.
-- `curate_content` resolves (V4 Path 1 only) to **3 people** (Fabricio, Roberto, Sarah) — all on
+- `curate_content` resolves (V4 Path 1 only) to **3 people** (member A, Roberto, member B) — all on
   gmail, i.e. **out-of-domain** vs the SA's `pmigo.org.br`.
 
 ## Decision

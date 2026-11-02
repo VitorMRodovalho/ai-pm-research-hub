@@ -24,7 +24,7 @@ Build a custom MCP server as a Supabase Edge Function that allows tribe leaders 
 - Bypasses ALL RLS policies
 - Exposes raw SQL execution (`execute_sql` tool)
 - Supabase docs: "Don't give to your customers"
-- Would let Fabrício's Claude see ALL data across ALL tribes
+- Would let member A's Claude see ALL data across ALL tribes
 
 ### ✅ THIS: Custom MCP Server (Edge Function + mcp-lite)
 - Authenticates as the USER (via Supabase Auth OAuth 2.1)
@@ -135,15 +135,15 @@ Claude/ChatGPT/Gemini (leader's personal AI)
 
 **No new permissions needed.** The existing RPC auth guards + RLS handle everything.
 
-### Fabrício pilot — superadmin question
+### member A pilot — superadmin question
 
 **Answer: No need to revoke superadmin.**
 
-When Fabrício authenticates via OAuth to the MCP server, his `auth.uid()` resolves to his `members` record. The RPCs he calls through the MCP will use the same auth path as the website. His superadmin flag means he CAN see everything — but the MCP tools we expose are scoped by design (e.g., `get_my_board_status` only returns HIS tribe's board).
+When member A authenticates via OAuth to the MCP server, his `auth.uid()` resolves to his `members` record. The RPCs he calls through the MCP will use the same auth path as the website. His superadmin flag means he CAN see everything — but the MCP tools we expose are scoped by design (e.g., `get_my_board_status` only returns HIS tribe's board).
 
 To test the "normal leader experience," we can:
 - Create a tool `get_my_tribe_board` that explicitly filters by `tribe_id` from the caller's member record
-- OR: ask Fabrício to test specific queries and report if he sees data he shouldn't
+- OR: ask member A to test specific queries and report if he sees data he shouldn't
 
 **Removing superadmin is unnecessary friction that could break his admin access to the website.**
 
@@ -229,11 +229,11 @@ All 10 tools map to EXISTING RPCs — zero new SQL needed:
 6. Document: setup guide for leaders
 ```
 
-### Phase 2: Pilot with Fabrício (1 session, ~2 hours)
+### Phase 2: Pilot with member A (1 session, ~2 hours)
 
 **Deliverables:**
 1. 5 write tools (create card, update status, create notes, register attendance, notify tribe)
-2. Fabrício tests with his Claude
+2. member A tests with his Claude
 3. Friction report documented
 4. Decision: roll out to 6 remaining leaders or iterate
 
@@ -291,7 +291,7 @@ GC-132: W-MCP-1 — Custom MCP server investigation complete.
 Architecture: Supabase Edge Function (mcp-lite) with OAuth 2.1 auth.
 NOT using official Supabase MCP (developer-only, bypasses RLS).
 Custom server authenticates as user, respects RLS, exposes 10 curated read-only tools.
-Phase 1: Read-only MVP. Phase 2: Write tools + Fabrício pilot.
+Phase 1: Read-only MVP. Phase 2: Write tools + member A pilot.
 Phase 3 (deferred): REST API for ChatGPT/Gemini users.
 Zero cost. Target: second half of April 2026.
 ```
@@ -306,4 +306,4 @@ Zero cost. Target: second half of April 2026.
 
 **First step:** Verify Supabase Auth OAuth server status for the project (may need to enable in Dashboard: Auth > OAuth Server > Enable dynamic client registration).
 
-**Pilot:** Fabrício with Claude, scoped to T6 board + tribe data.
+**Pilot:** member A with Claude, scoped to T6 board + tribe data.

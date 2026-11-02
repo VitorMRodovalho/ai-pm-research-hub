@@ -318,8 +318,8 @@ Consulta `board_lifecycle_events` filtrado por `item_id`.
 
 ```
 📋 12 Mar 14:30 — Vitor moveu de "Backlog" para "Em Andamento"
-👤 12 Mar 15:00 — Fabricio atribuído como revisor
-✅ 13 Mar 09:15 — Fabricio aprovou
+👤 12 Mar 15:00 — member A atribuído como revisor
+✅ 13 Mar 09:15 — member A aprovou
    Motivo: "Artigo bem estruturado, pronto para publicação"
 ```
 

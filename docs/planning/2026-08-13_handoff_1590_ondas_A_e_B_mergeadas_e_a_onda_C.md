@@ -75,10 +75,10 @@ Sai no chamador (`_dispatch_interview_booking_link`), nao no picker, que e STABL
 
 ## O estado medido do roteamento (12/08, RE-MEDIR)
 
-- Comite de `cycle4-2026`: **3 avaliadores roteaveis** (Fabricio, Vitor, Fernando, todos por
+- Comite de `cycle4-2026`: **3 avaliadores roteaveis** (member A, Vitor, Fernando, todos por
   `committee_override`) e **4 observadores** fora do rodizio (URL nula).
 - 94 despachos: researcher 57 `member_global` + 30 `committee_override`; leader 7 `cycle_fallback`.
-- Desde que o Fernando entrou no comite (31/07 22:19): Vitor 8, Fabricio 5, Fernando 4.
+- Desde que o Fernando entrou no comite (31/07 22:19): Vitor 8, member A 5, Fernando 4.
   ⚠️ **O rodizio LRD nao equaliza como o nome promete, e isso ainda nao tem explicacao medida.**
 - `selection_booking_attempts`: 31 `no_application`, 4 `matched`, 4 `cycle_closed`, 1
   `status_not_allowed`.

@@ -88,8 +88,8 @@ git branch -f fix/youtube-playlists-ciclo4-gerais-e-lideranca \
   webinares agendados em setembro.
 - **Card do framework do Marcos** com `forecast_date` 08/09, três semanas depois do
   ~18/08 que ele se comprometeu em 23/07.
-- **7 pessoas falaram na #8 sem registro de presença** (Vitor, Fabrício, Roberto,
-  Adailson, Hayala, Sarah, Jefferson).
+- **7 pessoas falaram na #8 sem registro de presença** (Vitor, member A, Roberto,
+  member B, member C, member D, member E).
 - Playlist `Ciclo 4 (2026/2) - Reuniões Gerais` existe, mas o backfill das Gerais
   **mais antigas** não foi varrido.
 

@@ -232,7 +232,7 @@ A Fase 1 mediu e quatro cortes saíram (#1778, #1784, #1791, #1779). Segue abert
 - **#1777**, **#1776**, **#1664 fase 2**, **#1762** (corrigir muda quem recebe candidato → precisa do PM),
   **#1729**, **#1742**, **#1744**, **#1728** (20 RPCs da mesma classe).
   **Onda E:** #1575, #1574, #1573, #1576, #1634, #1581, #1579.
-- **#1205** só fecha com o William no `/profile` LOGADO.
+- **#1205** só fecha com o member A no `/profile` LOGADO.
 
 ---
 

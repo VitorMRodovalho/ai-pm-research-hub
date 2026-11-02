@@ -1,5 +1,5 @@
 # TRIAGE DE CAMPO — Achados de Uso Real
-## 19/Mar/2026 — Feedback de Vitor, Jefferson (T5), Fabricio (Deputy)
+## 19/Mar/2026 — Feedback de Vitor, member A (T5), member B (Deputy)
 ## GC-091+
 
 ---
@@ -10,8 +10,8 @@
 
 | # | Issue | Quem reportou | Erro | Root Cause Provável |
 |---|-------|--------------|------|-------------------|
-| P0-1 | **Criar Evento falha** | Jefferson (T5) | `Could not choose the best candidate function between public.create_event(...)` — duas assinaturas sobrepostas | Duas versões da RPC `create_event` com tipos de param diferentes (uma com `p_tribe_id => uuid`, outra com `p_tribe_id => integer`). PostgreSQL não resolve ambiguidade. |
-| P0-2 | **Criar Série Recorrente falha** | Fabricio | `Could not find the function public.create_recurring_weekly_events(...)` in the schema cache | RPC não existe no banco. Frontend chama função que nunca foi criada ou foi dropada numa migration. |
+| P0-1 | **Criar Evento falha** | member A (T5) | `Could not choose the best candidate function between public.create_event(...)` — duas assinaturas sobrepostas | Duas versões da RPC `create_event` com tipos de param diferentes (uma com `p_tribe_id => uuid`, outra com `p_tribe_id => integer`). PostgreSQL não resolve ambiguidade. |
+| P0-2 | **Criar Série Recorrente falha** | member B | `Could not find the function public.create_recurring_weekly_events(...)` in the schema cache | RPC não existe no banco. Frontend chama função que nunca foi criada ou foi dropada numa migration. |
 | P0-3 | **Admin/members não carrega** | Vitor | Tudo zerado, sem dados | Provavelmente relacionado ao fix da RPC `get_member_detail` (B1) — verificar se a migration foi aplicada corretamente e se o frontend consome a resposta no formato esperado. |
 | P0-4 | **Relatório do Ciclo falha** | Vitor | "Falha ao gerar relatório do ciclo" | RPC de geração de relatório quebrada — pode ser mesma família de colunas renomeadas (padrão do B1). |
 | P0-5 | **Links 404 em vários lugares** | Vitor (apresentação PMI-RS) | 404 em múltiplas páginas | Necessita varredura sistemática de todas as rotas. Pode ser middleware novo (B4) bloqueando rotas que não deveria, ou rotas que nunca existiram. |
@@ -167,7 +167,7 @@ Report findings — may be related to search_path hardening (B3) changing functi
 
 | Ordem | Item | Esforço | Impacto |
 |-------|------|---------|---------|
-| 1 | P0-1 + P0-2: Fix RPCs de eventos | 1-2h | Desbloqueia Jefferson, Fabricio, e todos os líderes |
+| 1 | P0-1 + P0-2: Fix RPCs de eventos | 1-2h | Desbloqueia member A, member B, e todos os líderes |
 | 2 | P0-5: Varredura 404 + fix middleware | 2h | Credibilidade em apresentações |
 | 3 | P0-3: Admin/members zerado | 1h | Desbloqueia painel admin |
 | 4 | P0-4: Relatório do ciclo | 1h | Desbloqueia reporting |

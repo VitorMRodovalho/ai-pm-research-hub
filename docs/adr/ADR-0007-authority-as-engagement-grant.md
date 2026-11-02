@@ -15,12 +15,12 @@ O modelo atual (ADR-0002) armazena autoridade em `members.operational_role` (sca
 
 Mas o modelo quebra quando:
 
-1. **Scope varia por recurso** — Herlon precisa de escrita apenas no CPMAI, não em qualquer initiative.
+1. **Scope varia por recurso** — member A precisa de escrita apenas no CPMAI, não em qualquer initiative.
 2. **Autoridade é temporária** — palestrante externo pode anotar feedback só durante o webinar.
 3. **Autoridade depende de termo vigente** — voluntário com termo vencido não pode acessar PII.
 4. **Auditoria precisa rastrear origem** — "quem concedeu esta permissão, baseado em qual artefato de governança".
 5. **Revogação precisa ser atômica** — desligar alguém hoje exige caçar operational_role + designations + board_members + etc.
-6. **Expiração automática** — hoje o Herlon está `observer` porque **alguém esqueceu** de rebaixar quando o termo venceu. Isto é um gap crítico de governança.
+6. **Expiração automática** — hoje o member A está `observer` porque **alguém esqueceu** de rebaixar quando o termo venceu. Isto é um gap crítico de governança.
 
 Plataforma de governança máxima exige: **toda permissão rastreável até um artefato de governança com vigência explícita**.
 
@@ -45,7 +45,7 @@ Plataforma de governança máxima exige: **toda permissão rastreável até um a
 3. **`operational_role` continua existindo como cache denormalizado** (para performance em queries de listagem), mas é **recalculado automaticamente via trigger** sempre que engagements mudam. Nunca editado manualmente. Substitui ADR-0002 como fonte de verdade, mantém compatibilidade.
 4. **`canWrite` e `canWriteBoard` no nucleo-mcp** migram para chamar `can(...)`. `WRITE_ROLES` vira lookup em `engagement_kind_permissions`, não array hardcoded.
 5. **Todas RLS policies** que hoje fazem `operational_role IN (...)` migram para subquery em engagements. Gradualmente, via view `auth_engagements` para reduzir duplicação.
-6. **Trigger de expiração diária** (pg_cron): encerra engagements com `end_date < today`, rebaixa operational_role, notifica para renovação via VEP. Fecha o gap de "esquecer de rebaixar Herlon".
+6. **Trigger de expiração diária** (pg_cron): encerra engagements com `end_date < today`, rebaixa operational_role, notifica para renovação via VEP. Fecha o gap de "esquecer de rebaixar member A".
 7. **Trigger de termo vencido**: se `agreement_certificate_id` é requerido pelo kind e o certificate não está mais válido, engagement passa a `suspended` automaticamente — acesso a PII cortado até renovação.
 
 ## Consequências
@@ -54,7 +54,7 @@ Plataforma de governança máxima exige: **toda permissão rastreável até um a
 - **Auditabilidade total**: cada permissão tem trace até (engagement → VEP → termo → base legal LGPD).
 - **Expiração automática**: nunca mais "esquecer de rebaixar".
 - **Revogação atômica**: `UPDATE engagements SET status='revoked'` e fim.
-- **Permissões por recurso**: Herlon escreve no CPMAI mas não em outras initiatives.
+- **Permissões por recurso**: member A escreve no CPMAI mas não em outras initiatives.
 - **Relatório LGPD trivial**: "quem acessa PII dos inscritos CPMAI hoje" é um SELECT.
 - **Suporta engagements temporários**: palestrante externo, congress committee, workshops.
 

@@ -136,7 +136,7 @@
     },
     "selection_termo_due": {
       "delivery_mode": "transactional_immediate",
-      "rationale": "p159 (2026-05-14): post-VEP-Active candidate email carrying volunteer term link + next steps + Lorena (signatory). Helper updated p159; catalog backfilled p228 W2 Leaf 1 per PM Policy Matrix (#260, 2026-05-23). Candidate-facing operational; bypasses notify_delivery_mode_pref=suppress_all per W2 Leaf 6."
+      "rationale": "p159 (2026-05-14): post-VEP-Active candidate email carrying volunteer term link + next steps + member A (signatory). Helper updated p159; catalog backfilled p228 W2 Leaf 1 per PM Policy Matrix (#260, 2026-05-23). Candidate-facing operational; bypasses notify_delivery_mode_pref=suppress_all per W2 Leaf 6."
     },
     "volunteer_term_pending": {
       "delivery_mode": "transactional_immediate",

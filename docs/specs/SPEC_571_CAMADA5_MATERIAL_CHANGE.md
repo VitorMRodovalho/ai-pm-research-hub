@@ -54,7 +54,7 @@ Quatro frentes (work areas), mapeadas às cláusulas vivas:
 
 **Fora de escopo / gated:**
 - **Dispatch OUTWARD** (notificação de 30 dias aos capítulos, disparo da campanha de re-aceite a voluntários, ratificação PMI-GO ao vivo) — **gated em PM-OK + #334 (G12 DPO/ANPD)**. A máquina é construída **dormente**; o disparo é uma ação humana posterior (PARECER §C passos 5–7 são `[OUTWARD]`).
-- Mérito jurídico dos instrumentos / redação da cláusula de superação do Termo v2.3 (Opção A) — é **ação do jurídico do Ivan**, pré-requisito da ratificação, fora do código.
+- Mérito jurídico dos instrumentos / redação da cláusula de superação do Termo v2.3 (Opção A) — é **ação do jurídico do member A**, pré-requisito da ratificação, fora do código.
 - Reescrever o subsistema de approval chains (reusar ADR-0016).
 
 ## 1.2 Decisão de modelagem — RESOLVIDA: Opção A (consolidar)
@@ -238,7 +238,7 @@ PR-1 Fundações ──┬─→ PR-2 Version-pin (WA3) ──┐
 ## 7. Questões abertas (PM/legal — não-bloqueantes do backbone; resolver até o PR respectivo)
 
 1. **Composição do "Comitê de Curadoria"** p/ maioria simples (12.2.2): designação `ip_committee` vs roster explícito snapshot-ável; quórum mínimo. *(bloqueia PR-3 go-live, não o schema.)*
-2. **Sponsor PMI-GO = president_go?** O predicado vivo chaveia em `chapter_board`+`legal_signer`; "Chapter Sponsor" (Ivan) é o presidente. Confirmar semântica.
+2. **Sponsor PMI-GO = president_go?** O predicado vivo chaveia em `chapter_board`+`legal_signer`; "Chapter Sponsor" (member A) é o presidente. Confirmar semântica.
 3. **Âncora da janela consultiva de 15 úteis** (chain-open vs após president_go vs após committee_majority). Recomendação: após `president_go` (passo 5 precede passo 6).
 4. **"1ª contribuição material" por obra** (WA4): `content_products.created_at` (default recomendado, âncora canônica) vs first-drafted vs first-author. Fixa a versão regente irreversivelmente — ruling legal.
 5. **Governing Termo por-autor vs por-obra** em obras multi-autor (co-autores podem ter assinado versões diferentes). Recomendação: snapshot por-autor.

@@ -1,10 +1,10 @@
-# ADR-0076: PMI 3-dimensional volunteer model + Phase B base legal + retention bifurcated + Trentim firewall
+# ADR-0076: PMI 3-dimensional volunteer model + Phase B base legal + retention bifurcated + Path B firewall
 
 - Status: Proposed (Wave 1 draft p125)
 - Data: 2026-05-09
-- Aprovado por: Vitor (PM) + Ivan (DPO PMI-GO) — pendente sign-off Wave 4
+- Aprovado por: Vitor (PM) + member B (DPO PMI-GO) — pendente sign-off Wave 4
 - Autor: Vitor (PM) + Claude (council Wave 1 + Wave 3 synthesis)
-- Escopo: Modelo de dados e base jurídica para ingestão multi-fonte de dados de voluntários PMI (VEP + Community), retenção bifurcada, e firewall contra uso comercial (Path B Trentim). Complementa ADRs V4 (0006-0009), ADR-0011 (autoridade), ADR-0012 (schema consolidation), ADR-0067 (AI-augmented selection Art. 20).
+- Escopo: Modelo de dados e base jurídica para ingestão multi-fonte de dados de voluntários PMI (VEP + Community), retenção bifurcada, e firewall contra uso comercial (Path B member A). Complementa ADRs V4 (0006-0009), ADR-0011 (autoridade), ADR-0012 (schema consolidation), ADR-0067 (AI-augmented selection Art. 20).
 
 ## Contexto
 
@@ -141,7 +141,7 @@ Pre-existing data: 36/94 active engagements eligible for `agreement`; 58/94 fall
 
 **CRITICAL — Risk 2 do pre-mortem:** `anonymize_inactive_members()` atualmente usa `UPDATE public.members SET ...` que NÃO dispara FK CASCADE em `persons`. Migration E1 estende função para incluir explicit DELETE de novas tabelas (E1 migration 5 abaixo).
 
-### Princípio 7 — Trentim Path B firewall + Decision S2 (Wave 3 synth — IP Policy v3 commitment)
+### Princípio 7 — Path B firewall + Decision S2 (Wave 3 synth — IP Policy v3 commitment)
 
 **Cláusula obrigatória:** "Data persisted under este modelo é para selection + operational governance only. Commercial use (Path B consulting, white-label, sale, sharing with third parties beyond PMI partnership scope) requires new CR approved by all 5 ratifying chapters via existing approval_chains workflow."
 
@@ -149,7 +149,7 @@ Pre-existing data: 36/94 active engagements eligible for `agreement`; 58/94 fall
 
 Para a cláusula virar **legalmente vinculante** entre os 5 capítulos (não apenas cultural/process control), ela deve estar incorporada em **IP Policy v3** (revisão da v2) com:
 
-- **Owners**: Vitor (PM Núcleo) + Ivan (DPO PMI-GO) co-drivers
+- **Owners**: Vitor (PM Núcleo) + member B (DPO PMI-GO) co-drivers
 - **Deadline**: **Q3 2026 — até 30/Set/2026** (governance review com 5 chapter presidents agendado antes desta data)
 - **Cláusula penal mínima**: 3 meses budget do programa Núcleo IA pagos pelo capítulo violador para os 4 capítulos não-violadores (deterrence proporcional + remedy mensurável)
 - **Definição precisa de "commercial use"**: explicit list (consulting engagement com terceiro pago / white-label da methodology / sale of dataset access / sharing com 3rd party não-PMI / monetização direta ou indireta de aggregate insights)
@@ -162,7 +162,7 @@ Para a cláusula virar **legalmente vinculante** entre os 5 capítulos (não ape
 - **IP Policy v3 (post-Q3 2026)** — instrumento legalmente vinculante entre 5 capítulos
 - GitHub issue T-2 tracking IP Policy v3 progress
 
-**Status atual (2026-05-09 → Q3 2026)**: cultural/process control via ADR + COMMENT. Vitor + Ivan committed to converter para legal binding via IP Policy v3 até 30/Set/2026.
+**Status atual (2026-05-09 → Q3 2026)**: cultural/process control via ADR + COMMENT. Vitor + member B committed to converter para legal binding via IP Policy v3 até 30/Set/2026.
 
 **Important:** Esta cláusula é technical control = NULL. Enforcement real é (a) absence of bulk-export RPCs em E1/E2/E3/E4 implementation, (b) PII RLS gates, (c) cultural commitment até IP Policy v3 ratificada, (d) cláusula penal post-IP Policy v3.
 
@@ -186,7 +186,7 @@ Para a cláusula virar **legalmente vinculante** entre os 5 capítulos (não ape
 - Capture: voluntário no termo voluntariado v3 + opcional Cycle 3 (post-submit survey, não obrigatório)
 - Base legal: Art. 7 IX (LIA) — categoria não sensível, defensibility maior que gender
 - Status hoje: 0/103 populated → não há legacy gap
-- Mini-audit Ivan DPO: escopo agora é **só age_band** (não gender). Deadline mantido **30/Jun/2026**.
+- Mini-audit member B DPO: escopo agora é **só age_band** (não gender). Deadline mantido **30/Jun/2026**.
 - birth_date / exact age: NUNCA coletar. Apenas band.
 
 **Generalization hierarchies (k-anonymity ≥5 enforced server-side):**
@@ -195,14 +195,14 @@ Para a cláusula virar **legalmente vinculante** entre os 5 capítulos (não ape
 - `senioridade` → `junior (<5y) / mid (5-15y) / senior (>15y)`
 - `multi_chapter` → boolean
 - `industry` → 5 buckets via mapping (TBD em Wave 2 E4a)
-- `age_band` → enum direto (gated by Ivan DPO mini-audit 30/Jun)
+- `age_band` → enum direto (gated by member B DPO mini-audit 30/Jun)
 - ~~`gender`~~ → **REMOVED — out of scope per Decision S1**
 
 **E4a access tier:** PM + DPO only durante active cycle. Post-cycle retrospective: 5 chapter presidents acessam aggregate report.
 
 **Cross-tab limit:** 2 dimensions simultâneas max em v0.1. RPC RAISE EXCEPTION se p_dimensions length >2.
 
-**E4a CSV ships com 5 dimensões IMEDIATAMENTE pós-Wave 4 sign-off** (geo, industry, certs, senioridade, multi-chapter — todos sem audit dependency). age_band entra como 6ª dimensão pós Ivan sign-off (até 30/Jun/2026).
+**E4a CSV ships com 5 dimensões IMEDIATAMENTE pós-Wave 4 sign-off** (geo, industry, certs, senioridade, multi-chapter — todos sem audit dependency). age_band entra como 6ª dimensão pós member B sign-off (até 30/Jun/2026).
 
 **E4b dashboard:** NOT in p125 scope. Backlog Cycle 4 com prerequisitos: (a) age_band audit OK, (b) p125 cycle of operation completed, (c) explicit consent updated for Cycle 4.
 
@@ -247,7 +247,7 @@ Migration E1 e Worker E2 deployment **devem ser atômicos** (Risk 3 do pre-morte
 - **Single source of truth restored:** filiação ATUAL em `pmi_chapter_memberships`, HISTÓRICA em `selection_application_service_history`, ENTRADA em `selection_applications.chapter`. Zero ambiguidade conceitual.
 - **LGPD defensibility:** base legal explícita por field; LIA Art. 7 IX documentada; profilePrivate respeitados; profileAboutMe excluído LLM Cycle 3.
 - **Audit trail robusto:** snapshot evaluators viam preservado; canonical evolve via worker re-sync; cron alertas com source confidence.
-- **Trentim Path B firewall codified:** chapter presidents protegidos contra commercial use unauthorized.
+- **Path B firewall codified:** chapter presidents protegidos contra commercial use unauthorized.
 - **Pre-mortem risks mitigated:** Risk 2 (cron CASCADE) addressed via cron extension; Risk 3 (RPC drift) via invariant + atomicity protocol; Risk 5 (Issue D fallback) via multi-source.
 
 ### Negativas / risks
@@ -307,7 +307,7 @@ E3 + E4a são entregáveis subsequentes; E4b deferred.
 ## Aprovação requerida (Wave 4)
 
 - **PM (Vitor)**: aprova este ADR como master decision para p125 spec
-- **DPO (Ivan)**: signs base legal section (Princípio 2) + retention bifurcation (Princípio 6) + Trentim firewall (Princípio 7)
+- **DPO (member B)**: signs base legal section (Princípio 2) + retention bifurcation (Princípio 6) + Path B firewall (Princípio 7)
 - **Council Wave 2 review** (5 agents paralelos): data-architect + security-engineer + legal-counsel + platform-guardian + accountability-advisor — antes do sign-off final
 
 Após sign-off: status `Accepted`. Antes: `Proposed`.

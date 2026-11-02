@@ -149,7 +149,7 @@ functions whose ACL changed.
 **Council assessment:** PASS — no path-foreclosing decisions detected.
 
 The defensive nature of the work (REVOKE + COMMENT, no functional
-change) preserves all three member B paths:
+change) preserves all three paths:
 - **Path A (PMI institutional spinoff)**: improved audit-readiness +
   -85% advisor reduction = stronger institutional posture
 - **Path B (commercial)**: cleaner data governance = stronger DD

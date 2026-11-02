@@ -213,7 +213,7 @@ Nosso `ARTIA_CLIENT_ID/SECRET` enxerga apenas **4 projects** (de ~14 esperados p
 
 | Bloco PMO | Score atual | Estrutura criada Phase C.2 | Cobertura esperada na próxima auditoria |
 |---|---|---|---|
-| TAP (1) | 0% | 01.01 + 01.04 (TAP) + Project metadata | ≥75% (depende assinatura Ivan) |
+| TAP (1) | 0% | 01.01 + 01.04 (TAP) + Project metadata | ≥75% (depende assinatura member A) |
 | Cadastros (2) | 100% | (já OK) | 100% |
 | Templates (3) | 0% | 01.04 (TAP/Manual/Política IP/Acordos) + Project metadata | ≥75% |
 | Kick-off (4) | 0% | 01.03 (Kick-off realizado 2026-03-05) | 100% (Drive folder migrado + activity criada) |
@@ -556,7 +556,7 @@ Combinar **Opção A** (Discovery mode na EF) para visibilidade técnica + **Op�
 
 ### 7.1 Dependências externas
 - **Migração da pasta Kick-off** Drive pessoal → institucional **antes** de Fase C.5
-- **Aprovação do TAP** (assinatura Ivan) **antes** de Fase C.5 push de TAP
+- **Aprovação do TAP** (assinatura member A) **antes** de Fase C.5 push de TAP
 - **Política IP aprovada** Comitê de Curadoria **antes** de Fase C.5 push de Templates (atualmente em revisão — paralelo independente)
 
 ### 7.2 Riscos técnicos

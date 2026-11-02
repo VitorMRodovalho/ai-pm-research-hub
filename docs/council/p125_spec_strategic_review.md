@@ -120,7 +120,7 @@ Tabela atual: `(accessor_id, target_member_id, fields_accessed[], context, reaso
 
 **Recomendação**: A para v0.1 (E4a CSV only); B se E4b dashboard for retomado em Cycle 4.
 
-### R5 — member E Path B firewall (accountability-advisor)
+### R5 — Path B firewall (accountability-advisor)
 Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como "asset comercial" — se Path B (consulting) materializar, aparece como talent intelligence database. 5 chapter presidents que ratificaram IP Policy NÃO ratificaram esse uso. **ADR clause obrigatória**: "data persisted under este modelo é para selection + operational governance only; commercial use requires new CR approved by all 5 ratifying chapters."
 
 ---
@@ -188,13 +188,13 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 
 **Reversibility:** high (E4a CSV é additive RPC + admin-only; E4b dashboard é separate work).
 
-### Decision 7 — Retenção bifurcada + member E Path B firewall
+### Decision 7 — Retenção bifurcada + Path B firewall
 **Options:**
 - A) Anonymize cron 5y para todos (status quo)
 - B) Bifurcado: 5y para active members; 12 months para non-selected applicants; 90 days para profileAboutMe + bio fields independent of selection
 - C) 5y for all, com profileAboutMe explicit short retention (90d)
 
-**Recommend: B + ADR clause member E firewall.** Convergência legal-counsel + security-engineer. Implementação: cron bifurca lógica entre active member (5y) vs applicant-rejected (12m) vs free-text bio (90d). ADR clause obrigatória: "data persisted under este modelo = selection + operational governance only; commercial use requires new CR all 5 ratifying chapters."
+**Recommend: B + ADR clause Path B firewall.** Convergência legal-counsel + security-engineer. Implementação: cron bifurca lógica entre active member (5y) vs applicant-rejected (12m) vs free-text bio (90d). ADR clause obrigatória: "data persisted under este modelo = selection + operational governance only; commercial use requires new CR all 5 ratifying chapters."
 
 **Reversibility:** medium (cron logic reversível; mas dados anonimizados antes de 5y são unrecoverable).
 
@@ -272,7 +272,7 @@ Persistir 171 historical PMI roles + diversity aggregates posiciona dataset como
 | data-architect | 4 cross-deliverable contradictions, 5 schema decisions | Hybrid storage; agreement_certificate_id source; check_schema_invariants coverage; persons.chapter clarification |
 | security-engineer | 3 mandatory locks before E1 ship | profileAboutMe risk; k-anonymity cross-tab inhibition; isOpenToVolunteer ternary blacklist-by-silence; resumeUrl false permanence |
 | legal-counsel | 2 hard blockers + 5 PM decisions | Phase B base legal Art. 7 IX; controlador conjunto theory; retention bifurcated; Art. 33 transferência internacional Anthropic |
-| accountability-advisor | 3 institutional thresholds crossed | Cross-chapter authorization narrower theory; mid-cycle freeze owner naming; member E Path B firewall ADR clause; access tier policy |
+| accountability-advisor | 3 institutional thresholds crossed | Cross-chapter authorization narrower theory; mid-cycle freeze owner naming; Path B firewall ADR clause; access tier policy |
 | platform-guardian | YELLOW (1 ADR-0011 read-function pattern; 1 false-negative on pii_access_log) | Schema ready for greenfield E1; backlog candidate `get_tribe_attendance_grid` |
 
 ---

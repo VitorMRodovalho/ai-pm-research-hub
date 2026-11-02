@@ -3,11 +3,11 @@
 **Status:** Accepted (2026-06-28, Onda 2 FU-1, #952)
 **Supersede (parcial):** ADR-0025 §Q1 (sponsors com `manage_finance`) · seed `sponsor×sponsor → manage_partner` da migration `20260413400000_v4_phase4_engagement_permissions.sql` (reusada por ADR-0033 Phase 1).
 **Retém:** o trigger `notify_sponsor_finance_entry()` da ADR-0043 permanece como **registro histórico** (deixa de disparar — sponsor não passa mais no gate de escrita `manage_finance`).
-**Relacionado:** ADR-0007 (V4 `can()` autoridade), ADR-0011 (cutover V4), ADR-0033/0034 (partner subsystem V4), ADR-0023 (ladder), Onda 2 (handoff pt5/pt6; Ivan/sponsor audit), plano `~/.claude/plans/onda-2-auditoria-keen-kahn.md` (achado **F1** + **F9**), `docs/reference/V4_AUTHORITY_MODEL.md`.
+**Relacionado:** ADR-0007 (V4 `can()` autoridade), ADR-0011 (cutover V4), ADR-0033/0034 (partner subsystem V4), ADR-0023 (ladder), Onda 2 (handoff pt5/pt6; member A/sponsor audit), plano `~/.claude/plans/onda-2-auditoria-keen-kahn.md` (achado **F1** + **F9**), `docs/reference/V4_AUTHORITY_MODEL.md`.
 
 ## Contexto
 
-A designação institucional `sponsor` (presidentes de capítulo parceiro + o presidente da sede PMI-GO, Ivan, que apresenta o LIM ao PMI LATAM) tinha o seed `sponsor×sponsor` concedendo **5 actions** em scope `organization`:
+A designação institucional `sponsor` (presidentes de capítulo parceiro + o presidente da sede PMI-GO, member A, que apresenta o LIM ao PMI LATAM) tinha o seed `sponsor×sponsor` concedendo **5 actions** em scope `organization`:
 
 ```
 manage_finance               ← WRITE (ADR-0025 Q1)
@@ -47,8 +47,8 @@ Antes (todos `true`) → depois, via `can_by_member`:
 
 | Persona | manage_finance (W) | manage_partner (W) | view_finance (R) | view_partner (R) |
 |---|---|---|---|---|
-| 5 sponsors (Ivan/PMI-GO, Felipe/MG, Francisca/CE, Márcio/RS, Matheus/DF) | ❌ revogado | ❌ revogado | ✅ preservado | ✅ preservado |
-| GP/manager (Vitor, Fabricio) | ✅ | ✅ | ✅ | ✅ |
+| 5 sponsors (member A/PMI-GO, Felipe/MG, member B/CE, member C/RS, member D/DF) | ❌ revogado | ❌ revogado | ✅ preservado | ✅ preservado |
+| GP/manager (Vitor, member E) | ✅ | ✅ | ✅ | ✅ |
 | `chapter_board×liaison` (7) | — | ✅ (mantido) | — | ✅ (mantido) |
 
 Bloco `DO` in-tx fail-closed na migration (sponsor com 0 write seeds, 2 view seeds, 0 RPCs alvo ainda gateando em `manage_X`).

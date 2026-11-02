@@ -42,7 +42,7 @@ video_failed:             2    (Whisper 429 quota blocks per p199-a smoke)
 
 ### 1.1 — c-level-advisor (3-path optionality + sustainability)
 
-**Path most advanced by spec:** Path A (Trentim/PMI institutional). Specifically because G4.1 (org-owned service account, no DWD) eliminates the single largest succession-risk of PM-personal-Google-account custody.
+**Path most advanced by spec:** Path A (member A/PMI institutional). Specifically because G4.1 (org-owned service account, no DWD) eliminates the single largest succession-risk of PM-personal-Google-account custody.
 
 **Path most at risk:** Path A — but from B5 Whisper, not from #212 architecture. A live LGPD Art. 11 violation is incompatible with the institutional credibility Path A depends on. Whitepaper + LIM Detroit positioning both reference "responsible AI in PM" — a documented uncorrected violation makes that narrative adversarial to write.
 
@@ -88,9 +88,9 @@ video_failed:             2    (Whisper 429 quota blocks per p199-a smoke)
 
 **Whisper Art. 18 §IV / Art. 48 protocol:**
 - Internal disclosure: complete (this council record). File standalone critical issue TODAY with date precision.
-- External notification: per-individual (not generic notice), references Art. 18, includes mechanism to request deletion. Angeline drafts.
-- Art. 48 ANPD trigger: **engage Angeline for written determination** — if she concludes notification not required, that opinion becomes the audit defense document; if required, 2-business-day clock starts from her determination.
-- Audit trail (5 docs): issue ticket date · SQL affected-row count · Angeline written opinion · notification template + send log · deletion log per subject.
+- External notification: per-individual (not generic notice), references Art. 18, includes mechanism to request deletion. member B drafts.
+- Art. 48 ANPD trigger: **engage member B for written determination** — if she concludes notification not required, that opinion becomes the audit defense document; if required, 2-business-day clock starts from her determination.
+- Audit trail (5 docs): issue ticket date · SQL affected-row count · member B written opinion · notification template + send log · deletion log per subject.
 
 **Service account transition governance gates:**
 1. Infrastructure Custody Record (1-page, who holds what, succession)
@@ -109,7 +109,7 @@ All 4 = documentation tasks, 2-4h total, no legal review.
 **Recommendation:** Write Stage 2 gate criteria into ADR-0094 as explicit "Multi-Hub Governance Prerequisites" section. 30 minutes effort.
 
 **Budget/effort/sequencing of 5 LGPD docs for T-13d:**
-1. **Termo de Participação Speaker** — MUST SHIP FIRST (Art. 11 biometric gate). Angeline 6-8h, 3-4 business days.
+1. **Termo de Participação Speaker** — MUST SHIP FIRST (Art. 11 biometric gate). member B 6-8h, 3-4 business days.
 2. **Acordo de Cooperação Vassouras** — Before first student added. 4-6h drafting + back-and-forth with university.
 3. **Aviso Privacidade Externos** — Before first external accepts engagement (Art. 9 collection-time requirement). 4-6h.
 4. **Adendo Privacidade Principal (Whisper)** — Depends on Art. 48 determination. 2-3h.
@@ -160,14 +160,14 @@ All 4 = documentation tasks, 2-4h total, no legal review.
 - File as separate from #212 (cross-cutting LGPD remediation, not collab-hub work).
 - Block trigger via 1-line migration BEFORE any other code work this session.
 - Survey query result documented in migration header (1 transcription + 5 in-flight + 18 distinct candidates).
-- Angeline engaged for: (a) Art. 48 written determination; (b) Termo de Speaker draft; (c) Art. 18 §IV notification template.
-- Documentation: timestamp of discovery (2026-05-20), affected row count, Angeline's written opinion, notification template, deletion log. 5-doc audit trail.
+- member B engaged for: (a) Art. 48 written determination; (b) Termo de Speaker draft; (c) Art. 18 §IV notification template.
+- Documentation: timestamp of discovery (2026-05-20), affected row count, member B's written opinion, notification template, deletion log. 5-doc audit trail.
 
 **A2 — Vassouras (02-Jun T-13d) executes via manual runbook (M4) ONLY.**
 - NO #212 v1 code dependency for the event.
 - BUG-212.A (#217) fix shipped this week (30-min migration).
 - Vassouras MOU letter of intent initiated BEFORE 02-Jun (signing can follow; trail must exist).
-- Termo de Participação one-pager (Gate 1) drafted by Angeline before any external onboarded.
+- Termo de Participação one-pager (Gate 1) drafted by member B before any external onboarded.
 - PMI-RJ chapter president courtesy notification email sent (Gate 2) before PMI-RJ board members onboarded.
 - Service account provisioning (PM ops, 2-4h) + rotation runbook (1-page, BEFORE first key).
 
@@ -216,7 +216,7 @@ PM-led debrief 1-2 weeks after 02-Jun: what did the 30 students + academic coord
 | 0.1 | File Whisper Art. 11 remediation issue (separate from #212) | 30m | PM | All other AI work |
 | 0.2 | Apply `DROP TRIGGER trg_video_ai_analysis_on_upload` migration | 30m | PM/Claude | New transcription INSERTs |
 | 0.3 | Add `consent_voice_biometric_at` column + gate in `analyze_application_video_async` | 2-3h | Claude | Re-enabling trigger |
-| 0.4 | Engage Angeline: Art. 48 written determination + Art. 18 §IV notification template + Termo de Speaker draft | 3-5d legal | PM ↔ Angeline | Notifying affected candidate(s) |
+| 0.4 | Engage member B: Art. 48 written determination + Art. 18 §IV notification template + Termo de Speaker draft | 3-5d legal | PM ↔ member B | Notifying affected candidate(s) |
 | 0.5 | Document remediation audit chain (5 docs per Section 2.1 A1) | 1-2h | PM | ADR-0094 ratification |
 | 0.6 | BUG-212.A welcome URL fix (#217) | 30m | PM/Claude | External notifications |
 
@@ -225,11 +225,11 @@ PM-led debrief 1-2 weeks after 02-Jun: what did the 30 students + academic coord
 | # | Item | Effort | Owner |
 |---|------|--------|-------|
 | 1.1 | Manual runbook for ~50-person Vassouras add (SQL + spreadsheet) | 2-3h | PM/Claude |
-| 1.2 | Vassouras MOU letter of intent (drafted + initiated with Universidade) | 4-6h drafting + back-and-forth | PM ↔ Angeline ↔ Universidade counterpart |
-| 1.3 | Termo de Participação one-pager (Gate 1 — individual external acceptance) | 2-3h | Angeline |
+| 1.2 | Vassouras MOU letter of intent (drafted + initiated with Universidade) | 4-6h drafting + back-and-forth | PM ↔ member B ↔ Universidade counterpart |
+| 1.3 | Termo de Participação one-pager (Gate 1 — individual external acceptance) | 2-3h | member B |
 | 1.4 | PMI-RJ chapter president courtesy notification email (Gate 2) | 30m + 1-week response window | PM |
 | 1.5 | Service account org-owned provisioning (PM ops) + rotation runbook | 2-4h ops + 1h doc | PM |
-| 1.6 | Aviso Privacidade Externos (Art. 9 collection-time doc) | 4-6h | Angeline |
+| 1.6 | Aviso Privacidade Externos (Art. 9 collection-time doc) | 4-6h | member B |
 
 ### P1 — POST-VASSOURAS, OBSERVE & DECIDE (~2-4 weeks after 02-Jun)
 
@@ -285,7 +285,7 @@ Codify in `docs/council/README.md`:
 > - (b) Multi-chapter / inter-institutional decisions affecting PMI relationships
 > - (c) >50h-effort architectural work (ADRs spanning multiple primitives)
 > - (d) Pre-prod audit-readiness checks before a wave ships
-> - (e) Strategic milestones touching path optionality (Trentim/LIM/whitepaper)
+> - (e) Strategic milestones touching path optionality (member A/LIM/whitepaper)
 >
 > For implementation sub-issues spawned from a Tier 3 spec, default to Tier 1 (platform-guardian + code-reviewer at close). Tier 2 specialists optional per ADR-coverage triggers (security for auth changes, data-architect for migrations, etc.).
 
@@ -320,7 +320,7 @@ Council process is net positive for #212-class decisions. Continue for similar s
 To convert this synthesis into action:
 
 1. **Approve filing Whisper Art. 11 remediation as standalone critical issue (separate from #212).** Action TODAY.
-2. **Authorize trigger DROP migration TODAY (1-line).** Pre-commits the architecture decision; reversible if Angeline determination opens a different path.
+2. **Authorize trigger DROP migration TODAY (1-line).** Pre-commits the architecture decision; reversible if member B determination opens a different path.
 3. **Authorize Vassouras to execute via manual runbook only (M4).** No #212 v1 code dependency on the event.
 4. **Approve ADR-0094 ratification GATING: cannot move from Draft → Proposed until Whisper remediation Phase 1 is live.** Adds discipline to spec process.
 5. **Approve 5-lens Tier 3 panel composition + invocation criteria for `docs/council/README.md`.** Codifies the process for future milestones.

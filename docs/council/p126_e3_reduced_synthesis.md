@@ -56,7 +56,7 @@ Full E3 scope includes:
 | Issue A — Calendar webhook deploy | Apps Script auth chain + Google Workspace coordination | T-3 + handoff p127 |
 | Issue B — schedule_interview gate fix | Affects 10 active candidates; needs gate_attempts_log audit + PM decision | ISS-p126-E |
 | Issue D — end_date backfill | Worker E2 `setEngagementEndDateSource` handles + Hotfix Wave 0 covers 36/94 | Auto via /ingest re-run pós deploy |
-| Cron compliance D-60/D-30/D-7 | Chapter VP coordination (Decision 9 dry-run staging) | T-3 + chapter VP outreach via Ivan |
+| Cron compliance D-60/D-30/D-7 | Chapter VP coordination (Decision 9 dry-run staging) | T-3 + chapter VP outreach via member A |
 | import_vep_applications RPC patch (Issue C body) | Drift risk if /ingest re-runs antes do RPC patch | Add to E3 full scope p127 first migration |
 
 ## Compile/test status
@@ -86,9 +86,9 @@ Full E3 scope includes:
 ## Handoff to p127
 
 After this commit + push, sessão p126 closes. p127 starts CLEAN with:
-- ADR-0076 status `Proposed` (still pending Ivan async sign-off)
+- ADR-0076 status `Proposed` (still pending member A async sign-off)
 - E1+E2+E3-reduced shipped to GitHub
 - E3 full scope (Issue A + Issue B + cron + RPC patch) as next entregável
-- E4a CSV waiting on age_band audit (T-5, Ivan deadline 30/Jun/2026)
+- E4a CSV waiting on age_band audit (T-5, member A deadline 30/Jun/2026)
 
 Next session boot prompt updated em `memory/next_session_prompt.md`.
