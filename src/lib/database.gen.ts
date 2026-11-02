@@ -36746,9 +36746,10 @@ export type Database = {
         Args: { p_code: string; p_email: string; p_status: string }
         Returns: undefined
       }
-      set_site_config:
-        | { Args: { p_key: string; p_value: Json }; Returns: undefined }
-        | { Args: { p_key: string; p_value: string }; Returns: undefined }
+      set_site_config: {
+        Args: { p_key: string; p_value: Json }
+        Returns: undefined
+      }
       set_tribe_video: {
         Args: { p_duration?: string; p_tribe_id: number; p_url: string }
         Returns: Json
