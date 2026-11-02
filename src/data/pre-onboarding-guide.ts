@@ -59,11 +59,11 @@ export const journey: JourneyStep[] = [
     link: { href: 'https://nucleoia.pmigo.org.br/governance/glossario', label: 'Guia do voluntário + glossário' },
   },
   {
-    title: 'Participe do kickoff e escolha sua tribo',
-    where: 'Evento de abertura do ciclo',
+    title: 'Escolha sua tribo na plataforma',
+    where: 'Plataforma → Workspace',
     detail:
-      'No kickoff os temas de pesquisa do ciclo são apresentados: cada tribo com vídeo do líder, descrição da temática, proposta de valor, marcos de entrega e LinkedIn da liderança. A <strong>escolha da tribo é liberada a partir do kickoff</strong> (com o termo assinado). Ao final do evento há salas com os líderes para tirar dúvidas antes de decidir.',
-    link: { href: 'https://nucleoia.pmigo.org.br/reunioes-gerais', label: 'Agenda de reuniões' },
+      'Assim que o Termo estiver assinado, o seletor de tribos aparece no seu Workspace. Não é preciso esperar um evento de abertura do ciclo. Cada tribo tem uma página pública com a temática e o horário da reunião, e cada opção do seletor tem o link <strong>Ver a tribo</strong>. Escolha, conte por que quer participar e envie o pedido. O líder da tribo tem <strong>7 dias</strong> para responder. Se o prazo passar sem resposta, isso não é uma recusa: você pode pedir de novo ou escolher outra tribo. Dúvidas sobre a escolha ou o pedido: escreva para <strong>nucleoia@pmigo.org.br</strong>.',
+    link: { href: 'https://nucleoia.pmigo.org.br/#tribes', label: 'Conhecer as tribos' },
   },
 ];
 
@@ -107,7 +107,7 @@ export const preFaq: PreFaqEntry[] = [
   },
   {
     q: 'Quando escolho minha tribo? Onde vejo os detalhes de cada uma?',
-    a: 'A escolha é liberada <strong>a partir do kickoff do ciclo</strong>, e exige o termo assinado. No kickoff, cada tema de pesquisa é apresentado com vídeo do líder, descrição, proposta de valor, marcos de entrega e LinkedIn da liderança, e há salas com os líderes ao final para tirar dúvidas. Não se preocupe em decidir antes disso.',
+    a: 'Assim que o <strong>Termo estiver assinado</strong>, sem esperar um evento de abertura do ciclo. O seletor aparece no seu Workspace, e cada opção tem o link <strong>Ver a tribo</strong>, com a temática e o horário da reunião; as mesmas páginas estão na seção de tribos do site. O líder da tribo tem <strong>7 dias</strong> para responder ao seu pedido. Se o prazo passar sem resposta, isso não é uma recusa: peça de novo ou escolha outra tribo. Dúvidas: escreva para <strong>nucleoia@pmigo.org.br</strong>.',
   },
   {
     q: 'O que significa a barra "Completude do Perfil"?',

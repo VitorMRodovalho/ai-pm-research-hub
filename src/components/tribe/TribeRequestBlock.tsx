@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatMeetingSlots, type TribePublicProfile } from '../../lib/tribes/public-profile';
 
 // Tribe Selection Híbrida — PR2 (researcher-facing). See docs/specs/SPEC_TRIBE_SELECTION_HYBRID.md §5.
 //
@@ -17,6 +18,12 @@ import { useState, useEffect, useCallback } from 'react';
 //
 // Live cohort today = 0 (every active researcher already has a tribe); this island lights up for
 // the future promoted-guest cohort. No localStorage dismiss: needing a tribe is not optional noise.
+//
+// Onboarding wave 0 (R7): each option links to the public tribe page and shows the meeting time, so
+// the choice is not made on title and free slots alone. The time comes from get_tribe_public_profiles
+// (anon reader, recurring rule, #2609), read only when the picker is going to render. If that read
+// fails, the option shows no time at all: "to be defined" is shown only when the profile came back
+// with no slots, because saying it without having read would be a claim about the tribe.
 
 const MIN_MESSAGE = 50;
 // #1256: withdraw_from_initiative enforces reason >= 10; mirror it client-side to gate the button.
@@ -87,6 +94,11 @@ interface Copy {
   // #1877: per-option slot badge; a full tribe is shown disabled instead of failing at submit.
   slotsLeft: (n: number) => string;
   tribeFull: string;
+  // Onboarding wave 0 (R7): link to /tribe/<id> and the meeting time on each option.
+  viewTribe: string;
+  viewTribeAria: (title: string) => string;
+  scheduleLabel: string;
+  scheduleTbd: string;
   messageLabel: string;
   messagePlaceholder: string;
   charsLeft: (n: number) => string;
@@ -144,6 +156,10 @@ const COPY: Record<string, Copy> = {
     tribeLegend: 'Tribos disponíveis',
     slotsLeft: (n) => `${n} vaga${n === 1 ? '' : 's'}`,
     tribeFull: 'Lotada',
+    viewTribe: 'Ver a tribo',
+    viewTribeAria: (title) => `Ver a página da tribo ${title} (abre em nova aba)`,
+    scheduleLabel: 'Reunião',
+    scheduleTbd: 'horário a definir',
     messageLabel: 'Por que você quer entrar nesta tribo?',
     messagePlaceholder: 'Conte sua motivação, experiência e o que pode contribuir (mín. 50 caracteres).',
     charsLeft: (n) => (n > 0 ? `Faltam ${n} caractere${n === 1 ? '' : 's'}` : 'Pronto para enviar'),
@@ -199,6 +215,10 @@ const COPY: Record<string, Copy> = {
     tribeLegend: 'Available tribes',
     slotsLeft: (n) => `${n} spot${n === 1 ? '' : 's'} left`,
     tribeFull: 'Full',
+    viewTribe: 'See the tribe',
+    viewTribeAria: (title) => `See the ${title} tribe page (opens in a new tab)`,
+    scheduleLabel: 'Meeting',
+    scheduleTbd: 'time to be defined',
     messageLabel: 'Why do you want to join this tribe?',
     messagePlaceholder: 'Share your motivation, experience and what you can contribute (min. 50 characters).',
     charsLeft: (n) => (n > 0 ? `${n} character${n === 1 ? '' : 's'} to go` : 'Ready to send'),
@@ -252,6 +272,10 @@ const COPY: Record<string, Copy> = {
     tribeLegend: 'Tribus disponibles',
     slotsLeft: (n) => `${n} cupo${n === 1 ? '' : 's'}`,
     tribeFull: 'Llena',
+    viewTribe: 'Ver la tribu',
+    viewTribeAria: (title) => `Ver la página de la tribu ${title} (se abre en una pestaña nueva)`,
+    scheduleLabel: 'Reunión',
+    scheduleTbd: 'horario por definir',
     messageLabel: '¿Por qué quieres entrar en esta tribu?',
     messagePlaceholder: 'Cuenta tu motivación, experiencia y lo que puedes aportar (mín. 50 caracteres).',
     charsLeft: (n) => (n > 0 ? `Faltan ${n} carácter${n === 1 ? '' : 'es'}` : 'Listo para enviar'),
@@ -314,6 +338,8 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   const [leaving, setLeaving] = useState(false);
   const [leaveReason, setLeaveReason] = useState('');
   const [leaveBlocked, setLeaveBlocked] = useState<string | null>(null);
+  // R7: public profile per tribe_id. null = not read (or the read failed): the option then shows no time.
+  const [profiles, setProfiles] = useState<Map<number, TribePublicProfile> | null>(null);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -322,7 +348,15 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     if (!sb) return;
     const { data, error } = await sb.rpc('get_my_tribe_request_context');
     if (error || !data || typeof data !== 'object') return;
-    setCtx(data as Context);
+    const next = data as Context;
+    setCtx(next);
+    // R7: only when the picker will render, and without blocking it (the time fills in after).
+    if (next.eligible && !next.pending && Array.isArray(next.tribes) && next.tribes.length > 0) {
+      const { data: rows, error: profErr } = await sb.rpc('get_tribe_public_profiles');
+      if (!profErr && Array.isArray(rows)) {
+        setProfiles(new Map((rows as TribePublicProfile[]).map((p) => [p.tribe_id, p])));
+      }
+    }
   }, [getSb]);
 
   // Boot like the sibling islands: wait for the nav member, then load once.
@@ -613,6 +647,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   }
 
   // Picker — eligible researcher without a tribe.
+  const pickerLangPrefix = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
 
   return (
     <section role="region" aria-label={copy.ariaLabel} className="mb-6">
@@ -628,16 +663,22 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ctx.tribes.map((tr) => {
               const full = typeof tr.slots_left === 'number' && tr.slots_left <= 0;
+              // R7: time only from a profile that was actually read; "to be defined" only when it has no slots.
+              const profile = profiles?.get(tr.tribe_id);
+              const schedule = profile ? (formatMeetingSlots(profile.slots, lang) || copy.scheduleTbd) : '';
               return (
-              <label
+              <div
                 key={tr.tribe_id}
-                className={`flex items-center gap-2 min-h-[44px] px-3 rounded-lg border transition-colors focus-within:ring-2 focus-within:ring-teal/50 ${
+                className={`rounded-lg border transition-colors focus-within:ring-2 focus-within:ring-teal/50 ${
                   full
-                    ? 'border-[var(--border-subtle)] opacity-60 cursor-not-allowed'
+                    ? 'border-[var(--border-subtle)]'
                     : selected === tr.tribe_id
-                      ? 'border-teal bg-teal/10 cursor-pointer'
-                      : 'border-[var(--border-subtle)] hover:bg-[var(--surface-hover)] cursor-pointer'
+                      ? 'border-teal bg-teal/10'
+                      : 'border-[var(--border-subtle)] hover:bg-[var(--surface-hover)]'
                 }`}
+              >
+              <label
+                className={`flex items-center gap-2 min-h-[44px] px-3 ${full ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <input
                   type="radio"
@@ -648,13 +689,31 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
                   onChange={() => setSelected(tr.tribe_id)}
                   className="accent-teal"
                 />
-                <span className="text-sm font-semibold text-[var(--text-primary)] flex-1">{tr.title}</span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold text-[var(--text-primary)]">{tr.title}</span>
+                  {schedule && (
+                    <span className="block text-xs text-[var(--text-secondary)]">{copy.scheduleLabel}: {schedule}</span>
+                  )}
+                </span>
                 {typeof tr.slots_left === 'number' && (
                   <span className={`text-xs font-semibold whitespace-nowrap ${full ? 'text-[var(--text-muted)]' : 'text-teal'}`}>
                     {full ? copy.tribeFull : copy.slotsLeft(tr.slots_left)}
                   </span>
                 )}
               </label>
+              {/* Outside the label, so following the link never toggles the radio. New tab, so the
+                  motivation already typed below is not lost. Shown for a full tribe too: reading it is
+                  still useful, and the radio stays disabled. */}
+              <a
+                href={`${pickerLangPrefix}/tribe/${tr.tribe_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={copy.viewTribeAria(tr.title)}
+                className="flex items-center min-h-[44px] px-3 text-xs font-semibold text-teal underline underline-offset-2 hover:opacity-80"
+              >
+                {copy.viewTribe}
+              </a>
+              </div>
               );
             })}
           </div>
