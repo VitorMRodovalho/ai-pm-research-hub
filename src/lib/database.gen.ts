@@ -24283,6 +24283,7 @@ export type Database = {
           nucleo_contract_end: string | null
           nucleo_contract_start: string | null
           objective_score_avg: number | null
+          opening_alert_processed_at: string | null
           organization_id: string
           pert_band_lower: number | null
           pert_band_upper: number | null
@@ -24442,6 +24443,7 @@ export type Database = {
           nucleo_contract_end?: string | null
           nucleo_contract_start?: string | null
           objective_score_avg?: number | null
+          opening_alert_processed_at?: string | null
           organization_id?: string
           pert_band_lower?: number | null
           pert_band_upper?: number | null
@@ -24601,6 +24603,7 @@ export type Database = {
           nucleo_contract_end?: string | null
           nucleo_contract_start?: string | null
           objective_score_avg?: number | null
+          opening_alert_processed_at?: string | null
           organization_id?: string
           pert_band_lower?: number | null
           pert_band_upper?: number | null
@@ -31671,6 +31674,7 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: number
       }
+      _selection_opening_new_applications_cron: { Args: never; Returns: Json }
       _selection_status_recompute_cron: { Args: never; Returns: Json }
       _selection_stuck_scheduled_rescue_cron: { Args: never; Returns: Json }
       _selection_unbooked_rescue_cron: { Args: never; Returns: Json }
