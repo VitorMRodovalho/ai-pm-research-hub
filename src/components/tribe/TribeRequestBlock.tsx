@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatMeetingSlots, type TribePublicProfile } from '../../lib/tribes/public-profile';
+import { phoneVisibleNotice } from '../../lib/whatsapp-group-notice';
 
 // Tribe Selection Híbrida — PR2 (researcher-facing). See docs/specs/SPEC_TRIBE_SELECTION_HYBRID.md §5.
 //
@@ -24,6 +25,14 @@ import { formatMeetingSlots, type TribePublicProfile } from '../../lib/tribes/pu
 // (anon reader, recurring rule, #2609), read only when the picker is going to render. If that read
 // fails, the option shows no time at all: "to be defined" is shown only when the profile came back
 // with no slots, because saying it without having read would be a claim about the tribe.
+//
+// Onboarding wave 0, PR-2 (#2888): a self-request that expired in the last 14 days comes back as `expired`
+// (same shape as `pending`), and the block says so before the picker: it is not a rejection, "Request again"
+// reopens the picker with the same tribe and the previous message, "See other tribes" opens it empty. The
+// pending, expired and empty states name the onboarding contacts (get_onboarding_contacts, names only) and
+// the onboarding WhatsApp group (get_community_group_link, with the phone notice next to the link). Without
+// the group link the channel falls back to the Núcleo address, without the response-time promise, which the
+// owner tied to the group and the named contacts (decision of 01/11/2026).
 
 const MIN_MESSAGE = 50;
 // #1256: withdraw_from_initiative enforces reason >= 10; mirror it client-side to gate the button.
@@ -77,7 +86,16 @@ interface Context {
   // BEFORE the reason form. undefined/null (older backend / non-has_tribe) is treated as "not blocked".
   can_self_leave?: boolean | null;
   pending: PendingRequest | null;
+  // PR-2 (#2888): the caller's latest self-request, when it expired in the last 14 days and nothing came after it.
+  // Absent (older backend) or null = never asked, or asked again since.
+  expired?: PendingRequest | null;
   tribes: TribeOption[];
+}
+
+// PR-2: who answers and through which channel. null = not read yet (the block waits instead of flashing the fallback).
+interface OnboardingContact {
+  groupUrl: string | null;
+  names: string[];
 }
 
 interface Copy {
@@ -139,6 +157,20 @@ interface Copy {
   toastSent: string;
   toastError: string;
   toastFull: string;
+  // PR-2 (#2888): expired request state.
+  expiredTitle: string;
+  expiredBody: (title: string) => string;
+  expiredRetry: string;
+  expiredSeeOthers: string;
+  expiredUnavailable: (title: string) => string;
+  // PR-2: onboarding contact, in the pending, expired and empty states.
+  contactLeadPending: string;
+  contactLeadExpired: string;
+  contactLeadEmpty: string;
+  contactPeople: (names: string) => string;
+  contactGroup: string;
+  contactEmail: string;
+  contactResponse: string;
 }
 
 // #1877: the Núcleo's official address, the same one the rest of the site already shows.
@@ -178,7 +210,7 @@ const COPY: Record<string, Copy> = {
     cancelling: 'Cancelando…',
     toastCancelled: 'Pedido cancelado. Escolha uma tribo.',
     emptyTitle: 'Nenhuma tribo disponível',
-    emptyBody: 'Não há tribos abertas para ingresso no momento. Fale com a coordenação do Núcleo.',
+    emptyBody: 'Não há tribos abertas para ingresso no momento.',
     termTitle: 'Assine seu termo de voluntário',
     termBody: 'Para escolher uma tribo de pesquisa, você precisa primeiro assinar o Termo de Adesão ao Serviço Voluntário. Assim que ele estiver assinado, a escolha de tribo aparece aqui.',
     termCta: 'Assinar termo de voluntário',
@@ -203,6 +235,18 @@ const COPY: Record<string, Copy> = {
     // #1350: the request RPC now blocks a full tribe with "Tribo lotada (X/Y)". Surface it clearly
     // instead of the generic error, so the researcher picks another tribe.
     toastFull: 'Esta tribo está lotada. Escolha outra tribo.',
+    expiredTitle: 'Seu pedido passou do prazo',
+    expiredBody: (title) => `Seu pedido para a tribo ${title} passou do prazo sem resposta do líder. Isso não é uma recusa.`,
+    expiredRetry: 'Pedir de novo',
+    expiredSeeOthers: 'Ver outras tribos',
+    expiredUnavailable: (title) => `A tribo ${title} não está recebendo pedidos agora.`,
+    contactLeadPending: 'Dúvidas sobre o pedido? Fale com o time de onboarding.',
+    contactLeadExpired: 'O time de onboarding escolhe com você.',
+    contactLeadEmpty: 'Fale com o time de onboarding para encontrar sua tribo.',
+    contactPeople: (names) => `Quem responde: ${names}.`,
+    contactGroup: 'Entrar no grupo de WhatsApp do onboarding do Núcleo',
+    contactEmail: 'Escrever para o Núcleo',
+    contactResponse: 'Resposta em até 3 dias úteis.',
   },
   'en-US': {
     ariaLabel: 'Request to join a tribe',
@@ -237,7 +281,7 @@ const COPY: Record<string, Copy> = {
     cancelling: 'Cancelling…',
     toastCancelled: 'Request cancelled. Choose a tribe.',
     emptyTitle: 'No tribes available',
-    emptyBody: 'There are no tribes open to join right now. Contact the Núcleo coordination.',
+    emptyBody: 'There are no tribes open to join right now.',
     termTitle: 'Sign your volunteer term',
     termBody: 'To choose a research tribe, you first need to sign the Volunteer Service Agreement. Once it is signed, tribe selection will appear here.',
     termCta: 'Sign volunteer term',
@@ -260,6 +304,18 @@ const COPY: Record<string, Copy> = {
     toastSent: 'Request sent! The tribe leader will review it.',
     toastError: 'Could not send. Please try again.',
     toastFull: 'This tribe is full. Please choose another tribe.',
+    expiredTitle: 'Your request passed its deadline',
+    expiredBody: (title) => `Your request to join the ${title} tribe passed its deadline without a reply from the leader. This is not a rejection.`,
+    expiredRetry: 'Request again',
+    expiredSeeOthers: 'See other tribes',
+    expiredUnavailable: (title) => `The ${title} tribe is not taking requests right now.`,
+    contactLeadPending: 'Questions about your request? Talk to the onboarding team.',
+    contactLeadExpired: 'The onboarding team will choose with you.',
+    contactLeadEmpty: 'Talk to the onboarding team to find your tribe.',
+    contactPeople: (names) => `Who answers: ${names}.`,
+    contactGroup: 'Join the Hub onboarding WhatsApp group',
+    contactEmail: 'Write to the Núcleo',
+    contactResponse: 'Reply within 3 business days.',
   },
   'es-LATAM': {
     ariaLabel: 'Solicitar ingreso a una tribu',
@@ -294,7 +350,7 @@ const COPY: Record<string, Copy> = {
     cancelling: 'Cancelando…',
     toastCancelled: 'Solicitud cancelada. Elige una tribu.',
     emptyTitle: 'No hay tribus disponibles',
-    emptyBody: 'No hay tribus abiertas para unirse en este momento. Contacta a la coordinación del Núcleo.',
+    emptyBody: 'No hay tribus abiertas para unirse en este momento.',
     termTitle: 'Firma tu término de voluntariado',
     termBody: 'Para elegir una tribu de investigación, primero debes firmar el Término de Adhesión al Servicio Voluntario. Una vez firmado, la elección de tribu aparecerá aquí.',
     termCta: 'Firmar término de voluntariado',
@@ -317,11 +373,67 @@ const COPY: Record<string, Copy> = {
     toastSent: '¡Solicitud enviada! El líder de la tribu la revisará.',
     toastError: 'No se pudo enviar. Inténtalo de nuevo.',
     toastFull: 'Esta tribu está llena. Elige otra tribu.',
+    expiredTitle: 'Tu solicitud pasó del plazo',
+    expiredBody: (title) => `Tu solicitud para entrar en la tribu ${title} pasó del plazo sin respuesta del líder. Esto no es un rechazo.`,
+    expiredRetry: 'Solicitar de nuevo',
+    expiredSeeOthers: 'Ver otras tribus',
+    expiredUnavailable: (title) => `La tribu ${title} no está recibiendo solicitudes ahora.`,
+    contactLeadPending: '¿Dudas sobre tu solicitud? Habla con el equipo de onboarding.',
+    contactLeadExpired: 'El equipo de onboarding elige contigo.',
+    contactLeadEmpty: 'Habla con el equipo de onboarding para encontrar tu tribu.',
+    contactPeople: (names) => `Quién responde: ${names}.`,
+    contactGroup: 'Entrar al grupo de WhatsApp de onboarding del Núcleo',
+    contactEmail: 'Escribir al Núcleo',
+    contactResponse: 'Respuesta en hasta 3 días hábiles.',
   },
 };
 
 interface Props {
   lang?: string;
+}
+
+function joinNames(names: string[], lang: string): string {
+  try {
+    return new (Intl as any).ListFormat(lang, { style: 'long', type: 'conjunction' }).format(names);
+  } catch {
+    return names.join(', ');
+  }
+}
+
+// PR-2: the onboarding contact, shared by the pending, expired and empty states. The group invite comes from
+// get_community_group_link and is never in the bundle (#740); the phone notice sits next to it (#2908).
+function ContactBlock({ lead, contact, copy, lang }: { lead: string; contact: OnboardingContact; copy: Copy; lang: string }) {
+  const { groupUrl, names } = contact;
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+      <p className="text-sm font-semibold text-[var(--text-primary)]">{lead}</p>
+      {names.length > 0 && (
+        <p className="text-xs text-[var(--text-secondary)] mt-1">{copy.contactPeople(joinNames(names, lang))}</p>
+      )}
+      {groupUrl && (
+        <>
+          <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">{phoneVisibleNotice(lang)}</p>
+          <a
+            href={groupUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-flex items-center min-h-[44px] px-4 rounded-lg bg-emerald-600 text-white text-sm font-bold no-underline hover:bg-emerald-700"
+          >
+            {copy.contactGroup} →
+          </a>
+          <p className="text-xs text-[var(--text-secondary)] mt-1.5">{copy.contactResponse}</p>
+        </>
+      )}
+      {!groupUrl && (
+        <a
+          href={`mailto:${COORDINATION_EMAIL}`}
+          className="mt-2 inline-flex items-center min-h-[44px] text-sm font-semibold text-teal underline underline-offset-2 break-all"
+        >
+          {copy.contactEmail}: {COORDINATION_EMAIL}
+        </a>
+      )}
+    </div>
+  );
 }
 
 export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
@@ -340,8 +452,24 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   const [leaveBlocked, setLeaveBlocked] = useState<string | null>(null);
   // R7: public profile per tribe_id. null = not read (or the read failed): the option then shows no time.
   const [profiles, setProfiles] = useState<Map<number, TribePublicProfile> | null>(null);
+  // PR-2: onboarding contact (null until read) and whether the expired state gave way to the picker.
+  const [contact, setContact] = useState<OnboardingContact | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+
+  // PR-2: both reads are non-blocking; a failed one reads as "nothing to show" (no names, no group link).
+  const loadContact = useCallback(async (sb: any) => {
+    const [groupRes, peopleRes] = await Promise.all([
+      sb.rpc('get_community_group_link', { p_group: 'onboarding' }).then((r: any) => r, () => null),
+      sb.rpc('get_onboarding_contacts').then((r: any) => r, () => null),
+    ]);
+    const groupUrl = groupRes?.data?.success && typeof groupRes.data.whatsapp_url === 'string' ? groupRes.data.whatsapp_url : null;
+    const names = Array.isArray(peopleRes?.data)
+      ? (peopleRes.data as any[]).map((c) => (typeof c?.name === 'string' ? c.name.trim() : '')).filter(Boolean)
+      : [];
+    setContact({ groupUrl, names });
+  }, []);
 
   const load = useCallback(async () => {
     const sb = getSb();
@@ -350,6 +478,9 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     if (error || !data || typeof data !== 'object') return;
     const next = data as Context;
     setCtx(next);
+    // PR-2: the contact only where it is shown (pending, expired, eligible with no tribe to pick).
+    const noTribes = !Array.isArray(next.tribes) || next.tribes.length === 0;
+    if (next.pending || (next.eligible && (next.expired || noTribes))) loadContact(sb);
     // R7: only when the picker will render, and without blocking it (the time fills in after).
     if (next.eligible && !next.pending && Array.isArray(next.tribes) && next.tribes.length > 0) {
       const { data: rows, error: profErr } = await sb.rpc('get_tribe_public_profiles');
@@ -357,7 +488,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
         setProfiles(new Map((rows as TribePublicProfile[]).map((p) => [p.tribe_id, p])));
       }
     }
-  }, [getSb]);
+  }, [getSb, loadContact]);
 
   // Boot like the sibling islands: wait for the nav member, then load once.
   useEffect(() => {
@@ -385,6 +516,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
       (window as any).toast?.(copy.toastSent, 'success');
       setMessage('');
       setSelected(null);
+      setPickerOpen(false);
       await load(); // re-read -> now shows the pending state
     } catch (e) {
       // #1350: the request RPC blocks a full tribe ("Tribo lotada (X/Y)"). Show that specific,
@@ -451,6 +583,23 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     }
   }, [getSb, ctx, leaving, leaveReason, copy, load]);
 
+  // PR-2 (#2888): "Request again" reopens the picker with the same tribe and the previous message; the send is
+  // the same request_tribe_assignment. A tribe that is full or out of self-service is not pre-selected.
+  const retryExpired = useCallback(() => {
+    const exp = ctx?.expired;
+    if (!exp) return;
+    const option = (ctx?.tribes || []).find((t) => t.tribe_id === exp.tribe_id);
+    const open = !!option && !(typeof option.slots_left === 'number' && option.slots_left <= 0);
+    setSelected(open ? exp.tribe_id : null);
+    setMessage(exp.message || '');
+    setPickerOpen(true);
+  }, [ctx]);
+
+  const seeOtherTribes = useCallback(() => {
+    setSelected(null);
+    setPickerOpen(true);
+  }, []);
+
   if (!ctx) return null; // loading / not hydrated
 
   // Pending state — the request was already sent, awaiting the leader.
@@ -510,6 +659,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
                   </div>
                 )}
               </div>
+              {contact && <ContactBlock lead={copy.contactLeadPending} contact={contact} copy={copy} lang={lang} />}
             </div>
           </div>
         </div>
@@ -634,6 +784,47 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     return null;
   }
 
+  // PR-2 (#2888): the last self-request expired. Say so before the picker: it is not a rejection, and the way back
+  // is one click. "Request again" only when that tribe can still take the request.
+  if (ctx.expired && !pickerOpen) {
+    const exp = ctx.expired;
+    const hasTribes = Array.isArray(ctx.tribes) && ctx.tribes.length > 0;
+    const option = hasTribes ? ctx.tribes.find((t) => t.tribe_id === exp.tribe_id) : undefined;
+    const sameOpen = !!option && !(typeof option.slots_left === 'number' && option.slots_left <= 0);
+    return (
+      <section role="region" aria-label={copy.ariaLabel} className="mb-6">
+        <div className="rounded-2xl border border-amber-300/60 bg-amber-50 dark:bg-amber-950/20 p-5">
+          <h2 className="text-base font-extrabold text-navy dark:text-amber-200">{copy.expiredTitle}</h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.expiredBody(exp.title)}</p>
+          {!sameOpen && (
+            <p className="text-xs text-[var(--text-secondary)] mt-1.5">{copy.expiredUnavailable(exp.title)}</p>
+          )}
+          {contact && <ContactBlock lead={copy.contactLeadExpired} contact={contact} copy={copy} lang={lang} />}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sameOpen && (
+              <button
+                type="button"
+                onClick={retryExpired}
+                className="min-h-[44px] px-4 rounded-lg bg-teal text-white text-sm font-bold cursor-pointer hover:bg-teal/90"
+              >
+                {copy.expiredRetry}
+              </button>
+            )}
+            {hasTribes && (
+              <button
+                type="button"
+                onClick={seeOtherTribes}
+                className="min-h-[44px] px-4 rounded-lg border border-amber-400/70 text-navy dark:text-amber-200 text-sm font-bold cursor-pointer hover:bg-amber-100/60 dark:hover:bg-amber-900/30"
+              >
+                {copy.expiredSeeOthers}
+              </button>
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   // Eligible but zero selectable tribes = platform-config gap, not a normal state: don't go blank.
   if (!ctx.tribes || ctx.tribes.length === 0) {
     return (
@@ -641,6 +832,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
         <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface)] p-5">
           <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.emptyTitle}</h2>
           <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.emptyBody}</p>
+          {contact && <ContactBlock lead={copy.contactLeadEmpty} contact={contact} copy={copy} lang={lang} />}
         </div>
       </section>
     );

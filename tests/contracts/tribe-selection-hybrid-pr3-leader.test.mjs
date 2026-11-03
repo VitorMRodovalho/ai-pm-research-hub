@@ -18,12 +18,16 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
 
 const MIG_FILE = '20260805000218_tribe_selection_hybrid_pr3_leader_queue.sql';
 const MIG = read(`supabase/migrations/${MIG_FILE}`);
+// Authority and scope of the reader are a CURRENT invariant: read from the newest capture of the function (#1932). The
+// file above still answers what PR3 delivered (the CREATE and the grants).
+const LIVE = maskLineComments(latestFunctionCapture(ROOT, 'list_tribe_pending_requests').body);
 const PAGE = read('src/pages/tribe/[id].astro');
 const PT = read('src/i18n/pt-BR.ts');
 const EN = read('src/i18n/en-US.ts');
@@ -43,16 +47,16 @@ test('migration declares list_tribe_pending_requests, authenticated-only', () =>
 });
 
 test('reader uses Caminho-3 inline authority (GP OR volunteer/leader of THIS tribe), not the shared gate', () => {
-  assert.match(MIG, /can_by_member\(v_caller_member_id, 'manage_member'\)/);
-  assert.match(MIG, /e\.initiative_id = v_initiative_id\s+AND e\.kind = 'volunteer'\s+AND e\.role = 'leader'/);
+  assert.match(LIVE, /can_by_member\(v_caller_member_id, 'manage_member'\)/);
+  assert.match(LIVE, /e\.initiative_id = v_initiative_id\s+AND e\.kind = 'volunteer'\s+AND e\.role = 'leader'/);
   // resolves the tribe's research_tribe initiative from the integer id (scoped, not the shared reader)
-  assert.match(MIG, /i\.legacy_tribe_id = p_tribe_id AND i\.kind = 'research_tribe'/);
+  assert.match(LIVE, /i\.legacy_tribe_id = p_tribe_id AND i\.kind = 'research_tribe'/);
 });
 
 test('reader is scoped to self-requests + logs PII access for invitee names', () => {
-  assert.match(MIG, /ii\.invitee_member_id = ii\.inviter_member_id/);
-  assert.match(MIG, /log_pii_access\(/);
-  assert.match(MIG, /ii\.status = 'pending'/);
+  assert.match(LIVE, /ii\.invitee_member_id = ii\.inviter_member_id/);
+  assert.match(LIVE, /log_pii_access\(/);
+  assert.match(LIVE, /ii\.status = 'pending'/);
 });
 
 test('migration is registered in the active synthetic series', () => {
