@@ -100,7 +100,7 @@ const EF_CONTRACTS = [
   },
   {
     name: 'analyze-application-video',
-    tables: ['selection_applications', 'pmi_video_screenings', 'ai_processing_log', 'selection_evaluation_ai_suggestions'],
+    tables: ['selection_applications', 'pmi_video_screenings', 'ai_processing_log'],
     imports: [],
   },
   {

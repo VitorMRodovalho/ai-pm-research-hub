@@ -7590,10 +7590,10 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // TOOL: analyze_application_video — Phase 4 D1 (p197d, ADR-0086 successor for video pillar)
-  mcp.tool("analyze_application_video", "p197d D1 (2026-05-19): triggers AI video analysis for an application. For each uploaded pmi_video_screening row, generates a suggestion in selection_evaluation_ai_suggestions (evaluation_type='video') via Whisper (transcription) + Claude Haiku 4.5 multimodal (transcription + Drive thumbnail → score per pillar). NON-BINDING per LGPD Art. 20 — humano evaluator decides via submit_evaluation(ai_suggestion_id=...). Skips pillars with pending suggestion unless force=true. Auth: committee membership of cycle OR manage_member (gated at JS via view_pii + at RPC via cycle-scoped committee check). Returns dispatch envelope {dispatched, application_id, pillar, force, dispatch_id}; analysis runs async — re-call list_ai_suggestions after ~30-60s to see results.", {
+  mcp.tool("analyze_application_video", "Triggers transcription of the uploaded videos of an application (OpenAI Whisper); the text is stored on pmi_video_screenings. Transcription only: no score, no suggestion and no image analysis is produced. Videos that already have a transcription are not reprocessed. Auth: committee membership of cycle OR manage_member (gated at JS via view_pii + at RPC via cycle-scoped committee check). Returns dispatch envelope {dispatched, application_id, pillar, force, dispatch_id}; the work runs async.", {
     application_id: z.string().describe("Application UUID"),
-    pillar: z.enum(["background","communication","culture_alignment","proactivity","teamwork"]).optional().describe("Optional pillar filter — default: all 5 pillars (one suggestion per pillar)"),
-    force: z.boolean().optional().describe("Regenerate even if pending suggestion exists. Default: false; when false, skips pillars that already have a pending suggestion.")
+    pillar: z.enum(["background","communication","culture_alignment","proactivity","teamwork"]).optional().describe("Optional pillar filter — default: all 5 pillars"),
+    force: z.boolean().optional().describe("Passed to the dispatch RPC. Default: false.")
   }, async (params: { application_id: string; pillar?: string; force?: boolean }) => {
     const start = Date.now();
     const member = await getMember(sb);
