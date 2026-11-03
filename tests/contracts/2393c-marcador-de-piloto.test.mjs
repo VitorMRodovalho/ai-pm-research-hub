@@ -11,7 +11,8 @@
  *      - a coluna, o CHECK e o helper `_na_avaliacao_geral(uuid)`, fechado para todo cliente;
  *      - cada uma das 14 funções chama o helper DENTRO do bloco que decide (a fila, a recusa, o WHERE da
  *        automação), não solto no corpo;
- *      - inventário simétrico: as funções que chamam o helper são exatamente as 14.
+ *      - inventário simétrico: as funções que chamam o helper são exatamente as auditadas (as 14 da fila e das
+ *        automações, e o trigger do token da D4).
  *   L  viva: anon recebe 42501 no helper, e a coluna existe.
  * Quem vê o quê por persona é a verificação do pacote (impersonação, com vaga sintética line_pilot).
  */
@@ -195,9 +196,11 @@ const CHAMADORES = [
   'submit_evaluation', '_get_peer_review_eligibility', '_selection_cutoff_pending_cron',
   'notify_selection_cutoff_approved', '_compute_pert_cutoff_core', 'recompute_application_status',
   'calculate_rankings', 'recalculate_cycle_rankings', 'get_selection_rankings', 'detect_stuck_selection_funnel',
+  // #2393 fatia 3, D4: o trigger que tira o vídeo do token de candidatura de vaga piloto.
+  '_token_de_candidatura_sem_video_no_piloto',
 ].sort();
 
-test('#2393c S: as funções que chamam o helper são exatamente as 14 auditadas', () => {
+test('#2393c S: as funções que chamam o helper são exatamente as auditadas', () => {
   const ultima = new Map();
   for (const f of readdirSync(MIGRATIONS).filter((x) => x.endsWith('.sql')).sort()) {
     for (const b of parseMigration(f, readFileSync(join(MIGRATIONS, f), 'utf8'))) ultima.set(`${b.name}@${b.args}`, b);
