@@ -56,7 +56,7 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
 - **Drive revocation tail (post-offboard, by design — NOT pre-enqueueable).** The queue (`drive_offboarding_
   audit`) is populated by the **detection EF** (`audit-drive-offboarding-access`) which only matches members
   **already offboarded** (`member_status` alumni/inactive + `offboarded_at` set). Mechanism verified functional
-  (10/10 `revoked`, 0 failed; SA role elevation done). Sequence, once Antonio is alumni (03/07):
+  (10/10 `revoked`, 0 failed; SA role elevation done). Sequence, once member B is alumni (03/07):
   1. **Detection** queues his Drive permissions — **event-triggered at the offboard moment** (#1026 Fatia A,
      `trg_drive_teardown_scan` → targeted EF scan); the weekly cron (Mon 06/07 05:00 UTC) remains the backstop.
   2. **Approve** — depends on the #1039 kill-switch (`site_config drive_auto_revoke_enabled`):
@@ -87,10 +87,10 @@ term → LGPD/data/IP exposure; see #1022). Return preserved via re-application.
 - Until #1020 exists, track card/board/task ownership handoff manually.
 - **Drive:** same post-offboard flow as §3 (detection → GP `bulk_approve_drive_revocations` → drain). Do **not**
   revoke before her offboard — she is still an active tribe leader until the successor takes over.
-- **Recommended dependency — #1026:** the C4 turn offboards more than one member (Débora + any non-renewals).
+- **Recommended dependency — #1026:** the C4 turn offboards more than one member (member A + any non-renewals).
   Today Drive teardown is manual + weekly-batch (silent retention window). Landing **#1026** (event-triggered auto
   revocation + exception-only GP review + queue frontend) **before the C4 turn** makes the turn's access teardown
-  automatic-by-governance instead of a manual GP sweep. Not a blocker for Antonio's single 03/07 exit; it is the
+  automatic-by-governance instead of a manual GP sweep. Not a blocker for member B's single 03/07 exit; it is the
   right structural fix for the multi-member C4 turn.
 
 ---

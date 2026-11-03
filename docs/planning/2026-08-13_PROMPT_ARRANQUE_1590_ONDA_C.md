@@ -97,7 +97,7 @@ passam a poder o que nao podiam".
 |---|---|
 | comite de `cycle4-2026` | 3 avaliadores roteaveis + 4 observadores fora do rodizio |
 | despachos | 94: researcher 57 `member_global` + 30 `committee_override`; leader 7 `cycle_fallback` |
-| rodizio desde 31/07 | Vitor 8, member A 5, Fernando 4 |
+| rodizio desde 31/07 | Vitor 8, member A 5, member B 4 |
 | `selection_booking_attempts` | 31 `no_application`, 4 `matched`, 4 `cycle_closed`, 1 `status_not_allowed` |
 | `selection_interviewer_blackouts` | 0 linhas (a escrita e esta onda) |
 

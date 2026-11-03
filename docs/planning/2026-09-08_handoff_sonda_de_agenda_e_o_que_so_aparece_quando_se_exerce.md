@@ -102,14 +102,14 @@ despachos com estado de agenda: 0
 | GP | 23 |
 | institucional | 19 |
 | member A | 13 |
-| Fernando | 13 |
+| member B | 13 |
 
 ## O rodízio: bloqueio posto e retirado no mesmo dia
 
 De manhã, a agenda do member A tinha **0 horários** de 30/08 a 10/10, e ele era a **posição 1 do
 LRD**, e o próximo despacho de researcher iria para porta fechada. Registrado um blackout pela RPC
 canônica `set_interviewer_routing_block`, com auditoria, e provado por contrafactual que o rodízio
-passou a eleger o Fernando.
+passou a eleger o member B.
 
 À tarde o member A ajustou ("Feito" no grupo) e a sonda mediu **13 dias**. O blackout foi removido
 por `clear_interviewer_routing_block`: a premissa caiu, e mantê-lo puniria quem já corrigiu.
@@ -188,7 +188,7 @@ evento externo (`#1098`) pula em silêncio. Registrado no cabeçalho da migratio
 
 ## Do lado do PM, e atravessou o dia
 
-Os **cinco pontos da pauta** da Reunião Geral seguem parados desde 04/09. O Fernando também deu
+Os **cinco pontos da pauta** da Reunião Geral seguem parados desde 04/09. O member B também deu
 janelas específicas para entrevistas (quinta 14:30 às 18h, sexta 14:30 às 18:30, e amanhã não
 pode). Isso é **mais fino do que o rodízio LRD enxerga**, que distribui por último-despacho e não por
 preferência de dia. E ele pediu opinião sobre um formulário de onboarding.

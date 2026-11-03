@@ -15,7 +15,7 @@ que decide SUPERFICIE a partir de "quem esta cadastrado para roteamento".
 
 ## O diagnostico que abriu a sessao (onda 0, feita)
 
-O caso "o Fernando nao acessa `/admin/selection`" **nao era dele e nao era do servidor**. Provado em
+O caso "o member B nao acessa `/admin/selection`" **nao era dele e nao era do servidor**. Provado em
 transacao abortada atuando como o `auth_id` dele: `get_selection_dashboard()` devolveu payload de 3
 chaves e **zero erro**. Quem recusava era o gate client-side, e o dado que resolveria ja chegava ao
 navegador (`get_member_by_auth()` devolve `selection_committee_role: "evaluator"`).
@@ -75,10 +75,10 @@ Sai no chamador (`_dispatch_interview_booking_link`), nao no picker, que e STABL
 
 ## O estado medido do roteamento (12/08, RE-MEDIR)
 
-- Comite de `cycle4-2026`: **3 avaliadores roteaveis** (member A, Vitor, Fernando, todos por
+- Comite de `cycle4-2026`: **3 avaliadores roteaveis** (member A, Vitor, member B, todos por
   `committee_override`) e **4 observadores** fora do rodizio (URL nula).
 - 94 despachos: researcher 57 `member_global` + 30 `committee_override`; leader 7 `cycle_fallback`.
-- Desde que o Fernando entrou no comite (31/07 22:19): Vitor 8, member A 5, Fernando 4.
+- Desde que o member B entrou no comite (31/07 22:19): Vitor 8, member A 5, member B 4.
   ⚠️ **O rodizio LRD nao equaliza como o nome promete, e isso ainda nao tem explicacao medida.**
 - `selection_booking_attempts`: 31 `no_application`, 4 `matched`, 4 `cycle_closed`, 1
   `status_not_allowed`.

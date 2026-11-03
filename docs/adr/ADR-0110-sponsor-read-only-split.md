@@ -47,7 +47,7 @@ Antes (todos `true`) → depois, via `can_by_member`:
 
 | Persona | manage_finance (W) | manage_partner (W) | view_finance (R) | view_partner (R) |
 |---|---|---|---|---|
-| 5 sponsors (member A/PMI-GO, Felipe/MG, member B/CE, member C/RS, member D/DF) | ❌ revogado | ❌ revogado | ✅ preservado | ✅ preservado |
+| 5 sponsors (member A/PMI-GO, member F/MG, member B/CE, member C/RS, member D/DF) | ❌ revogado | ❌ revogado | ✅ preservado | ✅ preservado |
 | GP/manager (Vitor, member E) | ✅ | ✅ | ✅ | ✅ |
 | `chapter_board×liaison` (7) | — | ✅ (mantido) | — | ✅ (mantido) |
 

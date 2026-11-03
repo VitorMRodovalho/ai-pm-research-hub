@@ -6,12 +6,12 @@
 **Issues:** #1153 (Direção 1) · #1152 (gate `president_go`) · #1155 (F1+F2, merged) · #1156 (F3, este ciclo).
 
 > **Objetivo de negócio.** Destravar a assinatura da 1ª adesão para os ~45 novos C4 **com o texto
-> jurídico corrigido** (rodada Aaron/Angeline 06/07, `.docx` V2), fechando a drift entre a versão
+> jurídico corrigido** (rodada member A/member B 06/07, `.docx` V2), fechando a drift entre a versão
 > aprovada na cadeia e a versão que o voluntário assina. A assinatura está **bloqueada por design**
 > desde 14/04 (nenhum `volunteer_term_template` com `status='active'`); este runbook é o caminho
 > controlado para reativá-la sobre a v9.
 
-> **O que Claude NÃO faz.** Claude **não assina** a cadeia por Ivan nem pelos curadores (ato pessoal,
+> **O que Claude NÃO faz.** Claude **não assina** a cadeia por member C nem pelos curadores (ato pessoal,
 > LGPD Art. 18 / autoridade institucional), e **não ativa** a versão sem o go explícito do GP. As
 > etapas de assinatura e ativação são executadas **por pessoas**; Claude apenas prepara, aterra os
 > números ao vivo e verifica.
@@ -24,7 +24,7 @@
 |---|---|---|
 | `volunteer_term_template` `status='active'` | **0** (assinatura bloqueada - correto) | INV-1 abaixo |
 | Documento (governance) | `280c2c56-e0e3-4b10-be68-6c731d1b4520`, `status=under_review` | `governance_documents` |
-| Versão corrente (lacrada) | `246ff8be-9ed8-4a81-9211-bf097750c4c7` - "R3-C3-IP v9 (jurídico V2 Aaron/Angeline 2026-07-06)" | `document_versions` |
+| Versão corrente (lacrada) | `246ff8be-9ed8-4a81-9211-bf097750c4c7` - "R3-C3-IP v9 (jurídico V2 member A/member B 2026-07-06)" | `document_versions` |
 | Corpo v9 | `len=28037`, `md5=45041522e8a141ec9ad61dc8d0e82ab1` | `document_versions.content_html` |
 | Cadeia de aprovação | `c72ceca4-16f8-4b09-b22a-61381388fbd2`, `status=review` | `approval_chains` |
 | Gates | `curator (threshold: all)` → `president_go (threshold: 1)` | `approval_chains.gates` |
@@ -73,7 +73,7 @@ WHERE gd.id='280c2c56-e0e3-4b10-be68-6c731d1b4520';
         'c72ceca4-16f8-4b09-b22a-61381388fbd2'::uuid,
         'president_go', 'volunteer_term_template') AS can_sign;
       ```
-      Esperado: Ivan (legal_signer) = `true`; Lorena (contraparte, não legal_signer) = `false`.
+      Esperado: member C (legal_signer) = `true`; member D (contraparte, não legal_signer) = `false`.
 - [ ] **#1156 (F3) - recomendado, NÃO bloqueante.** A Cláusula 14 (Transferência Internacional de
       Dados) passa a renderizar **condicionalmente** por residência (EEE/UK). Como C4 é majoritariamente
       BR e a cláusula é auto-escopada, o release dos 45 não fica bloqueado por F3; mas deployar F3 antes
@@ -87,7 +87,7 @@ WHERE gd.id='280c2c56-e0e3-4b10-be68-6c731d1b4520';
 ## 2. Coletar as assinaturas da cadeia (ato humano - pela plataforma)
 
 A cadeia `c72ceca4` exige, **nesta ordem**: **todos os curadores** (gate `curator`, threshold `all`) e
-depois **1 `president_go`** (Ivan, `legal_signer`). São ~4 atos: 3 curadores + Ivan (reconfirmar a
+depois **1 `president_go`** (member C, `legal_signer`). São ~4 atos: 3 curadores + member C (reconfirmar a
 contagem exata pela query abaixo - a roster é derivada de autoridade, não hardcoded).
 
 Os signatários assinam **pela plataforma** (CTA de ratificação no leitor de governança), que chama
@@ -104,7 +104,7 @@ SELECT * FROM public.get_chain_audit_report('c72ceca4-16f8-4b09-b22a-61381388fbd
 ```
 
 - [ ] Todos os curadores assinaram (gate 1 `curator` satisfeito).
-- [ ] Ivan assinou o `president_go` (gate 2 satisfeito).
+- [ ] member C assinou o `president_go` (gate 2 satisfeito).
 - [ ] `approval_chains.approved_at` **deixou de ser NULL** para a cadeia `c72ceca4`.
 
 > **Se um signatário travar / trocar:** a cadeia é lacre da v9; não editar o corpo. Se for preciso

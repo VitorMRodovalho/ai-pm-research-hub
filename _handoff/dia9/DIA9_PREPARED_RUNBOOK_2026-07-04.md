@@ -1,10 +1,10 @@
 # DIA 9 (09/07/2026) — Runbook preparado (aterrado ao vivo em 04/07 ~19h UTC)
 
 > Consolida: `CYCLE4_TURN_PLAN_2026-07.md` §4 + cards [DIA 9] do board `c4d0e444` + decisões
-> supersedentes do kickoff (04/07 noite: cap 7 · **T2 ARQUIVA, D3 caiu** · **Messias→T6, sem tribo nova**).
+> supersedentes do kickoff (04/07 noite: cap 7 · **T2 ARQUIVA, D3 caiu** · **member E→T6, sem tribo nova**).
 > Todos os IDs e contagens abaixo vêm de queries ao vivo de 04/07 — **re-aterrar contagens no dia 9 antes de aplicar.**
 >
-> **Re-validado 04/07 19:30–19:40 UTC (sessão noite 3):** draft migration dry-run bate exato (63 C3 abertas · 0 cycle_4 · coorte=30) · invariantes 0/0 · cycle_4 is_current=false ✓ · tribos 9/10/11 ativas c/ leader_member_id setado ✓ · Messias eng `821f53c9` initiative NULL ✓ · T2 = member B + Gerson/Guilherme/Gustavo (4 ativos; member B sai no passo 4) ✓ · assinaturas líderes = 0 (gate 1 ainda fechado) · **PR #1101 estava BEHIND (main andou c/ #1108) → `gh pr update-branch` feito 04/07 ~19:35 UTC; CI re-rodou 9/9 VERDE ~19:45 UTC — PR pronto p/ merge no dia 9 (após o flip, passo 1→2).**
+> **Re-validado 04/07 19:30–19:40 UTC (sessão noite 3):** draft migration dry-run bate exato (63 C3 abertas · 0 cycle_4 · coorte=30) · invariantes 0/0 · cycle_4 is_current=false ✓ · tribos 9/10/11 ativas c/ leader_member_id setado ✓ · member E eng `821f53c9` initiative NULL ✓ · T2 = member B + member F/member G/member H (4 ativos; member B sai no passo 4) ✓ · assinaturas líderes = 0 (gate 1 ainda fechado) · **PR #1101 estava BEHIND (main andou c/ #1108) → `gh pr update-branch` feito 04/07 ~19:35 UTC; CI re-rodou 9/9 VERDE ~19:45 UTC — PR pronto p/ merge no dia 9 (após o flip, passo 1→2).**
 
 ## Pré-flight (antes de começar)
 - [ ] `check_schema_invariants()` = 0 (baseline 42/42=0 em 04/07)
@@ -34,7 +34,7 @@ TODAS abertas (`cycle_end` NULL) → fechar todas com `cycle_end='2026-07-08'`.
 
 > 🔴 **DECISÃO OWNER 2026-07-05 — NÃO ANTECIPAR os passos 4 e 5.** A virada operacional (flip +
 > roll-forward + #1101) foi puxada p/ 05/07, mas o **exit da member B e o arquivamento da T2 ficam
-> para o DIA 9, até ~18h BSB (antes do kickoff 19h).** O time da member B (Gerson/Guilherme/Gustavo)
+> para o DIA 9, até ~18h BSB (antes do kickoff 19h).** O time da member B (member F/member G/member H)
 > deve ser **comunicado DENTRO do kickoff** de que poderá escolher outras tribos (janela `select_tribe`
 > até 17/07). Manter T2 ativa com a member B como líder até lá. NÃO offboard, NÃO `is_active=false`
 > na tribo, NÃO limpar `members.tribe_id` dos 3 antes do DIA 9.
@@ -49,20 +49,20 @@ TODAS abertas (`cycle_end` NULL) → fechar todas com `cycle_end='2026-07-08'`.
 - Initiative `6c3ffc94-207c-4c63-9e83-c6f3d48529d7` → `status='archived'`.
 - Varrer board_items órfãos dela e do member A (offboarded 04/07) — listar ao vivo e
   realocar/arquivar.
-- **3 pesquisadores ficam órfãos de tribo: Gerson `dc42d4c5`, Guilherme `f5dee40d`, Gustavo
+- **3 pesquisadores ficam órfãos de tribo: member F `dc42d4c5`, member G `f5dee40d`, member H
   `dce513e6`** (tribe_id=2) → limpar `members.tribe_id` e orientar re-seleção via `select_tribe`
   (janela até 17/07; comunicar no kickoff).
 
-### 6. Transição T6 ROI & Portfólio: member C → Messias (card `29a8776d`)
-- `tribes` id=6 `leader_member_id`: `92d26057` (member C) → `c465b4ac` (Messias).
-- Engagement do Messias `821f53c9` (`initiative_id` NULL) → apontar à initiative T6
+### 6. Transição T6 ROI & Portfólio: member C → member E (card `29a8776d`)
+- `tribes` id=6 `leader_member_id`: `92d26057` (member C) → `c465b4ac` (member E).
+- Engagement do member E `821f53c9` (`initiative_id` NULL) → apontar à initiative T6
   `6c7e5945-1457-4eb3-ae99-28d7b1e72db9`.
-- `members.tribe_id` do Messias → 6. Verificar cache `operational_role` (trigger) → tribe_leader.
-- Pendência registrada: entrevista do Messias sem registro no sistema (exceção #1004).
+- `members.tribe_id` do member E → 6. Verificar cache `operational_role` (trigger) → tribe_leader.
+- Pendência registrada: entrevista do member E sem registro no sistema (exceção #1004).
 
 ### 7. Alocação dos líderes novos — JÁ FEITA em 04/07, só CONFIRMAR
-member D→T9, Honorio→T10, João H→T11 (`members.tribe_id` já setado). Gate real = assinatura do
-termo (pré-flight). Jhonathan: tribo Produtividade Aumentada Q1 SÓ pós-entrevista; Paulo (AI
+member D→T9, member I→T10, member K H→T11 (`members.tribe_id` já setado). Gate real = assinatura do
+termo (pré-flight). member J: tribo Produtividade Aumentada Q1 SÓ pós-entrevista; member L (AI
 Literacy) SÓ pós-candidatura (card `73186b96` é [DIA 9+], não bloqueia o dia).
 
 ### 8. Entrantes
@@ -84,5 +84,5 @@ precedente C2) · champion `general` (gestor).
   o termo C4; (2) owner aprova copy; (3) quota Resend reseta 00:00 UTC.
 - `sla_deadline` setado 04/07 (9 rows): steps `volunteer_term` (5×) + `complete_profile` (4×;
   member D já completo) → 2026-07-08 23:59 BRT — `detect_onboarding_overdue` passa a cobrar.
-- Perfis: só member D completo; Honorio/Jhonathan/João H/Messias sem phone/address/city/state/
-  birth_date (o fluxo pede antes de assinar). João H ainda SEM auth (cria no 1º login).
+- Perfis: só member D completo; member I/member J/member M H/member E sem phone/address/city/state/
+  birth_date (o fluxo pede antes de assinar). member K H ainda SEM auth (cria no 1º login).

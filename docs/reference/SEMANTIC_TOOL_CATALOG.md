@@ -370,7 +370,7 @@ are kept — `review` drives the CR lifecycle, `approve` records the sponsor-quo
 
 ### `certificate_manage` (R/W)
 - **Intent:** certificate lifecycle. **`action`:** `issue` (→ confirm) · `update` (→ confirm) · `verify` (public) · `list` · `my` · `timeline`.
-- **Absorbs:** `issue_certificate` · `update_certificate` · `verify_certificate` · `get_all_certificates` · `get_my_certificates` · `exec_cert_timeline`. (`counter_sign_certificate` stays raw — Lorena-only.)
+- **Absorbs:** `issue_certificate` · `update_certificate` · `verify_certificate` · `get_all_certificates` · `get_my_certificates` · `exec_cert_timeline`. (`counter_sign_certificate` stays raw — member A-only.)
 - **Gate:** `curate_content` / manager / superadmin (issue/update/list/timeline), RPC-internal; `verify` is public + rate-limited. Inputs validated before dispatch (see above).
 
 ### `ip_exclusion` (R/W)
@@ -475,7 +475,7 @@ in place** (kept name — connectors pin it; the additive/never-break principle)
 
 **Deliberately kept raw/frozen (not surfaced):** `knowledge_insights_overview`/`knowledge_insights_backlog_candidates`
 (internal ops-improvement backlog, dead, service-role — not narrative knowledge); `counter_sign_certificate`
-(Lorena-only, W5). `create_notification` authenticated-user spoofing stays a follow-up.
+(member A-only, W5). `create_notification` authenticated-user spoofing stays a follow-up.
 
 ### `search_nucleo_knowledge` (R) — the `knowledge_search` intent
 - **Intent:** unified knowledge search + page fetch + latest assets. **`mode`:** `search` (default; hub/wiki/knowledge_assets full-text) · `page` (`path` → one wiki page in full) · `latest` (`asset_source?` → most-recent knowledge_assets).

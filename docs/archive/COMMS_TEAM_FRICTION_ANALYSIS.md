@@ -32,7 +32,7 @@ The communications team (member A, member B, member C) operates across **7 disco
 
 ### F2: Access Chaos (24 signals)
 **Pattern:** "pedi acesso" / "sem acesso ao Canva" / "fiz a solicitação"
-**Evidence:** member D had to request Drive access. member B was without Canva access. Roberto had to request doc access.
+**Evidence:** member D had to request Drive access. member B was without Canva access. member F had to request doc access.
 **Portal fix:** Single auth (Google OAuth). Role-based access. No per-tool permissions.
 
 ### F3: Approval Bottleneck (31 signals)

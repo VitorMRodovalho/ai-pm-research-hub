@@ -32,7 +32,7 @@ O Looker Studio é 100% gratuito, corporativo e feito para isso.
 
 3. **No nosso Hub:** O time de desenvolvimento cria a página `/admin/comunicacao` e coloca o `<iframe src="link-do-looker-studio">`.
 
-**O Resultado:** A Mayanna (Líder de Comunicação) e você (GP) abrem o painel administrativo e veem tudo centralizado. Se a API do Instagram mudar amanhã, o seu site não quebra; você só ajusta o robô no Make.com.
+**O Resultado:** A member A (Líder de Comunicação) e você (GP) abrem o painel administrativo e veem tudo centralizado. Se a API do Instagram mudar amanhã, o seu site não quebra; você só ajusta o robô no Make.com.
 
 ---
 

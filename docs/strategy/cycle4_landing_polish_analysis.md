@@ -105,7 +105,7 @@ Diretriz do PM: *certificação não é foco, é consequência; só a PMI-CPMAI 
 
 **Princípio separador (parecer accountability-advisor):** *quem é o sujeito da frase de certificação?*
 - ✅ SEGURO: "membros do Núcleo **conquistam/completam** certificações PMI porque fazem pesquisa de alto nível" — o PMI certifica, o Núcleo pesquisa, a certificação é reconhecimento externo.
-- 🔴 RISCO: "o Núcleo **oferece/estrutura/organiza** uma progressão de certificação" — o Núcleo vira agente do processo certificatório (encosta nas diretorias do PMI). Corolário: celebrar "Maria completou a PMI-CPMAI" (ok) ≠ "nossa escada de certificação leva você à PMI-CPMAI" (risco).
+- 🔴 RISCO: "o Núcleo **oferece/estrutura/organiza** uma progressão de certificação" — o Núcleo vira agente do processo certificatório (encosta nas diretorias do PMI). Corolário: celebrar "member A completou a PMI-CPMAI" (ok) ≠ "nossa escada de certificação leva você à PMI-CPMAI" (risco).
 - Segundo princípio: **afirmação de co-branding só com paper trail** (MoU/acordo assinado).
 
 **Classificação das strings (i18n):**

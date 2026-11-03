@@ -20,7 +20,7 @@ Desde 21/Abr/2026 (ADR-0020), organizamos tudo em **séries temáticas nomeadas*
 
 | Série | Cadência | Voice | Formato | Dono | Audiência |
 |---|---|---|---|---|---|
-| **CPMAI Journey** | Quinzenal | Crônica educativa | Multi (blog+webinar+newsletter) | Herlon (GP subiniciativa) | PMs considerando CPMAI + voluntários |
+| **CPMAI Journey** | Quinzenal | Crônica educativa | Multi (blog+webinar+newsletter) | member A (GP subiniciativa) | PMs considerando CPMAI + voluntários |
 | **Trilha do Pesquisador** | Mensal | Case study com voz pessoal | Blog post | GP / Comms | Candidatos processo seletivo + Community Managers PMI |
 | **Behind Núcleo IA** | Mensal | Crônica técnica com storytelling | Blog post | GP Vitor | Dev BR + PMs que querem tech governance em comunidade |
 | **Radar Semanal — T1 Tecnologia** | Semanal | Weekly radar | Newsletter | Líder T1 | Members + subscribers externos |
@@ -73,7 +73,7 @@ IDEIA CHEGOU
 - Primeira pessoa do singular (o volunteer conta sua journey)
 - Estrutura narrativa (porque entrei → o que fiz → o que aprendi → porque fiquei/saí)
 - Tom: autêntico, reflexivo, pode ser emocional
-- Permite "exit stories" (ex.: Lorena/Lídia/Alexandre de 21/Abr — post póstumo com consent)
+- Permite "exit stories" (ex.: member B/member C/member D de 21/Abr — post póstumo com consent)
 
 ### Behind Núcleo IA — "Crônica técnica com storytelling"
 - Inspirado nos "Behind the M.Akita Chronicles"
@@ -145,7 +145,7 @@ Série `behind-nucleo-ia`: linkar para commits/PRs do próprio `ai-pm-research-h
 Cada série tem 1 dono declarado. Série sem dono por >60 dias → `is_active=false`. Reativação exige novo dono.
 
 Matriz sugerida inicial:
-- CPMAI Journey → Herlon (GP subiniciativa) + co_gp Fabrício
+- CPMAI Journey → member A (GP subiniciativa) + co_gp member E
 - Trilha Pesquisador → Comms lead (rotativo por ciclo)
 - Behind Núcleo IA → GP Vitor (voice único neste)
 - Radar Semanal T1 → Líder T1 (hoje: rotativo, idealmente fixo por ciclo)
@@ -178,7 +178,7 @@ Matriz sugerida inicial:
 
 ## Newsletter "Frontiers in AI & Project Mgmt" — TBD pending Gate 0
 
-> **Status:** Pre-launch. Aguarda fechamento de [issue #96 Gate 0](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) (CR-050 ratificada + Termo R3-C4 + decisão de marca + decisões 1-6 do GP+Fabrício). Esta seção é placeholder editorial — atualizar valores `__TBD__` quando decisões caírem.
+> **Status:** Pre-launch. Aguarda fechamento de [issue #96 Gate 0](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/96) (CR-050 ratificada + Termo R3-C4 + decisão de marca + decisões 1-6 do GP+member E). Esta seção é placeholder editorial — atualizar valores `__TBD__` quando decisões caírem.
 >
 > **Spec canônico (atual):** `docs/specs/SPEC_GOVERNANCE_DOCUMENTS_END_TO_END.md` §9 — Guia Frontiers como `editorial_guide` + pivô `content_products` para issues derivadas (Wave 4f, PR #396/#398).
 > **Spec histórico (OBSOLETE):** `docs/specs/SPEC_FRONTIERS_NEWSLETTER_LAUNCH.md` — SQL prep Apr-21 pré-Wave-4f. SQL Block 2 (`publication_ideas`) nunca foi shipped; foi superseded por `content_products`.
@@ -240,7 +240,7 @@ AUTOR (voluntário ou comms team)
   └─ stage='draft'
         │
         ▼ (manual ou MCP tool)
-  CURADOR (Fabrício ou comms_leader)
+  CURADOR (member E ou comms_leader)
   │
   ├─ Roda check_idea_originality (#95)
   ├─ Decide: avança para 'proposed' ou rejeita

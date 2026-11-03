@@ -227,7 +227,7 @@ Per data-architect (definitive ordering):
 | **Política de Retenção e Ciclo de Vida de Dados** | Formalizes 3 separate clocks (materials / communications / identity); base for cron config | 2-3h |
 | **Adendo Política de Privacidade Principal** | Section on event recordings + AI transcription + YouTube deletion rights | 2-3h |
 
-**Legal counsel call:** ANPD has explicit guidance on Art. 11 biometric — get advogada Angeline review on Termo de Speaker before any new transcription INSERT.
+**Legal counsel call:** ANPD has explicit guidance on Art. 11 biometric — get advogada member A review on Termo de Speaker before any new transcription INSERT.
 
 ---
 
@@ -275,7 +275,7 @@ Before this synthesis converts to ratified spec + sub-issue spawn:
 
 1. **Confirm scope-cut to Vassouras-only v1** (per product-leader recommendation) — or override with broader v1 scope
 2. **Whisper Art. 11 RETROACTIVE remediation** — agreed to file as critical-priority separate issue + block new INSERTs?
-3. **MOU with Universidade Vassouras** — legal-ops timeline acceptable (3-5 dias)? Who drafts (Angeline / Vitor)?
+3. **MOU with Universidade Vassouras** — legal-ops timeline acceptable (3-5 dias)? Who drafts (member A / Vitor)?
 4. **Service account provisioning** — PM ops task timeline; confirm `drive.file` scope + no DWD constraint
 5. **Spawn #212.b stub NOW** for CPMAI — or wait until first CPMAI cycle commits?
 6. **PR #214 disposition** — merge as Draft, or keep open until ADR-0094 ratifies?

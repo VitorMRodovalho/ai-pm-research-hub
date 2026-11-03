@@ -17,7 +17,7 @@
 | Métrica | Valor |
 |---|---|
 | Membros ativos com `tribe_id` | 47 |
-| `tribe_id` sem engagement de tribo correspondente | 1 (liaison Roberto, conhecido) |
+| `tribe_id` sem engagement de tribo correspondente | 1 (liaison member A, conhecido) |
 | Pedidos de entrada **pendentes** agora | 12 (todos dos últimos 3 dias — onda do kickoff C4) |
 | Pedidos expirando em <48h **sem ação do líder** | 2 |
 | Tribo com backlog mais antigo | Tribo 11 "PMO Inteligente" — 4 pendentes desde 2026-07-07 |

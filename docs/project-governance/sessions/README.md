@@ -46,10 +46,10 @@ mandatory handoff format defined in §4 of `P201_PARALLEL_AGENT_ROADMAP.md`.
    - **#163** (Cloudflare BIC) - independent infra
    - **#164** (local QA) - independent infra
    - **#165** (release backfill) - independent docs
-3. **#160** (Herlon) - needs PM decision; can run before or after the
+3. **#160** (member A) - needs PM decision; can run before or after the
    above
 4. **#161** (UI gates audit) - benefits from #160 path being decided
-   (Herlon UX path C touches the same surfaces)
+   (member A UX path C touches the same surfaces)
 5. **#166** (semantic layer) - depends on #162 output
 
 ## Coupling and conflicts
@@ -110,7 +110,7 @@ The p201 program is done when:
 
 1. All P1 issues are merged or have a deliberate carry decision recorded.
 2. MCP contract matrix exists and is reexecutable.
-3. Persona smoke covers Roberto, Sarah, Marcos, Herlon.
+3. Persona smoke covers member D, member B, member C, member A.
 4. Cloudflare MCP bootstrap is validated without 1010.
 5. Local QA strategy is documented (and `supabase start` either works or
    is explicitly not required).

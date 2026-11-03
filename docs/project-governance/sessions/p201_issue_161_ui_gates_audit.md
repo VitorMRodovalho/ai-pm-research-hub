@@ -27,7 +27,7 @@ capability cache. Many UI surfaces still gate visibility/enablement via
 capabilities are granted through engagements (committee coordinator,
 study group owner, etc.), the UI can hide actions or whole pages even
 though the DB/RLS would allow them. This is the class of bug that hit
-Roberto and Sarah on `/admin/curatorship`.
+member C and member A on `/admin/curatorship`.
 
 ## Lane and gates
 
@@ -39,8 +39,8 @@ Roberto and Sarah on `/admin/curatorship`.
 - Can't touch: `engagement_kind_permissions` seed, `can()` /
   `can_by_member()`, RLS policies. If a missing capability is discovered,
   open a new Foundation issue rather than seeding inline.
-- Gates: `npx astro build` PASS; persona smoke for Roberto, Sarah,
-  Marcos, Herlon, leader, curator, chapter_liaison; superadmin
+- Gates: `npx astro build` PASS; persona smoke for member C, member A,
+  member D, member B, leader, curator, chapter_liaison; superadmin
   simulation must remain isolated from real-user capability cache.
 
 ## In scope
@@ -88,8 +88,8 @@ Roberto and Sarah on `/admin/curatorship`.
 - `grep -rn "hasPermission(" src/ | wc -l` decreasing trend across PRs.
 - `grep -rn "canFor(" src/` covers each migrated surface.
 - `npx astro build` PASS, `npm test` PASS (baseline 1449/0/46 offline).
-- Manual persona smoke: Roberto sees curation, Sarah sees curation,
-  Marcos sees tribe-7 actions, Herlon sees pending-leadership badge (if
+- Manual persona smoke: member C sees curation, member A sees curation,
+  member D sees tribe-7 actions, member B sees pending-leadership badge (if
   #160 path C picked), generic curator sees curation, chapter_liaison
   sees chapter analytics.
 
@@ -101,7 +101,7 @@ Roberto and Sarah on `/admin/curatorship`.
 
 ## Cross-references
 
-- Issue #160 (Herlon) - affects persona smoke
+- Issue #160 (member B) - affects persona smoke
 - `docs/audit/P162_GAP_OPPORTUNITY_LOG.md` items #43, #44
 - `docs/audit/P201_MCP_ARCHITECTURE_AUDIT.md` §5.4 (recommended audit matrix)
 - ADR-0007 (V4 authority), ADR-0011 (V4 cutover invariants)

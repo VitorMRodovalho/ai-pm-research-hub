@@ -106,7 +106,7 @@ Contrato sugerido:
 Gates:
 
 - Retorna os 16 casos atuais sem PII desnecessária.
-- Herlon aparece como pending agreement, não como authority bug.
+- member A aparece como pending agreement, não como authority bug.
 - Não concede capability antes de assinatura/countersign.
 
 ### Fase 3 — Approval Orchestration (#179/#180)

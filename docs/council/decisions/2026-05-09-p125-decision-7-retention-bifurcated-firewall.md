@@ -8,7 +8,7 @@
 
 ## Context
 
-Council convergence (legal-counsel + security-engineer) que retenção 5y para todos viola Art. 6 §III LGPD (minimização) para candidatos não-selecionados. profileAboutMe (texto livre) tem maior risco latente de conteúdo sensível Art. 11 — merece retenção mais curta. Adicionalmente, accountability-advisor flagged member A Path B (consulting) risk: persistir 171 historical PMI roles + diversity aggregates pode posicionar dataset como "asset comercial" sem authorization dos 5 chapter presidents que ratificaram IP Policy.
+Council convergence (legal-counsel + security-engineer) que retenção 5y para todos viola Art. 6 §III LGPD (minimização) para candidatos não-selecionados. profileAboutMe (texto livre) tem maior risco latente de conteúdo sensível Art. 11 — merece retenção mais curta. Adicionalmente, accountability-advisor flagged Path B (consulting) risk: persistir 171 historical PMI roles + diversity aggregates pode posicionar dataset como "asset comercial" sem authorization dos 5 chapter presidents que ratificaram IP Policy.
 
 ## Options considered
 

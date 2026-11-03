@@ -64,7 +64,7 @@
 | # | Item | Status | Evidence |
 |---|------|--------|----------|
 | 26 | Category distribution correct | ✅ Full | Post-fix: trail=60/1200, specialization=44/1040, knowledge_ai_pm=40/735, cert_pmi_senior=13/650, badge=22/220, cert_cpmai=2/90, cert_pmi_entry=2/60, cert_pmi_practitioner=2/60, cert_pmi_mid=1/40, course=2/30 |
-| 27 | Trail entries at 20 XP each | ✅ Full | 60 entries, all at 20 XP (sum=1200). **Fixed during audit:** Fernando's 6 entries were 15→20 XP. |
+| 27 | Trail entries at 20 XP each | ✅ Full | 60 entries, all at 20 XP (sum=1200). **Fixed during audit:** member F's 6 entries were 15→20 XP. |
 | 28 | No entries category='course' except CDBA | ✅ Full | 2 remaining course entries are both `Curso: CDBA_INTRO` at 15 XP |
 | 29 | cert_pmi_senior at 50 XP | ✅ Full | 13 entries, 650 XP total (50 each) |
 | 30 | cert_cpmai at 45 XP | ✅ Full | 2 entries, 90 XP total (45 each) |
@@ -79,18 +79,18 @@
 
 | # | Item | Status | Evidence |
 |---|------|--------|----------|
-| 37 | Pedro: exactly 1 CPMAI entry | ✅ Full | 1 row: `PMI Certified Professional in Managing AI (PMI-CPMAI)™`, category=cert_cpmai, points=45 |
-| 38 | Gustavo: ATP at 25 | ✅ Full | `Authorized Training Partner Instructor - PMP`, category=specialization, points=25 |
-| 39 | Alexandre: PMO at 40+35 | ✅ Full | PMI-PMOCP=40 (cert_pmi_mid) + PMO-CP=35 (cert_pmi_practitioner) |
+| 37 | member G: exactly 1 CPMAI entry | ✅ Full | 1 row: `PMI Certified Professional in Managing AI (PMI-CPMAI)™`, category=cert_cpmai, points=45 |
+| 38 | member A: ATP at 25 | ✅ Full | `Authorized Training Partner Instructor - PMP`, category=specialization, points=25 |
+| 39 | member B: PMO at 40+35 | ✅ Full | PMI-PMOCP=40 (cert_pmi_mid) + PMO-CP=35 (cert_pmi_practitioner) |
 
 ### Trail Reconciliation
 
 | # | Item | Status | Evidence |
 |---|------|--------|----------|
-| 40 | Fabricio: 6/6 trail | ✅ Full | `trail_completed = 6` |
+| 40 | member C: 6/6 trail | ✅ Full | `trail_completed = 6` |
 | 41 | Vitor: 5/6 trail | ✅ Full | `trail_completed = 5` |
-| 42 | Italo: 0/6 trail | ✅ Full | `trail_completed = 0` (bulk entries deleted) |
-| 43 | Luciana: 0/6 trail | ✅ Full | `trail_completed = 0` (bulk entries deleted) |
+| 42 | member D: 0/6 trail | ✅ Full | `trail_completed = 0` (bulk entries deleted) |
+| 43 | member E: 0/6 trail | ✅ Full | `trail_completed = 0` (bulk entries deleted) |
 | 44 | No bulk-timestamp orphans remain | ✅ Full | `orphan_count = 0` |
 
 ### Functions/Views
@@ -125,7 +125,7 @@
 
 | Fix | Description | Action |
 |-----|-------------|--------|
-| Fernando trail entries | 6 Credly trail badges at 15 XP / wrong category | Updated to trail/20 XP (live DB + verified) |
+| member F trail entries | 6 Credly trail badges at 15 XP / wrong category | Updated to trail/20 XP (live DB + verified) |
 | CPMAI_INTRO credly_badge_name | Had stale badge name from old migration | Cleared to NULL (live DB + migration SQL) |
 | gamification.astro TRAIL_TOTAL | Was 7, should be 6 | Fixed in source code |
 

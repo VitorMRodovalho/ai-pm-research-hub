@@ -171,7 +171,7 @@ Para habilitar analytics PostHog, configurar nas env vars do deploy:
 
 | # | Item | Bloqueia? |
 |---|------|-----------|
-| 1 | HF5 data patch | Dados inconsistentes (Sarah, Roberto, deputy hierarchy) |
+| 1 | HF5 data patch | Dados inconsistentes (member A, member B, deputy hierarchy) |
 | 2 | SUPABASE_* no build | App não inicia |
 | 3 | sync-comms-metrics deploy + secret | `/admin/comms` tabela vazia até primeira ingestão |
 | 4 | Credly workflow secrets | S10 não executa |

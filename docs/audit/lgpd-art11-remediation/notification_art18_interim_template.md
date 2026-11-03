@@ -1,6 +1,6 @@
 # Aviso retroativo LGPD Art. 18 §IV — candidato <CANDIDATE_NAME> (ciclo 4-2026)
 
-**Status:** PM-approved interim text (Angeline async produzirá texto legal-grade definitivo sob issue [#334](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/334)).
+**Status:** PM-approved interim text (member A async produzirá texto legal-grade definitivo sob issue [#334](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/334)).
 **Template version:** `interim_v1`
 **Use:** dispatch único do PM via e-mail oficial `nucleoia@pmigo.org.br` (NÃO via plataforma).
 **Registro:** PR p238 #332 — `lgpd_record_retroactive_notification` RPC grava em `pii_access_log` no momento do envio.
@@ -210,7 +210,7 @@ Internal references (for your audit):
 
 ## Operational checklist (PM/dispatcher)
 
-1. PM (or designated DPO) reviews this template + adjusts wording if Angeline (issue #334) has stronger language available.
+1. PM (or designated DPO) reviews this template + adjusts wording if member A (issue #334) has stronger language available.
 2. PM dispatches the pt-BR text via email from `nucleoia@pmigo.org.br` to `<CANDIDATE_EMAIL>`. EN fallback offered if <CANDIDATE_FIRST_NAME> requests it.
 3. After dispatch (or same-day batch), call the audit RPC:
    ```sql
@@ -235,7 +235,7 @@ Internal references (for your audit):
 
 - Parent decomposition (closed p236): #218 + #221
 - Sibling shipped p238: #331 (W2 forward UI + i18n)
-- Sibling blocked / blocking: #333 (invariant U), #334 (Angeline legal-grade template), #335 (ADR-0094)
+- Sibling blocked / blocking: #333 (invariant U), #334 (member A legal-grade template), #335 (ADR-0094)
 - LGPD Art. 11 §1 I (dado biométrico sensível) · Art. 18 §IV (direito de exclusão) · Art. 9 (informação clara) · Art. 48 §1 (notificação ANPD — coordenar sob #334 se aplicável)
 - Wave 1 emergency block (canonical row `20260520231254`): blocks new transcriptions absent voice consent
 - Forward UI capture (canonical row `20260805000022`): captures destacado consent + SHA-256 evidence going forward

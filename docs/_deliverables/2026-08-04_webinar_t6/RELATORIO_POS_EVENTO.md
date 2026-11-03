@@ -73,7 +73,7 @@ edições.
 nota. Se a avaliação importa para o relatório de portfólio, ela precisa ser configurada no Airmeet
 antes do evento, não depois.
 
-🟡 **O material do Fernando existe e está no ar, mas só como QR na tela.** Ele oferece um kit com os
+🟡 **O material do member B existe e está no ar, mas só como QR na tela.** Ele oferece um kit com os
 cinco agentes e os prompts que usa (planejador, crítico técnico, crítico de negócio, advogado do
 diabo e consolidador, cada um em um modelo diferente). O endereço aparece no slide de encerramento
 dele, aos 32min42s do vídeo publicado: **https://m2br.academy/materiais/pmi**, "Kit de Análise de
@@ -158,7 +158,7 @@ webinar de ≈28 h para ≈34 h. Esse ganho só aparece em superfície com janel
 
 ⚠️ **A #1604 saiu de uma tentativa de fazer a coisa certa.** Antes de fechar o webinar por SQL fui
 conferir se dava para fechar pelo admin, e dava: `upsert_webinar` aceita `p_status` e `p_youtube_url`,
-e o gate dela permite ao **próprio organizador** (o Denis, neste caso) fechar o webinar dele. Só que a
+e o gate dela permite ao **próprio organizador** (o member A, neste caso) fechar o webinar dele. Só que a
 função grava `board_item_id = p_board_item_id` sem `COALESCE` e o modal nunca envia esse parâmetro.
 Fechar este webinar pela tela teria apagado, em silêncio, o vínculo com o card
 `f5a77542-4007-4229-916b-ead5852b20e6`. Por isso o fechamento foi por UPDATE direto.

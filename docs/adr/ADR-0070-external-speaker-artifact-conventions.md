@@ -16,7 +16,7 @@ External speaker engagements (PMI congress submissions, ProjectManagement.com ar
 3. Stage 2 final materials (final slides, recording rehearsals)
 4. Post-event public artifacts (official PMI recording, public deck)
 
-Without a documented convention, the team diverges on **which schema target stores which artifact** and **what visibility applies**. LATAM LIM 2026 (Roberto + member A) surfaced this divergence concretely. Replays for next submissions (LIM 2027, ProjectManagement.com articles, partner workshops) need predictable mapping.
+Without a documented convention, the team diverges on **which schema target stores which artifact** and **what visibility applies**. LATAM LIM 2026 (member D + member A) surfaced this divergence concretely. Replays for next submissions (LIM 2027, ProjectManagement.com articles, partner workshops) need predictable mapping.
 
 ## Decision
 

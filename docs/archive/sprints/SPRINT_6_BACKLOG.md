@@ -186,7 +186,7 @@ npx astro build && npm test
 | MCP Connector (#5) | **DONE** Sprint 5 | S6.1, S6.3, S6.6, S6.7 são follow-ups |
 | Attendance Cross-Tribe (#1) | Open P0 | S6.2 endereça diretamente |
 | Designation Filter (#7 S3.2) | Pendente Sprint 4 | S6.4 endereça diretamente |
-| Demo Mario 3/Abr | Prep done | MCP agora demo-ready, S6.1 valida write tools para demo |
+| Demo member A 3/Abr | Prep done | MCP agora demo-ready, S6.1 valida write tools para demo |
 | Dep Audit (Mar/2026) | Doc exists | S6.8 executa cleanup, S6.10 mapeia majors |
 | SDK Evolution | Tracked | S6.9 + S6.12 mantêm tracking ativo |
 

@@ -46,7 +46,7 @@ ficou de fora da `20260904175905`.
 
 ## A segunda, e ela depende de terceiros
 
-**As agendas do member A e do Fernando.** O GP pediu em 04/09 para os dois abrirem. A verificação é
+**As agendas do member A e do member B.** O GP pediu em 04/09 para os dois abrirem. A verificação é
 reabrir os quatro links de agendamento **em navegador** (fetch devolve 200 com a agenda vazia: são
 3.501 bytes de casca em JS) e recontar contra a linha de base registrada na `#2188`:
 
@@ -117,7 +117,7 @@ cima.
 
 ## O que continua parado do lado do PM, e é o que segura o dia 10
 
-**Os cinco pontos da pauta**, que o Fernando cita duas vezes na thread do PMOGA como esqueleto da
+**Os cinco pontos da pauta**, que o member B cita duas vezes na thread do PMOGA como esqueleto da
 descrição de cada produto, e **a atribuição da mensagem das 8:56** (se a mudança de cidade e a
 indisponibilidade até meados da semana são do PM ou do coordenador do PMOGA).
 

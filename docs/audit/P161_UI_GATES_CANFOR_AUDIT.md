@@ -2,7 +2,7 @@
 
 **Issue:** #161 — *permissions: audit sensitive UI gates against V4 canFor*
 **Date:** 2026-06-06
-**Trigger:** p201 root cause — Roberto & Sarah held `curate_content=true` via **engagement**, but the UI gated on
+**Trigger:** p201 root cause — member C & member A held `curate_content=true` via **engagement**, but the UI gated on
 a global `hasPermission(...)` keyed on the cached `operational_role`, which didn't reflect it → they were wrongly
 **blocked**. Same class can leak the other way (a tribe-X leader sees tribe-Y controls via a global gate).
 
@@ -116,8 +116,8 @@ global/org-tier affordance with no specific tribe/initiative in scope — `hasPe
 
 | Persona | Expectation | Mechanism |
 |---|---|---|
-| Roberto / Sarah (curator via engagement) | sees curation + own-tribe contacts despite stale `operational_role` | `canFor('view_pii'/'curate_content', scope)` reads engagement caps ✓ |
+| member C / member A (curator via engagement) | sees curation + own-tribe contacts despite stale `operational_role` | `canFor('view_pii'/'curate_content', scope)` reads engagement caps ✓ |
 | Tribe leader (engagement) of tribe X | edit/contacts on tribe X only, not tribe Y | scoped `canFor` — no cross-tribe leak ✓ |
-| Marcos / Herlon / member | masked contacts, no edit | gate returns false; server RPC returns `{}` ✓ |
+| member D / member B / member | masked contacts, no edit | gate returns false; server RPC returns `{}` ✓ |
 | chapter_liaison | admin entries via `canForAdminEntry`; no tribe-scoped edit | Class-A gates unchanged ✓ |
 | superadmin simulating tier T | previews tier T's affordances | simulation overlay (V3 path on effective tribe) ✓ |

@@ -87,7 +87,7 @@ P202 audit noted that beyond `kind='volunteer'`, several engagement kinds also n
 | Engagement kind | requires_agreement | Currently covered by rows above? | Notes |
 |---|---|---|---|
 | `volunteer` | yes (canonical path) | rows 4, 6, 7, 9 | full coverage post-#179/#181/#177 |
-| `study_group_owner` | yes (e.g. Herlon) | rows 4 + 6 partial | Herlon is in `get_pending_agreement_engagements` queue (#177); historical 2026-04-13/14 batch admin_attestation only covered `kind='volunteer'` |
+| `study_group_owner` | yes (e.g. member A) | rows 4 + 6 partial | member A is in `get_pending_agreement_engagements` queue (#177); historical 2026-04-13/14 batch admin_attestation only covered `kind='volunteer'` |
 | `study_group_participant` | yes (1 case) | row 4 | same as above |
 | `ambassador` | yes (~12 cases) | row 4 + Issue #160 deferred | PM team review pending; matrix row 4 covers nudge once decided |
 | `chapter_board` | yes (~9 cases) | row 4 + Issue #160 deferred | same |
@@ -115,7 +115,7 @@ P202 audit noted that beyond `kind='volunteer'`, several engagement kinds also n
 
 ### Gap 2 — countersign_pending admin alert (row 5)
 
-**Problem.** Counter-signature is the gate between `signed` and `authoritative` (capability turns on at `is_authoritative=true`). If admin (typically GP or chapter director) doesn't counter-sign within ~24h, the volunteer signed-but-can-do-nothing. There's no surface that flags this; only manual queue inspection on `/admin/certificates`. The Herlon case at p195 (counter-sign carry from p195-p199 sediment) is the canonical example — 4+ sessions of "PM-pending operational" item.
+**Problem.** Counter-signature is the gate between `signed` and `authoritative` (capability turns on at `is_authoritative=true`). If admin (typically GP or chapter director) doesn't counter-sign within ~24h, the volunteer signed-but-can-do-nothing. There's no surface that flags this; only manual queue inspection on `/admin/certificates`. The member A case at p195 (counter-sign carry from p195-p199 sediment) is the canonical example — 4+ sessions of "PM-pending operational" item.
 
 **Proposed shape.**
 - New notification type: `countersign_pending_alert`.
@@ -219,8 +219,8 @@ Pre-resolved decisions (stated for transparency; PM may revise but no input need
 
 Genuinely open for PM:
 
-1. **Retroactive scope for special engagement kinds (#160).** When PM decides on Herlon-class historical attestation, does the new nudge cron apply retroactively? If yes, the first non-dry-run cron run would fire for ~16+60 cases — notification storm. Mitigation already in §5 Gap 1 PREREQ: cron ships with `p_dry_run=true` default; PM signs off before flipping. PM still needs to answer: should the dry-run window be 1 run, 1 week, or until #160 closes?
-2. **Owner of countersign_pending alert.** GP only? Or also `voluntariado_director` designation? Affects template recipient list. Proposed (matches existing `v4_notify_expiring_engagements` D-7 pattern that cc's Lorena): both.
+1. **Retroactive scope for special engagement kinds (#160).** When PM decides on member A-class historical attestation, does the new nudge cron apply retroactively? If yes, the first non-dry-run cron run would fire for ~16+60 cases — notification storm. Mitigation already in §5 Gap 1 PREREQ: cron ships with `p_dry_run=true` default; PM signs off before flipping. PM still needs to answer: should the dry-run window be 1 run, 1 week, or until #160 closes?
+2. **Owner of countersign_pending alert.** GP only? Or also `voluntariado_director` designation? Affects template recipient list. Proposed (matches existing `v4_notify_expiring_engagements` D-7 pattern that cc's member B): both.
 
 ---
 

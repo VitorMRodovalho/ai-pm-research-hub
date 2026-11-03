@@ -106,10 +106,10 @@ nos 3 idiomas. Caminhos possíveis estão na **#1762**; qualquer um exige decis�
 
 | medida | valor |
 |---|---|
-| roteáveis hoje | **3** (member A, Fernando, Vitor — todos `committee_override`) |
+| roteáveis hoje | **3** (member A, member B, Vitor — todos `committee_override`) |
 | bloqueados hoje | **0** |
 | observadores | 4, todos com `role_not_routable` + `no_booking_url` |
-| despachos | Vitor 63 · member A 20 · Fernando 4 (94 no total, com 7 `cycle_fallback` de leader) |
+| despachos | Vitor 63 · member A 20 · member B 4 (94 no total, com 7 `cycle_fallback` de leader) |
 | `selection_interviewer_blackouts` | 0 linhas — a superfície existe, o mecanismo ainda **não foi exercido em produção** |
 
 ⚠️ **Zero bloqueio é ausência de uso, não imunidade.** O invariante do contrato que verifica

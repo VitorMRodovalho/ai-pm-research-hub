@@ -331,7 +331,7 @@ Brief pro council deve solicitar pesar especificamente:
 1. ✅ **p150**: spec drafted + ADR-0079 PROPOSED.
 2. ✅ **p151**: council 4-lens (data-architect + ai-engineer + security-engineer + legal-counsel) em paralelo + synthesis em `docs/council/decisions/2026-05-12-p151-subjective-scoring-synthesis.md`. Output: 10 decisões consolidadas + 11 blockers identificados.
 3. ✅ **p152 (esta sessão)**: amendments documentais — spec + ADR-0079 atualizados refletindo decisões + checklist. Status spec → DRAFT · POST-COUNCIL. Status ADR → PROPOSED · AWAITING-RATIFICATION.
-4. ⏳ **p153**: Material change Termo de Adesão v2.7→v2.8 (#9 do gate) — draft + workflow ratificação curadores (member A + member B + Roberto + Ângelina + member C DPO).
+4. ⏳ **p153**: Material change Termo de Adesão v2.7→v2.8 (#9 do gate) — draft + workflow ratificação curadores (member A + member B + member D + Ângelina + member C DPO).
 5. ⏳ **p154**: DPA Anthropic confirmação (#11). Após confirmação + Termo v2.8 ratificado + ADR ACCEPTED, migrations M0 (consent column dedicada) + M1 (video_screening_analysis) + M2 (trigger sync) + M3 (pillar_rubrics) + M4 (RPCs) + M5 (cron) podem ser aplicadas.
 6. ⏳ **p155+**: EF `pmi-ai-subjective` + frontend (banner UI + consent gate + calibration view + notificações) + MCP tools + QA + dry-run Cycle 4 (o candidato afetado (#332) com re-disclosure individual).
 
