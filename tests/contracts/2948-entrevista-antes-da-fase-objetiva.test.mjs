@@ -37,13 +37,15 @@ function slice(src, start, end) {
   assert.ok(j > i, `end marker not found after ${start}: ${end}`);
   return src.slice(i, j + end.length);
 }
+// Every regex metacharacter, backslash included, so a name is matched literally.
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const listOf = (src, name) => {
-  const m = src.match(new RegExp(`const ${name} = \\[([^\\]]*)\\];`));
+  const m = src.match(new RegExp(`const ${escapeRe(name)} = \\[([^\\]]*)\\];`));
   assert.ok(m, `${name} not declared as a literal list`);
   return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]).sort();
 };
 const keyValue = (dict, key) => {
-  const m = dict.match(new RegExp(`^\\s*'${key.replace(/\./g, '\\.')}':\\s*'((?:[^'\\\\]|\\\\.)*)',\\s*$`, 'm'));
+  const m = dict.match(new RegExp(`^\\s*'${escapeRe(key)}':\\s*'((?:[^'\\\\]|\\\\.)*)',\\s*$`, 'm'));
   return m ? m[1] : null;
 };
 
@@ -84,7 +86,7 @@ test('D: the opt-out and the revert take the status from app_status_after, never
   const optOut = slice(PORTAL, 'const handleOptInterviewAll = async () => {', 'const handleRevertInterview');
   const revert = slice(PORTAL, 'const handleRevertInterview = async () => {', 'const handleReplaceVideo');
   for (const [name, body, rpc] of [['opt-out', optOut, 'opt_out_all_pillars'], ['revert', revert, 'revert_interview_optout']]) {
-    assert.match(body, new RegExp(`const \\{ data, error \\} = await sb\\.rpc\\('${rpc}'`), `${name}: reads the RPC answer`);
+    assert.match(body, new RegExp(`const \\{ data, error \\} = await sb\\.rpc\\('${escapeRe(rpc)}'`), `${name}: reads the RPC answer`);
     assert.match(body, /const statusAfter = \(data as any\)\?\.app_status_after;/, `${name}: takes app_status_after`);
     assert.match(body, /application: \{ \.\.\.app, status: typeof statusAfter === 'string' \? statusAfter : app\.status \}/, `${name}: status from the server`);
     assert.doesNotMatch(body, /status: '(interview_|screening|objective_|submitted)/, `${name}: no status literal`);
