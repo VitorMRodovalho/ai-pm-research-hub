@@ -80,8 +80,9 @@ test('#1175 W4: dry-run preview reports the same two skips as Apply', () => {
 // Comments are masked so the explanation of the filter cannot stand in for the filter.
 test('#2827: /ingest drops applications outside their opportunity buckets before resume sync, preview and apply', () => {
   const src = maskJsComments(indexSrc);
-  assert.match(src, /const OPPORTUNITY_IMPORT_BUCKETS:\s*Record<string,\s*readonly string\[\]>\s*=\s*\{\s*'72562':\s*\['qualified'\]\s*\};/,
-    'the worker map must restrict 72562 to the qualified bucket, and nothing else');
+  // #2393 (D5): 76080, the line pilot, imports only the submitted and rejected buckets.
+  assert.match(src, /const OPPORTUNITY_IMPORT_BUCKETS:\s*Record<string,\s*readonly string\[\]>\s*=\s*\{\s*'72562':\s*\['qualified'\],\s*'76080':\s*\['submitted', 'rejected'\]\s*\};/,
+    'the worker map must restrict 72562 to qualified and 76080 to submitted and rejected, and nothing else');
 
   const handleAt = src.indexOf('async function handleIngest(');
   const filterAt = src.indexOf('body.applications = body.applications.filter(', handleAt);
@@ -120,8 +121,8 @@ test('#2827: script downloads only the qualified bucket of 72562', () => {
   // maskJsComments' block pass would blank everything from there to the next '*/',
   // the CONFIG block included.
   const src = scriptSrc.replace(/^[ \t]*\/\/[^\n]*/gm, '');
-  assert.match(src, /NUCLEO_OPPORTUNITY_BUCKETS:\s*\{\s*72562:\s*\['qualified'\]\s*\}/,
-    'the script map must restrict 72562 to the qualified bucket, and nothing else');
+  assert.match(src, /NUCLEO_OPPORTUNITY_BUCKETS:\s*\{\s*72562:\s*\['qualified'\],\s*76080:\s*\['submitted', 'rejected'\]\s*\}/,
+    'the script map must restrict 72562 to qualified and 76080 to submitted and rejected, and nothing else');
   const loopAt = src.indexOf('for (const b of buckets(oppId)) {');
   assert.ok(loopAt > 0, 'the bucket sweep loop must be findable');
   const head = src.slice(src.lastIndexOf('for (const oppId of opportunityIds)', loopAt), src.indexOf('fetchJson(', loopAt));
