@@ -33,6 +33,11 @@ import { phoneVisibleNotice } from '../../lib/whatsapp-group-notice';
 // the onboarding WhatsApp group (get_community_group_link, with the phone notice next to the link). Without
 // the group link the channel falls back to the Núcleo address, without the response-time promise, which the
 // owner tied to the group and the named contacts (decision of 01/11/2026).
+//
+// Onboarding wave 0, PR-4 (#1885): for who has the Term and no tribe (`eligible`), this block is the card of the day
+// of the Term, in place of the onboarding checklist (which hides itself for the same cohort): choose the tribe, the
+// next General Meeting (get_next_general_meeting, the public agenda reader, no personal data) with the link to the
+// General Meetings agenda, and the onboarding contact, now also in the picker state.
 
 const MIN_MESSAGE = 50;
 // #1256: withdraw_from_initiative enforces reason >= 10; mirror it client-side to gate the button.
@@ -96,6 +101,13 @@ interface Context {
 interface OnboardingContact {
   groupUrl: string | null;
   names: string[];
+}
+
+// PR-4: the next General Meeting, as get_next_general_meeting returns it. `date` is a calendar date of the series
+// (no timezone shift); `time_start` is the Brasília wall-clock time.
+interface NextGeral {
+  date: string;
+  time_start: string | null;
 }
 
 interface Copy {
@@ -171,6 +183,11 @@ interface Copy {
   contactGroup: string;
   contactEmail: string;
   contactResponse: string;
+  // PR-4 (#1885): the card of the day of the Term.
+  contactLeadPicker: string;
+  geralLead: string;
+  geralWhen: (date: string, time: string | null) => string;
+  geralAgenda: string;
 }
 
 // #1877: the Núcleo's official address, the same one the rest of the site already shows.
@@ -247,6 +264,10 @@ const COPY: Record<string, Copy> = {
     contactGroup: 'Entrar no grupo de WhatsApp do onboarding do Núcleo',
     contactEmail: 'Escrever para o Núcleo',
     contactResponse: 'Resposta em até 3 dias úteis.',
+    contactLeadPicker: 'Dúvidas para escolher? Fale com o time de onboarding.',
+    geralLead: 'Enquanto isso, venha à próxima Reunião Geral do Núcleo:',
+    geralWhen: (date, time) => (time ? `${date}, às ${time} (horário de Brasília)` : date),
+    geralAgenda: 'Ver a agenda das Reuniões Gerais',
   },
   'en-US': {
     ariaLabel: 'Request to join a tribe',
@@ -316,6 +337,10 @@ const COPY: Record<string, Copy> = {
     contactGroup: 'Join the Hub onboarding WhatsApp group',
     contactEmail: 'Write to the Núcleo',
     contactResponse: 'Reply within 3 business days.',
+    contactLeadPicker: 'Not sure which one to choose? Talk to the onboarding team.',
+    geralLead: 'Meanwhile, join the next Núcleo General Meeting:',
+    geralWhen: (date, time) => (time ? `${date}, at ${time} (Brasília time)` : date),
+    geralAgenda: 'See the General Meetings agenda',
   },
   'es-LATAM': {
     ariaLabel: 'Solicitar ingreso a una tribu',
@@ -385,6 +410,10 @@ const COPY: Record<string, Copy> = {
     contactGroup: 'Entrar al grupo de WhatsApp de onboarding del Núcleo',
     contactEmail: 'Escribir al Núcleo',
     contactResponse: 'Respuesta en hasta 3 días hábiles.',
+    contactLeadPicker: '¿Dudas para elegir? Habla con el equipo de onboarding.',
+    geralLead: 'Mientras tanto, ven a la próxima Reunión General del Núcleo:',
+    geralWhen: (date, time) => (time ? `${date}, a las ${time} (hora de Brasilia)` : date),
+    geralAgenda: 'Ver la agenda de las Reuniones Generales',
   },
 };
 
@@ -436,6 +465,33 @@ function ContactBlock({ lead, contact, copy, lang }: { lead: string; contact: On
   );
 }
 
+// PR-4: the Geral series stores a calendar date; render it as is (UTC noon, UTC formatting), never shifted by the
+// viewer's timezone, as get_next_general_meeting asks of its consumers.
+function formatGeralDate(date: string, lang: string): string {
+  try {
+    return new Date(`${date}T12:00:00Z`).toLocaleDateString(lang, { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' });
+  } catch {
+    return date;
+  }
+}
+
+function GeralLine({ geral, copy, lang }: { geral: NextGeral; copy: Copy; lang: string }) {
+  const lp = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
+  const time = geral.time_start ? geral.time_start.slice(0, 5) : null;
+  return (
+    <div className="mt-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-3">
+      <p className="text-sm font-semibold text-[var(--text-primary)]">{copy.geralLead}</p>
+      <p className="text-xs text-[var(--text-secondary)] mt-1">{copy.geralWhen(formatGeralDate(geral.date, lang), time)}</p>
+      <a
+        href={`${lp}/reunioes-gerais`}
+        className="mt-1 inline-flex items-center min-h-[44px] text-sm font-semibold text-teal underline underline-offset-2"
+      >
+        {copy.geralAgenda} →
+      </a>
+    </div>
+  );
+}
+
 export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   const copy = COPY[lang] || COPY['pt-BR'];
   const [ctx, setCtx] = useState<Context | null>(null);
@@ -455,6 +511,8 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
   // PR-2: onboarding contact (null until read) and whether the expired state gave way to the picker.
   const [contact, setContact] = useState<OnboardingContact | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  // PR-4: next General Meeting for the card of the day of the Term (null = not read, or none ahead).
+  const [nextGeral, setNextGeral] = useState<NextGeral | null>(null);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -471,6 +529,15 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     setContact({ groupUrl, names });
   }, []);
 
+  // PR-4: a failed read shows no meeting line at all, rather than a wrong one.
+  const loadNextGeral = useCallback(async (sb: any) => {
+    const res = await sb.rpc('get_next_general_meeting').then((r: any) => r, () => null);
+    const d = res?.data;
+    if (d && typeof d.date === 'string') {
+      setNextGeral({ date: d.date, time_start: typeof d.time_start === 'string' ? d.time_start : null });
+    }
+  }, []);
+
   const load = useCallback(async () => {
     const sb = getSb();
     if (!sb) return;
@@ -478,9 +545,10 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
     if (error || !data || typeof data !== 'object') return;
     const next = data as Context;
     setCtx(next);
-    // PR-2: the contact only where it is shown (pending, expired, eligible with no tribe to pick).
-    const noTribes = !Array.isArray(next.tribes) || next.tribes.length === 0;
-    if (next.pending || (next.eligible && (next.expired || noTribes))) loadContact(sb);
+    // PR-2/PR-4: the contact only where it is shown: pending, and every state of who has the Term and no tribe
+    // (picker, expired, empty). The next General Meeting only on the card of the day of the Term.
+    if (next.pending || next.eligible) loadContact(sb);
+    if (next.eligible) loadNextGeral(sb);
     // R7: only when the picker will render, and without blocking it (the time fills in after).
     if (next.eligible && !next.pending && Array.isArray(next.tribes) && next.tribes.length > 0) {
       const { data: rows, error: profErr } = await sb.rpc('get_tribe_public_profiles');
@@ -488,7 +556,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
         setProfiles(new Map((rows as TribePublicProfile[]).map((p) => [p.tribe_id, p])));
       }
     }
-  }, [getSb, loadContact]);
+  }, [getSb, loadContact, loadNextGeral]);
 
   // Boot like the sibling islands: wait for the nav member, then load once.
   useEffect(() => {
@@ -660,6 +728,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
                 )}
               </div>
               {contact && <ContactBlock lead={copy.contactLeadPending} contact={contact} copy={copy} lang={lang} />}
+              {nextGeral && <GeralLine geral={nextGeral} copy={copy} lang={lang} />}
             </div>
           </div>
         </div>
@@ -820,6 +889,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
               </button>
             )}
           </div>
+          {nextGeral && <GeralLine geral={nextGeral} copy={copy} lang={lang} />}
         </div>
       </section>
     );
@@ -833,6 +903,7 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
           <h2 className="text-base font-extrabold text-navy dark:text-teal">{copy.emptyTitle}</h2>
           <p className="text-sm text-[var(--text-secondary)] mt-1.5 leading-relaxed">{copy.emptyBody}</p>
           {contact && <ContactBlock lead={copy.contactLeadEmpty} contact={contact} copy={copy} lang={lang} />}
+          {nextGeral && <GeralLine geral={nextGeral} copy={copy} lang={lang} />}
         </div>
       </section>
     );
@@ -945,6 +1016,9 @@ export default function TribeRequestBlock({ lang = 'pt-BR' }: Props) {
           {/* In-flight announcement for screen readers (reliable, unlike aria-busy on a button). */}
           <span role="status" aria-live="assertive" className="sr-only">{submitting ? copy.submitting : ''}</span>
         </div>
+        {/* PR-4 (#1885): the rest of the card of the day of the Term. */}
+        {nextGeral && <GeralLine geral={nextGeral} copy={copy} lang={lang} />}
+        {contact && <ContactBlock lead={copy.contactLeadPicker} contact={contact} copy={copy} lang={lang} />}
       </div>
     </section>
   );

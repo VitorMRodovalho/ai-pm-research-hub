@@ -33,9 +33,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', credlyMissing: 'Seu perfil não tem Credly: a plataforma só vê o curso pelo badge do Credly.', connectCredly: 'Conectar Credly no perfil' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', credlyMissing: 'Your profile has no Credly: the platform only sees the course through the Credly badge.', connectCredly: 'Connect Credly on your profile' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', credlyMissing: 'Su perfil no tiene Credly: la plataforma solo ve el curso por la insignia de Credly.', connectCredly: 'Conectar Credly en el perfil' },
+  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', credlyMissing: 'Seu perfil não tem Credly: a plataforma só vê o curso pelo badge do Credly.', connectCredly: 'Conectar Credly no perfil', chooseTribe: 'Escolher sua tribo' },
+  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', credlyMissing: 'Your profile has no Credly: the platform only sees the course through the Credly badge.', connectCredly: 'Connect Credly on your profile', chooseTribe: 'Choose your tribe' },
+  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', credlyMissing: 'Su perfil no tiene Credly: la plataforma solo ve el curso por la insignia de Credly.', connectCredly: 'Conectar Credly en el perfil', chooseTribe: 'Elegir tu tribu' },
 };
 
 // Steps that carry a bespoke CTA below. Any other step (e.g. the #1103 role-scoped
@@ -98,6 +98,10 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   // `sessionHidden` = transient ✕ on the working checklist (not persisted).
   const [celebrationPending, setCelebrationPending] = useState(false);
   const [sessionHidden, setSessionHidden] = useState(false);
+  // Onboarding wave 0, PR-4 (#1885): who has the Term and no tribe (`eligible` in get_my_tribe_request_context) sees
+  // the card of the day of the Term (TribeRequestBlock: choose the tribe, the next General Meeting, the contact) in
+  // place of this list of steps. Read once with the steps.
+  const [dayOfTerm, setDayOfTerm] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
 
@@ -107,10 +111,12 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
     // #766 PR1 — fetch onboarding + the server-side celebration state in PARALLEL so
     // `allComplete` and `celebrationPending` resolve together (no flicker window where
     // allComplete=true but celebrationPending still false on slow networks; ux R1).
-    const [onb, ms] = await Promise.all([
+    const [onb, ms, trc] = await Promise.all([
       sb.rpc('get_my_onboarding'),
       sb.rpc('get_my_milestones'),
+      sb.rpc('get_my_tribe_request_context'),
     ]);
+    setDayOfTerm(trc?.data?.eligible === true);
     const data = onb?.data;
     if (data?.steps) {
       setSteps(data.steps);
@@ -185,6 +191,8 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
   }
 
   if (sessionHidden) return null;
+  // PR-4: the card of the day of the Term takes this place (the celebration above is not affected).
+  if (dayOfTerm) return null;
 
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
   const member = (window as any).navGetMember?.();
@@ -255,6 +263,14 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                     {s.step_id === 'meet_tribe' && member?.tribe_id && (
                       <a href={`${lp}/tribe/${member.tribe_id}`} className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">
                         🔬 {l.visitTribe}
+                      </a>
+                    )}
+                    {/* #1885: without a tribe the step had no exit at all; it points to where the choice lives, the
+                        tribe block of this same /workspace page (the /en and /es workspace pages redirect and would
+                        drop a hash, so the link stays on the page). */}
+                    {s.step_id === 'meet_tribe' && !member?.tribe_id && (
+                      <a href="#escolher-tribo" className="px-2.5 py-1 rounded-lg bg-purple-100 text-purple-700 text-[10px] font-semibold no-underline hover:bg-purple-200">
+                        🧭 {l.chooseTribe}
                       </a>
                     )}
                     {s.step_id === 'start_trail' && (

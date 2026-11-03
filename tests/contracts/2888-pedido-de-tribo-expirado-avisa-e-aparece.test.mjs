@@ -235,7 +235,8 @@ test('H3: the contact is in the pending, expired and empty states, and loads whe
   assert.match(pending, /\{contact && <ContactBlock lead=\{copy\.contactLeadPending\}/, 'the pending state has no contact');
   const empty = between(BLOCK, 'if (!ctx.tribes || ctx.tribes.length === 0) {', '</section>', 'empty state');
   assert.match(empty, /\{contact && <ContactBlock lead=\{copy\.contactLeadEmpty\}/, 'the empty state has no contact');
-  assert.match(BLOCK, /if \(next\.pending \|\| \(next\.eligible && \(next\.expired \|\| noTribes\)\)\) loadContact\(sb\);/, 'the contact is not loaded for the states that show it');
+  // PR-4 (#1885) widened the load to every state of who has the Term and no tribe (the picker shows the contact too).
+  assert.match(BLOCK, /if \(next\.pending \|\| next\.eligible\) loadContact\(sb\);/, 'the contact is not loaded for the states that show it');
   const lc = between(BLOCK, 'const loadContact = useCallback(async (sb: any) => {', '}, []);', 'loadContact');
   assert.match(lc, /sb\.rpc\('get_community_group_link', \{ p_group: 'onboarding' \}\)/, 'the group is not the onboarding group');
   assert.match(lc, /sb\.rpc\('get_onboarding_contacts'\)/, 'the names do not come from the reader');
