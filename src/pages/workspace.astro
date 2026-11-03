@@ -134,7 +134,11 @@ const WK = {
          get_my_tribe_request_context (eligible = active, termed, no tribe yet). Mutually exclusive
          with PostPromotionJourney (which needs tribe_id != null), so it sits just above it; a
          researcher without a tribe needs one before the first-days journey applies. -->
-    <TribeRequestBlock client:load lang={lang} />
+    <!-- Onboarding wave 0, PR-4 (#1885): anchor for the "Conheça sua tribo" step of who has no tribe. For who has the
+         Term and no tribe this block is the card of the day of the Term, in place of the onboarding checklist. -->
+    <div id="escolher-tribo" class="scroll-mt-24">
+      <TribeRequestBlock client:load lang={lang} />
+    </div>
 
     <!-- #766 H1: post-promotion journey (first days of the real role). Persistent, stateful
          replacement for the static HBLOCK that vanished with the onboarding card. Appears AFTER
