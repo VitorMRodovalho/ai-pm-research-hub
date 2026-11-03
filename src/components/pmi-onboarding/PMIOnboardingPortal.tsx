@@ -272,6 +272,10 @@ export default function PMIOnboardingPortal({
   const canBookInterview = INTERVIEW_BOOKING_STATUSES.includes(app.status);
   const awaitingObjective = BEFORE_OBJECTIVE_STATUSES.includes(app.status);
   const hasVoiceConsent = Boolean(app.has_voice_biometric_consent && !app.has_voice_biometric_revoked);
+  // #2393 (ADR-0134, D4): o token de candidatura de vaga piloto da linha sai sem 'video_screening' (trigger no
+  // banco). Sem o escopo o servidor recusa gravar e recusar vídeo, então o consentimento de voz e a seção de vídeo
+  // e entrevista dão lugar a um aviso neutro.
+  const hasVideoScope = (payload.scopes ?? []).includes('video_screening');
   const videosUploadedCount = videoScreenings.filter(v => ['uploaded','transcribing','transcribed'].includes(v.status)).length;
 
   const expiresAtDate = new Date(token_metadata.expires_at);
@@ -804,6 +808,7 @@ export default function PMIOnboardingPortal({
 
       {/* Issue #331 — destacado consent for voice biometric data (LGPD Art. 11 §I).
           Visually distinct (amber) from the AI analysis consent above per Art. 8 destaque rule. */}
+      {hasVideoScope && (
       <section
         data-testid="voice-biometric-consent-section"
         className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6 shadow-sm"
@@ -844,6 +849,7 @@ export default function PMIOnboardingPortal({
           )}
         </div>
       </section>
+      )}
 
       {/* p86 Wave 5b-2: AI-augmented self-improvement cards (Card B + Card A) */}
       {enrichmentStatus?.has_analysis && (
@@ -1108,7 +1114,15 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
+      {/* #2393 D4: sem o escopo de vídeo, um aviso neutro no lugar da seção de vídeo e entrevista */}
+      {!hasVideoScope && (
+        <section data-testid="no-video-scope-notice" className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+          <p className="text-sm text-gray-700">{T('pmi.onboarding.noVideoScopeNotice')}</p>
+        </section>
+      )}
+
       {/* Video screening — 5 pillars × question + opt-out + Drive Resumable upload */}
+      {hasVideoScope && (
       <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900 mb-2">
           🎥 {T('pmi.onboarding.videoScreeningTitle')}
@@ -1443,6 +1457,7 @@ export default function PMIOnboardingPortal({
           </div>
         )}
       </section>
+      )}
 
       <footer className="text-center text-sm text-gray-600 pt-6 border-t border-gray-200">
         {T('pmi.onboarding.contactFooter')}{' '}

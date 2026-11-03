@@ -7426,6 +7426,8 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.videoUploading': 'Uploading',
   'pmi.onboarding.videoFinalizing': 'Finalizing...',
   'pmi.onboarding.videoUploadHint': 'Accepted formats: MP4, MOV, WebM. Max size: 500MB. Videos are saved to a private Google Drive of the Núcleo team. Automatic virus scan.',
+  // #2393 (ADR-0134, D4): aviso no lugar do vídeo, texto aprovado pelo GP em 03/11/2026.
+  'pmi.onboarding.noVideoScopeNotice': 'For this opening, the next steps are arranged with the line leader, and you will be contacted by email.',
   'pmi.onboarding.videoErrorMime': 'File must be a video (MP4, MOV, WebM).',
   'pmi.onboarding.videoErrorSize': 'File larger than 500MB. Compress or split into parts.',
   'pmi.onboarding.videoPersistenceHint': 'You can close this portal and come back any time — videos already uploaded are saved.',

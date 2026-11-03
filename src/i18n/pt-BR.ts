@@ -7434,6 +7434,8 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.videoUploading': 'Enviando',
   'pmi.onboarding.videoFinalizing': 'Finalizando...',
   'pmi.onboarding.videoUploadHint': 'Formatos aceitos: MP4, MOV, WebM. Tamanho máximo: 500MB. Os vídeos são salvos em Google Drive privado da equipe Núcleo. Verificação anti-vírus automática.',
+  // #2393 (ADR-0134, D4): aviso no lugar do vídeo, texto aprovado pelo GP em 03/11/2026.
+  'pmi.onboarding.noVideoScopeNotice': 'Nesta vaga, as próximas etapas são combinadas com o líder da linha, e o contato chega por e-mail.',
   'pmi.onboarding.videoErrorMime': 'Arquivo precisa ser de vídeo (MP4, MOV, WebM).',
   'pmi.onboarding.videoErrorSize': 'Arquivo maior que 500MB. Comprima ou divida em partes.',
   'pmi.onboarding.videoPersistenceHint': 'Você pode fechar este portal e voltar quando quiser — os vídeos já enviados ficam salvos.',
