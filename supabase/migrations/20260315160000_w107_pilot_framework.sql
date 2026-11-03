@@ -88,7 +88,7 @@ INSERT INTO public.pilots (
   ]'::jsonb,
   ARRAY[
     (SELECT id FROM members WHERE name LIKE '%Vitor%Maia%'),
-    (SELECT id FROM members WHERE name LIKE '%Fabricio%Costa%')
+    (SELECT id FROM members WHERE name LIKE '%member A%Costa%')
   ],
   (SELECT id FROM members WHERE name LIKE '%Vitor%Maia%')
 )

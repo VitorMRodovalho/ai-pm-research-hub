@@ -1,4 +1,4 @@
--- Term counter-signature surface fix (Lorena / voluntariado_director sede).
+-- Term counter-signature surface fix (member A / voluntariado_director sede).
 --
 -- Problem: there was no working UI path to counter-sign a volunteer TERM.
 --   1. get_pending_countersign (the only list with a counter-sign button) filters

@@ -132,8 +132,8 @@ GRANT EXECUTE ON FUNCTION public.get_credly_unmapped_badges() TO authenticated, 
 
 -- ── (e) Credly coverage/health — surfaces the gaps this audit found by hand (2026-07-08):
 --   missing_link  = active researcher/leader/GP with NO credly_url cadastrado
---   never_verified= has a link but the sync never succeeded (fetch 404 / private profile — e.g. Tiele)
---   no_badges     = synced OK but the profile has 0 badges (empty/private — e.g. Marcela)
+--   never_verified= has a link but the sync never succeeded (fetch 404 / private profile — e.g. member B)
+--   no_badges     = synced OK but the profile has 0 badges (empty/private — e.g. member C)
 CREATE OR REPLACE FUNCTION public._credly_health_rows()
  RETURNS TABLE(kind text, member_id uuid, member_name text, papel text)
  LANGUAGE sql

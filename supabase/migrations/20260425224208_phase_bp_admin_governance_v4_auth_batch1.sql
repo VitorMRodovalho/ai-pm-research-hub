@@ -12,7 +12,7 @@
 --
 -- Privilege expansion analysis (verified live data 2026-04-25):
 --   - Currently only 2 active members satisfy old gate (Vitor manager+SA,
---     Fabricio SA via tribe_leader). Both also satisfy V4 manage_platform.
+--     member A SA via tribe_leader). Both also satisfy V4 manage_platform.
 --   - 0 active deputy_manager engagements. 0 active co_gp engagements.
 --   - Net authorization change in production today: ZERO.
 --   - Co_gp expansion takes effect only when a co_gp engagement is created.

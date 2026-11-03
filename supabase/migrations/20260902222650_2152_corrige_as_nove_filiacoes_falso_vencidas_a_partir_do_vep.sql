@@ -25,10 +25,10 @@
 --       capitulo.
 --
 -- E UMA LEITURA MINHA QUE ESTAVA ERRADA, registrada para nao se repetir: sondando
---       `pmi_memberships->1->>'chapterName'` eu conclui que Blenda (PMI-MG) e Thayanne (PMI-GO)
+--       `pmi_memberships->1->>'chapterName'` eu conclui que member A (PMI-MG) e member B (PMI-GO)
 --       estavam em capitulos divergentes (Sao Paulo e Ceara). Estavam nao: o array lista VARIOS
---       capitulos e o indice 1 nao e "o capitulo da pessoa". Abrindo o array inteiro, Blenda tem 4
---       memberships INCLUINDO Minas Gerais e Thayanne tem 3 INCLUINDO Goias. As nove batem com o
+--       capitulos e o indice 1 nao e "o capitulo da pessoa". Abrindo o array inteiro, member A tem 4
+--       memberships INCLUINDO Minas Gerais e member B tem 3 INCLUINDO Goias. As nove batem com o
 --       capitulo registrado. Indice fixo em array multi-valorado devolve o vizinho.
 --
 -- `verified_by_member_id` FICA NULL de proposito: nao houve pessoa verificando. Preencher com quem

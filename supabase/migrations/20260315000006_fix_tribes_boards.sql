@@ -1,6 +1,6 @@
 -- Migration: Consolidate duplicate/scattered boards per tribe
 -- Context: Tribe assignments changed across cycles (e.g. tribe_id=6 was
--- Débora in cycle 2, Fabrício in cycle 3; tribe_id=3 was Fabrício in
+-- member A in cycle 2, member B in cycle 3; tribe_id=3 was member B in
 -- cycles 1-2). This left board_items scattered across multiple boards
 -- for the same tribe_id.
 --
@@ -12,7 +12,7 @@ BEGIN;
 -- Nullify source_board on items being moved to avoid trigger conflicts
 -- with enforce_board_item_source_tribe_integrity.
 
--- === Tribe 6 (ROI & Portfolio — Fabrício, cycle 3) ===
+-- === Tribe 6 (ROI & Portfolio — member B, cycle 3) ===
 WITH target_board_t6 AS (
   SELECT id FROM project_boards
   WHERE tribe_id = 6 AND is_active = true
@@ -39,7 +39,7 @@ WHERE tribe_id = 6
   AND id != (SELECT id FROM target_board_t6)
   AND is_active = true;
 
--- === Tribe 3 (legacy Fabrício boards from cycles 1-2) ===
+-- === Tribe 3 (legacy member B boards from cycles 1-2) ===
 WITH target_board_t3 AS (
   SELECT id FROM project_boards
   WHERE tribe_id = 3 AND is_active = true
@@ -67,7 +67,7 @@ WHERE tribe_id = 3
   AND is_active = true
   AND EXISTS (SELECT 1 FROM target_board_t3);
 
--- === Tribe 2 (Agentes Autônomos — Débora, cycle 3) ===
+-- === Tribe 2 (Agentes Autônomos — member A, cycle 3) ===
 WITH target_board_t2 AS (
   SELECT id FROM project_boards
   WHERE tribe_id = 2 AND is_active = true
@@ -95,7 +95,7 @@ WHERE tribe_id = 2
   AND is_active = true
   AND EXISTS (SELECT 1 FROM target_board_t2);
 
--- === Tribe 4 (Cultura & Change — Fernando) ===
+-- === Tribe 4 (Cultura & Change — member C) ===
 WITH target_board_t4 AS (
   SELECT id FROM project_boards
   WHERE tribe_id = 4 AND is_active = true

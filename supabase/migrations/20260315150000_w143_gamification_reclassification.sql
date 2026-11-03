@@ -44,9 +44,9 @@ UPDATE public.courses SET is_trail = true WHERE code IN (
 
 -- E.2 Delete false course_progress entries (bulk insert 2026-03-05 20:36:58)
 
--- Italo: 0 real badges, delete all bulk entries
+-- member E: 0 real badges, delete all bulk entries
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Italo%Soares%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member E%Soares%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- member B: 0 real badges, delete all bulk entries
@@ -54,9 +54,9 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member B%Dutra%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
--- Marcelo: 0 real badges
+-- member F: 0 real badges
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Marcelo%Ferreira%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member F%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- member A: 0 real badges
@@ -64,9 +64,9 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member A%Grilo%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
--- Lídia: 0 real badges
+-- member G: 0 real badges
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Lídia%Vale%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member G%Vale%')
 AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- member C: only delete CPMAI_INTRO (the other 6 are real)
@@ -79,13 +79,13 @@ DELETE FROM course_progress
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Vitor%Maia%')
 AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO');
 
--- Leticia: delete CPMAI_INTRO if no matching Credly badge
+-- member H: delete CPMAI_INTRO if no matching Credly badge
 DELETE FROM course_progress
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Leticia%Clemente%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member H%Clemente%')
 AND course_id = (SELECT id FROM courses WHERE code = 'CPMAI_INTRO')
 AND NOT EXISTS (
   SELECT 1 FROM gamification_points gp
-  WHERE gp.member_id = (SELECT id FROM members WHERE name LIKE '%Leticia%Clemente%')
+  WHERE gp.member_id = (SELECT id FROM members WHERE name LIKE '%member H%Clemente%')
   AND gp.reason LIKE 'Credly:%'
   AND gp.reason LIKE '%CPMAI%'
 );
@@ -97,9 +97,9 @@ AND completed_at = '2026-03-05 20:36:58.893954+00';
 
 -- E.3 Delete orphaned gamification_points from false progress
 
--- Italo: delete all course-related gamification
+-- member E: delete all course-related gamification
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Italo%Soares%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member E%Soares%')
 AND reason LIKE 'Curso:%';
 
 -- member B
@@ -107,9 +107,9 @@ DELETE FROM gamification_points
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member B%Dutra%')
 AND reason LIKE 'Curso:%';
 
--- Marcelo
+-- member F
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Marcelo%Ferreira%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member F%')
 AND reason LIKE 'Curso:%';
 
 -- member A
@@ -117,9 +117,9 @@ DELETE FROM gamification_points
 WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member A%Grilo%')
 AND reason LIKE 'Curso:%';
 
--- Lídia
+-- member G
 DELETE FROM gamification_points
-WHERE member_id = (SELECT id FROM members WHERE name LIKE '%Lídia%Vale%')
+WHERE member_id = (SELECT id FROM members WHERE name LIKE '%member G%Vale%')
 AND reason LIKE 'Curso:%';
 
 -- member C: only CPMAI_INTRO and CDBA_INTRO "Curso:" entries

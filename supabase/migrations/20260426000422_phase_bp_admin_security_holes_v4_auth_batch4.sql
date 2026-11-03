@@ -21,11 +21,11 @@
 --       can_by_member('manage_platform').
 --
 -- Privilege expansion analysis (verified live data 2026-04-25):
---   manage_platform safety check: legacy_count=2 (Vitor SA, Fabricio SA),
+--   manage_platform safety check: legacy_count=2 (Vitor SA, member A SA),
 --   v4_count=2, would_gain=null, would_lose=null. Zero authorization
 --   change in production today. Co_gp + deputy_manager engagements would
 --   inherit access — consistent with admin authority semantics.
---   manage_member safety check: v4_count=2 (Vitor + Fabricio via
+--   manage_member safety check: v4_count=2 (Vitor + member A via
 --   superadmin fast-path). For admin_inactivate_member this TIGHTENS
 --   authority from "any authenticated caller" (security hole) to
 --   manage_member ladder.

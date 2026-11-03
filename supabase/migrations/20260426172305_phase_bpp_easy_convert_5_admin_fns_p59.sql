@@ -8,7 +8,7 @@
 --   - admin_deactivate_tribe       → manage_platform
 --
 -- Privilege expansion safety check (verified pre-apply):
---   V3 grant: 2 members (Vitor, Fabricio — superadmin)
+--   V3 grant: 2 members (Vitor, member A — superadmin)
 --   V4 manage_platform: 2 (same)
 --   V4 manage_member: 2 (same)
 --   would_gain: [] / would_lose: []

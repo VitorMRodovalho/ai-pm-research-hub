@@ -1,6 +1,6 @@
 -- Historical evaluation import for Ciclo 3 2026 (kickoff)
 -- ========================================================
--- Phase 1: 93 objective evaluations (Fabricio + Vitor) + 29 interviews imported
+-- Phase 1: 93 objective evaluations (member A + Vitor) + 29 interviews imported
 -- Phase 2: 24 leader_extra evaluations + conversion linkage for 5 dual applicants
 --
 -- Scale conversions applied:

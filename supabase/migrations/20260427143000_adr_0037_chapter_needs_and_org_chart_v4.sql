@@ -3,7 +3,7 @@
 --
 -- get_chapter_needs: 3-path ladder (manage_platform broad / view_internal_analytics own-chapter
 --   / chapter_board engagement Path Y for board_member preservation).
--- get_org_chart: pure view_internal_analytics (drift loss precedent — 6 tribe_leaders + Sarah).
+-- get_org_chart: pure view_internal_analytics (drift loss precedent — 6 tribe_leaders + member A).
 --
 -- See docs/adr/ADR-0037-chapter-needs-and-org-chart-v4-conversion.md
 -- Rollback: re-apply 20260404020000 (chapter_needs) + 20260320100012 (org_chart).

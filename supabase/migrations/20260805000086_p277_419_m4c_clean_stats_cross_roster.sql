@@ -14,7 +14,7 @@
 -- 2) get_initiative_stats(uuid)          — NATIVE branch only (bridged initiatives delegate to
 --    get_tribe_stats, unchanged). init_members CTE (active engagement, NO role filter) → roster
 --    (role<>'observer'). Visible delta: ONLY the "Mesa Redonda Universidade de Vassouras" congress
---    7→4 (drops 3 role=observer: Fabricio, Leticia, Vitor) — member_count + top_contributors; its
+--    7→4 (drops 3 role=observer: member A, member B, Vitor) — member_count + top_contributors; its
 --    attendance_rate stays NULL (0 events). All other native initiatives unchanged.
 --
 -- 3) exec_cross_initiative_comparison(text,text) — the per-initiative cohort predicate
@@ -23,8 +23,8 @@
 --    bug: it drops members whose kind='observer' but role<>'observer'. Converging ALL 5 keeps the
 --    response internally consistent (member_count, total_xp, avg_xp now describe the SAME cohort) and
 --    matches the already-shipped exec_tribe_dashboard (tribe-8 total_xp 2535→2815, avg 469.2).
---    Visible deltas (verified live, cycle_3): tribe 8 5→6 (+Roberto curator), LATAM LIM 3→5
---    (+Fabricio, +Sarah reviewers), Grupo CPMAI 3→4 (+Welma reviewer); Mesa Redonda 4→4 (identical
+--    Visible deltas (verified live, cycle_3): tribe 8 5→6 (+member C curator), LATAM LIM 3→5
+--    (+member A, +member D reviewers), Grupo CPMAI 3→4 (+member E reviewer); Mesa Redonda 4→4 (identical
 --    set). All other initiatives byte-identical. The leader-name lookup (en.kind ~ regex) is a
 --    separate concern (leader identification, not member counting) — left untouched.
 --

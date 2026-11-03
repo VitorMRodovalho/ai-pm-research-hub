@@ -9,14 +9,14 @@
 -- This migration keeps the public entrypoint `analyze_application_video(uuid,text,bool)`
 -- unchanged — it still delegates to async helper. New gate fires for BOTH the
 -- (now-dropped) trigger path AND the MCP tool path. Trigger remains DROPPED
--- from Phase 1 until Angeline's Art. 48 determination clears consent flow.
+-- from Phase 1 until member A's Art. 48 determination clears consent flow.
 --
 -- After this migration:
 --   - Phase 1 trigger DROP keeps automatic dispatch dead
 --   - Phase 3 helper gate keeps manual MCP tool call dead
 --   - Re-enabling requires per-candidate consent_voice_biometric_at NOT NULL
 --   - Future re-attachment of trg_video_ai_analysis_on_upload (Phase 4, separate
---     migration after Angeline cycle complete) restores automatic path with gate
+--     migration after member A cycle complete) restores automatic path with gate
 --
 -- LGPD legal basis for the gate:
 --   - Art. 11 §I (biometria de voz = dado sensível)

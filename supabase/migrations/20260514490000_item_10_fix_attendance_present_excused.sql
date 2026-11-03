@@ -4,7 +4,7 @@
 --
 -- Background:
 -- - Sessão 25/Abr corrigiu 20/22 registros corrompidos via Ação E
--- - 2 ambíguos restaram (Cíntia 05/03 + Fabricia 02/04). PM decidiu Hipótese A:
+-- - 2 ambíguos restaram (member A 05/03 + member B 02/04). PM decidiu Hipótese A:
 --   registros criados nos próprios dias dos eventos = present prevalece;
 --   excused tardio (gap >22 dias) é signal de erro. Fix: excused=false.
 -- - Funções continuam buggy → próxima chamada cria mais corrompidos

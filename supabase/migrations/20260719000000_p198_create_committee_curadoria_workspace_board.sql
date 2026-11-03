@@ -3,7 +3,7 @@
 -- =====================================================================
 -- Context: Comitê de Curadoria initiative (6a93cc94-c4a0-4280-8ea7-452ec6ec48a5)
 -- has been decorative since creation (0 boards, 0 events, 0 governance_docs).
--- The 3 active members (Fabricio leader, Sarah + Roberto coordinators) had
+-- The 3 active members (member A leader, member C + member B coordinators) had
 -- no workspace to record their meetings, attendance, or internal decisions.
 --
 -- Per PM directive (sessão p196/p197): the workspace should be ONE PLACE

@@ -24,7 +24,7 @@
 -- allowed. So volunteer + observer were impossible to add via RPC.
 --
 -- Also: workgroup_coordinator + workgroup_member did NOT include congress
--- either, even though João's coordinator engagement was direct-INSERT-seeded
+-- either, even though member A's coordinator engagement was direct-INSERT-seeded
 -- in 20260728000000. So no second workgroup_coordinator (e.g. co-coordinator
 -- like another initiative leader) could be added via UI without bypass.
 --

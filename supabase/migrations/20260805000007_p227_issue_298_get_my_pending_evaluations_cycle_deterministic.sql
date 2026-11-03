@@ -16,7 +16,7 @@
 --      (no information leak; no pending data is returned in either branch).
 --
 -- Post-fix behavior:
---   - Fabricio (cycle3-2026-b2 evaluator only, NOT on cycle4-2026 committee):
+--   - member A (cycle3-2026-b2 evaluator only, NOT on cycle4-2026 committee):
 --     receives Unauthorized when cycle4-2026 is newest evaluating cycle.
 --     Resolves once PM seeds cycle4-2026 committee (audit Item 6, separate PM decision).
 --   - Vitor (manage_member via can_by_member): sees pending list for cycle4-2026.

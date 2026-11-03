@@ -1,4 +1,4 @@
--- Mayanna report Items 2/3/4/5 — surgical changes per Decision Cs.
+-- member A report Items 2/3/4/5 — surgical changes per Decision Cs.
 --
 -- Item 04: storage bucket board-attachments 5MB → 7MB (small bump per PM).
 -- Items > 7MB devem usar Drive (temporário) ou YouTube (definitivo) — UI hint.

@@ -8,13 +8,13 @@
 --
 -- CPMAI (D-M6-CPMAI): the GOAL metric counts members who CERTIFIED DURING THE GOAL YEAR
 --   (cpmai_certified AND cpmai_certified_at in [year, year+1)). A member who arrived already holding
---   CPMAI (cert dated before the goal year — e.g. Pedro 2025-10-23) is on the certificate WALL
+--   CPMAI (cert dated before the goal year — e.g. member A 2025-10-23) is on the certificate WALL
 --   (all-time) but NOT the goal metric. PMI-GO-board-pactuated business rule. Canonical helper
 --   get_cpmai_certified_goal_count(p_year) repoints the 3 goal surfaces:
 --     exec_portfolio_health.cpmai_certified  (was already goal-year-windowed; now via the helper) = 1
 --     get_kpi_dashboard "Certificação CPMAI" (was is_active∧cpmai NO date — coincidentally 1)      -> 1
 --     get_annual_kpis.cpmai_certified_count  (was cpmai NO date/active = 2)                  2 -> 1
---   Live: goal-year-2026 (meta) = 1 (Marcos 2026-03-04); wall all-time = 2 (+ Pedro 2025-10-23).
+--   Live: goal-year-2026 (meta) = 1 (member B 2026-03-04); wall all-time = 2 (+ member A 2025-10-23).
 --   Canonical source = the DATED boolean, NOT the gamification cert_cpmai ledger, NOT a date-free count.
 --
 -- NOT touched (deferred to #425 coaching cockpit — avoids triple-touching the big gamification RPCs that

@@ -14,7 +14,7 @@
 --    search_path=public preserved (matches live state — not bumping to
 --    'public', 'pg_temp' to keep minimum-diff per scope match).
 --
--- 2. PM Option B cleanup: PERFORM compute_application_scores on Francisleila's
+-- 2. PM Option B cleanup: PERFORM compute_application_scores on member A's
 --    application (cycle4-2026 leader, the only row in the entire DB with this
 --    drift class) to reconcile final_score from naïve 309.00 → canonical
 --    158.30 (= leader_score per CR-047). Plus an admin_audit_log row
@@ -22,7 +22,7 @@
 --
 -- 3. Sanity DO block: RAISE if any leader has final_score IS DISTINCT FROM
 --    COALESCE(leader_score, research_score) after the refactor. Catches both
---    pre-existing drifts (today's audit showed Francisleila is the only one,
+--    pre-existing drifts (today's audit showed member A is the only one,
 --    and Step 2 fixes her) AND any new drift snuck in between migration write
 --    and apply.
 --
@@ -39,12 +39,12 @@
 --   `submit_evaluation('leader_extra')` call retain the naïve sum.
 --
 -- - The drift surfaced visibly on /admin/selection in p247 (#229b Frontend)
---   when the per-candidate Final régua chip rendered Francisleila with
+--   when the per-candidate Final régua chip rendered member A with
 --   `final_score=309` versus declared composite formula expectation 158.30
 --   (PM call-out 2026-05-24 post-p246 close).
 --
 -- - Audit (`docs/audit/OPP_246_A_FRANCISLEILA_FINAL_SCORE_DRIFT.md`) found
---   drift isolated to 1 row (Francisleila, cycle4 leader, screening); approved
+--   drift isolated to 1 row (member A, cycle4 leader, screening); approved
 --   leader cohort (8 apps all-time) all clean. PM ratified Option C+B = fix
 --   structural bug AND clean up immediate visible drift.
 --
@@ -54,7 +54,7 @@
 --   block above + the original migration file capturing the introducing
 --   commit). A future "revert" migration would CREATE OR REPLACE with the
 --   prior body to re-introduce the naïve-sum UPDATE. NOTE: any rows updated
---   by Step 2 (Francisleila's final_score = 158.30) would NOT be reverted by
+--   by Step 2 (member A's final_score = 158.30) would NOT be reverted by
 --   that rollback — they'd stay canonical, since canonical IS the truth per
 --   CR-047. The rollback only restores the bug class.
 -- ============================================================================
@@ -206,7 +206,7 @@ END;
 $$;
 
 -- ============================================================================
--- Step B (PM Option B cleanup): reconcile Francisleila's drifted final_score
+-- Step B (PM Option B cleanup): reconcile member A's drifted final_score
 -- via canonical compute_application_scores. Plus audit log row.
 -- ============================================================================
 
@@ -225,7 +225,7 @@ BEGIN
 
   -- Skip if row no longer exists or has no drift (defensive — protects against re-apply)
   IF v_before_final IS NULL THEN
-    RAISE NOTICE 'p248 OPP-246.A cleanup: Francisleila row not found, skipping';
+    RAISE NOTICE 'p248 OPP-246.A cleanup: member A row not found, skipping';
     RETURN;
   END IF;
 
@@ -262,16 +262,16 @@ BEGIN
         'audit_doc', 'docs/audit/OPP_246_A_FRANCISLEILA_FINAL_SCORE_DRIFT.md'
       )
     );
-    RAISE NOTICE 'p248 OPP-246.A cleanup: Francisleila final_score % → %', v_before_final, v_after_final;
+    RAISE NOTICE 'p248 OPP-246.A cleanup: member A final_score % → %', v_before_final, v_after_final;
   ELSE
-    RAISE NOTICE 'p248 OPP-246.A cleanup: Francisleila already canonical (final=%, no change)', v_after_final;
+    RAISE NOTICE 'p248 OPP-246.A cleanup: member A already canonical (final=%, no change)', v_after_final;
   END IF;
 END
 $cleanup$;
 
 -- ============================================================================
 -- Sanity DO block — RAISE if any leader has drift after the refactor +
--- cleanup. Catches both Francisleila (if cleanup failed) and any new drift.
+-- cleanup. Catches both member A (if cleanup failed) and any new drift.
 -- ============================================================================
 
 DO $sanity$

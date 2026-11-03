@@ -1,6 +1,6 @@
 -- Phase IP-3c refinement (PM correction 2026-04-18 p33c):
 -- * Chapter witnesses (pontos focais) assinam ANTES dos presidentes — aceleram "tradução" ao pres.
--- * Reusar designation chapter_liaison (já seedada: Roberto CE, Ana DF, Rogério MG, João RS)
+-- * Reusar designation chapter_liaison (já seedada: member C CE, member A DF, member D MG, member B RS)
 -- * threshold=4 (um liaison por capítulo — PMI-GO sem liaison ainda; GP-as-submitter cobre)
 -- * Ordem: curator → leader_awareness → submitter_acceptance → chapter_witness → president_go → president_others → member_ratification
 

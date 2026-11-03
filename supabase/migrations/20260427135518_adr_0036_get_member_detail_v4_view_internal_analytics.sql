@@ -1,6 +1,6 @@
 -- ADR-0036 (Accepted, p66 final round): get_member_detail V4 conversion
 -- Same ladder pattern as ADR-0031 admin_list_members → reuse view_internal_analytics
--- Privilege expansion: legacy=9 → v4=10 (+Roberto chapter_board × liaison, same as ADR-0031)
+-- Privilege expansion: legacy=9 → v4=10 (+member A chapter_board × liaison, same as ADR-0031)
 -- pg_policy precondition: zero RLS refs verified.
 
 CREATE OR REPLACE FUNCTION public.get_member_detail(p_member_id uuid)

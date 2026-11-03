@@ -16,7 +16,7 @@ Uma tribo pode ser inativada quando perde viabilidade operacional (ex: saída do
 4. Os membros são redistribuídos individualmente para outras tribos ou movidos para o pool de pesquisadores disponíveis
 5. A reativação é possível em ciclos futuros mediante nova designação de líder e quorum mínimo
 
-**Precedente:** T3 (TMO & PMO do Futuro) foi inativada no Ciclo 2 quando o líder Marcel deixou o Núcleo.'
+**Precedente:** T3 (TMO & PMO do Futuro) foi inativada no Ciclo 2 quando o líder member A deixou o Núcleo.'
 WHERE cr_number = 'CR-024' AND (proposed_changes IS NULL OR proposed_changes = '');
 
 -- CR-028: Permissões por Board

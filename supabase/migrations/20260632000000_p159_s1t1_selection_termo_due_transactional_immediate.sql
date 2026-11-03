@@ -1,7 +1,7 @@
 -- p159 Sessão #1 T1: selection_termo_due → transactional_immediate
 --
 -- PM clarification 14/05: candidato recebe email DEPOIS de VEP→Active. selection_termo_due
--- (criado pelo p157 #2 trigger) é o "email principal" com termo + próximos passos + Lorena
+-- (criado pelo p157 #2 trigger) é o "email principal" com termo + próximos passos + member A
 -- como signatária do termo. delivery_mode atual = digest_weekly (fallback ELSE) → email
 -- espera até 1 semana, atrita com expectativa PM.
 --

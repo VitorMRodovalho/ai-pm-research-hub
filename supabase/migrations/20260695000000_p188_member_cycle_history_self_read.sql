@@ -26,7 +26,7 @@
 -- remains gated to mch_superadmin_write (already covers SELECT via
 -- polcmd=ALL — superadmins continue to read across all members).
 --
--- Pre-fix smoke (p188 boot, MCP execute_sql JWT-simulated as Sarah,
+-- Pre-fix smoke (p188 boot, MCP execute_sql JWT-simulated as member A,
 -- non-superadmin, 4 history rows): sarah_own_filter = 0 rows. Confirms gap.
 -- Post-fix smoke (same JWT): sarah_total_visible = 4 (own), sarah_sees_antonios = 0.
 

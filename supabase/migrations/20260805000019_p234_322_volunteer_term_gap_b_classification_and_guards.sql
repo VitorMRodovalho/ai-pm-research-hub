@@ -59,7 +59,7 @@
 --
 -- PM directives (2026-05-23):
 --   - Status='skipped' (NOT 'completed'). Reason metadata required.
---   - Do NOT mint Herlon term. Herlon's hash matches a row with offboarded
+--   - Do NOT mint member A term. member A's hash matches a row with offboarded
 --     study_group_owner engagement; the requires_agreement=true check is on
 --     ACTIVE engagements only, so his row gets correctly skipped.
 --   - Goal metric: 0 active members with pending volunteer_term AND no

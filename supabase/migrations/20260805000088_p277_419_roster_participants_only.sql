@@ -6,8 +6,8 @@
 -- canonical roster excludes observers on BOTH axes: role<>'observer' AND kind<>'observer'.
 --
 -- This drops the 4 people who sit on the role-vs-kind boundary (all kind='observer'): member A
--- (tribe-8, role=curator) + three observer-kind reviewers — Welma (Grupo CPMAI), member B + member C
--- (LATAM LIM). It KEEPS the active external_reviewer (Mario, kind=external_reviewer) and all speakers.
+-- (tribe-8, role=curator) + three observer-kind reviewers — member D (Grupo CPMAI), member B + member C
+-- (LATAM LIM). It KEEPS the active external_reviewer (member E, kind=external_reviewer) and all speakers.
 --
 -- This unifies member_count and attendance-eligibility onto the SAME (kind) axis: get_member_tribe
 -- already filters kind='volunteer', so the kind-vs-role divergence that PR-F (D-M4-AXIS) would have

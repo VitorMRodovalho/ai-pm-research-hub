@@ -1,5 +1,5 @@
 -- #1445 — get_vep_divergence_report was blind to the "approved + VEP offer retracted + member
--- still active" class. The Hector case (approved on Núcleo, VEP offer withdrawn, member left
+-- still active" class. The member A case (approved on Núcleo, VEP offer withdrawn, member left
 -- active) had to be reconciled by hand because no bucket surfaced it:
 --   - selection_divergent   requires the app to be in the ACTIVE funnel (submitted..final_eval),
 --                           so an approved/converted row is excluded.

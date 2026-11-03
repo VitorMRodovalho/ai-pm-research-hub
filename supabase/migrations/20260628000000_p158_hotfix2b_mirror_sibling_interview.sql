@@ -1,10 +1,10 @@
 -- p158 hotfix #2 part B: mirror_sibling_interview RPC + future-proof reusable path
 --
--- PM directive (live test 2026-05-14): for William's dual_track pair, the researcher app had no
+-- PM directive (live test 2026-05-14): for member A's dual_track pair, the researcher app had no
 -- selection_interviews row (interview was scheduled+conducted only on the leader app). Opening
 -- the "Entrevista" tab in the modal for the researcher app showed "Nenhuma entrevista agendada
 -- ainda" with no live-eval option (status='submitted' didn't satisfy canStartLive gate). Leader
--- app interview was already locked (submitted). PM resorted to a one-shot SQL fix for William.
+-- app interview was already locked (submitted). PM resorted to a one-shot SQL fix for member A.
 --
 -- This RPC formalizes the path for future dual_track pairs: copies the sibling's most recent
 -- completed interview row + the sibling's 'interview' evaluation to the current application.

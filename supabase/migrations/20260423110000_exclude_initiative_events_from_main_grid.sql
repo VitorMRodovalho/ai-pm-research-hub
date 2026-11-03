@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════
 -- Exclude initiative-scoped events from main attendance grids
 --
--- Bug reported by Fabrício (T6 leader): after changing geral rito from
+-- Bug reported by member A (T6 leader): after changing geral rito from
 -- weekly to biweekly, 15/Abr still appeared with "expectation of geral"
 -- for all 51 members. Root cause: CPMAI Kickoff on 2026-04-15 was tagged
 -- type='geral' AND initiative_id=CPMAI. The grid RPCs enrolled every

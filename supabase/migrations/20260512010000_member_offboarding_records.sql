@@ -1,6 +1,6 @@
 -- Migration: #91 G3 — member_offboarding_records (rich exit interview capture)
 -- Issue: status_change_reason é curto demais para capturar exit interview rico (ex.
---        Lorena com 102 chars, Lídia com 178 chars + áudios WhatsApp pendentes).
+--        member A com 102 chars, member B com 178 chars + áudios WhatsApp pendentes).
 --        Sem estrutura analítica para "quantos alumni por motivo? quantos querem voltar?".
 --
 -- Schema:

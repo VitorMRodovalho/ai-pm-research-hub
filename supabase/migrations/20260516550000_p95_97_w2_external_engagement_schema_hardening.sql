@@ -30,7 +30,7 @@ COMMENT ON COLUMN public.initiatives.origin_partner_entity_id IS
 -- ============================================================
 -- G2: speaker presenter_role formal validation (Opção B — CHECK metadata)
 -- ============================================================
--- Pre-validated: 2 existing speakers (Roberto lead + Ivan co) both within new constraint.
+-- Pre-validated: 2 existing speakers (member B lead + member A co) both within new constraint.
 ALTER TABLE public.engagements
   ADD CONSTRAINT engagements_speaker_role_check
   CHECK (

@@ -1,6 +1,6 @@
 -- #1200 — admin_offboard_member writes member_offboarding_records itself with the
 -- caller-supplied reason category (2ª reincidência: T7 03/07 'personal_workload' e
--- Débora 08/07 'end_of_cycle' ambos gravados como 'other').
+-- member A 08/07 'end_of_cycle' ambos gravados como 'other').
 --
 -- Root cause (aterrada 2026-07-08): the MCP wrapper AND the deployed EF propagate
 -- p_reason_category correctly. The record is written by trg_offboarding_stub

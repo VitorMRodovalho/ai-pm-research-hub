@@ -1,7 +1,7 @@
--- Mayanna report (28/Abr p79): "Adicionar atividade não funciona" + tag/assignment errors.
+-- member A report (28/Abr p79): "Adicionar atividade não funciona" + tag/assignment errors.
 -- Root cause: 4 RLS policies on card-scoped tables (board_item_checklists, board_item_assignments,
 -- board_item_tag_assignments, board_lifecycle_events) only accept rls_can('write') — generic write.
--- Mayanna (comms_leader) has write_board=true but write=false. Cards are board-scoped → write_board
+-- member A (comms_leader) has write_board=true but write=false. Cards are board-scoped → write_board
 -- is the correct authority.
 --
 -- Fix: extend USING clauses to accept rls_can('write_board') as alternative.

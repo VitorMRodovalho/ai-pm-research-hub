@@ -58,7 +58,7 @@ INSERT INTO public.publication_series (slug, title_i18n, description_i18n, caden
   (
     'cpmai-journey',
     '{"pt":"CPMAI Journey","en":"CPMAI Journey","es":"CPMAI Journey"}'::jsonb,
-    '{"pt":"Acompanhamento quinzenal do grupo de estudos CPMAI — do preparatório até a certificação formal PMI. Herlon como GP da subiniciativa, Pedro como SME.","en":"Biweekly chronicle of the CPMAI study group — from prep to formal PMI certification.","es":"Crónica quincenal del grupo de estudios CPMAI."}'::jsonb,
+    '{"pt":"Acompanhamento quinzenal do grupo de estudos CPMAI — do preparatório até a certificação formal PMI. member A como GP da subiniciativa, member B como SME.","en":"Biweekly chronicle of the CPMAI study group — from prep to formal PMI certification.","es":"Crónica quincenal del grupo de estudios CPMAI."}'::jsonb,
     'biweekly',
     'multi',
     'Crônica educativa',

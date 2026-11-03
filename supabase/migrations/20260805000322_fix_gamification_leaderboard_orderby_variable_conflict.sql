@@ -5,7 +5,7 @@
 -- `ORDER BY total_points DESC` bound to that (uninitialized, NULL) variable
 -- instead of the computed output column, so the sort collapsed to a constant and
 -- fell through to the `m.name ASC` tiebreaker. With the default LIMIT 50 the RPC
--- returned the 50 alphabetically-first eligible members (cutoff ~"a member name"), silently dropping the top scorers whose names sort late (e.g. Paulo,
+-- returned the 50 alphabetically-first eligible members (cutoff ~"a member name"), silently dropping the top scorers whose names sort late (e.g. member A,
 -- Vitor) and even including 0-point members. The frontend re-sorted that page by
 -- points client-side, so it looked ranked but was missing ~half the members.
 --

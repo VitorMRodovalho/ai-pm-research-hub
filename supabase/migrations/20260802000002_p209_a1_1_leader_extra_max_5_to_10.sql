@@ -22,7 +22,7 @@
 -- Não toca closed cycles (cycle3-2026 fechado preserva histórico).
 --
 -- Impact on existing submissions:
--- - Cycle4-2026: 2 leader_extra evals existem. Vitor avaliou William scores 1-4
+-- - Cycle4-2026: 2 leader_extra evals existem. Vitor avaliou member D scores 1-4
 --   (válidos em ambas escalas, weighted=60). member C avaliou member B scores
 --   5-8 (válidos sob max:10 novo schema, weighted=162). Ambos preservados.
 -- - Cycle3-2026-b2: zero leader_extra evals submetidas até agora.

@@ -3,7 +3,7 @@
 -- BUG context (PM-surfaced 2026-05-21):
 -- =========================================
 -- The submit_evaluation RPC accepted scores OUTSIDE the schema-declared max
--- silently. PM e.g.: Fabricio submitted Francisleila leader_extra scores 7-8
+-- silently. PM e.g.: member A submitted member B leader_extra scores 7-8
 -- when schema max was 5 (now 10 per migration 20260802000002). UI showed
 -- "out_of_range" but RPC INSERT succeeded with weighted_subtotal=162.
 --
@@ -26,7 +26,7 @@
 --   - All existing invalid submissions (e.g. legacy if any) would be rejected
 --     on RE-SUBMIT, but not retroactively voided.
 --   - Cycle4-2026 today: 0 historical submissions exceed max:10 (Vitor's
---     William scored 1-4; Fabricio's Francisleila scored 5-8). All preserved.
+--     member C scored 1-4; member A's member B scored 5-8). All preserved.
 --
 -- Rollback (only if a downstream regression appears):
 --   - Re-apply prior body (saved at 20260802000001 Phase B capture).

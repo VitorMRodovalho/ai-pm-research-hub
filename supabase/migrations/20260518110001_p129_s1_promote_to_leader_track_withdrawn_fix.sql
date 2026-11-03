@@ -1,6 +1,6 @@
 -- p129 S1 Sistemic fix: promote_to_leader_track RPC must set researcher app
 -- status='withdrawn' (not allow it to remain in flow that may be auto/manually rejected).
--- Driver: Herlon + Ana/Hayala/Marcos cycle 3 batch 1 — researcher apps showing 'rejected'
+-- Driver: member C + member A/member B/member D cycle 3 batch 1 — researcher apps showing 'rejected'
 -- when semantically they should be 'withdrawn' (candidate accepted as leader instead).
 -- PM Vitor flagged: "naturalmente ocorre na vaga de pesquisador pq a pessoa que é lider
 -- aceita so a de lider".

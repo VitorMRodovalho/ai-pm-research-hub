@@ -5,8 +5,8 @@
 -- WHY (grounded 2026-06-15): the application dedup key is (vep_application_id,
 --   vep_opportunity_id) — per VEP ACCOUNT, never per PERSON. So one human with two PMI
 --   registrations (different pmi_id + email + name) appears as independent candidates.
---   Live scan today: EXACTLY 1 confirmed case (Ana — pmi_id 8712551 ↔ 12568385). persons
---   and members are clean (0 fuzzy dups; Ana not yet onboarded → no member/person leak yet).
+--   Live scan today: EXACTLY 1 confirmed case (member A — pmi_id 8712551 ↔ 12568385). persons
+--   and members are clean (0 fuzzy dups; member A not yet onboarded → no member/person leak yet).
 --   The leak would materialize at the onboarding/conversion boundary, NOT now. This RPC is
 --   the RADAR so the dimension is monitored as VEP waves accumulate — it does NOT merge or
 --   mutate any data (PM decision 2026-06-14: do not touch the candidate's data).

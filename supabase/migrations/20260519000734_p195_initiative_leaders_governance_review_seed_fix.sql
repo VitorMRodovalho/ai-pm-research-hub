@@ -6,7 +6,7 @@
 -- with correct tuples present in production.
 --
 -- Empirical role inventory at p195:
---   study_group_owner × leader (1 active — Herlon)
+--   study_group_owner × leader (1 active — member A)
 --   committee_coordinator × coordinator (2 active) + × leader (1 active)
 --   workgroup_coordinator × coordinator (1 active)
 -- ============================================================

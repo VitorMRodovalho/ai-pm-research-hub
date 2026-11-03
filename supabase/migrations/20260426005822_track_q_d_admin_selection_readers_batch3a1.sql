@@ -27,7 +27,7 @@
 --   onboarding state for an applicant; selection-admin only.
 --
 -- Privilege expansion analysis (verified live data 2026-04-25):
---   manage_platform safety check: legacy_count=2 (Vitor SA, Fabricio SA),
+--   manage_platform safety check: legacy_count=2 (Vitor SA, member A SA),
 --   v4_count=2, would_gain=null. Zero authorization change in production.
 --
 -- Bodies preserved verbatim except added gate at top.

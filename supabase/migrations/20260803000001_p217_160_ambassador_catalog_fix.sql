@@ -1,7 +1,7 @@
 -- Migration: p217 #160 — engagement_kinds catalog reconciliation for `ambassador`
 -- Date: 2026-05-21
 -- Session: p217
--- Issue: #160 (permissions: resolve Herlon study_group_owner authority state)
+-- Issue: #160 (permissions: resolve member A study_group_owner authority state)
 -- Path: A' (PM-picked 2026-05-21 — see decision log entry DECISION-160)
 --
 -- WHAT
@@ -17,7 +17,7 @@
 --   `kind=ambassador, status=active, legal_basis=consent, end_date=null, agreement=null`
 --                                                                       ^^^^^^^^^^^^
 -- ADR-0008 §lifecycle table (line 25) is the operational source of truth:
---   `ambassador (mérito, Herlon) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent`
+--   `ambassador (mérito, member A) | Nomeação → Sem termo → Indefinido (revogável) → Delete on request | Consent`
 --                                                  ^^^^^^^^^^^
 --
 -- HISTORY (pre-existing migration acknowledgment)
@@ -39,7 +39,7 @@
 --     auth_engagements.is_authoritative=true automatically via the view's
 --     `OR NOT COALESCE(ek.requires_agreement, false)` branch.
 --   - Real termo-needing backlog drops 16 → 4 engagements / 3 members
---     (Herlon SGO + Fernando SGP + Vitor volunteer x2).
+--     (member A SGO + member B SGP + Vitor volunteer x2).
 --   - ZERO V4 capability side-effects: engagement_kind_permissions WHERE
 --     kind='ambassador' has 0 rows. Ambassadors gain authoritative status
 --     but no new actions/scopes — their kind grants nothing in the V4 matrix.

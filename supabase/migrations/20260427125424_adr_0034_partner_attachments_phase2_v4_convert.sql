@@ -5,11 +5,11 @@
 --
 -- Privilege expansion (verified pre-apply):
 --   Group W2 (writers): legacy=4 → v4=10
---     would_gain = 7 admin/governance (Ana, Felipe, Francisca, Ivan, Márcio, Matheus, Rogério)
---     would_lose = [Sarah] (curator drift, same precedent as ADR-0030/0031/0033)
+--     would_gain = 7 admin/governance (member A, member B, member C, member D, member F, member E, member G)
+--     would_lose = [member H] (curator drift, same precedent as ADR-0030/0031/0033)
 --   Group R2 (readers, Path D drop chapter scope): legacy_org=10 → v4=10
 --     would_gain = 7 admin/governance
---     would_lose = [Sarah curator + 6 tribe_leaders] (drift correction)
+--     would_lose = [member H curator + 6 tribe_leaders] (drift correction)
 --
 -- Drift signals #5 #6 closed: V3 chapter_match using operational_role IN
 -- ('sponsor', 'chapter_liaison') (column-based check) is removed entirely.

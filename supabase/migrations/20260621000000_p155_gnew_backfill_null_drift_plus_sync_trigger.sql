@@ -2,7 +2,7 @@
 --
 -- Problem: 11 members têm engagement V4 ativo mas members.initiative_id=NULL (legacy V3).
 -- TribeKanbanIsland + BoardEngine + outras UIs/RPCs ainda filtram por members.initiative_id —
--- esses 11 membros (Herlon, Ivan, Roberto, Sarah, Vitor, etc) ficam invisíveis em board kanban
+-- esses 11 membros (member A, member B, member C, member D, Vitor, etc) ficam invisíveis em board kanban
 -- assignee picker e listings legacy.
 --
 -- Strategy:

@@ -3,13 +3,13 @@
 -- ============================================================
 -- WHAT: seed `participate_in_governance_review` capability for actual
 -- (kind, role) tuples present in production engagements:
---   study_group_owner × leader        (1 active — Herlon)
+--   study_group_owner × leader        (1 active — member A)
 --   workgroup_coordinator × coordinator (1 active)
 --   committee_coordinator × coordinator (2 active)
 --   committee_coordinator × leader      (1 active)
 --
 -- WHY (PM decision Option A, p195 Bug 1 carry)
--- Herlon (study_group_owner of Preparatório CPMAI) couldn't comment on his
+-- member A (study_group_owner of Preparatório CPMAI) couldn't comment on his
 -- own initiative's TAP because the existing seed only covered manager/
 -- deputy_manager/co_gp/curator/sponsor/chapter_board liaison/external_reviewer
 -- — no initiative leader kinds.
@@ -29,7 +29,7 @@
 -- which requires `agreement_certificate_id IS NOT NULL` when
 -- `engagement_kinds.requires_agreement=true` (true for study_group_owner +
 -- workgroup_coordinator + committee_coordinator). PM must counter-sign the
--- Volunteer Term for each leader before they can comment. Herlon's
+-- Volunteer Term for each leader before they can comment. member A's
 -- counter-sign is part of the 9 pending in /admin/certificates per p195
 -- handoff. This migration unlocks the path; the operational completion is
 -- a separate human step.

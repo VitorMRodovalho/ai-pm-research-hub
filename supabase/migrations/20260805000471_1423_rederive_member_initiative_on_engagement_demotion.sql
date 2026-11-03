@@ -3,7 +3,7 @@
 -- _sync_member_initiative_from_engagement(): it only SET the bridge on an active
 -- engagement and never re-derived it on demotion, so removing a study_group /
 -- workgroup / committee / congress participant left members.initiative_id pointing
--- at an initiative the person no longer engages in (the Nicolas/CPMAI orphan, #1423).
+-- at an initiative the person no longer engages in (the member A/CPMAI orphan, #1423).
 --
 -- research_tribe removal stays owned by _sync_tribe_id_from_engagement (clears both
 -- tribe_id and initiative_id for kind='volunteer'); this trigger must NOT touch the

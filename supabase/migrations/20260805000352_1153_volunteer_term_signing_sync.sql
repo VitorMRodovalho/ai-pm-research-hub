@@ -9,7 +9,7 @@
 -- (governance_documents.current_version_id -> document_versions.content_html). Fonte única.
 --
 -- Esta migração entrega a ARQUITETURA/tubulação (sem tocar no texto jurídico). A lavra v9
--- (do .docx V2) + lock via curator->president_go/Ivan + ativação da linha = Onda 1 governança
+-- (do .docx V2) + lock via curator->president_go/member A + ativação da linha = Onda 1 governança
 -- (depois). Enquanto nenhuma linha estiver 'active', a assinatura continua bloqueada (correto).
 --
 -- NOTA (corpo das funções): os corpos abaixo são byte-equivalentes ao que está VIVO em PROD

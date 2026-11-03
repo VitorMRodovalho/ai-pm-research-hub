@@ -12,7 +12,7 @@
 --       Returns an aggregate envelope { success, cancelled_interview_id,
 --       prior_scheduled_at, redispatch:<notify envelope> }.
 --
--- WHY: Issue #411 Wave 1d. Three such cases hit in cycle4 (Rafael, Bruna, Luciana —
+-- WHY: Issue #411 Wave 1d. Three such cases hit in cycle4 (member C, member A, member B —
 --      scheduled 2026-05-14, never conducted, never cancelled, 12 days dark). Closed
 --      one-shot via DO-block in p270; this RPC is the permanent atomic path so the
 --      modal button (F4) and the Wave 2b daily cron call ONE function and get a

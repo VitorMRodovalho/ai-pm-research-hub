@@ -16,7 +16,7 @@
 -- join_whatsapp, platform_access, kick_off, profile_complete) intentionally NOT seeded here.
 -- That's a separate concern (finalize_decisions RPC handles bulk) — discussed as future ADR.
 --
--- Driver: PM directive p155 (2026-05-13) — Herlon + João aprovação iminente needs working seed.
+-- Driver: PM directive p155 (2026-05-13) — member A + member B aprovação iminente needs working seed.
 
 CREATE OR REPLACE FUNCTION public.admin_update_application(p_application_id uuid, p_data jsonb)
 RETURNS json

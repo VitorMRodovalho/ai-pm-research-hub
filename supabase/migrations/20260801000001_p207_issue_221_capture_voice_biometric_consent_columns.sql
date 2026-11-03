@@ -9,7 +9,7 @@
 --
 -- NEW: `consent_voice_biometric_evidence` text column added so audit chain
 -- can capture HOW consent was attested (e.g., URL to signed termo PDF, email
--- thread ID with Angeline's notification template, or video-recorded verbal
+-- thread ID with member A's notification template, or video-recorded verbal
 -- consent reference).
 --
 -- Pattern mirrors p197d_a `consent_ai_analysis_at` + `consent_ai_analysis_evidence`
@@ -47,6 +47,6 @@ COMMENT ON COLUMN public.selection_applications.consent_voice_biometric_revoked_
   'p207 #221 (2026-05-20, drift-captured): timestamp when candidate revoked Art. 11 consent (LGPD Art. 9 §V). When non-NULL, pipeline must refuse new analyses AND audit-chain must trigger deletion per Art. 18 §IV.';
 
 COMMENT ON COLUMN public.selection_applications.consent_voice_biometric_evidence IS
-  'p207 #221 (2026-05-20): audit trail of how consent was captured — URL to signed termo PDF in Drive, email thread ID with Angeline notification, or video-recorded verbal-consent reference. REQUIRED for ANPD audit defense (Art. 37 record-keeping).';
+  'p207 #221 (2026-05-20): audit trail of how consent was captured — URL to signed termo PDF in Drive, email thread ID with the notification, or video-recorded verbal-consent reference. REQUIRED for ANPD audit defense (Art. 37 record-keeping).';
 
 NOTIFY pgrst, 'reload schema';

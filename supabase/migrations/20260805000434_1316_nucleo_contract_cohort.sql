@@ -46,7 +46,7 @@ $$;
 COMMENT ON FUNCTION public.nucleo_contract_cohort_cycle_id(date) IS
   '#1316 SSOT: cohort cycle for an approved app = selection_cycle with greatest open_date <= contract start. Mirrors worker pickCohortCycleByContractStart. NULL for pre-cycle3 legacy 2025 contracts (#1284).';
 
--- 3. Person-scoped contract status view (keyed on pmi_id, NOT email: Paulo 1158211 holds his
+-- 3. Person-scoped contract status view (keyed on pmi_id, NOT email: member A 1158211 holds his
 --    researcher + leader apps under two different emails). security_invoker respects RLS.
 --    superseded  = the same person holds an approved contract that STARTS later (promotion/role-change,
 --                  e.g. researcher -> leader) so this app's role was superseded; NEVER a dismissal.
@@ -111,7 +111,7 @@ FROM contracts c
 LEFT JOIN later l ON l.id = c.id;
 
 COMMENT ON VIEW public.v_nucleo_contract_status IS
-  '#1316 Per-app Nucleo contract status, person-scoped by pmi_id. Feeds #1284 baixa detection (desligado = person whose latest app is ended). superseded protects promotions (Paulo researcher->leader) from being read as dismissals.';
+  '#1316 Per-app Nucleo contract status, person-scoped by pmi_id. Feeds #1284 baixa detection (desligado = person whose latest app is ended). superseded protects promotions (member A researcher->leader) from being read as dismissals.';
 
 -- 4. Pave selection_cycles windows contiguous + non-overlapping. Rejected/pending apps use the
 --    temporal lens; a gap (2026-02-01..03-27) or overlap (cycle4 opened 05-15 while b2 ran to 05-31)

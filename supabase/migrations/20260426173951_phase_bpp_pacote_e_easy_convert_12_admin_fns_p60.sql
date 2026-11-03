@@ -4,7 +4,7 @@
 -- except admin_run_retention_cleanup which uses tighter V3 (no co_gp).
 --
 -- Privilege expansion safety check (verified pre-apply):
---   V3 broad (11 fns): 2 members (Vitor, Fabricio — superadmin)
+--   V3 broad (11 fns): 2 members (Vitor, member A — superadmin)
 --   V3 tight (admin_run_retention_cleanup): 2 (same)
 --   V4 manage_platform (engagement_kind_permissions volunteer × {co_gp,
 --                       deputy_manager, manager} + is_superadmin override): 2 (same)

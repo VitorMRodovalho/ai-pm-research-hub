@@ -1,6 +1,6 @@
 -- #447 — get_my_application_status: match the candidate's application by PRIMARY email OR any member_emails alternate.
 -- Before: matched only members.email (primary) -> applications whose canonical email is a reconciled ALTERNATE
---         (post-#445 member_emails) were invisible in the candidate's own self-view (live case: Paulo / app 6259ced2).
+--         (post-#445 member_emails) were invisible in the candidate's own self-view (live case: member A / app 6259ced2).
 -- After:  WHERE a.email IN (caller's primary UNION caller's member_emails alternates).
 -- Safe (no leak): member_emails.email is globally UNIQUE and no email maps to >1 member (verified live 2026-06-04),
 --                 so the UNION cannot surface another person's application.

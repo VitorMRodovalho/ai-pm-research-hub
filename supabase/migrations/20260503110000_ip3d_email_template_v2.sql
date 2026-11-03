@@ -10,7 +10,7 @@
 --        (EF send-notification-email atualizada para usar notif.title
 --        quando type startswith 'ip_ratification_')
 --
--- Template v2 example — Roberto (curator) recebe quando Vitor lacrar Política PI:
+-- Template v2 example — member A (curator) recebe quando Vitor lacrar Política PI:
 --   Subject: "Política PI v1.0 — Curadoria solicitada por Vitor Rodovalho — Nucleo IA & GP"
 --   Body: "Vitor Rodovalho submeteu o documento 'Política PI' versão v1.0 para
 --          ratificação no Núcleo IA & GP. Como curador(a), você deve ler o
