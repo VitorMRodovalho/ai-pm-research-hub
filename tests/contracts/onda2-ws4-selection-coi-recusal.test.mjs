@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
@@ -30,8 +31,12 @@ test('ADR-0109: selection_coi_recused helper declared with GP exemption', () => 
     'helper signature must be declared');
   assert.match(allSQL, /NOT public\.can_by_member\(p_caller_id,\s*'manage_platform'\)/i,
     'helper must exempt GP (manage_platform is never recused)');
-  assert.match(allSQL, /status NOT IN \('rejected','withdrawn','cancelled'\)/i,
-    'helper must key on ACTIVE (non-terminal) applications');
+  // #2946: era `assert.match(allSQL, /status NOT IN \('rejected','withdrawn','cancelled'\)/)`, que passava
+  // com a lista antiga em qualquer migration, inclusive depois de o helper vigente mudá-la. Agora lê o corpo
+  // VIGENTE; o conjunto exato de terminais, dentro do bloco que decide, é o guard 2946-coi-terminais.
+  const helper = maskLineComments(latestFunctionCapture(ROOT, 'selection_coi_recused').body).replace(/\s+/g, ' ');
+  assert.match(helper, /sa\.status NOT IN \('rejected','withdrawn','cancelled','approved','converted'\)/,
+    'helper must key on ACTIVE (non-terminal) applications; terminals per ADR-0109 §3');
 });
 
 test('ADR-0109: helper is internal-only (revoked from authenticated/anon/PUBLIC)', () => {
