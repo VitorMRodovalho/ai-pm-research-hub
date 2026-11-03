@@ -280,7 +280,7 @@ LOW-191.C transition aid.
 - 5 SECURITY DEFINER RPCs: `get_manual_sections`, `get_change_requests` (with tier filtering), `submit_change_request`, `review_change_request`, `get_section_change_history`
 - 13 candidate CRs seeded as draft (CR-001 to CR-013), linked to manual sections
 - RLS: `manual_sections` read-only for authenticated, write via RPC only
-- João Santos (PMI-RS) designated as `chapter_liaison`
+- a chapter member (PMI-RS) designated as `chapter_liaison`
 
 ### GC-114/114b: /attendance Events List Redesign
 - Collapsible sections by event type (7 public + 3 GP-only)
