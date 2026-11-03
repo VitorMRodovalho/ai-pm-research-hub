@@ -12,7 +12,7 @@ Hoje `members` é uma tabela catch-all que mistura perfis distintos:
 
 | Perfil | Base legal LGPD | Termo | Hoje |
 |--------|-----------------|-------|------|
-| Voluntário ativo (Vitor, Pedro) | Execução de contrato de voluntariado (Lei 9.608) | Assinado e vigente | `members` |
+| Voluntário ativo (Vitor, member B) | Execução de contrato de voluntariado (Lei 9.608) | Assinado e vigente | `members` |
 | Embaixador / mérito (member A) | Consent para uso de nome | Pode estar vencido | `members` com designation ambassador |
 | Chapter board (diretor PMI-CE) | Relação com capítulo, não Núcleo | N/A | `members` com designation chapter_board |
 | Partner contact (CTO de empresa parceira) | Legítimo interesse / consent | N/A | `members.partner_contact` (hack) |
@@ -112,7 +112,7 @@ A drift foi descoberta durante investigação do issue #160 (member A authority 
 **Fix:** Migration `20260803000001_p217_160_ambassador_catalog_fix.sql` aplicou `UPDATE engagement_kinds SET requires_agreement=false WHERE slug='ambassador'`. Efeitos:
 - 12 engagements ambassador (8 membros distintos) flip para `is_authoritative=true` via a branch `OR NOT COALESCE(ek.requires_agreement, false)` da view `auth_engagements`.
 - Zero side-effects de capacidade V4 (0 linhas em `engagement_kind_permissions` para esse kind).
-- Backlog real de termo cai de 16 → 4 (member A study_group_owner + Fernando study_group_participant + Vitor volunteer x2).
+- Backlog real de termo cai de 16 → 4 (member A study_group_owner + member C study_group_participant + Vitor volunteer x2).
 
 **Forward-defense:** Teste `tests/contracts/engagement-kinds-catalog-invariants.test.mjs` impede que migrations futuras re-introduzam a drift (cobre UPDATE, INSERT multi-row e ON CONFLICT DO UPDATE).
 

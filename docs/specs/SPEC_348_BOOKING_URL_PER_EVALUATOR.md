@@ -14,7 +14,7 @@ This spec proposes the schema, routing logic, and migration path for moving cycl
 PM unblocked the Cycle 4 cutoff dispatch by populating `selection_cycles.interview_booking_url` with a Núcleo group calendar link:
 
 - `cycle4-2026.interview_booking_url = 'https://calendar.app.google/XPiGWLh9JaLVFKJc6'` (populated 2026-05-24 16:38 UTC)
-- 5 above-target dispatches executed via `notify_selection_cutoff_approved(app_id)` (member A 227, João 171, member B 164, member C 163, member D 157.50; emails sent 16:39:48-16:40:23 UTC).
+- 5 above-target dispatches executed via `notify_selection_cutoff_approved(app_id)` (member A 227, member F 171, member B 164, member C 163, member D 157.50; emails sent 16:39:48-16:40:23 UTC).
 - The Núcleo link routes to dual interview (Vitor + member E). This is the implicit assumption for ALL Cycle 4 tracks today.
 
 **v1 does NOT remove this column.** The cycle-level URL remains the fallback and the leader-track default. Existing behavior is preserved for cycles that don't opt into per-evaluator routing.

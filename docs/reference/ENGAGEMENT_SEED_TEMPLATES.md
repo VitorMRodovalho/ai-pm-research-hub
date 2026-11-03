@@ -102,7 +102,7 @@ Embaixador / founder. Permissions reduzidas.
 [{"kind": "ambassador", "role": "ambassador", "scope": "organization"}]
 ```
 
-**Note**: founder role usado em algumas places (Vitor, Fabricio) —
+**Note**: founder role usado em algumas places (Vitor, member A) —
 template separado se necessário.
 
 ### 10. `chapter_liaison` — PMI chapter liaison

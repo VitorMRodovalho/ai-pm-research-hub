@@ -32,7 +32,7 @@ Without that registry, adding more Claude/Codex/Cursor instances increases throu
 | Issue | Status | Curator read |
 |---|---|---|
 | #221 | Active P0 | Canonical forward issue for Whisper Art. 11 remediation: drop/block trigger path, add explicit voice biometric consent, update EF/RPC gate, legal/audit chain. |
-| #218 | Partially resolved, keep open | Wave 1 emergency block was applied and PR created. Remaining Waves 2-5 are consent UI, privacy/i18n, retroactive notification, invariant, Angeline/ANPD determination. This should either become the parent tracker or be closed in favor of #221 after explicit comment. |
+| #218 | Partially resolved, keep open | Wave 1 emergency block was applied and PR created. Remaining Waves 2-5 are consent UI, privacy/i18n, retroactive notification, invariant, member A/ANPD determination. This should either become the parent tracker or be closed in favor of #221 after explicit comment. |
 | #148 | Active P0/P1 | CI Validate has been failing on `main` since 2026-05-18. All other merge/process improvements are weakened while this is open. |
 | #220 | Active P1 under #148 | Detailed root-cause investigation for `browser_guards`: L1 workerd DNS strict + L2 brittle Supabase auth-failure assumption. This is the real work item behind #148. |
 

@@ -7,7 +7,7 @@
 **Base legal:** Termo 15.3 (cascata material) · 15.4.3 (objeção) · 15.4.5 (licenças preservadas).
 
 > **Objetivo de negócio.** Levar os voluntários **ativos que assinaram versões antigas** do Termo
-> a **re-aceitar a v9** (mudança material — rodada jurídica Aaron/Angeline). A Onda 1 destravou a
+> a **re-aceitar a v9** (mudança material — rodada jurídica member A/member B). A Onda 1 destravou a
 > assinatura para os C4 novos; a Onda 2 fecha o círculo com quem já estava dentro.
 
 > **O que Claude NÃO faz.** Claude não dispara o fan-out real (`p_dry_run=false`) nem envia e-mail

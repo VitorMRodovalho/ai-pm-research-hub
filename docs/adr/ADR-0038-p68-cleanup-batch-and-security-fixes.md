@@ -343,7 +343,7 @@ Matches ADR-0030..0037 precedent.
 
 ### Deferred (out of this batch — for explicit PM ratify)
 - `create_cost_entry` / `create_revenue_entry` → V4 `manage_finance` would
-  expand audience by **+5 sponsors** (Felipe, member B, member C, member D, member E
+  expand audience by **+5 sponsors** (member F, member B, member C, member D, member E
   — all `sponsor × sponsor` engagements per V4 catalog). V4 catalog explicitly
   grants sponsor manage_finance, but the V3 RPC was narrower (manager/deputy/SA
   only). Sponsor-tier finance write is a meaningful policy change requiring

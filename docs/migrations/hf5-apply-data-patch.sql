@@ -1,6 +1,6 @@
 -- HF5 Apply - Data Patch Follow Through (idempotent)
 -- Scope:
--- 1) Sarah LinkedIn restoration (only when blank)
+-- 1) member A LinkedIn restoration (only when blank)
 -- 2) Align members role/designations with active member_cycle_history snapshot
 -- 3) Enforce deputy_manager <-> co_gp consistency
 --
@@ -8,8 +8,8 @@
 
 begin;
 
--- 1) Sarah LinkedIn restoration (only if empty)
--- Uses an existing non-empty value from another matching Sarah record if available.
+-- 1) member A LinkedIn restoration (only if empty)
+-- Uses an existing non-empty value from another matching member A record if available.
 with source_linkedin as (
   select m.linkedin_url
   from public.members m

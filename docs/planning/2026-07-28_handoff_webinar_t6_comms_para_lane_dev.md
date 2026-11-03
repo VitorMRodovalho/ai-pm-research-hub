@@ -13,11 +13,11 @@ Continua o handoff de 27/07 (`2026-07-26_handoff_webinar_t6_airmeet_comms.md`).
 - LinkedIn https://www.linkedin.com/feed/update/urn:li:share:7487510200724152320/
 - Instagram https://www.instagram.com/p/DbTJ-JrE-rA/
 
-**Página do evento**: 4 palestrantes (member A, member B, Fernando, member C) com foto, cargo, empresa e
+**Página do evento**: 4 palestrantes (member A, member B, member E, member C) com foto, cargo, empresa e
 LinkedIn, os 4 com convite de backstage enviado. Título, Overview, capa, waiting screen e lounge banner
 corrigidos e auditados.
 
-**Programação confirmada pelo member A**: 19h00 abertura, 19h05 tribo (member B), 19h10 Fernando,
+**Programação confirmada pelo member A**: 19h00 abertura, 19h05 tribo (member B), 19h10 member E,
 19h45 member C, 20h25 fechamento. member D dá suporte não declarado pela conta `contato@pmigo.org.br`.
 
 ## ⚠️ NADA está agendado
@@ -31,7 +31,7 @@ A fila `comms_scheduled_posts` tem só os 2 publicados e 2 cancelados. **Não v�
 | Lembrete D-1 do LinkedIn | pronto e no padrão do time, mas não agendado |
 
 **Marcação de pessoas e colab de post nunca foram feitas** nos 2 posts no ar. Não é automatizável
-(#1374): precisa alguém abrir o app e marcar Fernando, member C, member B, member A e as páginas dos
+(#1374): precisa alguém abrir o app e marcar member E, member C, member B, member A e as páginas dos
 capítulos.
 
 ## Lição que virou código: o time de comms edita, e o padrão é por canal

@@ -79,7 +79,7 @@ All items tagged `ciclo-2`, `cultura-change`, `trello-import`.
 
 ### Tags applied (21 new):
 - 20 pipeline guide cards tagged `pipeline-guide`, `processo`
-- 1 actual article enriched: "IA no GP: Análise Comparativa" → full description with authors (member B, member C, João, member D, member E), Google Doc link, EAA framework mention, PMI submission confirmation date
+- 1 actual article enriched: "IA no GP: Análise Comparativa" → full description with authors (member B, member C, member F, member D, member E), Google Doc link, EAA framework mention, PMI submission confirmation date
 
 ---
 

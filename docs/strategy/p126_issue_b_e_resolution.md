@@ -62,7 +62,7 @@ Bypass possível via `p_bypass_gate=true` AND `manage_member` action.
 
 ## Items still pending (E3 full scope future)
 
-- **Cron compliance D-60/D-30/D-7** (Decision 9 — chapter VP coordination async via Ivan T-3)
+- **Cron compliance D-60/D-30/D-7** (Decision 9 — chapter VP coordination async via member A T-3)
 - **Apps Script deployment** (PM action — Issue A guide doc)
 - **gate_attempts_log audit** of original 10 (deferred — let-proceed makes investigation low-priority; future-state invariant test could detect via grep on metadata)
 

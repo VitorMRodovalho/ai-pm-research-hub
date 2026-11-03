@@ -39,7 +39,7 @@ Quem envia é **`_dispatch_interview_booking_link`** (`_`-prefixed, ACL só `pos
    token + e-mail; se tiver, use-o em vez de chamar a função interna à mão.
 
 **O cenário melhorou desde ontem:** as quatro agendas estão abertas (GP 23 dias, institucional 19,
-member A 13, Fernando 13) e não há bloqueio de roteamento ativo. O rodízio LRD elegerá o member A
+member A 13, member B 13) e não há bloqueio de roteamento ativo. O rodízio LRD elegerá o member A
 (posição 1), e a linha nova já gravará `agenda_days_open`, que será a **primeira** linha com esse
 dado (`despachos_com_estado_de_agenda` estava em 0).
 

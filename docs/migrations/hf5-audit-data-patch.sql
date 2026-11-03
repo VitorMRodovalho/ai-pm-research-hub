@@ -1,7 +1,7 @@
 -- HF5 Audit - Data Patch Follow Through
 -- Run this before and after applying `hf5-apply-data-patch.sql`.
 
--- 1) Targeted member snapshot (Sarah + Roberto)
+-- 1) Targeted member snapshot (member A + member B)
 select
   id,
   name,
@@ -17,7 +17,7 @@ where
   or lower(name) like '%roberto%'
 order by name;
 
--- 1b) Sarah still missing LinkedIn after patch? (should return 0 rows)
+-- 1b) member A still missing LinkedIn after patch? (should return 0 rows)
 select
   id,
   name,

@@ -11,14 +11,14 @@ Entregue a **tubulação Direção 1** (sem tocar no texto jurídico; a lavra v9
 **Estado ao vivo:** 0 linhas `volunteer_term_template` active → assinatura segue bloqueada (correto; nada ligado prematuramente).
 
 ### Resta à governança (Onda 1, main/governança — NÃO é dev lane)
-1. Propor v9 do `.docx` V2 (descartar v8 stale) → lock cadeia `curator → president_go` (Ivan) → `activate_volunteer_term_version(<doc_id 280c2c56>)`.
+1. Propor v9 do `.docx` V2 (descartar v8 stale) → lock cadeia `curator → president_go` (member A) → `activate_volunteer_term_version(<doc_id 280c2c56>)`.
 2. **QA visual do PDF assinado** (smoke com 1 adesão de teste + rollback) comparando com o `.docx` V2 SSOT — gate ANTES de liberar os 45.
-3. #1152 (limpeza de gate: Lorena = contraparte, não `president_go`) idealmente antes do lock.
+3. #1152 (limpeza de gate: member B = contraparte, não `president_go`) idealmente antes do lock.
 4. Onda 2 (re-aceite dos ativos via `recirculate`) desacoplada.
 
 ---
 
-**Objetivo de negócio:** liberar os ~45 novos C4 a assinar o Termo **com o texto jurídico corrigido** (rodada Aaron/Angeline 06/07), fechando a drift entre a representação do leitor/aprovação e a representação assinada.
+**Objetivo de negócio:** liberar os ~45 novos C4 a assinar o Termo **com o texto jurídico corrigido** (rodada member C/member D 06/07), fechando a drift entre a representação do leitor/aprovação e a representação assinada.
 
 > Grounding: todos os fatos abaixo vêm de queries ao schema live (project `ldrfrvwhxsmgaabwmaik`) e leitura de `src/lib/certificates/pdf.ts` em 06/07. Re-aterrar antes de executar.
 
@@ -63,9 +63,9 @@ Manter o renderer de slots; adicionar ativação que transforma `content_html` �
 - **#648:** manter snapshot imutável no cert; o render usa o snapshot pinado, nunca o template live.
 
 ## 4. Ativação e a jornada de 2 ondas (contexto de #1152 / rodada jurídica)
-- **Onda 1 (destravar assinatura dos 45 novos):** após aprovar a versão jurídica (cadeia `curator → president_go`/Ivan), a ativação (Direção 1 ou 2) coloca a linha correta `active` → novos assinam 1ª adesão.
+- **Onda 1 (destravar assinatura dos 45 novos):** após aprovar a versão jurídica (cadeia `curator → president_go`/member A), a ativação (Direção 1 ou 2) coloca a linha correta `active` → novos assinam 1ª adesão.
 - **Onda 2 (desacoplada):** re-aceite dos voluntários ativos (`volunteers_in_role_active`) via `recirculate` + retificação de capítulos na Política (`partner_consultation`). Guardrail Cláusula 15.3 (material change exige janela de re-aceite dos ativos); 15.4.1 cobre o intervalo.
-- **Gate cleanup (#1152):** remover carve-out `voluntariado_director` de `president_go` (Lorena = contraparte do instrumento, não gate de versão); mapear função→gate.
+- **Gate cleanup (#1152):** remover carve-out `voluntariado_director` de `president_go` (member B = contraparte do instrumento, não gate de versão); mapear função→gate.
 
 ## 5. Plano de execução (dev lane, ordem sugerida)
 1. Ratificar Direção 1 vs 2 (PM).
@@ -78,5 +78,5 @@ Manter o renderer de slots; adicionar ativação que transforma `content_html` �
 
 ## 6. Fontes de verdade
 - Texto jurídico final (SSOT): `.docx` V2 (docs 1/2/3/5) + `-V1-redline` (docs 6/7) em `~/Downloads/nucleo-juridico-v0-drafts/`. Validação de diff: `RELATORIO-VALIDACAO-2026-07-06.md`.
-- Correção 2.6.4 (Angeline): manter âncora art. 49 IV; remover a frase "Prazos superiores...". Confirmada ausente nos `.docx` V2.
+- Correção 2.6.4 (member D): manter âncora art. 49 IV; remover a frase "Prazos superiores...". Confirmada ausente nos `.docx` V2.
 - CNPJ preâmbulo aterrado no cartão oficial Receita (06/07): 06.065.645/0001-99, Seção Goiânia GO, Av. Perimetral Norte 4129.

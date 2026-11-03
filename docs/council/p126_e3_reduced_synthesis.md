@@ -24,7 +24,7 @@ Full E3 scope includes:
 - File: `supabase/migrations/20260518080000_p126_e3_returning_member_engagement_backfill.sql`
 - SQL UPDATE flagging active-engagement returning candidates as `is_returning_member=true`
 - Predicate: matched member has `engagements.status='active' AND kind LIKE 'volunteer%'`
-- Catches João Coelho's case (cycle 2 cohort active 2026-03-05) + any similar
+- Catches member B Coelho's case (cycle 2 cohort active 2026-03-05) + any similar
 - Audit log entry registered in `admin_audit_log`
 - **NOT applied**: import_vep_applications RPC body patch (deferred — risk noted in handoff)
 

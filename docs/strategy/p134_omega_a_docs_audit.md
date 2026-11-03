@@ -128,12 +128,12 @@ ADRs recentes (0070+) — todos já estão no `docs/adr/README.md` exceto ADR-00
 | ADR-0073 | issue116-calendar-booking-sync-apps-script | Accepted | Não | Sim (79) |
 | ADR-0074 | onda3-arm-dual-model-ai-architecture | Accepted | Não | Sim (80) |
 | ADR-0075 | cv-extraction-pipeline | Accepted (2026-05-07) | Não | Sim (81) |
-| ADR-0076 | pmi-3d-volunteer-model-and-phase-b-base-legal | **PROPOSED** (p125, pending Ivan DPO sign-off Wave 4) | Não | **NÃO** — gap |
+| ADR-0076 | pmi-3d-volunteer-model-and-phase-b-base-legal | **PROPOSED** (p125, pending member A DPO sign-off Wave 4) | Não | **NÃO** — gap |
 
 **Ação A**: adicionar ADR-0076 ao `docs/adr/README.md` como entry pré-aceitação:
 
 ```markdown
-- `ADR-0076-pmi-3d-volunteer-model-and-phase-b-base-legal.md` — PMI 3-d volunteer model + Phase B base legal Art. 7 IX + retention bifurcated 5y/12m/90d + Trentim Path B firewall + 11 princípios. **Status: Proposed (2026-05-09 p125), pending Ivan DPO sign-off Wave 4.**
+- `ADR-0076-pmi-3d-volunteer-model-and-phase-b-base-legal.md` — PMI 3-d volunteer model + Phase B base legal Art. 7 IX + retention bifurcated 5y/12m/90d + Path B firewall + 11 princípios. **Status: Proposed (2026-05-09 p125), pending member A DPO sign-off Wave 4.**
 ```
 
 ### 2.2 Subdirs ausentes do INDEX.md
@@ -277,7 +277,7 @@ Estrutura proposta:
 | `research/README.md` | Research | 2026-04-14 | Re-sync |
 | `governance/ip-policy.md` | Politica de Publicacao e PI | 2026-04-14 | **Re-sync URGENTE** — IP policy v2.7 foi shipped p128 D1; wiki tem versão pré-Roberto |
 | `governance/manual.md` | Manual de Governanca e Operacoes | 2026-04-14 | Re-sync |
-| `governance/volunteer-term.md` | Termo de Voluntariado — Template | 2026-04-14 | **Re-sync URGENTE** — Termo Voluntário tem revisão pendente Roberto (5 comments p128) |
+| `governance/volunteer-term.md` | Termo de Voluntariado — Template | 2026-04-14 | **Re-sync URGENTE** — Termo Voluntário tem revisão pendente member B (5 comments p128) |
 | `tribes/tribo-1-radar-tecnologico.md` | Tribo 1: Radar Tecnologico | 2026-04-14 | Re-sync |
 | `tribes/tribo-2-agentes-autonomos.md` | Tribo 2: Agentes Autonomos | 2026-04-14 | Re-sync |
 | `tribes/tribo-4-cultura-change.md` | Tribo 4: Cultura & Change | 2026-04-14 | Re-sync |
@@ -304,7 +304,7 @@ Wiki sync defer para fora desta sweep — **investigar `sync-wiki` EF logs**:
 1. Verificar `mcp__supabase__get_logs` para EF `sync-wiki` (ver se cron ainda dispara).
 2. Verificar se cron job correspondente foi desativado (não vi `sync-wiki-*` em `cron.job` lista — só 34 jobs, nenhum prefixo wiki).
 3. **Hipótese**: cron foi descontinuado em algum momento entre 2026-04-18 e hoje (3 semanas). Re-habilitar OU executar `sync-wiki` manualmente uma vez para flush backlog.
-4. Pages críticas para forçar re-sync prioritário: `governance/adr/README.md` (66 ADRs faltando), `governance/ip-policy.md` (v2.7 shipped p128), `governance/volunteer-term.md` (revisão Roberto p128).
+4. Pages críticas para forçar re-sync prioritário: `governance/adr/README.md` (66 ADRs faltando), `governance/ip-policy.md` (v2.7 shipped p128), `governance/volunteer-term.md` (revisão member B p128).
 
 ---
 

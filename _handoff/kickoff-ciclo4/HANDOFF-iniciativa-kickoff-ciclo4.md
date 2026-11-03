@@ -43,9 +43,9 @@
 | Vertical | Líder | 
 |---|---|
 | Construção | member E (+ 2 embaixadores LATAM) |
-| PMO | Messias |
+| PMO | member J |
 | Ágil / Negócio | Jonathá |
-| ESG / Sustentabilidade | Felipe (PMI Minas Gerais) |
+| ESG / Sustentabilidade | member K (PMI Minas Gerais) |
 
 ---
 
@@ -67,7 +67,7 @@ Detalhe operacional (brief + 1 tarefa por líder + destino Drive) na **seção 6
 |---|---|---|---|
 | 2.1 | Gravar/atualizar vídeo (4-6 min, template) e subir no Drive | **cada líder de tribo** (ver seção 6) | 08/07 |
 | 2.2 | Prioridade de regravação: T2 (novo líder), T5 (ajuste de âmbito), tribos com datas alteradas | líderes T2/T5/T6 | 08/07 |
-| 2.3 | Vídeos dos novos líderes de vertical | member E/Messias/Jonathá/Felipe | 08/07 |
+| 2.3 | Vídeos dos novos líderes de vertical | member E/member J/Jonathá/member L | 08/07 |
 | 2.4 | Revisão de padrão (duração, lower third, áudio) antes de subir | member F (coord.) | 08/07 |
 
 ### Frente 3 — Correções do site (gaps da Parte B) — antes do kickoff
@@ -158,7 +158,7 @@ flowchart TB
 
   V --> VC["Construção<br/>(embaixador: member B + member E)"]:::v
   V --> VP["PMO"]:::v
-  V --> VE["ESG / Sustentabilidade<br/>(Felipe · PMI-MG)"]:::v
+  V --> VE["ESG / Sustentabilidade<br/>(member K · PMI-MG)"]:::v
   V --> VA["Ágil / Negócio"]:::v
 
   VC --> TC["Tribos de construção<br/>(temas dos quadrantes, foco setorial)"]:::t
@@ -202,9 +202,9 @@ flowchart TB
 | Gravar vídeo de boas-vindas | member H | T7 · Governança & Trustworthy AI | `T07-Governanca-member H.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | member A | T8 · Inclusão & Colaboração | `T08-Inclusao-AnaCarla.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | member E | Vertical · Construção | `Vertical-Construcao-member E.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Messias | Vertical · PMO | `Vertical-PMO-Messias.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member J | Vertical · PMO | `Vertical-PMO-Messias.mp4` | 08/07 |
 | Gravar vídeo de boas-vindas | Jonathá | Vertical · Ágil/Negócio | `Vertical-Agil-Jonatha.mp4` | 08/07 |
-| Gravar vídeo de boas-vindas | Felipe (PMI-MG) | Vertical · ESG | `Vertical-ESG-Felipe.mp4` | 08/07 |
+| Gravar vídeo de boas-vindas | member K (PMI-MG) | Vertical · ESG | `Vertical-ESG-Felipe.mp4` | 08/07 |
 
 > T3 (member G) não entra: desligamento no Ciclo 3.
 

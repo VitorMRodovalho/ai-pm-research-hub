@@ -23,7 +23,7 @@ Você está no projeto `ai-pm-research-hub`. Vamos operacionalizar o **Kickoff d
 - Roster de líderes e a tabela de 1 card por líder estão na **seção 6** do HANDOFF.
 
 **Faça, nesta ordem (confirmando comigo antes de qualquer ação externa/irreversível):**
-1. **Roster:** rode `search_members` para resolver os registros oficiais de: novo líder da **T2** (member E passou o bastão, nome a definir comigo), e os líderes de vertical member A (Construção), Messias (PMO), Jonathá (Ágil/Negócio), Felipe/PMI-MG (ESG). Me traga o que encontrou antes de convidar.
+1. **Roster:** rode `search_members` para resolver os registros oficiais de: novo líder da **T2** (member E passou o bastão, nome a definir comigo), e os líderes de vertical member A (Construção), member F (PMO), Jonathá (Ágil/Negócio), member G/PMI-MG (ESG). Me traga o que encontrou antes de convidar.
 2. **Iniciativa:** crie "Kickoff Ciclo 4 + Onboarding dos Líderes" (member C líder). Engaje member B como coordenador e todos os líderes do roster: `invite_to_initiative` / `manage_initiative_engagement`. Vincule a pasta do Ciclo 4 com `link_initiative_to_drive`.
 3. **Board + Drive:** crie/associe o board da iniciativa e vincule à pasta Drive dos vídeos com `link_board_to_drive` (folder `1T1ATHvJ-G3Tk7D05QoHALvfk15bTNG2m`).
 4. **Cards de vídeo (1 por líder):** para cada linha da tabela da seção 6, `create_board_card` + `update_card_fields` (responsável = líder, due = 08/07, descrição = conteúdo de `BRIEF-video-tribo.md`).

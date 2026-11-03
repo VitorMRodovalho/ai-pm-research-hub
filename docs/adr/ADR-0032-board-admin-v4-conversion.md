@@ -60,7 +60,7 @@ OR designations IN ('co_gp', 'curator', 'comms_leader')
 |---|---|
 | `admin_list_archived_board_items(uuid, integer)` | `/admin/governance-v2.astro` (curator-visible page from Bug A) |
 
-**Legacy V3 set: 5 active members** (member D, member B, Roberto, member C, Vitor SA)
+**Legacy V3 set: 5 active members** (member D, member B, member J, member C, Vitor SA)
 
 ### Por que 2 estratégias diferentes
 
@@ -79,7 +79,7 @@ OR designations IN ('co_gp', 'curator', 'comms_leader')
 
 | Reuse candidate | V4 set vs legacy | Drift |
 |---|---|---|
-| `view_internal_analytics` | 10 (incl Roberto, sem member C/member B) | Drift correction: member C curator + member B comms_leader perdem (mesmo padrão ADR-0030) |
+| `view_internal_analytics` | 10 (incl member J, sem member C/member B) | Drift correction: member C curator + member B comms_leader perdem (mesmo padrão ADR-0030) |
 | `write_board` | 35 | Too broad — read-only grant a participant é cesto demais |
 
 → **Group R reuses `view_internal_analytics`** (Opção B precedent) com drift correction documented.
@@ -195,9 +195,9 @@ END;
 #### 5. Privilege expansion check — Group R
 
 ```
-legacy reader = 5: member D, member B, Roberto, member C, Vitor SA
+legacy reader = 5: member D, member B, member J, member C, Vitor SA
 v4 view_internal_analytics = 10
-would_gain = [Ana, Felipe, member E, member F, member G, member H, member I] (7 admin/governance roles)
+would_gain = [member K, member L, member E, member F, member G, member H, member I] (7 admin/governance roles)
 would_lose = [member B (comms_leader designation sem V4 engagement),
               member C (curator designation sem V4 engagement)]
 ```

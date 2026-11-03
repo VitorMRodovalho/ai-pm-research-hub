@@ -70,7 +70,7 @@ Threshold: > 4 valores OU domain-defined (admin pode editar) → catalog → JOI
 
 - p138 — `supabase-js INSERT silencioso 400`: `gamification_rules.pillar NOT NULL` exposto pq RPC reader esperava pillar mas form de admin não setava. Trigger evidence: forms agora `.throwOnError()` + pillar field obrigatório em CRUD.
 - p165 — leaderboard surfacing bug: `curation_ratification` mostrava em "bonus_points" em vez de "curadoria" pq RPC hard-coded array não incluiu. Fix via JOIN rules.pillar.
-- p173 — cron digest tribe-centric: PM intuition "Herlon/Mayanna não recebem digest" surfaced que cron filtrava `tribes` em vez de `initiatives` (config primitivo do V4). Fix via JOIN initiatives + helper config-driven.
+- p173 — cron digest tribe-centric: PM intuition "member A/member B não recebem digest" surfaced que cron filtrava `tribes` em vez de `initiatives` (config primitivo do V4). Fix via JOIN initiatives + helper config-driven.
 
 ## Cross-refs
 

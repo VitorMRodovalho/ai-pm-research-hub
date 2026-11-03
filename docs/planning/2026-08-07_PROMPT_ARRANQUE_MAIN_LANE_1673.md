@@ -86,9 +86,9 @@ git branch -f fix/youtube-playlists-ciclo4-gerais-e-lideranca \
 - **38 action items abertos** entre as Lideranças #8 (23/07) e #9 (06/08).
 - **Webinar de patente e PI parado em 28/05/2026** com status `planned`, e **zero**
   webinares agendados em setembro.
-- **Card do framework do Marcos** com `forecast_date` 08/09, três semanas depois do
+- **Card do framework do member F** com `forecast_date` 08/09, três semanas depois do
   ~18/08 que ele se comprometeu em 23/07.
-- **7 pessoas falaram na #8 sem registro de presença** (Vitor, member A, Roberto,
+- **7 pessoas falaram na #8 sem registro de presença** (Vitor, member A, member G,
   member B, member C, member D, member E).
 - Playlist `Ciclo 4 (2026/2) - Reuniões Gerais` existe, mas o backfill das Gerais
   **mais antigas** não foi varrido.

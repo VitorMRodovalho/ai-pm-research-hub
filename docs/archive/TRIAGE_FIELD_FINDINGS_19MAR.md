@@ -25,7 +25,7 @@
 | P1-3 | **Portfolio/Boards: sem alerta de atraso** | Artefatos com baseline ou forecast anterior a hoje não mostram indicador de atraso. Sem visibilidade de overdue. |
 | P1-4 | **Parcerias: CRUD incompleto** | Não é possível criar nova parceria nem editar existentes via frontend. Dados foram inseridos direto no banco. Frontend não tem formulário de criação/edição. |
 | P1-5 | **Pilotos: CRUD incompleto** | Não é possível criar novo piloto nem editar via frontend. Dados parciais (nem tudo que está no banco aparece na UI). Verificar: quem vê? Quem edita? Tiers de acesso. |
-| P1-6 | **Processo Seletivo: múltiplos problemas** | (a) Nada é editável. (b) Snapshot tem duplicações. (c) Falta agrupamento por nome (mostrar último status). (d) Faltam colunas de indicadores de impacto (CPMAI pós-núcleo, membrezia PMI por conta do núcleo, filiação a capítulo). (e) Falta seção de requisitos/jornada do candidato. (f) Não filtra por capítulo. (g) João está como pesquisador mas sem contrato — feature de jornada pendente. |
+| P1-6 | **Processo Seletivo: múltiplos problemas** | (a) Nada é editável. (b) Snapshot tem duplicações. (c) Falta agrupamento por nome (mostrar último status). (d) Faltam colunas de indicadores de impacto (CPMAI pós-núcleo, membrezia PMI por conta do núcleo, filiação a capítulo). (e) Falta seção de requisitos/jornada do candidato. (f) Não filtra por capítulo. (g) member C está como pesquisador mas sem contrato — feature de jornada pendente. |
 | P1-7 | **Líder de tribo sem permissão de ajustar presenças passadas** | Líder não consegue corrigir presenças de reuniões passadas da sua tribo. Necessário para accountability. |
 
 ### 🟢 P2 — Melhoria / Polishing

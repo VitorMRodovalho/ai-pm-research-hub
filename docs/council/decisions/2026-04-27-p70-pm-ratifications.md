@@ -13,7 +13,7 @@ futuras (p71+).
 
 | ADR | Status | Justificativa concisa |
 |---|---|---|
-| **ADR-0037** chapter_needs subsystem 100% V4 | ✅ Accepted | Path Y formalizado; precedent já reusado em ADR-0039. Drift = 1 (João, precedented padrão 8x) |
+| **ADR-0037** chapter_needs subsystem 100% V4 | ✅ Accepted | Path Y formalizado; precedent já reusado em ADR-0039. Drift = 1 (member A, precedented padrão 8x) |
 | **ADR-0038** p68 cleanup batch | ✅ Accepted | 1 zero-drift convert + 2 security drift fixes (parameter-gate + no-gate). LGPD-relevant |
 | **ADR-0039** countersign subsystem 100% V4 + register_attendance_batch fix | ✅ Accepted | 3 gains (engagement-without-designation drift correction); zero losses; subsystem 100% V4 |
 | **ADR-0040** p70 cleanup batch | ✅ Accepted | DROP dead helper + 3 REVOKE-from-anon. Defense-in-depth pure |

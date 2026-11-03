@@ -123,7 +123,7 @@ CREATE INDEX idx_events_champion_pending
 | **G2b** | Extend `generate_weekly_leader_digest_cron()` com v_has_signal + tribe_id→initiative_id mapping | ~30min | G2a | NOVO |
 | **G3a** | Extend `buildWeeklyTribeDigestLeaderHtml` EF com 3 sections + CTAs (PT-BR inline) | ~2h | G2 | — |
 | **G3b** | Deep link URLSearchParams parsers em `/attendance` + `/admin/gamification` | ~1h | G3a | NOVO |
-| **G4** | Smoke cron + email render Roberto/Sarah | ~1h | G2/G3 | — |
+| **G4** | Smoke cron + email render member A/member B | ~1h | G2/G3 | — |
 | **G5** | Contract test `weekly-tribe-digest.test.mjs` (cobertura ata/presença/champion sections) | ~1h | G2 | NOVO |
 | **G1** | Migration `events.event_champion_waived` + trio (4 colunas, 1 index partial) — pattern p160 soft-cancel | ~1h | G0 | **DEFERRABLE — não load-bearing para G2** |
 

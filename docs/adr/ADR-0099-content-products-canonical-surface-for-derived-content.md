@@ -19,7 +19,7 @@
 
 Three things converged at p260 Wave 4 audit close (2026-05-24):
 
-1. **SPEC §6.1** introduced "instrumento, produto e modo de revisão" as a first-class concept: *uma mesma fonte pode gerar vários produtos* (LinkedIn post, LinkedIn Newsletter, blog/Hub article, magazine submission, governance attachment). The platform must register the **product reviewed**, not just the source file. SPEC §16.5 then ties this to QA smoke 5 (Roberto + member A curatorship paths) and to #382 blind-review primitives.
+1. **SPEC §6.1** introduced "instrumento, produto e modo de revisão" as a first-class concept: *uma mesma fonte pode gerar vários produtos* (LinkedIn post, LinkedIn Newsletter, blog/Hub article, magazine submission, governance attachment). The platform must register the **product reviewed**, not just the source file. SPEC §16.5 then ties this to QA smoke 5 (member B + member A curatorship paths) and to #382 blind-review primitives.
 
 2. **D3 PM decision (p260 audit §15.5)** ratified: *`content_products` deve ser o artefato canônico de produto derivado; `board_items` continua como tracking operacional. Racional: uma tribo pode gerar múltiplos produtos a partir de um documento — LinkedIn, newsletter, artigo, revista, política, template. Isso não deve ficar escondido em board item.*
 

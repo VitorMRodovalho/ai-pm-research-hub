@@ -1906,7 +1906,7 @@
     },
     {
       "name": "get_application_gate_attempts",
-      "description": "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI, retired by #1640 / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS / P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY, #2012), caller name, payload snapshot (consent/eval_count/score/status/authority_path at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (Fabricio incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).",
+      "description": "Returns timeline of gate attempts (schedule_interview + issue_interview_booking_token) for an application — success + fail with gate_failed_code (P0001 GATE_NO_AI, retired by #1640 / P0002 GATE_NO_PEER_REVIEW / P0003 GATE_NO_SCORE / P0004 INVALID_APP_STATUS / P0005 UNAUTHORIZED_NOT_INTERVIEW_AUTHORITY, #2012), caller name, payload snapshot (consent/eval_count/score/status/authority_path at attempt time), and bypass status. Used by committee/admins to diagnose workflow gate violations (member A incident pattern — candidate booked Calendar without AI/peer-review). Admin only (manage_member).",
       "domain": "selection",
       "rpcs": [
         "get_application_gate_attempts"

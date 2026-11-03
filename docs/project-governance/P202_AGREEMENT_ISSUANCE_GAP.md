@@ -2,7 +2,7 @@
 
 **Data:** 2026-05-19  
 **Status:** Diagnóstico / decisão pendente  
-**Origem:** Investigação #160 Herlon authority state
+**Origem:** Investigação #160 member A authority state
 **Spec correlata:** `docs/project-governance/P202_VOLUNTEER_LIFECYCLE_REMEDIATION_SPEC.md`
 **SQL audit pack:** `docs/audit/P202_VOLUNTEER_LIFECYCLE_SQL_AUDIT.md`
 
@@ -10,7 +10,7 @@
 
 ## 1. Problema
 
-Herlon Alves tem engagement ativo `study_group_owner / leader` em CPMAI, mas não recebe capacidades V4 porque o engagement exige acordo e ainda não possui `agreement_certificate_id`.
+member A tem engagement ativo `study_group_owner / leader` em CPMAI, mas não recebe capacidades V4 porque o engagement exige acordo e ainda não possui `agreement_certificate_id`.
 
 Investigação p202 mostrou que o problema não é apenas individual: o batch anterior de emissão/admin attestation cobriu principalmente `engagement_kind='volunteer'`, deixando special engagement kinds sem termo/certificado.
 
@@ -18,12 +18,12 @@ Investigação p202 mostrou que o problema não é apenas individual: o batch an
 
 ## 2. Evidência
 
-### Herlon
+### member A
 
 - `engagements`: `study_group_owner / leader`, status `active`, initiative `Preparatório CPMAI — Ciclo 3 (2026)`.
 - `auth_engagements`: `requires_agreement=true`, `agreement_certificate_id=NULL`, `is_authoritative=false`.
 - `get_caller_capabilities()`: `org_actions=[]`, `tribe_actions={}`, `initiative_actions={}`.
-- `certificates`: 0 rows para Herlon.
+- `certificates`: 0 rows para member A.
 - `notifications`: nenhuma notificação de termo/acordo para ele.
 - `admin_audit_log`: nenhuma ação relacionada a cert/agreement para ele.
 
@@ -124,7 +124,7 @@ Combinar A + C:
 - Membro consegue assinar.
 - GP consegue countersign.
 - `auth_engagements.is_authoritative` muda via fluxo normal.
-- Herlon recebe autoridade esperada só após assinatura/countersign.
+- member A recebe autoridade esperada só após assinatura/countersign.
 - Release log e governance changelog documentados.
 
 ---
@@ -138,13 +138,13 @@ A expansão da emissão para special engagement kinds deve considerar os achados
 - `period_end` já é derivado pela função live a partir de VEP/ciclo/histórico; há 1 certificado histórico com `period_end='2026-06-30'` que deve ser auditado/backfilled se necessário.
 - `get_my_signatures()` deve expor um pacote coerente para consulta do membro e export LGPD Art. 18.
 
-Esses pontos não bloqueiam a emissão operacional do termo vigente para Herlon, mas são ship gates antes de qualquer claim formal de não-repúdio criptográfico completo.
+Esses pontos não bloqueiam a emissão operacional do termo vigente para member A, mas são ship gates antes de qualquer claim formal de não-repúdio criptográfico completo.
 
 ---
 
 ## 8. Issues
 
-- GitHub #160 — Herlon authority state.
+- GitHub #160 — member A authority state.
 - GitHub #177 — emissão do termo vigente para special engagement kinds.
 - GitHub #181 / P162 #50 — `counter_signature_hash` computado mas não persistido.
 - GitHub #181 / P162 #51 — evidências do Termo incompletas (`signed_ip`, `signed_user_agent`, `period_end`).

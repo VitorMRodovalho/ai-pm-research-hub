@@ -4,7 +4,7 @@
 **Created:** 2026-05-26 (session p270)
 **Origin:** PM identified two production bugs on /admin/selection during cycle4-2026 dispatch:
 1. The RPC `notify_selection_cutoff_approved` (shipped p228 W2 leaf 4 + p251 #355) has **zero UI call sites**. Only invocable via DO-block manual dispatch — that's why 7 above_band researchers sat with welcome-email-only for 21 days.
-2. Candidates whose scheduled interview lapses (evaluator never accepted Google Calendar invite) get **no automatic re-invite** — they stay in `interview_scheduled` with `conducted_at IS NULL` indefinitely. Found 3 such cases in cycle4 (Rafael, member A, member B — interviews scheduled 2026-05-14, none conducted, no cancel/reschedule, candidates in the dark for 12 days).
+2. Candidates whose scheduled interview lapses (evaluator never accepted Google Calendar invite) get **no automatic re-invite** — they stay in `interview_scheduled` with `conducted_at IS NULL` indefinitely. Found 3 such cases in cycle4 (member E, member A, member B — interviews scheduled 2026-05-14, none conducted, no cancel/reschedule, candidates in the dark for 12 days).
 
 Both gaps were closed in-session as one-shot DO-blocks (10 candidates total: 7 above_band + 3 stuck-scheduled). This SPEC codifies the permanent UI + automation layer so the manual path is no longer load-bearing.
 
@@ -69,7 +69,7 @@ Each wave is a separable PR with its own merge gate. Sub-issues per wave for vis
 | Gate | Pass criteria |
 |---|---|
 | Bulk button | "📧 Enviar convite (N)" appears in bulk bar when ≥1 selected (alongside existing bulk-approve/reject/waitlist at selection.astro:374-377) |
-| Pre-confirm | `confirm()` shows count + first 3 names (e.g., "Enviar convite para 5 candidatos: LUIZ, member C, Andre, e mais 2?") |
+| Pre-confirm | `confirm()` shows count + first 3 names (e.g., "Enviar convite para 5 candidatos: LUIZ, member C, member F, e mais 2?") |
 | Loop | Iterates selection, calls F1 RPC per app, aggregates `{sent, skipped_already_sent, error_count}` |
 | Result toast | Aggregate: "Enviados: X · Já dispatchados: Y · Erros: Z" |
 | Idempotency safety | Skipped already-sent rows do NOT count as errors (delegated to RPC's `already_sent` reason) |

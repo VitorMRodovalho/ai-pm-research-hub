@@ -179,7 +179,7 @@ unratified name/PDU language.
 
 | Date | Milestone | Owner | Track |
 |---|---|---|---|
-| **02–03/07** | C3 closure (#1003) — sealing/certs/exits; Antonio offboard cron (jobid 75, 03/07 09:00 BRT) | ops | — |
+| **02–03/07** | C3 closure (#1003) — sealing/certs/exits; member A offboard cron (jobid 75, 03/07 09:00 BRT) | ops | — |
 | **now** | Ship Track-0 save-the-date + open Airmeet registration (Núcleo-only) | comms | 0 |
 | **now (async)** | Send §4 PMI-GO memo; start ADR-0104 reread + INPI check + Airmeet DPA check | Vitor/legal | gate |
 | **09/07** | C4 access turn (#1004) — cohort provisioning (separate ops lane) | ops | — |
@@ -207,7 +207,7 @@ unratified name/PDU language.
 ## 10. Out of scope (do not pull in)
 
 - **#1004** C4 access turn (09/07) and **#1003** C3 closure (02–03/07) — already detailed/scheduled (sibling
-  docs; cron jobid 75 handles Antonio's offboard 03/07).
+  docs; cron jobid 75 handles member A's offboard 03/07).
 - **#1000/#1001** VEP selection filters — dev lane.
 - **#1026/#1020/#1021/#1022** structural improvements — filed, do not block 16/07.
 - Any migration/feature — this event is **outside the platform** by decision (#1006 council).

@@ -14,19 +14,19 @@
 
 | Entrega | O que falhou em prod | Como foi encontrado | Deveria ter sido pego por |
 |---------|---------------------|--------------------|-----------------------|
-| RPCs P0 (GC-091) | 8 colunas inexistentes | HAR em campo (Jefferson, Fabricio, Vitor) | Smoke test de cada RPC |
+| RPCs P0 (GC-091) | 8 colunas inexistentes | HAR em campo (member A, member B, Vitor) | Smoke test de cada RPC |
 | Dark mode (GC-090) | 45 bugs visuais | Inspeção manual | Checklist visual por tema |
-| GC-095 create_event | FK violation (auth.uid vs member.id) | Jefferson em prod | Teste funcional: criar evento como líder |
+| GC-095 create_event | FK violation (auth.uid vs member.id) | member A em prod | Teste funcional: criar evento como líder |
 | GC-095 i18n | `attendance.modal.advanced` raw | Screenshot em prod | Grep por keys não traduzidas |
 | Blog EN/ES | 404 em /en/blog, /es/blog | Crawl sistemático (esta sessão) | Checklist de rotas por locale |
 | Privacy EN/ES | 404 em /en/privacy, /es/privacy | Crawl sistemático | Mesmo checklist |
-| Hero section | Horário raw, stats, email errado | Jefferson em prod | Smoke test autenticado |
+| Hero section | Horário raw, stats, email errado | member A em prod | Smoke test autenticado |
 
 ### Root cause:
 - **CI testa build e tipos, não comportamento.** 590 testes passam, mas nenhum teste simula "líder cria evento" ou "visitante EN acessa blog".
 - **Claude Code não tem contexto de banco.** Ele escreve SQL sintaticamente correto mas semanticamente errado (ex: `auth.uid()` vs `members.id`) porque não consulta o schema real.
 - **Não existe smoke test pós-deploy.** O merge vai direto para produção via Cloudflare Workers auto-deploy.
-- **O GP é o QA.** Vitor e Jefferson estão encontrando bugs que um checklist de 5 minutos pegaria.
+- **O GP é o QA.** Vitor e member A estão encontrando bugs que um checklist de 5 minutos pegaria.
 
 ---
 

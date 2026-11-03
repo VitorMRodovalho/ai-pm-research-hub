@@ -57,7 +57,7 @@
 - **B (consulting)**: LIM + CPMAI + whitepaper pipeline. Each week of LIM delay closes submission window.
 - **C (community-led)**: Already active via CBGPL expansion. No net-new decision required.
 
-**Closure risk**: Not submitting LIM → closes B partially. Starting multi-chapter technical onboarding before validating interest → closes A. Launching CPMAI without formal IP agreement with member B/Pedro → ambiguity risk (flag for legal-counsel).
+**Closure risk**: Not submitting LIM → closes B partially. Starting multi-chapter technical onboarding before validating interest → closes A. Launching CPMAI without formal IP agreement with member B/member D → ambiguity risk (flag for legal-counsel).
 
 ---
 
@@ -130,7 +130,7 @@ Per council README Phase 2 goal: populate `docs/council/decisions/` with 3-5 ent
 Per PM directive, Parte 3 (IP ratification on-platform workflow planning) was planned but deferred due to context budget. Recommended structure:
 - ux-leader + product-leader: workflow design (email → cadastro → DocuSign-like comments → curadores → líderes ciência → PMI-GO president approval → demais presidentes ciência)
 - data-architect: schema (approval_chains, document_versions, signatures)
-- legal-counsel: validate final text of 4 gov docs (v3) with Roberto's 2 pontos (software=direito autoral + conflito periódicos + INPI/Bib Nacional)
+- legal-counsel: validate final text of 4 gov docs (v3) with member C's 2 pontos (software=direito autoral + conflito periódicos + INPI/Bib Nacional)
 - accountability-advisor: define minimal audit trail
 
 Document outcome should land in `docs/council/2026-04-18-ip-ratification-planning.md`.
