@@ -2,8 +2,8 @@
 // (get_community_group_link, #740) and the tribe groups (get_tribe_group_link). Whoever joins a WhatsApp group
 // shows their phone number to its members, so the person reads that before following the link, not after.
 //
-// One source for the five places that render an invite (pre-onboarding card, general group card, Term success
-// screen, tribe page, tribe dashboard), so the wording cannot drift between them. Plain text: callers that build
+// One source for the places that render an invite (pre-onboarding card, general group card, Term success screen,
+// tribe page, tribe dashboard, tribe request block), so the wording cannot drift between them. Plain text: callers that build
 // HTML strings escape it like any other value.
 
 const PHONE_VISIBLE = {

@@ -9,11 +9,11 @@
  * get_tribe_group_link said nothing about the phone number; the warning lived only in code comments.
  *
  * Layers (all static except E, which calls the module):
- *   A  in each of the five places, the notice is rendered inside the block that renders the invite, so the
+ *   A  in each place (five on 2026-11-01, six since the tribe request block, PR-2 of #2888), the notice is rendered inside the block that renders the invite, so the
  *      link never shows without it;
  *   B  the pre-onboarding card names the group generically ("onboarding do Núcleo"), not "pré-onboarding",
  *      since the same group is served after the Term too;
- *   C  the set of files that ask for an invite is exactly these five, so a sixth place cannot render a link
+ *   C  the set of files that ask for an invite is exactly the PLACES list, so a new place cannot render a link
  *      without the notice going unnoticed;
  *   E  the module returns the approved sentence for each language, and Portuguese for anything else.
  */
@@ -33,6 +33,9 @@ const PLACES = {
   termSuccess: 'src/pages/volunteer-agreement.astro',
   tribePage: 'src/pages/tribe/[id].astro',
   tribeDashboard: 'src/components/islands/TribeDashboardIsland.tsx',
+  // Onboarding wave 0, PR-2 (#2888): the tribe request block offers the onboarding group in the pending, expired and
+  // empty states.
+  tribeRequest: 'src/components/tribe/TribeRequestBlock.tsx',
 };
 const MODULE = 'src/lib/whatsapp-group-notice.ts';
 const INVITE_CALL = /\.rpc\(\s*['"](get_community_group_link|get_tribe_group_link)['"]/;
@@ -79,6 +82,11 @@ test('A: tribe dashboard, the notice is inside {waLink && (...)}', () => {
   assert.match(block, /href=\{waLink\}[\s\S]*\{phoneVisibleNotice\(/, 'the tribe group invite on the dashboard renders without the phone notice');
 });
 
+test('A: tribe request block, the notice sits inside {groupUrl && (...)}, before the link', () => {
+  const block = between(read(PLACES.tribeRequest), '{groupUrl && (', 'href={groupUrl}', 'tribe request block');
+  assert.match(block, /\{phoneVisibleNotice\(lang\)\}/, 'the onboarding group invite in the tribe request block renders without the phone notice');
+});
+
 test('B: the pre-onboarding card names the group generically, in the 3 languages', () => {
   const body = read(PLACES.preOnboarding);
   for (const [label, re] of [
@@ -91,7 +99,7 @@ test('B: the pre-onboarding card names the group generically, in the 3 languages
   for (const b of bodies) assert.doesNotMatch(b, /pré-onboarding|pre-onboarding|pre-integración/i, `card still says pre-onboarding: ${b}`);
 });
 
-test('C: the files that ask for an invite are exactly the five that render the notice', () => {
+test('C: the files that ask for an invite are exactly the places that render the notice', () => {
   const files = readdirSync(resolve(ROOT, 'src'), { recursive: true })
     .map((f) => `src/${String(f).split(sep).join('/')}`)
     .filter((f) => /\.(tsx?|astro)$/.test(f) && !f.endsWith('database.gen.ts'));

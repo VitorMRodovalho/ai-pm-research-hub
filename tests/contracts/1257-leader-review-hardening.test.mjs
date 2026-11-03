@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MIG = join(
@@ -14,6 +15,10 @@ const MIG = join(
   '../../supabase/migrations/20260805000395_1257_wave3_leader_review_hardening.sql',
 );
 const sql = readFileSync(MIG, 'utf8');
+// The nudge and fallback mechanics are a CURRENT invariant, so they are read from the newest capture of the function
+// (#1932); the file above still answers what this migration delivered (the CREATE, the grants, the cron).
+const ROOT = join(__dirname, '../..');
+const NUDGES = maskLineComments(latestFunctionCapture(ROOT, 'process_tribe_request_nudges').body);
 
 // ── TTL 7d (tribe path only) ──
 
@@ -86,21 +91,21 @@ test('#1257: process_tribe_request_nudges — nudge D-2 ao líder com dedup por 
     /CREATE OR REPLACE FUNCTION public\.process_tribe_request_nudges\(p_dry_run boolean DEFAULT false\)/,
   );
   // janela D-2: pending, expira em <=2 dias, ainda não nudgeado
-  assert.match(sql, /ii\.expires_at <= v_run_at \+ interval '2 days'/, 'janela D-2');
-  assert.match(sql, /\(ii\.metadata->>'leader_nudged_at'\) IS NULL/, 'dedup do nudge por metadata');
-  assert.match(sql, /'tribe_request_nudge'/, 'tipo de notificação do nudge ao líder');
+  assert.match(NUDGES, /ii\.expires_at <= v_run_at \+ interval '2 days'/, 'janela D-2');
+  assert.match(NUDGES, /\(ii\.metadata->>'leader_nudged_at'\) IS NULL/, 'dedup do nudge por metadata');
+  assert.match(NUDGES, /'tribe_request_nudge'/, 'tipo de notificação do nudge ao líder');
 });
 
 test('#1257: GP fallback na expiração — fan-out por manager, dedup por metadata, bound de recência', () => {
-  assert.match(sql, /'tribe_request_expired_gp'/, 'tipo de notificação do fallback ao GP');
-  assert.match(sql, /\(ii\.metadata->>'gp_fallback_at'\) IS NULL/, 'dedup do fallback por metadata');
+  assert.match(NUDGES, /'tribe_request_expired_gp'/, 'tipo de notificação do fallback ao GP');
+  assert.match(NUDGES, /\(ii\.metadata->>'gp_fallback_at'\) IS NULL/, 'dedup do fallback por metadata');
   assert.match(
-    sql,
+    NUDGES,
     /ii\.expires_at > v_run_at - interval '3 days'/,
     'bound de 3 dias evita blast de backfill',
   );
   assert.match(
-    sql,
+    NUDGES,
     /CROSS JOIN public\.members m\s*\n\s*WHERE m\.operational_role = 'manager'/,
     'fan-out 1 por GP (manager), espelha detect_stuck_selection_funnel',
   );
