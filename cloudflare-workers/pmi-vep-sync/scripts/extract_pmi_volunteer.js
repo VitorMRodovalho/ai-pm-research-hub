@@ -9,6 +9,11 @@
 //        resposta válida do worker, valem elas, e o console avisa. A origem fica em
 //        meta.lgpd.allowlist_source ('platform' ou 'config').
 //
+// CHANGELOG 2026-11-02 (#2393, decisão D5 da ADR-0134):
+//   76080 (piloto da linha) só baixa os baldes submitted e rejected. O balde qualified
+//        entraria como aprovado sem passar pela seleção do piloto. O worker /ingest
+//        aplica o mesmo mapa.
+//
 // CHANGELOG 2026-10-29 (#2827, D1 do #1175 revista):
 //   72562 (vaga do capítulo) entra na allowlist, mas NUCLEO_OPPORTUNITY_BUCKETS a
 //        restringe ao balde qualified: só quem o capítulo já colocou na função. Os
@@ -165,7 +170,7 @@
     // #2827 — vagas que só importam alguns baldes do VEP. Os outros baldes
     // dessas vagas nem são baixados. O worker /ingest aplica o mesmo mapa
     // (OPPORTUNITY_IMPORT_BUCKETS em src/index.ts).
-    NUCLEO_OPPORTUNITY_BUCKETS: { 72562: ['qualified'] },
+    NUCLEO_OPPORTUNITY_BUCKETS: { 72562: ['qualified'], 76080: ['submitted', 'rejected'] },
     // #1316 — vagas HISTÓRICAS/FECHADAS do Núcleo que a auto-descoberta NÃO lista
     // (só lista as opportunities correntes do recruiter por partyID + posting date).
     // Ex.: 62106 = Ciclo 1 Goiás, porta de entrada de toda a coorte Goiás — o dado

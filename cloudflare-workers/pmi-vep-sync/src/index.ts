@@ -74,8 +74,12 @@ const KV_KEY = 'pmi_oauth:tokens';
 // the worker enforces it too, because an older copy of the script still sends every bucket.
 // #2843: GET /opportunities serves this map to the script, so the copy in the script is
 // only its fallback.
+// #2393 (ADR-0134, decision D5 of 2026-11-02): 76080 is the line pilot. Only the submitted
+// and rejected buckets come in, because the qualified bucket would land as 'approved' without
+// going through the pilot selection.
 const OPPORTUNITY_IMPORT_BUCKETS: Record<string, readonly string[]> = {
-  '72562': ['qualified']
+  '72562': ['qualified'],
+  '76080': ['submitted', 'rejected']
 };
 
 export default {
