@@ -378,7 +378,10 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export interface HomeOpening {
   id: string;
-  /** O título do VEP sem o sufixo da organização, pela mesma regra do e-mail de boas-vindas (worker, openingLabel). */
+  /**
+   * O rótulo de exibição da vaga (vep_opportunities.home_label, GP 03/11/2026). Sem ele, o título do VEP sem o sufixo
+   * da organização, pela mesma regra do e-mail de boas-vindas (worker, openingLabel).
+   */
   label: string;
   /** O título inteiro, como está no VEP. */
   title: string;
@@ -401,10 +404,11 @@ export async function loadHomeOpenings(): Promise<HomeOpening[]> {
   return rows
     .filter((r) => isText(r.opportunity_id) && isText(r.title) && (r.listing === 'open' || r.listing === 'soon'))
     .map((r) => {
+      const own = isText(r.home_label) ? r.home_label.trim() : '';
       const cut = r.title.search(/\s+-\s+Núcleo\b/);
       return {
         id: r.opportunity_id,
-        label: (cut > 0 ? r.title.slice(0, cut) : r.title).trim(),
+        label: own || (cut > 0 ? r.title.slice(0, cut) : r.title).trim(),
         title: r.title,
         role: optText(r.role_default),
         listing: r.listing,
