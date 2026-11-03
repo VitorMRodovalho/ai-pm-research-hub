@@ -1,13 +1,13 @@
 -- p159 S#3a (pré-ADR-0078): extend get_ghost_visitors para excluir auth.users cujo email
 -- já está em members.secondary_emails (linking via alias).
 --
--- PM ask 14/05: Herlon tem 2 auth.users — redacted-075@example.com (Google, primary auth, last_sign_in
+-- PM ask 14/05: member A tem 2 auth.users — redacted-075@example.com (Google, primary auth, last_sign_in
 -- hoje) + redacted-036@example.com (email provider, last_sign_in 11/04, orphan da 1ª tentativa).
--- members.secondary_emails do Herlon JÁ tem redacted-036@example.com. Mas RPC só checava
+-- members.secondary_emails do member A JÁ tem redacted-036@example.com. Mas RPC só checava
 -- auth_id direto, não secondary — orphan continuava em ghost_visitors list.
 --
 -- Fix: AND NOT EXISTS check sobre members.secondary_emails. Após apply, qualquer auth.users
--- orphan cujo email seja alias de algum member some da lista. Caso Herlon resolvido
+-- orphan cujo email seja alias de algum member some da lista. Caso member A resolvido
 -- imediatamente (sem mudar auth_id primary nem deletar nada).
 
 DROP FUNCTION IF EXISTS public.get_ghost_visitors();

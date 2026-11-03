@@ -10,7 +10,7 @@
 --
 -- Effect of the bad REVOKE: ALL authenticated PostgREST table reads that
 -- trigger members RLS evaluation fail with "permission denied for function
--- auth_org". Tested via Sarah (curator, member_id 19b7ff75...): document_versions
+-- auth_org". Tested via member A (curator, member_id 19b7ff75...): document_versions
 -- read returned null → /governance/ip-agreement showed empty content →
 -- she clicked sign by accident trying to make doc render → unintended signoff
 -- on Adendo IP chain 47362201 at 23:04:10 UTC (separate revert needed).

@@ -1,6 +1,6 @@
 -- D7 — Lembrete automático de aceite de oferta VEP (candidate-facing PUSH layer do Épico D)
 -- SPEC: docs/specs/SPEC_D7_VEP_OFFER_REMINDER.md
--- Coorte viva (2026-06-18): 3 candidatos OfferExtended+approved no cycle4-2026 (Maria/Bruna/Rafael)
+-- Coorte viva (2026-06-18): 3 candidatos OfferExtended+approved no cycle4-2026 (member B/member A/member C)
 --   parados no topo do funil (oferta VEP estendida, nunca clicaram "Accept Position"). 1 histórico
 --   OfferExpired já perdido — desfecho que o D7 previne.
 -- Padrão de reuso: p92 process_pending_reschedule_nudges (RPC/cron/template) + p157

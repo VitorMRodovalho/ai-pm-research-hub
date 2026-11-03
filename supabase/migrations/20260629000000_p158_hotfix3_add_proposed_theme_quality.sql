@@ -5,7 +5,7 @@
 -- (research_and_gp_exp, leadership, technical_knowledge, pmi_involvement, language) — none
 -- captures the QUALITY OF THE PROPOSED THEME that leader candidates submit as a key
 -- differentiator (proposed_theme + leadership_experience essay fields). PM noted this gap
--- specifically because for William the theme assessment is what tilts researcher vs leader
+-- specifically because for member A the theme assessment is what tilts researcher vs leader
 -- decision (his theme is described but PM judged him "imaturo ainda para ser lider de tema").
 --
 -- This migration appends one criterion to leader_extra_criteria of all currently-active
@@ -18,11 +18,11 @@
 --   weight: 4   (medium-high — comparable to 'leadership' which is weight=4)
 --
 -- Impact on existing evaluations:
---   - Past leader_extra submissions (e.g. William's: 5 criteria scored, weighted_subtotal=45)
+--   - Past leader_extra submissions (e.g. member A's: 5 criteria scored, weighted_subtotal=45)
 --     will now show 1 missing score when re-opened. Evaluator can re-submit including the new
 --     6th score; weighted_subtotal recomputes. UI form iterates cycle config so the new
 --     criterion appears automatically.
---   - Approved leaders (e.g. Herlon) NOT retro-scored per PM directive — only forward path.
+--   - Approved leaders (e.g. member B) NOT retro-scored per PM directive — only forward path.
 --   - The criterion is leader-only (lives in leader_extra_criteria, evaluated when role_applied
 --     includes 'leader' or via dual_track leader app).
 

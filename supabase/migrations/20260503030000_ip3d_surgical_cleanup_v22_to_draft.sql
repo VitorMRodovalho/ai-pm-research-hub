@@ -14,7 +14,7 @@
 --     (preserva invariante J — current must be locked, v2.1 is locked)
 --
 -- v2.1 permanece no histórico como evidência imutável do que foi enviado
--- pro Ivan (legal counsel). v2.2 vira draft editável por Vitor via novo
+-- pro member A (legal counsel). v2.2 vira draft editável por Vitor via novo
 -- editor /admin/governance/documents/[docId]/versions/new?draft=<v2.2_id>
 --
 -- Atomicidade: tudo numa migration (PostgreSQL BEGIN/COMMIT implícito).

@@ -1,7 +1,7 @@
 -- ============================================================
 -- drop_event_instance: opt-in force delete of attendance
 -- Rationale: UX fix. Previous behavior raised "Remova presenças primeiro"
--- as a terminal error; caller had to remarcate (Fabrício 16/Abr).
+-- as a terminal error; caller had to remarcate (member A 16/Abr).
 -- Now a two-step flow: first call returns attendance_count error,
 -- caller confirms, second call with p_force_delete_attendance=true
 -- cleans attendance in transaction and drops the event.

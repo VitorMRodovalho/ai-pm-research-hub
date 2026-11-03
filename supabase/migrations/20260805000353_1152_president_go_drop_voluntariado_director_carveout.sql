@@ -1,10 +1,10 @@
--- #1152 — Gate president_go: remover o carve-out voluntariado_director (Lorena) do Termo de Voluntário.
+-- #1152 — Gate president_go: remover o carve-out voluntariado_director (member B) do Termo de Voluntário.
 --
 -- Contexto: o predicado president_go em _can_sign_gate fundia dois papéis para volunteer_term_template:
 --   (legal_signer)  -> member A (SEDE, presidente/board) — assinatura JURÍDICA da versão. CORRETO.
---   (voluntariado_director) -> Lorena (diretora de voluntariado) — mas a função real da Lorena é ser a
+--   (voluntariado_director) -> member B (diretora de voluntariado) — mas a função real da member B é ser a
 --     CONTRAPARTE do instrumento assinado JUNTO ao voluntário (pós-aprovação), NÃO um gate de aprovação de
---     versão. O carve-out deixava Lorena elegível a satisfazer o president_go da cadeia (função != gate).
+--     versão. O carve-out deixava member B elegível a satisfazer o president_go da cadeia (função != gate).
 --
 -- Fix: president_go passa a exigir SEMPRE 'legal_signer' (uniforme com president_others). O papel de
 -- contraparte da diretoria de voluntariado é modelado fora da cadeia de gates (contra-assinatura do

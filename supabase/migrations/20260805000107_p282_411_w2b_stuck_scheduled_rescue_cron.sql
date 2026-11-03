@@ -11,7 +11,7 @@
 --       14:00 cutoff cron).
 --
 -- WHY: Issue #411 Wave 2b. Candidates whose evaluator never accepted the Calendar invite sat
---       12 days dark in cycle4 (Rafael/Bruna/Luciana). This automates the permanent rescue.
+--       12 days dark in cycle4 (member C/member A/member B). This automates the permanent rescue.
 --
 -- THRESHOLD: 48h grace after scheduled_at (covers same-day reschedules / holidays). The cron
 --       filter requires app.status='interview_scheduled' to match the rescue RPC's status guard

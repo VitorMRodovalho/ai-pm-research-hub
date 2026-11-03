@@ -2,7 +2,7 @@
 -- Audit trigger on public.events
 -- Captures INSERT/UPDATE/DELETE into admin_audit_log so we can
 -- reconstitute "who changed X, when, what" post-hoc. Previously
--- event CRUD was invisible — bug 1 (Fabrício 16/Abr) exposed this.
+-- event CRUD was invisible — bug 1 (member A 16/Abr) exposed this.
 --
 -- Shape:
 --   actor_id      = members.id resolved from auth.uid()

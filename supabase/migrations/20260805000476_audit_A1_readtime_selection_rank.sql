@@ -2,7 +2,7 @@
 -- rank_researcher/rank_leader ficavam STALE: nenhum gatilho recomputa o ranking quando um
 -- score muda (recalculate_cycle_rankings só roda no botão). Último snapshot 2026-07-02, 26
 -- avaliações depois. get_selection_rankings ordenava pelo rank armazenado E DESCARTAVA linhas
--- com rank NULL (13 researchers + 3 líderes sumiam da lista admin; Francisco J. exibido #39 /
+-- com rank NULL (13 researchers + 3 líderes sumiam da lista admin; member A exibido #39 /
 -- vivo #7). get_my_selection_result mostrava o rank stale ao candidato (35/41 finais errados).
 --
 -- Correção: calcular o rank em TEMPO DE LEITURA via RANK() sobre os scores vivos, com os MESMOS
@@ -12,7 +12,7 @@
 -- leitura não dependem mais delas.
 --
 -- NOTA (sessão main): read-only, sem mudança de dado. Validar após apply com um spot-check
--- (get_selection_rankings deve incluir os 13+3 antes ocultos; Francisco J. deve vir ~#7).
+-- (get_selection_rankings deve incluir os 13+3 antes ocultos; member A deve vir ~#7).
 
 -- ============================================================
 -- 1) get_selection_rankings — admin/curador (view_internal_analytics)

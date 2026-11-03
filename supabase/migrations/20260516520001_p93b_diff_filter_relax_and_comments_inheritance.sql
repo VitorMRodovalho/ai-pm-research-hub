@@ -5,7 +5,7 @@
 -- NOT EXISTS chain.status='withdrawn' to exclude only IP-1 seeds while still showing prior
 -- locked versions.
 --
--- Bug 2: 19 unresolved comments from Round 4 (Fabricio+Sarah signed 21-27/04) are tied to
+-- Bug 2: 19 unresolved comments from Round 4 (member A+member B signed 21-27/04) are tied to
 -- v1/v2 — invisible when curator opens new v6 chain. Add p_include_prior_versions param +
 -- 3 new return cols to surface inherited comments.
 

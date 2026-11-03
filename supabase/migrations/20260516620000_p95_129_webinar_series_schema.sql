@@ -38,7 +38,7 @@ COMMENT ON COLUMN public.webinars.tribe_anchors IS
 COMMENT ON COLUMN public.webinars.format_type IS
   'p95 #129: enum {palestra | painel | dupla | lightning | workshop}. Used by storytelling matrix per series narrative arc.';
 COMMENT ON COLUMN public.webinars.briefing_doc_url IS
-  'p95 #129: link to briefing document (Drive/Notion/etc). Used by Mayanna comms self-service (#131).';
+  'p95 #129: link to briefing document (Drive/Notion/etc). Used by comms self-service (#131).';
 COMMENT ON COLUMN public.webinars.sympla_event_url IS
   'p95 #129: link to Sympla event registration page. Used by D-30 trigger comms cadence (#131).';
 COMMENT ON COLUMN public.webinars.promo_kit_url IS

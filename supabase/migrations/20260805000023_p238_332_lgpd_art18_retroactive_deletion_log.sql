@@ -13,7 +13,7 @@
 -- (a) notify the affected candidate, (b) offer a deletion path, and (c)
 -- record both steps in an auditable chain. Sibling C1 (#331, shipped p238)
 -- covers forward consent capture. Sibling C4 (#334) is producing the
--- legal-grade notification template via Angeline async — until then this PR
+-- legal-grade notification template via member A async — until then this PR
 -- ships a PM-approved interim text (file
 -- `docs/audit/lgpd-art11-remediation/notification_art18_interim_template.md`).
 --

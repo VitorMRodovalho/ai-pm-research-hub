@@ -4,7 +4,7 @@
 -- New V4 kinds (study_group_owner, committee_member, committee_coordinator, workgroup_member, workgroup_coordinator)
 -- fell to ELSE 'guest' — silent demotion if member's ONLY authoritative engagement was one of these.
 --
--- Affected case found in audit (p162): Herlon (study_group_owner leader, no parallel volunteer)
+-- Affected case found in audit (p162): member A (study_group_owner leader, no parallel volunteer)
 -- Other 12 V4-kind members have parallel volunteer engagements that win, so trigger gap was silent.
 --
 -- Note: is_authoritative is a VIEW-computed column (auth_engagements view), derived from:

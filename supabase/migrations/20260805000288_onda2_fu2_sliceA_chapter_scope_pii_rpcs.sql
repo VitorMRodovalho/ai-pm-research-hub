@@ -1,7 +1,7 @@
 -- Onda 2 — FU-2 Slice A: chapter-scope the cross-chapter member-PII leak (legal A1, LIVE).
 --
 -- Finding (grounded 2026-06-28): a non-GP partner-chapter director holds `view_pii` at organization
--- scope (e.g. Francisca, PMI-CE: can_by_member view_pii=true, manage_platform=false), so the member-
+-- scope (e.g. member A, PMI-CE: can_by_member view_pii=true, manage_platform=false), so the member-
 -- directory PII RPCs returned PII (email/phone/pmi_id) of ANY chapter — violating LGPD minimization
 -- (Art.6,III) + finalidade. Council decision #2: partner-chapter leaders see only their OWN chapter;
 -- the SEDE (contracting chapter, PMI-GO) + GP see all. This migration TIGHTENS (reduces) exposure —

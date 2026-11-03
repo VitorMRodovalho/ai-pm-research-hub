@@ -1,7 +1,7 @@
 -- Bug fix: audit_events_changes ainda referenciava NEW.tribe_id,
 -- mas events.tribe_id foi DROPADO em ADR-0015 Phase 3e (migration 20260428050000).
 -- Toda write em events quebrava com "record 'new' has no field 'tribe_id'".
--- Mesmo bug que Fabrício encontrou via MCP em create_meeting_notes (chain de triggers).
+-- Mesmo bug que member A encontrou via MCP em create_meeting_notes (chain de triggers).
 -- Remove refs tribe_id; preserva backward-compat via legacy_tribe_id derivação JOIN initiatives.
 
 CREATE OR REPLACE FUNCTION public.audit_events_changes()

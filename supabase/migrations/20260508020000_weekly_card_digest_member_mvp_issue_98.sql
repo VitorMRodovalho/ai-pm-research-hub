@@ -1,7 +1,7 @@
 -- Migration: Weekly Card Digest — MVP V1 from issue #98
 -- 2026-05-08 p39
 -- Context: Leaders cobram via WhatsApp individual; member sem sinal automatizado de
--- cards pendentes / próximos. Fabrício + outros leaders pediram digest automatizado.
+-- cards pendentes / próximos. member A + outros leaders pediram digest automatizado.
 -- Escopo MVP V1: card digest individual member (sábado 09h BRT = 12h UTC).
 -- V2 leader digest + V3 timezone config ficam backlog.
 --

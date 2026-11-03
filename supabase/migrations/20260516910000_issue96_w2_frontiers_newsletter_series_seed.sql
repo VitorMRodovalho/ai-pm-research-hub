@@ -1,5 +1,5 @@
 -- Issue #96 W2 partial: seed Frontiers newsletter as 6th publication_series + add 'linkedin_newsletter' target type
--- Newsletter já está LIVE em LinkedIn (id 7440224833159790592, editor Fabricio).
+-- Newsletter já está LIVE em LinkedIn (id 7440224833159790592, editor member A).
 -- Outros gates (PI/jurídico per #96 Gate 0) permanecem para PM action — não tocados nesta migration.
 
 DO $$
@@ -20,8 +20,8 @@ INSERT INTO public.publication_series (
     'es', 'Frontiers in AI & Project Management'
   ),
   jsonb_build_object(
-    'pt', 'Newsletter LinkedIn editada por Fabricio (Vice-GP Núcleo) explorando fronteiras entre IA e gerenciamento de projetos. URL canônica: https://www.linkedin.com/newsletters/frontiers-in-ai-project-mgmt-7440224833159790592/. Já em produção (publicada externamente). Ratificação retroativa via PI fluxo pendente — Gate 0 #96.',
-    'en', 'LinkedIn newsletter edited by Fabricio (Vice-GP Núcleo) exploring frontiers between AI and project management. Canonical URL: https://www.linkedin.com/newsletters/frontiers-in-ai-project-mgmt-7440224833159790592/. Already in production. Retroactive PI alignment pending — Gate 0 of #96.'
+    'pt', 'Newsletter LinkedIn editada por member A (Vice-GP Núcleo) explorando fronteiras entre IA e gerenciamento de projetos. URL canônica: https://www.linkedin.com/newsletters/frontiers-in-ai-project-mgmt-7440224833159790592/. Já em produção (publicada externamente). Ratificação retroativa via PI fluxo pendente — Gate 0 #96.',
+    'en', 'LinkedIn newsletter edited by member A (Vice-GP Núcleo) exploring frontiers between AI and project management. Canonical URL: https://www.linkedin.com/newsletters/frontiers-in-ai-project-mgmt-7440224833159790592/. Already in production. Retroactive PI alignment pending — Gate 0 of #96.'
   ),
   'monthly',
   'multi',

@@ -16,7 +16,7 @@
 --                        same code (modal prefill fidelity)
 --       expiry         : that raw membership's expiryDate (SSOT carries no expiry) }
 --
--- WHY (index case João, #1192 grounded live 2026-07-08): the frontend re-parsed
+-- WHY (index case member A, #1192 grounded live 2026-07-08): the frontend re-parsed
 -- pmi_memberships with a hardcoded /brazil chapter/i heuristic
 -- (src/lib/affiliation-chapters.ts brChapters()), so "Amazônia Chapter" (registry alias
 -- for AM) produced an empty list and the row fell to the amber "verificar manualmente"

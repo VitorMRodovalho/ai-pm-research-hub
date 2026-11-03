@@ -7,7 +7,7 @@
 --   • occurred_at (data do fato) + effective_at (COALESCE occurred_at,created_at)
 --   • cycle_code / cycle_label do ciclo a que o fato pertence (resolvido pela
 --     janela do ciclo que contém effective_at) — responde "de onde vêm estes
---     pontos e em qual ciclo" (o caso Jefferson).
+--     pontos e em qual ciclo" (o caso member A).
 --
 -- Forma (respeitando o guard anti-IDOR do #1087 wave1):
 --   1. _points_statement_json(member,org,scope,...) — helper INTERNO (SECDEF,

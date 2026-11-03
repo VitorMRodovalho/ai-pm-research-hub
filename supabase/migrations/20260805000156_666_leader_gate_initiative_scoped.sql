@@ -2,14 +2,14 @@
 -- #666 — gate `leader` escopado ao LÍDER DA INICIATIVA do documento (não a todos os líderes)
 -- Bug (aterrado): _can_sign_gate('leader') = can_by_member('sign_chain_leader'), capability de
 --   QUALQUER tribe_leader → os 6 líderes ativos ficavam elegíveis no gate 'leader' do TAP CPMAI
---   (chain fa5fd11d), quando deveria ser só o líder da iniciativa (Fernando). Família #648/#653/#654.
+--   (chain fa5fd11d), quando deveria ser só o líder da iniciativa (member A). Família #648/#653/#654.
 --
 -- Fix (função-anchored): 'leader' = capability sign_chain_leader AND (líder da iniciativa do doc via
 --   v_initiative_roster). Fallback p/ capability-only quando o doc não tem iniciativa (policy/
 --   cooperation) — back-compat. `leader_awareness` (gate de ciência, amplo) fica INALTERADO.
 --
 -- Safety pré-apply: a única chain review/approved com gate 'leader' é o TAP; o pinned actor
---   (Fernando) É o roster leader → zero regressão (Fernando elegível, outros 5 negados).
+--   (member A) É o roster leader → zero regressão (member A elegível, outros 5 negados).
 --
 -- _can_sign_gate é predicado COMPARTILHADO (read-path get_pending_ratifications + write-path
 --   sign_ip_ratification + denominador de threshold). A mudança é AUDIENCE-SCOPING (trabalho do

@@ -18,7 +18,7 @@
 --    coexist across the surface — Phase B should pick one and reconcile.
 -- 4. import_historical_evaluations + import_historical_interviews +
 --    import_leader_evaluations all hardcode the cycle3-2026 cycle code AND
---    two specific evaluator UUIDs (Vitor + Fabricio). One-shot importers
+--    two specific evaluator UUIDs (Vitor + member A). One-shot importers
 --    not parameterized — flag for archival vs parameterization decision.
 --
 -- All 14 are SECURITY DEFINER. No new state, just capture.

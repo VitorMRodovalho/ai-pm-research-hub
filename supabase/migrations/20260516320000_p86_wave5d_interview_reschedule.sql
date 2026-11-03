@@ -1,6 +1,6 @@
 -- p86 Wave 5d: Interview Reschedule Flow
 --
--- Use case: PM declines candidate-booked Calendar slot (e.g., Thayanne 2026-04-30) →
+-- Use case: PM declines candidate-booked Calendar slot (e.g., member A 2026-04-30) →
 -- admin marks application interview_status='needs_reschedule' + emails candidate with
 -- new booking link. Independent of Wave 5b. Risk-low: additive columns + new RPC + new
 -- campaign_template + new index. Email dispatch reuses campaign_send_one_off (Pattern

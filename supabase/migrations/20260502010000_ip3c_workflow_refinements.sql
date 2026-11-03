@@ -4,7 +4,7 @@
 -- * submitter_acceptance: GP final aceite pós-curadoria before presidents
 -- * chapter_witness: pontos focais dos capítulos como testemunhas (seed pending)
 -- * legal_signer designation: distingue quem tem poder legal dentro de chapter_board
--- * Lorena (diretoria voluntariado PMI-GO) limited to volunteer_term_template docs
+-- * member A (diretoria voluntariado PMI-GO) limited to volunteer_term_template docs
 -- * Comment visibility: submitter_only + change_notes added; public retained for back-compat
 
 -- ========================================

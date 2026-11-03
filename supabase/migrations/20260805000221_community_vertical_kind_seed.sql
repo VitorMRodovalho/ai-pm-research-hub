@@ -1,6 +1,6 @@
 -- Ciclo 4 — Fatia A: vertical de comunidade como initiative_kind (ADR-0103, ADR-0009 config-driven)
 -- Modelagem de arquitetura para o kickoff do Ciclo 4. Zero impacto em features existentes (aditivo).
--- A vertical-piloto (Construção) e o engagement do líder (Henrique) NÃO entram aqui:
+-- A vertical-piloto (Construção) e o engagement do líder (member A) NÃO entram aqui:
 --   - a vertical é criada via create_initiative em runtime (dado de produção, não schema);
 --   - o líder só é engajado após o termo de voluntário assinado (decisão PM 2026-06-19).
 -- Adiado p/ a ativação (kickoff/termo, documentado no ADR-0103): seeds de engagement_kind_permissions

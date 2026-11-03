@@ -3,7 +3,7 @@
 -- Today a tribe join-request notifies only that tribe's leader and renders only on that tribe's
 -- Members tab (list_tribe_pending_requests). There is no aggregated view, so when a leader does not
 -- act (e.g. the tribe is full and the approve raises "Tribo lotada" -> 400) the pending is invisible
--- to the GP and just expires. Anchor: Guilherme -> Tribo 6 (8/8), stuck 4 days until manually declined.
+-- to the GP and just expires. Anchor: member A -> Tribo 6 (8/8), stuck 4 days until manually declined.
 --
 -- Fix: add a `tribe_request_pending` alert to detect_operational_alerts() (the manage_platform SSOT of
 -- operational alerts). One alert per pending self-request across ALL tribes, with escalated severity:

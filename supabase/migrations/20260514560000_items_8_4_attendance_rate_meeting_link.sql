@@ -43,7 +43,7 @@ CREATE TRIGGER trg_events_inherit_meeting_link
   EXECUTE FUNCTION public._events_inherit_meeting_link();
 
 COMMENT ON FUNCTION public._events_inherit_meeting_link() IS
-'Item 4 (handoff 25/Abr): se NEW.meeting_link IS NULL e events.initiative_id aponta para initiative com legacy_tribe_id, herda tribes.meeting_link. Cascade único a todos event creators (create_event, create_initiative_event, create_recurring_weekly_events, link_webinar_event). Resolve sintoma reportado por Ricardo.';
+'Item 4 (handoff 25/Abr): se NEW.meeting_link IS NULL e events.initiative_id aponta para initiative com legacy_tribe_id, herda tribes.meeting_link. Cascade único a todos event creators (create_event, create_initiative_event, create_recurring_weekly_events, link_webinar_event). Resolve sintoma reportado por um membro (link no sistema diferente do WhatsApp).';
 
 CREATE OR REPLACE FUNCTION public.exec_tribe_dashboard(p_tribe_id integer, p_cycle text DEFAULT NULL::text)
 RETURNS jsonb

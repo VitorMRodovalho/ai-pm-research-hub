@@ -14,7 +14,7 @@
 --
 -- WHY:   The TAP "Grupo de Estudos CPMAI Prep Course · Ciclo 4" (doc d7447a94, R01
 --        8f57a321) recirculates through a 4-gate chain where the sede Certification
---        Directorate (Welma, certificacao_director) signs between the Initiative
+--        Directorate (member A, certificacao_director) signs between the Initiative
 --        Leader and the President. No existing gate_kind fit that authority.
 --
 -- SPEC:  ADR-0016 Amendment 4 (docs/adr/ADR-0016-ip-ratification-governance-model.md)
@@ -157,7 +157,7 @@ END;
 $function$;
 
 -- 3) _ip_ratify_cta_link: route cert_director_go to the member-facing review-chain page
---    (Welma is manage_member=false; non-admin signers sign at /governance/documents/X)
+--    (member A is manage_member=false; non-admin signers sign at /governance/documents/X)
 CREATE OR REPLACE FUNCTION public._ip_ratify_cta_link(p_chain_id uuid, p_gate_kind text)
  RETURNS text
  LANGUAGE sql

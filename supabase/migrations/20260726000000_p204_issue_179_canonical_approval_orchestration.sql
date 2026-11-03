@@ -17,7 +17,7 @@
 --     queue — surfaced by #177 `get_pending_agreement_engagements()`).
 --   - `auth_engagements.is_authoritative` is COMPUTED — engagements created with
 --     `agreement_certificate_id IS NULL` AND kind requires_agreement remain
---     non-authoritative until counter-signature (Herlon-class invariant preserved).
+--     non-authoritative until counter-signature (member B-class invariant preserved).
 --
 -- DESIGN
 -- ──────
@@ -58,7 +58,7 @@
 --
 -- INVARIANTS PRESERVED
 -- ────────────────────
--- - Herlon-class pending: engagement.agreement_certificate_id stays NULL for
+-- - member B-class pending: engagement.agreement_certificate_id stays NULL for
 --   kinds requiring agreement → is_authoritative=false in auth_engagements view.
 -- - Members are anchored to a single email (UNIQUE constraint); lookup uses
 --   case-insensitive lower(email).

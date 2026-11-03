@@ -7,12 +7,12 @@
 --   migration): all 3 return true.
 --
 -- Tuples:
---   committee_coordinator × coordinator → covers Roberto, Sarah
---   committee_coordinator × leader      → covers Fabricio
---   observer × curator                  → covers Roberto's cross-init curation
+--   committee_coordinator × coordinator → covers member A, member B
+--   committee_coordinator × leader      → covers member C
+--   observer × curator                  → covers member A's cross-init curation
 --
 -- NOTE: initial seed used default scope='initiative' which caused
--- inconsistent results (Roberto=true, Fabricio/Sarah=false) because
+-- inconsistent results (member A=true, member C/member B=false) because
 -- can() requires either matching p_resource_id OR legacy_tribe_id set
 -- on the engagement when scope=initiative + p_resource_id=NULL. See
 -- migration 20260519182828 for the scope='organization' correction.

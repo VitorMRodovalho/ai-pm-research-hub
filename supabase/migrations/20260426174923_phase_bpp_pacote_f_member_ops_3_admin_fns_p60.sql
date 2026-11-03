@@ -1,7 +1,7 @@
 -- Phase B'' Pacote F (p60) — 3 admin member-ops fns V3→V4 manage_member
 -- All currently SECDEF with V3 gate (members.is_superadmin ONLY — tighter
 -- than Pacote E's broad gate). V4 manage_member grant set is identical
--- (2 members = Vitor + Fabricio via superadmin override).
+-- (2 members = Vitor + member A via superadmin override).
 --
 -- Privilege expansion safety check (verified pre-apply):
 --   V3 superadmin-only: 2 members

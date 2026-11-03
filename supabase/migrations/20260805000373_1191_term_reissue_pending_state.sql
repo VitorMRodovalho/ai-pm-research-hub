@@ -10,8 +10,8 @@
 --   'reissued_at'     : the latest such superseded cert's updated_at (the supersede moment),
 --                       for the panel tooltip.
 --
--- WHY (index case João, decision PM 2026-07-08 "option 1+3" — gate stays, UX explains):
--- after reissue_agreement superseded TERM-2026-9EED7D, João showed as "❌ Não assinado" +
+-- WHY (index case member A, decision PM 2026-07-08 "option 1+3" — gate stays, UX explains):
+-- after reissue_agreement superseded TERM-2026-9EED7D, member A showed as "❌ Não assinado" +
 -- role guest, indistinguishable from someone who never signed. The signature gate is BY
 -- DESIGN (engagement stays correct; auth_engagements.is_authoritative=false without a
 -- signed term ⇒ operational_role cache stays guest until re-signature, then F5 snapshots

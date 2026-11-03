@@ -118,7 +118,7 @@ begin
     where id = v_andressa_id;
   end if;
 
-  -- Promote Mayanna as current communication tribe leader when available.
+  -- Promote member A as current communication tribe leader when available.
   if v_mayanna_id is not null then
     update public.tribes
     set leader_member_id = v_mayanna_id,
@@ -150,7 +150,7 @@ begin
       3,
       'cycle_3',
       6,
-      'Fabricio',
+      'member B',
       'same_stream_new_id',
       true,
       'Leadership override: legacy tribe 3 continues as current tribe 6.',
@@ -163,7 +163,7 @@ begin
       6,
       'cycle_3',
       2,
-      'Debora',
+      'member C',
       'same_stream_new_id',
       true,
       'Leadership override: legacy tribe 6 continues as current tribe 2.',
@@ -238,7 +238,7 @@ begin
   )
     and pb.tribe_id is distinct from 6;
 
-  -- Keep manual board continuity for Italo/Fabricio stream visible in tribe 6.
+  -- Keep manual board continuity for member D/member B stream visible in tribe 6.
   update public.project_boards
   set tribe_id = 6,
       is_active = true,

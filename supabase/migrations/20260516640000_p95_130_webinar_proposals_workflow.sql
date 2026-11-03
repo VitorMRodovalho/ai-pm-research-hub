@@ -1,6 +1,6 @@
 -- p95 #130 — webinar proposals workflow
 -- Spinoff #89 Frente 3 (split p95 per PM decision 3A).
--- Discussão Ana ↔ Vitor ↔ Fabricio (20-21/Abr) sobre storytelling de webinar séries acontece em WhatsApp sem trail.
+-- Discussão member A ↔ Vitor ↔ member B (20-21/Abr) sobre storytelling de webinar séries acontece em WhatsApp sem trail.
 -- Backend portion only — frontend wizard deferred to PM browser session.
 --
 -- Spec correction: quadrant_anchor is integer (not uuid as in issue body), since quadrants.id is integer.

@@ -1,5 +1,5 @@
 -- Linhagem de Tribos: RPC para buscar board_items legados de tribos anteriores
--- Permite que um líder (ex: Débora, T6 C2 -> T2 C3) veja o backlog legado
+-- Permite que um líder (ex: member A, T6 C2 -> T2 C3) veja o backlog legado
 -- integrado na sua visão atual do Kanban.
 -- Date: 2026-03-16
 -- ============================================================================

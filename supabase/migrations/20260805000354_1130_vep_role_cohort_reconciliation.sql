@@ -12,7 +12,7 @@
 --
 -- Parte B: get_vep_role_cohort_reconciliation() — matriz plataforma×VEP por papel×coorte, com
 --   listas nominais dos divergentes nos dois sentidos. Join estável por PMI id (fallback e-mail),
---   resolvendo o falso-gap do caso Paulo (e-mails divergentes, mesmo pmi_id).
+--   resolvendo o falso-gap do caso member A (e-mails divergentes, mesmo pmi_id).
 --
 -- Bodies capturados verbatim do vivo (pg_get_functiondef) — GC-097 body-drift parity.
 

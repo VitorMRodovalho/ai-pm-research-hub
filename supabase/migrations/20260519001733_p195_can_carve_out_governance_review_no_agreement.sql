@@ -14,8 +14,8 @@
 -- Term first:
 --   1. Initiative leaders pending agreement counter-sign
 --      (e.g., member A, study_group_owner × leader; agreement_certificate_id
---      NULL until Lorena/PMI-GO counter-signs the term)
---   2. PMI chapter directors (PMO PMI-GO: Lorena, Eder, etc.)
+--      NULL until member B/PMI-GO counter-signs the term)
+--   2. PMI chapter directors (PMO PMI-GO: member B, member C, etc.)
 --      who participate in governance review as ex-officio observers but
 --      do not sign the platform's volunteer term
 --   3. External legal counsel (e.g., advogada Angelina, external_reviewer)

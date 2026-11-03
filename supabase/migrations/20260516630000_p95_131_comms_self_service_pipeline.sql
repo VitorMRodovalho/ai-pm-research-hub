@@ -1,6 +1,6 @@
 -- p95 #131 — comms self-service: pipeline view + asset patcher
 -- Spinoff from #89 Frente 4 split per PM decision 3A.
--- Mayanna não consegue responder via plataforma: template divulgação, Sympla cadastrar, briefing materials.
+-- member A não consegue responder via plataforma: template divulgação, Sympla cadastrar, briefing materials.
 -- Build sobre #129 (cols briefing_doc_url + sympla_event_url + promo_kit_url + comms_kickoff_at já em prod).
 -- Rollback:
 --   DROP FUNCTION IF EXISTS public.get_comms_pipeline();
@@ -10,7 +10,7 @@
 -- get_comms_pipeline — read view
 -- Distinct from webinars_pending_comms (status-driven actions).
 -- This one: ALL upcoming webinars (planned + confirmed) with PROMO ASSET readiness.
--- Mayanna's perspective: "what's the pipeline of webinars I need to prep promo for".
+-- member A's perspective: "what's the pipeline of webinars I need to prep promo for".
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.get_comms_pipeline()
 RETURNS jsonb
@@ -108,7 +108,7 @@ COMMENT ON FUNCTION public.get_comms_pipeline() IS
 
 -- ============================================================
 -- update_webinar_comms_assets — patcher
--- Mayanna fills briefing/sympla/promo_kit URLs without DB access.
+-- member A fills briefing/sympla/promo_kit URLs without DB access.
 -- ============================================================
 CREATE OR REPLACE FUNCTION public.update_webinar_comms_assets(
   p_webinar_id uuid,

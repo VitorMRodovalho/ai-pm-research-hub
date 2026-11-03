@@ -2,12 +2,12 @@
 -- See docs/adr/ADR-0032-board-admin-v4-conversion.md
 --
 -- Privilege expansion (Opção A):
---   legacy = 5 (Fabricio, Mayanna, Roberto, Sarah, Vitor SA)
---   v4 = 10 (legacy minus Sarah/Mayanna + 7 admin/governance)
+--   legacy = 5 (member A, member B, member C, member D, Vitor SA)
+--   v4 = 10 (legacy minus member D/member B + 7 admin/governance)
 --   would_gain = 7 admin/governance roles
---   would_lose = [Sarah curator, Mayanna comms_leader] — drift correction (V3 designation sem V4 engagement)
+--   would_lose = [member D curator, member B comms_leader] — drift correction (V3 designation sem V4 engagement)
 --
--- Note: Sarah loses listing capability em /admin/governance-v2.astro (Bug A's curator-visible page).
+-- Note: member D loses listing capability em /admin/governance-v2.astro (Bug A's curator-visible page).
 -- PM ratified Q3 = Opção A — drift consistent com ADR-0030 precedent.
 
 CREATE OR REPLACE FUNCTION public.admin_list_archived_board_items(
@@ -65,6 +65,6 @@ BEGIN
 END;
 $$;
 COMMENT ON FUNCTION public.admin_list_archived_board_items(uuid, integer) IS
-  'Phase B'' V4 conversion (ADR-0032 Group R Opção A, p66): Opção B reuse view_internal_analytics via can_by_member. Was V3 (SA OR manager/deputy_manager OR designations co_gp/curator/comms_leader). Drift loss: Sarah curator + Mayanna comms_leader (V3 designation sem V4 engagement) — same pattern as ADR-0030.';
+  'Phase B'' V4 conversion (ADR-0032 Group R Opção A, p66): Opção B reuse view_internal_analytics via can_by_member. Was V3 (SA OR manager/deputy_manager OR designations co_gp/curator/comms_leader). Drift loss: member A curator + member B comms_leader (V3 designation sem V4 engagement) — same pattern as ADR-0030.';
 
 NOTIFY pgrst, 'reload schema';

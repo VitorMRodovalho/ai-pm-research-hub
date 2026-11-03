@@ -12,7 +12,7 @@
 -- - Cohort PERT cutoff comparisons (compute_pert_cutoff over objective_score_avg
 --   cohort got inflated with leader_extra values)
 -- - Subsequent objective recomputes
--- - Analytics rankings + UI band displays (Francisleila preview "BELOW band 128
+-- - Analytics rankings + UI band displays (member A preview "BELOW band 128
 --   < 139.87" used OBJECTIVE cutoff for leader_extra dimension)
 --
 -- Minimal scope this migration (full A2 at #229: cohort cutoff separated,
@@ -30,7 +30,7 @@
 --    - MCP get_selection_rankings enrichment
 --
 -- Backfill: NONE needed for cycle4-2026 (single existing leader_extra eval by
--- Fabricio on Francisleila — min_evaluators=2 not met yet so mutation never
+-- member B on member A — min_evaluators=2 not met yet so mutation never
 -- fired; leader_extra_pert_score stays NULL until 2nd evaluator submits).
 --
 -- Forward state:

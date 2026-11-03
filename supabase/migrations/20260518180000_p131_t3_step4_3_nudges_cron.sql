@@ -7,7 +7,7 @@
 --         Tipo: engagement_renewal_d60_gp_aggregate (suppress, só agrega no digest)
 --   D-30: notif WEEKLY DIGEST para o voluntário + GP (ambos via digest)
 --         Tipo: engagement_renewal_d30 (digest_weekly default)
---   D-7:  notif TRANSACTIONAL email real-time para voluntário + Lorena cc + GP cc
+--   D-7:  notif TRANSACTIONAL email real-time para voluntário + member A cc + GP cc
 --         Tipo: engagement_renewal_d7_urgent (transactional_immediate)
 --
 -- Plus trigger trg_link_renewal_application — quando selection_application
@@ -232,7 +232,7 @@ END;
 $function$;
 
 COMMENT ON FUNCTION public.v4_notify_expiring_engagements() IS
-  'p131 T-3 C3 step 4: substitui versão p124 com 3 nudges em vez de 1. D-60 (53-60d) GP-only aggregate, D-30 (23-30d) voluntário + GP, D-7 (1-7d) voluntário URGENT + GP cc + Lorena (voluntariado_director) cc. Idempotência: dedup window 7d via NOT EXISTS sobre notifications.created_at. Filtro kind=volunteer único (founders/ambassadors/sponsors/etc não entram). Cron job v4_engagement_expiry_notify dispara diário 0 8 * * *.';
+  'p131 T-3 C3 step 4: substitui versão p124 com 3 nudges em vez de 1. D-60 (53-60d) GP-only aggregate, D-30 (23-30d) voluntário + GP, D-7 (1-7d) voluntário URGENT + GP cc + member A (voluntariado_director) cc. Idempotência: dedup window 7d via NOT EXISTS sobre notifications.created_at. Filtro kind=volunteer único (founders/ambassadors/sponsors/etc não entram). Cron job v4_engagement_expiry_notify dispara diário 0 8 * * *.';
 
 -- 3) Trigger trg_link_renewal_application — auto-popula renews_engagement_id
 CREATE OR REPLACE FUNCTION public._trg_link_renewal_application()

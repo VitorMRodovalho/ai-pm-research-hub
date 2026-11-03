@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════
--- Two fixes reported by Jefferson (T5 tribe leader) and Vitor (GP):
+-- Two fixes reported by member A (T5 tribe leader) and Vitor (GP):
 --
 -- Bug #1 (Wellington offboard incomplete): earlier offboard only toggled
 --   is_active=false + operational_role='none'. It forgot V4 fields

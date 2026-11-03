@@ -1,5 +1,5 @@
 -- ARM Onda 4 Fase 1.3 (p109): permitir reschedule a partir de interview_noshow.
--- Bug discovered live (2026-05-06): Cristiano não compareceu, foi marcado no-show,
+-- Bug discovered live (2026-05-06): member A não compareceu, foi marcado no-show,
 -- e PM não conseguia reagendar (RPC só aceitava interview_pending|interview_scheduled).
 -- Segunda chance é o caso mais comum de reschedule — não pode bloquear.
 --

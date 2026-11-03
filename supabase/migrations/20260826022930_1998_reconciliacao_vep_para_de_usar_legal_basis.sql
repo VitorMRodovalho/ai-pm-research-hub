@@ -2,8 +2,8 @@
 --
 -- Sintoma que o PM levantou em 25/08 olhando /admin/vep-reconciliation: a lista "Ativo no VEP
 -- sem contrato de voluntario ativo" acusava pessoas que TEM engajamento ativo. Medido em
--- 26/08: 5 de 5 linhas da lista eram falso positivo (Gerson, Guilherme, Gustavo, Ligia e
--- Rogerio). A 6a linha (Vinicyus) saiu sozinha quando o pmi-vep-sync reimportou 26/08 01:45 UTC
+-- 26/08: 5 de 5 linhas da lista eram falso positivo (member A, member B, member C, member D e
+-- member E). A 6a linha (member F) saiu sozinha quando o pmi-vep-sync reimportou 26/08 01:45 UTC
 -- e o espelho dele virou 'Complete'.
 --
 -- CAUSA. As tres CTEs do lado plataforma filtravam `e.legal_basis = 'contract'`. legal_basis e
@@ -42,7 +42,7 @@
 --   plat_keys (denominador plataforma) 73 -> 78
 --   platform_only                       5 -> 5  (as MESMAS pessoas, nenhuma nova)
 --   matriz researcher/cycle3-2026   delta -4 -> 0   (plat 7 -> 12, VEP 11 -> 12)
---   matriz researcher/cycle4-2026   delta +2 -> +3  (plat 48 -> 49, VEP 46; o Rogerio ja
+--   matriz researcher/cycle4-2026   delta +2 -> +3  (plat 48 -> 49, VEP 46; o member E ja
 --                                   contava do lado VEP e faltava do lado plataforma)
 --   matriz researcher/no_cycle      a celula SOME   (a pessoa e o par VEP dela migram p/ cycle3)
 --

@@ -12,7 +12,7 @@
 --   campaign_send_one_off call (audit + LRD lookback source).
 --
 -- WHY: Cycle 4 dispatch (p243) used a single cycle-level URL for everyone.
---   PM directive (#348 boot 2026-05-24): researcher → Vitor/Fabricio
+--   PM directive (#348 boot 2026-05-24): researcher → Vitor/member A
 --   individual; leader → Núcleo/dupla. Child #1 (p250 / #354) shipped the
 --   schema; this leaf wires the routing. Per-evaluator URLs land later via
 --   Child #3 admin UI (#356) and Child #4 cycle4 reseed (#357); until then

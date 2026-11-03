@@ -4,7 +4,7 @@
 -- Bootstrap content so curators see a non-empty board on first login.
 -- Cards are guidance, not blocking work. Curators can edit/delete/move.
 --
--- created_by = Fabricio (committee leader, member 92d26057...)
+-- created_by = member A (committee leader, member 92d26057...)
 -- All in 'backlog' status (curators pull what they want into todo).
 -- =====================================================================
 
@@ -36,7 +36,7 @@ INSERT INTO public.board_items (board_id, title, description, status, position, 
 SELECT
   pb.id,
   '✏️ Definir critérios de aprovação + protocolo de revisão',
-  E'**Objetivo:** alinhar consistência entre os 3 curadores (Fabricio, Sarah, Roberto) na aplicação da rúbrica.\n\n**Tópicos sugeridos:**\n• Critérios da rúbrica (clarity, originality, adherence, relevance, ethics) — exemplos por nível\n• Quando aprovar solo vs pedir 2º parecer\n• Como escrever feedback construtivo em devoluções\n• Critérios para arquivamento (vs devolver para revisão)\n• Padronização do registro institucional (Manual §4.3)\n\n**Referência:** Manual de Governança §3.6 + §4.2 + §5.1 + ADR-0086 (peer review colegiado, leader review nominal, waiver path).',
+  E'**Objetivo:** alinhar consistência entre os 3 curadores (member A, member C, member B) na aplicação da rúbrica.\n\n**Tópicos sugeridos:**\n• Critérios da rúbrica (clarity, originality, adherence, relevance, ethics) — exemplos por nível\n• Quando aprovar solo vs pedir 2º parecer\n• Como escrever feedback construtivo em devoluções\n• Critérios para arquivamento (vs devolver para revisão)\n• Padronização do registro institucional (Manual §4.3)\n\n**Referência:** Manual de Governança §3.6 + §4.2 + §5.1 + ADR-0086 (peer review colegiado, leader review nominal, waiver path).',
   'backlog', 3,
   ARRAY['workspace', 'process'],
   '92d26057-5550-4f15-a3bf-b00eed5f32f9'::uuid,

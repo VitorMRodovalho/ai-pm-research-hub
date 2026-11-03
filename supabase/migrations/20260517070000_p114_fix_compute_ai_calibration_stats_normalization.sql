@@ -3,7 +3,7 @@
 -- Bug: function used `(a.final_score::numeric / 10.0) AS human_score_normalized`,
 -- assuming final_score is on 0-100 scale. Real scale is sum of (criterion.max ×
 -- weight) per scoring_formula CR-047, which for cycle3-2026-b2 yields max=414
--- (objective max=284 + interview max=130). Result: deltas inflated ~4x — Marcio
+-- (objective max=284 + interview max=130). Result: deltas inflated ~4x — member A
 -- showed delta=18.2 (correct: ~5x lower under proper scaling).
 --
 -- Fix: derive max_research dynamically from the cycle's objective_criteria +

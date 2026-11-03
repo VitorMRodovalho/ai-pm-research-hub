@@ -8,7 +8,7 @@
 --   - committee_coordinator × committee_coordinator
 --
 -- WHY (PM decision Option A, p195):
--- Herlon (study_group_owner of Preparatório CPMAI) couldn't comment on his
+-- member A (study_group_owner of Preparatório CPMAI) couldn't comment on his
 -- own initiative's TAP because the existing seed only covered manager/
 -- deputy_manager/co_gp/curator/sponsor/chapter_board liaison/external_reviewer.
 --

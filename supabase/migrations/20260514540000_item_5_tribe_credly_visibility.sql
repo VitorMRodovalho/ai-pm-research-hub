@@ -1,4 +1,4 @@
--- Item 5 (handoff 25/Abr): Vitor prometeu Fabricio rota Credly visibility para TLs.
+-- Item 5 (handoff 25/Abr): Vitor prometeu member A rota Credly visibility para TLs.
 -- Decision #16 C (both): A enrich per-member + B aggregate dashboard.
 -- get_my_tribe_members handoff-referenced não existe; criando ambas como novas RPCs.
 

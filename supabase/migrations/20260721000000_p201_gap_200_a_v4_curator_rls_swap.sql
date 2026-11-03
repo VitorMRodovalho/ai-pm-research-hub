@@ -21,7 +21,7 @@
 -- as-is — they are out of scope for ADR-0087 and tracked separately.
 --
 -- Parity verified pre-migration:
---   - 3 current curators (Fabricio/Roberto/Sarah) have committee_coordinator
+--   - 3 current curators (member A/member B/member C) have committee_coordinator
 --     engagement → can('curate_content') = true
 --   - Non-curators → false
 --

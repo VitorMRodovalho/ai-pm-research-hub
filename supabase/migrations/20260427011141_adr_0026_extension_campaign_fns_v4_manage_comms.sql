@@ -5,10 +5,10 @@
 -- Privilege expansion safety check (verified pre-apply):
 --   V3 gate: is_superadmin OR manager/deputy_manager OR 'comms_team' designation
 --   Note: 'comms_team' designation = 0 active members (dead code reference)
---   Effective V3 set: 2 (Vitor SA, Fabricio manager equiv → checked active)
+--   Effective V3 set: 2 (Vitor SA, member A manager equiv → checked active)
 --   V4 manage_comms grant: 2 (same)
 --   would_gain = []  would_lose = []
---   Mayanna (comms_leader designation, no V4 engagement) — same drift as ADR-0026 batch 1.
+--   member B (comms_leader designation, no V4 engagement) — same drift as ADR-0026 batch 1.
 --
 -- Rationale for extension:
 --   * Same gate semantics as admin_manage_comms_channel (already converted in p59)

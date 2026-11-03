@@ -1,9 +1,9 @@
--- Wave 1 (Ivan) parity: mirror the sponsor>researcher precedence into the A3 invariant ladder.
+-- Wave 1 (member A) parity: mirror the sponsor>researcher precedence into the A3 invariant ladder.
 --
 -- ADR-0023 (role-ladder-parity.test.mjs) requires the CASE ladder in sync_operational_role_cache()
 -- to match the A3 expected_role ladder in check_schema_invariants() byte-for-byte (same conditions,
 -- same order). Migration 20260805000282 moved `sponsor` above `researcher` in the trigger; this moves
--- the matching A3 branch so the drift detector expects the same derivation (else Ivan, now correctly
+-- the matching A3 branch so the drift detector expects the same derivation (else member A, now correctly
 -- 'sponsor', would be reported as A3 drift). ONLY the A3 ladder's sponsor branch position changes; every
 -- other invariant is reproduced verbatim from the live body.
 

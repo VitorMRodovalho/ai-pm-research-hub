@@ -1,8 +1,8 @@
 -- p159 S#3b: extend get_ghost_visitors filter — também excluir auth.users cujo email
 -- match members.email (primary), não só secondary_emails.
 --
--- PM 14/05 audit: 4 ghosts (Carlos redacted-054@example.com · Paulo redacted-065@example.com
--- · Paulo redacted-064@example.com · Italo redacted-037@example.com). Os 2 últimos eram
+-- PM 14/05 audit: 4 ghosts (member A redacted-054@example.com · member B redacted-065@example.com
+-- · member B redacted-064@example.com · member C redacted-037@example.com). Os 2 últimos eram
 -- duplicates do email primary dos members correspondentes (Supabase OAuth duplicates per
 -- provider). Filter anterior (S#3a) só checava secondary_emails — primary email match
 -- ainda deixava dup como ghost.

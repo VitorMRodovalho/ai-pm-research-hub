@@ -5,7 +5,7 @@
 -- entrevistas COM linha selection_interviews em status scheduled/rescheduled atrasada.
 -- Logo dois grupos caem num buraco invisível: (A) convidado que nunca agendou (sem linha
 -- de entrevista) e (B) no-show sem recuperação (linha status=noshow). Coorte viva:
--- Hector(86d) / Djeimiys(57d) sem linha; Edinan(86d) no-show; Bruna(66d) 3 falhas.
+-- member D(86d) / member B(57d) sem linha; member C(86d) no-show; member A(66d) 3 falhas.
 --
 -- Solução: cron diário classifica esses dois buckets no ciclo ativo e NOTIFICA os
 -- managers (GP) — sem agir sobre o candidato (auto-rescue = D3, PR posterior).

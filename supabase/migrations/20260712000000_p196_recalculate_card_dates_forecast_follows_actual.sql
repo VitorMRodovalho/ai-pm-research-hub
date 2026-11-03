@@ -1,7 +1,7 @@
 -- =====================================================================
 -- p196 Gap 2 — recalculate_card_dates: forecast follows actual on complete
 -- =====================================================================
--- Bug observed (Débora, 2026-05-18): card "Artigo — Agentes Autônomos em GP"
+-- Bug observed (member A, 2026-05-18): card "Artigo — Agentes Autônomos em GP"
 -- completed 18-mai (all 4 checklists done), but forecast_date stayed at
 -- 2026-04-30 (original baseline). UI showed "🔴 Desvio: Concluído 18d após
 -- baseline" — confusing because forecast became implicit SLA reference.
@@ -16,7 +16,7 @@
 -- completion; once complete, forecast = actual. This is correct
 -- semantically regardless of whether checklists carry dates.
 --
--- Backfill of Débora's card (forecast_date 2026-04-30 → 2026-05-18)
+-- Backfill of member A's card (forecast_date 2026-04-30 → 2026-05-18)
 -- follows inline below.
 --
 -- Rollback: restore previous body of recalculate_card_dates from migration

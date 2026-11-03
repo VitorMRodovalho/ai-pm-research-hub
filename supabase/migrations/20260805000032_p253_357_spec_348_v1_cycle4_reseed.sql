@@ -4,7 +4,7 @@
 -- WHAT: One-off data seed for cycle4-2026 to activate per-evaluator booking
 --   URL routing (researcher track). Two operations + sanity gate, all in
 --   one DO block, idempotent via ON CONFLICT:
---   1. UPDATE public.members SET interview_booking_url for Vitor + Fabricio
+--   1. UPDATE public.members SET interview_booking_url for Vitor + member A
 --      (researcher-track individual calendar pool URLs). The member.global
 --      URL is the canonical source for SPEC #348 §3 ladder
 --      "committee override → member global → cycle fallback".
@@ -26,7 +26,7 @@
 --   so the dispatch decision is driven by application.role_applied. With this
 --   seed:
 --     - researcher-track apps in cycle4 → #355 RPC ladder picks the
---       least-recently-dispatched between Vitor and Fabricio per LRD
+--       least-recently-dispatched between Vitor and member A per LRD
 --       (selection_dispatch_url_log) → individual booking URL goes in the
 --       Resend cutoff-approved email.
 --     - leader-track apps in cycle4 → #355 RPC continues to use the cycle
