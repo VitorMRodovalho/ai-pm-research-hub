@@ -257,3 +257,7 @@ O mesmo parecer recomendou retirar a classificação de imagem e voz como catego
 **Fora desta emenda:** o Acordo de Operador (Doc 09) na plataforma ainda está na v1, de 11/06/2026, e a cláusula 4.4 dele ainda trata imagem e voz como dado sensível do art. 11. A correção ali é uma versão nova do documento, em trilha própria.
 
 A linha E4 do plano e o benchmark de 01/10 foram ajustados na mesma mudança.
+
+## Nota de execução (03/11/2026, #2967): seção 5 no vídeo
+
+A função de borda `analyze-application-video` passa a só transcrever: Whisper e gravação do texto em `pmi_video_screenings`. Ela não chama modelo de texto, não baixa a miniatura do Drive, não lê o campo de nome e não grava em `selection_evaluation_ai_suggestions`. A descrição da ferramenta `analyze_application_video` no MCP reflete o mesmo contrato. Guard: `tests/contracts/analyze-application-video-transcription-only.test.mjs`.
