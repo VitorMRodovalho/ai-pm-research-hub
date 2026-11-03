@@ -448,7 +448,7 @@ const INIT_I18N = {
       </a>`);
     }
 
-    // Drive folders (Mayanna feedback round 2 — surface initiative-level Drive)
+    // Drive folders (member A feedback round 2 — surface initiative-level Drive)
     try {
       const { data: driveData } = await sb.rpc('get_initiative_drive_links', { p_initiative_id: INITIATIVE_ID });
       const links = Array.isArray(driveData?.drive_links) ? driveData.drive_links : [];
@@ -649,7 +649,7 @@ const INIT_I18N = {
     return 'participant';
   }
 
-  // Legacy role display fallback (Sarah's old 'speaker' → falls to 'participant' visually)
+  // Legacy role display fallback (member B's old 'speaker' → falls to 'participant' visually)
   function displayRoleLabel(role: string): string {
     return ROLE_LABELS[role] || ROLE_LABELS[defaultRoleForKind('')] || role;
   }

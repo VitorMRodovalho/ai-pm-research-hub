@@ -6,7 +6,7 @@
  * Before: a tribe join-request notified only that tribe's leader and rendered only on that tribe's
  * Members tab (list_tribe_pending_requests). No aggregated view, so a pending in a full tribe
  * (un-approvable -> the approve raises "Tribo lotada" 400) was invisible to the GP and just expired.
- * Anchor: Guilherme -> Tribo 6 (8/8), stuck 4 days.
+ * Anchor: member A -> Tribo 6 (8/8), stuck 4 days.
  *
  * After: detect_operational_alerts() (the manage_platform SSOT of operational alerts) emits one
  * `tribe_request_pending` alert per pending self-request across ALL tribes, severity escalated

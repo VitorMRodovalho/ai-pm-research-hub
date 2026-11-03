@@ -13,7 +13,7 @@ const sb = SUPABASE_URL && SUPABASE_SRK ? createClient(SUPABASE_URL, SUPABASE_SR
   auth: { persistSession: false }
 }) : null;
 
-const FRANCISLEILA_ID = '72ea1a45-8dc8-4b0b-b4cb-f1427968ff22';
+const TARGET_APP_ID = '72ea1a45-8dc8-4b0b-b4cb-f1427968ff22';
 
 describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naïve sum race)', () => {
   describe('migration static assertions', () => {
@@ -96,11 +96,11 @@ describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naï
       assert.match(MIGRATION_SQL, /v_new_status := 'interview_pending'/);
     });
 
-    it('Step B cleanup DO block reconciles Francisleila via compute_application_scores', () => {
+    it('Step B cleanup DO block reconciles member A via compute_application_scores', () => {
       assert.match(
         MIGRATION_SQL,
         /v_francisleila_id uuid := '72ea1a45-8dc8-4b0b-b4cb-f1427968ff22';/,
-        'cleanup block must target Francisleila ID exactly'
+        'cleanup block must target member A ID exactly'
       );
       assert.match(
         MIGRATION_SQL,
@@ -113,7 +113,7 @@ describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naï
       assert.match(
         MIGRATION_SQL,
         /INSERT INTO public\.admin_audit_log[\s\S]*?'selection\.final_score_canonical_reconciliation',\s*'selection_application',\s*v_francisleila_id/,
-        'audit row must use canonical action + target_type=selection_application + target_id=Francisleila'
+        'audit row must use canonical action + target_type=selection_application + target_id=member A'
       );
       // metadata must capture before/after for audit trail
       assert.match(MIGRATION_SQL, /'before_final_score', v_before_final/);
@@ -184,17 +184,17 @@ describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naï
 
   if (sb) {
     describe('DB-gated assertions (with SUPABASE_SERVICE_ROLE_KEY)', () => {
-      it('Francisleila final_score reconciled to canonical 158.30 post-migration', async () => {
+      it('member A final_score reconciled to canonical 158.30 post-migration', async () => {
         const { data, error } = await sb
           .from('selection_applications')
           .select('id, final_score, leader_score, research_score')
-          .eq('id', FRANCISLEILA_ID)
+          .eq('id', TARGET_APP_ID)
           .maybeSingle();
         if (error) assert.fail(`probe error: ${error.message}`);
-        assert.ok(data, 'Francisleila row must exist');
+        assert.ok(data, 'member A row must exist');
         // OPP-246.A invariant: final_score is the CANONICAL compute (= leader_score for a leader
         // app), never a naïve interview+leader sum. The specific value is transient — it evolves
-        // as the candidate is (re-)evaluated (was 158.30 at the p248 cleanup; Francisleila has since
+        // as the candidate is (re-)evaluated (was 158.30 at the p248 cleanup; member A has since
         // been interviewed and her canonical leader_score moved, with final_score correctly
         // tracking it). Assert the canonical RELATIONSHIP, not a frozen number (the frozen 158.30
         // is preserved as immutable history in the p248 reconciliation audit row, asserted below).
@@ -206,7 +206,7 @@ describe('p248 OPP-246.A — submit_evaluation canonical final_score (drops naï
           .from('admin_audit_log')
           .select('action, target_id, target_type, metadata')
           .eq('action', 'selection.final_score_canonical_reconciliation')
-          .eq('target_id', FRANCISLEILA_ID)
+          .eq('target_id', TARGET_APP_ID)
           .order('created_at', { ascending: false })
           .limit(1);
         if (error) assert.fail(`probe error: ${error.message}`);

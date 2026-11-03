@@ -5,7 +5,7 @@
  *   value="https://meet.google.com/dzo-phoj-tid" — a stale link that re-propagated
  *   into every new recurring series and diverged from the canonical
  *   site_config.general_meeting_link (and the active "Ciclo 3" banner). Reported by
- *   Rodolfo/PMI-MG (two different Meet links surfaced on /attendance).
+ *   member A/PMI-MG (two different Meet links surfaced on /attendance).
  *
  * Fix: remove the hardcoded value (placeholder only); the active banner row was
  *   data-corrected to the canonical jgu link. The standing link lives in

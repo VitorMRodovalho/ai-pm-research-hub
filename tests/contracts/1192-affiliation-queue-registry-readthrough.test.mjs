@@ -1,7 +1,7 @@
 /**
  * #1192 — Filiação queue chapter resolution is registry-driven end to end.
  *
- * Root cause (grounded live 2026-07-08, index case João/PMI-AM): the frontend kept a
+ * Root cause (grounded live 2026-07-08, index case member A/PMI-AM): the frontend kept a
  * SECOND, hardcoded copy of the BR-chapter parser (/brazil chapter/i in
  * src/lib/affiliation-chapters.ts), so "Amazônia Chapter" (a chapter_registry
  * vep_name_alias for AM) parsed to [] and the row fell to the amber "verificar

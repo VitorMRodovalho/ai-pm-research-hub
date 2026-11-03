@@ -22,7 +22,7 @@
  *
  * Cross-ref:
  *   - GH #321
- *   - p230 audit doc: docs/audit/HERLON_TRUST_AUDIT_P230.md (live evidence)
+ *   - p230 audit doc: docs/audit/ (p230 audit doc) (live evidence)
  *   - sign_volunteer_agreement() RPC (mig 20260415020000 + p209 cap fix)
  *   - sibling triggers on certificates: trg_auto_remove_designation_on_cert,
  *     trg_certificate_pdf_autogen (unaffected — independent scope)

@@ -6,7 +6,7 @@
  *
  * Root cause: the capacity gate lived only on approve (review_tribe_request) + legacy select_tribe.
  * request_tribe_assignment had none, so a request against a full tribe entered as pending but was
- * un-approvable (leader's approve raised "Tribo lotada" -> HTTP 400). Anchor: Guilherme -> Tribo 6 (8/8).
+ * un-approvable (leader's approve raised "Tribo lotada" -> HTTP 400). Anchor: member A -> Tribo 6 (8/8).
  *
  * Invariants (static — the DB behaviour was proven live via an impersonated rolled-back DO block in
  * the PR: full tribe 6 -> RAISE 'Tribo lotada (8/8)', open tribe 5 -> ok=true; request_tribe_assignment

@@ -19,7 +19,7 @@
  *   - offboard_member_with_handoffs via service (auth.uid NULL) e recusado (self-gate).
  *
  *  O ciclo destrutivo completo (route -> place / auto-park -> tribe headless -> finalize -> orphans=0)
- *  foi provado por bloco DO rolled-back ao vivo (ver PR): Henrique (tribe 9) offboard alumni,
+ *  foi provado por bloco DO rolled-back ao vivo (ver PR): member A (tribe 9) offboard alumni,
  *  1 placed + tribe 9 headless, orphans_detected=0, tudo revertido.
  */
 

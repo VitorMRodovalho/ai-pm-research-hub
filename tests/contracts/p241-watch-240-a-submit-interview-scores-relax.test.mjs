@@ -9,7 +9,7 @@
  * Pre-WATCH-240.A: submit_interview_scores only set conducted_at INSIDE the
  *   IF v_all_interviewers_submitted branch, so partial submissions (1-of-N
  *   interviewers) never fired the trigger → app stuck in 'interview_pending'.
- *   This was the exact #251 manifestation — cycle4 seeds Vitor + Fabricio as
+ *   This was the exact #251 manifestation — cycle4 seeds Vitor + member A as
  *   interviewers, only Vitor submitted, app never advanced.
  *
  * Fix: hoist `UPDATE selection_interviews SET conducted_at = now()` to BEFORE

@@ -23,7 +23,7 @@ describe('permissions types', () => {
     assert.equal(Object.keys(DESIGNATION_PERMISSIONS).length, 13);
   });
 
-  it('sponsor designation grants full read (no write) — Wave 1 Ivan/LIM', () => {
+  it('sponsor designation grants full read (no write) — Wave 1 member A/LIM', () => {
     const perms = DESIGNATION_PERMISSIONS.sponsor;
     // read surface present
     for (const p of ['admin.access', 'admin.members.view', 'admin.portfolio', 'admin.partners',
@@ -150,7 +150,7 @@ describe('hasPermission (real mode)', () => {
     // on email magic links. admin.governance.view is the surgical gate.
     const member = { operational_role: 'researcher', designations: ['curator'] };
     assert.ok(hasPermission(member, 'admin.governance.view'),
-      'curator must have admin.governance.view (Bug A — Sarah governance flow)');
+      'curator must have admin.governance.view (Bug A — member B governance flow)');
     assert.ok(!hasPermission(member, 'admin.access'),
       'curator must NOT have admin.access (would expose admin-only items)');
   });

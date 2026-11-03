@@ -2,8 +2,8 @@
  * #1152 — president_go gate must NOT include the voluntariado_director carve-out.
  *
  * The president_go predicate in _can_sign_gate fused two roles for volunteer_term_template:
- * legal_signer (Ivan, SEDE — the correct legal signatory of the version) AND voluntariado_director
- * (Lorena — whose real function is the COUNTERPARTY of the signed instrument with the volunteer,
+ * legal_signer (member A, SEDE — the correct legal signatory of the version) AND voluntariado_director
+ * (member B — whose real function is the COUNTERPARTY of the signed instrument with the volunteer,
  * not a version-approval gate). Migration 20260805000353 removes the carve-out so president_go
  * always requires legal_signer (uniform with president_others).
  *

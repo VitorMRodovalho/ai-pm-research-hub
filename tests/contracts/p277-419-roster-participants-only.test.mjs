@@ -5,9 +5,9 @@
  * as members — member_count = participants. kind='observer' is the explicit non-participation marker, so
  * the canonical roster excludes observers on BOTH axes: role<>'observer' AND kind<>'observer' (mig 088).
  *
- * Drops the 4 observer-kind people on the role-vs-kind boundary: Roberto (tribe-8, role=curator) + three
- * observer-kind reviewers — Welma (Grupo), Fabricio + Sarah (LATAM). Keeps the active external_reviewer
- * (Mario) and all speakers. Live antes→depois: tribe-8 6→5, LATAM 5→3, Grupo 4→3, Mesa 4→4 (its observers
+ * Drops the 4 observer-kind people on the role-vs-kind boundary: member D (tribe-8, role=curator) + three
+ * observer-kind reviewers — member A (Grupo), member B + member C (LATAM). Keeps the active external_reviewer
+ * (member E) and all speakers. Live antes→depois: tribe-8 6→5, LATAM 5→3, Grupo 4→3, Mesa 4→4 (its observers
  * were already role=observer); all other tribes/initiatives unchanged.
  *
  * Because M4-A/B/C route every member-count surface through this single primitive, the one view revision
@@ -119,7 +119,7 @@ test('roster participants-only DB: single-source propagation — get_tribe_stats
 
 test('roster participants-only DB: metric-3 is INDEPENDENT — get_member_tribe drives the attendance cohort, not the roster', { skip: svcGated ? false : skipMsg }, async (t) => {
   const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-  // Roberto's get_member_tribe stays NULL (his tribe-8 engagement is kind=observer) → he is NOT pulled into
+  // member D's get_member_tribe stays NULL (his tribe-8 engagement is kind=observer) → he is NOT pulled into
   // the tribe-8 attendance cohort. #1249: the absolute fixture (cohort_n == 5) died when #1247 regularized
   // 2 phantom tribe-8 memberships (their new engagements gave them get_member_tribe=8). The durable
   // contract: the attendance cohort is the get_member_tribe axis — active researchers/leaders whose

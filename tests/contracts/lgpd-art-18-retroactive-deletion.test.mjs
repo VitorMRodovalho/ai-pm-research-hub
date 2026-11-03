@@ -17,7 +17,7 @@
  * The actual notification email dispatch is OUT OF SCOPE for this PR — PM
  * sends from nucleoia@pmigo.org.br using the docs/audit/lgpd-art11-remediation/
  * notification_art18_interim_template.md template (PM-approved interim text,
- * pt-BR primary + en-US fallback). The Angeline legal-grade replacement is
+ * pt-BR primary + en-US fallback). The member A legal-grade replacement is
  * sibling #334.
  *
  * Migration: supabase/migrations/20260805000023_p238_332_lgpd_art18_retroactive_deletion_log.sql
@@ -51,7 +51,7 @@
  *   - GH #218 + #221 (parent umbrella, decomposed p236)
  *   - GH #331 (sibling shipped p238 — forward UI path)
  *   - GH #333 (sibling — invariant U; depends on this leaf's deletion completing for the affected row)
- *   - GH #334 (sibling — Angeline legal-grade template; produces the v2 replacement for interim_v1)
+ *   - GH #334 (sibling — member A legal-grade template; produces the v2 replacement for interim_v1)
  *   - LGPD Art. 11 §I (sensitive data) · Art. 18 §IV (deletion right) · Art. 9 (informed processing) · Art. 48 §1 (ANPD pre-disclosure — coordinate under #334)
  *   - Wave 1 emergency block canonical row: 20260520231254
  *   - Forward UI capture canonical row: 20260805000022 (p238 #331)

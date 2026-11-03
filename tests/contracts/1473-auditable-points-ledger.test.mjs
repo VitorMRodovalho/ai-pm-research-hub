@@ -11,7 +11,7 @@
  *     scope (espelha get_member_cycle_xp). Superfície admin ?member=.
  *   - Cada linha de fato expõe occurred_at (data DO FATO) + o ciclo a que pertence
  *     (resolvido pela janela que contém effective_at) — responde "de onde vêm e
- *     em qual ciclo" (o caso Jefferson).
+ *     em qual ciclo" (o caso member A).
  *
  * Frontend: página dedicada /minha-pontuacao (+ /en /es), nav item, i18n 3 dicts.
  * Todas as asserções rodam OFFLINE (sem DB env).

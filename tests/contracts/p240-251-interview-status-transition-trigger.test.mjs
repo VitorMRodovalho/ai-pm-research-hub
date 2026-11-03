@@ -12,7 +12,7 @@
  *   - mark_interview_status() has precondition status IN ('interview_scheduled',
  *     'interview_done') that silently no-ops when row is still 'interview_pending'.
  *   - submit_interview_scores() advances to 'final_eval' ONLY when ALL
- *     interviewer_ids submitted (Vitor + Fabricio; only Vitor submitted).
+ *     interviewer_ids submitted (Vitor + member C; only Vitor submitted).
  *
  * Fix: AFTER INSERT OR UPDATE OF (status, conducted_at) trigger on
  *   selection_interviews syncs the parent app status based on the row's
@@ -33,7 +33,7 @@
  *
  * Cross-ref:
  *   - GH #251
- *   - p226 audit (Henrique/Fabricio precursor): docs/audit/CYCLE4_TRUST_AUDIT_P226.md
+ *   - p226 audit (member D/member C precursor): docs/audit/CYCLE4_TRUST_AUDIT_P226.md
  *   - sibling trigger trg_sync_interview_to_event (selection_interviews → events)
  *   - V4 authority: selection_applications.status drift was observable but
  *     never enforced as an invariant; trigger fills the gap until #260-style

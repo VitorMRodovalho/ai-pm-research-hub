@@ -5,7 +5,7 @@
  *
  * Bug (2026-07-18): manage_initiative_engagement action=remove expired the engagement
  * but _sync_member_initiative_from_engagement() only SET the bridge on an active
- * engagement — it never re-derived it on demotion. Removing Nicolas from the CPMAI
+ * engagement — it never re-derived it on demotion. Removing member A from the CPMAI
  * study group left members.initiative_id = CPMAI (orphaned pointer); members.tribe_id
  * was correctly Radar. Same class as the dual-write demotion fix #1270/#1273
  * ([[reference-dual-write-demotion-clear-both-columns]]), which the tribe-side twin

@@ -180,7 +180,7 @@ async function lazyExtractCv(applicationId: string): Promise<boolean> {
 }
 
 // Cap CV text inclusion to control prompt cost. Median CV ~5500 chars; outliers
-// (Edinan 21498) get truncated. Tail typically has less signal than head.
+// (member A 21498) get truncated. Tail typically has less signal than head.
 const CV_TEXT_MAX_CHARS = 12000;
 
 function buildUserPrompt(app: AppRow): string {

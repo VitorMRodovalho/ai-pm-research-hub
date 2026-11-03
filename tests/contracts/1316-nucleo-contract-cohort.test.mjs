@@ -18,9 +18,9 @@
  *  - nucleo_contract_cohort_cycle_id: 2026-01-20 -> cycle3, 2026-07-01 -> cycle4, 2026-04-01 -> b2,
  *    2025-08-22 -> NULL (pre-cycle3 legacy, #1284).
  *  - v_nucleo_contract_status distribution: active 70 / no_contract 58 / ended 11 / superseded 1 /
- *    not_engaged 1 (= 141). ended=11 are the desligamentos; superseded=1 is Paulo's researcher app;
+ *    not_engaged 1 (= 141). ended=11 are the desligamentos; superseded=1 is member A's researcher app;
  *    not_engaged=1 is the rejected OfferExpired app (291120) that carries offered dates.
- *  - Paulo (pmi_id 1158211, two emails): researcher app 270695 (start 2026-01-20) -> superseded
+ *  - member A (pmi_id 1158211, two emails): researcher app 270695 (start 2026-01-20) -> superseded
  *    (leader app 301116 starts later 2026-07-01); leader -> active. He is NEVER dismissed, even when
  *    his researcher end is later set to 2026-06-30, because the CASE checks superseded BEFORE ended.
  *  - Paving moved exactly 12 rejected/withdrawn (no-contract) apps to their window; 0 apps with a
@@ -68,12 +68,12 @@ test('#1316: cohort logic does NOT reuse the polluted lifetime columns', () => {
 
 test('#1316: status view is security_invoker and person-scoped by pmi_id (NOT email)', () => {
   assert.match(mig, /CREATE OR REPLACE VIEW public\.v_nucleo_contract_status\s*\n\s*WITH \(security_invoker = true\)/);
-  // The later-contract lookup joins on pmi_id (Paulo holds two emails across his apps).
+  // The later-contract lookup joins on pmi_id (member A holds two emails across his apps).
   assert.match(mig, /c2\.pmi_id = c\.pmi_id/);
   assert.doesNotMatch(mig, /c2\.email = c\.email/);
 });
 
-test('#1316: superseded (promotion) is decided BEFORE ended (dismissal) — Paulo guarantee', () => {
+test('#1316: superseded (promotion) is decided BEFORE ended (dismissal) — member A guarantee', () => {
   // CASE ordering: has_later_contract -> superseded MUST precede the contract_end -> ended branch,
   // so a short earlier-role contract with a later contract is never read as a dismissal.
   const supIdx = mig.indexOf("THEN 'superseded'");

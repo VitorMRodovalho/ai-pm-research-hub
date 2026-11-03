@@ -1,6 +1,6 @@
 /**
  * Contract: #1445 — get_vep_divergence_report must surface the "approved/converted + VEP offer
- * retracted + member still active" class (the Hector case), which no prior bucket caught:
+ * retracted + member still active" class (the member A case), which no prior bucket caught:
  *   - selection_divergent requires the app to be in the active funnel (excludes approved/converted);
  *   - active_members_divergent requires member.is_active = FALSE (excludes an active member);
  *   - onboarding_divergent only covers Submitted/OfferExtended (a retracted offer is out).

@@ -9,7 +9,7 @@
  *
  * Recorrencia ja prevenida: a ponte dual-write (#1270) re-deriva members.tribe_id das engagements
  * ATIVAS; ao offboardar, o engagement vai a 'offboarded' -> a ponte zera o cache (validado com
- * Cintia no primeiro uso real do #1020). Este teste e a rede de seguranca: falha se o invariante
+ * member A no primeiro uso real do #1020). Este teste e a rede de seguranca: falha se o invariante
  * regredir (ex.: um caminho de mudanca de status que nao feche a engagement).
  *
  * Invariante: nenhum member com member_status <> 'active' pode reter members.tribe_id

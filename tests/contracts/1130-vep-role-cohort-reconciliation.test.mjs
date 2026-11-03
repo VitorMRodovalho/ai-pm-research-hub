@@ -11,7 +11,7 @@
  *      'Active' NUNCA pode entrar no bucket B — senão o farol volta a ser enganoso.
  *
  *  (B) Nova RPC get_vep_role_cohort_reconciliation(): matriz papel×coorte + listas nominais,
- *      join estável por PMI id (resolve o falso-gap do caso Paulo, e-mails divergentes/mesmo pmi_id).
+ *      join estável por PMI id (resolve o falso-gap do caso member A, e-mails divergentes/mesmo pmi_id).
  *
  * Static locks + DB-aware smoke (função deployada e gated). Skips offline como os demais.
  */

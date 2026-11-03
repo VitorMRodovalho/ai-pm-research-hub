@@ -1,7 +1,7 @@
 /**
  * #1200 — the offboard reason category must reach member_offboarding_records.
  *
- * Root cause (2ª reincidência: T7 03/07, Débora 08/07): the MCP wrapper and the deployed EF both
+ * Root cause (2ª reincidência: T7 03/07, member A 08/07): the MCP wrapper and the deployed EF both
  * propagate p_reason_category to admin_offboard_member correctly, but the record used to be written
  * only by trg_offboarding_stub (AFTER UPDATE OF member_status), which infers the category from
  * members.status_change_reason ('^[a-z_]+:\s' prefix) and lands on 'other' whenever a free-text

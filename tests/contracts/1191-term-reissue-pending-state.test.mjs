@@ -1,7 +1,7 @@
 /**
  * #1191 — Termos panel distinguishes "reissued — awaiting re-signature" from "never signed".
  *
- * Context (decision PM 2026-07-08, option 1+3 — gate stays, UX explains; index case João):
+ * Context (decision PM 2026-07-08, option 1+3 — gate stays, UX explains; index case member A):
  * reissue_agreement supersedes the year's cert, which detaches agreement_certificate_id →
  * auth_engagements.is_authoritative=false → operational_role cache stays guest until the
  * volunteer re-signs (then the new cert snapshots role+period from the engagement, F5/#1175,

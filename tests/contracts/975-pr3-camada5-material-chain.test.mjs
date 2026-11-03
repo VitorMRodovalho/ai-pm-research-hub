@@ -100,7 +100,7 @@ test('#1152: committee_majority ACTIVATED — ip_committee predicate + Comitê d
   assert.match(sql1152, /array_append\(designations, 'ip_committee'\)/, 'the migration must seed the ip_committee designation');
   assert.match(sql1152, /NOT \('ip_committee' = ANY\(designations\)\)/, 'the roster seed must be idempotent');
   const ids = sql1152.match(/'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'/g) || [];
-  assert.equal(new Set(ids).size, 3, 'exactly 3 committee members must be seeded (Sarah, Fabricio, Roberto)');
+  assert.equal(new Set(ids).size, 3, 'exactly 3 committee members must be seeded (member A, member B, member C)');
 });
 
 test('PR-3: _gate_threshold_met — majority branch (pinned roster, n>=1 guard, strict floor)', () => {

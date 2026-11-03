@@ -13,7 +13,7 @@
  *   3) exec_cross_initiative_comparison  — the cohort predicate "is_active AND EXISTS(engagements ...
  *      kind<>'observer')" repeated 5× (member_count, members_inactive_30d, total_hours, total_xp,
  *      avg_xp) → roster. kind<>observer is the bug (drops members whose kind='observer' but
- *      role<>'observer'). Visible deltas (verified live, cycle_3): tribe 8 5→6 (+Roberto curator),
+ *      role<>'observer'). Visible deltas (verified live, cycle_3): tribe 8 5→6 (+member A curator),
  *      LATAM LIM 3→5 (+2 reviewers), Grupo CPMAI 3→4 (+1 reviewer); Mesa 4→4 (same set). tribe-8
  *      total_xp 2535→2815 / avg 507.0→469.2 — now MATCHES the shipped exec_tribe_dashboard (mig 084).
  *

@@ -5,7 +5,7 @@
  *        filtro de status). Bug 3: completed_count fazia count(*) sobre o JOIN de
  *        selection_evaluations (fan-out) -> progress_pct > 100%. Fix (mig 173):
  *        universo "avaliável" = não-terminal aplicado em pending + completed + total,
- *        com count(DISTINCT). Bug 2: pares dual-track antigos órfãos (Maria) — backfill
+ *        com count(DISTINCT). Bug 2: pares dual-track antigos órfãos (member A) — backfill
  *        idempotente liga os pares limpos 1:1 (complementa o trigger AFTER INSERT do #693).
  *
  * STATIC: a migration aplica o filtro de terminais + DISTINCT e PRESERVA os

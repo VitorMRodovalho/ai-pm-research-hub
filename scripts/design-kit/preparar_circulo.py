@@ -1,7 +1,7 @@
 """Gera a derivada `-circ.png`: retrato quadrado COM folga acima da cabeca.
 
 Por que existe. As derivadas de retrato do evento chegam sem headroom: medido em 29/08,
-o topo da cabeca fica a 1,00% da altura no Joao e a 1,67% no Rodrigo. Num medalhao
+o topo da cabeca fica a 1,00% da altura no member A e a 1,67% no member B. Num medalhao
 circular isso e fatal, porque `object-fit:cover` num quadrado so mostra a partir de
 `object-position Y / 4` da altura da fonte. Com Y=14% a janela comeca em 3,5% e come a
 cabeca. Recuar Y para 0 resolve o corte e cria outro problema: a cabeca encosta no apice
@@ -11,7 +11,7 @@ A saida e nao brigar com o enquadramento e sim FABRICAR a folga, estendendo o pr
 fundo do retrato para cima. Como o fundo desses estudios e liso ou um gradiente suave na
 horizontal, replicar uma amostra por coluna e imperceptivel.
 
-De quebra conserta a cunha preta que a foto do Rodrigo carrega nos cantos superiores,
+De quebra conserta a cunha preta que a foto do member B carrega nos cantos superiores,
 resto de alguma transformacao anterior. Ela ficaria visivel dentro do circulo depois que
 o conteudo desce.
 
@@ -34,20 +34,20 @@ ESCURO = 95           # luminancia abaixo disso e cabelo, nao fundo
 # junto com a escolha do retangulo.
 #
 # O QUE FOI MEDIDO, e a medicao que eu errei primeiro. Perfilando so a faixa ESQUERDA por
-# altura, os dois fundos parecem planos: Joao 172, Rodrigo 134,146,156 do topo ao ombro.
+# altura, os dois fundos parecem planos: member A 172, member B 134,146,156 do topo ao ombro.
 # Dai eu concluiria um offset constante. Errado: comparando esquerda com DIREITA, o fundo
-# do Rodrigo vai de (134,146,156) a (192,197,199), 51 niveis de gradiente HORIZONTAL,
-# enquanto o do Joao e chapado nos dois lados. Perfilar um eixo so nao mede planura.
+# do member B vai de (134,146,156) a (192,197,199), 51 niveis de gradiente HORIZONTAL,
+# enquanto o do member A e chapado nos dois lados. Perfilar um eixo so nao mede planura.
 # Por isso a correcao e POR COLUNA, nao por cor unica: uma cor unica acertaria a media e
 # deixaria as duas pontas erradas, uma clara demais e outra escura demais.
 #
 # A correcao mexe SO NO FUNDO, por mascara de distancia. Duas alternativas globais foram
 # descartadas por contas feitas antes de escrever isto:
-#   ganho global      preserva preto mas estoura o realce: o p99 do Rodrigo esta em 209 e
+#   ganho global      preserva preto mas estoura o realce: o p99 do member B esta em 209 e
 #                     o ganho no vermelho o jogaria acima de 255.
 #   gamma global      nao estoura, mas levanta a sombra: a camiseta preta dele sairia de
 #                     ~25 para ~61, virando cinza morno. E a pessoa, nao o fundo.
-ALVO_FUNDO = (171, 171, 173)   # neutro, onde o fundo do Joao ja estava
+ALVO_FUNDO = (171, 171, 173)   # neutro, onde o fundo do member A ja estava
 TOL, RAMPA = 30, 30            # distancia ate a cor da COLUNA: dentro de TOL corrige 100%
 
 
@@ -95,7 +95,7 @@ def perfil_do_fundo(a):
     alto = a[int(H * .02):int(H * .45)]
     # Descarta escuro (cabelo, cunha preta do canto) E PELE. O filtro de luminancia sozinho
     # nao basta: pele e CLARA, entao as colunas do rosto passavam por fundo valido e
-    # puxavam o ajuste para o rosado. Medido: com elas dentro, o fundo do Joao saia
+    # puxavam o ajuste para o rosado. Medido: com elas dentro, o fundo do member A saia
     # (177,158,157) em vez de neutro.
     val = (alto.mean(axis=2) >= ESCURO) & ((alto[:, :, 0] - alto[:, :, 2]) < 8)
     perfil = np.full((W, 3), np.nan)
@@ -112,7 +112,7 @@ def perfil_do_fundo(a):
         return np.tile(np.array(ALVO_FUNDO, float), (W, 1))
     idx = np.arange(W, dtype=float)
     # AJUSTE POLINOMIAL, e nao interpolacao mais alisamento. A primeira versao interpolava
-    # coluna a coluna e alisava com janela curta: no Rodrigo funcionou, mas no Joao, cujo
+    # coluna a coluna e alisava com janela curta: no member B funcionou, mas no member A, cujo
     # fundo ja estava certo e o deslocamento e de ~1 nivel, o RUIDO do perfil virou LISTRA
     # VERTICAL na peca, porque cada coluna recebeu um deslocamento ligeiramente diferente.
     # Iluminacao de estudio e um campo suave e de baixa frequencia: um polinomio de grau 2
@@ -150,7 +150,7 @@ def normalizar_fundo(im: Image.Image, alvo=ALVO_FUNDO):
 def preparar(origem: pathlib.Path, destino: pathlib.Path):
     im = Image.open(origem).convert("RGB")
     # A normalizacao vem ANTES de fabricar a folga, e a ordem importa: rodando depois, ela
-    # mediria a PROPRIA folga em vez do fundo real. No Rodrigo isso dava 176 no lugar de
+    # mediria a PROPRIA folga em vez do fundo real. No member B isso dava 176 no lugar de
     # 145, porque a folga nasce de uma amostra das linhas 2 a 14, que nos cantos dele caem
     # dentro da cunha preta e sao descartadas. Antes, a folga ja nasce da cor corrigida e
     # emenda nenhuma aparece.
