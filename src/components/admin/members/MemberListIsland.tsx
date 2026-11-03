@@ -71,6 +71,20 @@ function kindLabel(e: EngagementRow, locale: Locale): string {
   return e.kind_display_name;
 }
 
+/* #2111 — the offboard reason menu reads offboard_reason_categories (active rows, by sort_order).
+   label_pt is the canonical/fallback; label_en/label_es come from the same row. */
+interface ReasonCategory {
+  code: string;
+  label_pt: string;
+  label_en: string | null;
+  label_es: string | null;
+}
+function reasonLabel(c: ReasonCategory, locale: Locale): string {
+  if (locale === 'en-US') return c.label_en || c.label_pt;
+  if (locale === 'es-LATAM') return c.label_es || c.label_pt;
+  return c.label_pt;
+}
+
 /* #625 C2 — chronological sort key for a cycle_code ('cycle_1'..'cycle_N'); a non-numbered
    code like 'pilot' (the 2024 pilot, oldest) sorts before all numbered cycles. */
 function cycleOrder(code: string): number {
@@ -289,12 +303,35 @@ export default function MemberListIsland() {
   // #1022-C: offboard targets are 'alumni' | 'inactive' only ('observer' retired — non-volunteer
   // unbound by the term = LGPD/IP exposure; see admin_offboard_member + ADR-0071 Amendment 3).
   const [offboardStatus, setOffboardStatus] = useState('alumni');
-  const [offboardCategory, setOffboardCategory] = useState('time');
+  // #2111: no default reason. The admin picks one from the catalog; the RPC stores an unknown code as 'other'.
+  const [offboardCategory, setOffboardCategory] = useState('');
   const [offboardDetail, setOffboardDetail] = useState('');
   const [offboardReassign, setOffboardReassign] = useState('');
   const [offboardSaving, setOffboardSaving] = useState(false);
+  const [reasonCategories, setReasonCategories] = useState<ReasonCategory[] | null>(null);
+  const [reasonLoadError, setReasonLoadError] = useState(false);
 
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
+
+  // #2111: load the reason catalog when the offboard modal opens, until one load succeeds.
+  useEffect(() => {
+    if (!offboardMember || reasonCategories) return;
+    const sb = getSb();
+    if (!sb) return;
+    let cancelled = false;
+    setReasonLoadError(false);
+    (async () => {
+      const { data, error } = await sb.from('offboard_reason_categories')
+        .select('code, label_pt, label_en, label_es')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('code', { ascending: true });
+      if (cancelled) return;
+      if (error || !data || data.length === 0) { setReasonLoadError(true); return; }
+      setReasonCategories(data as ReasonCategory[]);
+    })();
+    return () => { cancelled = true; };
+  }, [offboardMember, reasonCategories, getSb]);
 
   const fetchMembers = useCallback(async () => {
     const sb = getSb();
@@ -446,7 +483,7 @@ export default function MemberListIsland() {
   };
 
   const handleOffboard = async () => {
-    if (!offboardMember) return;
+    if (!offboardMember || !offboardCategory) return;
     const sb = getSb();
     if (!sb) return;
     setOffboardSaving(true);
@@ -988,7 +1025,7 @@ export default function MemberListIsland() {
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-between gap-2 flex-shrink-0">
               <div className="flex gap-2">
                 {editMember.is_active ? (
-                  <button onClick={() => { setOffboardMember(editMember); setOffboardStatus('alumni'); setOffboardCategory('time'); setOffboardDetail(''); setOffboardReassign(''); closeEdit(); }}
+                  <button onClick={() => { setOffboardMember(editMember); setOffboardStatus('alumni'); setOffboardCategory(''); setOffboardDetail(''); setOffboardReassign(''); closeEdit(); }}
                     className="px-3 py-2 rounded-lg text-[12px] font-semibold border border-amber-300 text-amber-700 bg-transparent hover:bg-amber-50 cursor-pointer">
                     Gerenciar Status
                   </button>
@@ -1144,13 +1181,14 @@ export default function MemberListIsland() {
                 <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">Categoria</label>
                 <select value={offboardCategory} onChange={e => setOffboardCategory(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                  <option value="professional">Profissional</option>
-                  <option value="personal">Pessoal</option>
-                  <option value="time">Falta de tempo</option>
-                  <option value="interest_shift">Mudanca de interesses</option>
-                  <option value="inactivity">Inatividade</option>
-                  <option value="administrative">Administrativo</option>
+                  <option value="" disabled>{t('comp.memberList.reasonPlaceholder', 'Selecione o motivo')}</option>
+                  {(reasonCategories || []).map(c => (
+                    <option key={c.code} value={c.code}>{reasonLabel(c, locale)}</option>
+                  ))}
                 </select>
+                {reasonLoadError && (
+                  <div className="text-[11px] text-rose-700 mt-1">{t('comp.memberList.reasonLoadError', 'Não foi possível carregar os motivos. Feche e abra de novo.')}</div>
+                )}
               </div>
 
               <div>
@@ -1179,7 +1217,7 @@ export default function MemberListIsland() {
             </div>
             <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
               <button onClick={() => setOffboardMember(null)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancel')}</button>
-              <button onClick={handleOffboard} disabled={offboardSaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-amber-600 text-white border-0 hover:bg-amber-700 cursor-pointer disabled:opacity-50">
+              <button onClick={handleOffboard} disabled={offboardSaving || !offboardCategory} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-amber-600 text-white border-0 hover:bg-amber-700 cursor-pointer disabled:opacity-50">
                 {offboardSaving ? 'Processando...' : 'Confirmar'}
               </button>
             </div>

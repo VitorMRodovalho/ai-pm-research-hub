@@ -7001,6 +7001,8 @@ const enUS: Record<string, string> = {
   'comp.memberList.noReassign': '— None —',
   'comp.memberList.removeWarning': 'Will be removed from homepage/tribes',
   'comp.memberList.cancel': 'Cancel',
+  'comp.memberList.reasonPlaceholder': 'Select the reason',
+  'comp.memberList.reasonLoadError': 'Could not load the reasons. Close and open again.',
 
   // ── Tribe Dashboard ──
   'comp.tribe.loading': 'Loading tribe dashboard...',

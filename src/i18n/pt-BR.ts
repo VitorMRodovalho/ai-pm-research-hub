@@ -7009,6 +7009,8 @@ const ptBR: Record<string, string> = {
   'comp.memberList.noReassign': '— Nenhum —',
   'comp.memberList.removeWarning': 'Removerá da homepage/tribos',
   'comp.memberList.cancel': 'Cancelar',
+  'comp.memberList.reasonPlaceholder': 'Selecione o motivo',
+  'comp.memberList.reasonLoadError': 'Não foi possível carregar os motivos. Feche e abra de novo.',
 
   // ── Tribe Dashboard ──
   'comp.tribe.loading': 'Carregando dashboard da tribo...',

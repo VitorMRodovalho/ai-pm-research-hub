@@ -7002,6 +7002,8 @@ const esLATAM: Record<string, string> = {
   'comp.memberList.noReassign': '— Ninguno —',
   'comp.memberList.removeWarning': 'Se removerá de homepage/tribus',
   'comp.memberList.cancel': 'Cancelar',
+  'comp.memberList.reasonPlaceholder': 'Seleccione el motivo',
+  'comp.memberList.reasonLoadError': 'No fue posible cargar los motivos. Cierre y abra de nuevo.',
 
   // ── Tribe Dashboard ──
   'comp.tribe.loading': 'Cargando dashboard de la tribu...',
