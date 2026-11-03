@@ -34,6 +34,10 @@ const VITOR_URL_LIVE = 'https://calendar.app.google/MHAmfkgZCwT9KsoKA';
 const DEPUTY_URL = 'https://calendar.app.google/1jDNjPpoGCkV2V9A6';
 const CYCLE_GROUP_URL = 'https://calendar.app.google/XPiGWLh9JaLVFKJc6'; // p243 seeded; leader flow
 
+// Escape completo de metacaracteres de regex (inclui a barra e o hifen): usado para casar literais
+// verbatim (URL e UUID) com assert.match em vez de includes()/replace identidade.
+const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&');
+
 describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
   describe('migration file presence + header cross-refs', () => {
     it('migration file exists at canonical timestamp', () => {
@@ -66,10 +70,10 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
       assert.ok(MIGRATION_SQL.includes(DEPUTY_ID), `expected member A id ${DEPUTY_ID}`);
     });
     it('Vitor calendar URL appears verbatim', () => {
-      assert.ok(MIGRATION_SQL.includes(VITOR_URL), `expected ${VITOR_URL}`);
+      assert.match(MIGRATION_SQL, new RegExp(escapeRe(VITOR_URL)), `expected ${VITOR_URL}`);
     });
     it('member A calendar URL appears verbatim', () => {
-      assert.ok(MIGRATION_SQL.includes(DEPUTY_URL), `expected ${DEPUTY_URL}`);
+      assert.match(MIGRATION_SQL, new RegExp(escapeRe(DEPUTY_URL)), `expected ${DEPUTY_URL}`);
     });
     it('cycle code cycle4-2026 referenced for pre-seed sanity', () => {
       assert.match(MIGRATION_SQL, /cycle_code\s*=\s*'cycle4-2026'/);
@@ -109,13 +113,13 @@ describe('p253 #357 — SPEC #348 Child #4 cycle4-2026 reseed', () => {
     it('UPDATE members for Vitor populates personal URL', () => {
       assert.match(
         MIGRATION_SQL,
-        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${VITOR_ID.replace(/-/g, '-')}`)
+        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${escapeRe(VITOR_ID)}`)
       );
     });
     it('UPDATE members for member A populates personal URL', () => {
       assert.match(
         MIGRATION_SQL,
-        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${DEPUTY_ID.replace(/-/g, '-')}`)
+        new RegExp(`UPDATE public\\.members[\\s\\S]*?interview_booking_url[\\s\\S]*?${escapeRe(DEPUTY_ID)}`)
       );
     });
   });
