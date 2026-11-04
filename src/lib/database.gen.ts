@@ -18489,6 +18489,7 @@ export type Database = {
           created_at: string
           description_pt: string | null
           is_active: boolean | null
+          is_system_only: boolean
           is_volunteer_fault: boolean | null
           label_en: string | null
           label_es: string | null
@@ -18501,6 +18502,7 @@ export type Database = {
           created_at?: string
           description_pt?: string | null
           is_active?: boolean | null
+          is_system_only?: boolean
           is_volunteer_fault?: boolean | null
           label_en?: string | null
           label_es?: string | null
@@ -18513,6 +18515,7 @@ export type Database = {
           created_at?: string
           description_pt?: string | null
           is_active?: boolean | null
+          is_system_only?: boolean
           is_volunteer_fault?: boolean | null
           label_en?: string | null
           label_es?: string | null
