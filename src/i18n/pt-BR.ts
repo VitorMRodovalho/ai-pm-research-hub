@@ -6480,6 +6480,11 @@ const ptBR: Record<string, string> = {
   'admin.selection.modal.videosNoAiScoreYet': 'Avaliação subjetiva por IA ainda não implementada — substrato em construção (B-full).',
   'admin.selection.modal.videosRestricted': 'Os vídeos desta candidatura ficam com a coordenação e a avaliação do ciclo.',
   'admin.selection.modal.videosRecused': 'Você é candidato(a) neste ciclo: os vídeos estão impedidos por conflito de interesse.',
+  // #2393 A1: estado da candidatura de vaga piloto da linha na ficha da gestão
+  'admin.selection.modal.pilotDecision': 'Candidatura do piloto da linha: a decisão sai depois das três notas (avaliação objetiva, vídeo da linha e conversa de fit). Aqui só valem desistência e cancelamento.',
+  'admin.selection.modal.pilotEvaluate': 'Candidatura do piloto da linha: a avaliação não é feita pelo comitê do ciclo. Duas pessoas de fora da linha avaliam o currículo e o vídeo da linha, e o líder da linha faz a conversa de fit.',
+  'admin.selection.modal.pilotInterview': 'Candidatura do piloto da linha: não há entrevista do fluxo geral. A conversa de fit com o líder da linha abre depois do vídeo da linha.',
+  'admin.selection.modal.pilotVideos': 'Candidatura do piloto da linha: esta vaga não tem a rota de vídeos do fluxo geral. O vídeo da linha, com as perguntas da linha, abre com o convite.',
   'admin.selection.modal.returningBadge': 'Retornante',
   'admin.selection.modal.email': 'Email',
   'admin.selection.modal.role': 'Papel',

@@ -198,6 +198,10 @@ const CHAMADORES = [
   'calculate_rankings', 'recalculate_cycle_rankings', 'get_selection_rankings', 'detect_stuck_selection_funnel',
   // #2393 fatia 3, D4: o trigger que tira o vídeo do token de candidatura de vaga piloto.
   '_token_de_candidatura_sem_video_no_piloto',
+  // #2393 A1: as travas do piloto na decisão, na entrevista e no token de agendamento (guard 2393h).
+  'admin_update_application', 'schedule_interview', '_issue_interview_booking_token_core',
+  // #2393 A3 e A4: o link do portal do piloto vale o processo, e o líder não recebe o e-mail (guard 2393i).
+  '_token_do_piloto_vale_o_processo', 'get_opening_application',
 ].sort();
 
 test('#2393c S: as funções que chamam o helper são exatamente as auditadas', () => {

@@ -189,6 +189,10 @@ const SEL_I18N = {
     videosNoAiScoreYet: t('admin.selection.modal.videosNoAiScoreYet', lang),
     videosRestricted: t('admin.selection.modal.videosRestricted', lang),
     videosRecused: t('admin.selection.modal.videosRecused', lang),
+    pilotDecision: t('admin.selection.modal.pilotDecision', lang),
+    pilotEvaluate: t('admin.selection.modal.pilotEvaluate', lang),
+    pilotInterview: t('admin.selection.modal.pilotInterview', lang),
+    pilotVideos: t('admin.selection.modal.pilotVideos', lang),
     returningBadge: t('admin.selection.modal.returningBadge', lang),
     email: t('admin.selection.modal.email', lang),
     chapter: t('admin.selection.chapter', lang),
@@ -1636,11 +1640,39 @@ const SEL_I18N = {
      sem onde escrever. */
   function earlyAcceptanceBlock(): string {
     return `
-      <div class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 space-y-2">
+      <div id="modal-early-acceptance-block" class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-elevated)] p-3 space-y-2">
         <h4 class="text-[12px] font-bold text-[var(--text-secondary)]">${T.modal.earlyAcceptanceTitle}</h4>
         <p class="text-[11px] text-[var(--text-muted)]">${T.modal.earlyAcceptanceHint}</p>
         <textarea id="modal-early-acceptance" class="w-full px-3 py-2 text-sm border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] h-16" placeholder="${T.modal.earlyAcceptancePlaceholder}"></textarea>
       </div>`;
+  }
+
+  /* #2393 A1 — candidatura de vaga piloto da linha (ADR-0134). Ela não passa pelo fluxo geral: a ficha mostra
+     o estado do piloto no lugar da decisão, da avaliação e da entrevista, e as RPCs recusam do mesmo jeito
+     (admin_update_application, schedule_interview e o token de agendamento). A trilha vem do painel. */
+  const PILOT_STATUS_OPTIONS = ['withdrawn', 'cancelled'];
+  function isPilotRow(r: any): boolean {
+    return r?.evaluation_track === 'line_pilot';
+  }
+  function pilotNotice(texto: string): string {
+    return `<div data-pilot-notice class="rounded-lg border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">${esc(texto)}</div>`;
+  }
+  function aplicarEstadoDoPiloto(body: HTMLElement, r: any): void {
+    if (!isPilotRow(r)) return;
+    const sel = body.querySelector('#modal-status-select') as HTMLSelectElement | null;
+    if (sel) {
+      Array.from(sel.options).forEach((o) => { if (o.value !== r.status && !PILOT_STATUS_OPTIONS.includes(o.value)) o.remove(); });
+      sel.insertAdjacentHTML('beforebegin', pilotNotice(T.modal.pilotDecision));
+    }
+    body.querySelector('#modal-early-acceptance-block')?.remove();
+    if (body.querySelector('#modal-dual-save-btn')) {
+      body.querySelector('#modal-status-researcher')?.insertAdjacentHTML('beforebegin', pilotNotice(T.modal.pilotDecision));
+      ['#modal-status-researcher', '#modal-status-leader', '#modal-dual-save-btn'].forEach((sel2) => body.querySelector(sel2)?.remove());
+    }
+    const evalBox = body.querySelector('#eval-form-container');
+    if (evalBox) evalBox.innerHTML = pilotNotice(T.modal.pilotEvaluate);
+    const interview = body.querySelector('#modal-tab-interview');
+    if (interview) interview.innerHTML = pilotNotice(T.modal.pilotInterview);
   }
 
   /* p92 Phase D — pipeline workflow indicators (5 mini-badges per candidate).
@@ -1695,6 +1727,7 @@ const SEL_I18N = {
     const videoUploaded = Number(r.video_agg?.uploaded_count ?? r.video_screening_uploaded_count ?? 0);
     const videoTotal = Number(r.video_agg?.total_rows ?? r.video_screening_total_rows ?? 0);
     const videoBadge = (() => {
+      if (isPilotRow(r) && videoAgg === 'none') return dot('bg-gray-100 text-gray-400', '—', T.modal.pilotVideos);  // #2393 A1
       if (videoAgg === 'uploaded')
         return dot('bg-emerald-100 text-emerald-700', '📹', `Candidato subiu ${videoUploaded} de ${videoTotal} pilares`);
       if (videoAgg === 'opted_out')
@@ -2753,6 +2786,8 @@ const SEL_I18N = {
     // content; loadReturningContext hides the panel when there is nothing relevant to show.
     loadReturningContext(row.id);
 
+    aplicarEstadoDoPiloto(body, row);  // #2393 A1
+
     // Modal tab switching
     body.querySelectorAll('.modal-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2767,11 +2802,12 @@ const SEL_I18N = {
         ['info', 'evaluate', 'interview', 'comms', 'ai-runs', 'videos', 'pmi-profile', 'audit-log'].forEach(t => {
           body.querySelector(`#modal-tab-${t}`)?.classList.toggle('hidden', t !== tab);
         });
-        if (tab === 'evaluate') loadEvaluationForm(row.id);
-        if (tab === 'interview') loadInterviewForm(row);
+        // #2393 A1: na candidatura do piloto, Avaliar e Entrevista mostram o estado do piloto, sem formulário
+        if (tab === 'evaluate' && !isPilotRow(row)) loadEvaluationForm(row.id);
+        if (tab === 'interview' && !isPilotRow(row)) loadInterviewForm(row);
         if (tab === 'comms') loadCommunications(row.id);
         if (tab === 'ai-runs') loadAiAnalysisRuns(row.id);
-        if (tab === 'videos') loadVideoScreenings(row.id);
+        if (tab === 'videos') loadVideoScreenings(row.id, isPilotRow(row));
         if (tab === 'pmi-profile') loadPmiProfile(row.id);
         if (tab === 'audit-log') loadGateAuditLog(row.id);
       });
@@ -3113,7 +3149,7 @@ const SEL_I18N = {
        2) summary.uploaded === 0 AND summary.opted_out > 0 → opt-out banner
        3) any uploaded → per-pillar list with transcription + drive/youtube links
      B-full (next sessions) will add ai_subjective_score per pillar in this same view. */
-  async function loadVideoScreenings(applicationId: string) {
+  async function loadVideoScreenings(applicationId: string, pilot = false) {
     const container = document.getElementById('videos-container');
     if (!container || !sb) return;
     container.innerHTML = `<p class="text-sm text-[var(--text-muted)]">${T.modal.loadingVideos}</p>`;
@@ -3133,7 +3169,7 @@ const SEL_I18N = {
 
       // State 1: no decision yet
       if ((summary.total || 0) === 0) {
-        container.innerHTML = `<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-[var(--text-muted)]">${esc(T.modal.videosEmpty)}</div>`;
+        container.innerHTML = `<div class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center text-sm text-[var(--text-muted)]">${esc(pilot ? T.modal.pilotVideos : T.modal.videosEmpty)}</div>`;  // #2393 A1
         return;
       }
 
