@@ -30,7 +30,7 @@ ONBOARDING_TOKEN_TTL_DAYS = "7"
 #   PMI_VEP_OAUTH_CLIENT_ID
 #   PMI_VEP_OAUTH_CLIENT_SECRET
 #   GP_NOTIFICATION_EMAIL     vitor's email para alertas de 3 falhas consecutivas
-#   ONBOARDING_BASE_URL       https://nucleoia.vitormr.dev/pmi-onboarding
+#   ONBOARDING_BASE_URL       https://nucleoia.pmigo.org.br/pmi-onboarding  (#2393 A3: o domínio institucional)
 
 # =====================================================================
 # Cloudflare KV namespace — PMI OAuth refresh_token cache (Plano B per p81)
