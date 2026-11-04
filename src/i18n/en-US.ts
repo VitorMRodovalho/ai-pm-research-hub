@@ -6472,6 +6472,11 @@ const enUS: Record<string, string> = {
   'admin.selection.modal.videosNoAiScoreYet': 'AI subjective scoring not implemented yet — substrate in progress (B-full).',
   'admin.selection.modal.videosRestricted': 'Videos for this application are available to the cycle lead and evaluators.',
   'admin.selection.modal.videosRecused': 'You are a candidate in this cycle: videos are blocked due to a conflict of interest.',
+  // #2393 A1: estado da candidatura de vaga piloto da linha na ficha da gestão
+  'admin.selection.modal.pilotDecision': 'Line pilot application: the decision comes after the three scores (objective review, line video and fit conversation). Only withdrawal and cancellation apply here.',
+  'admin.selection.modal.pilotEvaluate': 'Line pilot application: the cycle committee does not evaluate it. Two people from outside the line review the résumé and the line video, and the line leader holds the fit conversation.',
+  'admin.selection.modal.pilotInterview': 'Line pilot application: there is no general-flow interview. The fit conversation with the line leader opens after the line video.',
+  'admin.selection.modal.pilotVideos': 'Line pilot application: this opening does not use the general-flow video route. The line video, with the line\'s questions, opens with the invitation.',
   'admin.selection.modal.returningBadge': 'Returning',
   'admin.selection.modal.email': 'Email',
   'admin.selection.modal.role': 'Role',
