@@ -122,7 +122,7 @@ const ALL_ROLES = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'f
 // governanca, presenca, workspace) e ate aqui NAO era concedivel pela UI -- quem a tinha
 // recebeu fora de banda. `co_gp` ja esta na lista e ja concede o mesmo tier admin
 // (route-access.ts), entao incluir esta NAO amplia a classe do que um admin pode conceder.
-const ALL_DESIGS = ['sponsor', 'chapter_liaison', 'ambassador', 'founder', 'curator', 'comms_team', 'comms_leader', 'comms_member', 'co_gp', 'deputy_manager'];
+const ALL_DESIGS = ['sponsor', 'chapter_liaison', 'ambassador', 'founder', 'curator', 'comms_leader', 'comms_member', 'co_gp', 'deputy_manager'];
 
 function initials(name: string): string {
   return name.split(' ').map(w => w[0]).filter(Boolean).join('').substring(0, 2).toUpperCase() || '?';
