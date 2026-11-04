@@ -20,11 +20,11 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 const ROOT = process.cwd();
 const SRC = maskJsComments(readFileSync(resolve(ROOT, 'src/components/pmi-onboarding/PMIOnboardingPortal.tsx'), 'utf8')).replace(/\s+/g, ' ');
 const CHAVES = ['introPilot', 'periodLabel', 'periodValue', 'expiresOn', 'journeyTitle', 'journeyReceived', 'journeyNow', 'journeyVideo',
-  'journeyVideoSoon', 'journeyFit', 'journeyResult', 'journeyWho', 'consentDone', 'consentDonePilot', 'helpLine', 'withdrawLine',
+  'journeyVideoSoon', 'journeyFit', 'journeyResult', 'journeyResultNoDate', 'journeyWho', 'consentDone', 'consentDonePilot', 'helpLine', 'withdrawLine',
   'withdrawSubject', 'helpSubject'];
 
 test('#2393l: a trilha vem da vaga no payload, e sem ela o portal fica como era', () => {
-  assert.match(SRC, /opening\?: \{ opportunity_id: string; title: string \| null; start_date: string \| null; end_date: string \| null; evaluation_track: [^;]*; video_invite_by: string \| null; \} \| null;/,
+  assert.match(SRC, /opening\?: \{ opportunity_id: string; title: string \| null; start_date: string \| null; end_date: string \| null; evaluation_track: [^;]*; video_invite_by: string \| null; result_by\?: string \| null; \} \| null;/,
     'o tipo da vaga no payload mudou');
   assert.match(SRC, /const opening = payload\.opening \?\? null; const isLinePilot = opening\?\.evaluation_track === 'line_pilot';/,
     'a trilha deixou de vir da vaga');
@@ -43,10 +43,12 @@ test('#2393l C2 e X1: o piloto vê a jornada, e o texto do comitê fica para as 
   const ini = SRC.indexOf('{isLinePilot && ( <section data-testid="pilot-journey"');
   assert.ok(ini >= 0, 'a jornada do piloto sumiu ou deixou de depender da trilha');
   const jornada = SRC.slice(ini, SRC.indexOf('</section>', ini));
-  for (const k of ['journeyReceived', 'journeyNow', 'journeyFit', 'journeyResult', 'journeyWho'])
+  for (const k of ['journeyReceived', 'journeyNow', 'journeyFit', 'journeyWho'])
     assert.ok(jornada.includes(`T('pmi.onboarding.${k}')`), `a jornada perdeu ${k}`);
   assert.match(jornada, /\{opening\?\.video_invite_by \? T\('pmi\.onboarding\.journeyVideo'\)\.replace\('\{date\}', fmtData\(opening\.video_invite_by\)\) : T\('pmi\.onboarding\.journeyVideoSoon'\)\}/,
     'a jornada deixou de prometer a data do convite que a vaga declara');
+  assert.match(jornada, /\{opening\?\.result_by \? T\('pmi\.onboarding\.journeyResult'\)\.replace\('\{date\}', fmtData\(opening\.result_by\)\) : T\('pmi\.onboarding\.journeyResultNoDate'\)\}/,
+    'o resultado deixou de mostrar a data que o servidor conta da emissão do token');
   assert.match(jornada, /href=\{mailto\(T\('pmi\.onboarding\.helpSubject'\)\)\}/, 'a saída de ajuda sumiu');
   assert.match(jornada, /href=\{mailto\(T\('pmi\.onboarding\.withdrawSubject'\)\)\}/, 'a saída de desistência sumiu');
   assert.match(SRC, /\{isInPreOnboarding && !isLinePilot && \( <section className="bg-blue-50 border border-blue-200 rounded-xl p-6"> <h2 [^>]*> 📋 \{T\('pmi\.onboarding\.evaluationPhase'\)\}/,
@@ -73,7 +75,7 @@ test('#2393l: as chaves do portal do piloto existem nas 3 línguas', () => {
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const d = readFileSync(resolve(ROOT, `src/i18n/${lang}.ts`), 'utf8');
     for (const k of CHAVES) assert.match(d, new RegExp(`\\n  'pmi\\.onboarding\\.${k}': '[^'\\n]{5,}`), `${lang}: falta ${k}`);
-    for (const k of ['journeyVideo', 'consentDonePilot']) assert.match(d, new RegExp(`'pmi\\.onboarding\\.${k}': '[^'\\n]*\\{date\\}`), `${lang}: ${k} sem {date}`);
+    for (const k of ['journeyVideo', 'consentDonePilot', 'journeyResult']) assert.match(d, new RegExp(`'pmi\\.onboarding\\.${k}': '[^'\\n]*\\{date\\}`), `${lang}: ${k} sem {date}`);
     assert.doesNotMatch(d.split('\n').filter((l) => /'pmi\.onboarding\.(journey|intro|consentDone|help|withdraw|period|expiresOn)/.test(l)).join('\n'), /—|–/, `${lang}: travessão no texto do piloto`);
   }
 });

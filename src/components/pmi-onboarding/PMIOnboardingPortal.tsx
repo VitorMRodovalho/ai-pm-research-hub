@@ -96,6 +96,8 @@ interface ConsumePayload {
     end_date: string | null;
     evaluation_track: 'general' | 'line_pilot' | string | null;
     video_invite_by: string | null;
+    /** A data do resultado, que o servidor conta da emissão do token (_prazo_do_resultado_do_piloto). */
+    result_by?: string | null;
   } | null;
   account_state?: AccountState;
   onboarding_progress: OnboardingProgressEntry[];
@@ -1057,7 +1059,9 @@ export default function PMIOnboardingPortal({
               ? T('pmi.onboarding.journeyVideo').replace('{date}', fmtData(opening.video_invite_by))
               : T('pmi.onboarding.journeyVideoSoon')}</li>
             <li>{T('pmi.onboarding.journeyFit')}</li>
-            <li>{T('pmi.onboarding.journeyResult')}</li>
+            <li>{opening?.result_by
+              ? T('pmi.onboarding.journeyResult').replace('{date}', fmtData(opening.result_by))
+              : T('pmi.onboarding.journeyResultNoDate')}</li>
           </ol>
           <p className="mt-4 text-sm text-blue-800">{T('pmi.onboarding.journeyWho')}</p>
           <div className="mt-4 space-y-1 text-sm text-blue-800">
