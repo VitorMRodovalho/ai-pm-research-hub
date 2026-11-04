@@ -98,6 +98,7 @@ function linguas(trecho) {
   return { pt: m[1].replace(/''/g, "'"), en: m[2].replace(/''/g, "'"), es: m[3].replace(/''/g, "'") };
 }
 const variaveis = (txt) => [...txt.matchAll(/\{\{([a-z_]+)\}\}/g)].map((x) => x[1]);
+const TRANSCRICAO = { pt: 'A transcrição automática do vídeo é opcional e não muda sua avaliação.', en: 'The automatic transcription of the video is optional and does not change your evaluation.', es: 'La transcripción automática del video es opcional y no cambia su evaluación.' };
 const ASSUNTO = { pt: 'Recebemos sua candidatura à vaga {{role_label}}', en: 'We received your application for {{role_label}}', es: 'Recibimos su candidatura a la vacante {{role_label}}' };
 
 test('#2393i S: o e-mail de candidatura recebida do fluxo geral diz "recebemos", nas 3 línguas, sem travessão', () => {
@@ -132,6 +133,14 @@ test('#2393i S: o e-mail do piloto tem os passos e a data do convite, e só usa 
     for (const [lang, txt] of Object.entries(txts)) {
       assert.ok(txt.includes('{{video_invite_by}}'), `${nome} ${lang}: sem a data do convite do vídeo`);
       assert.match(txt, /45/, `${nome} ${lang}: sem o prazo do resultado`);
+      // A frase da transcrição mora no passo do vídeo, e o passo "Agora" não fala de consentimento (texto aprovado pelo GP).
+      const passos = nome === 'body_html' ? [...txt.matchAll(/<li>([\s\S]*?)<\/li>/g)].map((x) => x[1]) : txt.split(/\s(?=\d\. )/);
+      const video = passos.filter((p) => p.includes('{{video_invite_by}}'));
+      assert.equal(video.length, 1, `${nome} ${lang}: o passo do vídeo não é único`);
+      assert.ok(video[0].includes(TRANSCRICAO[lang]), `${nome} ${lang}: a frase da transcrição saiu do passo do vídeo`);
+      const agora = passos.filter((p) => /Agora|Now|Ahora/.test(p));
+      assert.equal(agora.length, 1, `${nome} ${lang}: o passo "Agora" não é único`);
+      assert.doesNotMatch(agora[0], /consent/i, `${nome} ${lang}: o passo "Agora" voltou a falar de consentimento`);
       assert.doesNotMatch(txt, /—|Bem-vind|Welcome to|Bienvenid/, `${nome} ${lang}: travessão ou boas-vindas`);
       for (const v of variaveis(txt)) assert.ok(declaradas.includes(v), `${nome} ${lang}: {{${v}}} não declarada`);
     }
