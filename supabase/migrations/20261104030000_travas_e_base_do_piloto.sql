@@ -1067,3 +1067,38 @@ $function$;
 
 REVOKE ALL ON FUNCTION public.get_opening_application(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_opening_application(uuid) TO authenticated;
+
+-- ── 10. A3 (R3, opção A): o link do portal do piloto vence quando a candidatura encerra ──
+-- Desistência, recusa ou cancelamento fecham o processo, e o link deixa de abrir na hora. A aprovação não fecha: o
+-- aprovado segue no portal para os passos da entrada. Status sem mudança (inclusive o que a trava da parte 1
+-- suprimiu) não mexe no prazo.
+CREATE OR REPLACE FUNCTION public._token_do_piloto_vence_no_encerramento()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+BEGIN
+  IF NEW.status IN ('withdrawn', 'rejected', 'cancelled')
+     AND OLD.status IS DISTINCT FROM NEW.status
+     AND EXISTS (SELECT 1 FROM public.vep_opportunities vo
+                  WHERE vo.opportunity_id = NEW.vep_opportunity_id AND vo.evaluation_track = 'line_pilot') THEN
+    UPDATE public.onboarding_tokens t
+       SET expires_at = least(t.expires_at, now())
+     WHERE t.source_type = 'pmi_application'
+       AND t.source_id = NEW.id
+       AND t.scopes && ARRAY['profile_completion', 'consent_giving']::text[];
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public._token_do_piloto_vence_no_encerramento() FROM PUBLIC, anon, authenticated;
+
+COMMENT ON FUNCTION public._token_do_piloto_vence_no_encerramento() IS
+  '#2393 A3 (R3, opção A): o token do portal da candidatura de vaga line_pilot vence quando ela chega a withdrawn, rejected ou cancelled.';
+
+DROP TRIGGER IF EXISTS trg_token_do_piloto_vence_no_encerramento ON public.selection_applications;
+CREATE TRIGGER trg_token_do_piloto_vence_no_encerramento
+  AFTER UPDATE OF status ON public.selection_applications
+  FOR EACH ROW EXECUTE FUNCTION public._token_do_piloto_vence_no_encerramento();

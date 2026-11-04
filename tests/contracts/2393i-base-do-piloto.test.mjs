@@ -158,3 +158,26 @@ test('#2393i S: o líder não recebe nem registra o e-mail da candidatura piloto
     'o e-mail da candidatura piloto voltou a sair para o líder');
   assert.doesNotMatch(retorno, /'email', v_app\.email,/, 'o e-mail sai sem a condição');
 });
+
+// ── R3, opção A: o link do portal do piloto vence quando a candidatura encerra ──
+const VENCE_FN = '_token_do_piloto_vence_no_encerramento';
+const VENCE_TRG = 'trg_token_do_piloto_vence_no_encerramento';
+
+test('#2393i S (R3): desistência, recusa ou cancelamento vencem o link do portal do piloto; o resto não mexe no prazo', () => {
+  const { corpo } = captura(VENCE_FN);
+  assert.match(corpo,
+    new RegExp(`BEGIN IF NEW\\.status IN \\('withdrawn', 'rejected', 'cancelled'\\) AND OLD\\.status IS DISTINCT FROM NEW\\.status AND EXISTS \\(SELECT 1 FROM public\\.vep_opportunities vo WHERE vo\\.opportunity_id = NEW\\.vep_opportunity_id AND vo\\.evaluation_track = 'line_pilot'\\) THEN UPDATE public\\.onboarding_tokens t SET expires_at = least\\(t\\.expires_at, now\\(\\)\\) WHERE t\\.source_type = 'pmi_application' AND t\\.source_id = NEW\\.id AND ${ESCOPO.replace('t?\\.?', 't\\.')}; END IF; RETURN NEW; END;`),
+    'a condição do encerramento ou o resultado no token mudou');
+  let ultimo = null;
+  for (const { s } of todas()) {
+    const ev = [];
+    for (const m of s.matchAll(new RegExp(`CREATE (?:OR REPLACE )?TRIGGER ${VENCE_TRG} ([^;]*);`, 'g'))) ev.push({ i: m.index, def: m[1] });
+    for (const m of s.matchAll(new RegExp(`DROP TRIGGER (?:IF EXISTS )?${VENCE_TRG} ON public\\.selection_applications;`, 'g'))) ev.push({ i: m.index, def: null });
+    for (const e of ev.sort((a, b) => a.i - b.i)) ultimo = e.def;
+  }
+  assert.equal(ultimo, `AFTER UPDATE OF status ON public.selection_applications FOR EACH ROW EXECUTE FUNCTION public.${VENCE_FN}()`,
+    'o trigger do encerramento não existe no estado final ou mudou de momento');
+  const { file } = captura(VENCE_FN);
+  const sql = maskLineComments(readFileSync(join(MIGRATIONS, file), 'utf8')).replace(/\s+/g, ' ');
+  assert.match(sql, new RegExp(`REVOKE ALL ON FUNCTION public\\.${VENCE_FN}\\(\\) FROM PUBLIC, anon, authenticated;`), 'a função não é revogada dos clientes');
+});
