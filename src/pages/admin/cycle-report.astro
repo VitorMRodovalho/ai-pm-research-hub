@@ -185,6 +185,7 @@ const CR_I18N = {
 <script>
   import Chart from 'chart.js/auto';
   import { hasPermission } from '../../lib/permissions';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
   // The frontmatter import of CANONICAL_HOST is server-side only; the PT-BR fallback below runs
   // in the browser and referenced it free (ReferenceError whenever define:vars degrades).
   import { CANONICAL_HOST } from '../../lib/canonical';
@@ -233,7 +234,6 @@ const CR_I18N = {
     return Object.entries(vars).reduce((acc, [k, v]) => acc.replace(`{${k}}`, String(v)), s);
   }
 
-  let crBootRetries = 0;
   let crChapterChart: Chart | null = null;
   let crRoleChart: Chart | null = null;
 
@@ -260,29 +260,27 @@ const CR_I18N = {
     return hasPermission(member, 'admin.analytics');
   }
 
+  const CR_DENIED_TEXT = document.getElementById('cr-denied')?.textContent?.trim() || '';
+
+  function showCrNotice(text: string) {
+    document.getElementById('cr-loading')?.classList.add('hidden');
+    const denied = document.getElementById('cr-denied');
+    if (denied) {
+      denied.textContent = text;
+      denied.classList.remove('hidden');
+    }
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasAccess verdadeiro.
   async function bootCycleReport() {
     const loading = document.getElementById('cr-loading');
     const denied = document.getElementById('cr-denied');
     const report = document.getElementById('cr-report');
-    const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
-
-    if (!member || !sb) {
-      crBootRetries++;
-      if (crBootRetries >= 60) {
-        loading?.classList.add('hidden');
-        denied?.classList.remove('hidden');
-        return;
-      }
-      setTimeout(bootCycleReport, 300);
-      return;
-    }
+    if (!sb) return;
 
     loading?.classList.add('hidden');
-    if (!hasAccess(member)) {
-      denied?.classList.remove('hidden');
-      return;
-    }
+    denied?.classList.add('hidden');
 
     const { data, error } = await sb.rpc('exec_cycle_report');
     if (error || !data) {
@@ -622,8 +620,12 @@ const CR_I18N = {
     window.print();
   });
 
-  document.addEventListener('DOMContentLoaded', () => {
-    requestAnimationFrame(() => bootCycleReport());
+  // #2973: o acesso se decide quando o Nav resolve o membro, sem prazo de tentativas.
+  gateAdminPage({
+    allow: hasAccess,
+    onAllowed: () => { void bootCycleReport(); },
+    onDenied: () => showCrNotice(CR_DENIED_TEXT),
+    onNoSession: () => showCrNotice(adminSignInText()),
   });
 </script>
 

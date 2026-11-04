@@ -154,7 +154,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 <span id="i18n-pilots-baseline" class="hidden">{t('pilots.baseline', lang)}</span>
 <span id="i18n-pilots-target" class="hidden">{t('pilots.target', lang)}</span>
 <span id="i18n-pilots-current" class="hidden">{t('pilots.current', lang)}</span>
-<span id="i18n-pilots-timeoutMsg" class="hidden">{t('pilots.timeoutMsg', lang)}</span>
+<span id="i18n-pilots-noMember" class="hidden">{t('admin.accessRestricted', lang)}</span>
 <span id="i18n-pilots-tribePrefix" class="hidden">{t('pilots.tribePrefix', lang)}</span>
 <span id="i18n-pilots-errorSaving" class="hidden">{t('pilots.errorSaving', lang)}</span>
 <span id="i18n-pilots-errorDeleting" class="hidden">{t('pilots.errorDeleting', lang)}</span>
@@ -167,24 +167,18 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
   import { rpcChecked } from '../../lib/rpc-checked';
 
-  let pilotsBootRetries = 0;
+  function showPilotsNotice(text: string) {
+    const loading = document.getElementById('admin-pilots-loading');
+    if (loading) loading.textContent = text;
+  }
 
-  async function bootAdminPilots() {
+  // Só roda depois que gateAdminPage liberou: todo membro cadastrado lê; escrever pede admin.portfolio (abaixo).
+  async function bootAdminPilots(member: any) {
     const sb = (window as any).navGetSb?.();
-    const member = (window as any).navGetMember?.();
-
-    if (!sb || !member) {
-      pilotsBootRetries++;
-      if (pilotsBootRetries >= 60) {
-        const loading = document.getElementById('admin-pilots-loading');
-        if (loading) loading.textContent = document.getElementById('i18n-pilots-timeoutMsg')?.textContent || 'Timeout — recarregue a página.';
-        return;
-      }
-      setTimeout(bootAdminPilots, 300);
-      return;
-    }
+    if (!sb) return;
 
     const loading = document.getElementById('admin-pilots-loading');
     const content = document.getElementById('admin-pilots-content');
@@ -496,5 +490,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     }
   }
 
-  bootAdminPilots();
+  // #2973: espera o Nav resolver o membro, sem prazo de tentativas. Sem cadastro de membro, o aviso de acesso
+  // restrito; sem sessão, o pedido para entrar.
+  gateAdminPage({
+    allow: (member) => !!member,
+    onAllowed: (member) => { void bootAdminPilots(member); },
+    onDenied: () => showPilotsNotice(document.getElementById('i18n-pilots-noMember')?.textContent || 'Access restricted.'),
+    onNoSession: () => showPilotsNotice(adminSignInText()),
+  });
 </script>

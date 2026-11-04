@@ -6873,6 +6873,7 @@ const enUS: Record<string, string> = {
   'admin.dashboard.successCreatedTemplate': 'Created: <strong>{title}</strong> on <strong>{date}</strong>',
   'admin.dashboard.errorPrefix': 'Error',
   'admin.deniedAdmin': 'Access restricted to administrators.',
+  'admin.signInToView': 'Sign in to view this page.',
   'admin.tribeBreadcrumb': 'Tribe',
   'admin.blog.tagsLabel': 'Tags (comma separated)',
   'admin.blog.featuredBadge': 'Featured',

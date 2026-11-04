@@ -45,7 +45,10 @@ export function diagnosticos(src) {
   return {
     nasceEscondido: /<div id="portfolio-platform-actions" class="hidden [^"]*">\s*<button id="portfolio-run-taxonomy-alerts"[^>]*>[^<]*<\/button>\s*<button id="portfolio-run-sanity"[^>]*>[^<]*<\/button>\s*<\/div>/.test(c),
     portao: /const show = !getSimulation\(\)\.active && canFor\('manage_platform'\);\s*document\.getElementById\('portfolio-platform-actions'\)\?\.classList\.toggle\('hidden', !show\);/.test(c),
-    aplicaNoBoot: /if \(!hasPortfolioAccess\(member\)\) \{\s*denied\?\.classList\.remove\('hidden'\);\s*return;\s*\}\s*applyPlatformActions\(\);/.test(c),
+    // #2973: a checagem de acesso passou para o gateAdminPage. O boot (que aplica o portão) só roda pelo onAllowed
+    // de um portão cujo allow é hasPortfolioAccess, e não é chamado de nenhum outro lugar.
+    aplicaNoBoot: /async function bootPortfolioPage\(\) \{[\s\S]*?denied\?\.classList\.add\('hidden'\);\s*applyPlatformActions\(\);[\s\S]*?gateAdminPage\(\{\s*allow: hasPortfolioAccess,\s*onAllowed: \(\) => \{ void bootPortfolioPage\(\); \}/.test(c)
+      && (c.match(/bootPortfolioPage\(\)/g) || []).length === 2,
     reaplicaNasCapacidades: /window\.addEventListener\('nav:capabilities', applyPlatformActions\);/.test(c),
     // INVERSA: nenhum outro caminho tira o hidden do contêiner ou de um dos botões.
     semAtalho: !/getElementById\('portfolio-(?:platform-actions|run-taxonomy-alerts|run-sanity)'\)\?\.classList\.remove\('hidden'\)/.test(c),

@@ -208,6 +208,7 @@ const PART_I18N = {
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
   // #2782: contact_name, contact_email e a mensagem passam a vir do formulário público do site (anônimo), então
   // todo dado de parceria e de interação interpolado em innerHTML passa por escapeHtml.
   import { escapeHtml as E } from '../../lib/escape-html';
@@ -237,7 +238,6 @@ const PART_I18N = {
   };
 
   let allPartners: any[] = [];
-  let bootRetries = 0;
 
   function hasPartnershipsAccess(member: any): boolean {
     if (!member) return false;
@@ -479,29 +479,27 @@ const PART_I18N = {
     await loadPartners(sb);
   }
 
+  const PARTNERSHIPS_DENIED_TEXT = document.getElementById('partnerships-denied')?.textContent?.trim() || '';
+
+  function showPartnershipsNotice(text: string) {
+    document.getElementById('partnerships-loading')?.classList.add('hidden');
+    const denied = document.getElementById('partnerships-denied');
+    if (denied) {
+      denied.textContent = text;
+      denied.classList.remove('hidden');
+    }
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasPartnershipsAccess verdadeiro.
   async function bootPartnershipsPage() {
     const loading = document.getElementById('partnerships-loading');
     const denied = document.getElementById('partnerships-denied');
     const panel = document.getElementById('partnerships-panel');
-    const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
-
-    if (!member || !sb) {
-      bootRetries += 1;
-      if (bootRetries >= 60) {
-        loading?.classList.add('hidden');
-        denied?.classList.remove('hidden');
-        return;
-      }
-      setTimeout(() => bootPartnershipsPage(), 300);
-      return;
-    }
+    if (!sb) return;
 
     loading?.classList.add('hidden');
-    if (!hasPartnershipsAccess(member)) {
-      denied?.classList.remove('hidden');
-      return;
-    }
+    denied?.classList.add('hidden');
 
     const pipelinePanel = document.getElementById('pipeline-panel');
     const viewToggle = document.getElementById('view-toggle');
@@ -543,5 +541,11 @@ const PART_I18N = {
     });
   }
 
-  bootPartnershipsPage();
+  // #2973: o acesso se decide quando o Nav resolve o membro, sem prazo de tentativas.
+  gateAdminPage({
+    allow: hasPartnershipsAccess,
+    onAllowed: () => { void bootPartnershipsPage(); },
+    onDenied: () => showPartnershipsNotice(PARTNERSHIPS_DENIED_TEXT),
+    onNoSession: () => showPartnershipsNotice(adminSignInText()),
+  });
 </script>

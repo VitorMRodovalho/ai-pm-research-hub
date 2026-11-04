@@ -6881,6 +6881,7 @@ const ptBR: Record<string, string> = {
   'admin.dashboard.successCreatedTemplate': 'Criado: <strong>{title}</strong> em <strong>{date}</strong>',
   'admin.dashboard.errorPrefix': 'Erro',
   'admin.deniedAdmin': 'Acesso restrito a administradores.',
+  'admin.signInToView': 'Entre na plataforma para ver esta página.',
   'admin.tribeBreadcrumb': 'Tribo',
   'admin.blog.tagsLabel': 'Tags (separadas por vírgula)',
   'admin.blog.featuredBadge': 'Destacado',
