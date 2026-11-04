@@ -46,7 +46,8 @@ test('#2393g: a seção de vídeo e entrevista inteira fica no bloco do escopo, 
   for (const marca of ["T('pmi.onboarding.videoScreeningTitle')", "T('pmi.onboarding.interviewCtaButton')", 'PILLARS.map(', "T('pmi.onboarding.videoRecordButton')", 'optInterviewConfirm && (', 'revertInterviewConfirm && (']) {
     assert.ok(texto.includes(marca), `a seção condicionada não traz ${marca}`);
   }
-  assert.match(SRC, /\{!hasVideoScope && \( <section data-testid="no-video-scope-notice" [^>]*> <p [^>]*>\{T\('pmi\.onboarding\.noVideoScopeNotice'\)\}<\/p> <\/section> \)\}/,
+  // #2393 A2: na candidatura piloto, a jornada da vaga (guard 2393l) ocupa esse lugar; o aviso fica para as outras.
+  assert.match(SRC, /\{!hasVideoScope && !isLinePilot && \( <section data-testid="no-video-scope-notice" [^>]*> <p [^>]*>\{T\('pmi\.onboarding\.noVideoScopeNotice'\)\}<\/p> <\/section> \)\}/,
     'sem o escopo, o aviso neutro não ocupa o lugar');
 });
 
