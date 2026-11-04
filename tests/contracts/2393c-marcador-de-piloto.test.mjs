@@ -28,7 +28,9 @@ import { dbFetch } from '../helpers/db-fetch.mjs';
 const ROOT = process.cwd();
 const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
 const HELPER = '_na_avaliacao_geral';
-const RECUSA = "IF NOT public\\._na_avaliacao_geral\\(p_application_id\\) THEN RAISE EXCEPTION 'Unauthorized: pilot_track[^']*' USING ERRCODE = 'insufficient_privilege'; END IF;";
+// #2393 M2: a recusa D1 ganhou UMA exceção, o avaliador atribuído ao piloto (regra única em _avaliador_do_piloto).
+const ATRIBUIDO = "v_piloto_atribuido := NOT public\\._na_avaliacao_geral\\(p_application_id\\) AND public\\._avaliador_do_piloto\\(v_caller\\.id, p_application_id, p_evaluation_type\\);";
+const RECUSA = "IF NOT public\\._na_avaliacao_geral\\(p_application_id\\) AND NOT v_piloto_atribuido THEN RAISE EXCEPTION 'Unauthorized: pilot_track[^']*' USING ERRCODE = 'insufficient_privilege'; END IF;";
 
 function captura(nome) {
   const cap = latestFunctionCapture(ROOT, nome);
@@ -110,14 +112,16 @@ test('#2393c S: as atribuições do comitê tiram o piloto', () => {
     'as atribuições não tiram o piloto');
 });
 
-test('#2393c S (D1): o formulário recusa o piloto para todos, depois do portão e antes do registro de acesso', () => {
+test('#2393c S (D1): o formulário recusa o piloto, salvo o avaliador atribuído, depois do portão e antes do registro de acesso', () => {
   const { corpo } = captura('get_evaluation_form');
+  assert.match(corpo, new RegExp(ATRIBUIDO), 'a exceção deixou de vir só da regra única do avaliador do piloto');
   assert.match(corpo, new RegExp(`RAISE EXCEPTION 'Unauthorized: not a committee member'; END IF; ${RECUSA} PERFORM public\\._log_application_pii_access\\(`),
     'a recusa do piloto não está entre o portão do comitê e o registro de acesso');
 });
 
-test('#2393c S (D1): o envio de avaliação recusa o piloto para todos, antes de gravar', () => {
+test('#2393c S (D1): o envio de avaliação recusa o piloto, salvo o avaliador atribuído, antes de gravar', () => {
   const { corpo } = captura('submit_evaluation');
+  assert.match(corpo, new RegExp(ATRIBUIDO), 'a exceção deixou de vir só da regra única do avaliador do piloto');
   const m = corpo.match(new RegExp(`RAISE EXCEPTION 'Unauthorized: observer role does not evaluate' USING ERRCODE = 'insufficient_privilege'; END IF; ${RECUSA} IF EXISTS \\(`));
   assert.ok(m, 'a recusa do piloto não está logo depois da recusa do observador');
   const grava = corpo.search(/INSERT INTO public\.selection_evaluations\b/);
@@ -202,6 +206,8 @@ const CHAMADORES = [
   'admin_update_application', 'schedule_interview', '_issue_interview_booking_token_core',
   // #2393 A3 e A4: o link do portal do piloto vale o processo, e o líder não recebe o e-mail (guard 2393i).
   '_token_do_piloto_vale_o_processo', 'get_opening_application',
+  // #2393 M2: as notas do piloto só a gestão lê (guard 2393n).
+  'get_evaluation_results',
 ].sort();
 
 test('#2393c S: as funções que chamam o helper são exatamente as auditadas', () => {

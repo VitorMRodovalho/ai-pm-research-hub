@@ -24295,6 +24295,7 @@ export type Database = {
           pert_cutoff_method: string | null
           pert_target_score: number | null
           phone: string | null
+          pilot_portal_reminder_at: string | null
           pmi_data_fetched_at: string | null
           pmi_id: string | null
           pmi_memberships: Json | null
@@ -24455,6 +24456,7 @@ export type Database = {
           pert_cutoff_method?: string | null
           pert_target_score?: number | null
           phone?: string | null
+          pilot_portal_reminder_at?: string | null
           pmi_data_fetched_at?: string | null
           pmi_id?: string | null
           pmi_memberships?: Json | null
@@ -24615,6 +24617,7 @@ export type Database = {
           pert_cutoff_method?: string | null
           pert_target_score?: number | null
           phone?: string | null
+          pilot_portal_reminder_at?: string | null
           pmi_data_fetched_at?: string | null
           pmi_id?: string | null
           pmi_memberships?: Json | null
@@ -25929,6 +25932,207 @@ export type Database = {
           },
         ]
       }
+      selection_evaluation_assignments: {
+        Row: {
+          application_id: string
+          assigned_at: string
+          assigned_by: string | null
+          due_at: string | null
+          evaluator_member_id: string
+          id: string
+          organization_id: string
+          part: string
+          withdrawn_at: string | null
+          withdrawn_reason: string | null
+        }
+        Insert: {
+          application_id: string
+          assigned_at?: string
+          assigned_by?: string | null
+          due_at?: string | null
+          evaluator_member_id: string
+          id?: string
+          organization_id: string
+          part: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Update: {
+          application_id?: string
+          assigned_at?: string
+          assigned_by?: string | null
+          due_at?: string | null
+          evaluator_member_id?: string
+          id?: string
+          organization_id?: string
+          part?: string
+          withdrawn_at?: string | null
+          withdrawn_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_evaluation_assignments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "selection_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_application_interview_state"
+            referencedColumns: ["application_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "v_nucleo_contract_status"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluation_assignments_evaluator_member_id_fkey"
+            columns: ["evaluator_member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       selection_evaluations: {
         Row: {
           application_id: string
@@ -26067,6 +26271,183 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_evaluator_calibrations: {
+        Row: {
+          calibrated_at: string
+          calibrated_by: string | null
+          id: string
+          material_version: string
+          member_id: string
+          notes: string | null
+          opportunity_id: string
+          organization_id: string
+          part: string
+        }
+        Insert: {
+          calibrated_at?: string
+          calibrated_by?: string | null
+          id?: string
+          material_version: string
+          member_id: string
+          notes?: string | null
+          opportunity_id: string
+          organization_id: string
+          part: string
+        }
+        Update: {
+          calibrated_at?: string
+          calibrated_by?: string | null
+          id?: string
+          material_version?: string
+          member_id?: string
+          notes?: string | null
+          opportunity_id?: string
+          organization_id?: string
+          part?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_calibrated_by_fkey"
+            columns: ["calibrated_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluator_calibrations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -31206,6 +31587,10 @@ export type Database = {
           view_name: string
         }[]
       }
+      _avaliador_do_piloto: {
+        Args: { p_application_id: string; p_member_id: string; p_part: string }
+        Returns: boolean
+      }
       _board_attachment_visible: { Args: { p_name: string }; Returns: boolean }
       _board_item_needs_curation: {
         Args: { p_item_id: string }
@@ -31464,6 +31849,7 @@ export type Database = {
         }
         Returns: Json
       }
+      _lembrete_do_portal_do_piloto_cron: { Args: never; Returns: Json }
       _log_application_pii_access: {
         Args: {
           p_accessor_id: string
@@ -32448,6 +32834,15 @@ export type Database = {
       assign_member_to_item: {
         Args: { p_item_id: string; p_member_id: string; p_role?: string }
         Returns: string
+      }
+      assign_selection_evaluators: {
+        Args: {
+          p_application_ids: string[]
+          p_member_id: string
+          p_opportunity_id: string
+          p_part: string
+        }
+        Returns: Json
       }
       attest_affiliation_access: {
         Args: { p_signed_ip?: string; p_signed_user_agent?: string }
@@ -34908,6 +35303,10 @@ export type Database = {
         Returns: Json
       }
       grant_public_map_consent: { Args: { p_evidence?: Json }; Returns: Json }
+      grant_selection_evaluator: {
+        Args: { p_end_date: string; p_member_id: string; p_note?: string }
+        Returns: Json
+      }
       import_historical_evaluations: { Args: { p_data: Json }; Returns: Json }
       import_historical_interviews: { Args: { p_data: Json }; Returns: Json }
       import_leader_evaluations: { Args: { p_data: Json }; Returns: Json }
@@ -36202,6 +36601,16 @@ export type Database = {
           p_referred_by_tribe_leader?: boolean
           p_return_interest?: boolean
           p_return_window_suggestion?: string
+        }
+        Returns: Json
+      }
+      record_selection_evaluator_calibration: {
+        Args: {
+          p_material_version: string
+          p_member_id: string
+          p_notes?: string
+          p_opportunity_id: string
+          p_part: string
         }
         Returns: Json
       }
@@ -37538,6 +37947,10 @@ export type Database = {
       wiki_suggestion_queue: { Args: never; Returns: Json }
       withdraw_from_initiative: {
         Args: { p_initiative_id: string; p_reason: string }
+        Returns: Json
+      }
+      withdraw_selection_evaluator_assignment: {
+        Args: { p_assignment_id: string; p_reason: string }
         Returns: Json
       }
     }
