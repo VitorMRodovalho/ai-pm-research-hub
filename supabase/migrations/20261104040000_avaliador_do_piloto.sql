@@ -502,6 +502,7 @@ BEGIN
     v_app_core := v_app_core || jsonb_build_object('applicant_name', 'Candidatura ' || left(v_app.id::text, 8),
                                                    'email', NULL, 'linkedin_url', NULL);
     v_app_profile := v_app_profile || jsonb_build_object('profile_linkedin_url', NULL);
+    v_app_ai := '{}'::jsonb;  -- opção A: nem antes nem depois da nota; a gestão e o líder (depois do fit) seguem vendo
   END IF;
 
   RETURN jsonb_build_object(

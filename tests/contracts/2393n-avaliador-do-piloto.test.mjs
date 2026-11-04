@@ -138,3 +138,14 @@ test('#2393n C9: o texto do lembrete só usa variável que o cron passa, nas 3 l
   assert.doesNotMatch(bloco, /—|–/, 'travessão no texto do lembrete');
   for (const lang of ['pt', 'en', 'es']) assert.ok((bloco.match(new RegExp(`'${lang}', '`, 'g')) || []).length >= 3, `falta ${lang} no assunto ou no corpo`);
 });
+
+test('#2393n (opção A do GP): o avaliador do piloto não vê a triagem por IA, nem antes nem depois da nota; quem já via segue vendo', () => {
+  const c = captura('get_evaluation_form');
+  assert.match(c, /v_app_ai := jsonb_build_object\( 'consent_ai_analysis_at', v_app\.consent_ai_analysis_at, 'ai_analysis', v_app\.ai_analysis, 'ai_triage_score', v_app\.ai_triage_score, 'ai_triage_reasoning', v_app\.ai_triage_reasoning, 'ai_triage_confidence', v_app\.ai_triage_confidence,/,
+    'a triagem deixou de ser montada: a gestão e o comitê geral também a perderiam');
+  const ini = c.indexOf('IF v_piloto_atribuido THEN v_app_core := v_app_core');
+  const bloco = c.slice(ini, c.indexOf('END IF;', ini));
+  assert.match(bloco, / v_app_ai := '\{\}'::jsonb; $/, 'o avaliador do piloto voltou a ver a triagem por IA');
+  assert.doesNotMatch(bloco, /submitted_at|v_draft/, 'a triagem passou a depender da nota enviada (opção B), e o GP decidiu a A');
+  assert.equal([...c.matchAll(/v_app_ai := '\{\}'::jsonb;/g)].length, 1, 'a triagem é esvaziada fora do caso do avaliador do piloto');
+});
