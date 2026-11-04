@@ -285,6 +285,10 @@
     "selection_opening_new_applications": {
       "delivery_mode": "digest_weekly",
       "rationale": "#2393 (ADR-0134, GP decision 2026-11-02): new applications reached an opening linked to an initiative. An hourly cron (_selection_opening_new_applications_cron) sends ONE notification per (opening leader, opening) with the count and the opening, never a candidate name, email or answer. Recipients come from the same gate as the per-opening reader (can_by_member view_opening_applications on the opening initiative, minus conflict of interest). Bell immediately, email only in the Saturday digest: the leader acts within days (ADR-0134 section 8), and the first import of an opening must not become a burst. Not candidate-facing, so it honors suppress_all."
+    },
+    "selection_evaluator_assigned": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2393 M2 (ADR-0134 section 4, D22): the management assigned pilot applications to an outside evaluator. ONE notification per assignment batch (evaluator, opening, part) with the count, the part and the deadline, never a candidate name or email. Immediate, because the objective part has 7 days from the assignment. Not candidate-facing, so it honors suppress_all."
     }
   },
   "implementation": {
