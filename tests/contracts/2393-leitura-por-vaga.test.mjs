@@ -72,7 +72,8 @@ function recorte(corpo, de, ate) {
 }
 
 const chavesDe = (bloco, alias) =>
-  [...bloco.matchAll(new RegExp(`'([a-z_]+)', (?:${alias}\\.|v_perguntas\\b)`, 'g'))].map((m) => m[1]);
+  // #2393 A4 (R2): o e-mail da candidatura piloto não sai para o líder; a condição está no guard 2393i.
+  [...bloco.matchAll(new RegExp(`'([a-z_]+)', (?:${alias}\\.|v_perguntas\\b|CASE WHEN public\\._na_avaliacao_geral\\(v_app\\.id\\) THEN ${alias}\\.)`, 'g'))].map((m) => m[1]);
 
 const PORTAO_MEMBRO =
   /SELECT m\.id INTO v_caller_id FROM public\.members m WHERE m\.auth_id = auth\.uid\(\) AND m\.is_active = true; v_org := public\.auth_org\(\); IF v_caller_id IS NULL OR v_org IS NULL THEN RETURN jsonb_build_object\('error', 'Unauthorized'\);/;
@@ -173,7 +174,7 @@ test('#2393 S: list_opening_applications, por candidatura: conflito de interesse
 test('#2393 S: get_opening_application: cada passo recusa, na ordem, e o registro vem antes do retorno', () => {
   const { corpo } = captura('get_opening_application');
   assert.match(corpo,
-    /WHERE sa\.id = p_application_id AND sa\.anonymized_at IS NULL; IF v_app\.id IS NULL OR v_app\.organization_id IS DISTINCT FROM v_org THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF v_app\.vo_opportunity_id IS NULL OR v_app\.vo_organization_id IS DISTINCT FROM v_org THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF v_app\.vo_initiative_id IS NULL THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF NOT public\.can_by_member\(v_caller_id, 'view_opening_applications', 'initiative', v_app\.vo_initiative_id\) OR NOT public\.rls_can_see_initiative\(v_app\.vo_initiative_id\) THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF public\.selection_coi_recused\(v_caller_id, v_app\.cycle_id\) THEN RETURN jsonb_build_object\('error', 'recused_conflict_of_interest'.*?\); END IF; PERFORM public\._log_opening_application_access\( v_app\.id, v_caller_id, ARRAY\[[^\]]+\], 'get_opening_application' \); v_perguntas := \( SELECT .*? END\) q \); RETURN jsonb_build_object\(/,
+    /WHERE sa\.id = p_application_id AND sa\.anonymized_at IS NULL; IF v_app\.id IS NULL OR v_app\.organization_id IS DISTINCT FROM v_org THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF v_app\.vo_opportunity_id IS NULL OR v_app\.vo_organization_id IS DISTINCT FROM v_org THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF v_app\.vo_initiative_id IS NULL THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF NOT public\.can_by_member\(v_caller_id, 'view_opening_applications', 'initiative', v_app\.vo_initiative_id\) OR NOT public\.rls_can_see_initiative\(v_app\.vo_initiative_id\) THEN RETURN jsonb_build_object\('error', 'Unauthorized'\); END IF; IF public\.selection_coi_recused\(v_caller_id, v_app\.cycle_id\) THEN RETURN jsonb_build_object\('error', 'recused_conflict_of_interest'.*?\); END IF; PERFORM public\._log_opening_application_access\( v_app\.id, v_caller_id, CASE WHEN public\._na_avaliacao_geral\(v_app\.id\) THEN ARRAY\['email'\] ELSE ARRAY\[\]::text\[\] END \|\| ARRAY\[[^\]]+\], 'get_opening_application' \); v_perguntas := \( SELECT .*? END\) q \); RETURN jsonb_build_object\(/,
     'a sequência candidatura → vaga → vaga geral → autoridade → conflito de interesse → registro → retorno foi quebrada');
   assert.match(corpo,
     /LEFT JOIN public\.vep_opportunities vo ON vo\.opportunity_id = sa\.vep_opportunity_id AND vo\.cycle_id = sa\.cycle_id/,

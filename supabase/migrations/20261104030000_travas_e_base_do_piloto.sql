@@ -1,4 +1,11 @@
--- #2393 A1 (ADR-0134): travas do piloto da linha.
+-- #2393 M1 (ADR-0134): travas e base do piloto da linha (fatias A1 a A4).
+--
+-- Partes 1 a 4, A1: travas do piloto (abaixo).
+-- Partes 5 e 6, A2: a vaga no payload do portal e a data prometida do convite do vídeo.
+-- Partes 7 e 8, A3: o link do portal do piloto vale o processo inteiro, e os e-mails de candidatura recebida.
+-- Parte 9, A4: o líder da vaga não recebe o e-mail da candidatura piloto.
+--
+-- A1 (ADR-0134): travas do piloto da linha.
 --
 -- A candidatura de vaga line_pilot não entra no fluxo geral por nenhum caminho:
 --   1. um trigger suprime e registra a mudança de status para aprovação, conversão, corte, entrevista ou lista
@@ -646,3 +653,403 @@ BEGIN
   );
 END;
 $function$;
+
+-- ── 5. A2: data prometida do convite do vídeo, como configuração da vaga ──
+ALTER TABLE public.vep_opportunities ADD COLUMN IF NOT EXISTS video_invite_by date;
+COMMENT ON COLUMN public.vep_opportunities.video_invite_by IS
+  '#2393 (ADR-0134, N1 do GP em 03/11/2026): data até a qual a vaga piloto da linha promete o convite do vídeo. Lida pelo portal e pelo e-mail de candidatura recebida. NULL fora do piloto.';
+UPDATE public.vep_opportunities SET video_invite_by = DATE '2026-11-20'
+ WHERE opportunity_id = '76080' AND evaluation_track = 'line_pilot' AND video_invite_by IS NULL;
+
+-- ── 6. A2: consume_onboarding_token devolve a vaga ──
+CREATE OR REPLACE FUNCTION public.consume_onboarding_token(p_token text)
+ RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  v_token_row onboarding_tokens%ROWTYPE;
+  v_app selection_applications%ROWTYPE;
+  v_cycle selection_cycles%ROWTYPE;
+  v_progress jsonb;
+  v_video_screenings jsonb;
+  v_step_catalog jsonb;
+  v_member_id uuid;
+  v_member_auth_id uuid;
+  v_primary_email text;
+  v_result jsonb;
+BEGIN
+  UPDATE onboarding_tokens
+     SET consumed_at = COALESCE(consumed_at, now()),
+         last_accessed_at = now(),
+         access_count = access_count + 1
+   WHERE token = p_token
+     AND expires_at > now()
+  RETURNING * INTO v_token_row;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid or expired token'
+      USING ERRCODE = 'invalid_authorization_specification';
+  END IF;
+
+  IF v_token_row.source_type = 'pmi_application' THEN
+    SELECT * INTO v_app
+    FROM selection_applications
+    WHERE id = v_token_row.source_id;
+
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Token references missing application';
+    END IF;
+
+    SELECT * INTO v_cycle
+    FROM selection_cycles
+    WHERE id = v_app.cycle_id;
+
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'step_key', op.step_key,
+      'status', op.status,
+      'completed_at', op.completed_at,
+      'evidence_url', op.evidence_url,
+      'notes', op.notes,
+      'sla_deadline', op.sla_deadline
+    ) ORDER BY op.created_at), '[]'::jsonb)
+    INTO v_progress
+    FROM onboarding_progress op
+    WHERE op.application_id = v_app.id;
+
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'pillar', vs.pillar,
+      'question_index', vs.question_index,
+      'status', vs.status,
+      'uploaded_at', vs.uploaded_at
+    ) ORDER BY vs.question_index, vs.created_at), '[]'::jsonb)
+    INTO v_video_screenings
+    FROM pmi_video_screenings vs
+    WHERE vs.application_id = v_app.id;
+
+    -- #2273 defeito A — o CATALOGO, que e onde os rotulos sempre estiveram.
+    -- Vai inteiro, sem filtrar por papel: quem decide quais passos a pessoa tem e
+    -- `onboarding_progress`, ja semeado. Filtrar aqui duplicaria a regra de elegibilidade em
+    -- dois lugares, e a copia e que envelhece.
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'key', os.id,
+      'step_order', os.step_order,
+      'icon', os.icon,
+      'is_required', os.is_required,
+      'applies_to_role', os.applies_to_role,
+      'label', jsonb_build_object(
+        'pt-BR', os.label_pt, 'en-US', os.label_en, 'es-LATAM', os.label_es
+      ),
+      'description', jsonb_build_object(
+        'pt-BR', os.description_pt, 'en-US', os.description_en, 'es-LATAM', os.description_es
+      )
+    ) ORDER BY os.step_order), '[]'::jsonb)
+    INTO v_step_catalog
+    FROM onboarding_steps os;
+
+    -- #2273 defeito B — o estado de conta, para o portal poder dizer COM QUAL e-mail entrar.
+    v_member_id := public._portal_member_for_application(v_app.id);
+    IF v_member_id IS NOT NULL THEN
+      SELECT m.auth_id,
+             COALESCE(
+               (SELECT me.email::text FROM public.member_emails me
+                 WHERE me.member_id = m.id AND me.is_primary IS TRUE LIMIT 1),
+               m.email
+             )
+        INTO v_member_auth_id, v_primary_email
+      FROM public.members m WHERE m.id = v_member_id;
+    END IF;
+
+    v_result := jsonb_build_object(
+      'source_type', 'pmi_application',
+      'scopes', v_token_row.scopes,
+      'application', jsonb_build_object(
+        'id', v_app.id,
+        'applicant_name', v_app.applicant_name,
+        'email', v_app.email,
+        'phone', v_app.phone,
+        'linkedin_url', v_app.linkedin_url,
+        'credly_url', v_app.credly_url,
+        'role_applied', v_app.role_applied,
+        'cycle_id', v_app.cycle_id,
+        'has_consent', v_app.consent_ai_analysis_at IS NOT NULL
+                       AND v_app.consent_ai_analysis_revoked_at IS NULL,
+        'has_revoked', v_app.consent_ai_analysis_revoked_at IS NOT NULL,
+        'has_voice_biometric_consent', v_app.consent_voice_biometric_at IS NOT NULL
+                       AND v_app.consent_voice_biometric_revoked_at IS NULL,
+        'has_voice_biometric_revoked', v_app.consent_voice_biometric_revoked_at IS NOT NULL,
+        'status', v_app.status
+      ),
+      'cycle', jsonb_build_object(
+        'id', v_cycle.id,
+        'cycle_code', v_cycle.cycle_code,
+        'title', v_cycle.title,
+        'phase', v_cycle.phase,
+        'onboarding_steps', v_cycle.onboarding_steps
+      ),
+      'step_catalog', v_step_catalog,
+      -- #2393 A2: a vaga da candidatura, para o portal mostrar o período e os passos da trilha no lugar do ciclo.
+      'opening', (SELECT jsonb_build_object(
+                    'opportunity_id', vo.opportunity_id, 'title', vo.title,
+                    'start_date', vo.start_date, 'end_date', vo.end_date,
+                    'evaluation_track', vo.evaluation_track, 'video_invite_by', vo.video_invite_by)
+                  FROM public.vep_opportunities vo WHERE vo.opportunity_id = v_app.vep_opportunity_id),
+      'account_state', jsonb_build_object(
+        'member_exists',     v_member_id IS NOT NULL,
+        'has_account',       v_member_auth_id IS NOT NULL,
+        'masked_email',      public._mask_email(v_primary_email),
+        'can_request_setup', v_member_id IS NOT NULL
+                             AND v_member_auth_id IS NULL
+                             AND v_app.status = 'approved'
+      ),
+      'onboarding_progress', v_progress,
+      'video_screenings', v_video_screenings,
+      'token_metadata', jsonb_build_object(
+        'access_count', v_token_row.access_count,
+        'expires_at', v_token_row.expires_at,
+        'first_access', v_token_row.consumed_at = v_token_row.last_accessed_at
+      )
+    );
+
+  ELSIF v_token_row.source_type IN ('initiative_invitation', 'direct_assignment') THEN
+    v_result := jsonb_build_object(
+      'source_type', v_token_row.source_type,
+      'scopes', v_token_row.scopes,
+      'pending_implementation', true,
+      'message', 'Esse fluxo ainda não está ativo. Aguarde comunicação.'
+    );
+
+  ELSE
+    RAISE EXCEPTION 'Unknown source_type: %', v_token_row.source_type;
+  END IF;
+
+  RETURN v_result;
+END;
+$function$;
+
+-- ── 7. A3 (R3): o link do portal da candidatura piloto vale o processo inteiro ──
+-- 45 dias (ADR-0134 §8, prazo do resultado) a partir da emissão. Só o token do portal do candidato; o de
+-- agendamento do fluxo geral é recusado na trava da A1. Os tokens já emitidos ganham o mesmo prazo abaixo.
+CREATE OR REPLACE FUNCTION public._token_do_piloto_vale_o_processo()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+BEGIN
+  IF NEW.source_type = 'pmi_application'
+     AND NEW.scopes && ARRAY['profile_completion', 'consent_giving']::text[]
+     AND NOT public._na_avaliacao_geral(NEW.source_id) THEN
+    NEW.expires_at := greatest(NEW.expires_at, now() + interval '45 days');
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public._token_do_piloto_vale_o_processo() FROM PUBLIC, anon, authenticated;
+
+COMMENT ON FUNCTION public._token_do_piloto_vale_o_processo() IS
+  '#2393 A3 (ADR-0134, R3 do GP): o token do portal da candidatura de vaga line_pilot vale 45 dias da emissão, o prazo do resultado.';
+
+DROP TRIGGER IF EXISTS trg_token_do_piloto_vale_o_processo ON public.onboarding_tokens;
+CREATE TRIGGER trg_token_do_piloto_vale_o_processo
+  BEFORE INSERT ON public.onboarding_tokens
+  FOR EACH ROW EXECUTE FUNCTION public._token_do_piloto_vale_o_processo();
+
+UPDATE public.onboarding_tokens t
+   SET expires_at = greatest(t.expires_at, t.issued_at + interval '45 days')
+ WHERE t.source_type = 'pmi_application'
+   AND t.scopes && ARRAY['profile_completion', 'consent_giving']::text[]
+   AND NOT public._na_avaliacao_geral(t.source_id);
+
+-- ── 8. A3 (R4, C7, C8, C16, C17): e-mails de candidatura recebida ──
+UPDATE public.campaign_templates
+   SET subject   = jsonb_build_object('pt', 'Recebemos sua candidatura à vaga {{role_label}}', 'en', 'We received your application for {{role_label}}', 'es', 'Recibimos su candidatura a la vacante {{role_label}}'),
+       body_html = jsonb_build_object('pt', '<p>Olá, <b>{{first_name}}</b>!</p><p>Recebemos sua candidatura à vaga <b>{{role_label}}</b>, do Núcleo IA & GP.</p><p>Próximo passo: complete seu cadastro no link abaixo. Os passos seguintes chegam por e-mail.</p><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continuar cadastro</a></p><p><small>O link expira em {{expires_in_days}} dias.</small></p><p>Equipe do Núcleo IA & GP</p>', 'en', '<p>Hi, <b>{{first_name}}</b>!</p><p>We received your application for <b>{{role_label}}</b> at Núcleo IA & GP.</p><p>Next step: complete your registration using the link below. The following steps will reach you by email.</p><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continue registration</a></p><p><small>The link expires in {{expires_in_days}} days.</small></p><p>Núcleo IA & GP team</p>', 'es', '<p>¡Hola, <b>{{first_name}}</b>!</p><p>Recibimos su candidatura a la vacante <b>{{role_label}}</b>, del Núcleo IA & GP.</p><p>Próximo paso: complete su registro en el enlace de abajo. Los pasos siguientes llegan por correo electrónico.</p><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continuar registro</a></p><p><small>El enlace expira en {{expires_in_days}} días.</small></p><p>Equipo del Núcleo IA & GP</p>'),
+       body_text = jsonb_build_object('pt', 'Olá, {{first_name}}!
+
+Recebemos sua candidatura à vaga {{role_label}}, do Núcleo IA & GP.
+
+Próximo passo: complete seu cadastro em {{onboarding_url}}
+Os passos seguintes chegam por e-mail.
+
+O link expira em {{expires_in_days}} dias.
+
+Equipe do Núcleo IA & GP', 'en', 'Hi, {{first_name}}!
+
+We received your application for {{role_label}} at Núcleo IA & GP.
+
+Next step: complete your registration at {{onboarding_url}}
+The following steps will reach you by email.
+
+The link expires in {{expires_in_days}} days.
+
+Núcleo IA & GP team', 'es', '¡Hola, {{first_name}}!
+
+Recibimos su candidatura a la vacante {{role_label}}, del Núcleo IA & GP.
+
+Próximo paso: complete su registro en {{onboarding_url}}
+Los pasos siguientes llegan por correo electrónico.
+
+El enlace expira en {{expires_in_days}} días.
+
+Equipo del Núcleo IA & GP'),
+       updated_at = now()
+ WHERE slug = 'pmi_welcome_with_token';
+
+INSERT INTO public.campaign_templates (name, slug, subject, body_html, body_text, target_audience, category, theme, variables)
+SELECT 'Candidatura recebida, vaga piloto da linha', 'pmi_welcome_line_pilot',
+       jsonb_build_object('pt', 'Recebemos sua candidatura à vaga {{role_label}}', 'en', 'We received your application for {{role_label}}', 'es', 'Recibimos su candidatura a la vacante {{role_label}}'),
+       jsonb_build_object('pt', '<p>Olá, <b>{{first_name}}</b>!</p><p>Recebemos sua candidatura à vaga <b>{{role_label}}</b>, do Núcleo IA & GP. Nesta vaga, a seleção é feita junto com a linha de pesquisa, em quatro passos:</p><ol><li><b>Agora:</b> complete seu cadastro no link abaixo. O consentimento de análise por IA é opcional e não muda sua avaliação.</li><li><b>Até {{video_invite_by}}:</b> você recebe por e-mail o convite para um vídeo curto, com perguntas da linha. Se preferir, a mesma etapa pode ser feita ao vivo.</li><li><b>Depois do vídeo:</b> uma conversa com o líder da linha.</li><li><b>Resultado:</b> em até 45 dias a partir de hoje, por e-mail.</li></ol><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continuar cadastro</a></p><p><small>O link vale durante todo o processo.</small></p><p>Equipe do Núcleo IA & GP</p>', 'en', '<p>Hi, <b>{{first_name}}</b>!</p><p>We received your application for <b>{{role_label}}</b> at Núcleo IA & GP. For this opening, selection is run together with the research line, in four steps:</p><ol><li><b>Now:</b> complete your registration using the link below. Consent to AI analysis is optional and does not change your evaluation.</li><li><b>By {{video_invite_by}}:</b> you receive by email the invitation to a short video with the line''s questions. If you prefer, the same step can be done live.</li><li><b>After the video:</b> a conversation with the line leader.</li><li><b>Result:</b> within 45 days from today, by email.</li></ol><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continue registration</a></p><p><small>The link stays valid for the whole process.</small></p><p>Núcleo IA & GP team</p>', 'es', '<p>¡Hola, <b>{{first_name}}</b>!</p><p>Recibimos su candidatura a la vacante <b>{{role_label}}</b>, del Núcleo IA & GP. En esta vacante, la selección se hace junto con la línea de investigación, en cuatro pasos:</p><ol><li><b>Ahora:</b> complete su registro en el enlace de abajo. El consentimiento de análisis por IA es opcional y no cambia su evaluación.</li><li><b>Hasta el {{video_invite_by}}:</b> recibe por correo electrónico la invitación a un video corto, con preguntas de la línea. Si lo prefiere, la misma etapa puede hacerse en vivo.</li><li><b>Después del video:</b> una conversación con quien lidera la línea.</li><li><b>Resultado:</b> en hasta 45 días a partir de hoy, por correo electrónico.</li></ol><p><a href="{{onboarding_url}}" style="background:#0066cc;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;">Continuar registro</a></p><p><small>El enlace vale durante todo el proceso.</small></p><p>Equipo del Núcleo IA & GP</p>'),
+       jsonb_build_object('pt', 'Olá, {{first_name}}!
+
+Recebemos sua candidatura à vaga {{role_label}}, do Núcleo IA & GP. Nesta vaga, a seleção é feita junto com a linha de pesquisa, em quatro passos:
+
+1. Agora: complete seu cadastro em {{onboarding_url}} (o consentimento de análise por IA é opcional e não muda sua avaliação).
+2. Até {{video_invite_by}}: você recebe por e-mail o convite para um vídeo curto, com perguntas da linha. Se preferir, a mesma etapa pode ser feita ao vivo.
+3. Depois do vídeo: uma conversa com o líder da linha.
+4. Resultado: em até 45 dias a partir de hoje, por e-mail.
+
+O link vale durante todo o processo.
+
+Equipe do Núcleo IA & GP', 'en', 'Hi, {{first_name}}!
+
+We received your application for {{role_label}} at Núcleo IA & GP. For this opening, selection is run together with the research line, in four steps:
+
+1. Now: complete your registration at {{onboarding_url}} (consent to AI analysis is optional and does not change your evaluation).
+2. By {{video_invite_by}}: you receive by email the invitation to a short video with the line''s questions. If you prefer, the same step can be done live.
+3. After the video: a conversation with the line leader.
+4. Result: within 45 days from today, by email.
+
+The link stays valid for the whole process.
+
+Núcleo IA & GP team', 'es', '¡Hola, {{first_name}}!
+
+Recibimos su candidatura a la vacante {{role_label}}, del Núcleo IA & GP. En esta vacante, la selección se hace junto con la línea de investigación, en cuatro pasos:
+
+1. Ahora: complete su registro en {{onboarding_url}} (el consentimiento de análisis por IA es opcional y no cambia su evaluación).
+2. Hasta el {{video_invite_by}}: recibe por correo electrónico la invitación a un video corto, con preguntas de la línea. Si lo prefiere, la misma etapa puede hacerse en vivo.
+3. Después del video: una conversación con quien lidera la línea.
+4. Resultado: en hasta 45 días a partir de hoy, por correo electrónico.
+
+El enlace vale durante todo el proceso.
+
+Equipo del Núcleo IA & GP'),
+       '{"type":"external"}'::jsonb, 'onboarding', 'onboarding', '{"first_name":{"type":"text","required":true},"role_label":{"type":"text","required":true},"onboarding_url":{"type":"text","required":true},"video_invite_by":{"type":"text","required":true}}'::jsonb
+ WHERE NOT EXISTS (SELECT 1 FROM public.campaign_templates WHERE slug = 'pmi_welcome_line_pilot');
+
+-- ── 9. A4 (R2): get_opening_application sem o e-mail da candidatura piloto ──
+CREATE OR REPLACE FUNCTION public.get_opening_application(p_application_id uuid)
+ RETURNS jsonb
+LANGUAGE plpgsql
+VOLATILE
+SECURITY DEFINER
+SET search_path = ''
+AS $function$
+DECLARE
+  v_caller_id uuid;
+  v_org uuid;
+  v_app record;
+  v_perguntas jsonb;
+BEGIN
+  SELECT m.id INTO v_caller_id
+  FROM public.members m
+  WHERE m.auth_id = auth.uid() AND m.is_active = true;
+  v_org := public.auth_org();
+  IF v_caller_id IS NULL OR v_org IS NULL THEN
+    RETURN jsonb_build_object('error', 'Unauthorized');
+  END IF;
+
+  SELECT sa.id, sa.cycle_id, sa.organization_id,
+         sa.applicant_name, sa.email, sa.chapter, sa.chapter_affiliation,
+         sa.applicant_city, sa.state, sa.country, sa.linkedin_url, sa.credly_url,
+         sa.role_applied, sa.status, sa.interview_status, sa.application_date,
+         sa.certifications, sa.academic_background, sa.motivation_letter, sa.reason_for_applying,
+         sa.proposed_theme, sa.areas_of_interest, sa.availability_declared,
+         sa.leadership_experience, sa.non_pmi_experience,
+         vo.opportunity_id AS vo_opportunity_id, vo.title AS opening_title,
+         vo.initiative_id AS vo_initiative_id, vo.organization_id AS vo_organization_id,
+         vo.essay_mapping AS vo_essay_mapping,
+         sc.cycle_code
+    INTO v_app
+  FROM public.selection_applications sa
+  LEFT JOIN public.vep_opportunities vo
+    ON vo.opportunity_id = sa.vep_opportunity_id
+   AND vo.cycle_id = sa.cycle_id
+  LEFT JOIN public.selection_cycles sc ON sc.id = sa.cycle_id
+  WHERE sa.id = p_application_id
+    AND sa.anonymized_at IS NULL;
+
+  IF v_app.id IS NULL OR v_app.organization_id IS DISTINCT FROM v_org THEN
+    RETURN jsonb_build_object('error', 'Unauthorized');
+  END IF;
+  IF v_app.vo_opportunity_id IS NULL OR v_app.vo_organization_id IS DISTINCT FROM v_org THEN
+    RETURN jsonb_build_object('error', 'Unauthorized');
+  END IF;
+  IF v_app.vo_initiative_id IS NULL THEN
+    RETURN jsonb_build_object('error', 'Unauthorized');
+  END IF;
+  IF NOT public.can_by_member(v_caller_id, 'view_opening_applications', 'initiative', v_app.vo_initiative_id)
+     OR NOT public.rls_can_see_initiative(v_app.vo_initiative_id) THEN
+    RETURN jsonb_build_object('error', 'Unauthorized');
+  END IF;
+  IF public.selection_coi_recused(v_caller_id, v_app.cycle_id) THEN
+    RETURN jsonb_build_object('error', 'recused_conflict_of_interest',
+      'detail', 'Você é candidato(a) neste ciclo: a leitura das candidaturas está impedida por conflito de interesse (ADR-0109).');
+  END IF;
+
+  PERFORM public._log_opening_application_access(
+    v_app.id, v_caller_id,
+    -- #2393 A4 (R2): na candidatura piloto o e-mail não sai, então também não entra no registro de acesso.
+    CASE WHEN public._na_avaliacao_geral(v_app.id) THEN ARRAY['email'] ELSE ARRAY[]::text[] END ||
+    ARRAY['applicant_name', 'chapter', 'chapter_affiliation', 'applicant_city', 'state',
+          'country', 'linkedin_url', 'credly_url', 'certifications', 'academic_background',
+          'motivation_letter', 'reason_for_applying', 'proposed_theme', 'areas_of_interest',
+          'availability_declared', 'leadership_experience', 'non_pmi_experience'],
+    'get_opening_application'
+  );
+
+  -- Das perguntas da vaga saem só o campo e o texto. O essay_mapping é jsonb livre e vai crescer
+  -- com as camadas de perguntas (ADR-0134 §2); o que entrar nele além disso não chega ao leitor.
+  v_perguntas := (
+    SELECT jsonb_object_agg(q.key, jsonb_build_object('field', q.value->>'field', 'question', q.value->>'question'))
+    FROM jsonb_each(CASE WHEN jsonb_typeof(v_app.vo_essay_mapping) = 'object'
+                         THEN v_app.vo_essay_mapping ELSE '{}'::jsonb END) q
+  );
+
+  RETURN jsonb_build_object(
+    'application_id', v_app.id,
+    'opportunity_id', v_app.vo_opportunity_id,
+    'opening_title', v_app.opening_title,
+    'initiative_id', v_app.vo_initiative_id,
+    'cycle_code', v_app.cycle_code,
+    'essay_questions', v_perguntas,
+    'applicant_name', v_app.applicant_name,
+    'email', CASE WHEN public._na_avaliacao_geral(v_app.id) THEN v_app.email END,  -- #2393 A4 (R2)
+    'chapter', v_app.chapter,
+    'chapter_affiliation', v_app.chapter_affiliation,
+    'applicant_city', v_app.applicant_city,
+    'state', v_app.state,
+    'country', v_app.country,
+    'linkedin_url', v_app.linkedin_url,
+    'credly_url', v_app.credly_url,
+    'role_applied', v_app.role_applied,
+    'status', v_app.status,
+    'interview_status', v_app.interview_status,
+    'application_date', v_app.application_date,
+    'certifications', v_app.certifications,
+    'academic_background', v_app.academic_background,
+    'motivation_letter', v_app.motivation_letter,
+    'reason_for_applying', v_app.reason_for_applying,
+    'proposed_theme', v_app.proposed_theme,
+    'areas_of_interest', v_app.areas_of_interest,
+    'availability_declared', v_app.availability_declared,
+    'leadership_experience', v_app.leadership_experience,
+    'non_pmi_experience', v_app.non_pmi_experience
+  );
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.get_opening_application(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_opening_application(uuid) TO authenticated;
