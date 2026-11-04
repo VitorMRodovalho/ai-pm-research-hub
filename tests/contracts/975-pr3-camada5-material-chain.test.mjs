@@ -104,7 +104,9 @@ test('#1152: committee_majority ACTIVATED — ip_committee predicate + Comitê d
 });
 
 test('PR-3: _gate_threshold_met — majority branch (pinned roster, n>=1 guard, strict floor)', () => {
-  const fn = sql.match(/CREATE OR REPLACE FUNCTION public\._gate_threshold_met[\s\S]*?\$function\$;/);
+  // #2970: a captura vigente, não o arquivo desta migration: o ramo 'all' foi redefinido depois, e os ramos
+  // majority e window_optional precisam continuar valendo no corpo que está no ar.
+  const fn = [latestFunctionCapture(ROOT_975, '_gate_threshold_met').block];
   assert.ok(fn, '_gate_threshold_met must be (re)defined');
   assert.match(fn[0], /WHEN \(p_gate->>'threshold'\) = 'majority' THEN/, 'majority branch must exist');
   // roster read from gate_state snapshot (NOT live _can_sign_gate)
@@ -115,7 +117,9 @@ test('PR-3: _gate_threshold_met — majority branch (pinned roster, n>=1 guard, 
 });
 
 test('PR-3: _gate_threshold_met — window_optional branch with eligible_snapshot>0 guard (review BLOCKER fix)', () => {
-  const fn = sql.match(/CREATE OR REPLACE FUNCTION public\._gate_threshold_met[\s\S]*?\$function\$;/);
+  // #2970: a captura vigente, não o arquivo desta migration: o ramo 'all' foi redefinido depois, e os ramos
+  // majority e window_optional precisam continuar valendo no corpo que está no ar.
+  const fn = [latestFunctionCapture(ROOT_975, '_gate_threshold_met').block];
   assert.match(fn[0], /WHEN \(p_gate->>'threshold'\) = 'window_optional' THEN/, 'window_optional branch must exist');
   // auto_closed_at path (window expiry)
   assert.match(fn[0], /gate_state -> \(p_gate->>'kind'\) ->> 'auto_closed_at'\) IS NOT NULL/, 'auto_closed_at path must exist');
