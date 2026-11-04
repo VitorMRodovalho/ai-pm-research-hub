@@ -43,14 +43,14 @@ test('#2393i S: a vaga tem a data do convite do vídeo, e a da 76080 é configur
 test('#2393i S: consume_onboarding_token devolve a vaga da candidatura, com período, trilha e data do convite', () => {
   const { corpo } = captura('consume_onboarding_token');
   assert.match(corpo,
-    /'step_catalog', v_step_catalog, 'opening', \(SELECT jsonb_build_object\( 'opportunity_id', vo\.opportunity_id, 'title', vo\.title, 'start_date', vo\.start_date, 'end_date', vo\.end_date, 'evaluation_track', vo\.evaluation_track, 'video_invite_by', vo\.video_invite_by\) FROM public\.vep_opportunities vo WHERE vo\.opportunity_id = v_app\.vep_opportunity_id\), 'account_state',/,
+    /'step_catalog', v_step_catalog, 'opening', \(SELECT jsonb_build_object\( 'opportunity_id', vo\.opportunity_id, 'title', vo\.title, 'start_date', vo\.start_date, 'end_date', vo\.end_date, 'evaluation_track', vo\.evaluation_track, 'video_invite_by', vo\.video_invite_by, 'result_by', CASE WHEN vo\.evaluation_track = 'line_pilot' THEN \(v_token_row\.issued_at \+ public\._prazo_do_resultado_do_piloto\(\)\)::date END\) FROM public\.vep_opportunities vo WHERE vo\.opportunity_id = v_app\.vep_opportunity_id\), 'account_state',/,
     'a vaga saiu do payload, mudou de campos ou deixou de ser a da candidatura');
 });
 
 test('#2393i S: o token do portal da candidatura piloto ganha 45 dias na emissão', () => {
   const { corpo } = captura(TOKEN_FN);
   assert.match(corpo,
-    new RegExp(`BEGIN IF NEW\\.source_type = 'pmi_application' AND NEW\\.${ESCOPO.replace('t?\\.?', '')} AND NOT public\\._na_avaliacao_geral\\(NEW\\.source_id\\) THEN NEW\\.expires_at := greatest\\(NEW\\.expires_at, now\\(\\) \\+ interval '45 days'\\); END IF; RETURN NEW; END;`),
+    new RegExp(`BEGIN IF NEW\\.source_type = 'pmi_application' AND NEW\\.${ESCOPO.replace('t?\\.?', '')} AND NOT public\\._na_avaliacao_geral\\(NEW\\.source_id\\) THEN NEW\\.expires_at := greatest\\(NEW\\.expires_at, now\\(\\) \\+ public\\._prazo_do_resultado_do_piloto\\(\\)\\); END IF; RETURN NEW; END;`),
     'a condição ou o prazo do token do piloto mudou');
 });
 
@@ -70,8 +70,17 @@ test('#2393i S: os tokens já emitidos ganham o mesmo prazo, pela mesma condiç�
   const m = ultimaCom(/UPDATE public\.onboarding_tokens t SET expires_at = greatest\(/);
   assert.ok(m, 'os tokens já emitidos não são estendidos');
   assert.match(m.s,
-    new RegExp(`UPDATE public\\.onboarding_tokens t SET expires_at = greatest\\(t\\.expires_at, t\\.issued_at \\+ interval '45 days'\\) WHERE t\\.source_type = 'pmi_application' AND ${ESCOPO.replace('t?\\.?', 't\\.')} AND NOT public\\._na_avaliacao_geral\\(t\\.source_id\\);`),
+    new RegExp(`UPDATE public\\.onboarding_tokens t SET expires_at = greatest\\(t\\.expires_at, t\\.issued_at \\+ public\\._prazo_do_resultado_do_piloto\\(\\)\\) WHERE t\\.source_type = 'pmi_application' AND ${ESCOPO.replace('t?\\.?', 't\\.')} AND NOT public\\._na_avaliacao_geral\\(t\\.source_id\\);`),
     'a extensão dos tokens já emitidos divergiu da condição do trigger');
+});
+
+test('#2393i S: o prazo do resultado do piloto mora numa função só, de 45 dias, que nenhum cliente executa', () => {
+  const { file, corpo } = captura('_prazo_do_resultado_do_piloto');
+  assert.match(corpo, /RETURNS interval LANGUAGE sql IMMUTABLE SET search_path = '' AS \$function\$ SELECT interval '45 days' \$function\$/, 'o prazo do resultado mudou');
+  const sql = maskLineComments(readFileSync(join(MIGRATIONS, file), 'utf8')).replace(/\s+/g, ' ');
+  assert.match(sql, /REVOKE ALL ON FUNCTION public\._prazo_do_resultado_do_piloto\(\) FROM PUBLIC, anon, authenticated;/, 'a função do prazo não é revogada dos clientes');
+  const literais = (sql.match(/interval '45 days'/g) || []).length;
+  assert.equal(literais, 1, 'o prazo de 45 dias apareceu fora da função: o link, o UPDATE e o portal têm de ler a mesma regra');
 });
 
 test('#2393i S: nenhum cliente executa a função do prazo', () => {

@@ -793,7 +793,10 @@ BEGIN
       'opening', (SELECT jsonb_build_object(
                     'opportunity_id', vo.opportunity_id, 'title', vo.title,
                     'start_date', vo.start_date, 'end_date', vo.end_date,
-                    'evaluation_track', vo.evaluation_track, 'video_invite_by', vo.video_invite_by)
+                    'evaluation_track', vo.evaluation_track, 'video_invite_by', vo.video_invite_by,
+                    -- o prazo do resultado do piloto, contado da emissão deste token (a mesma regra do prazo do link)
+                    'result_by', CASE WHEN vo.evaluation_track = 'line_pilot'
+                                      THEN (v_token_row.issued_at + public._prazo_do_resultado_do_piloto())::date END)
                   FROM public.vep_opportunities vo WHERE vo.opportunity_id = v_app.vep_opportunity_id),
       'account_state', jsonb_build_object(
         'member_exists',     v_member_id IS NOT NULL,
@@ -829,6 +832,17 @@ END;
 $function$;
 
 -- ── 7. A3 (R3): o link do portal da candidatura piloto vale o processo inteiro ──
+-- O prazo do resultado (ADR-0134 §8) mora numa função só: o trigger, o UPDATE dos tokens já emitidos e o portal
+-- (result_by, parte 6) leem a mesma regra, contada da emissão do token.
+CREATE OR REPLACE FUNCTION public._prazo_do_resultado_do_piloto()
+RETURNS interval
+LANGUAGE sql
+IMMUTABLE
+SET search_path = ''
+AS $function$ SELECT interval '45 days' $function$;
+
+REVOKE ALL ON FUNCTION public._prazo_do_resultado_do_piloto() FROM PUBLIC, anon, authenticated;
+
 -- 45 dias (ADR-0134 §8, prazo do resultado) a partir da emissão. Só o token do portal do candidato; o de
 -- agendamento do fluxo geral é recusado na trava da A1. Os tokens já emitidos ganham o mesmo prazo abaixo.
 CREATE OR REPLACE FUNCTION public._token_do_piloto_vale_o_processo()
@@ -841,7 +855,7 @@ BEGIN
   IF NEW.source_type = 'pmi_application'
      AND NEW.scopes && ARRAY['profile_completion', 'consent_giving']::text[]
      AND NOT public._na_avaliacao_geral(NEW.source_id) THEN
-    NEW.expires_at := greatest(NEW.expires_at, now() + interval '45 days');
+    NEW.expires_at := greatest(NEW.expires_at, now() + public._prazo_do_resultado_do_piloto());
   END IF;
   RETURN NEW;
 END;
@@ -858,7 +872,7 @@ CREATE TRIGGER trg_token_do_piloto_vale_o_processo
   FOR EACH ROW EXECUTE FUNCTION public._token_do_piloto_vale_o_processo();
 
 UPDATE public.onboarding_tokens t
-   SET expires_at = greatest(t.expires_at, t.issued_at + interval '45 days')
+   SET expires_at = greatest(t.expires_at, t.issued_at + public._prazo_do_resultado_do_piloto())
  WHERE t.source_type = 'pmi_application'
    AND t.scopes && ARRAY['profile_completion', 'consent_giving']::text[]
    AND NOT public._na_avaliacao_geral(t.source_id);
