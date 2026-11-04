@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { onMemberResolved } from '../../lib/member-ready';
 
 interface BoardMember {
   id: string;
@@ -38,17 +39,11 @@ export default function BoardMembersPanel() {
   const [saving, setSaving] = useState(false);
   const [member, setMember] = useState<any>(null);
 
-  // Self-boot: wait for nav to be ready
-  useEffect(() => {
-    let retries = 0;
-    const check = () => {
-      const m = (window as any).navGetMember?.();
-      if (m) { setMember(m); setLoading(false); }
-      else if (retries < 30) { retries++; setTimeout(check, 300); }
-      else setLoading(false);
-    };
-    setTimeout(check, 300);
-  }, []);
+  // #2973: espera o Nav resolver o membro, sem prazo de tentativas.
+  useEffect(() => onMemberResolved((r) => {
+    setMember(r.kind === 'member' ? r.member : null);
+    setLoading(false);
+  }), []);
 
   // p184 hotfix (Fixes AI-PM-RESEARCH-HUB-1F/1G/1N): all hooks MUST be called before any
   // conditional return per React rules. Moved early `if (!isGP && !loading) return null` from

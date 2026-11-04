@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import GovernanceStats from './GovernanceStats';
 import GovernanceCRTable from './GovernanceCRTable';
+import { onMemberResolved } from '../../lib/member-ready';
 
 export default function GovernanceAdminIsland() {
   const t = usePageI18n();
@@ -31,27 +32,21 @@ export default function GovernanceAdminIsland() {
     }
   }, [getSb]);
 
+  // #2973: espera o Nav resolver o membro, sem prazo de tentativas. Carrega uma vez, com o membro que houver
+  // (sem sessão ou sem cadastro, sem membro, como antes acontecia depois do prazo); e acompanha as trocas.
   useEffect(() => {
     let cancelled = false;
-    let retries = 0;
-
-    async function boot() {
-      const sb = getSb();
-      const m = (window as any).navGetMember?.();
-      if ((!sb || !m) && retries < 30) {
-        retries++;
-        setTimeout(boot, 300);
-        return;
-      }
-      if (m && !cancelled) setMember(m);
-      if (!sb) { if (!cancelled) { setLoading(false); setError('Supabase not available'); } return; }
-
-      await loadData();
-      if (!cancelled) setLoading(false);
-    }
-
-    boot();
-    return () => { cancelled = true; };
+    let loaded = false;
+    const stop = onMemberResolved((r) => {
+      if (cancelled) return;
+      setMember(r.kind === 'member' ? r.member : null);
+      if (loaded) return;
+      loaded = true;
+      // O Nav cria o cliente antes de resolver o membro: aqui getSb() já existe.
+      if (!getSb()) return;
+      void loadData().then(() => { if (!cancelled) setLoading(false); });
+    });
+    return () => { cancelled = true; stop(); };
   }, [getSb, loadData]);
 
   const handleRefresh = useCallback(async () => {

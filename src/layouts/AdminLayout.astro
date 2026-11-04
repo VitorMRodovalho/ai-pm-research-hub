@@ -5,7 +5,7 @@
  */
 import BaseLayout from './BaseLayout.astro';
 import AdminSidebar from '../components/admin/AdminSidebar.tsx';
-import { getLangFromURL, type Lang } from '../i18n/utils';
+import { getLangFromURL, t, type Lang } from '../i18n/utils';
 
 interface Props {
   title: string;
@@ -64,6 +64,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <div class="p-6">
         <slot />
       </div>
+      <!-- #2973: o texto que as telas mostram quando não há sessão (lido por adminSignInText) -->
+      <span id="admin-signin-to-view" class="hidden">{t('admin.signInToView', lang)}</span>
     </main>
   </div>
 </BaseLayout>

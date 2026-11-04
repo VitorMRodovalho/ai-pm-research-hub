@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { chromium } from 'playwright';
 import {
@@ -25,6 +26,16 @@ const devState = { fatal: null, singleton: null };
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// #2973: o texto esperado na tela sai da chave do dicionário pt-BR, não de uma string solta no teste. Chave ausente
+// lança: devolver '' faria uma asserção de igualdade com texto vazio parecer um defeito da tela.
+const PT_BR = readFileSync(new URL('../src/i18n/pt-BR.ts', import.meta.url), 'utf8');
+function textoPtBr(chave) {
+  const re = new RegExp(`^\\s*'${chave.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}':\\s*'((?:[^'\\\\]|\\\\.)*)',?\\s*$`, 'm');
+  const m = PT_BR.match(re);
+  if (!m) throw new Error(`browser-guards: a chave ${chave} não está em src/i18n/pt-BR.ts`);
+  return m[1].replace(/\\'/g, "'");
 }
 
 function resolveAvailablePort(preferredPort) {
@@ -136,11 +147,15 @@ async function run() {
   await waitForServer();
   const browser = await chromium.launch({ headless: true });
   try {
+    const ENTRAR = textoPtBr('admin.signInToView');
     const page = await browser.newPage({ locale: 'pt-BR' });
     await page.goto(`${base}/admin/selection`, { waitUntil: 'networkidle' });
     const denied = page.locator('#sel-denied');
     await denied.waitFor({ state: 'visible' });
-    assert.match(await denied.textContent() || '', /Acesso (restrito a administradores|negado ao módulo de seleção)/);
+    // #2973: sem sessão a tela pede para entrar, e nada do módulo aparece. "Acesso negado" é a resposta para quem
+    // entrou sem a permissão (o caso do PESQUISADOR, mais abaixo).
+    assert.equal((await denied.locator('p').textContent() || '').trim(), ENTRAR,
+      'sem sessão, a caixa da seleção tem de mostrar o texto de admin.signInToView');
     assert.equal(await page.locator('#sel-panel').isVisible(), false);
 
     // #1590 — o stub virou parametrizado por MEMBRO. Antes só existia o caso `manager`, e era
@@ -331,6 +346,14 @@ async function run() {
       org_actions: [], initiative_actions: {}, tribe_actions: {},
     });
     await outsiderPage.locator('#sel-denied').waitFor({ state: 'visible' });
+    // #2973: a caixa já estava visível antes do membro chegar, com o pedido para entrar; esperar só a caixa não
+    // distingue "recusado" de "ainda sem sessão". Com sessão e sem permissão, o texto é o de selection.denied.
+    const NEGADO_SELECAO = textoPtBr('selection.denied');
+    await outsiderPage.waitForFunction(
+      (t) => document.querySelector('#sel-denied p')?.textContent?.trim() === t, NEGADO_SELECAO, { timeout: 5000 },
+    ).catch(() => {});
+    assert.equal((await outsiderPage.locator('#sel-denied p').textContent() || '').trim(), NEGADO_SELECAO,
+      'com sessão e sem permissão, a seleção tem de dizer acesso negado, não pedir para entrar');
     assert.equal(await outsiderPage.locator('#sel-panel').isVisible(), false);
     await outsiderPage.close();
 
@@ -392,7 +415,10 @@ async function run() {
     await page.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
     const boardGovDenied = page.locator('#boardgov-denied');
     await boardGovDenied.waitFor({ state: 'visible' });
-    assert.match(await boardGovDenied.textContent() || '', /Acesso restrito a gestão de projeto/);
+    // #2973: sem sessão, o pedido para entrar (admin.signInToView), e o painel do módulo fica fechado.
+    assert.equal((await boardGovDenied.textContent() || '').trim(), ENTRAR,
+      'sem sessão, a governance-v2 tem de mostrar o texto de admin.signInToView');
+    assert.equal(await page.locator('#boardgov-panel').isVisible(), false);
 
     const boardGovPage = await browser.newPage({ locale: 'pt-BR' });
     await boardGovPage.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });

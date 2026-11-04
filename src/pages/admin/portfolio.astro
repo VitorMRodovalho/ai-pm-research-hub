@@ -88,11 +88,10 @@ const scriptI18n = JSON.stringify({
 
 <script>
   import { canFor, getSimulation, hasPermission } from '../../lib/permissions';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // Read i18n bundle injected by Astro template
   const _i18n = JSON.parse(document.getElementById('portfolio-i18n')?.textContent || '{}');
-
-  let portfolioBootRetries = 0;
 
   function hasPortfolioAccess(member: any): boolean {
     if (!member) return false;
@@ -153,31 +152,27 @@ const scriptI18n = JSON.stringify({
     `;
   }
 
+  function showPortfolioNotice(text: string) {
+    document.getElementById('portfolio-loading')?.classList.add('hidden');
+    const denied = document.getElementById('portfolio-denied');
+    if (denied) {
+      denied.textContent = text;
+      denied.classList.remove('hidden');
+    }
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasPortfolioAccess verdadeiro.
   async function bootPortfolioPage() {
     const loading = document.getElementById('portfolio-loading');
     const denied = document.getElementById('portfolio-denied');
     const panel = document.getElementById('portfolio-panel');
     const summary = document.getElementById('portfolio-summary');
     const macros = document.getElementById('portfolio-macros');
-    const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
+    if (!sb) return;
 
-    if (!member || !sb) {
-      portfolioBootRetries += 1;
-      if (portfolioBootRetries >= 20) {
-        loading?.classList.add('hidden');
-        denied?.classList.remove('hidden');
-        denied!.textContent = _i18n.accessDenied || 'Access restricted.';
-        return;
-      }
-      setTimeout(() => bootPortfolioPage(), 150);
-      return;
-    }
     loading?.classList.add('hidden');
-    if (!hasPortfolioAccess(member)) {
-      denied?.classList.remove('hidden');
-      return;
-    }
+    denied?.classList.add('hidden');
     applyPlatformActions();
 
     const [{ data, error }, membersQuery, tribesQuery] = await Promise.all([
@@ -382,5 +377,11 @@ const scriptI18n = JSON.stringify({
     return d.innerHTML;
   }
 
-  bootPortfolioPage();
+  // #2973: o acesso se decide quando o Nav resolve o membro, sem prazo de tentativas.
+  gateAdminPage({
+    allow: hasPortfolioAccess,
+    onAllowed: () => { void bootPortfolioPage(); },
+    onDenied: () => showPortfolioNotice(_i18n.accessDenied || 'Access restricted.'),
+    onNoSession: () => showPortfolioNotice(adminSignInText()),
+  });
 </script>

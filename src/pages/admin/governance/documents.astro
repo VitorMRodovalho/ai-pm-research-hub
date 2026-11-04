@@ -289,15 +289,24 @@ const i18n = {
     // p131 hotfix: também espera por member load. Sem isto, race condition
     // entre navGetSb() e navGetMember() faz "Suas pendências" silenciar mesmo
     // para users autenticados (memberId fica null no momento de loadChains).
-    function waitForMember(max) {
+    // #2973: sem prazo de tentativas. Resolve com o membro quando o Nav o entrega, e com null só quando o Nav diz
+    // que não há sessão ou que a sessão não tem cadastro (navAuthState), e não porque o tempo acabou.
+    function waitForMember() {
       return new Promise(function (resolve) {
-        var tries = 0;
-        (function pick() {
+        function pick() {
           var m = window.navGetMember && window.navGetMember();
-          if (m) return resolve(m);
-          if (++tries > (max || 20)) return resolve(null);
-          setTimeout(pick, 200);
-        })();
+          var st = window.navAuthState && window.navAuthState();
+          if (m) return done(m);
+          if (st === 'no-session' || st === 'resolved') return done(null);
+        }
+        function done(v) {
+          window.removeEventListener('nav:member', pick);
+          window.removeEventListener('nav:no-session', pick);
+          resolve(v);
+        }
+        window.addEventListener('nav:member', pick);
+        window.addEventListener('nav:no-session', pick);
+        pick();
       });
     }
 
