@@ -113,6 +113,7 @@ const GOV2_I18N = {
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__GOV2_I18N) || {
@@ -124,7 +125,6 @@ const GOV2_I18N = {
     curatorInactive: 'inativa',
   };
 
-  let boardGovBootRetries = 0;
 
   function hasBoardGovAccess(member: any): boolean {
     if (!member) return false;
@@ -159,29 +159,28 @@ const GOV2_I18N = {
     if (error) throw error;
   }
 
+  const BOARDGOV_DENIED_TEXT = document.getElementById('boardgov-denied')?.textContent?.trim() || '';
+
+  function showBoardGovNotice(text: string) {
+    document.getElementById('boardgov-loading')?.classList.add('hidden');
+    const denied = document.getElementById('boardgov-denied');
+    if (denied) {
+      denied.textContent = text;
+      denied.classList.remove('hidden');
+    }
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasBoardGovAccess verdadeiro (e de novo depois de
+  // restaurar um item).
   async function bootBoardGovPage() {
     const loading = document.getElementById('boardgov-loading');
     const denied = document.getElementById('boardgov-denied');
     const panel = document.getElementById('boardgov-panel');
     const list = document.getElementById('boardgov-list');
-    const member = (window as any).navGetMember?.();
     const sb = (window as any).navGetSb?.();
-    if (!member || !sb) {
-      boardGovBootRetries += 1;
-      if (boardGovBootRetries >= 20) {
-        loading?.classList.add('hidden');
-        denied?.classList.remove('hidden');
-        denied!.textContent = T.deniedRestricted;
-        return;
-      }
-      setTimeout(() => bootBoardGovPage(), 150);
-      return;
-    }
+    if (!sb) return;
     loading?.classList.add('hidden');
-    if (!hasBoardGovAccess(member)) {
-      denied?.classList.remove('hidden');
-      return;
-    }
+    denied?.classList.add('hidden');
     panel?.classList.remove('hidden');
     const rows = await loadArchived();
     if (list) list.innerHTML = rows.length ? rows.map((r: any) => rowHtml(r)).join('') : `<p class="text-sm text-[var(--text-secondary)]">${document.getElementById('ai18n-nor')?.textContent || 'No archived cards.'}</p>`;
@@ -203,7 +202,13 @@ const GOV2_I18N = {
     }
   });
 
-  bootBoardGovPage();
+  // #2973: o acesso se decide quando o Nav resolve o membro, sem prazo de tentativas.
+  gateAdminPage({
+    allow: hasBoardGovAccess,
+    onAllowed: () => { void bootBoardGovPage(); },
+    onDenied: () => showBoardGovNotice(BOARDGOV_DENIED_TEXT),
+    onNoSession: () => showBoardGovNotice(adminSignInText()),
+  });
 
   // ═══ Org Chart ═══
   const oc = (id: string) => document.getElementById(id)?.textContent || '';

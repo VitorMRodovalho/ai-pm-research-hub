@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 function detectLang(): string {
   if (typeof window === 'undefined') return 'pt-BR';
@@ -37,16 +38,20 @@ export default function PlannedVsActualSection() {
   const chartRef = useRef<HTMLCanvasElement>(null);
   const chartInstance = useRef<any>(null);
 
+  // #2973: a primeira chamada espera o Nav resolver o membro (get_portfolio_planned_vs_actual não tem EXECUTE para
+  // anon) e se repete quando o membro muda. Sem sessão ou sem cadastro, a seção não chama e não mostra nada.
+  const { ready, memberId } = useResolvedMember();
+
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 300); return; }
+    if (!sb) return;
     setLoading(true);
     const { data: d } = await sb.rpc('get_portfolio_planned_vs_actual', {});
     if (Array.isArray(d)) setData(d);
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
   // Chart.js
   useEffect(() => {
@@ -83,6 +88,7 @@ export default function PlannedVsActualSection() {
     return () => { if (chartInstance.current) chartInstance.current.destroy(); };
   }, [data]);
 
+  if (ready && !memberId) return null;
   if (loading) return <p className="text-sm text-[var(--text-muted)]">{l.loading}</p>;
   if (!data.length) return <p className="text-sm text-[var(--text-muted)]">{l.noData}</p>;
 

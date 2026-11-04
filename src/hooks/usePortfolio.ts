@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useResolvedMember } from './useResolvedMember';
 
 export interface Artifact {
   id: string;
@@ -103,27 +104,27 @@ export function usePortfolio(cycle: number | null = null) {
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<PortfolioFilters>(EMPTY_FILTERS);
 
+  // #2973: a primeira chamada espera o Nav resolver o membro (get_portfolio_dashboard não tem EXECUTE para anon) e
+  // a carga se repete quando o membro muda. Sem sessão ou sem cadastro, não chama e não mostra nada.
+  const { ready, memberId } = useResolvedMember();
+
   useEffect(() => {
+    if (!ready) return;
+    if (!memberId) { setData(null); setError(null); setLoading(false); return; }
     let cancelled = false;
     (async () => {
       setLoading(true);
-      // Wait for supabase
-      let sb = getSb();
-      let retries = 0;
-      while (!sb && retries < 20) {
-        await new Promise(r => setTimeout(r, 200));
-        sb = getSb();
-        retries++;
-      }
+      const sb = getSb();
       if (!sb) { setError('Supabase indisponível'); setLoading(false); return; }
       const { data: d, error: e } = await sb.rpc('get_portfolio_dashboard', { p_cycle: cycle });
       if (cancelled) return;
       if (e) { setError(e.message); setLoading(false); return; }
+      setError(null);
       setData(d);
       setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [cycle]);
+  }, [cycle, ready, memberId]);
 
   const filtered = useMemo(() => {
     if (!data?.artifacts) return [];

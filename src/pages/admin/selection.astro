@@ -896,6 +896,7 @@ const SEL_I18N = {
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/route-access.ts';
   import { canFor } from '../../lib/permissions.ts';
+  import { adminSignInText, onMemberResolved } from '../../lib/member-ready';
   import { rpcChecked } from '../../lib/rpc-checked';
   import { SELECTION_STATUS_TONE, GROUP_TONE, TONE_BADGE } from '../../lib/statusFarol';
   import { formatDateOnly, isDateOnlyString, isOverdueDateOnly } from '../../lib/date-only';
@@ -1371,10 +1372,18 @@ const SEL_I18N = {
     (window as any).toast?.(msg, type);
   }
 
-  function showDenied() {
+  // #2973: sem texto, o aviso de acesso restrito do markup; com texto (sem sessão), o pedido para entrar. O texto
+  // original fica guardado no próprio elemento para voltar quando a sessão aparecer sem a permissão.
+  function showDenied(text?: string) {
     document.getElementById('sel-loading')?.classList.add('hidden');
     document.getElementById('sel-panel')?.classList.add('hidden');
-    document.getElementById('sel-denied')?.classList.remove('hidden');
+    const box = document.getElementById('sel-denied');
+    const p = box?.querySelector('p');
+    if (p) {
+      if (p.dataset.deniedText === undefined) p.dataset.deniedText = p.textContent || '';
+      p.textContent = text ?? p.dataset.deniedText;
+    }
+    box?.classList.remove('hidden');
   }
 
   function showPanel() {
@@ -6791,23 +6800,14 @@ const SEL_I18N = {
   }
 
   /* ── boot ─────────────────────────────────────────── */
-  let bootRetries = 0;
-  async function boot() {
+  // #2973: o acesso se decide quando o Nav resolve o membro, sem prazo de tentativas, e de novo a cada nav:member
+  // (troca de membro, simulação). Quem decide é applyGate, por canAccessAdminRoute.
+  let eventsBound = false;
+  onMemberResolved((r) => {
+    if (r.kind === 'no-session') { showDenied(adminSignInText()); return; }
     sb = (window as any).navGetSb?.();
-    const m = (window as any).navGetMember?.();
-    if (!sb || !m) {
-      bootRetries += 1;
-      if (bootRetries >= 20) { showDenied(); return; }
-      setTimeout(boot, 200);
-      return;
-    }
-    MEMBER = m;
-    bindEvents();
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
-    }) as EventListener);
+    MEMBER = r.kind === 'member' ? r.member : null;
+    if (MEMBER && !eventsBound) { eventsBound = true; bindEvents(); }
     applyGate(MEMBER);
-  }
-
-  boot();
+  });
 </script>

@@ -6874,6 +6874,7 @@ const esLATAM: Record<string, string> = {
   'admin.dashboard.successCreatedTemplate': 'Creado: <strong>{title}</strong> el <strong>{date}</strong>',
   'admin.dashboard.errorPrefix': 'Error',
   'admin.deniedAdmin': 'Acceso restringido a administradores.',
+  'admin.signInToView': 'Inicia sesión para ver esta página.',
   'admin.tribeBreadcrumb': 'Tribu',
   'admin.blog.tagsLabel': 'Tags (separados por coma)',
   'admin.blog.featuredBadge': 'Destacado',

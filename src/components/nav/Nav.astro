@@ -315,6 +315,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   const sb = getSupabase();
   let _member: any = null;
   let _user: any = null;
+  // #2973: em que pé está a leitura da sessão. 'pending' até o getSession voltar; 'no-session' sem sessão (ou
+  // depois do logout); 'resolved' quando o membro foi buscado, tenha vindo cadastro ou não. As telas decidem
+  // acesso por aqui e pelo nav:member, em vez de contar tentativas.
+  let _authState: 'pending' | 'no-session' | 'resolved' = 'pending';
   let _tribesCache: any[] | null = null;
   // Capability cache realtime invalidation (ADR-0083 Tier B). Single live
   // subscription per session; rebound when person_id changes (auto-link ghost,
@@ -1109,6 +1113,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   (window as any).navGetMember = () => _member;
   (window as any).navGetUser = () => _user;
   (window as any).navGetSb = () => sb;
+  (window as any).navAuthState = () => _authState;
 
   // V4 capability helpers exposed to Astro inline scripts (parity with
   // src/lib/permissions.ts canFor/canForAdminEntry for React islands).
@@ -1214,6 +1219,10 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
     syncAuthCookie(session);
+    if (!session) {
+      _authState = 'no-session';
+      window.dispatchEvent(new CustomEvent('nav:no-session'));
+    }
     if (session) {
       _user = session.user;
       // Fire member + capabilities in parallel — both are bootstrap-time reads
@@ -1233,6 +1242,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
         }
       }
       _member = data;
+      _authState = 'resolved';
       renderAuth();
       window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
       if (!isRegisteredMember(_member)) {
@@ -1257,6 +1267,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
             }
           }
           _member = data;
+          _authState = 'resolved';
           renderAuth();
           window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
           if (!isRegisteredMember(_member)) {
@@ -1272,6 +1283,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
           _capInvalidate = null;
         }
         _capSubscribedPersonId = null;
+        _authState = 'no-session';
         renderLoggedOut();
         window.dispatchEvent(new CustomEvent('nav:member', { detail: null }));
         window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: null }));
