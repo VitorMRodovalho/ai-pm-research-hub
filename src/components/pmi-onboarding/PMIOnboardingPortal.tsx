@@ -88,6 +88,15 @@ interface ConsumePayload {
   };
   /** #2273 — ADITIVO. Ausente no payload de antes da migration, daí o opcional. */
   step_catalog?: StepCatalogEntry[];
+  /** #2393 A2 — ADITIVO: a vaga da candidatura (ausente no payload de antes da M1, daí o opcional). */
+  opening?: {
+    opportunity_id: string;
+    title: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    evaluation_track: 'general' | 'line_pilot' | string | null;
+    video_invite_by: string | null;
+  } | null;
   account_state?: AccountState;
   onboarding_progress: OnboardingProgressEntry[];
   video_screenings?: VideoScreening[];
@@ -169,6 +178,7 @@ export default function PMIOnboardingPortal({
 }: Props) {
   const [payload, setPayload] = useState<ConsumePayload | null>(initialPayload);
   const [busyConsent, setBusyConsent] = useState(false);
+  const [consentConfirmed, setConsentConfirmed] = useState(false);  // #2393 A2 (C6)
   const [busyVoiceConsent, setBusyVoiceConsent] = useState(false);
   const [busyStep, setBusyStep] = useState<string | null>(null);
   const [busyVideo, setBusyVideo] = useState<string | null>(null);
@@ -276,6 +286,18 @@ export default function PMIOnboardingPortal({
   // banco). Sem o escopo o servidor recusa gravar e recusar vídeo, então o consentimento de voz e a seção de vídeo
   // e entrevista dão lugar a um aviso neutro.
   const hasVideoScope = (payload.scopes ?? []).includes('video_screening');
+  // #2393 A2 (ADR-0134): a candidatura de vaga piloto da linha vê a jornada da vaga, com o período no lugar do ciclo
+  // (D27) e a data prometida do convite do vídeo (N1). Sem 'opening' no payload, o portal fica como era.
+  const opening = payload.opening ?? null;
+  const isLinePilot = opening?.evaluation_track === 'line_pilot';
+  const openingName = (opening?.title ?? '').split(/\s+-\s+Núcleo\b/)[0].trim();
+  const fmtData = (iso: string | null | undefined): string => {
+    if (!iso) return '';
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
+    return d.toLocaleDateString(lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es' : 'pt-BR', { timeZone: 'America/Sao_Paulo' });
+  };
+  const statusHumano = i18n[`meStatus.statusBadge.${app?.status}`] ?? app?.status;  // #2393 A2 (C10)
+  const mailto = (assunto: string) => `mailto:nucleoia@pmigo.org.br?subject=${encodeURIComponent(assunto)}`;
   const videosUploadedCount = videoScreenings.filter(v => ['uploaded','transcribing','transcribed'].includes(v.status)).length;
 
   const expiresAtDate = new Date(token_metadata.expires_at);
@@ -420,6 +442,7 @@ export default function PMIOnboardingPortal({
         ...payload,
         application: { ...app, has_consent: grant, has_revoked: !grant }
       });
+      setConsentConfirmed(true);  // #2393 A2 (C6): a pessoa vê que a escolha ficou registrada e o que vem a seguir
     } catch (e: any) {
       setErrorMsg(e?.message ?? String(e));
     } finally {
@@ -747,25 +770,36 @@ export default function PMIOnboardingPortal({
           {T('pmi.onboarding.greeting').replace('{name}', app.applicant_name.split(/\s+/)[0] ?? '')}
         </h1>
         <p className="text-gray-700">
-          {T('pmi.onboarding.intro')
-            .replace('{role}', roleLabel)
-            .replace('{cycle}', cycle.title)}
+          {isLinePilot
+            ? T('pmi.onboarding.introPilot')
+                .replace('{opening}', openingName)
+                .replace('{start}', fmtData(opening?.start_date))
+                .replace('{end}', fmtData(opening?.end_date))
+            : T('pmi.onboarding.intro')
+                .replace('{role}', roleLabel)
+                .replace('{cycle}', cycle.title)}
         </p>
         <div className="mt-4 flex flex-wrap gap-2 text-sm">
-          <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded-full">
-            {T('pmi.onboarding.cycleCode')}: <strong>{cycle.cycle_code}</strong>
-          </span>
+          {isLinePilot ? (
+            <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded-full">
+              {T('pmi.onboarding.periodLabel')}: <strong>{T('pmi.onboarding.periodValue').replace('{start}', fmtData(opening?.start_date)).replace('{end}', fmtData(opening?.end_date))}</strong>
+            </span>
+          ) : (
+            <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded-full">
+              {T('pmi.onboarding.cycleCode')}: <strong>{cycle.cycle_code}</strong>
+            </span>
+          )}
           <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded-full">
             {T('pmi.onboarding.role')}: <strong>{roleLabel}</strong>
           </span>
           <span className="bg-white border border-blue-200 text-blue-800 px-3 py-1 rounded-full">
-            {T('pmi.onboarding.status')}: <strong>{app.status}</strong>
+            {T('pmi.onboarding.status')}: <strong>{statusHumano}</strong>
           </span>
         </div>
       </div>
 
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
-        ⏰ {T('pmi.onboarding.expires').replace('{days}', String(daysLeft))}
+        ⏰ {T('pmi.onboarding.expiresOn').replace('{date}', fmtData(token_metadata.expires_at))}
       </div>
 
       <section className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -804,6 +838,13 @@ export default function PMIOnboardingPortal({
             </>
           )}
         </div>
+        {consentConfirmed && (
+          <p role="status" data-testid="consent-done" className="mt-3 text-sm text-green-800">
+            {isLinePilot && opening?.video_invite_by
+              ? T('pmi.onboarding.consentDonePilot').replace('{date}', fmtData(opening.video_invite_by))
+              : T('pmi.onboarding.consentDone')}
+          </p>
+        )}
       </section>
 
       {/* Issue #331 — destacado consent for voice biometric data (LGPD Art. 11 §I).
@@ -1005,7 +1046,28 @@ export default function PMIOnboardingPortal({
         </section>
       )}
 
-      {isInPreOnboarding && (
+      {/* #2393 A2 (C2, X1): a candidatura piloto vê a própria jornada, e não o texto do comitê do fluxo geral */}
+      {isLinePilot && (
+        <section data-testid="pilot-journey" className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-blue-900 mb-3">🧭 {T('pmi.onboarding.journeyTitle')}</h2>
+          <ol className="space-y-2 text-sm text-blue-900 list-decimal pl-5">
+            <li>✓ {T('pmi.onboarding.journeyReceived')}</li>
+            <li><strong>{T('pmi.onboarding.journeyNow')}</strong></li>
+            <li>{opening?.video_invite_by
+              ? T('pmi.onboarding.journeyVideo').replace('{date}', fmtData(opening.video_invite_by))
+              : T('pmi.onboarding.journeyVideoSoon')}</li>
+            <li>{T('pmi.onboarding.journeyFit')}</li>
+            <li>{T('pmi.onboarding.journeyResult')}</li>
+          </ol>
+          <p className="mt-4 text-sm text-blue-800">{T('pmi.onboarding.journeyWho')}</p>
+          <div className="mt-4 space-y-1 text-sm text-blue-800">
+            <p>{T('pmi.onboarding.helpLine').split('{email}')[0]}<a className="underline" href={mailto(T('pmi.onboarding.helpSubject'))}>nucleoia@pmigo.org.br</a>{T('pmi.onboarding.helpLine').split('{email}')[1]}</p>
+            <p>{T('pmi.onboarding.withdrawLine').split('{email}')[0]}<a className="underline" href={mailto(T('pmi.onboarding.withdrawSubject'))}>nucleoia@pmigo.org.br</a>{T('pmi.onboarding.withdrawLine').split('{email}')[1]}</p>
+          </div>
+        </section>
+      )}
+
+      {isInPreOnboarding && !isLinePilot && (
         <section className="bg-blue-50 border border-blue-200 rounded-xl p-6">
           <h2 className="text-lg font-semibold text-blue-900 mb-2">
             📋 {T('pmi.onboarding.evaluationPhase')}
@@ -1115,7 +1177,7 @@ export default function PMIOnboardingPortal({
       )}
 
       {/* #2393 D4: sem o escopo de vídeo, um aviso neutro no lugar da seção de vídeo e entrevista */}
-      {!hasVideoScope && (
+      {!hasVideoScope && !isLinePilot && (
         <section data-testid="no-video-scope-notice" className="bg-gray-50 border border-gray-200 rounded-xl p-6">
           <p className="text-sm text-gray-700">{T('pmi.onboarding.noVideoScopeNotice')}</p>
         </section>
