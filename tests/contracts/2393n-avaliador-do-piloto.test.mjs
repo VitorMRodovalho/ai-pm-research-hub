@@ -124,7 +124,7 @@ test('#2393n C9: o lembrete sai uma vez, de 4 a 6 dias, a quem não abriu nenhum
     'o lembrete deixou de marcar o envio logo depois de mandar');
   const m = todas().filter((x) => x.s.includes("cron.schedule( 'selection-pilot-portal-reminder-daily',")).pop();
   assert.ok(m, 'o lembrete não está agendado');
-  assert.match(m.s, /cron\.schedule\( 'selection-pilot-portal-reminder-daily', '0 13 \* \* \*', \$cron\$ SELECT public\._lembrete_do_portal_do_piloto_cron\(\) \$cron\$ \);/, 'o agendamento mudou');
+  assert.match(m.s, /cron\.schedule\( 'selection-pilot-portal-reminder-daily', '11 13 \* \* \*', \$cron\$ SELECT public\._lembrete_do_portal_do_piloto_cron\(\) \$cron\$ \);/, 'o agendamento mudou');
 });
 
 test('#2393n C9: o texto do lembrete só usa variável que o cron passa, nas 3 línguas, sem travessão', () => {

@@ -1322,6 +1322,6 @@ END $$;
 
 SELECT cron.schedule(
   'selection-pilot-portal-reminder-daily',
-  '0 13 * * *',
+  '11 13 * * *',  -- minuto livre: às 13:00 já rodam três crons diários e um semanal
   $cron$ SELECT public._lembrete_do_portal_do_piloto_cron() $cron$
 );
