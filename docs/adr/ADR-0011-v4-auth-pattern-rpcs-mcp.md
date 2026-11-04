@@ -36,7 +36,7 @@ Nenhum incidente reportado em `mcp_usage_log` nos últimos 30 dias (0 unauthoriz
 | **RPC SECURITY DEFINER (read s/ PII)** | Auth gate opcional — depender de RLS/MCP gate já é suficiente |
 | **MCP tools (write)** | `if (!(await canV4(sb, member.id, '<action>'))) return err("Unauthorized")` |
 | **MCP tools (read PII)** | `canV4(sb, member.id, 'view_pii')` ou delegação à RPC (que já gate) |
-| **Front paths `/admin/*`** | Middleware verifica via RPC helper e redireciona |
+| **Front paths `/admin/*`** | Sem gate no middleware (ADR-0106): a fronteira é RLS + RPC SECURITY DEFINER, e a tela decide com `canFor()` do cache de capacidades (ADR-0083) |
 
 ### Actions canônicas
 

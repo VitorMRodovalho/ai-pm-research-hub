@@ -240,12 +240,6 @@ test('CrossTribeIsland has ranking charts and sortable table', () => {
   assert.ok(content.includes('exec_cross_initiative_comparison'), 'Must load cross-initiative data (p192 OPP-191.A)');
 });
 
-test('AdminNav has cross-tribes entry', () => {
-  const content = readFileSync(resolve(ROOT, 'src/components/nav/AdminNav.astro'), 'utf8');
-  assert.ok(content.includes('cross-tribes'), 'AdminNav must have cross-tribes entry');
-  assert.ok(content.includes('/admin/tribes'), 'AdminNav must link to /admin/tribes');
-});
-
 test('navigation.config has admin-cross-tribes entry', () => {
   const content = readFileSync(resolve(ROOT, 'src/lib/navigation.config.ts'), 'utf8');
   assert.ok(content.includes('admin-cross-tribes'), 'navigation.config must have admin-cross-tribes');

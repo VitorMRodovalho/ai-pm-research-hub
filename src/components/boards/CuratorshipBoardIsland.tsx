@@ -698,8 +698,8 @@ export default function CuratorshipBoardIsland({ i18n }: { i18n?: I18n }) {
   const [search, setSearch] = useState('');
 
   // Derive curation access from shared member context.
-  // V4 canFor() fallback is gated on !isSimulating to keep parity with
-  // AdminNav: when a superadmin simulates a tier without curation access,
+  // V4 canFor() fallback is gated on !isSimulating: when a superadmin
+  // simulates a tier without curation access,
   // the V4 capability cache still reflects the real user, so without this
   // guard the curatorship UI would render while hasPermission correctly
   // returns false. Legacy hasPermission already honours simulation via

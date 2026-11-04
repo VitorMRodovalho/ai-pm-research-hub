@@ -336,14 +336,6 @@ test('/blog/[slug] shows individual post (SSR)', () => {
 // Navigation
 // ═══════════════════════════════════════════════════
 
-test('AdminNav has campaigns and blog links', () => {
-  const content = readFile('src/components/nav/AdminNav.astro');
-  assert.ok(content.includes("'campaigns'"), 'Must have campaigns nav link');
-  assert.ok(content.includes("'blog'"), 'Must have blog nav link');
-  assert.ok(content.includes("'/admin/campaigns'"), 'Must link to /admin/campaigns');
-  assert.ok(content.includes("'/admin/blog'"), 'Must link to /admin/blog');
-});
-
 test('navigation.config.ts has campaigns and blog entries', () => {
   const content = readFile('src/lib/navigation.config.ts');
   assert.ok(content.includes("'admin-campaigns'"), 'Must have admin-campaigns entry');

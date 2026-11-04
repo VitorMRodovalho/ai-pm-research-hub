@@ -304,7 +304,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   import { TIER_RANK } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
-  import { subscribeCapabilityInvalidation } from '../../lib/permissions';
+  import { subscribeCapabilityInvalidation, ADMIN_TIER_ACTIONS } from '../../lib/permissions';
   import { unregisterThisDevice } from '../../lib/push';
 
   // Ensure runtime-injected env is available before creating the client.
@@ -1117,13 +1117,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
 
   // V4 capability helpers exposed to Astro inline scripts (parity with
   // src/lib/permissions.ts canFor/canForAdminEntry for React islands).
-  // Source-of-truth list of ADMIN_TIER_ACTIONS lives in permissions.ts;
-  // mirrored here for vanilla-script access without bundler imports.
-  const ADMIN_TIER_ACTIONS_INLINE = [
-    'write', 'manage_event', 'manage_member', 'manage_partner', 'manage_finance',
-    'manage_comms', 'manage_board_admin', 'manage_platform',
-    'view_internal_analytics', 'view_chapter_dashboards',
-  ];
+  // #2974: a lista de ações de entrada é a de permissions.ts, importada. A cópia
+  // literal que morava aqui tinha 10 das 13 e fazia a casca da página e a ilha
+  // responderem diferente para a mesma pessoa.
   (window as any).__nucleoCanFor = (action: string, scope?: { type: 'initiative'|'tribe', id: string|number }) => {
     const caps = (window as any).__nucleoCapabilities;
     if (!caps) return false;
@@ -1137,7 +1133,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     const caps = (window as any).__nucleoCapabilities;
     if (!caps) return false;
     if (caps.is_superadmin) return true;
-    return ADMIN_TIER_ACTIONS_INLINE.some(a => (caps.org_actions || []).includes(a));
+    return ADMIN_TIER_ACTIONS.some(a => (caps.org_actions || []).includes(a));
   };
 
   // ── Boot ──

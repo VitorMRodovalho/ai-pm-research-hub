@@ -329,7 +329,6 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   // dois arquivos ele mora, então lê os dois.
   const constants = read('src/lib/admin/constants.ts') + '\n' + read('src/lib/admin/route-access.ts');
   const navConfig = read('src/lib/navigation.config.ts');
-  const adminNav = read('src/components/nav/AdminNav.astro');
   const analytics = read('src/pages/admin/analytics.astro');
   const migration = read('supabase/migrations/20260312110000_analytics_v2_internal_readonly_and_metrics.sql');
 
@@ -337,7 +336,6 @@ test('analytics v2 grants readonly access without widening admin actions and shi
   assert.equal(constants.includes('canReadInternalAnalytics(member)'), true);
   assert.equal(constants.includes('canManageAdminActions(member)'), true);
   assert.equal(navConfig.includes("allowedDesignations: ['sponsor', 'chapter_liaison', 'curator']"), true);
-  assert.equal(adminNav.includes("allowedDesignations: ['sponsor', 'chapter_liaison', 'curator']"), true);
   // GC-082: admin/index.astro is now a redirect — tab-based assertions removed
   assert.equal(analytics.includes('id="analytics-filter-cycle"'), true);
   assert.equal(analytics.includes('id="analytics-filter-tribe"'), true);
