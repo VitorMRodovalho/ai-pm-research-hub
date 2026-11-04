@@ -8192,6 +8192,10 @@ const ptBR: Record<string, string> = {
   'myOpenings.section.answers': 'Respostas da vaga',
   'myOpenings.section.other': 'Outras informações',
   'myOpenings.noAnswer': 'Sem resposta.',
+  // #2393 A4: Minhas vagas do alfa
+  'myOpenings.nextStep': 'Próximo passo: escreva as perguntas do vídeo e os critérios da conversa de fit, com o modelo que a gestão enviou. A sua parte com os candidatos é a conversa de fit, depois do vídeo da linha; até lá, não é preciso entrar em contato com ninguém.',
+  'myOpenings.emailHidden': 'O e-mail do candidato fica com a gestão até a conversa de fit.',
+  'myOpenings.notInformed': 'Não informado.',
   'myOpenings.field.email': 'E-mail',
   'myOpenings.field.linkedin': 'LinkedIn',
   'myOpenings.field.credly': 'Credly',

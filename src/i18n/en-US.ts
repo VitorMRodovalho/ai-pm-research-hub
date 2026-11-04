@@ -8183,6 +8183,10 @@ const enUS: Record<string, string> = {
   'myOpenings.section.answers': 'Answers to the opening',
   'myOpenings.section.other': 'Other information',
   'myOpenings.noAnswer': 'No answer.',
+  // #2393 A4: Minhas vagas do alfa
+  'myOpenings.nextStep': 'Next step: write the video questions and the fit conversation criteria, using the template the management team sent. Your part with the candidates is the fit conversation, after the line video; until then, there is no need to contact anyone.',
+  'myOpenings.emailHidden': 'The candidate\'s email stays with the management team until the fit conversation.',
+  'myOpenings.notInformed': 'Not provided.',
   'myOpenings.field.email': 'Email',
   'myOpenings.field.linkedin': 'LinkedIn',
   'myOpenings.field.credly': 'Credly',

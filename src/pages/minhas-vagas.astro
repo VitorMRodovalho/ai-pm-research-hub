@@ -41,6 +41,9 @@ const MV_I18N = {
   sectionAnswers: t('myOpenings.section.answers', lang),
   sectionOther: t('myOpenings.section.other', lang),
   noAnswer: t('myOpenings.noAnswer', lang),
+  nextStep: t('myOpenings.nextStep', lang),
+  emailHidden: t('myOpenings.emailHidden', lang),
+  notInformed: t('myOpenings.notInformed', lang),
   fieldEmail: t('myOpenings.field.email', lang),
   fieldLinkedin: t('myOpenings.field.linkedin', lang),
   fieldCredly: t('myOpenings.field.credly', lang),
@@ -73,6 +76,9 @@ const MV_I18N = {
       <p class="text-sm text-[var(--text-secondary)] mt-1">{t('myOpenings.subtitle', lang)}</p>
       <p class="text-xs text-[var(--text-muted)] mt-1">{t('myOpenings.logNote', lang)}</p>
     </header>
+
+    <!-- #2393 A4 (L5): o que o líder faz agora no alfa. Texto fixo da fase; quando houver etapa por vaga, vem do banco. -->
+    <div id="mv-next-step" class="mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">{MV_I18N.nextStep}</div>
 
     <div id="mv-loading" class="text-center py-16">
       <p class="text-[var(--text-muted)] text-sm">{MV_I18N.loading}</p>
@@ -184,7 +190,17 @@ const MV_I18N = {
           <p class="font-bold text-navy">${esc(g.titulo)}</p>
           <p class="text-xs text-[var(--text-muted)]"><span class="font-mono">${esc(vaga)}</span> · ${esc(I.countLabel)} ${g.itens.length}</p>
         </div>
-        <div class="overflow-x-auto">
+        <ul class="md:hidden divide-y divide-[var(--border)]">${g.itens.map((a) => `
+          <li class="py-3 flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-semibold text-navy">${esc(a.applicant_name)}</p>
+              <p class="text-xs text-[var(--text-muted)]">${esc(a.chapter || '—')} · ${esc(statusLabel(a.status))} · ${esc(dataCurta(a.application_date))}</p>
+            </div>
+            <button type="button" data-mv-app="${esc(a.application_id)}"
+              class="shrink-0 px-3 py-1.5 rounded-xl bg-navy text-white text-xs font-semibold hover:opacity-90">${esc(I.viewBtn)}</button>
+          </li>`).join('')}
+        </ul>
+        <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-sm">
             <thead><tr class="text-left text-xs text-[var(--text-muted)]">
               <th class="py-1 pr-3">${esc(I.colName)}</th><th class="py-1 pr-3">${esc(I.colChapter)}</th>
@@ -248,12 +264,17 @@ const MV_I18N = {
       if (campo) usados.add(campo);
       return linha(q?.question || campo, texto(campo ? data[campo] : ''));
     }).join('');
+    // #2393 A4 (L1, L2): sem repetir um texto já mostrado como resposta e sem "Sem resposta" em campo que a vaga
+    // não perguntou. O "Sem resposta" fica só nas perguntas da vaga, onde ele quer dizer alguma coisa.
+    const jaMostrados = new Set([...usados].map((campo) => texto(data[campo])).filter(Boolean));
     const outros = CAMPOS_OUTROS.filter(([campo]) => !usados.has(campo))
+      .filter(([campo]) => texto(data[campo]) !== '' && !jaMostrados.has(texto(data[campo])))
       .map(([campo, rotulo]) => linha(I[rotulo], texto(data[campo]))).join('');
 
     const local = [data.applicant_city, data.state, data.country].filter(Boolean).join(', ');
     const linkedin = urlSegura(data.linkedin_url);
     const credly = urlSegura(data.credly_url);
+    const temEmail = Boolean(data.email);  // #2393 A4 (R2): sem e-mail, a tela diz onde ele está
 
     const body = $('mv-detail-body');
     if (!body) return;
@@ -261,21 +282,21 @@ const MV_I18N = {
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
         <p class="text-xs text-[var(--text-muted)]"><span class="font-mono">${esc(data.opportunity_id)}</span> · ${esc(data.opening_title)}</p>
         <h2 class="text-xl font-bold text-navy mt-1">${esc(data.applicant_name)}</h2>
-        <p class="text-sm text-[var(--text-secondary)] mt-1">${esc(roleLabel(data.role_applied))} · ${esc(statusLabel(data.status))} · ${esc(I.fieldCycle)} ${esc(data.cycle_code || '—')} · ${esc(I.fieldDate)} ${esc(dataCurta(data.application_date))}</p>
+        <p class="text-sm text-[var(--text-secondary)] mt-1">${esc(roleLabel(data.role_applied))} · ${esc(statusLabel(data.status))} · ${esc(I.fieldDate)} ${esc(dataCurta(data.application_date))}</p>
       </div>
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
         <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionContact)}</h3>
-        ${linha(I.fieldEmail, texto(data.email))}
+        ${temEmail ? linha(I.fieldEmail, texto(data.email)) : `<div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(I.fieldEmail)}</p><p class="text-sm text-[var(--text-muted)]">${esc(I.emailHidden)}</p></div>`}
         <div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(I.fieldLinkedin)}</p>
-          <p class="text-sm">${linkedin ? `<a href="${esc(linkedin)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(linkedin)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.noAnswer)}</span>`}</p></div>
+          <p class="text-sm">${linkedin ? `<a href="${esc(linkedin)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(linkedin)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.notInformed)}</span>`}</p></div>
         <div class="mb-3"><p class="text-xs uppercase tracking-wide text-[var(--text-muted)]">${esc(I.fieldCredly)}</p>
-          <p class="text-sm">${credly ? `<a href="${esc(credly)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(credly)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.noAnswer)}</span>`}</p></div>
+          <p class="text-sm">${credly ? `<a href="${esc(credly)}" target="_blank" rel="noopener noreferrer" class="text-navy hover:underline break-all">${esc(credly)}</a>` : `<span class="text-[var(--text-muted)]">${esc(I.notInformed)}</span>`}</p></div>
       </div>
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
         <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionProfile)}</h3>
         ${linha(I.fieldLocation, local)}
         ${linha(I.fieldChapter, texto(data.chapter))}
-        ${linha(I.fieldChapterAffiliation, texto(data.chapter_affiliation))}
+        ${usados.has('chapter_affiliation') ? '' : linha(I.fieldChapterAffiliation, texto(data.chapter_affiliation))}
       </div>
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-4">
         <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-3">${esc(I.sectionAnswers)}</h3>
