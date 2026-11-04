@@ -72,6 +72,7 @@ function kindLabel(e: EngagementRow, locale: Locale): string {
 }
 
 /* #2111 — the offboard reason menu reads offboard_reason_categories (active rows, by sort_order).
+   O8: rows marked is_system_only (codes only a system flow records, e.g. re-acceptance) stay out of this manual menu.
    label_pt is the canonical/fallback; label_en/label_es come from the same row. */
 interface ReasonCategory {
   code: string;
@@ -324,6 +325,7 @@ export default function MemberListIsland() {
       const { data, error } = await sb.from('offboard_reason_categories')
         .select('code, label_pt, label_en, label_es')
         .eq('is_active', true)
+        .eq('is_system_only', false)
         .order('sort_order', { ascending: true })
         .order('code', { ascending: true });
       if (cancelled) return;

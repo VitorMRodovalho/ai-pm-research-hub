@@ -6,8 +6,8 @@
  * admin_offboard_member stores an unknown code as 'other' (#449a, kept on purpose and pinned by
  * 1200-offboard-reason-category-propagation), so every offboard made from the screen recorded 'other'.
  *
- *   A  the menu reads offboard_reason_categories, active rows only, ordered by sort_order, and that result is what
- *      the menu state holds;
+ *   A  the menu reads offboard_reason_categories, active rows only and without the system-only codes (O8,
+ *      is_system_only), ordered by sort_order, and that result is what the menu state holds;
  *   B  every option with a value comes from that state: the only fixed option is the empty, disabled placeholder,
  *      and the RPC receives the chosen code;
  *   C  there is no default reason: the state starts empty, and the "Gerenciar Status" button resets it to empty;
@@ -40,11 +40,11 @@ function between(text, from, to, label) {
 const reasonSelect = () => between(ISLAND, '<select value={offboardCategory}', '</select>', 'the reason menu');
 const handleOffboard = () => between(ISLAND, 'const handleOffboard = async () => {', '\n  };', 'handleOffboard');
 
-test('A: the menu reads the catalog, active rows only, by sort_order, and keeps that result', () => {
+test('A: the menu reads the catalog, active and not system-only rows, by sort_order, and keeps that result', () => {
   const load = between(ISLAND, "sb.from('offboard_reason_categories')", 'setReasonCategories(data as ReasonCategory[]);', 'A');
   assert.match(load,
-    /^sb\.from\('offboard_reason_categories'\)\s*\.select\('code, label_pt, label_en, label_es'\)\s*\.eq\('is_active', true\)\s*\.order\('sort_order', \{ ascending: true \}\)\s*\.order\('code', \{ ascending: true \}\);/,
-    'the menu does not read the active catalog ordered by sort_order');
+    /^sb\.from\('offboard_reason_categories'\)\s*\.select\('code, label_pt, label_en, label_es'\)\s*\.eq\('is_active', true\)\s*\.eq\('is_system_only', false\)\s*\.order\('sort_order', \{ ascending: true \}\)\s*\.order\('code', \{ ascending: true \}\);/,
+    'the menu does not read the active, not system-only catalog ordered by sort_order');
   assert.match(load,
     /if \(error \|\| !data \|\| data\.length === 0\) \{ setReasonLoadError\(true\); return; \}\s*setReasonCategories\(data as ReasonCategory\[\]\);$/,
     'the catalog result is not what the menu state holds, or a failed load is silent');
