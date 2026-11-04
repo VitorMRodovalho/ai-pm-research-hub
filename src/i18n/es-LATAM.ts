@@ -8184,6 +8184,10 @@ const esLATAM: Record<string, string> = {
   'myOpenings.section.answers': 'Respuestas de la vacante',
   'myOpenings.section.other': 'Otra información',
   'myOpenings.noAnswer': 'Sin respuesta.',
+  // #2393 A4: Minhas vagas do alfa
+  'myOpenings.nextStep': 'Próximo paso: escriba las preguntas del video y los criterios de la conversación de fit, con el modelo que envió la gestión. Su parte con los candidatos es la conversación de fit, después del video de la línea; hasta entonces, no hace falta contactar a nadie.',
+  'myOpenings.emailHidden': 'El correo del candidato queda con la gestión hasta la conversación de fit.',
+  'myOpenings.notInformed': 'No informado.',
   'myOpenings.field.email': 'Correo electrónico',
   'myOpenings.field.linkedin': 'LinkedIn',
   'myOpenings.field.credly': 'Credly',
