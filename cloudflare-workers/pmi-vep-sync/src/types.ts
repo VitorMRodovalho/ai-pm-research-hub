@@ -65,6 +65,9 @@ export interface VepOpportunityRow {
   essay_mapping: Record<string, { field: string; question: string }> | null;
   vep_url: string | null;
   is_active: boolean;
+  /** #2393 A3: a trilha de avaliação da vaga e a data prometida do convite do vídeo (só na vaga piloto). */
+  evaluation_track?: 'general' | 'line_pilot' | string | null;
+  video_invite_by?: string | null;
 }
 
 export interface VepApplicationListItem {

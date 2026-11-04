@@ -291,7 +291,7 @@ import type { VepOpportunityRow } from './types';
 export async function getAllOpportunities(db: SupabaseClient): Promise<VepOpportunityRow[]> {
   const { data, error } = await db
     .from('vep_opportunities')
-    .select('opportunity_id, title, chapter_posted, role_default, essay_mapping, vep_url, is_active');
+    .select('opportunity_id, title, chapter_posted, role_default, essay_mapping, vep_url, is_active, evaluation_track, video_invite_by');
 
   if (error) throw new Error(`getAllOpportunities: ${error.message}`);
   return (data ?? []) as VepOpportunityRow[];

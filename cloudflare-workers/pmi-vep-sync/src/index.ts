@@ -731,6 +731,8 @@ async function handleIngest(req: Request, env: Env): Promise<Response> {
               email: mapped.email,
               role_applied: mapped.role_applied,
               opportunity_title: opp.title,
+              evaluation_track: opp.evaluation_track ?? null,
+              video_invite_by: opp.video_invite_by ?? null,
               chapter: mapped.chapter,
               token
             });
