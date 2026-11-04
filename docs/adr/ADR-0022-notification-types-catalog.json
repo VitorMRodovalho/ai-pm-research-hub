@@ -164,7 +164,7 @@
     },
     "selection_interview_overdue": {
       "delivery_mode": "digest_weekly",
-      "rationale": "p228 W2 Leaf 2 (2026-05-23) — admin alert for stale `selection_interviews` (scheduled_at past, conducted_at NULL, status IN scheduled/rescheduled). Emitted by `_selection_interview_overdue_cron()` daily at 14:00 UTC. One notification per (interview, interviewer) pair with 7-day idempotency window. Bundled in Saturday digest; no email spam."
+      "rationale": "p228 W2 Leaf 2 (2026-05-23) — admin alert for stale `selection_interviews` (scheduled_at past, conducted_at NULL, status IN scheduled/rescheduled). Emitted by `_selection_interview_overdue_cron()` daily at 14:00 UTC. One notification per (interview, interviewer) pair with 7-day idempotency window. Bundled in the weekly digest (Monday 12:00 UTC, #2580); no email spam."
     },
     "selection_cutoff_approved": {
       "delivery_mode": "transactional_immediate",
@@ -284,7 +284,7 @@
     },
     "selection_opening_new_applications": {
       "delivery_mode": "digest_weekly",
-      "rationale": "#2393 (ADR-0134, GP decision 2026-11-02): new applications reached an opening linked to an initiative. An hourly cron (_selection_opening_new_applications_cron) sends ONE notification per (opening leader, opening) with the count and the opening, never a candidate name, email or answer. Recipients come from the same gate as the per-opening reader (can_by_member view_opening_applications on the opening initiative, minus conflict of interest). Bell immediately, email only in the Saturday digest: the leader acts within days (ADR-0134 section 8), and the first import of an opening must not become a burst. Not candidate-facing, so it honors suppress_all."
+      "rationale": "#2393 (ADR-0134, GP decision 2026-11-02): new applications reached an opening linked to an initiative. An hourly cron (_selection_opening_new_applications_cron) sends ONE notification per (opening leader, opening) with the count and the opening, never a candidate name, email or answer. Recipients come from the same gate as the per-opening reader (can_by_member view_opening_applications on the opening initiative, minus conflict of interest). Bell immediately, email only in the weekly digest (Monday 12:00 UTC): the leader acts within days (ADR-0134 section 8), and the first import of an opening must not become a burst. Not candidate-facing, so it honors suppress_all."
     },
     "selection_evaluator_assigned": {
       "delivery_mode": "transactional_immediate",
@@ -300,7 +300,7 @@
   },
   "ef_routing": {
     "transactional_immediate": "send-transactional-emails (cron */5 min) — picks rows where delivery_mode = 'transactional_immediate' AND email_sent_at IS NULL",
-    "digest_weekly": "send-weekly-member-digest (cron Saturday 12:00 UTC) — aggregates rows per recipient where delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL AND created_at < last_saturday_12h",
+    "digest_weekly": "send-weekly-member-digest (cron Monday 12:00 UTC since #2580) — aggregates rows per recipient where delivery_mode = 'digest_weekly' AND digest_delivered_at IS NULL AND created_at < last_saturday_12h",
     "suppress": "Never picked by either EF — in-app only"
   },
   "next_waves": {
