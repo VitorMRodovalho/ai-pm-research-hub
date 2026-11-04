@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
+import { ADMIN_SIDEBAR_SECTIONS } from '../../src/lib/navigation.config.ts';
 
 const MIG = 'supabase/migrations/20260805000165_676_recurring_meeting_admin_list_rpc.sql';
 const PAGE = 'src/pages/admin/agenda-recorrente.astro';
@@ -46,10 +47,14 @@ test('#676 slice2 static: page + locale redirects exist', () => {
 });
 
 test('#676 slice2 static: nav entry registered in operations section', () => {
+  // #2974 (F0b): os dados da sidebar moram em ADMIN_SIDEBAR_SECTIONS (src/lib/navigation.config.ts); o ícone
+  // continua importado no componente.
+  const ops = ADMIN_SIDEBAR_SECTIONS.find(s => s.id === 'operations');
+  const item = ops?.items.find(i => i.href === '/admin/agenda-recorrente');
+  assert.ok(item, 'sidebar item present in the operations section');
+  assert.equal(item.permission, 'system.global_config', 'gated to platform managers');
+  assert.equal(item.icon, 'CalendarClock', 'icon wired');
   const nav = read(SIDEBAR);
-  assert.match(nav, /href: '\/admin\/agenda-recorrente'/, 'sidebar item present');
-  assert.match(nav, /permission: 'system\.global_config'/, 'gated to platform managers');
-  assert.match(nav, /icon: 'CalendarClock'/, 'icon wired');
   assert.match(nav, /CalendarClock,?\s*\n?\s*\} from 'lucide-react'/, 'icon imported from lucide');
 });
 

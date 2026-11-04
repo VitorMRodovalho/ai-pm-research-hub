@@ -8,8 +8,7 @@ import {
   MonitorPlay, ClipboardList,
   Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 } from 'lucide-react';
-import { hasPermission as checkPermission, type Permission } from '../../lib/permissions';
-import { canAccessAdminRoute, type AdminRouteKey } from '../../lib/admin/route-access.ts';
+import { ADMIN_SIDEBAR_SECTIONS as SECTIONS, isAdminSidebarItemVisible } from '../../lib/navigation.config';
 
 /* ────────────────────────── Icon map ────────────────────────── */
 const ICONS: Record<string, React.FC<{ size?: number }>> = {
@@ -20,116 +19,6 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   MonitorPlay, ClipboardList,
   Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 };
-
-/* ────────────────────────── Sidebar data ────────────────────── */
-interface SidebarItem {
-  href: string;
-  label: Record<string, string>;
-  icon: string;
-  /**
-   * Permission gate for this item. A single permission string, or an array =
-   * OR-semantics (item shows if the member holds ANY of them). Arrays exist
-   * because some pages admit more than one audience the permission model can't
-   * fold into one string (e.g. chapter-report: GP via admin.access OR chapter
-   * roles via admin.analytics.chapter). Nav is a UX hint; the page self-gates.
-   */
-  permission?: Permission | Permission[];
-  /**
-   * #1590 — porta alternativa por ROTA, em OR com `permission`.
-   *
-   * `permission` fala o vocabulário V3 (tabela hardcoded de tier + designação). A página fala
-   * `canAccessAdminRoute`, que desde a correção do #1590 também conhece o comitê de seleção. Um
-   * avaliador de comitê passava na página e sumia daqui: a tela abria com o menu lateral sem a
-   * entrada que descreve onde ele está.
-   *
-   * Só a entrada de Seleção declara isto por enquanto; reconciliar as ~40 restantes é o #1046.
-   */
-  routeKey?: AdminRouteKey;
-}
-
-interface SidebarSection {
-  id: string;
-  emoji: string;
-  label: Record<string, string>;
-  items: SidebarItem[];
-}
-
-// Normalize an item's permission gate to a list (see SidebarItem.permission).
-const itemPerms = (item: SidebarItem): Permission[] =>
-  item.permission == null ? [] : Array.isArray(item.permission) ? item.permission : [item.permission];
-
-const SECTIONS: SidebarSection[] = [
-  {
-    id: 'overview', emoji: '📊',
-    label: { 'pt-BR': 'Visão Geral', 'en-US': 'Overview', 'es-LATAM': 'Visión General' },
-    items: [
-      { href: '/admin', label: { 'pt-BR': 'Dashboard', 'en-US': 'Dashboard', 'es-LATAM': 'Dashboard' }, icon: 'LayoutDashboard', permission: 'admin.access' },
-    ],
-  },
-  {
-    id: 'people', emoji: '👥',
-    label: { 'pt-BR': 'Pessoas', 'en-US': 'People', 'es-LATAM': 'Personas' },
-    items: [
-      { href: '/admin/members', label: { 'pt-BR': 'Membros', 'en-US': 'Members', 'es-LATAM': 'Miembros' }, icon: 'Users', permission: 'admin.access' },
-      { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase', permission: 'admin.access' },
-      { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
-      { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage', routeKey: 'admin_selection' },
-      { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
-      { href: '/admin/vep-reconciliation', label: { 'pt-BR': 'Reconciliação VEP', 'en-US': 'VEP Reconciliation', 'es-LATAM': 'Reconciliación VEP' }, icon: 'ArrowLeftRight', permission: 'admin.access' },
-      { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
-      { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
-      { href: '/admin/members/drive-teardown', label: { 'pt-BR': 'Teardown de Drive', 'en-US': 'Drive Teardown', 'es-LATAM': 'Teardown de Drive' }, icon: 'HardDrive', permission: 'admin.members.manage' },
-      { href: '/admin/cohort-health', label: { 'pt-BR': 'Saúde da Coorte', 'en-US': 'Cohort Health', 'es-LATAM': 'Salud de la Cohorte' }, icon: 'HeartPulse', permission: ['admin.members.manage', 'admin.analytics'] },
-    ],
-  },
-  {
-    id: 'content', emoji: '📋',
-    label: { 'pt-BR': 'Conteúdo', 'en-US': 'Content', 'es-LATAM': 'Contenido' },
-    items: [
-      { href: '/admin/blog', label: { 'pt-BR': 'Blog', 'en-US': 'Blog', 'es-LATAM': 'Blog' }, icon: 'PenSquare', permission: 'admin.blog' },
-      { href: '/admin/publications', label: { 'pt-BR': 'Publicações', 'en-US': 'Publications', 'es-LATAM': 'Publicaciones' }, icon: 'BookOpen', permission: 'admin.publications' },
-      { href: '/admin/curatorship', label: { 'pt-BR': 'Curadoria', 'en-US': 'Curatorship', 'es-LATAM': 'Curaduría' }, icon: 'CheckCircle', permission: 'admin.curation' },
-      { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone', permission: 'admin.campaigns' },
-      { href: '/admin/comms', label: { 'pt-BR': 'Mídia Social', 'en-US': 'Social Media', 'es-LATAM': 'Redes Sociales' }, icon: 'BarChart3', permission: 'admin.campaigns' },
-      { href: '/admin/webinars', label: { 'pt-BR': 'Webinars', 'en-US': 'Webinars', 'es-LATAM': 'Webinars' }, icon: 'MonitorPlay', permission: 'admin.access' },
-      { href: '/admin/knowledge', label: { 'pt-BR': 'Biblioteca de Recursos', 'en-US': 'Resource Library', 'es-LATAM': 'Biblioteca de Recursos' }, icon: 'Library', permission: 'admin.access' },
-    ],
-  },
-  {
-    id: 'reports', emoji: '📈',
-    label: { 'pt-BR': 'Relatórios', 'en-US': 'Reports', 'es-LATAM': 'Informes' },
-    items: [
-      { href: '/admin/portfolio', label: { 'pt-BR': 'Portfólio Executivo', 'en-US': 'Executive Portfolio', 'es-LATAM': 'Portafolio Ejecutivo' }, icon: 'Briefcase', permission: 'admin.portfolio' },
-      { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart', permission: 'admin.portfolio' },
-      { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
-      { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
-      { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório do Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe del Capítulo' }, icon: 'FileText', permission: ['admin.access', 'admin.analytics.chapter'] },
-      { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
-    ],
-  },
-  {
-    id: 'operations', emoji: '⚙️',
-    label: { 'pt-BR': 'Operações', 'en-US': 'Operations', 'es-LATAM': 'Operaciones' },
-    items: [
-      { href: '/admin/campaigns', label: { 'pt-BR': 'Campanhas', 'en-US': 'Campaigns', 'es-LATAM': 'Campañas' }, icon: 'Mail', permission: 'admin.campaigns' },
-      { href: '/admin/sustainability', label: { 'pt-BR': 'Sustentabilidade', 'en-US': 'Sustainability', 'es-LATAM': 'Sostenibilidad' }, icon: 'Leaf', permission: 'admin.sustainability' },
-      { href: '/admin/pilots', label: { 'pt-BR': 'Pilotos', 'en-US': 'Pilots', 'es-LATAM': 'Pilotos' }, icon: 'Rocket', permission: 'admin.portfolio' },
-      { href: '/admin/agenda-recorrente', label: { 'pt-BR': 'Agenda Recorrente', 'en-US': 'Recurring Agenda', 'es-LATAM': 'Agenda Recurrente' }, icon: 'CalendarClock', permission: 'system.global_config' },
-      { href: '/admin/agenda-viva', label: { 'pt-BR': 'Agenda Viva', 'en-US': 'Live Agenda', 'es-LATAM': 'Agenda Viva' }, icon: 'CalendarDays', permission: 'admin.events.manage' },
-      { href: '/admin/organization', label: { 'pt-BR': 'Organização', 'en-US': 'Organization', 'es-LATAM': 'Organización' }, icon: 'Building', permission: 'system.global_config' },
-      { href: '/admin/settings', label: { 'pt-BR': 'Configurações', 'en-US': 'Settings', 'es-LATAM': 'Configuraciones' }, icon: 'Settings', permission: 'system.global_config' },
-      { href: '/admin/audit-log', label: { 'pt-BR': 'Registro de Auditoria', 'en-US': 'Audit Log', 'es-LATAM': 'Registro de Auditoría' }, icon: 'ClipboardList', permission: 'system.global_config' },
-      { href: '/admin/data-health', label: { 'pt-BR': 'Data Health', 'en-US': 'Data Health', 'es-LATAM': 'Data Health' }, icon: 'SearchCheck', permission: 'system.global_config' },
-      { href: '/admin/ai-calibration', label: { 'pt-BR': 'Calibração de IA', 'en-US': 'AI Calibration', 'es-LATAM': 'Calibración de IA' }, icon: 'SlidersHorizontal', permission: 'system.global_config' },
-      { href: '/admin/initiative-kinds', label: { 'pt-BR': 'Tipos de Iniciativa', 'en-US': 'Initiative Kinds', 'es-LATAM': 'Tipos de Iniciativa' }, icon: 'Shapes', permission: 'system.global_config' },
-      { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
-      { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.governance.view' },
-      { href: '/admin/gamification', label: { 'pt-BR': 'Gamificação', 'en-US': 'Gamification', 'es-LATAM': 'Gamificación' }, icon: 'Trophy', permission: 'admin.gamification' },
-      { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake', permission: 'admin.access' },
-      { href: '/help', label: { 'pt-BR': 'Ajuda / Guia', 'en-US': 'Help / Guide', 'es-LATAM': 'Ayuda / Guía' }, icon: 'HelpCircle', permission: 'workspace.access' },
-    ],
-  },
-];
 
 /* ────────────────────────── Props ────────────────────────────── */
 interface Props {
@@ -148,8 +37,7 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
     return false;
   });
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [visiblePerms, setVisiblePerms] = useState<Set<string>>(new Set());
-  const [visibleRoutes, setVisibleRoutes] = useState<Set<string>>(new Set());
+  const [visibleHrefs, setVisibleHrefs] = useState<Set<string>>(new Set());
 
   // Persist collapsed state
   useEffect(() => {
@@ -161,16 +49,11 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
     function resolvePerms() {
       const member = (window as any).navGetMember?.();
       if (!member) return;
-      const perms = new Set<string>();
-      const routes = new Set<string>();
+      const hrefs = new Set<string>();
       SECTIONS.forEach(s => s.items.forEach(item => {
-        itemPerms(item).forEach(p => {
-          if (checkPermission(member, p)) perms.add(p);
-        });
-        if (item.routeKey && canAccessAdminRoute(member, item.routeKey)) routes.add(item.routeKey);
+        if (isAdminSidebarItemVisible(member, item)) hrefs.add(item.href);
       }));
-      setVisiblePerms(perms);
-      setVisibleRoutes(routes);
+      setVisibleHrefs(hrefs);
     }
 
     // Try immediately
@@ -236,12 +119,8 @@ export default function AdminSidebar({ currentPath, locale }: Props) {
       {/* Sections */}
       <div className="flex-1 overflow-y-auto py-2">
         {SECTIONS.map(section => {
-          const visibleItems = section.items.filter(item => {
-            const ps = itemPerms(item);
-            if (ps.length === 0 && !item.routeKey) return true;
-            return ps.some(p => visiblePerms.has(p))
-              || (!!item.routeKey && visibleRoutes.has(item.routeKey));
-          });
+          const visibleItems = section.items.filter(item =>
+            isAdminSidebarItemVisible(null, item) || visibleHrefs.has(item.href));
           if (visibleItems.length === 0) return null;
 
           return (
