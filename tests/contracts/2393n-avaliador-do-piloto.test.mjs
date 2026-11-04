@@ -58,8 +58,8 @@ test('#2393n: a regra única exige atribuição, ação, calibragem, ausência d
 test('#2393n: a atribuição recusa, tudo ou nada, antes de gravar e de avisar', () => {
   const c = captura('assign_selection_evaluators');
   for (const [cond, motivo] of [
-    [/IF NOT public\.can_by_member\(p_member_id, 'evaluate_assigned_application'\) THEN v_motivos := v_motivos \|\| 'sem o vínculo de avaliador';/, 'sem vínculo'],
-    [/IF NOT EXISTS \(SELECT 1 FROM public\.selection_evaluator_calibrations c WHERE c\.member_id = p_member_id AND c\.opportunity_id = p_opportunity_id AND c\.part = p_part\) THEN v_motivos := v_motivos \|\| 'sem calibragem desta vaga e parte';/, 'calibragem'],
+    [/IF NOT public\.can_by_member\(p_member_id, 'evaluate_assigned_application'\) THEN v_motivos := v_motivos \|\| 'sem o vínculo de avaliador'::text;/, 'sem vínculo'],
+    [/IF NOT EXISTS \(SELECT 1 FROM public\.selection_evaluator_calibrations c WHERE c\.member_id = p_member_id AND c\.opportunity_id = p_opportunity_id AND c\.part = p_part\) THEN v_motivos := v_motivos \|\| 'sem calibragem desta vaga e parte'::text;/, 'calibragem'],
     [/IF EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = v_member\.person_id AND e\.initiative_id = v_vo\.initiative_id AND e\.status IN \('active', 'suspended'\)\) THEN v_motivos := v_motivos \|\| 'tem vínculo na iniciativa da vaga/, 'vínculo na linha'],
     [/ELSIF public\.selection_coi_recused\(p_member_id, v_app\.cycle_id\) THEN v_motivos := v_motivos \|\| \(left\(v_app\.id::text, 8\) \|\| ': conflito de interesse'\);/, 'conflito'],
     [/AND a\.evaluator_member_id <> p_member_id\) >= 2 THEN v_motivos := v_motivos \|\| \(left\(v_app\.id::text, 8\) \|\| ': já tem 2 avaliadores nesta parte'\);/, 'dois por parte'],
@@ -68,6 +68,22 @@ test('#2393n: a atribuição recusa, tudo ou nada, antes de gravar e de avisar',
   assert.ok(recusa > 0 && recusa < c.indexOf('INSERT INTO public.selection_evaluation_assignments'), 'a recusa não vem antes de gravar');
   assert.ok(c.indexOf('INSERT INTO public.selection_evaluation_assignments') < c.indexOf("PERFORM public.create_notification( p_member_id, 'selection_evaluator_assigned',"),
     'o aviso deixou de vir depois de gravar, ou de ir ao avaliador');
+});
+
+test('#2393n: a recusa com motivo literal junta texto ao array, e não um literal de array (22P02)', () => {
+  // Em PL/pgSQL, text[] || 'literal' resolve o literal como text[], e um texto comum vira 22P02 (malformed array
+  // literal): a recusa estourava em vez de devolver os motivos. Toda variável de array da função só recebe
+  // literal com cast.
+  const c = captura('assign_selection_evaluators');
+  const declare = c.slice(c.indexOf('AS $function$ DECLARE '), c.indexOf(' BEGIN '));
+  const arrays = [...declare.matchAll(/ (\w+) [\w.]+\[\](?: :=| DEFAULT|;)/g)].map((m) => m[1]);
+  assert.ok(arrays.includes('v_motivos'), 'v_motivos deixou de ser o array dos motivos; revise esta asserção');
+  for (const v of arrays) {
+    const semCast = [...c.matchAll(new RegExp(`\\b${v} \\|\\| '(?:[^']|'')*'(?!::)`, 'g'))].map((m) => m[0]);
+    assert.deepEqual(semCast, [], `${v} recebe literal sem cast, e o literal vira array (22P02)`);
+  }
+  assert.equal([...c.matchAll(/\bv_motivos := v_motivos \|\| '(?:[^']|'')*'::text;/g)].length, 4,
+    'as 4 recusas com motivo literal deixaram de existir ou de ter o cast');
 });
 
 test('#2393n: o formulário abre ao avaliador atribuído, esconde o contato e só lê a avaliação de quem chama', () => {
