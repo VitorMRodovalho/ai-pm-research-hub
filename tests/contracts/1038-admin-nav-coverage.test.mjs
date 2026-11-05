@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { ADMIN_SIDEBAR_SECTIONS } from '../../src/lib/navigation.config.ts';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // #1038 — anti-drift guard for the admin LEFT sidebar.
@@ -18,7 +19,10 @@ import { join } from 'node:path';
 // It is pure static file analysis (no DB, no live state) so it never flakes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-const SIDEBAR = 'src/components/admin/AdminSidebar.tsx';
+// #2974 (F0b): os dados da sidebar moram em ADMIN_SIDEBAR_SECTIONS de src/lib/navigation.config.ts, e o
+// componente só os renderiza. O guard lê a lista exportada, não o texto do arquivo.
+const SIDEBAR = 'ADMIN_SIDEBAR_SECTIONS (src/lib/navigation.config.ts)';
+const SIDEBAR_HREFS = new Set(ADMIN_SIDEBAR_SECTIONS.flatMap(s => s.items.map(i => i.href)));
 const ADMIN_PAGES_DIR = 'src/pages/admin';
 
 // Routes intentionally NOT in the left admin sidebar (reached contextually).
@@ -49,8 +53,7 @@ function fileToRoute(file) {
 }
 
 test('#1038 every static /admin page is in the sidebar or explicitly allowlisted', () => {
-  const nav = readFileSync(SIDEBAR, 'utf8');
-  const sidebarHrefs = new Set([...nav.matchAll(/href:\s*'([^']+)'/g)].map(m => m[1]));
+  const sidebarHrefs = SIDEBAR_HREFS;
 
   const missing = [];
   for (const f of walk(ADMIN_PAGES_DIR)) {
@@ -79,8 +82,7 @@ test('#1038 sidebar-coverage allowlist has no stale entries', () => {
 });
 
 test('#1038 the five formerly-drifted pages are now wired into the sidebar', () => {
-  const nav = readFileSync(SIDEBAR, 'utf8');
-  const hrefs = new Set([...nav.matchAll(/href:\s*'([^']+)'/g)].map(m => m[1]));
+  const hrefs = SIDEBAR_HREFS;
   for (const route of [
     '/admin/chapter-report',
     '/admin/vep-reconciliation',

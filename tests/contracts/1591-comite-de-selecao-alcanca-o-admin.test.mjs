@@ -87,20 +87,23 @@ describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
       'sem o mapeamento camelCase o menu mostra a chave crua');
   });
 
-  it('AS DUAS implementações do menu conhecem o eixo', () => {
-    // O defeito clássico é consertar a gêmea morta. Aqui as duas estão vivas: uma decide no
-    // servidor, a outra no cliente, sobre o MESMO item de nav.
+  it('o menu do cliente decide pelo mesmo predicado do servidor, com o papel do comitê', () => {
+    // Antes eram duas implementações vivas, e o defeito clássico era consertar uma só. Desde a #2974 (F0b) a gêmea do
+    // cliente delega o "habilitado" a getItemAccessibility. O que o cliente não pode perder é o argumento do comitê:
+    // sem ele, o eixo some do menu do cliente e só o servidor o conhece.
     assert.match(navSrc, /item\.allowedSelectionCommittee === 'evaluator'/,
       'servidor: getItemAccessibility não considera o eixo');
-    assert.match(clientSrc, /_committeeRole === 'evaluator'/,
-      'cliente: getItemAccessClient não considera o eixo');
+    assert.match(clientSrc,
+      /getItemAccessibility\(\s*item, tier, designations, true,\s*String\(_member\?\.operational_role \|\| ''\),\s*_member\?\.selection_committee_role \?\? null,?\s*\)/,
+      'cliente: getItemAccessClient não passa o papel do comitê ao predicado');
   });
 
   it('o eixo só conta quando a ENTRADA o declara, e distingue PAPEL', () => {
     // Duas coisas de uma vez: (a) um perfil "sou do comitê" não pode abrir rota que não declarou
     // o eixo — seria chave-mestra; (b) 'any' e 'evaluator' têm de ser tratados diferente, senão
     // observador recebe a fila de avaliação.
-    for (const [src, nome] of [[navSrc, 'servidor'], [clientSrc, 'cliente']]) {
+    // Desde a #2974 (F0b) o cliente usa o predicado do servidor (teste acima), então os ramos moram só em navSrc.
+    for (const [src, nome] of [[navSrc, 'servidor']]) {
       assert.match(src, /allowedSelectionCommittee === 'any'/, `${nome}: falta o ramo 'any'`);
       assert.match(src, /allowedSelectionCommittee === 'evaluator'/, `${nome}: falta o ramo 'evaluator'`);
       // O `: false` final é o que fecha a porta para entrada que não declarou o eixo.

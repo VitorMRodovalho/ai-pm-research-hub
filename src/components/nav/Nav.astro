@@ -301,7 +301,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   import { resolveAvatarUrl, initialsFor } from '../../lib/avatar';
   import { getMemberRole, isRegisteredMember } from '../../lib/routing';
   import { resolveTierFromMember, hasMinimumTier, type AccessTier } from '../../lib/admin/constants';
-  import { TIER_RANK } from '../../lib/navigation.config';
+  import { getItemAccessibility } from '../../lib/navigation.config';
   import { canExploreTribes, canSeeInactiveTribes } from '../../lib/tribes/access';
   import { buildTribeLabel, isRuntimeTribeActive } from '../../lib/tribes/catalog';
   import { subscribeCapabilityInvalidation, ADMIN_TIER_ACTIONS } from '../../lib/permissions';
@@ -382,27 +382,16 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   };
 
   function getItemAccessClient(item: any, tier: AccessTier, designations: string[]): { visible: boolean, enabled: boolean } {
-    const meetsMinTier = (TIER_RANK[tier] ?? 0) >= (TIER_RANK[item.minTier as AccessTier] ?? 0);
-    const hasDesig = item.allowedDesignations?.length
-      ? item.allowedDesignations.some((d: string) => designations.includes(d))
-      : false;
-    const hasOpRole = item.allowedOperationalRoles?.length
-      ? item.allowedOperationalRoles.includes(String(_member?.operational_role || ''))
-      : false;
-    // #1591 — ESTA função é a gêmea de `getItemAccessibility` em `src/lib/navigation.config.ts`.
-    // As duas decidem a mesma coisa em runtimes diferentes (servidor e cliente), então um eixo
-    // novo em só uma delas produz menu que aparece de um lado e some do outro. Mexer nas duas.
-    //
-    // O eixo distingue PAPEL: observador acompanha o processo ('any') mas não recebe a fila de
-    // avaliação ('evaluator'). Tratar os dois como iguais convidava o observador a pontuar.
-    const _committeeRole = _member?.selection_committee_role ?? null;
-    const hasCommittee =
-      item.allowedSelectionCommittee === 'any'
-        ? Boolean(_committeeRole)
-        : item.allowedSelectionCommittee === 'evaluator'
-          ? _committeeRole === 'evaluator'
-          : false;
-    const enabled = meetsMinTier || hasDesig || hasOpRole || hasCommittee;
+    // #1591 / #2974: o "habilitado" vem de `getItemAccessibility` (src/lib/navigation.config.ts), a mesma função que
+    // o servidor e o teste de matriz usam. Antes esta função era uma cópia dela, e um eixo novo numa só fazia o menu
+    // aparecer de um lado e sumir do outro. `isLoggedIn` vai como true porque o cliente decide o habilitado pelo tier
+    // e pelos eixos, como a cópia decidia; o que fica aqui é só a regra de visibilidade do cliente: item desabilitado
+    // aparece cinza, salvo `lgpdSensitive`.
+    const { enabled } = getItemAccessibility(
+      item, tier, designations, true,
+      String(_member?.operational_role || ''),
+      _member?.selection_committee_role ?? null,
+    );
     if (item.lgpdSensitive && !enabled) return { visible: false, enabled: false };
     return { visible: true, enabled };
   }
