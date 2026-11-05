@@ -26,12 +26,15 @@ import { canAccessAdminRoute, type AdminRouteKey } from './admin/route-access.ts
  * - `ownChapter`: o portão de uma RPC da tela aceita o próprio capítulo de qualquer membro. Entra quem tem capítulo.
  * - `rpcs`: as RPCs da tela de onde as ações saíram. O guard confere cada uma contra a última captura nas
  *   migrations e exige que a tela as chame.
+ * - `policies`: para a tela que lê e grava a tabela direto pela API, as policies de onde as ações saíram. O guard lê
+ *   a definição vigente de cada uma nas migrations (CREATE e os ALTER depois dele) e exige que a tela use a tabela.
  */
 export interface AdminRouteAccess {
   actions: readonly string[];
   designations?: readonly string[];
   ownChapter?: boolean;
   rpcs: readonly string[];
+  policies?: readonly { table: string; name: string }[];
 }
 
 export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
@@ -57,6 +60,8 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/comms-ops': { actions: ['manage_comms', 'view_internal_analytics'], rpcs: ['broadcast_history', 'get_comms_dashboard_metrics', 'webinars_pending_comms', 'schedule_comms_post'] },
   // Criar, editar e ligar o webinar ao evento pedem manage_member.
   '/admin/webinars': { actions: ['manage_member'], rpcs: ['upsert_webinar', 'link_webinar_event'] },
+  // A tela lê e grava blog_posts pela API: ler rascunho e gravar pedem manage_comms (policy blog_posts_manage_v4).
+  '/admin/blog': { actions: ['manage_comms'], rpcs: [], policies: [{ table: 'blog_posts', name: 'blog_posts_manage_v4' }] },
 };
 
 function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[], chapter?: string | null): boolean {
@@ -226,7 +231,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'admin-selection', labelKey: 'nav.adminSelection', href: '/admin/selection', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'], allowedSelectionCommittee: 'any', lgpdSensitive: true }, // sponsor = host/chapter president full read (Wave 1 — member A/LIM; RPC data already gated view_chapter_dashboards which sponsor holds)
   { key: 'admin-vep-reconciliation', labelKey: 'nav.adminVepReconciliation', href: '/admin/vep-reconciliation', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor'] },
   { key: 'admin-campaigns', labelKey: 'nav.adminCampaigns', href: '/admin/campaigns', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
-  { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_team'] },
+  { key: 'admin-blog', labelKey: 'nav.adminBlog', href: '/admin/blog', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-settings',  labelKey: 'nav.adminSettings',  href: '/admin/settings', minTier: 'superadmin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' },
   { key: 'notifications',   labelKey: 'nav.notifications', href: '/notifications',  minTier: 'member',   requiresAuth: true, section: 'main', group: 'member', navSlot: 'none' },
   { key: 'help',            labelKey: 'nav.adminHelp',     href: '/help',           minTier: 'visitor',  requiresAuth: false, section: 'both', group: 'member', navSlot: 'none', drawerSection: 'meu-espaco' },
@@ -378,7 +383,7 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
     id: 'content', emoji: '📋',
     label: { 'pt-BR': 'Conteúdo', 'en-US': 'Content', 'es-LATAM': 'Contenido' },
     items: [
-      { href: '/admin/blog', label: { 'pt-BR': 'Blog', 'en-US': 'Blog', 'es-LATAM': 'Blog' }, icon: 'PenSquare', permission: 'admin.blog' },
+      { href: '/admin/blog', label: { 'pt-BR': 'Blog', 'en-US': 'Blog', 'es-LATAM': 'Blog' }, icon: 'PenSquare' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/publications', label: { 'pt-BR': 'Publicações', 'en-US': 'Publications', 'es-LATAM': 'Publicaciones' }, icon: 'BookOpen', permission: 'admin.publications' },
       { href: '/admin/curatorship', label: { 'pt-BR': 'Curadoria', 'en-US': 'Curatorship', 'es-LATAM': 'Curaduría' }, icon: 'CheckCircle', permission: 'admin.curation' },
       { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone' }, // acesso: ADMIN_ROUTE_ACCESS

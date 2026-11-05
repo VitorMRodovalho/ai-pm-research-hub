@@ -1,6 +1,6 @@
 ---
 /**
- * /admin/blog — Blog Post Management (GP/DM/comms_team)
+ * /admin/blog — Blog Post Management (acesso: ADMIN_ROUTE_ACCESS)
  * CRUD for blog posts with i18n, status workflow, and preview.
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
@@ -28,7 +28,7 @@ const BLOG_I18N = {
 
     <div id="blog-loading" class="text-center py-16 text-gray-400">{t('campaigns.loading', lang)}</div>
     <div id="blog-denied" class="hidden text-center py-16">
-      <p class="text-red-400 font-semibold">{t('campaigns.denied', lang)}</p>
+      <p id="blog-denied-text" class="text-red-400 font-semibold">{t('campaigns.denied', lang)}</p>
     </div>
 
     <div id="blog-panel" class="hidden">
@@ -116,7 +116,8 @@ const BLOG_I18N = {
   window.__BLOG_I18N = BLOG_I18N;
 </script>
 <script>
-  import { hasPermission } from '../../lib/permissions';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__BLOG_I18N) || {
@@ -150,36 +151,30 @@ const BLOG_I18N = {
     window.dispatchEvent(new CustomEvent('blog:editor:set', { detail: html }));
   }
 
-  function boot() {
-    const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-    const member = (window as any).navGetMember?.();
-    if (!member) {
-      window.addEventListener('nav:member', ((e: CustomEvent) => {
-        if (e.detail) initBlog(sb, e.detail); else showDenied();
-      }) as EventListener);
-      sb.auth.getSession().then(({ data: { session } }: any) => {
-        if (session) sb.rpc('get_member_by_auth').then(({ data }: any) => {
-          if (data) initBlog(sb, data); else showDenied();
-        });
-        else showDenied();
-      });
-      return;
-    }
-    initBlog(sb, member);
+  function hasBlogAccess(member: any): boolean {
+    if (!member) return false;
+    return canEnterAdminRoute('/admin/blog', member);
   }
 
-  function showDenied() {
+  const BLOG_DENIED_TEXT = document.getElementById('blog-denied-text')?.textContent?.trim() || '';
+
+  function showBlogNotice(text: string) {
     document.getElementById('blog-loading')?.classList.add('hidden');
+    const p = document.getElementById('blog-denied-text');
+    if (p) p.textContent = text;
     document.getElementById('blog-denied')?.classList.remove('hidden');
   }
 
-  function hasAccess(m: any): boolean {
-    return hasPermission(m, 'admin.blog');
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasBlogAccess verdadeiro.
+  function bootBlogPage() {
+    const sb = (window as any).navGetSb?.();
+    const member = (window as any).navGetMember?.() ?? null;
+    if (!sb || !member) return;
+    document.getElementById('blog-denied')?.classList.add('hidden');
+    void initBlog(sb, member);
   }
 
   async function initBlog(sb: any, member: any) {
-    if (!hasAccess(member)) { showDenied(); return; }
     document.getElementById('blog-loading')?.classList.add('hidden');
     document.getElementById('blog-panel')?.classList.remove('hidden');
 
@@ -319,5 +314,12 @@ const BLOG_I18N = {
     });
   }
 
-  boot();
+  // #2974 (F1): o acesso se decide quando o Nav resolve o membro, pela entrada da rota em ADMIN_ROUTE_ACCESS.
+  gateAdminPage({
+    allow: hasBlogAccess,
+    onAllowed: () => { void bootBlogPage(); },
+    onDenied: () => showBlogNotice(BLOG_DENIED_TEXT),
+    onNoSession: () => showBlogNotice(adminSignInText()),
+    onLoadFailed: () => showBlogNotice(adminLoadFailedText()),
+  });
 </script>
