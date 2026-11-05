@@ -130,10 +130,11 @@ describe('p270 #365b objective rank per track', () => {
       );
     });
 
+    // #2393 A5: the line pilot row never shows a position (pinned in 2393k); the general row keeps #N.
     it('TD renders r.objective_rank with # prefix and graceful — fallback', () => {
       assert.match(
         PAGE,
-        /\$\{r\.objective_rank != null \? `#\$\{r\.objective_rank\}` : '<span class="text-\[var\(--text-muted\)\]">—<\/span>'\}/,
+        /\$\{r\.objective_rank != null && !isPilotRow\(r\) \? `#\$\{r\.objective_rank\}` : '<span class="text-\[var\(--text-muted\)\]">—<\/span>'\}/,
         'TD must read r.objective_rank, format as #N when present, fallback to muted — when missing (graceful pre-deploy degradation)'
       );
     });
@@ -141,7 +142,7 @@ describe('p270 #365b objective rank per track', () => {
     it('TD uses T.colObjectiveRankHint in title for hover help', () => {
       assert.match(
         PAGE,
-        /title="\$\{esc\(T\.colObjectiveRankHint \|\| ''\)\}"/,
+        /title="\$\{esc\(isPilotRow\(r\) \? T\.pilotBadgeHint : \(T\.colObjectiveRankHint \|\| ''\)\)\}"/,
         'TD title hover must mirror TH tooltip via runtime T helper'
       );
     });

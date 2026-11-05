@@ -2109,13 +2109,15 @@ const SEL_I18N = {
     const alertEl = document.getElementById('rank-empty-alert');
     const msgEl = document.getElementById('rank-empty-msg');
     if (!alertEl || !msgEl) return;
-    if (filteredRows.length < 5) { alertEl.classList.add('hidden'); return; }
-    const noRank = filteredRows.filter((r: any) =>
+    // #2393 A5 (G6): a candidatura piloto nunca terá rank (o recálculo a exclui), então não conta para o aviso.
+    const comRank = filteredRows.filter((r: any) => !isPilotRow(r));
+    if (comRank.length < 5) { alertEl.classList.add('hidden'); return; }
+    const noRank = comRank.filter((r: any) =>
       r.rank_chapter == null && r.rank_leader == null && r.rank_researcher == null && r.rank_overall == null
     ).length;
-    const pct = (noRank / filteredRows.length) * 100;
+    const pct = (noRank / comRank.length) * 100;
     if (pct >= 80) {
-      const totalText = `${noRank}/${filteredRows.length} aplicações sem rank (${pct.toFixed(0)}%).`;
+      const totalText = `${noRank}/${comRank.length} aplicações sem rank (${pct.toFixed(0)}%).`;
       msgEl.textContent = totalText;
       alertEl.classList.remove('hidden');
     } else {
@@ -2529,7 +2531,7 @@ const SEL_I18N = {
           <div class="${r.final_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.final_score != null ? Number(r.final_score).toFixed(1) : '—'}</div>
           ${finalScoreChip(r)}
         </td>
-        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold" title="${esc(T.colObjectiveRankHint || '')}">${r.objective_rank != null ? `#${r.objective_rank}` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
+        <td class="px-4 py-2.5 text-[12px] font-mono font-semibold" title="${esc(isPilotRow(r) ? T.pilotBadgeHint : (T.colObjectiveRankHint || ''))}">${r.objective_rank != null && !isPilotRow(r) ? `#${r.objective_rank}` : '<span class="text-[var(--text-muted)]">—</span>'}</td>
         <td class="px-4 py-2.5 text-[12px] font-bold">${rankDisplay}</td>
         <td class="px-4 py-2.5"><span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${sb2.bg} ${sb2.color}">${esc(statusLabel)}</span></td>
         <td class="px-3 py-2.5">${myEvalBadge(r)}</td>
