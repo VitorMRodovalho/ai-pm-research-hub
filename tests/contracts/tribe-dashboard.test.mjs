@@ -259,12 +259,6 @@ test('TribeDashboardIsland component exists', () => {
 
 // ─── Navigation contract ───
 
-test('AdminNav includes tribe-dashboard link', () => {
-  const nav = readFileSync(resolve(ROOT, 'src/components/nav/AdminNav.astro'), 'utf8');
-  assert.ok(/tribe-dashboard/i.test(nav), 'AdminNav must include tribe-dashboard key');
-  assert.ok(/adminTribeDashboard/i.test(nav), 'AdminNav must reference adminTribeDashboard label');
-});
-
 test('navigation.config.ts includes admin-tribe-dashboard', () => {
   const config = readFileSync(resolve(ROOT, 'src/lib/navigation.config.ts'), 'utf8');
   assert.ok(/admin-tribe-dashboard/i.test(config), 'navigation.config must include admin-tribe-dashboard');

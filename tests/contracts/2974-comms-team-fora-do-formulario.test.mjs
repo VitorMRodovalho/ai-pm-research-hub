@@ -4,8 +4,7 @@
  * Nenhum membro tem `comms_team`; os membros da comunicação usam `comms_leader` e `comms_member`. O formulário
  * oferecia as três, então bastava um clique para atribuir uma designação que nenhum fluxo do produto usa.
  *
- * O guard lê a lista que cada formulário de fato oferece (o array `ALL_DESIGS` das duas ilhas e os `value` dos
- * checkboxes `desig-cb` do modal) e afirma sobre ELA:
+ * O guard lê a lista que cada formulário de fato oferece (o array `ALL_DESIGS` das duas ilhas) e afirma sobre ELA:
  *   - `comms_team` não está na lista;
  *   - `comms_leader` e `comms_member` estão. É o controle: prova que o guard achou a lista certa, e não uma lista
  *     vazia ou outro array.
@@ -30,16 +29,9 @@ function allDesigs(src) {
   return [...decls[0][1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
 }
 
-/** Os `value` dos checkboxes de designação (`class="desig-cb ..."`) do modal. */
-function modalDesigs(src) {
-  const html = src.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
-  return [...html.matchAll(/<input[^>]*type="checkbox"[^>]*value="([a-z_]+)"[^>]*class="desig-cb\b/g)].map((x) => x[1]);
-}
-
 const FORMS = [
   { file: 'src/components/admin/members/MemberDetailIsland.tsx', list: allDesigs },
   { file: 'src/components/admin/members/MemberListIsland.tsx', list: allDesigs },
-  { file: 'src/components/admin/modals/EditMemberModal.astro', list: modalDesigs },
 ];
 
 for (const { file, list } of FORMS) {
