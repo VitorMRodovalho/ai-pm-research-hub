@@ -143,7 +143,9 @@ test('Phase 4 Migration 7: RLS policy rewrite', async (t) => {
   });
 
   // Category 5: Designation-based
-  await t.test('blog_posts: uses rls_can(\'write\') covering comms_leader', () => {
+  // Histórico: afirma o que a migration de 15/04 fez. Desde a #2974 a policy pede superadmin ou manage_comms; o estado
+  // vigente está no guard tests/contracts/2974-f1-link-e-pagina.test.mjs, que lê a definição atual da policy.
+  await t.test('blog_posts (15/04, substituída na #2974): uses rls_can(\'write\') covering comms_leader', () => {
     const idx = sql.indexOf('blog_posts_manage_v4');
     const section = sql.substring(idx, idx + 200);
     assert.match(section, /rls_can\('write'\)/);

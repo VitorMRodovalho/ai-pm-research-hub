@@ -527,6 +527,52 @@ async function run() {
     assert.equal(await commsOpsPage.locator('#commsops-denied').isVisible(), false, 'com a ação, a comms-ops ainda mostra o aviso');
     await commsOpsPage.close();
 
+    // #2974 (F1): o blog decide pela ação V4 que a policy de blog_posts pede. Sem sessão, o pedido para entrar; a
+    // designação comms_team sozinha não abre; capacidades que falharam dão o texto de falha; com a ação, abre.
+    await page.goto(`${base}/admin/blog`, { waitUntil: 'networkidle' });
+    const blogSemSessao = page.locator('#blog-denied');
+    await blogSemSessao.waitFor({ state: 'visible' });
+    assert.equal((await blogSemSessao.textContent() || '').trim(), ENTRAR,
+      'sem sessão, o blog tem de mostrar o texto de admin.signInToView');
+    assert.equal(await page.locator('#blog-panel').isVisible(), false);
+
+    const blogPage = await browser.newPage({ locale: 'pt-BR' });
+    await blogPage.goto(`${base}/admin/blog`, { waitUntil: 'networkidle' });
+    const blogMostra = (texto) => blogPage.waitForFunction(
+      (t) => (document.getElementById('blog-denied')?.textContent || '').trim() === t, texto);
+    await blogPage.evaluate(() => {
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['reserve_agenda_block'], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'blog-v3-test', operational_role: 'researcher', designations: ['comms_team'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await blogMostra(textoPtBr('campaigns.denied'));
+    assert.equal(await blogPage.locator('#blog-panel').isVisible(), false, 'a designação sem a ação V4 abriu o blog');
+    await blogPage.evaluate(() => {
+      window.__nucleoCapabilities = null;
+      window.navCapabilitiesFailed = () => true;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await blogMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    assert.equal(await blogPage.locator('#blog-panel').isVisible(), false, 'capacidades que falharam abriram o blog');
+    await blogPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['manage_comms'], initiative_actions: {}, tribe_actions: {} };
+      const fakeMember = { id: 'blog-v4-test', auth_id: 'blog-v4-test', operational_role: 'researcher', designations: [], is_superadmin: false };
+      const vazio = { data: [], error: null };
+      const cadeia = {
+        select() { return cadeia; }, eq() { return cadeia; }, order() { return cadeia; },
+        then(ok, erro) { return Promise.resolve(vazio).then(ok, erro); },
+      };
+      const fakeSb = { rpc() { return Promise.resolve(vazio); }, from() { return cadeia; } };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await blogPage.locator('#blog-panel').waitFor({ state: 'visible' });
+    assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
+    await blogPage.close();
+
     const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     await curatorshipPage.evaluate(() => {

@@ -16,7 +16,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { latestFunctionCapture, maskJsComments, maskLineComments, buildNewestDefinitions } from '../helpers/guard-pin-staleness.mjs';
@@ -229,7 +229,11 @@ function aceitaProprioCapitulo(b) {
 function pergunta(nome, nivel = 0) {
   const cap = captura(nome);
   assert.ok(cap, `${nome} não foi capturada por nenhuma migration`);
-  const b = cap.body.replace(/--[^\n]*/g, '');
+  return perguntaDoCorpo(cap.body.replace(/--[^\n]*/g, ''), nivel);
+}
+
+// A mesma leitura sobre um corpo já sem comentário: o de uma função ou a expressão de uma policy.
+function perguntaDoCorpo(b, nivel = 0) {
   const acoes = new Set(), desig = new Set();
   let capitulo = aceitaProprioCapitulo(b);
   for (const m of b.matchAll(/\b(can_by_member|can|rls_can)\s*\(/g)) {
@@ -253,6 +257,75 @@ function pergunta(nome, nivel = 0) {
   }
   return { acoes, desig, capitulo };
 }
+
+// SQL sem comentário: o `--` de linha primeiro (um `/*` dentro dele não abre bloco), depois o bloco `/* */`, como o
+// bloco de rollback da migration de 15/04, que repete CREATE POLICY antigos.
+const semComentarioSql = (s) => maskLineComments(s).replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+
+// A expressão de `USING (...)` ou `WITH CHECK (...)` no nível zero do comando, ou null.
+function clausula(st, kw) {
+  for (const m of st.matchAll(new RegExp(`\\b${kw}\\s*\\(`, 'gi'))) {
+    const antes = st.slice(0, m.index);
+    if ((antes.match(/\(/g) || []).length !== (antes.match(/\)/g) || []).length) continue;
+    const abre = m.index + m[0].length - 1;
+    const fim = fecha(st, abre);
+    assert.ok(fim > abre, `${kw} sem o parêntese que fecha`);
+    return st.slice(abre + 1, fim);
+  }
+  return null;
+}
+
+/**
+ * A definição vigente de uma policy, lendo as migrations em ordem de arquivo: o CREATE POLICY a define, cada ALTER
+ * POLICY depois dele troca o USING e o WITH CHECK que trouxer, e o DROP POLICY a remove (devolve null).
+ */
+function politica(tabela, nome) {
+  const dir = resolve(ROOT, 'supabase/migrations');
+  const re = new RegExp(`\\b(CREATE|ALTER|DROP)\\s+POLICY\\s+(?:IF\\s+EXISTS\\s+)?"${escRe(nome)}"\\s+ON\\s+(?:public\\.)?${escRe(tabela)}\\b`, 'gi');
+  let atual = null;
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
+    const sql = semComentarioSql(readFileSync(resolve(dir, f), 'utf8'));
+    for (const m of sql.matchAll(re)) {
+      const fim = sql.indexOf(';', m.index);
+      const st = sql.slice(m.index + m[0].length, fim < 0 ? sql.length : fim);
+      const verbo = m[1].toUpperCase();
+      if (verbo === 'DROP') { atual = null; continue; }
+      const using = clausula(st, 'USING'), check = clausula(st, 'WITH\\s+CHECK');
+      if (verbo === 'CREATE') {
+        const cmd = st.match(/\bFOR\s+(ALL|SELECT|INSERT|UPDATE|DELETE)\b/i)?.[1]?.toUpperCase() || 'ALL';
+        atual = { file: f, cmd, restritiva: /\bAS\s+RESTRICTIVE\b/i.test(st), using, check };
+      } else {
+        assert.ok(atual, `${tabela}.${nome}: ALTER POLICY em ${f} sem policy viva antes`);
+        assert.doesNotMatch(st, /\bRENAME\b/i, `${tabela}.${nome}: ${f} renomeia a policy, e o extrator não segue o nome novo`);
+        atual = { ...atual, file: f, using: using ?? atual.using, check: check ?? atual.check };
+      }
+    }
+  }
+  return atual;
+}
+
+/**
+ * A pergunta de uma policy: a do USING. Sem WITH CHECK, o USING vale também para a linha nova; com WITH CHECK, ele tem
+ * de perguntar o mesmo, porque a declaração da rota não separa ler de gravar.
+ */
+function perguntaDaPolitica(tabela, nome) {
+  const pol = politica(tabela, nome);
+  assert.ok(pol, `${tabela}.${nome}: a policy não existe nas migrations`);
+  assert.equal(pol.restritiva, false, `${tabela}.${nome}: policy RESTRICTIVE não concede acesso`);
+  assert.ok(pol.using, `${tabela}.${nome}: sem USING`);
+  const p = perguntaDoCorpo(pol.using);
+  if (pol.check) {
+    const c = perguntaDoCorpo(pol.check);
+    assert.deepEqual([[...c.acoes].sort(), [...c.desig].sort()], [[...p.acoes].sort(), [...p.desig].sort()],
+      `${tabela}.${nome}: o WITH CHECK pergunta outra coisa que o USING`);
+  }
+  return { ...p, cmd: pol.cmd };
+}
+
+// As operações da tela sobre a tabela: `.from('t').select(`, `.insert(`, `.update(`, `.delete(` ou `.upsert(`.
+const operacoes = (fonte, t) => [...fonte.matchAll(new RegExp(`\\.from\\(\\s*['"]${escRe(t)}['"]\\s*\\)\\s*\\.(select|insert|update|delete|upsert)\\(`, 'g'))]
+  .map((x) => x[1].toUpperCase());
+const cobre = (cmd, op) => cmd === 'ALL' || cmd === op;
 
 const resolveImport = (from, spec) => {
   if (!spec.startsWith('.')) return null;
@@ -283,7 +356,15 @@ function chamaRpc(fonte, r) {
   return false;
 }
 
-test('a declaração é a pergunta das RPCs da tela, e a tela chama essas RPCs', () => {
+test('a declaração é a pergunta das RPCs e das policies da tela, e a tela as usa', () => {
+  // controle do extrator de policy: o bloco de rollback de 15/04 (comentado) não ressuscita a policy removida
+  assert.equal(politica('blog_posts', 'Admin manages posts'), null, 'controle: a policy removida voltou pelo bloco comentado');
+  assert.deepEqual([...perguntaDaPolitica('campaign_templates', 'campaign_templates_manage_v4').acoes], ['write'],
+    'controle: campaign_templates_manage_v4 pergunta write');
+  const restritiva = politica('blog_posts', 'blog_posts_v4_org_scope_insert');
+  assert.equal(restritiva?.restritiva, true, 'controle: a policy RESTRICTIVE não foi vista como tal');
+  assert.equal(restritiva?.cmd, 'INSERT', 'controle: o comando da policy não foi lido');
+  assert.throws(() => perguntaDaPolitica('blog_posts', 'blog_posts_v4_org_scope_insert'), /RESTRICTIVE/, 'controle: policy RESTRICTIVE aceita como origem');
   // controle do embrulho: o nome passado a safeRpc conta; um nome que a tela não chama, não
   const analytics = maskJsComments(readFileSync(resolve(ROOT, 'src/pages/admin/analytics.astro'), 'utf8'));
   assert.equal(chamaRpc(analytics, 'exec_role_transitions'), true, 'controle: o embrulho safeRpc não foi visto');
@@ -298,18 +379,27 @@ test('a declaração é a pergunta das RPCs da tela, e a tela chama essas RPCs',
   assert.throws(() => latestFunctionCapture(ROOT, 'set_site_config'), /assinaturas/, 'controle: a sobrecarga antiga sumiu; o desvio de captura() ficou morto');
   assert.deepEqual([...pergunta('set_site_config').acoes], ['manage_platform'], 'controle: set_site_config pergunta manage_platform');
   for (const [href, acc] of ROTAS) {
-    assert.ok(acc.rpcs.length > 0, `${href}: sem RPC de origem`);
+    const policies = acc.policies || [];
+    assert.ok(acc.rpcs.length + policies.length > 0, `${href}: sem RPC nem policy de origem`);
     const acoes = new Set(), desig = new Set();
     let capitulo = false;
-    for (const r of acc.rpcs) {
-      const p = pergunta(r);
+    for (const p of [...acc.rpcs.map((r) => pergunta(r)), ...policies.map((x) => perguntaDaPolitica(x.table, x.name))]) {
       p.acoes.forEach((a) => acoes.add(a)); p.desig.forEach((d) => desig.add(d)); capitulo = capitulo || p.capitulo;
     }
-    assert.deepEqual([...acoes].sort(), [...acc.actions].sort(), `${href}: as ações declaradas não são as que as RPCs perguntam`);
-    assert.deepEqual([...desig].sort(), [...(acc.designations || [])].sort(), `${href}: as designações declaradas não são as que as RPCs leem`);
-    assert.equal(acc.ownChapter === true, capitulo, `${href}: o próprio capítulo declarado não é o que as RPCs aceitam`);
+    assert.deepEqual([...acoes].sort(), [...acc.actions].sort(), `${href}: as ações declaradas não são as que as RPCs e as policies perguntam`);
+    assert.deepEqual([...desig].sort(), [...(acc.designations || [])].sort(), `${href}: as designações declaradas não são as que as RPCs e as policies leem`);
+    assert.equal(acc.ownChapter === true, capitulo, `${href}: o próprio capítulo declarado não é o que as RPCs e as policies aceitam`);
     const fonte = arquivosDaTela(resolve(ROOT, `src/pages${href}.astro`)).map((f) => maskJsComments(readFileSync(f, 'utf8'))).join('\n');
     for (const r of acc.rpcs) assert.ok(chamaRpc(fonte, r), `${href}: a tela não chama ${r}`);
+    for (const x of policies) {
+      const ops = operacoes(fonte, x.table);
+      assert.ok(ops.length > 0, `${href}: a tela não usa ${x.table}`);
+      const { cmd } = perguntaDaPolitica(x.table, x.name);
+      for (const op of ops) {
+        const precisa = op === 'UPSERT' ? ['INSERT', 'UPDATE'] : [op];
+        for (const o of precisa) assert.ok(cobre(cmd, o), `${href}: a tela faz ${o} em ${x.table}, e ${x.name} é FOR ${cmd}`);
+      }
+    }
   }
 });
 

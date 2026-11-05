@@ -46,7 +46,6 @@
    "admin-selection",
    "admin-vep-reconciliation",
    "admin-campaigns",
-   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -64,7 +63,6 @@
    "/admin/certificates",
    "/admin/members/drive-teardown",
    "/admin/cohort-health",
-   "/admin/blog",
    "/admin/publications",
    "/admin/curatorship",
    "/admin/knowledge",
@@ -133,7 +131,6 @@
    "admin-selection",
    "admin-vep-reconciliation",
    "admin-campaigns",
-   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -1024,7 +1021,6 @@
    "governance",
    "docs-mcp",
    "admin-campaigns",
-   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -1183,7 +1179,6 @@
    "admin-selection",
    "admin-vep-reconciliation",
    "admin-campaigns",
-   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -2101,6 +2096,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -2109,6 +2105,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/blog",
    "/admin/comms-ops",
    "/admin/comms",
    "/help"
@@ -2702,6 +2699,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-blog",
    "notifications",
    "help",
    "certificates",
@@ -2710,6 +2708,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/blog",
    "/admin/comms-ops",
    "/admin/comms",
    "/help"
