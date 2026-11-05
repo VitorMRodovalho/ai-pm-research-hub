@@ -129,7 +129,9 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
         try {
           const certData = JSON.parse(raw) as CertificateData & { id?: string };
           if (certData.id) {
-            try { await sb.rpc('record_certificate_download', { p_cert_id: certData.id }); } catch { /* tracking best-effort */ }
+            // #2974 (d): o registro do primeiro download não bloqueia o PDF; a recusa do corpo vai para o console
+            const { data: reg, error: regErr } = await sb.rpc('record_certificate_download', { p_cert_id: certData.id });
+            if (regErr || reg?.error) console.warn('record_certificate_download', regErr?.message || reg?.error);
           }
           await downloadCertificatePDF(certData, sb);
         } catch (err) {

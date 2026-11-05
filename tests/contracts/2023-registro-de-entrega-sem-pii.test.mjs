@@ -5,7 +5,7 @@
  *
  * O parecer jurídico (27/08) fez do registro um PRÉ-REQUISITO: nada dispara antes dele, porque hoje
  * não há registro nem de download (`downloaded_at` nulo em 100% dos 168 certificados, e a coluna
- * nunca é escrita) — a própria entrega não teria como ser provada.
+ * não era escrita até a #2974 (d)) — a própria entrega não teria como ser provada.
  *
  * DUAS DECISÕES DE DESENHO que este arquivo protege:
  *
