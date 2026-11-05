@@ -10,7 +10,8 @@
  *
  * #2974 (F1): cada forma leva também as capacidades simuladas (`setCapabilities`), porque as rotas de
  * `ADMIN_ROUTE_ACCESS` decidem pela ação V4. As formas de papel e designação vêm sem ações; superadmin vem com a marca;
- * e entram uma forma por ação de organização sozinha, mais as de escopo de tribo e de iniciativa.
+ * e entram uma forma por ação de organização sozinha, mais as de escopo de tribo e de iniciativa, e uma forma com
+ * capítulo, para as rotas que aceitam o próprio capítulo.
  *
  * O snapshot (`2974-matriz-de-visibilidade.snapshot.json`) é o comportamento aprovado. Uma fatia que muda quem vê o
  * quê regrava o snapshot com `ATUALIZAR_MATRIZ=1 node --test <este arquivo>`, e a diferença aparece na revisão da PR.
@@ -49,6 +50,7 @@ const FORMAS = [
   ['superadmin', { operational_role: 'researcher', designations: [], is_superadmin: true }, { ...SEM_ACOES, is_superadmin: true }],
   ['comite:evaluator', { operational_role: 'researcher', designations: [], is_superadmin: false, selection_committee_role: 'evaluator' }, SEM_ACOES],
   ['comite:observer', { operational_role: 'researcher', designations: [], is_superadmin: false, selection_committee_role: 'observer' }, SEM_ACOES],
+  ['capitulo', { operational_role: 'researcher', designations: [], is_superadmin: false, chapter: 'CAPITULO-SINTETICO' }, SEM_ACOES],
   ...ACOES.map((a) => [`acao:${a}`, PESQUISADOR, { ...SEM_ACOES, org_actions: [a] }]),
   ...ACOES.map((a) => [`tribo:${a}`, PESQUISADOR, { ...SEM_ACOES, tribe_actions: { 1: [a] } }]),
   ...ACOES.map((a) => [`iniciativa:${a}`, PESQUISADOR, { ...SEM_ACOES, initiative_actions: { 'iniciativa-sintetica': [a] } }]),
@@ -61,7 +63,7 @@ function matriz() {
     if (caps) setCapabilities(caps); else clearCapabilities();
     const tier = resolveTierFromMember(m);
     const menu = NAV_ITEMS.filter((item) =>
-      getItemAccessibility(item, tier, m?.designations || [], !!m, m?.operational_role, m?.selection_committee_role ?? null).enabled,
+      getItemAccessibility(item, tier, m?.designations || [], !!m, m?.operational_role, m?.selection_committee_role ?? null, m?.chapter ?? null).enabled,
     ).map((item) => item.key);
     const sidebar = ADMIN_SIDEBAR_SECTIONS.flatMap((s) => s.items).filter((i) => isAdminSidebarItemVisible(m, i)).map((i) => i.href);
     out[id] = { menu, sidebar };
