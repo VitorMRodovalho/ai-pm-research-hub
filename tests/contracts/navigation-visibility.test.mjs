@@ -261,12 +261,11 @@ test('publications requires leader tier OR curator/comms designation/communicato
 test('#670 chapter_liaison operational_role gets only declared read admin nav routes', () => {
   const focal = { tier: 'member', isLoggedIn: true, designations: [], operationalRole: 'chapter_liaison' };
   const allowed = new Set([
-    'admin-analytics',
     'admin-portfolio',
     'admin-cycle-report',
-    'admin-exec-report',
     'admin-partnerships',
-    'admin-chapter-report',
+    // #2974 (F1): admin-analytics, admin-exec-report e admin-chapter-report saíram daqui; a rota decide pela ação V4
+    // (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina.
     'admin-sustainability',
     'admin-tribe-dashboard',
   ]);

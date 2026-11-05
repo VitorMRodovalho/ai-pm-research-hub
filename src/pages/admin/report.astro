@@ -15,6 +15,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       {t('common.loading', lang)}
     </div>
 
+    <div id="report-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+      <p id="report-denied-text" class="font-semibold text-amber-800">{t('admin.accessRestricted', lang)}</p>
+    </div>
+
     <div id="report-config-content" class="hidden space-y-6">
       <div class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-5 space-y-4">
         <div>
@@ -65,19 +69,22 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 </AdminLayout>
 
 <script>
-  import { hasPermission } from '../../lib/permissions';
   import { loadChapters } from '../../lib/chapters';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
-  async function bootReportConfig() {
+  // O texto de "sem acesso" que a página traz; um aviso anterior (entrar, falha) não pode ficar no lugar dele.
+  const DENIED_TEXT = document.getElementById('report-denied-text')?.textContent || '';
+  function showDenied(text?: string) {
+    const msg = document.getElementById('report-denied-text');
+    if (msg) msg.textContent = text || DENIED_TEXT;
+    document.getElementById('report-config-loading')?.classList.add('hidden');
+    document.getElementById('report-denied')?.classList.remove('hidden');
+  }
+
+  async function startReportConfig() {
     const sb = (window as any).navGetSb?.();
-    const member = (window as any).navGetMember?.();
-    if (!sb || !member) { setTimeout(bootReportConfig, 300); return; }
-
-    // Admin check
-    if (!hasPermission(member, 'admin.analytics')) {
-      document.getElementById('report-config-loading')!.textContent = 'Acesso restrito.';
-      return;
-    }
+    if (!sb) { showDenied(adminLoadFailedText()); return; }
 
     const loading = document.getElementById('report-config-loading')!;
     const content = document.getElementById('report-config-content')!;
@@ -138,5 +145,13 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     });
   }
 
-  bootReportConfig();
+  // #2974 (F1): decide quando o Nav resolve o membro e as capacidades, pela mesma entrada que decide o link no menu e
+  // na sidebar. Sem laço de tentativas: sem sessão, pede para entrar.
+  gateAdminPage({
+    allow: (m) => canEnterAdminRoute('/admin/report', m),
+    onAllowed: () => { void startReportConfig(); },
+    onDenied: () => showDenied(),
+    onNoSession: () => showDenied(adminSignInText()),
+    onLoadFailed: () => showDenied(adminLoadFailedText()),
+  });
 </script>

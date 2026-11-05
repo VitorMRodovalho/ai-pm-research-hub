@@ -391,6 +391,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       item, tier, designations, true,
       String(_member?.operational_role || ''),
       _member?.selection_committee_role ?? null,
+      _member?.chapter ?? null,
     );
     if (item.lgpdSensitive && !enabled) return { visible: false, enabled: false };
     return { visible: true, enabled };

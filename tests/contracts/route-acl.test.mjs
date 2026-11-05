@@ -233,8 +233,5 @@ test('comms_member can access admin-comms despite being member tier', () => {
   assert.equal(canAccess(item, commsMember), true, 'comms_member designation should grant access to admin-comms');
 });
 
-test('curator can access admin-analytics via designation', () => {
-  const curator = { tier: 'observer', isLoggedIn: true, designations: ['curator'], operationalRole: 'researcher' };
-  const item = parseNavItem('admin-analytics');
-  assert.equal(canAccess(item, curator), true, 'curator designation should grant access to analytics');
-});
+// #2974 (F1): o caso "curator abre admin-analytics pela designação" saiu daqui. A rota decide pela ação V4
+// (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina, e exec_role_transitions não lê designação.

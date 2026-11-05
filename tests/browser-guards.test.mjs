@@ -359,9 +359,10 @@ async function run() {
 
     await page.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     const analyticsDenied = page.locator('#analytics-denied');
-    // Analytics page retries auth for 5s before showing denied for unauthenticated users
+    // #2974 (F1): sem sessão, o gateAdminPage pede para entrar, sem prazo de tentativas.
     await analyticsDenied.waitFor({ state: 'visible', timeout: 10000 });
-    assert.match(await analyticsDenied.textContent() || '', /analytics/i);
+    assert.equal((await page.locator('#analytics-denied-text').textContent() || '').trim(), ENTRAR,
+      'sem sessão, analytics tem de mostrar o texto de admin.signInToView');
     assert.equal(await page.locator('#analytics-panel').isVisible(), false);
 
     await page.goto(`${base}/`, { waitUntil: 'networkidle' });
@@ -640,7 +641,28 @@ async function run() {
 
     const analyticsPage = await browser.newPage({ locale: 'pt-BR' });
     await analyticsPage.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
+    // #2974 (F1): primeiro sem sessão (pede para entrar); depois a designação V3 sozinha, que não abre analytics, e o
+    // texto de "sem acesso" tem de substituir o pedido para entrar.
     await analyticsPage.evaluate(() => {
+      window.navGetMember = () => null;
+      window.navAuthState = () => 'no-session';
+      window.dispatchEvent(new CustomEvent('nav:no-session'));
+    });
+    await analyticsPage.waitForFunction(
+      (t) => (document.getElementById('analytics-denied-text')?.textContent || '').trim() === t, ENTRAR);
+    await analyticsPage.evaluate(() => {
+      window.navAuthState = () => 'resolved';
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'analytics-v3-test', operational_role: 'researcher', designations: ['sponsor'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await analyticsPage.waitForFunction(
+      (t) => (document.getElementById('analytics-denied-text')?.textContent || '').trim() === t, textoPtBr('admin.analytics.denied'));
+    assert.equal(await analyticsPage.locator('#analytics-panel').isVisible(), false, 'designação V3 sem a ação V4 abriu analytics');
+    await analyticsPage.evaluate(() => {
+      // com a ação que exec_role_transitions pede, abre
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['view_internal_analytics'], initiative_actions: {}, tribe_actions: {} };
       (window).__copiedSummary = '';
       try {
         Object.defineProperty(navigator, 'clipboard', {
@@ -821,6 +843,55 @@ async function run() {
     await initPage.waitForFunction(() => ((window).__initRpcs || []).includes('list_initiatives'));
     assert.equal(await initPage.locator('#init-denied').isVisible(), false);
     await initPage.close();
+
+    // #2974 (F1): chapter-report segue exec_chapter_dashboard, que aceita o próprio capítulo de qualquer membro
+    // (ADR-0030 Q2). Sem ação e sem capítulo, nega; com capítulo, abre só o próprio, e a seção de seleção fica oculta
+    // porque get_selection_pipeline_metrics recusa.
+    const chapterPage = await browser.newPage({ locale: 'pt-BR' });
+    await chapterPage.goto(`${base}/admin/chapter-report`, { waitUntil: 'networkidle' });
+    await chapterPage.evaluate(() => {
+      const rpcs = [];
+      (window).__chrRpcs = rpcs;
+      const fakeSb = {
+        rpc(name, args) {
+          rpcs.push(`${name}:${args?.p_chapter || ''}`);
+          if (name === 'exec_chapter_dashboard') {
+            return Promise.resolve({ data: { chapter: args?.p_chapter, members: { total: 3, active: 2 }, production: {}, engagement: {}, certification: {} }, error: null });
+          }
+          if (name === 'get_selection_pipeline_metrics') {
+            return Promise.resolve({ data: null, error: { message: 'Unauthorized: admin or sponsor required' } });
+          }
+          return Promise.resolve({ data: null, error: { message: `unexpected ${name}` } });
+        },
+        from() {
+          return {
+            select() { return this; },
+            not() { return Promise.resolve({ data: [{ chapter: 'CAP-B' }, { chapter: 'CAP-A' }, { chapter: 'CAP-B' }], error: null }); },
+          };
+        },
+      };
+      window.navGetSb = () => fakeSb;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'chapter-none-test', operational_role: 'researcher', designations: [], is_superadmin: false, chapter: null });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await chapterPage.waitForFunction(
+      (t) => (document.getElementById('chr-denied-text')?.textContent || '').trim() === t, textoPtBr('chapterReport.denied'));
+    assert.equal(await chapterPage.locator('#chr-panel').isVisible(), false, 'sem ação e sem capítulo, chapter-report abriu');
+    await chapterPage.evaluate(() => {
+      window.navGetMember = () => ({ auth_id: 'chapter-own-test', operational_role: 'researcher', designations: [], is_superadmin: false, chapter: 'CAP-B' });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await chapterPage.locator('#chr-panel').waitFor({ state: 'visible' });
+    await chapterPage.waitForFunction(() => ((window).__chrRpcs || []).includes('exec_chapter_dashboard:CAP-B'));
+    const opcoes = await chapterPage.locator('#chr-chapter-select option').evaluateAll((os) => os.map((o) => o.value));
+    assert.deepEqual(opcoes, ['CAP-B'], 'quem entra pelo capítulo vê só o próprio');
+    assert.deepEqual(await chapterPage.evaluate(() => (window).__chrRpcs.filter((x) => x.startsWith('exec_chapter_dashboard'))),
+      ['exec_chapter_dashboard:CAP-B'], 'o retrato pediu outro capítulo');
+    assert.equal(await chapterPage.locator('#chr-denied').isVisible(), false);
+    assert.equal(await chapterPage.locator('#chr-selection').isVisible(), false, 'a seção de seleção apareceu sem a ação');
+    await chapterPage.close();
 
     await page.close();
     console.log('Browser guard, home runtime, webinars/curatorship admin, and analytics readonly test passed.');

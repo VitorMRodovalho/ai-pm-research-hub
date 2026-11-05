@@ -131,6 +131,8 @@
     "src/pages/workspace.astro"
    ],
    "corrigidas": [
+    "src/pages/admin/analytics.astro",
+    "src/pages/admin/chapter-report.astro",
     "src/pages/admin/initiatives.astro"
    ]
   },
@@ -181,7 +183,8 @@
     "src/pages/volunteer-agreement.astro"
    ],
    "corrigidas": [
-    "src/pages/admin/filiacao.astro"
+    "src/pages/admin/filiacao.astro",
+    "src/pages/admin/report.astro"
    ]
   },
   "ilha_sem_membro": {
