@@ -99,8 +99,10 @@ test('admin webinars uses webinar governance with CRUD modal and list_webinars_v
   assert.equal(content.includes("sb.rpc('upsert_webinar'"), true);
   assert.equal(content.includes("sb.rpc('link_webinar_event'"), true);
   assert.equal(content.includes("sb.rpc('get_webinar_lifecycle'"), true);
-  assert.equal(content.includes('canAccessWebinarsWorkspace(member)'), true);
-  assert.equal(content.includes("navSb?.auth?.getSession"), true);
+  // #2974 (F1): a entrada é a da rota em ADMIN_ROUTE_ACCESS, decidida pelo gateAdminPage; o 2973 e o
+  // 2974-f1-link-e-pagina prendem a forma do portão.
+  assert.equal(content.includes("canEnterAdminRoute('/admin/webinars', member)"), true);
+  assert.equal(content.includes('gateAdminPage({'), true);
   assert.equal(content.includes('/admin/comms'), true);
   assert.equal(content.includes('Webinar Governance'), true);
   assert.equal(content.includes('webinar-modal'), true);

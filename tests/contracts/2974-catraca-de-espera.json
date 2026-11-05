@@ -133,7 +133,10 @@
    "corrigidas": [
     "src/pages/admin/analytics.astro",
     "src/pages/admin/chapter-report.astro",
-    "src/pages/admin/initiatives.astro"
+    "src/pages/admin/comms-ops.astro",
+    "src/pages/admin/comms.astro",
+    "src/pages/admin/initiatives.astro",
+    "src/pages/admin/webinars.astro"
    ]
   },
   "le_navgetmember_sem_evento": {

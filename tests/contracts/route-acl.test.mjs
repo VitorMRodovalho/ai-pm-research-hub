@@ -227,11 +227,8 @@ test('admin/settings requires superadmin', () => {
 
 // ─── Designation override tests ───
 
-test('comms_member can access admin-comms despite being member tier', () => {
-  const commsMember = { tier: 'member', isLoggedIn: true, designations: ['comms_member'], operationalRole: 'researcher' };
-  const item = parseNavItem('admin-comms');
-  assert.equal(canAccess(item, commsMember), true, 'comms_member designation should grant access to admin-comms');
-});
+// #2974 (F1): o caso "comms_member abre admin-comms pela designação" saiu daqui. A rota decide pela ação V4
+// (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina, e as RPCs da tela não leem designação.
 
 // #2974 (F1): o caso "curator abre admin-analytics pela designação" saiu daqui. A rota decide pela ação V4
 // (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina, e exec_role_transitions não lê designação.

@@ -76,7 +76,7 @@ const COMMS_I18N = {
 
     <div id="comms-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
       <div class="text-2xl mb-2">&#x1f512;</div>
-      <p class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
+      <p id="comms-denied-text" class="font-semibold text-amber-800">{t('admin.comms.denied', lang)}</p>
       <a href={`${langPrefix}/admin`} class="inline-block mt-3 px-4 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">
         {t('admin.comms.backAdmin', lang)}
       </a>
@@ -372,7 +372,8 @@ const COMMS_I18N = {
   window.__COMMS_I18N = COMMS_I18N;
 </script>
 <script>
-  import { canAccessAdminRoute } from '../../lib/admin/constants';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__COMMS_I18N) || {
@@ -1066,21 +1067,35 @@ const COMMS_I18N = {
     }
   }
 
-  function boot() {
-    sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && canAccessAdminRoute(e.detail, 'admin_comms')) { currentMember = e.detail; showPanel(); }
-      else { document.getElementById('comms-loading')?.classList.add('hidden'); document.getElementById('comms-denied')?.classList.remove('hidden'); }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m) {
-      if (canAccessAdminRoute(m, 'admin_comms')) { currentMember = m; showPanel(); }
-      else { document.getElementById('comms-loading')?.classList.add('hidden'); document.getElementById('comms-denied')?.classList.remove('hidden'); }
-    }
+  function hasCommsAccess(member: any): boolean {
+    if (!member) return false;
+    return canEnterAdminRoute('/admin/comms', member);
   }
 
-  boot();
+  const COMMS_DENIED_TEXT = document.getElementById('comms-denied-text')?.textContent?.trim() || '';
+
+  function showCommsNotice(text: string) {
+    document.getElementById('comms-loading')?.classList.add('hidden');
+    const p = document.getElementById('comms-denied-text');
+    if (p) p.textContent = text;
+    document.getElementById('comms-denied')?.classList.remove('hidden');
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasCommsAccess verdadeiro.
+  function bootCommsPage() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    currentMember = (window as any).navGetMember?.() ?? null;
+    document.getElementById('comms-denied')?.classList.add('hidden');
+    showPanel();
+  }
+
+  // #2974 (F1): o acesso se decide quando o Nav resolve o membro, pela entrada da rota em ADMIN_ROUTE_ACCESS.
+  gateAdminPage({
+    allow: hasCommsAccess,
+    onAllowed: () => { void bootCommsPage(); },
+    onDenied: () => showCommsNotice(COMMS_DENIED_TEXT),
+    onNoSession: () => showCommsNotice(adminSignInText()),
+    onLoadFailed: () => showCommsNotice(adminLoadFailedText()),
+  });
 </script>

@@ -32,8 +32,6 @@
    "my-points",
    "my-evaluations",
    "admin",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "admin-cycle-report",
@@ -69,9 +67,6 @@
    "/admin/blog",
    "/admin/publications",
    "/admin/curatorship",
-   "/admin/comms-ops",
-   "/admin/comms",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/portfolio",
    "/admin/cycle-report",
@@ -124,8 +119,6 @@
    "my-points",
    "my-evaluations",
    "admin",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "admin-cycle-report",
@@ -205,7 +198,6 @@
    "/admin/adoption",
    "/admin/certificates",
    "/admin/cohort-health",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/portfolio",
    "/admin/cycle-report",
@@ -334,7 +326,6 @@
    "/admin/adoption",
    "/admin/certificates",
    "/admin/cohort-health",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/portfolio",
    "/admin/cycle-report",
@@ -760,8 +751,6 @@
    "profile",
    "my-points",
    "admin",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "admin-cycle-report",
@@ -793,7 +782,6 @@
    "/admin/cohort-health",
    "/admin/publications",
    "/admin/curatorship",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/portfolio",
    "/admin/cycle-report",
@@ -1079,8 +1067,6 @@
    "about",
    "profile",
    "my-points",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "boards",
@@ -1132,8 +1118,6 @@
    "about",
    "profile",
    "my-points",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "boards",
@@ -1185,8 +1169,6 @@
    "my-points",
    "my-evaluations",
    "admin",
-   "admin-comms",
-   "admin-comms-ops",
    "stakeholder-dashboard",
    "admin-portfolio",
    "admin-cycle-report",
@@ -1265,9 +1247,6 @@
    "/admin/certificates",
    "/admin/members/drive-teardown",
    "/admin/cohort-health",
-   "/admin/comms-ops",
-   "/admin/comms",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/portfolio",
    "/admin/cycle-report",
@@ -1329,7 +1308,6 @@
    "/admin/adoption",
    "/admin/certificates",
    "/admin/cohort-health",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/cycle-report",
    "/admin/chapter",
@@ -1383,7 +1361,6 @@
    "/admin/tribes",
    "/admin/vep-reconciliation",
    "/admin/certificates",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
    "/help"
@@ -1436,7 +1413,6 @@
    "/admin/filiacao",
    "/admin/vep-reconciliation",
    "/admin/certificates",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
    "/help"
@@ -1488,7 +1464,6 @@
    "/admin/tribes",
    "/admin/vep-reconciliation",
    "/admin/certificates",
-   "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
    "/help"
@@ -2120,6 +2095,8 @@
    "about",
    "profile",
    "my-points",
+   "admin-comms",
+   "admin-comms-ops",
    "stakeholder-dashboard",
    "boards",
    "governance",
@@ -2132,6 +2109,8 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/comms-ops",
+   "/admin/comms",
    "/help"
   ]
  },
@@ -2265,6 +2244,7 @@
   ],
   "sidebar": [
    "/admin/filiacao",
+   "/admin/webinars",
    "/help"
   ]
  },
@@ -2529,6 +2509,8 @@
    "profile",
    "my-points",
    "admin-analytics",
+   "admin-comms",
+   "admin-comms-ops",
    "stakeholder-dashboard",
    "boards",
    "governance",
@@ -2543,6 +2525,8 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/comms-ops",
+   "/admin/comms",
    "/admin/chapter-report",
    "/admin/analytics",
    "/admin/governance-v2",
@@ -2712,6 +2696,8 @@
    "about",
    "profile",
    "my-points",
+   "admin-comms",
+   "admin-comms-ops",
    "stakeholder-dashboard",
    "boards",
    "governance",
@@ -2724,6 +2710,8 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/comms-ops",
+   "/admin/comms",
    "/help"
   ]
  },
@@ -3120,6 +3108,8 @@
    "profile",
    "my-points",
    "admin-analytics",
+   "admin-comms",
+   "admin-comms-ops",
    "stakeholder-dashboard",
    "boards",
    "governance",
@@ -3134,6 +3124,8 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/comms-ops",
+   "/admin/comms",
    "/admin/chapter-report",
    "/admin/analytics",
    "/admin/governance-v2",

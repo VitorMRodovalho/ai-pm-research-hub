@@ -149,6 +149,8 @@ const COMMSOPS_I18N = {
 </script>
 <script>
   import { buildAttendanceFromCommsRoute, buildCommsPlaybookTemplates } from '../../lib/webinars/context-aids';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__COMMSOPS_I18N) || {
@@ -185,11 +187,7 @@ const COMMSOPS_I18N = {
 
   function hasCommsOpsAccess(member: any): boolean {
     if (!member) return false;
-    if (member.is_superadmin) return true;
-    const role = String(member.operational_role || '');
-    const designations: string[] = Array.isArray(member.designations) ? member.designations : [];
-    return ['manager', 'deputy_manager'].includes(role)
-      || ['comms_leader', 'comms_member'].some(d => designations.includes(d));
+    return canEnterAdminRoute('/admin/comms-ops', member);
   }
 
   // ── Route parsing (for webinar context handoff) ──
@@ -431,27 +429,31 @@ const COMMSOPS_I18N = {
     loadCalendar();
   }
 
-  function boot() {
-    sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
+  const COMMSOPS_DENIED_TEXT = document.getElementById('commsops-denied')?.textContent?.trim() || '';
 
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && hasCommsOpsAccess(e.detail)) showPanel();
-      else {
-        document.getElementById('commsops-loading')?.classList.add('hidden');
-        document.getElementById('commsops-denied')?.classList.remove('hidden');
-      }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m) {
-      if (hasCommsOpsAccess(m)) showPanel();
-      else {
-        document.getElementById('commsops-loading')?.classList.add('hidden');
-        document.getElementById('commsops-denied')?.classList.remove('hidden');
-      }
+  function showCommsOpsNotice(text: string) {
+    document.getElementById('commsops-loading')?.classList.add('hidden');
+    const denied = document.getElementById('commsops-denied');
+    if (denied) {
+      denied.textContent = text;
+      denied.classList.remove('hidden');
     }
   }
 
-  boot();
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasCommsOpsAccess verdadeiro.
+  function bootCommsOpsPage() {
+    sb = (window as any).navGetSb?.();
+    if (!sb) return;
+    document.getElementById('commsops-denied')?.classList.add('hidden');
+    showPanel();
+  }
+
+  // #2974 (F1): o acesso se decide quando o Nav resolve o membro, pela entrada da rota em ADMIN_ROUTE_ACCESS.
+  gateAdminPage({
+    allow: hasCommsOpsAccess,
+    onAllowed: () => { void bootCommsOpsPage(); },
+    onDenied: () => showCommsOpsNotice(COMMSOPS_DENIED_TEXT),
+    onNoSession: () => showCommsOpsNotice(adminSignInText()),
+    onLoadFailed: () => showCommsOpsNotice(adminLoadFailedText()),
+  });
 </script>
