@@ -6,9 +6,9 @@
  *   1. `canForUnscoped` espelha can(pessoa, ação) sem recurso: a exceção de tribo legada é a do corpo de can() na
  *      última captura das migrations.
  *   2. Para cada rota declarada e cada forma sintética, o menu, a sidebar e a página dizem a mesma coisa.
- *   3. Quem abre a rota é exatamente a declaração: cada ação sozinha, cada designação sozinha.
- *   4. A declaração é igual à pergunta das RPCs listadas (ações sem recurso e designações lidas no portão), e a tela
- *      chama essas RPCs.
+ *   3. Quem abre a rota é exatamente a declaração: cada ação sozinha, cada designação sozinha, o próprio capítulo.
+ *   4. A declaração é igual à pergunta das RPCs listadas (ações sem recurso, designações lidas no portão e a cláusula
+ *      do próprio capítulo do chamador dentro do bloco que nega), e a tela chama essas RPCs.
  *   5. A página decide pelo `gateAdminPage` com `canEnterAdminRoute` da própria rota, passa `onLoadFailed` e não
  *      espera por laço próprio.
  *   6. A rota declarada não carrega eixo V3 que ninguém lê.
@@ -19,7 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { latestFunctionCapture, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskJsComments, maskLineComments, buildNewestDefinitions } from '../helpers/guard-pin-staleness.mjs';
 import {
   ADMIN_ROUTE_ACCESS, canEnterAdminRoute, NAV_ITEMS, getItemAccessibility, ADMIN_SIDEBAR_SECTIONS, isAdminSidebarItemVisible,
 } from '../../src/lib/navigation.config.ts';
@@ -40,6 +40,8 @@ const FORMAS = [
   ...PAPEIS.map((p) => [`papel:${p}`, { ...P, operational_role: p }, SEM]),
   ...DESIGNACOES.map((d) => [`designacao:${d}`, { ...P, designations: [d] }, SEM]),
   ['superadmin', { ...P, is_superadmin: true }, { ...SEM, is_superadmin: true }],
+  ['capitulo', { ...P, chapter: 'CAPITULO-SINTETICO' }, SEM],
+  ['capitulo-vazio', { ...P, chapter: '' }, SEM],
   ...ACOES.map((a) => [`acao:${a}`, P, { ...SEM, org_actions: [a] }]),
   ...ACOES.map((a) => [`tribo:${a}`, P, { ...SEM, tribe_actions: { 1: [a] } }]),
   ...ACOES.map((a) => [`iniciativa:${a}`, P, { ...SEM, initiative_actions: { x: [a] } }]),
@@ -100,7 +102,7 @@ const menuSintetico = (href) => ({ key: 'menu-sintetico', labelKey: 'x', href, m
 function links(href, m) {
   const tier = resolveTierFromMember(m);
   const menu = [...NAV_ITEMS.filter((i) => i.href === href), menuSintetico(href)]
-    .map((i) => getItemAccessibility(i, tier, m?.designations || [], !!m, m?.operational_role, m?.selection_committee_role ?? null).enabled);
+    .map((i) => getItemAccessibility(i, tier, m?.designations || [], !!m, m?.operational_role, m?.selection_committee_role ?? null, m?.chapter ?? null).enabled);
   const sidebar = ADMIN_SIDEBAR_SECTIONS.flatMap((s) => s.items).filter((i) => i.href === href).map((i) => isAdminSidebarItemVisible(m, i));
   return [...menu, ...sidebar];
 }
@@ -132,7 +134,8 @@ test('quem abre cada rota é exatamente a declaração: cada ação e cada desig
       const esperado = id === 'superadmin'
         || (tipo === 'acao' && acc.actions.includes(nome))
         || (tipo === 'tribo' && acc.actions.includes(nome) && !excecao.includes(nome))
-        || (tipo === 'designacao' && (acc.designations || []).includes(nome));
+        || (tipo === 'designacao' && (acc.designations || []).includes(nome))
+        || (id === 'capitulo' && acc.ownChapter === true);
       assert.equal(comCaps(caps, () => canEnterAdminRoute(href, m)), esperado, `${href} em ${id}`);
     }
   }
@@ -166,12 +169,69 @@ function propriedades(obj) {
   return out;
 }
 
-/** A pergunta do portão de uma função: ações perguntadas SEM recurso e designações lidas. Expande um nível de helper. */
+// Índice do parêntese que fecha o que abre em `abre`.
+function fecha(src, abre) {
+  let nivel = 0;
+  for (let i = abre; i < src.length; i++) {
+    if (src[i] === '(') nivel++;
+    if (src[i] === ')' && --nivel === 0) return i;
+  }
+  return -1;
+}
+
+/**
+ * O corpo da última versão de uma função. Quando uma migration antiga tem duas assinaturas, o helper recusa; vale então
+ * a migration mais nova que a define, se nela houver um CREATE só, precedido do DROP de uma assinatura.
+ */
+function captura(nome) {
+  try {
+    return latestFunctionCapture(ROOT, nome);
+  } catch (e) {
+    if (!/assinaturas/.test(e.message)) throw e;
+    const dir = resolve(ROOT, 'supabase/migrations');
+    const f = buildNewestDefinitions(dir).newest.get(nome);
+    assert.ok(f, `${nome}: sem migration que a defina`);
+    const original = readFileSync(resolve(dir, f.file), 'utf8');
+    const sql = maskLineComments(original);
+    const creates = [...sql.matchAll(new RegExp(`\\bCREATE\\s+(?:OR\\s+REPLACE\\s+)?FUNCTION\\s+(?:public\\.)?${nome}\\s*\\(`, 'gi'))];
+    assert.equal(creates.length, 1, `${nome}: ${f.file} tem ${creates.length} CREATE; a sobrecarga não foi resolvida`);
+    const drop = sql.search(new RegExp(`\\bDROP\\s+FUNCTION\\s+(?:IF\\s+EXISTS\\s+)?(?:public\\.)?${nome}\\s*\\(`, 'i'));
+    assert.ok(drop >= 0 && drop < creates[0].index, `${nome}: ${f.file} não remove a outra assinatura antes de criar`);
+    const after = original.slice(creates[0].index);
+    const as = maskLineComments(after).match(/\bAS\s+(\$[a-zA-Z_]*\$)/);
+    assert.ok(as, `${nome}: corpo não encontrado em ${f.file}`);
+    const abre = as.index + as[0].length;
+    return { file: f.file, body: after.slice(abre, after.indexOf(as[1], abre)) };
+  }
+}
+
+/**
+ * A cláusula do próprio capítulo: dentro de um `IF NOT (...) THEN` que nega, `OR <v> = p_chapter`, com <v> lido do
+ * capítulo do chamador (`SELECT ... chapter ... INTO ... <v> ... auth_id = auth.uid()`).
+ */
+function aceitaProprioCapitulo(b) {
+  for (const m of b.matchAll(/\bIF\s+NOT\s*\(/gi)) {
+    const abre = m.index + m[0].length - 1;
+    const fim = fecha(b, abre);
+    if (fim < 0 || !/^\s*THEN\s+(RETURN|RAISE)\b/i.test(b.slice(fim + 1))) continue;
+    for (const c of b.slice(abre + 1, fim).matchAll(/\bOR\s+(\w+)\s*=\s*p_chapter\b/gi)) {
+      const lido = new RegExp(`SELECT[^;]*\\bchapter\\b[^;]*\\bINTO\\b[^;]*\\b${c[1]}\\b[^;]*auth_id\\s*=\\s*auth\\.uid\\(\\)`, 'i');
+      if (lido.test(b)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * A pergunta do portão de uma função: ações perguntadas SEM recurso, designações lidas e a cláusula do próprio
+ * capítulo. Expande um nível de helper.
+ */
 function pergunta(nome, nivel = 0) {
-  const cap = latestFunctionCapture(ROOT, nome);
+  const cap = captura(nome);
   assert.ok(cap, `${nome} não foi capturada por nenhuma migration`);
   const b = cap.body.replace(/--[^\n]*/g, '');
   const acoes = new Set(), desig = new Set();
+  let capitulo = aceitaProprioCapitulo(b);
   for (const m of b.matchAll(/\b(can_by_member|can|rls_can)\s*\(/g)) {
     const args = argumentos(b, m.index + m[0].length - 1);
     if (!args) continue;
@@ -187,10 +247,11 @@ function pergunta(nome, nivel = 0) {
       if (helper && /can_by_member|rls_can/.test(helper.body)) {
         const h = pergunta(m[1], 1);
         h.acoes.forEach((a) => acoes.add(a)); h.desig.forEach((d) => desig.add(d));
+        capitulo = capitulo || h.capitulo;
       }
     }
   }
-  return { acoes, desig };
+  return { acoes, desig, capitulo };
 }
 
 const resolveImport = (from, spec) => {
@@ -212,18 +273,43 @@ function arquivosDaTela(pagina) {
   return [...vistos];
 }
 
+// A tela chama a RPC: `.rpc('nome'`, ou um embrulho local `function f(nome) { ... .rpc(nome ... }` chamado como f('nome').
+function chamaRpc(fonte, r) {
+  if (new RegExp(`\\.rpc\\(\\s*['"]${r}['"]`).test(fonte)) return true;
+  for (const m of fonte.matchAll(/(?:async\s+)?function\s+(\w+)\s*\(\s*(\w+)/g)) {
+    const corpo = fonte.slice(m.index, fonte.indexOf('\n  }', m.index));
+    if (new RegExp(`\\.rpc\\(\\s*${m[2]}\\b`).test(corpo) && new RegExp(`\\b${m[1]}\\(\\s*['"]${r}['"]`).test(fonte)) return true;
+  }
+  return false;
+}
+
 test('a declaração é a pergunta das RPCs da tela, e a tela chama essas RPCs', () => {
+  // controle do embrulho: o nome passado a safeRpc conta; um nome que a tela não chama, não
+  const analytics = maskJsComments(readFileSync(resolve(ROOT, 'src/pages/admin/analytics.astro'), 'utf8'));
+  assert.equal(chamaRpc(analytics, 'exec_role_transitions'), true, 'controle: o embrulho safeRpc não foi visto');
+  assert.equal(chamaRpc(analytics, 'exec_funnel_summary'), false, 'controle: o extrator viu chamada que não existe');
   // controle do extrator: com recurso não conta, sem recurso conta
   assert.deepEqual([...pergunta('update_initiative').acoes], [], 'controle: update_initiative pergunta COM recurso');
   assert.deepEqual([...pergunta('create_initiative').acoes], ['manage_platform'], 'controle: create_initiative pergunta manage_platform');
+  // controle do capítulo: o filtro `chapter = p_chapter` do funil não é portão; o retrato aceita o próprio capítulo
+  assert.equal(pergunta('get_selection_pipeline_metrics').capitulo, false, 'controle: filtro por capítulo contou como portão');
+  assert.equal(pergunta('exec_chapter_dashboard').capitulo, true, 'controle: a cláusula do próprio capítulo não foi vista');
+  // controle da sobrecarga: set_site_config tem duas assinaturas numa migration antiga e uma só na mais nova
+  assert.throws(() => latestFunctionCapture(ROOT, 'set_site_config'), /assinaturas/, 'controle: a sobrecarga antiga sumiu; o desvio de captura() ficou morto');
+  assert.deepEqual([...pergunta('set_site_config').acoes], ['manage_platform'], 'controle: set_site_config pergunta manage_platform');
   for (const [href, acc] of ROTAS) {
     assert.ok(acc.rpcs.length > 0, `${href}: sem RPC de origem`);
     const acoes = new Set(), desig = new Set();
-    for (const r of acc.rpcs) { const p = pergunta(r); p.acoes.forEach((a) => acoes.add(a)); p.desig.forEach((d) => desig.add(d)); }
+    let capitulo = false;
+    for (const r of acc.rpcs) {
+      const p = pergunta(r);
+      p.acoes.forEach((a) => acoes.add(a)); p.desig.forEach((d) => desig.add(d)); capitulo = capitulo || p.capitulo;
+    }
     assert.deepEqual([...acoes].sort(), [...acc.actions].sort(), `${href}: as ações declaradas não são as que as RPCs perguntam`);
     assert.deepEqual([...desig].sort(), [...(acc.designations || [])].sort(), `${href}: as designações declaradas não são as que as RPCs leem`);
+    assert.equal(acc.ownChapter === true, capitulo, `${href}: o próprio capítulo declarado não é o que as RPCs aceitam`);
     const fonte = arquivosDaTela(resolve(ROOT, `src/pages${href}.astro`)).map((f) => maskJsComments(readFileSync(f, 'utf8'))).join('\n');
-    for (const r of acc.rpcs) assert.match(fonte, new RegExp(`\\.rpc\\(\\s*['"]${r}['"]`), `${href}: a tela não chama ${r}`);
+    for (const r of acc.rpcs) assert.ok(chamaRpc(fonte, r), `${href}: a tela não chama ${r}`);
   }
 });
 
@@ -266,6 +352,14 @@ test('rota declarada não carrega eixo V3 que ninguém lê', () => {
       assert.equal(i.routeKey, undefined, `${href}: a sidebar ainda declara routeKey`);
     }
   }
+});
+
+test('o menu do cliente passa o capítulo do membro a getItemAccessibility', () => {
+  const nav = maskJsComments(readFileSync(resolve(ROOT, 'src/components/nav/Nav.astro'), 'utf8'));
+  const at = nav.indexOf('getItemAccessibility(', nav.indexOf('function getItemAccessClient('));
+  assert.ok(at >= 0, 'getItemAccessClient não chama getItemAccessibility');
+  const args = argumentos(nav, at + 'getItemAccessibility'.length);
+  assert.equal(args?.[6], '_member?.chapter ?? null', 'o 7º argumento não é o capítulo do membro');
 });
 
 test('o texto de falha ao carregar existe nos 3 idiomas e o AdminLayout o põe na página', () => {

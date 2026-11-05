@@ -23,12 +23,14 @@ import { canAccessAdminRoute, type AdminRouteKey } from './admin/route-access.ts
  * - `actions`: ações V4, qualquer uma basta, perguntadas como as RPCs da tela perguntam: can(pessoa, ação) sem
  *   recurso (`canForUnscoped`).
  * - `designations`: só as que o próprio servidor lê no portão das RPCs da tela.
+ * - `ownChapter`: o portão de uma RPC da tela aceita o próprio capítulo de qualquer membro. Entra quem tem capítulo.
  * - `rpcs`: as RPCs da tela de onde as ações saíram. O guard confere cada uma contra a última captura nas
  *   migrations e exige que a tela as chame.
  */
 export interface AdminRouteAccess {
   actions: readonly string[];
   designations?: readonly string[];
+  ownChapter?: boolean;
   rpcs: readonly string[];
 }
 
@@ -37,18 +39,26 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/initiatives': { actions: ['manage_platform'], rpcs: ['create_initiative'] },
   // A fila e as verificações pedem manage_member ou a designação filiacao_director.
   '/admin/filiacao': { actions: ['manage_member'], designations: ['filiacao_director'], rpcs: ['get_affiliation_verification_queue'] },
+  // As transições de papel pedem view_internal_analytics (pelo helper) ou view_aggregate_analytics.
+  '/admin/analytics': { actions: ['view_internal_analytics', 'view_aggregate_analytics'], rpcs: ['exec_role_transitions'] },
+  // O funil e o retrato pedem view_internal_analytics ou view_aggregate_analytics; o retrato aceita também o
+  // próprio capítulo de qualquer membro (ADR-0030, Path Y).
+  '/admin/chapter-report': { actions: ['view_internal_analytics', 'view_aggregate_analytics'], ownChapter: true, rpcs: ['get_selection_pipeline_metrics', 'exec_chapter_dashboard'] },
+  // Salvar a configuração pede manage_platform.
+  '/admin/report': { actions: ['manage_platform'], rpcs: ['set_site_config'] },
 };
 
-function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[]): boolean {
+function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[], chapter?: string | null): boolean {
   return access.actions.some((a) => canForUnscoped(a))
-    || (access.designations || []).some((d) => designations.includes(d));
+    || (access.designations || []).some((d) => designations.includes(d))
+    || (!!access.ownChapter && typeof chapter === 'string' && chapter !== '');
 }
 
 /** O portão da página de uma rota declarada em `ADMIN_ROUTE_ACCESS`. Rota não declarada não abre. */
 export function canEnterAdminRoute(href: string, member: any): boolean {
   const access = ADMIN_ROUTE_ACCESS[href];
   if (!access || !member) return false;
-  return routeAccessAllows(access, Array.isArray(member.designations) ? member.designations : []);
+  return routeAccessAllows(access, Array.isArray(member.designations) ? member.designations : [], member.chapter);
 }
 
 export interface NavItem {
@@ -177,13 +187,13 @@ export const NAV_ITEMS: NavItem[] = [
 
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
-  { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'chapter_board'], allowedOperationalRoles: ['chapter_liaison'] },
+  { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['comms_leader', 'comms_member', 'sponsor'], lgpdSensitive: true },
   { key: 'admin-comms-ops', labelKey: 'nav.adminCommsOps',  href: '/admin/comms-ops', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_leader', 'comms_member', 'sponsor'], lgpdSensitive: true },
   { key: 'stakeholder-dashboard', labelKey: 'nav.stakeholder', href: '/stakeholder', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'chapter_board'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-portfolio', labelKey: 'nav.adminPortfolio', href: '/admin/portfolio', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'chapter_board', 'comms_leader', 'comms_member'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cycle-report', labelKey: 'nav.adminCycleReport', href: '/report', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
-  { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
+  { key: 'admin-exec-report', labelKey: 'nav.adminReport', href: '/admin/report', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'boards', labelKey: 'nav.boards', href: '/boards', minTier: 'member', requiresAuth: true, section: 'both', group: 'member', drawerSection: 'meu-espaco', navSlot: 'primary' },
   { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
   // /cpmai saiu do menu (GP, 09/10/2026): Grupo de Estudos CPMAI · Piloto, só participantes e gestão.
@@ -193,7 +203,7 @@ export const NAV_ITEMS: NavItem[] = [
   // #701 Agenda Viva coordination — manage_event holders (org-scope: manager/deputy_manager/co_gp/comms_leader). UX gate only; reorder/confirm/revoke RPCs are the real boundary.
   { key: 'admin-agenda-viva', labelKey: 'nav.adminAgendaViva', href: '/admin/agenda-viva', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['deputy_manager', 'co_gp', 'comms_leader', 'sponsor'], allowedOperationalRoles: ['manager'] },
   { key: 'admin-partnerships', labelKey: 'nav.adminPartnerships', href: '/admin/partnerships', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
-  { key: 'admin-chapter-report', labelKey: 'nav.adminChapterReport', href: '/admin/chapter-report', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
+  { key: 'admin-chapter-report', labelKey: 'nav.adminChapterReport', href: '/admin/chapter-report', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cross-tribes', labelKey: 'nav.adminCrossTribes', href: '/admin/tribes', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor'] },
   { key: 'admin-tribe-dashboard', labelKey: 'nav.adminTribeDashboard', href: '/admin/tribe/', minTier: 'leader', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', dynamic: true, resolver: 'resolveMyTribeDashboard', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
@@ -223,7 +233,8 @@ export function getItemAccessibility(
   designations: string[],
   isLoggedIn: boolean,
   operationalRole?: string,
-  selectionCommitteeRole?: string | null
+  selectionCommitteeRole?: string | null,
+  chapter?: string | null
 ): ItemAccessibility {
   if (item.requiresAuth && !isLoggedIn) {
     return { visible: false, enabled: false, requiredTier: item.minTier };
@@ -232,7 +243,7 @@ export function getItemAccessibility(
   // #2974 (F1): rota com acesso declarado responde pela declaração, como a página.
   const declared = ADMIN_ROUTE_ACCESS[item.href];
   if (declared) {
-    const enabledByRoute = isLoggedIn && routeAccessAllows(declared, designations);
+    const enabledByRoute = isLoggedIn && routeAccessAllows(declared, designations, chapter);
     if (item.lgpdSensitive && !enabledByRoute) return { visible: false, enabled: false, requiredTier: item.minTier };
     return { visible: isLoggedIn || enabledByRoute, enabled: enabledByRoute, requiredTier: item.minTier };
   }
@@ -370,11 +381,11 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
     label: { 'pt-BR': 'Relatórios', 'en-US': 'Reports', 'es-LATAM': 'Informes' },
     items: [
       { href: '/admin/portfolio', label: { 'pt-BR': 'Portfólio Executivo', 'en-US': 'Executive Portfolio', 'es-LATAM': 'Portafolio Ejecutivo' }, icon: 'Briefcase', permission: 'admin.portfolio' },
-      { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart', permission: 'admin.portfolio' },
+      { href: '/admin/report', label: { 'pt-BR': 'Gerador de Relatório', 'en-US': 'Report Builder', 'es-LATAM': 'Generador de Informes' }, icon: 'FileBarChart' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/cycle-report', label: { 'pt-BR': 'Relatório do Ciclo', 'en-US': 'Cycle Report', 'es-LATAM': 'Informe del Ciclo' }, icon: 'FileText', permission: 'admin.analytics' },
       { href: '/admin/chapter', label: { 'pt-BR': 'Meu Capítulo', 'en-US': 'My Chapter', 'es-LATAM': 'Mi Capítulo' }, icon: 'Building', permission: 'admin.analytics.chapter' },
-      { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório do Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe del Capítulo' }, icon: 'FileText', permission: ['admin.access', 'admin.analytics.chapter'] },
-      { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3', permission: 'admin.analytics' },
+      { href: '/admin/chapter-report', label: { 'pt-BR': 'Relatório do Capítulo', 'en-US': 'Chapter Report', 'es-LATAM': 'Informe del Capítulo' }, icon: 'FileText' }, // acesso: ADMIN_ROUTE_ACCESS
+      { href: '/admin/analytics', label: { 'pt-BR': 'Analytics', 'en-US': 'Analytics', 'es-LATAM': 'Analytics' }, icon: 'BarChart3' }, // acesso: ADMIN_ROUTE_ACCESS
     ],
   },
   {

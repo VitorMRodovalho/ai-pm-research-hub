@@ -94,7 +94,8 @@ describe('#1591 A — o eixo existe e é declarado na rota certa', () => {
     assert.match(navSrc, /item\.allowedSelectionCommittee === 'evaluator'/,
       'servidor: getItemAccessibility não considera o eixo');
     assert.match(clientSrc,
-      /getItemAccessibility\(\s*item, tier, designations, true,\s*String\(_member\?\.operational_role \|\| ''\),\s*_member\?\.selection_committee_role \?\? null,?\s*\)/,
+      // #2974 (F1): o capítulo do membro vem depois, como 7º argumento; o guard da F1 o confere.
+      /getItemAccessibility\(\s*item, tier, designations, true,\s*String\(_member\?\.operational_role \|\| ''\),\s*_member\?\.selection_committee_role \?\? null,?\s*(?:_member\?\.chapter \?\? null,?\s*)?\)/,
       'cliente: getItemAccessClient não passa o papel do comitê ao predicado');
   });
 

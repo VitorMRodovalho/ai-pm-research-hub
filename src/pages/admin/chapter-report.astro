@@ -40,7 +40,7 @@ const CHR_I18N = {
   <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <div id="chr-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
-      <p class="font-semibold text-amber-800">{t('chapterReport.denied', lang)}</p>
+      <p id="chr-denied-text" class="font-semibold text-amber-800">{t('chapterReport.denied', lang)}</p>
       <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.backToAdmin', lang)}</a>
     </div>
 
@@ -122,6 +122,8 @@ const CHR_I18N = {
 </script>
 <script>
   import { hasPermission } from '../../lib/permissions';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__CHR_I18N) || {
@@ -147,7 +149,11 @@ const CHR_I18N = {
 
   const ROLE_LABELS: Record<string, string> = T.roleLabels;
 
-  function showDenied() {
+  // O texto de "sem acesso" que a página traz; um aviso anterior (entrar, falha) não pode ficar no lugar dele.
+  const DENIED_TEXT = document.getElementById('chr-denied-text')?.textContent || '';
+  function showDenied(text?: string) {
+    const msg = document.getElementById('chr-denied-text');
+    if (msg) msg.textContent = text || DENIED_TEXT;
     document.getElementById('chr-loading')?.classList.add('hidden');
     document.getElementById('chr-panel')?.classList.add('hidden');
     document.getElementById('chr-denied')?.classList.remove('hidden');
@@ -327,42 +333,28 @@ const CHR_I18N = {
     loadSelectionMetrics(sel.value);
   }
 
-  let _gateApplied = false;
-
-  async function boot() {
+  function startChapterReport(m: any) {
     sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail && !_gateApplied) { MEMBER = e.detail; _gateApplied = true; applyGate(MEMBER); }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; _gateApplied = true; applyGate(MEMBER); return; }
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        const { data } = await sb.rpc('get_member_by_auth');
-        if (data) { MEMBER = data; _gateApplied = true; applyGate(MEMBER); return; }
-      }
-    } catch (e) { console.warn('ChapterReport boot:', e); }
-
-    // Don't show denied immediately — nav:member event may still fire
-    setTimeout(() => { if (!_gateApplied) showDenied(); }, 3000);
+    if (!sb) { showDenied(adminLoadFailedText()); return; }
+    MEMBER = m;
+    // A comparação entre capítulos e a lista de todos os capítulos seguem no V3; a F6 leva esse portão interno
+    // à pergunta das RPCs dele.
+    isGP = hasPermission(m, 'admin.access');
+    showPanel();
+    populateChapterSelect();
+    if (isGP) loadComparison();
   }
 
-  function applyGate(m: any) {
-    const desigs: string[] = m?.designations || [];
-    isGP = hasPermission(m, 'admin.access');
-    const hasAccess = isGP || m?.operational_role === 'chapter_liaison' || desigs.includes('sponsor') || desigs.includes('chapter_liaison');
-    if (hasAccess) {
-      showPanel();
-      populateChapterSelect();
-      if (isGP) loadComparison();
-    } else {
-      showDenied();
-    }
+  function boot() {
+    // #2974 (F1): decide quando o Nav resolve o membro e as capacidades, pela mesma entrada que decide o link no
+    // menu e na sidebar. Sem laço de tentativas: sem sessão, pede para entrar.
+    gateAdminPage({
+      allow: (m) => canEnterAdminRoute('/admin/chapter-report', m),
+      onAllowed: (m) => startChapterReport(m),
+      onDenied: () => showDenied(),
+      onNoSession: () => showDenied(adminSignInText()),
+      onLoadFailed: () => showDenied(adminLoadFailedText()),
+    });
   }
 
   boot();
