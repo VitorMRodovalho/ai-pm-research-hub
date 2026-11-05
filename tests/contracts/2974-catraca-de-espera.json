@@ -56,7 +56,9 @@
     "src/pages/admin/vep-reconciliation.astro",
     "src/pages/stakeholder.astro"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/pages/admin/filiacao.astro"
+   ]
   },
   "sem_limite_capacidades": {
    "base": [
@@ -128,7 +130,9 @@
     "src/pages/wiki.astro",
     "src/pages/workspace.astro"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/pages/admin/initiatives.astro"
+   ]
   },
   "le_navgetmember_sem_evento": {
    "base": [
@@ -176,7 +180,9 @@
     "src/pages/publications/submissions/[id].astro",
     "src/pages/volunteer-agreement.astro"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/pages/admin/filiacao.astro"
+   ]
   },
   "ilha_sem_membro": {
    "base": [

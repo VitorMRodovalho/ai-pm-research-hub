@@ -25,26 +25,30 @@ const i18nBundle = buildPageI18n(['comp.affiliationQueue', 'comp.common'], lang)
     <AffiliationQueueIsland client:load />
   </div>
   <Toast />
+  <span id="filiacao-denied-text" class="hidden">{t('admin.deniedAdmin', lang)}</span>
 </AdminLayout>
 
-<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    const check = () => {
-      const member = window.navGetMember?.();
-      if (!member) { setTimeout(check, 300); return; }
-      // UX gate only — the server RPCs are the real boundary (filiacao_director OR manage_member).
-      // Mirror the `admin.filiacao` audience EXACTLY (office + GP + deputy + superadmin). Do NOT use
-      // the broad __nucleoCanForAdminEntry, which would admit view_internal_analytics holders the
-      // tightened RPC now denies (security review L-1 / M-1, #659).
-      const isAllowed =
-        member.is_superadmin ||
-        member.operational_role === 'manager' ||
-        (member.designations || []).some(function (d) { return d === 'deputy_manager' || d === 'filiacao_director'; });
-      if (!isAllowed) {
-        document.querySelector('.max-w-\\[1200px\\]').innerHTML =
-          '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
-      }
-    };
-    check();
+<script>
+  // UX gate only: the server RPCs are the real boundary (filiacao_director OR manage_member).
+  // #2974 (F1): decide quando o Nav resolve o membro e as capacidades, pela mesma entrada que decide o link no
+  // menu e na sidebar (ADMIN_ROUTE_ACCESS), que é a pergunta das RPCs da fila.
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  function showFiliacaoNotice(text: string) {
+    const box = document.querySelector('.max-w-\\[1200px\\]');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.className = 'text-center py-20 text-[var(--text-muted)]';
+    div.textContent = text;
+    box.replaceChildren(div);
+  }
+
+  gateAdminPage({
+    allow: (m) => canEnterAdminRoute('/admin/filiacao', m),
+    onAllowed: () => {},
+    onDenied: () => showFiliacaoNotice(document.getElementById('filiacao-denied-text')?.textContent?.trim() || ''),
+    onNoSession: () => showFiliacaoNotice(adminSignInText()),
+    onLoadFailed: () => showFiliacaoNotice(adminLoadFailedText()),
   });
 </script>
