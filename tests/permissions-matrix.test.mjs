@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { NAV_ITEMS, getItemAccessibility } from '../src/lib/navigation.config.ts';
+import { resolveTierFromMember } from '../src/lib/admin/route-access.ts';
+import { setCapabilities, clearCapabilities } from '../src/lib/permissions.ts';
 
 const ROOT = process.cwd();
 const NAV_CONFIG = readFileSync(resolve(ROOT, 'src/lib/navigation.config.ts'), 'utf8');
@@ -91,10 +94,29 @@ test('leadership/comms/curator profiles can access operational surfaces', () => 
 
   const webinars = parseNavItem('webinars');
   const publications = parseNavItem('publications');
-  const adminCommsOps = parseNavItem('admin-comms-ops');
 
   assert.equal(canAccess(webinars, leadership), true);
   assert.equal(canAccess(webinars, commsMember), true);
   assert.equal(canAccess(publications, curator), true);
-  assert.equal(canAccess(adminCommsOps, commsMember), true);
+});
+
+// #2974 (F1c): admin-comms-ops não tem mais eixo V3 no menu. Quem decide é ADMIN_ROUTE_ACCESS, pela ação V4 das RPCs
+// da tela, então a asserção passa pela função real do menu com as capacidades do perfil, e não pela leitura do texto.
+test('admin-comms-ops abre pela ação V4, não pela designação de comunicação', () => {
+  const item = NAV_ITEMS.find((i) => i.key === 'admin-comms-ops');
+  assert.ok(item, 'admin-comms-ops sumiu do menu');
+  const commsMember = { operational_role: 'researcher', designations: ['comms_member'], is_superadmin: false };
+  const SEM = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+  const abre = (caps) => {
+    setCapabilities(caps);
+    try {
+      return getItemAccessibility(item, resolveTierFromMember(commsMember), commsMember.designations, true,
+        commsMember.operational_role, null, null).enabled;
+    } finally {
+      clearCapabilities();
+    }
+  };
+  assert.equal(abre(SEM), false, 'a designação de comunicação sem a ação abriu comms-ops');
+  assert.equal(abre({ ...SEM, org_actions: ['manage_comms'] }), true, 'manage_comms não abriu comms-ops');
+  assert.equal(abre({ ...SEM, org_actions: ['view_internal_analytics'] }), true, 'view_internal_analytics não abriu comms-ops');
 });
