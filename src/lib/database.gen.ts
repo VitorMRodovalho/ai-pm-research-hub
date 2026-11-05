@@ -28314,6 +28314,7 @@ export type Database = {
           end_date: string | null
           essay_mapping: Json
           evaluation_track: string
+          home_label: string | null
           home_listing: string
           id: string
           initiative_id: string | null
@@ -28338,6 +28339,7 @@ export type Database = {
           end_date?: string | null
           essay_mapping?: Json
           evaluation_track?: string
+          home_label?: string | null
           home_listing?: string
           id?: string
           initiative_id?: string | null
@@ -28362,6 +28364,7 @@ export type Database = {
           end_date?: string | null
           essay_mapping?: Json
           evaluation_track?: string
+          home_label?: string | null
           home_listing?: string
           id?: string
           initiative_id?: string | null
@@ -34834,6 +34837,7 @@ export type Database = {
         Args: never
         Returns: {
           application_deadline: string
+          home_label: string
           line_title: string
           listing: string
           opportunity_id: string
