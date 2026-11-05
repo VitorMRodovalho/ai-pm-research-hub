@@ -36542,6 +36542,10 @@ export type Database = {
           suppressed: boolean
         }[]
       }
+      record_certificate_download: {
+        Args: { p_cert_id: string }
+        Returns: Json
+      }
       record_drive_discovery: {
         Args: {
           p_drive_file_id: string
