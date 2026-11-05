@@ -122,7 +122,7 @@ test('#2782 B2: a entidade nasce prospect, com o tipo da porta e SEM contato nem
   const m = ents[0].map;
   assert.equal(m.status, "'prospect'");
   assert.equal(m.entity_type, "CASE v_role WHEN 'chapter' THEN 'pmi_chapter' ELSE 'outro' END");
-  // partner_entities é lida por todo membro ativo (partners_read_members): o contato não entra nela
+  // o contato de quem pediu fica no lead (notes aponta para ele), não na entidade do parceiro
   assert.ok(!('contact_name' in m) && !('contact_email' in m), 'a entidade voltou a guardar o contato de quem pediu');
   for (const [col, val] of Object.entries(m)) assert.doesNotMatch(val, PII_VARS, `partner_entities.${col} leva dado de quem pediu`);
   assert.match(m.notes, /v_lead_id::text/);
