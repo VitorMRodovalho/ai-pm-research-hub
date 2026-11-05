@@ -183,36 +183,41 @@ test('Nav: marca a falha das capacidades no catch, limpa no sucesso e no logout,
 
 // ── 3. as telas ──
 
+// #2974 (F1): partnerships e governance-v2 decidem pela entrada da rota em ADMIN_ROUTE_ACCESS (`rota`), e não mais por
+// hasPermission; o 2974-f1-link-e-pagina prende o resto. A forma do portão é a mesma, com onLoadFailed.
 const PORTOES = [
   { arq: 'src/pages/admin/portfolio.astro', fn: 'hasPortfolioAccess', perm: 'admin.portfolio' },
-  { arq: 'src/pages/admin/partnerships.astro', fn: 'hasPartnershipsAccess', perm: 'admin.partners' },
+  { arq: 'src/pages/admin/partnerships.astro', fn: 'hasPartnershipsAccess', rota: '/admin/partnerships' },
   { arq: 'src/pages/admin/cycle-report.astro', fn: 'hasAccess', perm: 'admin.analytics' },
-  { arq: 'src/pages/admin/governance-v2.astro', fn: 'hasBoardGovAccess', perm: 'admin.access' },
+  { arq: 'src/pages/admin/governance-v2.astro', fn: 'hasBoardGovAccess', rota: '/admin/governance-v2' },
 ];
 
 /** O portão da tela, ligado: allow é a função de permissão, negado e sem sessão mostram textos diferentes. */
-export function portaoDaTela(src, fn, perm) {
+export function portaoDaTela(src, fn, perm, rota) {
   const c = src.replace(/\s+/g, ' ');
+  const decide = rota ? `canEnterAdminRoute\\('${esc(rota)}', member\\)` : `hasPermission\\(member, '${esc(perm)}'\\)`;
   const permissao = new RegExp(
-    `function ${esc(fn)}\\(member: any\\): boolean \\{ if \\(!member\\) return false; return hasPermission\\(member, '${esc(perm)}'\\); \\}`,
+    `function ${esc(fn)}\\(member: any\\): boolean \\{ if \\(!member\\) return false; return ${decide}; \\}`,
   ).test(c);
   const m = c.match(new RegExp(
     `gateAdminPage\\(\\{ allow: ${esc(fn)}, onAllowed: \\(\\) => \\{ void boot\\w+\\(\\); \\}, ` +
       'onDenied: \\(\\) => (show\\w+Notice)\\(([^()]*(?:\\([^()]*\\))?[^()]*)\\), ' +
-      'onNoSession: \\(\\) => (show\\w+Notice)\\(adminSignInText\\(\\)\\), \\}\\);',
+      'onNoSession: \\(\\) => (show\\w+Notice)\\(adminSignInText\\(\\)\\), ' +
+      `${rota ? 'onLoadFailed: \\(\\) => (show\\w+Notice)\\(adminLoadFailedText\\(\\)\\), ' : ''}\\}\\);`,
   ));
   return {
     permissao,
     gate: !!m,
     negadoNaoPedeLogin: !!m && !/adminSignInText/.test(m[2]),
-    mesmoAviso: !!m && m[1] === m[3],
+    mesmoAviso: !!m && m[1] === m[3] && (!rota || m[4] === m[1]),
   };
 }
 
 for (const p of PORTOES) {
-  test(`${p.arq}: negado vem de ${p.fn} (hasPermission '${p.perm}'), sem sessão pede para entrar`, () => {
-    const r = portaoDaTela(ler(p.arq), p.fn, p.perm);
-    assert.ok(r.permissao, `${p.fn} não é "sem membro: falso; senão hasPermission(member, '${p.perm}')"`);
+  const pergunta = p.rota ? `canEnterAdminRoute('${p.rota}')` : `hasPermission '${p.perm}'`;
+  test(`${p.arq}: negado vem de ${p.fn} (${pergunta}), sem sessão pede para entrar`, () => {
+    const r = portaoDaTela(ler(p.arq), p.fn, p.perm, p.rota);
+    assert.ok(r.permissao, `${p.fn} não é "sem membro: falso; senão ${pergunta}"`);
     assert.ok(r.gate, 'a tela não passa pelo gateAdminPage com allow, onDenied e onNoSession');
     assert.ok(r.negadoNaoPedeLogin, 'o caminho de negado mostra o texto de entrar');
     assert.ok(r.mesmoAviso, 'negado e sem sessão usam funções de aviso diferentes');

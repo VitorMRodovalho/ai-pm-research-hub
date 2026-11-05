@@ -40,10 +40,8 @@
    "boards",
    "governance",
    "docs-mcp",
-   "admin-governance-v2",
    "admin-curatorship",
    "admin-agenda-viva",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-cross-tribes",
    "admin-tribe-dashboard",
@@ -89,9 +87,7 @@
    "/admin/ai-calibration",
    "/admin/initiative-kinds",
    "/admin/tags",
-   "/admin/governance-v2",
    "/admin/gamification",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -136,10 +132,8 @@
    "boards",
    "governance",
    "docs-mcp",
-   "admin-governance-v2",
    "admin-curatorship",
    "admin-agenda-viva",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-cross-tribes",
    "admin-tribe-dashboard",
@@ -219,8 +213,6 @@
    "/admin/sustainability",
    "/admin/pilots",
    "/admin/tags",
-   "/admin/governance-v2",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -291,7 +283,6 @@
    "admin-cycle-report",
    "governance",
    "docs-mcp",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-tribe-dashboard",
    "help",
@@ -307,7 +298,6 @@
    "/admin/chapter",
    "/admin/sustainability",
    "/admin/pilots",
-   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -352,8 +342,6 @@
    "/admin/sustainability",
    "/admin/pilots",
    "/admin/tags",
-   "/admin/governance-v2",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -780,10 +768,8 @@
    "boards",
    "governance",
    "docs-mcp",
-   "admin-governance-v2",
    "admin-curatorship",
    "admin-agenda-viva",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-cross-tribes",
    "admin-tribe-dashboard",
@@ -815,9 +801,7 @@
    "/admin/sustainability",
    "/admin/pilots",
    "/admin/tags",
-   "/admin/governance-v2",
    "/admin/gamification",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -858,7 +842,6 @@
    "governance",
    "docs-mcp",
    "admin-curatorship",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-tribe-dashboard",
    "notifications",
@@ -876,7 +859,6 @@
    "/admin/chapter",
    "/admin/sustainability",
    "/admin/pilots",
-   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -1006,7 +988,6 @@
    "boards",
    "governance",
    "docs-mcp",
-   "admin-governance-v2",
    "admin-curatorship",
    "admin-sustainability",
    "notifications",
@@ -1018,7 +999,6 @@
   ],
   "sidebar": [
    "/admin/curatorship",
-   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -1213,10 +1193,8 @@
    "boards",
    "governance",
    "docs-mcp",
-   "admin-governance-v2",
    "admin-curatorship",
    "admin-agenda-viva",
-   "admin-partnerships",
    "admin-sustainability",
    "admin-cross-tribes",
    "admin-tribe-dashboard",
@@ -1298,9 +1276,7 @@
    "/admin/pilots",
    "/admin/agenda-viva",
    "/admin/tags",
-   "/admin/governance-v2",
    "/admin/gamification",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -1358,8 +1334,6 @@
    "/admin/cycle-report",
    "/admin/chapter",
    "/admin/tags",
-   "/admin/governance-v2",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -1412,7 +1386,6 @@
    "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -1466,7 +1439,6 @@
    "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -1519,7 +1491,6 @@
    "/admin/webinars",
    "/admin/knowledge",
    "/admin/tags",
-   "/admin/partnerships",
    "/help"
   ]
  },
@@ -2330,6 +2301,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-partnerships",
    "notifications",
    "help",
    "certificates",
@@ -2338,6 +2310,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/partnerships",
    "/help"
   ]
  },
@@ -2375,6 +2348,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-governance-v2",
    "notifications",
    "help",
    "certificates",
@@ -2385,6 +2359,7 @@
   "sidebar": [
    "/admin/initiatives",
    "/admin/report",
+   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -2558,6 +2533,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-governance-v2",
    "admin-chapter-report",
    "notifications",
    "help",
@@ -2569,6 +2545,7 @@
   "sidebar": [
    "/admin/chapter-report",
    "/admin/analytics",
+   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -2605,6 +2582,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-partnerships",
    "notifications",
    "help",
    "certificates",
@@ -2613,6 +2591,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/partnerships",
    "/help"
   ]
  },
@@ -2913,6 +2892,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-partnerships",
    "notifications",
    "help",
    "certificates",
@@ -2921,6 +2901,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/partnerships",
    "/help"
   ]
  },
@@ -2958,6 +2939,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-governance-v2",
    "notifications",
    "help",
    "certificates",
@@ -2968,6 +2950,7 @@
   "sidebar": [
    "/admin/initiatives",
    "/admin/report",
+   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -3141,6 +3124,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-governance-v2",
    "admin-chapter-report",
    "notifications",
    "help",
@@ -3152,6 +3136,7 @@
   "sidebar": [
    "/admin/chapter-report",
    "/admin/analytics",
+   "/admin/governance-v2",
    "/help"
   ]
  },
@@ -3188,6 +3173,7 @@
    "boards",
    "governance",
    "docs-mcp",
+   "admin-partnerships",
    "notifications",
    "help",
    "certificates",
@@ -3196,6 +3182,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/partnerships",
    "/help"
   ]
  },

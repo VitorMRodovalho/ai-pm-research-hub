@@ -175,9 +175,11 @@ test('admin-selection visible to admin+ tier OR sponsor designation (Wave 1 — 
   assert.ok(sponsor.visible && sponsor.enabled, 'admin-selection must be visible+enabled for a sponsor designation');
 });
 
-test('Wave 1: host sponsor sees the gated admin READ surfaces (selection/vep/cross-tribes/comms/governance/agenda)', () => {
+test('Wave 1: host sponsor sees the gated admin READ surfaces (selection/vep/cross-tribes/comms/agenda)', () => {
+  // #2974 (F1): admin-governance-v2 saiu desta lista. A rota decide pela ação V4 que as RPCs da tela pedem
+  // (ADMIN_ROUTE_ACCESS), não pela designação, e o 2974-f1-link-e-pagina prende isso com capacidades simuladas.
   for (const key of ['admin-selection', 'admin-vep-reconciliation', 'admin-cross-tribes',
-                     'admin-comms', 'admin-comms-ops', 'admin-governance-v2', 'admin-agenda-viva']) {
+                     'admin-comms', 'admin-comms-ops', 'admin-agenda-viva']) {
     const item = parseNavItem(key);
     const r = getItemAccessibility(item, 'member', ['sponsor'], true, 'sponsor');
     assert.ok(r.visible && r.enabled, `${key} must be visible+enabled for a sponsor designation (Wave 1 host president full read)`);
@@ -263,9 +265,8 @@ test('#670 chapter_liaison operational_role gets only declared read admin nav ro
   const allowed = new Set([
     'admin-portfolio',
     'admin-cycle-report',
-    'admin-partnerships',
-    // #2974 (F1): admin-analytics, admin-exec-report e admin-chapter-report saíram daqui; a rota decide pela ação V4
-    // (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina.
+    // #2974 (F1): admin-analytics, admin-exec-report, admin-chapter-report e admin-partnerships saíram daqui; a rota
+    // decide pela ação V4 (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina.
     'admin-sustainability',
     'admin-tribe-dashboard',
   ]);
