@@ -17,12 +17,12 @@ How decisions are made, how architecture evolves, and where different types of c
 |---|---|---|
 | Architecture (domain model, auth pattern, schema structure) | Vitor (GP) + architectural committee when convened | ADR in `docs/adr/` |
 | Platform operational rules (permissions, cycles, workflows) | Vitor + tribe leaders | `.claude/rules/*`, RPC code + comments |
-| Feature roadmap / prioritization | Vitor + Ivan (sponsor PMI-GO) | `memory/project_issue_gap_opportunity_log.md` + GitHub issues |
-| Partnership agreements / external integrations | Ivan (sponsor) + Vitor | Private wiki `strategy/` + signed contracts |
+| Feature roadmap / prioritization | Vitor + the PMI-GO sponsor | `memory/project_issue_gap_opportunity_log.md` + GitHub issues |
+| Partnership agreements / external integrations | The PMI-GO sponsor + Vitor | Private wiki `strategy/` + signed contracts |
 | Chapter-level decisions | 5 chapter presidents (CR process) | Change Request docs + chapter assemblies |
 | Member lifecycle (selection, offboarding) | Tribe leaders + Vitor (for escalations) | `admin_audit_log` entries + `.claude/rules/database.md` |
 
-**Important:** This project is an open-source initiative of PMI chapters. External programs that Vitor or Fabrício participate in individually (e.g., **AIPM Ambassadors**) are **not institutional partnerships** unless there is a signed cooperation agreement between entities. Do not document external programs as stakeholders without formal agreement.
+**Important:** This project is an open-source initiative of PMI chapters. External programs that Vitor or the Co-GP participate in individually (e.g., **AIPM Ambassadors**) are **not institutional partnerships** unless there is a signed cooperation agreement between entities. Do not document external programs as stakeholders without formal agreement.
 
 ## ADR process
 

@@ -52,7 +52,7 @@ Three surfaces:
   `add_document_comment`→`create_document_comment`, `list_change_requests`→`get_change_requests`,
   `list_my_signatures`→`get_my_signatures`. Migration `20260805000459` clamped `submit_change_request`
   priority (`critical`→`high`, was a hard CHECK fail) and REVOKEd dead anon/PUBLIC EXECUTE on 14 governance/cert
-  write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (Lorena-only, never auto).
+  write RPCs (all fail-closed). **Kept RAW on purpose:** `counter_sign_certificate` (second-signature authority only, never auto).
   **#1397 (migration `20260805000462`, ef 2.88.0 / semantic v0.10.0):** `review_change_request`/
   `approve_change_request` are now absorbed into `change_request` (`review`/`approve`). The unilateral
   `implement` branch was retired (`approved→implemented` is 2-of-N only, via `document_version_write
@@ -106,7 +106,7 @@ Three surfaces:
   `get_volunteer_funnel_stats`, `list_ai_suggestions`, `exec_cycle_report`, `lgpd_execute_retroactive_deletion`,
   `lgpd_record_retroactive_notification`); public feeds (`get_public_impact_data`/`get_public_trail_ranking`/
   `get_cpmai_leaderboard`) intentionally kept anon. **Kept RAW on purpose:** `knowledge_insights_*` (internal
-  ops backlog, dead, service-role); `counter_sign_certificate` (Lorena-only). Re-grounding: the
+  ops backlog, dead, service-role); `counter_sign_certificate` (second-signature authority only). Re-grounding: the
   `lgpd_record_retroactive_notification` FK failure + `award_champion invalid_criteria` in the 180d log were NOT
   live bugs (p239b hotfix already live; invalid_criteria = legitimate slug-not-in-catalog error).
   Raw tools stay registered (additive/deprecation). Operator SSOT: `docs/reference/SEMANTIC_TOOL_CATALOG.md`.

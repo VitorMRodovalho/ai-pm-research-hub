@@ -94,7 +94,7 @@ loudness a menos não é, e o YouTube atenua quem passa de −14 mas **não ampl
 ### 3. Transcrever LOCAL, em português
 
 Nunca usar a transcrição da plataforma de evento sem olhar. A do Airmeet de 08/09 rodou ASR em
-inglês sobre áudio em português e saiu inutilizável ("Wow. Rodrigo to the bone.").
+inglês sobre áudio em português e saiu inutilizável ("Wow. <prenome> to the bone.").
 
 ```bash
 ~/.venvs/video/bin/whisperx audio.wav --language pt --model large-v3 \
@@ -137,12 +137,12 @@ tiverem números diferentes de cue, porque é a igualdade de contagem que torna 
 legítimo. Conferir isso também serve de porteiro da tradução: 972 na fonte, 972 em cada saída.
 
 **Nome de pessoa também é traduzido, e o `blindar_siglas.py` não o cobre.** Medido em 01/10/2026
-(Liderança #13): "Messias" virou "Messiah" em **11 de 11** ocorrências, "Paulo" virou "Paul"/"Pablo",
+(Liderança #13): um prenome em português virou a forma em inglês em **11 de 11** ocorrências, outro virou duas formas estrangeiras diferentes,
 "Vitor" virou "Victor", um apelido virou "the Witch", e o tradutor inventou frase ("hackathon" virou
 "cuchillo"). O `blindar_nomes.py` cobre prenomes comuns em português, com as mesmas garantias do
 irmão. Nome e apelido específicos de uma reunião vão num TSV local por `--nomes`, fora do git,
 porque é dado de pessoa. Testado nas faixas daquela reunião: 36 cues no en e 28 no es das traduções
-brutas, 0 na segunda passada, e 1 acerto que a correção manual tinha perdido ("João" → "John").
+brutas, 0 na segunda passada, e 1 acerto que a correção manual tinha perdido (um prenome comum voltando à forma em inglês).
 A regra só troca o que conhece: revise os cues que têm nome.
 
 **Termo quebrado entre dois cues escapa da busca exata.** Medido em 01/10/2026: a correção de
@@ -211,7 +211,7 @@ falha; a forma com `=` é a que funciona.
 - **Capítulos** na descrição, nos tempos do vídeo CORTADO. 55 dos 67 vídeos longos não têm.
   **Ancorar cada carimbo numa frase encontrada na transcrição, nunca copiar da nota automática.**
   O resumo do Gemini da reunião de 10/09/2026 errou de forma sistemática: a marca cai no fim do
-  assunto ANTERIOR, não no começo do seguinte (Hanae marcada em 34:20, onde ainda se ouve "para
+  assunto ANTERIOR, não no começo do seguinte (uma pessoa marcada em 34:20, onde ainda se ouve "para
   mim está aceito o desafio"; começa de fato em 34:33), e três marcas vieram fora de ordem, uma
   delas repetida em dois tópicos diferentes. Conferir de 3 a 5 por amostra não basta quando o erro
   é sistemático: confira todos, procurando a frase-âncora de cada tópico.

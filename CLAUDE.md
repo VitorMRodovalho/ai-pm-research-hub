@@ -170,7 +170,7 @@ alcança. Issue, comentário ou corpo de PR que cite **pessoa identificável** (
 
 - No público, referencie o privado só por **identificador opaco** ("item interno N"), ou abra uma issue pública técnica
   que descreva apenas o código. O gate de referência a issue continua satisfeito pela issue pública técnica.
-- `gh issue create -R VitorMRodovalho/ai-pm-research-hub-private` para o privado. Acesso: GP e Fabricio.
+- `gh issue create -R VitorMRodovalho/ai-pm-research-hub-private` para o privado. Acesso: GP e o co-GP.
 - A varredura diária de PII (`.github/workflows/tracker-pii-scan.yml`) é **rede de segurança**, não o controle: ela
   avisa em até 24 h, mas a limpeza do histórico de edição é manual, item a item. Medido em 10/10/2026: 50 itens.
 
