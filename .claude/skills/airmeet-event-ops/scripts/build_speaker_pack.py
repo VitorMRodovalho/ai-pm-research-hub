@@ -9,7 +9,7 @@ o auto-map falhar em silencio e o evento vai ao ar com foto trocada ou sem foto.
 Manifesto JSON esperado:
 {
   "speakers": [
-    {"first": "Denis", "last": "Vasconcelos", "email": "...", "job_title": "...",
+    {"first": "Nome", "last": "Sobrenome", "email": "...", "job_title": "...",
      "organization": "...", "city": "...", "country": "Brasil", "bio": "...",
      "linkedin": "...", "website": "", "foto": "/caminho/para/origem.png"}
   ]

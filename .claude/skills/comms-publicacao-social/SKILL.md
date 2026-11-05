@@ -47,8 +47,8 @@ na prévia que topo e rodapé aparecem antes de seguir.
 
 ### Armadilhas medidas
 
-⚠️ **A busca de arroba devolve sósias.** Procurando `hbj_joao` vieram também `joao.hbj` e
-`haiderbaptistajoaohbj`. Escolha pelo **nome exibido e pelo selo de verificado**, não pela ordem.
+⚠️ **A busca de arroba devolve sósias.** Procurando `usuario_nome` vieram também `nome.usuario` e
+`nomecompletousuario`. Escolha pelo **nome exibido e pelo selo de verificado**, não pela ordem.
 Marcar a conta errada num post público não se desfaz.
 
 ✅ **Os colaboradores sobrevivem à reescrita da legenda.** Apagar tudo com `ctrl+a` e redigitar não
