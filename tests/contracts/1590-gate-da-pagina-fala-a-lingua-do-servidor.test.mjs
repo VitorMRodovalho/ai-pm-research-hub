@@ -39,7 +39,7 @@ import { ADMIN_SIDEBAR_SECTIONS, isAdminSidebarItemVisible } from '../../src/lib
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
 // Perfis reais medidos em 12/08/2026 (nomes fora daqui de proposito — o repo e publico).
-const FERNANDO = { operational_role: 'tribe_leader', designations: [], is_superadmin: false, selection_committee_role: 'evaluator' };
+const LIDER_AVALIADOR = { operational_role: 'tribe_leader', designations: [], is_superadmin: false, selection_committee_role: 'evaluator' };
 const OBSERVADOR = { operational_role: 'chapter_liaison', designations: ['chapter_board'], is_superadmin: false, selection_committee_role: 'observer' };
 const GP = { operational_role: 'manager', designations: ['co_gp'], is_superadmin: true, selection_committee_role: 'evaluator' };
 const PESQUISADOR = { operational_role: 'researcher', designations: [], is_superadmin: false, selection_committee_role: null };
@@ -47,7 +47,7 @@ const LIDER_SEM_COMITE = { operational_role: 'tribe_leader', designations: [], i
 
 describe('#1590 A — o eixo de comite abre a rota de selecao', () => {
   it('avaliador de comite sem tier admin ENTRA', () => {
-    assert.equal(canAccessAdminRoute(FERNANDO, 'admin_selection'), true,
+    assert.equal(canAccessAdminRoute(LIDER_AVALIADOR, 'admin_selection'), true,
       'era exatamente o caso relatado: tribe_leader, designations vazio, evaluator do ciclo vivo');
   });
 
@@ -74,14 +74,14 @@ describe('#1590 A — o eixo de comite abre a rota de selecao', () => {
   it('o eixo NAO vaza para outras rotas', () => {
     // O mapa e por rota justamente para isto: comite nao e credencial de admin em geral.
     for (const rota of ['admin_settings', 'admin_member_edit', 'admin_comms', 'admin_webinars']) {
-      assert.equal(canAccessAdminRoute(FERNANDO, rota), false,
+      assert.equal(canAccessAdminRoute(LIDER_AVALIADOR, rota), false,
         `${rota} nao declara o eixo e nao pode abrir para o comite`);
     }
   });
 
   it('papel solto no perfil nao abre rota que nao declara o eixo', () => {
-    assert.equal(hasSelectionCommitteeAccess(FERNANDO, undefined), false);
-    assert.equal(hasSelectionCommitteeAccess(FERNANDO, 'any'), true);
+    assert.equal(hasSelectionCommitteeAccess(LIDER_AVALIADOR, undefined), false);
+    assert.equal(hasSelectionCommitteeAccess(LIDER_AVALIADOR, 'any'), true);
     assert.equal(hasSelectionCommitteeAccess(OBSERVADOR, 'evaluator'), false,
       "'evaluator' e mais estrito que 'any' — observador nao pontua (#1591 2a parte)");
   });

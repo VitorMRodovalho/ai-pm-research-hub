@@ -31,8 +31,8 @@ const sb = SUPABASE_URL && SUPABASE_SRK ? createClient(SUPABASE_URL, SUPABASE_SR
 }) : null;
 
 // CPMAI identities (live, p254 audit):
-const FERNANDO_MEMBER_ID = 'c8b930c3-62ec-4d38-881e-307cd57a44f7';
-const FERNANDO_PERSON_ID = 'd762921a-3087-4237-b438-e22f615593c1';
+const MEMBER_A_MEMBER_ID = 'c8b930c3-62ec-4d38-881e-307cd57a44f7';
+const MEMBER_A_PERSON_ID = 'd762921a-3087-4237-b438-e22f615593c1';
 const CPMAI_PARENT_INIT  = '2f5846f3-5b6b-4ce1-9bc6-e07bdb22cd19'; // study_group
 const CPMAI_CHILD_INIT   = '3f49752b-50c8-4e5f-9c58-3b43f69a6c14'; // workgroup
 const CPMAI_DESIGN_BOARD = '75df916d-cc19-4d42-a58d-6017eb710a24';
@@ -265,7 +265,7 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/member B hotf
       const { data, error } = await sb
         .from('engagements')
         .select('initiative_id, role, status')
-        .eq('person_id', FERNANDO_PERSON_ID)
+        .eq('person_id', MEMBER_A_PERSON_ID)
         .eq('status', 'active');
       if (error) return;
       const byInit = (data || []).reduce((acc, e) => {
@@ -294,7 +294,7 @@ describe('p254 — boards initiative-leader engagement gate (CPMAI/member B hotf
         const { data: engs } = await sb
           .from('engagements')
           .select('role')
-          .eq('person_id', FERNANDO_PERSON_ID)
+          .eq('person_id', MEMBER_A_PERSON_ID)
           .eq('initiative_id', board.initiative_id)
           .eq('status', 'active');
         const matched = (engs || []).some(e => LEADER_CLASS_ROLES.includes(e.role));
