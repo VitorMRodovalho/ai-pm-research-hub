@@ -1685,7 +1685,7 @@ const SCORING_I18N = {
           ${c.description ? `<div class="text-[12px] text-[var(--text-secondary)] mt-0.5">${c.description}</div>` : ''}
           <div class="text-[10px] text-[var(--text-muted)] mt-0.5 font-mono">${I.certCode}: ${c.verification_code}</div>
         </div>
-        <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[10px] font-semibold cursor-pointer border-0 hover:opacity-90" onclick="(async()=>{await sb.rpc('record_certificate_download',{p_cert_id:'${c.id}'});window.downloadCertificatePDF({member_name:'${MEMBER.name}',type:'${c.type}',title:'${c.title||''}',period_start:'${c.period_start||''}',period_end:'${c.period_end||''}',function_role:'${c.function_role||''}',language:'${c.language||'pt-BR'}',verification_code:'${c.verification_code||''}'})})()">📥 PDF</button>
+        <button class="px-3 py-1.5 bg-navy text-white rounded-lg text-[10px] font-semibold cursor-pointer border-0 hover:opacity-90" data-action="download-my-cert" data-cert-id="${c.id}" data-cert='${JSON.stringify({member_name:MEMBER.name,type:c.type,title:c.title||'',period_start:c.period_start||'',period_end:c.period_end||'',function_role:c.function_role||'',language:c.language||'pt-BR',verification_code:c.verification_code||''}).replace(/'/g,"&#39;")}'>📥 PDF</button>
         <a href="${(typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || ''}/verify/${c.verification_code}" target="_blank" class="text-[10px] text-blue-500 hover:underline no-underline ml-1">🔗 ${I.certVerify || 'Verificar'}</a>
       </div>`;
       }).join('');
@@ -2064,6 +2064,19 @@ const SCORING_I18N = {
       case 'download-cert': {
         try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); }
         catch (e) { console.error('[gamification] cert PDF failed', e); toast(I.certDownloadError, 'error'); }
+        break;
+      }
+      case 'download-my-cert': {
+        // #2974 (d): o botão de Meus certificados. Antes era um onclick inline que chamava sb.rpc, e sb é deste
+        // script de módulo, fora do escopo global do onclick. Registra o primeiro download sem bloquear o PDF: a
+        // recusa do corpo vai para o console.
+        const certId = target.dataset.certId || '';
+        if (certId && sb) {
+          const { data: reg, error: regErr } = await sb.rpc('record_certificate_download', { p_cert_id: certId });
+          if (regErr || reg?.error) console.warn('record_certificate_download', regErr?.message || reg?.error);
+        }
+        try { const d = JSON.parse(target.dataset.cert || '{}'); await (window as any).downloadCertificatePDF(d); }
+        catch (err) { console.error('[gamification] cert PDF failed', err); toast(I.certDownloadError, 'error'); }
         break;
       }
       case 'edit-cert': {
