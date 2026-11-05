@@ -112,8 +112,8 @@ const GOV2_I18N = {
   window.__GOV2_I18N = GOV2_I18N;
 </script>
 <script>
-  import { hasPermission } from '../../lib/permissions';
-  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__GOV2_I18N) || {
@@ -128,7 +128,8 @@ const GOV2_I18N = {
 
   function hasBoardGovAccess(member: any): boolean {
     if (!member) return false;
-    return hasPermission(member, 'admin.access');
+    // #2974 (F1): a mesma entrada que decide o link no menu e na sidebar.
+    return canEnterAdminRoute('/admin/governance-v2', member);
   }
 
   function rowHtml(row: any): string {
@@ -208,6 +209,7 @@ const GOV2_I18N = {
     onAllowed: () => { void bootBoardGovPage(); },
     onDenied: () => showBoardGovNotice(BOARDGOV_DENIED_TEXT),
     onNoSession: () => showBoardGovNotice(adminSignInText()),
+    onLoadFailed: () => showBoardGovNotice(adminLoadFailedText()),
   });
 
   // ═══ Org Chart ═══

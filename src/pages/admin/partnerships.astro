@@ -207,8 +207,8 @@ const PART_I18N = {
   window.__PART_I18N = PART_I18N;
 </script>
 <script>
-  import { hasPermission } from '../../lib/permissions';
-  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
   // #2782: contact_name, contact_email e a mensagem passam a vir do formulário público do site (anônimo), então
   // todo dado de parceria e de interação interpolado em innerHTML passa por escapeHtml.
   import { escapeHtml as E } from '../../lib/escape-html';
@@ -241,7 +241,8 @@ const PART_I18N = {
 
   function hasPartnershipsAccess(member: any): boolean {
     if (!member) return false;
-    return hasPermission(member, 'admin.partners');
+    // #2974 (F1): a mesma entrada que decide o link no menu e na sidebar.
+    return canEnterAdminRoute('/admin/partnerships', member);
   }
 
   function renderPartners() {
@@ -547,5 +548,6 @@ const PART_I18N = {
     onAllowed: () => { void bootPartnershipsPage(); },
     onDenied: () => showPartnershipsNotice(PARTNERSHIPS_DENIED_TEXT),
     onNoSession: () => showPartnershipsNotice(adminSignInText()),
+    onLoadFailed: () => showPartnershipsNotice(adminLoadFailedText()),
   });
 </script>
