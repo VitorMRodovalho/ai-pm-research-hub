@@ -4,10 +4,15 @@
  * Antes, cada tela do admin consultava navGetMember() em laço e, depois de N tentativas (3 a 18 s), mostrava
  * "acesso restrito". Quem tinha a permissão e um get_member_by_auth lento via a tela negada. Aqui a espera não
  * tem prazo: enquanto o Nav não leu a sessão, nada é decidido; com sessão, quem decide é a permissão do membro.
+ *
+ * #2974 (E1): o estado 'member' diz também se get_caller_capabilities falhou. O Nav lê o membro e as capacidades
+ * no mesmo Promise.all antes do nav:member, então, quando o membro chega, as capacidades já chegaram ou falharam.
+ * É um campo do estado 'member', e não um estado à parte, para que quem lê `kind === 'member'` continue recebendo
+ * o membro quando só as capacidades falharam.
  */
 
 export type MemberResolution =
-  | { kind: 'member'; member: any }
+  | { kind: 'member'; member: any; capabilitiesFailed: boolean }
   | { kind: 'no-member' }
   | { kind: 'no-session' };
 
@@ -16,12 +21,13 @@ export interface NavWindow {
   removeEventListener: (type: string, fn: () => void) => void;
   navGetMember?: () => any;
   navAuthState?: () => 'pending' | 'no-session' | 'resolved';
+  navCapabilitiesFailed?: () => boolean;
 }
 
 /** O que o Nav sabe agora; null enquanto a sessão não foi lida (a tela continua carregando). */
 export function readMemberResolution(win: NavWindow): MemberResolution | null {
   const member = win.navGetMember?.();
-  if (member) return { kind: 'member', member };
+  if (member) return { kind: 'member', member, capabilitiesFailed: win.navCapabilitiesFailed?.() === true };
   const state = win.navAuthState?.();
   if (state === 'no-session') return { kind: 'no-session' };
   if (state === 'resolved') return { kind: 'no-member' };
@@ -51,6 +57,11 @@ export interface AdminGate {
   onAllowed: (member: any) => void;
   onDenied: () => void;
   onNoSession: () => void;
+  /**
+   * #2974 (E1): allow(membro) deu falso e as capacidades não carregaram, então a recusa pode ser falsa. Sem
+   * onLoadFailed, o portão chama onDenied, como antes.
+   */
+  onLoadFailed?: () => void;
 }
 
 /**
@@ -68,6 +79,10 @@ export function gateAdminPage(gate: AdminGate, win?: NavWindow): () => void {
     }
     const member = r.kind === 'member' ? r.member : null;
     if (!member || !gate.allow(member)) {
+      if (r.kind === 'member' && r.capabilitiesFailed && gate.onLoadFailed) {
+        gate.onLoadFailed();
+        return;
+      }
       gate.onDenied();
       return;
     }

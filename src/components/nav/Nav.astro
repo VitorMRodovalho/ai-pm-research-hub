@@ -319,6 +319,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   // depois do logout); 'resolved' quando o membro foi buscado, tenha vindo cadastro ou não. As telas decidem
   // acesso por aqui e pelo nav:member, em vez de contar tentativas.
   let _authState: 'pending' | 'no-session' | 'resolved' = 'pending';
+  // #2974 (E1): get_caller_capabilities falhou na última leitura. Sem esta marca, "não carregou" e "não tem a
+  // capacidade" são o mesmo null, e canFor() devolve falso nos dois casos.
+  let _capFailed = false;
   let _tribesCache: any[] | null = null;
   // Capability cache realtime invalidation (ADR-0083 Tier B). Single live
   // subscription per session; rebound when person_id changes (auto-link ghost,
@@ -1103,6 +1106,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   (window as any).navGetUser = () => _user;
   (window as any).navGetSb = () => sb;
   (window as any).navAuthState = () => _authState;
+  (window as any).navCapabilitiesFailed = () => _capFailed;
 
   // V4 capability helpers exposed to Astro inline scripts (parity with
   // src/lib/permissions.ts canFor/canForAdminEntry for React islands).
@@ -1181,6 +1185,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     try {
       const { data, error } = await sb.rpc('get_caller_capabilities');
       if (error) throw error;
+      _capFailed = false;
       (window as any).__nucleoCapabilities = data || null;
       window.dispatchEvent(new CustomEvent('nav:capabilities', { detail: data || null }));
       // ADR-0083 Tier B: bind realtime invalidation once per session for the
@@ -1197,6 +1202,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     } catch (e) {
       // Fail-closed: leave window cap as null. canFor() returns false.
       (window as any).__nucleoCapabilities = null;
+      _capFailed = true;
       console.warn('loadCapabilities failed', e);
     }
   }
@@ -1268,6 +1274,7 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
           _capInvalidate = null;
         }
         _capSubscribedPersonId = null;
+        _capFailed = false;
         _authState = 'no-session';
         renderLoggedOut();
         window.dispatchEvent(new CustomEvent('nav:member', { detail: null }));

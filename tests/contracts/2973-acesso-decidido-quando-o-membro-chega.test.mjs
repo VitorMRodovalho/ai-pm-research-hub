@@ -16,7 +16,11 @@
  *   3. cada tela liga o caminho de negado à função de permissão dela (hasPermission), e o caminho sem sessão ao
  *      texto "entre para ver";
  *   4. censo: nenhum arquivo de src/pages/admin ou src/components/admin espera o membro com contador, salvo as
- *      isenções declaradas abaixo, cada uma com o motivo.
+ *      isenções declaradas abaixo, cada uma com o motivo;
+ *   5. #2974 (E1): o estado 'member' diz se as capacidades falharam. O Nav marca a falha no catch de
+ *      loadCapabilities e limpa no sucesso e no logout; o portão chama onLoadFailed, e não onDenied, só quando
+ *      allow é falso e as capacidades falharam, e só se a tela passar onLoadFailed.
+ * O censo das ilhas que chamam RPC sem esperar o membro foi para a catraca de 2974-catraca-de-espera.test.mjs.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -29,12 +33,13 @@ const ROOT = process.cwd();
 const ler = (p) => maskJsComments(readFileSync(join(ROOT, p), 'utf8'));
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-function janela(state = 'pending', member = null) {
+function janela(state = 'pending', member = null, capFailed = false) {
   const ouvintes = new Map();
   const w = {
-    state, member,
+    state, member, capFailed,
     navAuthState: () => w.state,
     navGetMember: () => w.member,
+    navCapabilitiesFailed: () => w.capFailed,
     addEventListener: (t, fn) => { if (!ouvintes.has(t)) ouvintes.set(t, new Set()); ouvintes.get(t).add(fn); },
     removeEventListener: (t, fn) => { ouvintes.get(t)?.delete(fn); },
     disparar: (t) => { for (const fn of [...(ouvintes.get(t) || [])]) fn(); },
@@ -43,7 +48,7 @@ function janela(state = 'pending', member = null) {
   return w;
 }
 
-function portao(w, allow) {
+function portao(w, allow, comFalha = false) {
   const log = [];
   const chamadasAllow = [];
   gateAdminPage({
@@ -51,6 +56,7 @@ function portao(w, allow) {
     onAllowed: (m) => log.push(['allowed', m?.id]),
     onDenied: () => log.push(['denied']),
     onNoSession: () => log.push(['no-session']),
+    ...(comFalha ? { onLoadFailed: () => log.push(['load-failed']) } : {}),
   }, w);
   return { log, chamadasAllow };
 }
@@ -112,6 +118,41 @@ test('onMemberResolved: segue as trocas e para quando desinscrito', () => {
   assert.equal(w.ouvindo(), 0);
 });
 
+test('estado: capabilitiesFailed vem do Nav e só no estado member', () => {
+  assert.deepEqual(readMemberResolution(janela('resolved', { id: 'a' }, true)), { kind: 'member', member: { id: 'a' }, capabilitiesFailed: true });
+  assert.deepEqual(readMemberResolution(janela('resolved', { id: 'a' }, false)), { kind: 'member', member: { id: 'a' }, capabilitiesFailed: false });
+  const semMarca = janela('resolved', { id: 'a' });
+  delete semMarca.navCapabilitiesFailed;
+  assert.equal(readMemberResolution(semMarca).capabilitiesFailed, false, 'sem a marca do Nav, falha não pode ser presumida');
+  assert.deepEqual(readMemberResolution(janela('resolved', null, true)), { kind: 'no-member' });
+  assert.deepEqual(readMemberResolution(janela('no-session', null, true)), { kind: 'no-session' });
+});
+
+test('portão: capacidades falharam e allow falso: onLoadFailed, quando a tela o passa', () => {
+  const { log } = portao(janela('resolved', { id: 'f1' }, true), () => false, true);
+  assert.deepEqual(log, [['load-failed']]);
+});
+
+test('portão: capacidades falharam e a tela não passa onLoadFailed: onDenied, como antes', () => {
+  const { log } = portao(janela('resolved', { id: 'f2' }, true), () => false, false);
+  assert.deepEqual(log, [['denied']]);
+});
+
+test('portão: capacidades falharam e allow verdadeiro: libera (a permissão V3 não depende delas)', () => {
+  const { log } = portao(janela('resolved', { id: 'f3' }, true), () => true, true);
+  assert.deepEqual(log, [['allowed', 'f3']]);
+});
+
+test('portão: capacidades carregadas e allow falso: onDenied, nunca onLoadFailed', () => {
+  const { log } = portao(janela('resolved', { id: 'f4' }, false), () => false, true);
+  assert.deepEqual(log, [['denied']]);
+});
+
+test('portão: sem cadastro de membro com capacidades falhadas: onDenied, não onLoadFailed', () => {
+  const { log } = portao(janela('resolved', null, true), () => false, true);
+  assert.deepEqual(log, [['denied']]);
+});
+
 // ── 2. o Nav ──
 
 test('Nav: marca o estado da sessão em cada transição e avisa a falta de sessão', () => {
@@ -123,6 +164,21 @@ test('Nav: marca o estado da sessão em cada transição e avisa a falta de sess
   assert.equal(resolvido.length, 2, "boot e SIGNED_IN precisam marcar 'resolved' antes do nav:member");
   assert.match(nav, /if \(event === 'SIGNED_OUT'\) \{ _member = null; _user = null;[\s\S]*?_authState = 'no-session'; renderLoggedOut\(\); window\.dispatchEvent\(new CustomEvent\('nav:member', \{ detail: null \}\)\);/,
     "SIGNED_OUT precisa marcar 'no-session' antes do nav:member nulo");
+});
+
+test('Nav: marca a falha das capacidades no catch, limpa no sucesso e no logout, e expõe a marca', () => {
+  const nav = ler('src/components/nav/Nav.astro').replace(/\s+/g, ' ');
+  assert.match(nav, /\(window as any\)\.navCapabilitiesFailed = \(\) => _capFailed;/, 'navCapabilitiesFailed não exposto');
+  const ini = nav.indexOf('async function loadCapabilities() {');
+  const fim = nav.indexOf('async function bootNav()', ini);
+  assert.ok(ini !== -1 && fim !== -1, 'loadCapabilities não encontrada');
+  const corpo = nav.slice(ini, fim);
+  assert.match(corpo, /try \{ const \{ data, error \} = await sb\.rpc\('get_caller_capabilities'\); if \(error\) throw error; _capFailed = false; \(window as any\)\.__nucleoCapabilities = data \|\| null;/,
+    'no sucesso, a marca precisa ser limpa antes de gravar as capacidades');
+  assert.match(corpo, /\} catch \(e\) \{ \(window as any\)\.__nucleoCapabilities = null; _capFailed = true;/,
+    'no catch, a marca precisa ser posta junto com as capacidades nulas');
+  assert.match(nav, /if \(event === 'SIGNED_OUT'\) \{ _member = null; _user = null;[\s\S]*?_capFailed = false; _authState = 'no-session';/,
+    'no logout, a marca precisa ser limpa');
 });
 
 // ── 3. as telas ──
@@ -223,11 +279,12 @@ test('censo: nada em src/pages/admin e src/components/admin espera o membro com 
 
 // ── 5. ilhas que chamam RPC autenticada ──
 
-test('useResolvedMember: memberId só existe quando o Nav entrega um membro', () => {
+test('useResolvedMember: memberId e capabilitiesFailed só existem quando o Nav entrega um membro', () => {
   const c = ler('src/hooks/useResolvedMember.ts').replace(/\s+/g, ' ');
   assert.match(c, /useEffect\(\(\) => onMemberResolved\(setResolution\), \[\]\);/);
   assert.match(c, /const memberId = resolution\?\.kind === 'member' \? String\(resolution\.member\?\.id \?\? ''\) \|\| null : null;/);
-  assert.match(c, /return \{ ready: resolution !== null, memberId \};/);
+  assert.match(c, /const capabilitiesFailed = resolution\?\.kind === 'member' && resolution\.capabilitiesFailed === true;/);
+  assert.match(c, /return \{ ready: resolution !== null, memberId, capabilitiesFailed \};/);
 });
 
 test('usePortfolio: a primeira chamada de get_portfolio_dashboard espera o membro e se repete quando ele muda', () => {
@@ -246,59 +303,4 @@ test('PlannedVsActualSection: a primeira chamada espera o membro e se repete qua
   assert.match(c, /if \(ready && !memberId\) return null;/);
 });
 
-// Ilhas que chamam .rpc( depois de esperar só o cliente (navGetSb), sem esperar o membro. Lista medida em
-// 04/11/2026, a classificar: chamada na montagem (o defeito do portfolio) ou só em clique (já com sessão), e RPC
-// com ou sem EXECUTE para anon. Entrada nova reprova; entrada corrigida precisa sair da lista.
-const ILHAS_SEM_MEMBRO = new Set([
-  'src/components/admin/AdminAgendaVivaPanel.tsx',
-  'src/components/admin/AiCalibrationIsland.tsx',
-  'src/components/admin/CommsDashboard.tsx',
-  'src/components/admin/CommsSchedulerPanel.tsx',
-  'src/components/admin/GpActionTodayWidget.tsx',
-  'src/components/admin/RecurringAgendaIsland.tsx',
-  'src/components/admin/audit/AuditLogIsland.tsx',
-  'src/components/admin/campaigns/OneOffMessageIsland.tsx',
-  'src/components/admin/members/DriveTeardownIsland.tsx',
-  'src/components/admin/members/InactiveCandidatesIsland.tsx',
-  'src/components/admin/members/MemberCommunicationsPanel.tsx',
-  'src/components/admin/members/MemberDetailIsland.tsx',
-  'src/components/board/CardDetail.tsx',
-  'src/components/events/EventMinutesEditor.tsx',
-  'src/components/governance/ChainAuditReportIsland.tsx',
-  'src/components/governance/ChainDocxExportIsland.tsx',
-  'src/components/governance/ChainPDFExportIsland.tsx',
-  'src/components/governance/ClauseCommentDrawer.tsx',
-  'src/components/governance/DocumentIntakeWizard.tsx',
-  'src/components/governance/DocumentVersionEditor.tsx',
-  'src/components/governance/GovernanceLibrary.tsx',
-  'src/components/governance/ManualDocumentViewer.tsx',
-  'src/components/initiative/InitiativeRecurringMeetingsPanel.tsx',
-  'src/components/islands/CrossTribeIsland.tsx',
-  'src/components/islands/ImpactPageIsland.tsx',
-  'src/components/islands/PartnerPipelineIsland.tsx',
-  'src/components/islands/TribeDashboardIsland.tsx',
-  'src/components/report/ReportPage.tsx',
-  'src/components/sections/InterestForm.tsx',
-  'src/components/selection/DiversityDashboard.tsx',
-  'src/components/tribes/TribeGamificationTab.tsx',
-  'src/components/workspace/KpiDashboard.tsx',
-  'src/components/workspace/MyMeetingsIsland.tsx',
-  'src/components/workspace/MyTasksIsland.tsx',
-  'src/hooks/useBoard.ts',
-  'src/hooks/usePilots.ts',
-]);
-
-const ESPERA_MEMBRO = /navGetMember|nav:member|onMemberResolved|useResolvedMember|getSession|onAuthStateChange/;
-
-test('censo: nenhuma ilha nova chama RPC sem esperar o membro, e a lista declarada não guarda corrigidas', () => {
-  const todos = [...arquivos('src/components'), ...arquivos('src/hooks')].filter((p) => /\.(tsx?|jsx?)$/.test(p));
-  const achadas = new Set();
-  for (const p of todos) {
-    const c = ler(p);
-    if (c.includes('navGetSb') && /\.rpc\(/.test(c) && !ESPERA_MEMBRO.test(c)) achadas.add(p);
-  }
-  const novas = [...achadas].filter((p) => !ILHAS_SEM_MEMBRO.has(p)).sort();
-  const vencidas = [...ILHAS_SEM_MEMBRO].filter((p) => !achadas.has(p)).sort();
-  assert.deepEqual(novas, [], `ilhas novas chamando RPC sem esperar o membro:\n${novas.join('\n')}`);
-  assert.deepEqual(vencidas, [], `já esperam o membro (ou sumiram); tire da lista:\n${vencidas.join('\n')}`);
-});
+// O censo das ilhas que chamam RPC sem esperar o membro está na catraca: 2974-catraca-de-espera.test.mjs.
