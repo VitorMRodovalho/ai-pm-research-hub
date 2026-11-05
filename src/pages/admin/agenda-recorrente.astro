@@ -30,7 +30,7 @@ const i18nBundle = buildPageI18n(['comp.recurringAgenda', 'comp.common'], lang);
 </AdminLayout>
 
 <script>
-  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+  import { adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // UX gate only — the server RPC (manage_platform) is the real boundary.
   // Mirror manage_platform = platform managers (GP/superadmin/deputy).
@@ -54,12 +54,12 @@ const i18nBundle = buildPageI18n(['comp.recurringAgenda', 'comp.common'], lang);
   }
 
   // #2974 (F2): a espera é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a
-  // tela pede para entrar. O predicado do allow é o de antes.
+  // tela pede para entrar. O predicado do allow é o de antes, e ele não lê capacidade: sem onLoadFailed, a recusa
+  // mostra o texto de negado mesmo quando get_caller_capabilities falhou.
   gateAdminPage({
     allow: hasRecurringAgendaAccess,
     onAllowed: () => showRecurringAgendaPage(),
     onDenied: () => showRecurringAgendaNotice(RECURRING_AGENDA_DENIED_TEXT),
     onNoSession: () => showRecurringAgendaNotice(adminSignInText()),
-    onLoadFailed: () => showRecurringAgendaNotice(adminLoadFailedText()),
   });
 </script>

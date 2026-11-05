@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { canForAdminEntry } from '../../lib/permissions';
 import { SELECTION_STATUS_TONE, VEP_STATUS_TONE, toneClasses } from '../../lib/statusFarol';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 interface Props { lang?: string; }
 
@@ -204,6 +205,7 @@ function MatrixPanel({ t, data, loading, error, onRetry, roleLabel, cycleHref, r
 export default function VepReconciliationIsland({ lang: propLang }: Props) {
   const lang = useLang(propLang);
   const t = usePageI18n();
+  const { memberId } = useResolvedMember();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [data, setData] = useState<any>(null);
   const [tab, setTab] = useState<TabKey>('matrix');
@@ -257,12 +259,11 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
   }, [t, loadBaselines]);
 
   const load = useCallback(async () => {
+    // #2974 (F2): a primeira chamada espera o membro resolvido (useResolvedMember), sem prazo e sem laço próprio.
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const m = (window as any).navGetMember?.();
-    // p152 W4 hotfix: retry while member is still loading (was: setAuthorized(false)
-    // immediately, causing "Acesso restrito" flash for legit admins including superadmin).
-    if (!m) { setTimeout(load, 400); return; }
+    if (!m) return;
     // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
     const isAdmin = m.is_superadmin
       || canForAdminEntry()
@@ -311,7 +312,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
   // #1130 — lazy-load the matrix the first time its tab is opened (and on authorize if default)
   useEffect(() => {
     if (authorized === true && tab === 'matrix' && matrixData === null && !matrixLoading && !matrixError) {
@@ -375,6 +376,7 @@ export default function VepReconciliationIsland({ lang: propLang }: Props) {
     }
   };
 
+  if (!memberId) return null;
   if (authorized === false) {
     return <div className="text-center py-12 text-[var(--text-muted)]">{t('comp.vepReconciliation.deniedAccess')}</div>;
   }

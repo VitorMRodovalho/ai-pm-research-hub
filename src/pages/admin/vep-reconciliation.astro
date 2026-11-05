@@ -17,26 +17,44 @@ const i18nBundle = buildPageI18n(['comp.vepReconciliation'], lang);
   ]}
 >
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
-  <div class="max-w-[1100px] mx-auto px-4 pb-12">
+  <div id="vep-reconciliation-notice" class="hidden max-w-[1100px] mx-auto px-4 text-center py-20 text-[var(--text-muted)]">{t('admin.deniedAdmin', lang)}</div>
+  <div id="vep-reconciliation-content" class="max-w-[1100px] mx-auto px-4 pb-12">
     <VepReconciliationIsland client:load lang={lang} />
   </div>
   <Toast />
 </AdminLayout>
 
-<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    const check = () => {
-      const member = window.navGetMember?.();
-      if (!member) { setTimeout(check, 300); return; }
-      // ADR-0083 Tier B
-      const hasAdminCapability = window.__nucleoCanForAdminEntry?.() === true;
-      const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
-      const hasAdminDesignation = (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
-      const isAdmin = member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
-      if (!isAdmin) {
-        document.querySelector('.max-w-\\[1100px\\]').innerHTML = '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
-      }
-    };
-    check();
+<script>
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  // ADR-0083 Tier B
+  function hasVepReconciliationAccess(member: any): boolean {
+    const hasAdminCapability = (window as any).__nucleoCanForAdminEntry?.() === true;
+    const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
+    const hasAdminDesignation = (member.designations || []).some(function(d: string) { return d === 'deputy_manager' || d === 'curator'; });
+    return member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
+  }
+
+  const VEP_RECONCILIATION_DENIED_TEXT = document.getElementById('vep-reconciliation-notice')?.textContent?.trim() || '';
+
+  function showVepReconciliationNotice(text: string) {
+    const notice = document.getElementById('vep-reconciliation-notice');
+    if (notice) { notice.textContent = text; notice.classList.remove('hidden'); }
+    document.getElementById('vep-reconciliation-content')?.classList.add('hidden');
+  }
+
+  function showVepReconciliationPage() {
+    document.getElementById('vep-reconciliation-notice')?.classList.add('hidden');
+    document.getElementById('vep-reconciliation-content')?.classList.remove('hidden');
+  }
+
+  // #2974 (F2): a espera é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a
+  // tela pede para entrar. O predicado do allow é o de antes.
+  gateAdminPage({
+    allow: hasVepReconciliationAccess,
+    onAllowed: () => showVepReconciliationPage(),
+    onDenied: () => showVepReconciliationNotice(VEP_RECONCILIATION_DENIED_TEXT),
+    onNoSession: () => showVepReconciliationNotice(adminSignInText()),
+    onLoadFailed: () => showVepReconciliationNotice(adminLoadFailedText()),
   });
 </script>

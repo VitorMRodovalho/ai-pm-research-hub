@@ -58,15 +58,20 @@
    ],
    "corrigidas": [
     "src/components/admin/CrossTribeWidget.tsx",
+    "src/components/admin/VepReconciliationIsland.tsx",
     "src/components/admin/VepReconciliationWidget.tsx",
     "src/components/admin/VolunteerAgreementPanel.tsx",
     "src/components/admin/VolunteerComplianceWidget.tsx",
+    "src/components/workspace/MyActionItemsWidget.tsx",
+    "src/components/workspace/MyCardsWidget.tsx",
     "src/pages/admin/agenda-recorrente.astro",
     "src/pages/admin/data-health.astro",
     "src/pages/admin/filiacao.astro",
     "src/pages/admin/index.astro",
     "src/pages/admin/knowledge.astro",
-    "src/pages/admin/tags.astro"
+    "src/pages/admin/tags.astro",
+    "src/pages/admin/vep-reconciliation.astro",
+    "src/pages/stakeholder.astro"
    ]
   },
   "sem_limite_capacidades": {
@@ -146,7 +151,8 @@
     "src/pages/admin/comms-ops.astro",
     "src/pages/admin/comms.astro",
     "src/pages/admin/initiatives.astro",
-    "src/pages/admin/webinars.astro"
+    "src/pages/admin/webinars.astro",
+    "src/pages/stakeholder.astro"
    ]
   },
   "le_navgetmember_sem_evento": {
@@ -197,16 +203,20 @@
    ],
    "corrigidas": [
     "src/components/admin/CrossTribeWidget.tsx",
+    "src/components/admin/VepReconciliationIsland.tsx",
     "src/components/admin/VepReconciliationWidget.tsx",
     "src/components/admin/VolunteerAgreementPanel.tsx",
     "src/components/admin/VolunteerComplianceWidget.tsx",
+    "src/components/workspace/MyActionItemsWidget.tsx",
+    "src/components/workspace/MyCardsWidget.tsx",
     "src/pages/admin/agenda-recorrente.astro",
     "src/pages/admin/data-health.astro",
     "src/pages/admin/filiacao.astro",
     "src/pages/admin/index.astro",
     "src/pages/admin/knowledge.astro",
     "src/pages/admin/report.astro",
-    "src/pages/admin/tags.astro"
+    "src/pages/admin/tags.astro",
+    "src/pages/admin/vep-reconciliation.astro"
    ]
   },
   "ilha_sem_membro": {

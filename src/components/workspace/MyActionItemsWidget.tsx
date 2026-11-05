@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 import { formatDateOnly, isOverdueDateOnly, daysUntilDateOnly } from '../../lib/date-only';
 
 /**
@@ -59,22 +60,22 @@ export default function MyActionItemsWidget({ lang = 'pt-BR' }: Props) {
   const t = L[lang] || L['pt-BR'];
   // p123: link interno preserva o idioma do usuario; `/rota` seco derruba o contexto.
   const lp = lang === 'en-US' ? '/en' : lang === 'es-LATAM' ? '/es' : '';
+  const { memberId } = useResolvedMember();
   const [items, setItems] = useState<ActionItem[] | null>(null);
 
   const load = useCallback(async () => {
+    // #2974 (F2): a primeira chamada espera o membro resolvido (useResolvedMember), sem prazo e sem laço próprio.
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
-    const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const { data } = await sb.rpc('get_my_responsibilities');
     const lista = data?.surfaces?.action_items?.items;
     setItems(Array.isArray(lista) ? lista : []);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
   // Mesma convencao do MyCardsWidget: nada de esqueleto e nada de bloco vazio.
-  if (items === null) return null;
+  if (!memberId || items === null) return null;
   if (items.length === 0) return null;
 
   // #1511 - `due_date` e coluna `date`: o prazo so vence depois do fim do dia LOCAL.

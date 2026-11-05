@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { formatDateOnly, isOverdueDateOnly } from '../../lib/date-only';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 interface CardRow {
   id: string;
@@ -30,21 +31,21 @@ const STATUS_STYLE: Record<string, { bg: string; label: string }> = {
 
 export default function MyCardsWidget({ lang = 'pt-BR' }: Props) {
   const t = L[lang] || L['pt-BR'];
+  const { memberId } = useResolvedMember();
   const [cards, setCards] = useState<CardRow[] | null>(null);
 
   const load = useCallback(async () => {
+    // #2974 (F2): a primeira chamada espera o membro resolvido (useResolvedMember), sem prazo e sem laço próprio.
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
-    const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const { data } = await sb.rpc('get_my_cards');
     if (Array.isArray(data)) setCards(data);
     else setCards([]);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
-  if (cards === null) return null;
+  if (!memberId || cards === null) return null;
   if (cards.length === 0) return null;
 
   return (
