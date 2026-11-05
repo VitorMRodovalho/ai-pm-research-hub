@@ -175,11 +175,12 @@ test('admin-selection visible to admin+ tier OR sponsor designation (Wave 1 — 
   assert.ok(sponsor.visible && sponsor.enabled, 'admin-selection must be visible+enabled for a sponsor designation');
 });
 
-test('Wave 1: host sponsor sees the gated admin READ surfaces (selection/vep/cross-tribes/comms/agenda)', () => {
-  // #2974 (F1): admin-governance-v2 saiu desta lista. A rota decide pela ação V4 que as RPCs da tela pedem
-  // (ADMIN_ROUTE_ACCESS), não pela designação, e o 2974-f1-link-e-pagina prende isso com capacidades simuladas.
+test('Wave 1: host sponsor sees the gated admin READ surfaces (selection/vep/cross-tribes/agenda)', () => {
+  // #2974 (F1): admin-governance-v2, admin-comms e admin-comms-ops saíram desta lista. A rota decide pela ação V4 que
+  // as RPCs da tela pedem (ADMIN_ROUTE_ACCESS), não pela designação, e o 2974-f1-link-e-pagina prende isso com
+  // capacidades simuladas.
   for (const key of ['admin-selection', 'admin-vep-reconciliation', 'admin-cross-tribes',
-                     'admin-comms', 'admin-comms-ops', 'admin-agenda-viva']) {
+                     'admin-agenda-viva']) {
     const item = parseNavItem(key);
     const r = getItemAccessibility(item, 'member', ['sponsor'], true, 'sponsor');
     assert.ok(r.visible && r.enabled, `${key} must be visible+enabled for a sponsor designation (Wave 1 host president full read)`);
@@ -189,34 +190,9 @@ test('Wave 1: host sponsor sees the gated admin READ surfaces (selection/vep/cro
   assert.equal(settings.enabled, false, 'admin-settings must stay closed to a sponsor (superadmin-only)');
 });
 
-// ─── admin/comms (requires admin OR comms_leader/comms_member designation) ───
-
-test('admin-comms visible to admin and comms_member designation', () => {
-  const item = parseNavItem('admin-comms');
-
-  // Should see: admin, superadmin, comms_member
-  const shouldSee = ['admin', 'superadmin', 'comms_member'];
-  for (const [name, profile] of Object.entries(PROFILES)) {
-    const result = getItemAccessibility(item, profile.tier, profile.designations, profile.isLoggedIn, profile.operationalRole);
-    const expected = shouldSee.includes(name);
-    assert.equal(result.visible && result.enabled, expected,
-      `admin-comms access for ${name}: expected ${expected}, got visible=${result.visible} enabled=${result.enabled}`);
-  }
-});
-
-// ─── admin/comms-ops ───
-
-test('admin-comms-ops visible to admin and comms_member designation', () => {
-  const item = parseNavItem('admin-comms-ops');
-
-  const shouldSee = ['admin', 'superadmin', 'comms_member'];
-  for (const [name, profile] of Object.entries(PROFILES)) {
-    const result = getItemAccessibility(item, profile.tier, profile.designations, profile.isLoggedIn, profile.operationalRole);
-    const expected = shouldSee.includes(name);
-    assert.equal(result.visible && result.enabled, expected,
-      `admin-comms-ops access for ${name}: expected ${expected}`);
-  }
-});
+// #2974 (F1): os casos de admin-comms e admin-comms-ops pela designação de comunicação saíram daqui. As duas rotas
+// decidem pela ação V4 (ADMIN_ROUTE_ACCESS), coberta no 2974-f1-link-e-pagina, e as RPCs das telas não leem
+// designação.
 
 // ─── allowedDesignations are respected ───
 

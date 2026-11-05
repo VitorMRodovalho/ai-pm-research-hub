@@ -50,6 +50,13 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/governance-v2': { actions: ['view_internal_analytics', 'manage_platform'], rpcs: ['admin_list_archived_board_items', 'get_governance_stats'] },
   // O pipeline pede view_partner; criar e editar a entidade, manage_partner.
   '/admin/partnerships': { actions: ['view_partner', 'manage_partner'], rpcs: ['get_partner_pipeline', 'admin_manage_partner_entity'] },
+  // O status dos canais pede manage_comms ou view_internal_analytics (pelo helper); gravar o canal, manage_comms.
+  '/admin/comms': { actions: ['manage_comms', 'view_internal_analytics'], rpcs: ['comms_channel_status', 'admin_manage_comms_channel'] },
+  // O histórico de disparos, o painel e a fila de webinars pedem manage_comms ou view_internal_analytics (pelo
+  // helper); agendar, manage_comms.
+  '/admin/comms-ops': { actions: ['manage_comms', 'view_internal_analytics'], rpcs: ['broadcast_history', 'get_comms_dashboard_metrics', 'webinars_pending_comms', 'schedule_comms_post'] },
+  // Criar, editar e ligar o webinar ao evento pedem manage_member.
+  '/admin/webinars': { actions: ['manage_member'], rpcs: ['upsert_webinar', 'link_webinar_event'] },
 };
 
 function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[], chapter?: string | null): boolean {
@@ -192,8 +199,8 @@ export const NAV_ITEMS: NavItem[] = [
   // ─── Admin area ───
   { key: 'admin',           labelKey: 'nav.admin',          href: '/admin',           minTier: 'observer', requiresAuth: true, section: 'both',   group: 'admin', badge: 'purple', drawerSection: 'admin', navSlot: 'primary' },
   { key: 'admin-analytics', labelKey: 'nav.adminAnalytics', href: '/admin/analytics', minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin' }, // acesso: ADMIN_ROUTE_ACCESS
-  { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['comms_leader', 'comms_member', 'sponsor'], lgpdSensitive: true },
-  { key: 'admin-comms-ops', labelKey: 'nav.adminCommsOps',  href: '/admin/comms-ops', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['comms_leader', 'comms_member', 'sponsor'], lgpdSensitive: true },
+  { key: 'admin-comms',     labelKey: 'nav.adminComms',     href: '/admin/comms',     minTier: 'admin',    requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', lgpdSensitive: true }, // acesso: ADMIN_ROUTE_ACCESS
+  { key: 'admin-comms-ops', labelKey: 'nav.adminCommsOps',  href: '/admin/comms-ops', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', lgpdSensitive: true }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'stakeholder-dashboard', labelKey: 'nav.stakeholder', href: '/stakeholder', minTier: 'member', requiresAuth: true, section: 'drawer', group: 'profile', drawerSection: 'meu-espaco', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'chapter_board'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-portfolio', labelKey: 'nav.adminPortfolio', href: '/admin/portfolio', minTier: 'admin',    requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator', 'chapter_board', 'comms_leader', 'comms_member'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cycle-report', labelKey: 'nav.adminCycleReport', href: '/report', minTier: 'admin', requiresAuth: true, section: 'drawer', group: 'admin-sub', drawerSection: 'admin', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
@@ -374,9 +381,9 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
       { href: '/admin/blog', label: { 'pt-BR': 'Blog', 'en-US': 'Blog', 'es-LATAM': 'Blog' }, icon: 'PenSquare', permission: 'admin.blog' },
       { href: '/admin/publications', label: { 'pt-BR': 'Publicações', 'en-US': 'Publications', 'es-LATAM': 'Publicaciones' }, icon: 'BookOpen', permission: 'admin.publications' },
       { href: '/admin/curatorship', label: { 'pt-BR': 'Curadoria', 'en-US': 'Curatorship', 'es-LATAM': 'Curaduría' }, icon: 'CheckCircle', permission: 'admin.curation' },
-      { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone', permission: 'admin.campaigns' },
-      { href: '/admin/comms', label: { 'pt-BR': 'Mídia Social', 'en-US': 'Social Media', 'es-LATAM': 'Redes Sociales' }, icon: 'BarChart3', permission: 'admin.campaigns' },
-      { href: '/admin/webinars', label: { 'pt-BR': 'Webinars', 'en-US': 'Webinars', 'es-LATAM': 'Webinars' }, icon: 'MonitorPlay', permission: 'admin.access' },
+      { href: '/admin/comms-ops', label: { 'pt-BR': 'Comunicação', 'en-US': 'Communications', 'es-LATAM': 'Comunicación' }, icon: 'Megaphone' }, // acesso: ADMIN_ROUTE_ACCESS
+      { href: '/admin/comms', label: { 'pt-BR': 'Mídia Social', 'en-US': 'Social Media', 'es-LATAM': 'Redes Sociales' }, icon: 'BarChart3' }, // acesso: ADMIN_ROUTE_ACCESS
+      { href: '/admin/webinars', label: { 'pt-BR': 'Webinars', 'en-US': 'Webinars', 'es-LATAM': 'Webinars' }, icon: 'MonitorPlay' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/knowledge', label: { 'pt-BR': 'Biblioteca de Recursos', 'en-US': 'Resource Library', 'es-LATAM': 'Biblioteca de Recursos' }, icon: 'Library', permission: 'admin.access' },
     ],
   },

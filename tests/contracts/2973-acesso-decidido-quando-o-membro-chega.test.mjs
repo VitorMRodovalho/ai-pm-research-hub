@@ -183,13 +183,17 @@ test('Nav: marca a falha das capacidades no catch, limpa no sucesso e no logout,
 
 // ── 3. as telas ──
 
-// #2974 (F1): partnerships e governance-v2 decidem pela entrada da rota em ADMIN_ROUTE_ACCESS (`rota`), e não mais por
-// hasPermission; o 2974-f1-link-e-pagina prende o resto. A forma do portão é a mesma, com onLoadFailed.
+// #2974 (F1): partnerships, governance-v2, comms, comms-ops e webinars decidem pela entrada da rota em
+// ADMIN_ROUTE_ACCESS (`rota`), e não mais por hasPermission ou pelo próprio predicado; o 2974-f1-link-e-pagina prende o
+// resto. A forma do portão é a mesma, com onLoadFailed.
 const PORTOES = [
   { arq: 'src/pages/admin/portfolio.astro', fn: 'hasPortfolioAccess', perm: 'admin.portfolio' },
   { arq: 'src/pages/admin/partnerships.astro', fn: 'hasPartnershipsAccess', rota: '/admin/partnerships' },
   { arq: 'src/pages/admin/cycle-report.astro', fn: 'hasAccess', perm: 'admin.analytics' },
   { arq: 'src/pages/admin/governance-v2.astro', fn: 'hasBoardGovAccess', rota: '/admin/governance-v2' },
+  { arq: 'src/pages/admin/comms.astro', fn: 'hasCommsAccess', rota: '/admin/comms' },
+  { arq: 'src/pages/admin/comms-ops.astro', fn: 'hasCommsOpsAccess', rota: '/admin/comms-ops' },
+  { arq: 'src/pages/admin/webinars.astro', fn: 'hasWebinarsAccess', rota: '/admin/webinars' },
 ];
 
 /** O portão da tela, ligado: allow é a função de permissão, negado e sem sessão mostram textos diferentes. */

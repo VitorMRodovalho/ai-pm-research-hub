@@ -186,7 +186,7 @@ const WEBINARS_I18N = {
   <!-- Denied -->
   <div id="webinars-denied" class="hidden max-w-[900px] mx-auto px-4 py-16 text-center">
     <div class="text-4xl mb-3">🔒</div>
-    <p class="font-semibold text-[var(--text-secondary)]">{t('admin.webinars.deniedDetail', lang)}</p>
+    <p id="webinars-denied-text" class="font-semibold text-[var(--text-secondary)]">{t('admin.webinars.deniedDetail', lang)}</p>
     <a href="/" class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{t('admin.webinars.backHome', lang)}</a>
   </div>
 
@@ -292,7 +292,8 @@ const WEBINARS_I18N = {
   window.__WEBINARS_I18N = WEBINARS_I18N;
 </script>
 <script>
-  import { canAccessWebinarsWorkspace } from '../../lib/admin/constants';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__WEBINARS_I18N) || {
@@ -787,29 +788,24 @@ const WEBINARS_I18N = {
 
   // ── Boot ──
 
-  async function boot() {
-    const member = (window as any).navGetMember?.();
-    if (!member) {
-      if (!(window as any).__webinarsWaitForMember) {
-        (window as any).__webinarsWaitForMember = true;
-        window.addEventListener('nav:member', () => {
-          (window as any).__webinarsWaitForMember = false;
-          boot();
-        }, { once: true });
-      }
-      const navSb = (window as any).navGetSb?.();
-      if (navSb?.auth?.getSession) {
-        const { data: { session } } = await navSb.auth.getSession();
-        if (!session) { showDenied(); return; }
-      }
-      return;
-    }
+  function hasWebinarsAccess(member: any): boolean {
+    if (!member) return false;
+    return canEnterAdminRoute('/admin/webinars', member);
+  }
 
-    MEMBER = member;
-    if (!canAccessWebinarsWorkspace(member)) { showDenied(); return; }
+  const WEBINARS_DENIED_TEXT = document.getElementById('webinars-denied-text')?.textContent?.trim() || '';
 
+  function showWebinarsNotice(text: string) {
+    const p = document.getElementById('webinars-denied-text');
+    if (p) p.textContent = text;
+    showDenied();
+  }
+
+  // Só roda depois que gateAdminPage liberou, ou seja, com hasWebinarsAccess verdadeiro.
+  async function bootWebinarsPage() {
+    MEMBER = (window as any).navGetMember?.() ?? null;
     sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 300); return; }
+    if (!sb) return;
 
     // Hide new button if not admin
     if (!canEdit()) {
@@ -837,5 +833,12 @@ const WEBINARS_I18N = {
     });
   }
 
-  boot();
+  // #2974 (F1): o acesso se decide quando o Nav resolve o membro, pela entrada da rota em ADMIN_ROUTE_ACCESS.
+  gateAdminPage({
+    allow: hasWebinarsAccess,
+    onAllowed: () => { void bootWebinarsPage(); },
+    onDenied: () => showWebinarsNotice(WEBINARS_DENIED_TEXT),
+    onNoSession: () => showWebinarsNotice(adminSignInText()),
+    onLoadFailed: () => showWebinarsNotice(adminLoadFailedText()),
+  });
 </script>

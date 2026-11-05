@@ -480,6 +480,53 @@ async function run() {
     await boardGovPage.locator('[data-action="restore-archived-item"]').first().click();
     await boardGovPage.close();
 
+    // #2974 (F1): comms-ops decide pela ação V4 que as RPCs da tela pedem. Sem sessão, o pedido para entrar; a
+    // designação de comunicação sozinha não abre; capacidades que falharam dão o texto de falha; com a ação, abre.
+    await page.goto(`${base}/admin/comms-ops`, { waitUntil: 'networkidle' });
+    const commsOpsSemSessao = page.locator('#commsops-denied');
+    await commsOpsSemSessao.waitFor({ state: 'visible' });
+    assert.equal((await commsOpsSemSessao.textContent() || '').trim(), ENTRAR,
+      'sem sessão, a comms-ops tem de mostrar o texto de admin.signInToView');
+    assert.equal(await page.locator('#commsops-panel').isVisible(), false);
+
+    const commsOpsPage = await browser.newPage({ locale: 'pt-BR' });
+    await commsOpsPage.goto(`${base}/admin/comms-ops`, { waitUntil: 'networkidle' });
+    const commsOpsMostra = (texto) => commsOpsPage.waitForFunction(
+      (t) => (document.getElementById('commsops-denied')?.textContent || '').trim() === t, texto);
+    await commsOpsPage.evaluate(() => {
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['reserve_agenda_block'], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'comms-ops-v3-test', operational_role: 'researcher', designations: ['comms_member'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await commsOpsMostra(textoPtBr('admin.commsOps.deniedRestricted'));
+    assert.equal(await commsOpsPage.locator('#commsops-panel').isVisible(), false, 'a designação sem a ação V4 abriu a comms-ops');
+    await commsOpsPage.evaluate(() => {
+      window.__nucleoCapabilities = null;
+      window.navCapabilitiesFailed = () => true;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await commsOpsMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    assert.equal(await commsOpsPage.locator('#commsops-panel').isVisible(), false, 'capacidades que falharam abriram a comms-ops');
+    await commsOpsPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['manage_comms'], initiative_actions: {}, tribe_actions: {} };
+      const fakeMember = { auth_id: 'comms-ops-v4-test', operational_role: 'researcher', designations: [], is_superadmin: false };
+      const vazio = { data: [], error: null };
+      const cadeia = {
+        select() { return cadeia; }, eq() { return cadeia; }, in() { return cadeia; }, order() { return cadeia; },
+        gte() { return cadeia; }, lte() { return cadeia; }, limit() { return cadeia; },
+        then(ok, erro) { return Promise.resolve(vazio).then(ok, erro); },
+      };
+      const fakeSb = { rpc() { return Promise.resolve(vazio); }, from() { return cadeia; } };
+      window.navGetMember = () => fakeMember;
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+    });
+    await commsOpsPage.locator('#commsops-panel').waitFor({ state: 'visible' });
+    assert.equal(await commsOpsPage.locator('#commsops-denied').isVisible(), false, 'com a ação, a comms-ops ainda mostra o aviso');
+    await commsOpsPage.close();
+
     const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     await curatorshipPage.evaluate(() => {
