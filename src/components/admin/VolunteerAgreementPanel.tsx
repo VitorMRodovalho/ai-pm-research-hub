@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 // #1347 — reuse the shared certificate PDF helpers to view/download/archive the signed
 // volunteer term per volunteer (frozen PDF via downloadCertificatePDF; immutable-snapshot
 // rebuild in batch via downloadBulkCertificatesPDF). Read-only: no state writes here.
@@ -328,12 +329,15 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [previewMember, setPreviewMember] = useState<MemberRow | null>(null);
+  // #2974 (F2): a primeira chamada espera o Nav resolver o membro (useResolvedMember), sem prazo, e se repete quando
+  // o membro muda. Sem sessão ou sem cadastro, o painel não chama e não mostra nada. Quem vê é o predicado de antes.
+  const { memberId } = useResolvedMember();
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 500); return; }
+    if (!m) return;
     if (!(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || (m.designations || []).includes('chapter_board'))) return;
     setAuthorized(true);
     const { data: d } = await sb.rpc('get_volunteer_agreement_status');
@@ -349,9 +353,9 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
-  if (!authorized || !summary) return null;
+  if (!memberId || !authorized || !summary) return null;
 
   const filtered = members.filter(m => {
     if (filter === 'signed' && !m.signed) return false;

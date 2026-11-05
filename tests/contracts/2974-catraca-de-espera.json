@@ -57,9 +57,14 @@
     "src/pages/stakeholder.astro"
    ],
    "corrigidas": [
+    "src/components/admin/CrossTribeWidget.tsx",
+    "src/components/admin/VepReconciliationWidget.tsx",
+    "src/components/admin/VolunteerAgreementPanel.tsx",
+    "src/components/admin/VolunteerComplianceWidget.tsx",
     "src/pages/admin/agenda-recorrente.astro",
     "src/pages/admin/data-health.astro",
     "src/pages/admin/filiacao.astro",
+    "src/pages/admin/index.astro",
     "src/pages/admin/knowledge.astro",
     "src/pages/admin/tags.astro"
    ]
@@ -191,9 +196,14 @@
     "src/pages/volunteer-agreement.astro"
    ],
    "corrigidas": [
+    "src/components/admin/CrossTribeWidget.tsx",
+    "src/components/admin/VepReconciliationWidget.tsx",
+    "src/components/admin/VolunteerAgreementPanel.tsx",
+    "src/components/admin/VolunteerComplianceWidget.tsx",
     "src/pages/admin/agenda-recorrente.astro",
     "src/pages/admin/data-health.astro",
     "src/pages/admin/filiacao.astro",
+    "src/pages/admin/index.astro",
     "src/pages/admin/knowledge.astro",
     "src/pages/admin/report.astro",
     "src/pages/admin/tags.astro"

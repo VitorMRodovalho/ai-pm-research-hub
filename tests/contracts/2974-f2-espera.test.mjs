@@ -27,15 +27,32 @@ const TIER_B = "const hasAdminCapability = (window as any).__nucleoCanForAdminEn
 const TELAS = [
   {
     arq: 'src/pages/admin/agenda-recorrente.astro', id: 'recurring-agenda', nome: 'RecurringAgenda', texto: "t('admin.deniedAdmin', lang)",
+    ilha: 'RecurringAgendaIsland',
     predicado: "return member.is_superadmin || member.operational_role === 'manager' || " +
       "(member.designations || []).some(function (d: string) { return d === 'deputy_manager'; });",
   },
-  { arq: 'src/pages/admin/data-health.astro', id: 'data-health', nome: 'DataHealth', texto: "t('admin.deniedAdmin', lang)", predicado: TIER_B },
-  { arq: 'src/pages/admin/knowledge.astro', id: 'knowledge', nome: 'Knowledge', texto: 'deniedMsg', predicado: TIER_B },
-  { arq: 'src/pages/admin/tags.astro', id: 'tags', nome: 'Tags', texto: "t('admin.deniedAdmin', lang)", predicado: TIER_B },
+  { arq: 'src/pages/admin/data-health.astro', id: 'data-health', nome: 'DataHealth', texto: "t('admin.deniedAdmin', lang)", ilha: 'DataHealthIsland', predicado: TIER_B },
+  { arq: 'src/pages/admin/knowledge.astro', id: 'knowledge', nome: 'Knowledge', texto: 'deniedMsg', ilha: 'KnowledgeIsland', predicado: TIER_B },
+  { arq: 'src/pages/admin/tags.astro', id: 'tags', nome: 'Tags', texto: "t('admin.deniedAdmin', lang)", ilha: 'TagManagementIsland', predicado: TIER_B },
+  {
+    arq: 'src/pages/admin/index.astro', id: 'admin-dashboard', nome: 'AdminDashboard', texto: "t('admin.deniedAdmin', lang)",
+    ilha: 'AdminDashboardIsland', predicado: TIER_B.replace("d === 'curator'; });", "d === 'curator' || d === 'chapter_board'; });"),
+  },
 ];
 
 const ler = (arq) => readFileSync(resolve(ROOT, arq), 'utf8');
+
+// O que o `<div id="...">` envolve, contando as aberturas e os fechamentos de div até o que fecha o dele.
+function divConteudo(src, id) {
+  const a = src.indexOf(`<div id="${id}"`);
+  if (a < 0) return null;
+  let nivel = 0;
+  for (const m of src.slice(a).matchAll(/<div\b|<\/div>/g)) {
+    nivel += m[0] === '</div>' ? -1 : 1;
+    if (nivel === 0) return src.slice(a, a + m.index);
+  }
+  return null;
+}
 // O corpo de `function nome(...) {` até o `}` que fecha na mesma indentação do script (dois espaços).
 function corpo(src, assinatura) {
   const a = src.indexOf(assinatura);
@@ -69,7 +86,7 @@ for (const t of TELAS) {
     const s = norm(maskJsComments(src));
     assert.match(src, new RegExp(`<div id="${t.id}-notice" class="hidden [^"]*">\\{${esc(t.texto)}\\}</div>`),
       'o aviso não nasce escondido com o texto de negado');
-    assert.match(src, new RegExp(`<div id="${t.id}-content" [^>]*>\\s*<\\w+Island client:load />\\s*</div>`),
+    assert.match(divConteudo(src, `${t.id}-content`) || '', new RegExp(`<${t.ilha} client:load\\b`),
       'o conteúdo não envolve a ilha da tela');
     assert.match(s, new RegExp(`const ${CONST} = document\\.getElementById\\('${t.id}-notice'\\)\\?\\.textContent\\?\\.trim\\(\\) \\|\\| '';`),
       'o texto de negado não vem do aviso');
@@ -90,6 +107,59 @@ for (const t of TELAS) {
   test(`${t.arq}: não espera mais por conta própria`, () => {
     const s = maskJsComments(ler(t.arq));
     assert.doesNotMatch(s, /setTimeout/, 'a tela voltou a se reagendar');
-    assert.doesNotMatch(s, /navGetMember|navMember|nav:member|getSession|is:inline/, 'a tela lê o membro fora do portão');
+    assert.doesNotMatch(s, /navGetMember|navMember|nav:member|getSession|__nucleoCapabilities/, 'a tela lê o membro fora do portão');
   });
+}
+
+// ── Ilhas do painel do admin e dos certificados: a primeira chamada espera o useResolvedMember, sem prazo, e se repete
+// quando o membro muda; sem membro, a ilha não mostra nada. Quem vê é o predicado de antes, ligado ao setAuthorized.
+const PRED_VOLUNTARIADO = "if (!(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || " +
+  "(m.designations || []).includes('chapter_board'))) return; setAuthorized(true);";
+const ILHAS = [
+  { arq: 'src/components/admin/CrossTribeWidget.tsx', retorno: 'if (!memberId || !data) return null;', predicado: null },
+  {
+    arq: 'src/components/admin/VepReconciliationWidget.tsx', retorno: 'if (!memberId || !authorized || !data) return null;',
+    predicado: "const isAdmin = m.is_superadmin || canForAdminEntry() || ['manager', 'deputy_manager'].includes(m.operational_role) || " +
+      "(m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board'); " +
+      'if (!isAdmin) return; setAuthorized(true);',
+  },
+  { arq: 'src/components/admin/VolunteerComplianceWidget.tsx', retorno: 'if (!memberId || !authorized || !data?.summary) return null;', predicado: PRED_VOLUNTARIADO },
+  { arq: 'src/components/admin/VolunteerAgreementPanel.tsx', retorno: 'if (!memberId || !authorized || !summary) return null;', predicado: PRED_VOLUNTARIADO },
+];
+
+function corpoDoLoad(s) {
+  const a = s.indexOf('const load = useCallback(async () => {');
+  if (a < 0) return null;
+  const b = s.indexOf('}, []);', a);
+  return b < 0 ? null : s.slice(a, b);
+}
+
+for (const i of ILHAS) {
+  test(`${i.arq}: a primeira chamada espera o membro resolvido, sem laço próprio`, () => {
+    const s = norm(maskJsComments(ler(i.arq)));
+    assert.match(s, /import \{ useResolvedMember \} from '\.\.\/\.\.\/hooks\/useResolvedMember';/);
+    assert.match(s, /const \{ memberId \} = useResolvedMember\(\);/, 'a ilha não lê o membro resolvido');
+    assert.match(s, /useEffect\(\(\) => \{ if \(memberId\) load\(\); \}, \[load, memberId\]\);/, 'a primeira chamada não espera o membro');
+    assert.doesNotMatch(s, /useEffect\(\(\) => \{ load\(\); \}, \[load\]\);/, 'a ilha voltou a chamar na montagem');
+    assert.doesNotMatch(s, /setTimeout/, 'a ilha voltou a se reagendar');
+    const load = corpoDoLoad(s);
+    assert.ok(load, 'load não encontrado');
+    assert.match(load, /if \(!sb\) return;/, 'sem cliente, o load não para');
+  });
+
+  test(`${i.arq}: sem membro, não mostra nada`, () => {
+    assert.ok(norm(maskJsComments(ler(i.arq))).includes(i.retorno), 'a ilha mostra conteúdo sem membro');
+  });
+
+  if (i.predicado) {
+    test(`${i.arq}: quem vê é o predicado de antes`, () => {
+      const load = corpoDoLoad(norm(maskJsComments(ler(i.arq)))) || '';
+      const p = norm(i.predicado);
+      assert.ok(load.includes(p), 'o predicado mudou');
+      // o único setAuthorized(true) do load é o que vem logo depois do predicado
+      assert.equal(load.split('setAuthorized(true)').length - 1, 1, 'o load autoriza em mais de um lugar');
+      assert.equal(load.indexOf('setAuthorized(true)'), load.indexOf(p) + p.length - 'setAuthorized(true);'.length,
+        'o load autoriza antes de o predicado decidir');
+    });
+  }
 }

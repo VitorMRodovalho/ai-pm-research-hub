@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { canForAdminEntry } from '../../lib/permissions';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 import { usePageI18n } from '../../i18n/usePageI18n';
 
 interface Props { lang?: string; }
@@ -20,12 +21,15 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
   const [data, setData] = useState<any>(null);
   const [authorized, setAuthorized] = useState(false);
   const [hasVepData, setHasVepData] = useState<boolean | null>(null);
+  // #2974 (F2): a primeira chamada espera o Nav resolver o membro (useResolvedMember), sem prazo, e se repete quando
+  // o membro muda. Sem sessão ou sem cadastro, o widget não chama e não mostra nada. Quem vê é o predicado de antes.
+  const { memberId } = useResolvedMember();
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 400); return; }
+    if (!m) return;
     // ADR-0007 V4 (p163 Opção C): admin entry via canForAdminEntry (engagement-derived
      // org-scoped actions). manager/deputy_manager kept as hard-tier fallback.
     // See docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md.
@@ -48,9 +52,9 @@ export default function VepReconciliationWidget({ lang: propLang }: Props) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
-  if (!authorized || !data) return null;
+  if (!memberId || !authorized || !data) return null;
 
   const summary = data.summary || {};
   const total = summary.total_divergent ?? 0;
