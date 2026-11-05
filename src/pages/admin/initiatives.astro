@@ -55,7 +55,7 @@ const INIT_I18N = {
   <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <div id="init-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-8 text-center">
       <div class="text-3xl mb-3">&#x1F512;</div>
-      <p class="font-semibold text-amber-800">{INIT_I18N.denied}</p>
+      <p id="init-denied-text" class="font-semibold text-amber-800">{INIT_I18N.denied}</p>
       <a href={`${langPrefix}/admin`} class="inline-block mt-4 px-5 py-2 bg-navy text-white rounded-xl text-sm font-semibold no-underline hover:opacity-90">{INIT_I18N.backToAdmin}</a>
     </div>
 
@@ -151,7 +151,8 @@ const INIT_I18N = {
   window.__INIT_ADMIN_LANG_PREFIX = langPrefix;
 </script>
 <script>
-  import { hasPermission } from '../../lib/permissions';
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
 
   // i18n bundle is injected via define:vars; bail out if missing (no PT-BR fallback —
   // keeps the page strictly trilingual via dictionaries).
@@ -176,7 +177,11 @@ const INIT_I18N = {
     return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function showDenied() {
+  // O texto de "sem acesso" que a página traz; um aviso anterior (entrar, falha) não pode ficar no lugar dele.
+  const DENIED_TEXT = document.getElementById('init-denied-text')?.textContent || '';
+  function showDenied(text?: string) {
+    const msg = document.getElementById('init-denied-text');
+    if (msg) msg.textContent = text || DENIED_TEXT;
     document.getElementById('init-loading')?.classList.add('hidden');
     document.getElementById('init-panel')?.classList.add('hidden');
     document.getElementById('init-denied')?.classList.remove('hidden');
@@ -370,32 +375,21 @@ const INIT_I18N = {
     }
   }
 
-  async function boot() {
-    sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-
-    window.addEventListener('nav:member', ((e: CustomEvent) => {
-      if (e.detail) { MEMBER = e.detail; applyGate(MEMBER); }
-    }) as EventListener);
-
-    const m = (window as any).navGetMember?.();
-    if (m) { MEMBER = m; applyGate(MEMBER); return; }
-
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      if (session) {
-        const { data } = await sb.rpc('get_member_by_auth');
-        MEMBER = data;
-        applyGate(MEMBER);
-        return;
-      }
-    } catch (e) { console.warn('init admin boot:', e); }
-    showDenied();
-  }
-
-  function applyGate(m: any) {
-    if (hasPermission(m, 'system.global_config')) showPanel();
-    else showDenied();
+  function boot() {
+    // #2974 (F1): decide quando o Nav resolve o membro e as capacidades, pela mesma entrada que decide o link. Sem
+    // laço de tentativas: o cliente já existe quando o Nav resolve o membro.
+    gateAdminPage({
+      allow: (m) => canEnterAdminRoute('/admin/initiatives', m),
+      onAllowed: (m) => {
+        sb = (window as any).navGetSb?.();
+        if (!sb) { showDenied(adminLoadFailedText()); return; }
+        MEMBER = m;
+        void showPanel();
+      },
+      onDenied: () => showDenied(),
+      onNoSession: () => showDenied(adminSignInText()),
+      onLoadFailed: () => showDenied(adminLoadFailedText()),
+    });
   }
 
   document.getElementById('init-add-btn')?.addEventListener('click', () => openModal());

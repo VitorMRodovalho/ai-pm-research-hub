@@ -99,3 +99,9 @@ export function adminSignInText(doc?: Pick<Document, 'getElementById'>): string 
   const d = doc ?? (typeof document === 'undefined' ? null : document);
   return d?.getElementById('admin-signin-to-view')?.textContent?.trim() || 'Sign in to view this page.';
 }
+
+/** #2974 (F1): o texto de falha ao carregar as capacidades, que o AdminLayout põe na página nos 3 idiomas. */
+export function adminLoadFailedText(doc?: Pick<Document, 'getElementById'>): string {
+  const d = doc ?? (typeof document === 'undefined' ? null : document);
+  return d?.getElementById('admin-load-failed')?.textContent?.trim() || 'Could not load right now. Please try again.';
+}

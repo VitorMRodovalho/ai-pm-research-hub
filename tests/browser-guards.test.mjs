@@ -779,6 +779,49 @@ async function run() {
     assert.match(copiedSummary, /Scope:/);
     await analyticsPage.close();
 
+    // #2974 (F1): initiatives decide pela ação V4 que create_initiative pede (manage_platform). O papel V3 sozinho não
+    // abre; capacidades que falharam dão o texto de falha, não "sem acesso"; com a ação, abre e lista.
+    const initPage = await browser.newPage({ locale: 'pt-BR' });
+    await initPage.goto(`${base}/admin/initiatives`, { waitUntil: 'networkidle' });
+    const initMostra = (texto) => initPage.waitForFunction(
+      (t) => (document.getElementById('init-denied-text')?.textContent || '').trim() === t, texto);
+    await initPage.evaluate(() => {
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'init-v3-test', operational_role: 'manager', designations: ['co_gp'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await initMostra(textoPtBr('admin.accessRestricted'));
+    assert.equal(await initPage.locator('#init-panel').isVisible(), false, 'papel V3 sem a ação V4 abriu initiatives');
+    await initPage.evaluate(() => {
+      window.__nucleoCapabilities = null;
+      window.navCapabilitiesFailed = () => true;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await initMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    assert.equal(await initPage.locator('#init-panel').isVisible(), false, 'capacidades que falharam abriram initiatives');
+    await initPage.evaluate(() => {
+      const rpcs = [];
+      (window).__initRpcs = rpcs;
+      window.navGetSb = () => ({
+        rpc(name) {
+          rpcs.push(name);
+          if (name === 'list_initiatives') return Promise.resolve({ data: [{ id: 'i-1', title: 'Iniciativa sintetica', kind: 'study_group', status: 'active' }], error: null });
+          return Promise.resolve({ data: null, error: { message: `unexpected ${name}` } });
+        },
+        from() {
+          return { select() { return this; }, order() { return Promise.resolve({ data: [{ slug: 'study_group', display_name: 'Grupo de estudo' }], error: null }); } };
+        },
+      });
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['manage_platform'], initiative_actions: {}, tribe_actions: {} };
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await initPage.locator('#init-panel').waitFor({ state: 'visible' });
+    await initPage.waitForFunction(() => ((window).__initRpcs || []).includes('list_initiatives'));
+    assert.equal(await initPage.locator('#init-denied').isVisible(), false);
+    await initPage.close();
+
     await page.close();
     console.log('Browser guard, home runtime, webinars/curatorship admin, and analytics readonly test passed.');
   } finally {

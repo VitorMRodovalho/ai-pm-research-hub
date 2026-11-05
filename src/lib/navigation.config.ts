@@ -12,8 +12,44 @@
  * ═══════════════════════════════════════════════════════════════════════════
  */
 import type { AccessTier } from './admin/constants';
-import { hasPermission, type Permission } from './permissions.ts';
+import { hasPermission, canForUnscoped, type Permission } from './permissions.ts';
 import { canAccessAdminRoute, type AdminRouteKey } from './admin/route-access.ts';
+
+/* ────────────────────────── Acesso por rota (#2974 F1) ────────────────────── */
+/**
+ * Uma declaração por rota, lida pelo menu (`getItemAccessibility`), pela sidebar (`isAdminSidebarItemVisible`) e pela
+ * página (`canEnterAdminRoute`). Link e página respondem pela mesma entrada, então não divergem.
+ *
+ * - `actions`: ações V4, qualquer uma basta, perguntadas como as RPCs da tela perguntam: can(pessoa, ação) sem
+ *   recurso (`canForUnscoped`).
+ * - `designations`: só as que o próprio servidor lê no portão das RPCs da tela.
+ * - `rpcs`: as RPCs da tela de onde as ações saíram. O guard confere cada uma contra a última captura nas
+ *   migrations e exige que a tela as chame.
+ */
+export interface AdminRouteAccess {
+  actions: readonly string[];
+  designations?: readonly string[];
+  rpcs: readonly string[];
+}
+
+export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
+  // create_initiative pede manage_platform.
+  '/admin/initiatives': { actions: ['manage_platform'], rpcs: ['create_initiative'] },
+  // A fila e as verificações pedem manage_member ou a designação filiacao_director.
+  '/admin/filiacao': { actions: ['manage_member'], designations: ['filiacao_director'], rpcs: ['get_affiliation_verification_queue'] },
+};
+
+function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[]): boolean {
+  return access.actions.some((a) => canForUnscoped(a))
+    || (access.designations || []).some((d) => designations.includes(d));
+}
+
+/** O portão da página de uma rota declarada em `ADMIN_ROUTE_ACCESS`. Rota não declarada não abre. */
+export function canEnterAdminRoute(href: string, member: any): boolean {
+  const access = ADMIN_ROUTE_ACCESS[href];
+  if (!access || !member) return false;
+  return routeAccessAllows(access, Array.isArray(member.designations) ? member.designations : []);
+}
 
 export interface NavItem {
   key: string;
@@ -193,6 +229,14 @@ export function getItemAccessibility(
     return { visible: false, enabled: false, requiredTier: item.minTier };
   }
 
+  // #2974 (F1): rota com acesso declarado responde pela declaração, como a página.
+  const declared = ADMIN_ROUTE_ACCESS[item.href];
+  if (declared) {
+    const enabledByRoute = isLoggedIn && routeAccessAllows(declared, designations);
+    if (item.lgpdSensitive && !enabledByRoute) return { visible: false, enabled: false, requiredTier: item.minTier };
+    return { visible: isLoggedIn || enabledByRoute, enabled: enabledByRoute, requiredTier: item.minTier };
+  }
+
   const meetsMinTier = TIER_RANK[tier] >= TIER_RANK[item.minTier];
   const hasDesig = item.allowedDesignations?.length
     ? item.allowedDesignations.some(d => designations.includes(d))
@@ -297,10 +341,10 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
     label: { 'pt-BR': 'Pessoas', 'en-US': 'People', 'es-LATAM': 'Personas' },
     items: [
       { href: '/admin/members', label: { 'pt-BR': 'Membros', 'en-US': 'Members', 'es-LATAM': 'Miembros' }, icon: 'Users', permission: 'admin.access' },
-      { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase', permission: 'admin.access' },
+      { href: '/admin/initiatives', label: { 'pt-BR': 'Iniciativas', 'en-US': 'Initiatives', 'es-LATAM': 'Iniciativas' }, icon: 'Briefcase' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage', routeKey: 'admin_selection' },
-      { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck', permission: 'admin.filiacao' },
+      { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/vep-reconciliation', label: { 'pt-BR': 'Reconciliação VEP', 'en-US': 'VEP Reconciliation', 'es-LATAM': 'Reconciliación VEP' }, icon: 'ArrowLeftRight', permission: 'admin.access' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },
@@ -363,6 +407,8 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
  * (`hasPermission`) ou passa em `canAccessAdminRoute` pela `routeKey`. Sem membro, só os itens sem portão.
  */
 export function isAdminSidebarItemVisible(member: any, item: AdminSidebarItem): boolean {
+  // #2974 (F1): rota com acesso declarado responde pela declaração, como a página.
+  if (ADMIN_ROUTE_ACCESS[item.href]) return canEnterAdminRoute(item.href, member);
   const ps = adminSidebarItemPerms(item);
   if (ps.length === 0 && !item.routeKey) return true;
   if (!member) return false;

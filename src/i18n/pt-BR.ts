@@ -6882,6 +6882,7 @@ const ptBR: Record<string, string> = {
   'admin.dashboard.errorPrefix': 'Erro',
   'admin.deniedAdmin': 'Acesso restrito a administradores.',
   'admin.signInToView': 'Entre na plataforma para ver esta página.',
+  'admin.capabilitiesLoadFailed': 'Não foi possível carregar agora. Tente de novo.',
   'admin.tribeBreadcrumb': 'Tribo',
   'admin.blog.tagsLabel': 'Tags (separadas por vírgula)',
   'admin.blog.featuredBadge': 'Destacado',

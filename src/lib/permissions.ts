@@ -456,15 +456,11 @@ export function setCapabilities(caps: Capabilities | null): void {
 }
 
 export function getCapabilities(): Capabilities | null {
-  if (_capabilities) return _capabilities;
-  if (typeof window !== 'undefined') {
-    const w = (window as any)[WINDOW_KEY];
-    if (w) {
-      _capabilities = w;
-      return w;
-    }
-  }
-  return null;
+  // #2974 (F1): no navegador, a chave da janela é a fonte viva. O Nav a reescreve quando recarrega as capacidades
+  // (invalidação em tempo real, novo login) e a zera no logout; guardar a primeira leitura deixava canFor
+  // respondendo pela capacidade antiga até recarregar a página. setCapabilities escreve nas duas.
+  if (typeof window !== 'undefined') return (window as any)[WINDOW_KEY] ?? null;
+  return _capabilities;
 }
 
 export function clearCapabilities(): void {
@@ -534,6 +530,21 @@ export function canForAnyTribe(action: string): boolean {
     if (acts.includes(action)) return true;
   }
   return false;
+}
+
+// #2974 (F1): a pergunta do servidor quando a RPC ou a policy chama can(pessoa, ação) SEM recurso.
+// No corpo de can(), sem recurso valem o escopo de organização ou global e, no escopo de iniciativa, o
+// vínculo com tribo legada, exceto para view_pii e manage_member. Aqui: org_actions (que já juntam
+// organização e global) e tribe_actions com a mesma exceção. initiative_actions de iniciativa sem tribo
+// legada não contam, porque o servidor também não as conta sem recurso. Superadmin passa, como em canFor.
+const SEM_RECURSO_SEM_TRIBO = ['view_pii', 'manage_member'];
+export function canForUnscoped(action: string): boolean {
+  const caps = getCapabilities();
+  if (!caps) return false;
+  if (caps.is_superadmin) return true;
+  if (caps.org_actions?.includes(action)) return true;
+  if (SEM_RECURSO_SEM_TRIBO.includes(action)) return false;
+  return Object.values(caps.tribe_actions || {}).some((acts) => acts.includes(action));
 }
 
 // Set of org-scoped V4 actions that legitimately indicate admin-tier authority

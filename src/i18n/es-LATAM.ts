@@ -6875,6 +6875,7 @@ const esLATAM: Record<string, string> = {
   'admin.dashboard.errorPrefix': 'Error',
   'admin.deniedAdmin': 'Acceso restringido a administradores.',
   'admin.signInToView': 'Inicia sesión para ver esta página.',
+  'admin.capabilitiesLoadFailed': 'No fue posible cargar ahora. Inténtalo de nuevo.',
   'admin.tribeBreadcrumb': 'Tribu',
   'admin.blog.tagsLabel': 'Tags (separados por coma)',
   'admin.blog.featuredBadge': 'Destacado',
