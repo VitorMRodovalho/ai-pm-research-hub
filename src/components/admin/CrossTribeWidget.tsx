@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 // p194 OPP-192.E/OPP-193.A: migrated to V4 exec_cross_initiative_comparison.
 // V4 envelope: { initiatives: [...], kinds_present, generated_at }. We call with
@@ -76,12 +77,13 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
   const langKey = propLang || (typeof document !== 'undefined' && document.documentElement.lang?.startsWith('en') ? 'en-US' : document.documentElement.lang?.startsWith('es') ? 'es-LATAM' : 'pt-BR');
   const t = L[langKey] || L['pt-BR'];
   const [data, setData] = useState<TribeRow[] | null>(null);
+  // #2974 (F2): a primeira chamada espera o Nav resolver o membro (useResolvedMember), sem prazo, e se repete quando
+  // o membro muda. Sem sessão ou sem cadastro, o widget não chama e não mostra nada.
+  const { memberId } = useResolvedMember();
 
   const load = useCallback(async () => {
     const sb = getSb();
-    if (!sb) { setTimeout(load, 400); return; }
-    const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const { data: result } = await sb.rpc('exec_cross_initiative_comparison', { p_kind: 'research_tribe' });
     const initiatives: V4InitiativeRow[] = result?.initiatives ?? [];
     // #1656: a RPC publica attendance_pct em 0-100. A conversao de escala saiu do widget.
@@ -107,9 +109,9 @@ export default function CrossTribeWidget({ lang: propLang }: Props) {
     setData(mapped);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
-  if (!data) return null;
+  if (!memberId || !data) return null;
 
   return (
     <div className="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">

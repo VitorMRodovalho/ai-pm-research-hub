@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 interface Props { lang?: string; }
 
@@ -24,21 +25,24 @@ export default function VolunteerComplianceWidget({ lang: propLang }: Props) {
   const t = L[lang] || L['pt-BR'];
   const [data, setData] = useState<any>(null);
   const [authorized, setAuthorized] = useState(false);
+  // #2974 (F2): a primeira chamada espera o Nav resolver o membro (useResolvedMember), sem prazo, e se repete quando
+  // o membro muda. Sem sessão ou sem cadastro, o widget não chama e não mostra nada. Quem vê é o predicado de antes.
+  const { memberId } = useResolvedMember();
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(load, 400); return; }
+    if (!sb) return;
     const m = (window as any).navGetMember?.();
-    if (!m) { setTimeout(load, 500); return; }
+    if (!m) return;
     if (!(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || (m.designations || []).includes('chapter_board'))) return;
     setAuthorized(true);
     const { data: d } = await sb.rpc('get_volunteer_agreement_status');
     if (d && !d.error) setData(d);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
-  if (!authorized || !data?.summary) return null;
+  if (!memberId || !authorized || !data?.summary) return null;
 
   const s = data.summary;
   const pct = s.pct ?? 0;

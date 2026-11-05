@@ -573,15 +573,15 @@ async function run() {
     assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
     await blogPage.close();
 
-    // #2974 (F2): agenda-recorrente, data-health, knowledge e tags esperam pelo gateAdminPage. Sem sessão, cada uma
-    // pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
+    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags e o painel do admin esperam pelo gateAdminPage. Sem
+    // sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
     const escondido = (p, sel) => p.evaluate((s) => document.querySelector(s)?.classList.contains('hidden') === true, sel);
-    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags']]) {
-      await page.goto(`${base}/admin/${rota}`, { waitUntil: 'networkidle' });
+    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard']]) {
+      await page.goto(rota ? `${base}/admin/${rota}` : `${base}/admin`, { waitUntil: 'networkidle' });
       const aviso = page.locator(`#${id}-notice`);
       await aviso.waitFor({ state: 'visible' });
-      assert.equal((await aviso.textContent() || '').trim(), ENTRAR, `sem sessão, ${rota} tem de mostrar o texto de admin.signInToView`);
-      assert.equal(await escondido(page, `#${id}-content`), true, `sem sessão, ${rota} ainda mostra o conteúdo`);
+      assert.equal((await aviso.textContent() || '').trim(), ENTRAR, `sem sessão, /admin/${rota} tem de mostrar o texto de admin.signInToView`);
+      assert.equal(await escondido(page, `#${id}-content`), true, `sem sessão, /admin/${rota} ainda mostra o conteúdo`);
     }
     // Com membro, na agenda-recorrente: negada, o texto de antes; capacidades que falharam, o texto de falha; o papel
     // que o predicado aceita mostra o conteúdo e esconde o aviso.
@@ -609,6 +609,26 @@ async function run() {
     await agendaPage.waitForFunction(() => document.getElementById('recurring-agenda-content')?.classList.contains('hidden') === false);
     assert.equal(await escondido(agendaPage, '#recurring-agenda-notice'), true, 'liberada, a agenda-recorrente ainda mostra o aviso');
     await agendaPage.close();
+
+    // O painel do admin: negado, o texto de antes; com o papel que o predicado aceita, o conteúdo aparece.
+    const painelPage = await browser.newPage({ locale: 'pt-BR' });
+    await painelPage.goto(`${base}/admin`, { waitUntil: 'networkidle' });
+    await painelPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navGetMember = () => ({ id: 'painel-researcher-test', auth_id: 'painel-researcher-test', operational_role: 'researcher', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await painelPage.waitForFunction(
+      (t) => (document.getElementById('admin-dashboard-notice')?.textContent || '').trim() === t, textoPtBr('admin.deniedAdmin'));
+    assert.equal(await escondido(painelPage, '#admin-dashboard-content'), true, 'negado, o painel do admin ainda mostra o conteúdo');
+    await painelPage.evaluate(() => {
+      window.navGetMember = () => ({ id: 'painel-manager-test', auth_id: 'painel-manager-test', operational_role: 'manager', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await painelPage.waitForFunction(() => document.getElementById('admin-dashboard-content')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(painelPage, '#admin-dashboard-notice'), true, 'liberado, o painel do admin ainda mostra o aviso');
+    await painelPage.close();
 
     const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
