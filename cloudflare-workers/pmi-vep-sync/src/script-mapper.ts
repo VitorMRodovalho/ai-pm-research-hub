@@ -471,9 +471,13 @@ function extractResponsesFromScript(
   return out;
 }
 
+// #3004: the 27 Brazilian UFs, the only codes strategy 1 accepts after "PMI".
+const BR_UFS = new Set(['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR',
+  'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']);
+
 /**
  * Determine chapter slug. Priority:
- * 1. PMI-XX / PMI_XX / PMI/XX / PMI XX patterns
+ * 1. PMI-XX / PMI_XX / PMI/XX / PMI XX patterns, where XX is a Brazilian UF
  * 2. Full state name (Goiás, Minas Gerais, ...)
  * 3. Standalone UF abbreviation (GO, MG, ...) with word boundary, but ONLY if
  *    affiliation doesn't start with "Não" / "ainda não" / "atualmente não"
@@ -482,7 +486,7 @@ function extractResponsesFromScript(
  *
  * Returns null when ambiguous ("MG e DF") or explicitly-not-affiliated.
  */
-function parseChapterFromAffiliation(
+export function parseChapterFromAffiliation(
   affiliation: string,
   state: string,
   _country: string
@@ -490,9 +494,13 @@ function parseChapterFromAffiliation(
   const aff = (affiliation || '').trim();
   const affLower = aff.toLowerCase();
 
-  // Strategy 1: explicit PMI-XX / PMI_XX / PMI/XX / PMI XX
-  const pmiMatch = aff.match(/PMI[-\s_/]([A-Z]{2,3})\b/i);
-  if (pmiMatch) return `PMI-${pmiMatch[1]!.toUpperCase()}`;
+  // Strategy 1: explicit PMI-XX / PMI_XX / PMI/XX / PMI XX, only when XX is a UF (#3004). Without the u flag, \b
+  // saw the "á" of "Goiás" as a word boundary, so "PMI Goiás" became PMI-GOI; and any 2 or 3 letters passed, so
+  // "PMI em Goiás" became PMI-EM. A word that is not a UF falls through to strategy 2.
+  for (const m of aff.matchAll(/PMI[-\s_/]([A-Z]{2})(?![\p{L}\p{N}])/giu)) {
+    const uf = m[1]!.toUpperCase();
+    if (BR_UFS.has(uf)) return `PMI-${uf}`;
+  }
 
   const STATE_FULL_TO_CHAPTER: Record<string, string> = {
     'goiás': 'PMI-GO', 'goias': 'PMI-GO',
