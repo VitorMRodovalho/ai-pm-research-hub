@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeMemberships, mapScriptToNucleo, mapServiceHistory } from './script-mapper';
+import { normalizeMemberships, mapScriptToNucleo, mapServiceHistory, parseChapterFromAffiliation } from './script-mapper';
 
 /**
  * #1037 — the enriched PMI export carries per-chapter expiry in `profileMemberships`
@@ -130,5 +130,55 @@ describe('#1175 Wave 4 mapServiceHistory', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].chapter_name).toBe('Ceará, Brazil Chapter');
     expect(rows[0].role_name).toBeNull();
+  });
+});
+
+/**
+ * #3004 — strategy 1 of parseChapterFromAffiliation read "PMI" + any 2 or 3 letters as a chapter code, and its \b
+ * (no u flag) took the "á" of "Goiás" as a word boundary. Every row binds an affiliation answer to the chapter it
+ * must yield; the forms below are the ones that produced PMI-GOI, PMI-RIO, PMI-EM, PMI-DE and PMI-EUA.
+ */
+describe('#3004 parseChapterFromAffiliation', () => {
+  it.each([
+    ['PMI Goiás', 'PMI-GO'],
+    ['PMI-Goiás', 'PMI-GO'],
+    ['Sim, PMI Goiás', 'PMI-GO'],
+    ['PMI Rio Grande do Sul', 'PMI-RS'],
+    ['PMI Rio de Janeiro', 'PMI-RJ'],
+    ['Sou filiado ao PMI em Goiás', 'PMI-GO'],
+    ['PMI de São Paulo', 'PMI-SP'],
+    ['PMI do Rio de Janeiro', 'PMI-RJ'],
+    ['PMI EUA', null],
+    ['PMI América Latina', null],
+    ['PMI Pará', null],
+    ['PMI Sul', null],
+  ])('a word after "PMI" that is not a UF does not become a code: %s -> %s', (answer, chapter) => {
+    expect(parseChapterFromAffiliation(answer, '', '')).toBe(chapter);
+  });
+
+  it.each([
+    ['PMI-GO', 'PMI-GO'],
+    ['PMI GO', 'PMI-GO'],
+    ['PMI-DF', 'PMI-DF'],
+    ['PMI-AM', 'PMI-AM'],
+    ['PMI-SE', 'PMI-SE'],
+    ['PMI Goias', 'PMI-GO'],
+    ['PMI Ceará', 'PMI-CE'],
+    ['Goiás', 'PMI-GO'],
+    ['GO', 'PMI-GO'],
+    ['Não', null],
+  ])('the forms that already worked keep their chapter: %s -> %s', (answer, chapter) => {
+    expect(parseChapterFromAffiliation(answer, '', '')).toBe(chapter);
+  });
+
+  it('mapScriptToNucleo writes the chapter from the affiliation answer', () => {
+    const opp = { role_default: 'x', essay_mapping: { '1': { field: 'chapter_affiliation', question: 'Filiação' } } } as any;
+    const app = {
+      applicationId: '1', _opportunityId: 'o', applicantName: 'N', applicantEmail: 'e@x.com',
+      _bucket: 'submitted', status: 'Submitted',
+    } as any;
+    const out = mapScriptToNucleo(app, opp, [{ applicationId: '1', questionId: '1', response: 'PMI Goiás' }], 'cyc');
+    expect(out.chapter_affiliation).toBe('PMI Goiás');
+    expect(out.chapter).toBe('PMI-GO');
   });
 });
