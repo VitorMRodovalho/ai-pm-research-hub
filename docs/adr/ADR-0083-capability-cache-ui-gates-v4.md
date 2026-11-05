@@ -67,6 +67,7 @@ canForAdminEntry()
   // (write, manage_event, manage_member, manage_partner, manage_finance,
   //  manage_comms, manage_board_admin, manage_platform,
   //  view_internal_analytics, view_chapter_dashboards)
+  // Emenda 1 (2026-11-04): a lista vigente tem 13 ações e mora só em permissions.ts.
 ```
 
 ### Bootstrap (`src/components/nav/Nav.astro`)
@@ -171,3 +172,21 @@ Worker deployed `2ee09456-b21d-4fdf-9e7c-15383ae4fcc4`. Evidence sequence:
 **Δ = 1.358s** between UPDATE and re-fetch — consistent with WAL replication (~200-500ms) + 500ms debounce + WebSocket round-trip. No page reload required.
 
 Conclusion: the capability cache now invalidates on engagement mutations without user-visible staleness window. The original ADR-0083 backlog item closed.
+
+## Emenda 1: lista única de ações de entrada (2026-11-04, #2974)
+
+**Contexto.** A #952 (FU-1 e FU-3) acrescentou `view_finance`, `view_partner` e `view_aggregate_analytics` a
+`ADMIN_TIER_ACTIONS` em `src/lib/permissions.ts`, que passou a ter 13 ações. A cópia literal mantida em `Nav.astro`
+para os scripts inline (`ADMIN_TIER_ACTIONS_INLINE`) ficou com as 10 do texto original desta ADR. As páginas que usam
+`window.__nucleoCanForAdminEntry` liam a cópia; as ilhas que usam `canForAdminEntry()` liam a lista de
+`permissions.ts`. Em `/admin/vep-reconciliation`, a casca da página e a ilha davam respostas diferentes para a mesma
+pessoa.
+
+**Decisão.** Valem as 13 ações de `permissions.ts` (decisão do GP, 2026-11-04). A lista mora só ali. `Nav.astro`
+importa `ADMIN_TIER_ACTIONS` no script processado e expõe `__nucleoCanForAdminEntry` sobre ela; a cópia literal saiu.
+Pelo levantamento da #2974, a única entrada nova que a lista de 13 abre é a de `institutional_auditor.auditor`, que
+hoje não tem ninguém.
+
+**Guard.** `tests/contracts/2974-lista-unica-de-acoes-de-entrada.test.mjs` afirma que as duas funções de entrada
+decidem pela mesma lista, que `Nav.astro` não tem array literal de ações de entrada e que a lista tem as 13.
+
