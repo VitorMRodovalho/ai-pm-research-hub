@@ -22,28 +22,44 @@ const i18nBundle = buildPageI18n(['comp.recurringAgenda', 'comp.common'], lang);
   ]}
 >
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
-  <div class="max-w-[1200px] mx-auto px-4 pb-12">
+  <div id="recurring-agenda-notice" class="hidden max-w-[1200px] mx-auto px-4 text-center py-20 text-[var(--text-muted)]">{t('admin.deniedAdmin', lang)}</div>
+  <div id="recurring-agenda-content" class="max-w-[1200px] mx-auto px-4 pb-12">
     <RecurringAgendaIsland client:load />
   </div>
   <Toast />
 </AdminLayout>
 
-<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    const check = () => {
-      const member = window.navGetMember?.();
-      if (!member) { setTimeout(check, 300); return; }
-      // UX gate only — the server RPC (manage_platform) is the real boundary.
-      // Mirror manage_platform = platform managers (GP/superadmin/deputy).
-      const isAllowed =
-        member.is_superadmin ||
-        member.operational_role === 'manager' ||
-        (member.designations || []).some(function (d) { return d === 'deputy_manager'; });
-      if (!isAllowed) {
-        document.querySelector('.max-w-\\[1200px\\]').innerHTML =
-          '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
-      }
-    };
-    check();
+<script>
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  // UX gate only — the server RPC (manage_platform) is the real boundary.
+  // Mirror manage_platform = platform managers (GP/superadmin/deputy).
+  function hasRecurringAgendaAccess(member: any): boolean {
+    return member.is_superadmin ||
+      member.operational_role === 'manager' ||
+      (member.designations || []).some(function (d: string) { return d === 'deputy_manager'; });
+  }
+
+  const RECURRING_AGENDA_DENIED_TEXT = document.getElementById('recurring-agenda-notice')?.textContent?.trim() || '';
+
+  function showRecurringAgendaNotice(text: string) {
+    const notice = document.getElementById('recurring-agenda-notice');
+    if (notice) { notice.textContent = text; notice.classList.remove('hidden'); }
+    document.getElementById('recurring-agenda-content')?.classList.add('hidden');
+  }
+
+  function showRecurringAgendaPage() {
+    document.getElementById('recurring-agenda-notice')?.classList.add('hidden');
+    document.getElementById('recurring-agenda-content')?.classList.remove('hidden');
+  }
+
+  // #2974 (F2): a espera é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a
+  // tela pede para entrar. O predicado do allow é o de antes.
+  gateAdminPage({
+    allow: hasRecurringAgendaAccess,
+    onAllowed: () => showRecurringAgendaPage(),
+    onDenied: () => showRecurringAgendaNotice(RECURRING_AGENDA_DENIED_TEXT),
+    onNoSession: () => showRecurringAgendaNotice(adminSignInText()),
+    onLoadFailed: () => showRecurringAgendaNotice(adminLoadFailedText()),
   });
 </script>

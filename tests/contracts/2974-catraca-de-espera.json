@@ -57,7 +57,11 @@
     "src/pages/stakeholder.astro"
    ],
    "corrigidas": [
-    "src/pages/admin/filiacao.astro"
+    "src/pages/admin/agenda-recorrente.astro",
+    "src/pages/admin/data-health.astro",
+    "src/pages/admin/filiacao.astro",
+    "src/pages/admin/knowledge.astro",
+    "src/pages/admin/tags.astro"
    ]
   },
   "sem_limite_capacidades": {
@@ -187,8 +191,12 @@
     "src/pages/volunteer-agreement.astro"
    ],
    "corrigidas": [
+    "src/pages/admin/agenda-recorrente.astro",
+    "src/pages/admin/data-health.astro",
     "src/pages/admin/filiacao.astro",
-    "src/pages/admin/report.astro"
+    "src/pages/admin/knowledge.astro",
+    "src/pages/admin/report.astro",
+    "src/pages/admin/tags.astro"
    ]
   },
   "ilha_sem_membro": {

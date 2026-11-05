@@ -573,6 +573,43 @@ async function run() {
     assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
     await blogPage.close();
 
+    // #2974 (F2): agenda-recorrente, data-health, knowledge e tags esperam pelo gateAdminPage. Sem sessão, cada uma
+    // pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
+    const escondido = (p, sel) => p.evaluate((s) => document.querySelector(s)?.classList.contains('hidden') === true, sel);
+    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags']]) {
+      await page.goto(`${base}/admin/${rota}`, { waitUntil: 'networkidle' });
+      const aviso = page.locator(`#${id}-notice`);
+      await aviso.waitFor({ state: 'visible' });
+      assert.equal((await aviso.textContent() || '').trim(), ENTRAR, `sem sessão, ${rota} tem de mostrar o texto de admin.signInToView`);
+      assert.equal(await escondido(page, `#${id}-content`), true, `sem sessão, ${rota} ainda mostra o conteúdo`);
+    }
+    // Com membro, na agenda-recorrente: negada, o texto de antes; capacidades que falharam, o texto de falha; o papel
+    // que o predicado aceita mostra o conteúdo e esconde o aviso.
+    const agendaPage = await browser.newPage({ locale: 'pt-BR' });
+    await agendaPage.goto(`${base}/admin/agenda-recorrente`, { waitUntil: 'networkidle' });
+    const agendaMostra = (texto) => agendaPage.waitForFunction(
+      (t) => (document.getElementById('recurring-agenda-notice')?.textContent || '').trim() === t, texto);
+    await agendaPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'agenda-researcher-test', operational_role: 'researcher', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await agendaMostra(textoPtBr('admin.deniedAdmin'));
+    assert.equal(await escondido(agendaPage, '#recurring-agenda-content'), true, 'negada, a agenda-recorrente ainda mostra o conteúdo');
+    await agendaPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => true;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await agendaMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    await agendaPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'agenda-manager-test', operational_role: 'manager', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await agendaPage.waitForFunction(() => document.getElementById('recurring-agenda-content')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(agendaPage, '#recurring-agenda-notice'), true, 'liberada, a agenda-recorrente ainda mostra o aviso');
+    await agendaPage.close();
+
     const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });
     await curatorshipPage.evaluate(() => {
