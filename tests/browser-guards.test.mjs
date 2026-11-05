@@ -423,7 +423,30 @@ async function run() {
 
     const boardGovPage = await browser.newPage({ locale: 'pt-BR' });
     await boardGovPage.goto(`${base}/admin/governance-v2`, { waitUntil: 'networkidle' });
+    // #2974 (F1): a rota decide pela ação V4 que as RPCs da tela pedem. O papel V3 sozinho não abre; capacidades que
+    // falharam dão o texto de falha, não "sem acesso"; com a ação, abre (o último bloco, abaixo).
+    const govDenied = boardGovPage.locator('#boardgov-denied');
+    const mostra = (texto) => boardGovPage.waitForFunction(
+      (t) => (document.getElementById('boardgov-denied')?.textContent || '').trim() === t, texto);
     await boardGovPage.evaluate(() => {
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ auth_id: 'board-gov-v3-test', operational_role: 'manager', designations: ['co_gp'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await mostra(textoPtBr('admin.governanceV2.deniedRestricted'));
+    assert.equal(await boardGovPage.locator('#boardgov-panel').isVisible(), false, 'papel V3 sem a ação V4 abriu a governance-v2');
+    await boardGovPage.evaluate(() => {
+      window.__nucleoCapabilities = null;
+      window.navCapabilitiesFailed = () => true;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await mostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    assert.equal(await govDenied.isVisible(), true);
+    assert.equal(await boardGovPage.locator('#boardgov-panel').isVisible(), false, 'capacidades que falharam abriram a governance-v2');
+    await boardGovPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['view_internal_analytics', 'manage_platform'], initiative_actions: {}, tribe_actions: {} };
       const fakeMember = {
         auth_id: 'board-gov-admin-test',
         operational_role: 'manager',

@@ -46,6 +46,10 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/chapter-report': { actions: ['view_internal_analytics', 'view_aggregate_analytics'], ownChapter: true, rpcs: ['get_selection_pipeline_metrics', 'exec_chapter_dashboard'] },
   // Salvar a configuração pede manage_platform.
   '/admin/report': { actions: ['manage_platform'], rpcs: ['set_site_config'] },
+  // Os itens arquivados pedem view_internal_analytics; as estatísticas, manage_platform.
+  '/admin/governance-v2': { actions: ['view_internal_analytics', 'manage_platform'], rpcs: ['admin_list_archived_board_items', 'get_governance_stats'] },
+  // O pipeline pede view_partner; criar e editar a entidade, manage_partner.
+  '/admin/partnerships': { actions: ['view_partner', 'manage_partner'], rpcs: ['get_partner_pipeline', 'admin_manage_partner_entity'] },
 };
 
 function routeAccessAllows(access: AdminRouteAccess, designations: readonly string[], chapter?: string | null): boolean {
@@ -198,11 +202,11 @@ export const NAV_ITEMS: NavItem[] = [
   { key: 'governance', labelKey: 'nav.governance', href: '/governance', minTier: 'visitor', requiresAuth: false, section: 'both', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
   // /cpmai saiu do menu (GP, 09/10/2026): Grupo de Estudos CPMAI · Piloto, só participantes e gestão.
   { key: 'docs-mcp',   labelKey: 'nav.docsMcp',    href: '/docs/mcp',   minTier: 'visitor', requiresAuth: false, section: 'drawer', group: 'tools', drawerSection: 'explorar', navSlot: 'none' },
-  { key: 'admin-governance-v2', labelKey: 'nav.adminBoardGovernance', href: '/admin/governance-v2', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['curator', 'co_gp', 'sponsor'] },
+  { key: 'admin-governance-v2', labelKey: 'nav.adminBoardGovernance', href: '/admin/governance-v2', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-curatorship', labelKey: 'nav.adminCuratorship', href: '/admin/curatorship', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' },
   // #701 Agenda Viva coordination — manage_event holders (org-scope: manager/deputy_manager/co_gp/comms_leader). UX gate only; reorder/confirm/revoke RPCs are the real boundary.
   { key: 'admin-agenda-viva', labelKey: 'nav.adminAgendaViva', href: '/admin/agenda-viva', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['deputy_manager', 'co_gp', 'comms_leader', 'sponsor'], allowedOperationalRoles: ['manager'] },
-  { key: 'admin-partnerships', labelKey: 'nav.adminPartnerships', href: '/admin/partnerships', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison'], allowedOperationalRoles: ['chapter_liaison'] },
+  { key: 'admin-partnerships', labelKey: 'nav.adminPartnerships', href: '/admin/partnerships', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-chapter-report', labelKey: 'nav.adminChapterReport', href: '/admin/chapter-report', minTier: 'observer', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none' }, // acesso: ADMIN_ROUTE_ACCESS
   { key: 'admin-sustainability', labelKey: 'nav.adminSustainability', href: '/admin/sustainability', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor', 'chapter_liaison', 'curator'], allowedOperationalRoles: ['chapter_liaison'] },
   { key: 'admin-cross-tribes', labelKey: 'nav.adminCrossTribes', href: '/admin/tribes', minTier: 'admin', requiresAuth: true, section: 'main', group: 'admin-sub', navSlot: 'none', allowedDesignations: ['sponsor'] },
@@ -404,9 +408,9 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
       { href: '/admin/ai-calibration', label: { 'pt-BR': 'Calibração de IA', 'en-US': 'AI Calibration', 'es-LATAM': 'Calibración de IA' }, icon: 'SlidersHorizontal', permission: 'system.global_config' },
       { href: '/admin/initiative-kinds', label: { 'pt-BR': 'Tipos de Iniciativa', 'en-US': 'Initiative Kinds', 'es-LATAM': 'Tipos de Iniciativa' }, icon: 'Shapes', permission: 'system.global_config' },
       { href: '/admin/tags', label: { 'pt-BR': 'Tags', 'en-US': 'Tags', 'es-LATAM': 'Tags' }, icon: 'Tag', permission: 'admin.access' },
-      { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield', permission: 'admin.governance.view' },
+      { href: '/admin/governance-v2', label: { 'pt-BR': 'Governança', 'en-US': 'Governance', 'es-LATAM': 'Gobernanza' }, icon: 'Shield' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/gamification', label: { 'pt-BR': 'Gamificação', 'en-US': 'Gamification', 'es-LATAM': 'Gamificación' }, icon: 'Trophy', permission: 'admin.gamification' },
-      { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake', permission: 'admin.access' },
+      { href: '/admin/partnerships', label: { 'pt-BR': 'Parcerias', 'en-US': 'Partnerships', 'es-LATAM': 'Alianzas' }, icon: 'Handshake' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/help', label: { 'pt-BR': 'Ajuda / Guia', 'en-US': 'Help / Guide', 'es-LATAM': 'Ayuda / Guía' }, icon: 'HelpCircle', permission: 'workspace.access' },
     ],
   },
