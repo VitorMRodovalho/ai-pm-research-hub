@@ -45,6 +45,8 @@ const FORMAS = [
   ...ACOES.map((a) => [`iniciativa:${a}`, P, { ...SEM, initiative_actions: { x: [a] } }]),
   ['sem-membro', null, null],
 ];
+// Escape completo para interpolar texto num RegExp (inclui a barra invertida), como nos guards 963/991/1021.
+const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const comCaps = (caps, fn) => { if (caps) setCapabilities(caps); else clearCapabilities(); try { return fn(); } finally { clearCapabilities(); } };
 
 // A exceção de tribo legada no corpo de can(): `p_action NOT IN ('view_pii', 'manage_member')`.
@@ -239,7 +241,7 @@ test('a página decide pelo gateAdminPage com canEnterAdminRoute da própria rot
       assert.ok(f >= 0, `${href}: ${allow} não definida na página`);
       corpo = src.slice(f, src.indexOf('\n  }', f));
     }
-    assert.match(corpo, new RegExp(`canEnterAdminRoute\\(\\s*'${href.replace(/\//g, '\\/')}'\\s*,`), `${href}: o allow não pergunta a entrada da própria rota`);
+    assert.match(corpo, new RegExp(`canEnterAdminRoute\\(\\s*'${escRe(href)}'\\s*,`), `${href}: o allow não pergunta a entrada da própria rota`);
     assert.doesNotMatch(corpo, /hasPermission|canAccessAdminRoute|canReadInternalAnalytics|canFor\w*\(|operational_role|designations|is_superadmin/,
       `${href}: o allow decide também por outro eixo`);
     assert.match(args, /onLoadFailed:/, `${href}: falha das capacidades viraria "sem acesso"`);
