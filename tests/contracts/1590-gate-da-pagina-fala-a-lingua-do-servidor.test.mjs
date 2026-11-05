@@ -34,6 +34,7 @@ import {
   hasSelectionCommitteeAccess,
 } from '../../src/lib/admin/route-access.ts';
 import { setCapabilities, clearCapabilities } from '../../src/lib/permissions.ts';
+import { ADMIN_SIDEBAR_SECTIONS, isAdminSidebarItemVisible } from '../../src/lib/navigation.config.ts';
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
 
@@ -206,18 +207,35 @@ describe('#1590 C — a tela esconde a escrita que o servidor recusa', () => {
 });
 
 describe('#1590 D — o menu lateral parou de discordar da pagina', () => {
+  // #2974 (F0b): os dados e o predicado da sidebar moram em src/lib/navigation.config.ts. O guard exerce o predicado
+  // que o componente usa, em vez de casar texto do componente.
   const SIDEBAR = read('src/components/admin/AdminSidebar.tsx');
+  const SELECAO = ADMIN_SIDEBAR_SECTIONS.flatMap(s => s.items).find(i => i.href === '/admin/selection');
+  const AVALIADOR_SEM_V3 = { operational_role: 'tribe_leader', designations: [], is_superadmin: false, selection_committee_role: 'evaluator' };
+  // tem admin.members.manage pela designacao e nao tem a rota (o tier da rota e admin): isola o ramo V3
+  const SO_V3 = { operational_role: 'researcher', designations: ['deputy_manager'], is_superadmin: false };
 
   it('a entrada de Selecao consulta a rota, alem da permissao V3', () => {
-    const linha = SIDEBAR.split('\n').find(l => l.includes("href: '/admin/selection'")) ?? '';
-    assert.ok(linha, 'entrada de selecao ausente');
-    assert.match(linha, /routeKey: 'admin_selection'/);
-    assert.match(linha, /permission: 'admin\.members\.manage'/,
+    assert.ok(SELECAO, 'entrada de selecao ausente');
+    assert.equal(SELECAO.routeKey, 'admin_selection');
+    assert.equal(SELECAO.permission, 'admin.members.manage',
       'o eixo novo SOMA — tirar a permissao V3 mudaria quem ja via');
   });
 
   it('o filtro de visibilidade aplica o OR', () => {
-    assert.match(SIDEBAR, /visibleRoutes\.has\(item\.routeKey\)/);
-    assert.match(SIDEBAR, /canAccessAdminRoute\(member, item\.routeKey\)/);
+    // pela rota: o avaliador de comite sem a permissao V3 ve a entrada
+    assert.equal(isAdminSidebarItemVisible(AVALIADOR_SEM_V3, SELECAO), true);
+    // por nenhum dos dois: o pesquisador sem comite nao ve
+    assert.equal(isAdminSidebarItemVisible(PESQUISADOR, SELECAO), false);
+    // so pela permissao V3, sem a rota: ve
+    assert.equal(canAccessAdminRoute(SO_V3, 'admin_selection'), false, 'controle: a forma SO_V3 ganhou a rota');
+    assert.equal(isAdminSidebarItemVisible(SO_V3, SELECAO), true);
+    // pelos dois: o GP ve
+    assert.equal(isAdminSidebarItemVisible(GP, SELECAO), true);
+    // sem membro: nao ve uma entrada que pede permissao ou rota
+    assert.equal(isAdminSidebarItemVisible(null, SELECAO), false);
+    // e o componente filtra pelo mesmo predicado
+    assert.match(SIDEBAR, /isAdminSidebarItemVisible\(member, item\)/);
+    assert.match(SIDEBAR, /isAdminSidebarItemVisible\(null, item\) \|\| visibleHrefs\.has\(item\.href\)/);
   });
 });
