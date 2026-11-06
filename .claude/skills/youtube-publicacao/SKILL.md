@@ -260,6 +260,18 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
   - meça a fração de 1 kHz dentro e fora de cada bipe.
   - A janela curta demais engana: em 05/11 nem o cru transcreveu o nome numa janela de 3 s, e a
     prova veio com 20 s.
+- ⚠️ **Quem é de fora também diz o PRÓPRIO nome.** Ao se apresentar, a pessoa diz o nome e a
+  organização que representa. Em 05/11 o bipe cobriu o rótulo lido por quem conduzia, e a
+  autoapresentação passou para a prévia. Quem pegou foi a legenda do final, não a conferência
+  do bipe. Antes de fechar a lista de bipes, leia no cru TODAS as falas de cada conta de fora
+  (as janelas do desfoque dão onde estão) e procure "eu sou", "meu nome", "me chamo" e
+  "representando" na transcrição inteira.
+- **Quando só o bipe muda, refaça só o áudio.** Recorte a parte de áudio do grafo do master e
+  reempacote com o vídeo antigo (`-c copy`). Prove por dois lados: o md5 do vídeo
+  (`-map 0:v -c copy -f md5 -`) igual ao anterior, e um teste nulo amostra a amostra contra o
+  áudio antigo, em que só os trechos novos podem diferir. Em 05/11 isso levou 17 s, contra 27 min
+  do master inteiro. O `enable` do ffmpeg vale por quadro de áudio, então a borda pode passar
+  cerca de 20 ms do pedido.
 - Barra de favoritos de navegador em tela compartilhada traz nomes de empresa e de serviço: desfoque.
 - A ata cita quem é de fora sem nome.
 
