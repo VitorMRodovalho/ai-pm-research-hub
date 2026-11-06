@@ -7,12 +7,12 @@ import CrossTribeIsland from '../../components/islands/CrossTribeIsland';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = getPrefix(lang);
 const i18nBundle = buildPageI18n(['comp.cross', 'comp.crossTribe', 'comp.tribe', 'comp.common'], lang);
-const deniedMsg = t('admin.tribes.denied', lang);
 ---
 
 <AdminLayout title={t('admin.breadcrumb.tribesComparison', lang)} breadcrumbs={[{label: t('admin.breadcrumb.people', lang)},{label: t('admin.breadcrumb.tribes', lang)}]}>
 
-  <div id="cross-tribe-panel" class="max-w-[1200px] mx-auto px-4 pb-12">
+  <div id="tribes-notice" class="hidden max-w-[1200px] mx-auto px-4 text-center py-20 text-[var(--text-muted)]">{t('admin.tribes.denied', lang)}</div>
+  <div id="tribes-content" class="max-w-[1200px] mx-auto px-4 pb-12">
     <div class="mb-6">
       <h1 class="text-xl font-bold text-[var(--text-primary)]">{t('admin.breadcrumb.tribesComparison', lang)} — Ciclo 4</h1>
       <p class="text-sm text-[var(--text-secondary)] mt-1">{t('admin.tribes.subtitle', lang)}</p>
@@ -27,21 +27,38 @@ const deniedMsg = t('admin.tribes.denied', lang);
   </div>
 </AdminLayout>
 
-<script is:inline define:vars={{ deniedMsg }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    const check = () => {
-      const member = window.navMember;
-      if (!member) { setTimeout(check, 300); return; }
-      // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
-      const hasAdminCapability = window.__nucleoCanForAdminEntry?.() === true;
-      const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
-      const hasAdminDesignation = (member.designations || []).some(function(d) { return d === 'deputy_manager' || d === 'curator'; });
-      const isGP = member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
-      if (!isGP) {
-        const panel = document.getElementById('cross-tribe-panel');
-        if (panel) panel.innerHTML = '<div class="text-center py-20"><p class="text-lg font-bold text-red-500">' + deniedMsg + '</p></div>';
-      }
-    };
-    check();
+<script>
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  // ADR-0007 V4 (p163 Opção C): see docs/audit/P163_A3_BACKFILL_DECISION_AUDIT.md
+  function hasTribesAccess(member: any): boolean {
+    const hasAdminCapability = (window as any).__nucleoCanForAdminEntry?.() === true;
+    const v3HardTier = ['manager', 'deputy_manager'].includes(member.operational_role);
+    const hasAdminDesignation = (member.designations || []).some(function(d: string) { return d === 'deputy_manager' || d === 'curator'; });
+    return member.is_superadmin || hasAdminCapability || v3HardTier || hasAdminDesignation;
+  }
+
+  const TRIBES_DENIED_TEXT = document.getElementById('tribes-notice')?.textContent?.trim() || '';
+
+  function showTribesNotice(text: string) {
+    const notice = document.getElementById('tribes-notice');
+    if (notice) { notice.textContent = text; notice.classList.remove('hidden'); }
+    document.getElementById('tribes-content')?.classList.add('hidden');
+  }
+
+  function showTribesPage() {
+    document.getElementById('tribes-notice')?.classList.add('hidden');
+    document.getElementById('tribes-content')?.classList.remove('hidden');
+  }
+
+  // #2974 (F6): o portão antigo esperava window.navMember, que nada define, e por isso nunca decidia. A espera agora
+  // é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a tela pede para entrar.
+  // O predicado do allow é o que a página já tinha.
+  gateAdminPage({
+    allow: hasTribesAccess,
+    onAllowed: () => showTribesPage(),
+    onDenied: () => showTribesNotice(TRIBES_DENIED_TEXT),
+    onNoSession: () => showTribesNotice(adminSignInText()),
+    onLoadFailed: () => showTribesNotice(adminLoadFailedText()),
   });
 </script>

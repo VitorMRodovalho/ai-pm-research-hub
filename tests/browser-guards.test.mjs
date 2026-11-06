@@ -601,11 +601,11 @@ async function run() {
     assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
     await blogPage.close();
 
-    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags, o painel do admin, a vep-reconciliation e a agenda-viva
-    // esperam pelo gateAdminPage. Sem sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para
-    // sempre.
+    // #2974 (F2 e F6): agenda-recorrente, data-health, knowledge, tags, o painel do admin, a vep-reconciliation, a
+    // agenda-viva e a comparação de tribos esperam pelo gateAdminPage. Sem sessão, cada uma pede para entrar e esconde o
+    // conteúdo, em vez de se reagendar para sempre.
     const escondido = (p, sel) => p.evaluate((s) => document.querySelector(s)?.classList.contains('hidden') === true, sel);
-    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard'], ['vep-reconciliation', 'vep-reconciliation'], ['agenda-viva', 'agenda-viva']]) {
+    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard'], ['vep-reconciliation', 'vep-reconciliation'], ['agenda-viva', 'agenda-viva'], ['tribes', 'tribes']]) {
       await page.goto(rota ? `${base}/admin/${rota}` : `${base}/admin`, { waitUntil: 'networkidle' });
       const aviso = page.locator(`#${id}-notice`);
       await aviso.waitFor({ state: 'visible' });
@@ -691,6 +691,35 @@ async function run() {
     await vivaPage.waitForFunction(() => document.getElementById('agenda-viva-content')?.classList.contains('hidden') === false);
     assert.equal(await escondido(vivaPage, '#agenda-viva-notice'), true, 'liberada, a agenda-viva ainda mostra o aviso');
     await vivaPage.close();
+
+    // F6: a comparação de tribos, cujo portão antigo nunca decidia. Negada, o texto de antes; com as capacidades falhas e
+    // sem papel nem designação que a aceite, o texto de falha de carga; o papel que o predicado aceita mostra o conteúdo.
+    const tribosPage = await browser.newPage({ locale: 'pt-BR' });
+    await tribosPage.goto(`${base}/admin/tribes`, { waitUntil: 'networkidle' });
+    const tribosMostra = (texto) => tribosPage.waitForFunction(
+      (t) => (document.getElementById('tribes-notice')?.textContent || '').trim() === t, texto);
+    await tribosPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: {}, tribe_actions: {} };
+      window.navGetMember = () => ({ id: 'tribos-researcher-test', auth_id: 'tribos-researcher-test', operational_role: 'researcher', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await tribosMostra(textoPtBr('admin.tribes.denied'));
+    assert.equal(await escondido(tribosPage, '#tribes-content'), true, 'negada, a comparação de tribos ainda mostra o conteúdo');
+    await tribosPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => true;
+      window.__nucleoCapabilities = null;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await tribosMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    await tribosPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ id: 'tribos-manager-test', auth_id: 'tribos-manager-test', operational_role: 'manager', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await tribosPage.waitForFunction(() => document.getElementById('tribes-content')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(tribosPage, '#tribes-notice'), true, 'liberada, a comparação de tribos ainda mostra o aviso');
+    await tribosPage.close();
 
     // A stakeholder, no BaseLayout: sem sessão, pede para entrar no lugar do carregando; negada, o texto de antes, também
     // com as capacidades falhas (o predicado só lê o membro); liberada, o app aparece e o aviso e o carregando somem.

@@ -70,6 +70,7 @@
     "src/pages/admin/index.astro",
     "src/pages/admin/knowledge.astro",
     "src/pages/admin/tags.astro",
+    "src/pages/admin/tribes.astro",
     "src/pages/admin/vep-reconciliation.astro",
     "src/pages/stakeholder.astro"
    ]
@@ -259,7 +260,8 @@
     "src/hooks/usePilots.ts"
    ],
    "corrigidas": [
-    "src/components/admin/AdminAgendaVivaPanel.tsx"
+    "src/components/admin/AdminAgendaVivaPanel.tsx",
+    "src/components/islands/CrossTribeIsland.tsx"
    ]
   }
  },

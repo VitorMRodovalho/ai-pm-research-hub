@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { usePageI18n } from '../../i18n/usePageI18n';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface InitiativeMetrics {
@@ -67,6 +68,7 @@ function rowLabel(it: InitiativeMetrics): string {
 
 export default function CrossTribeIsland() {
   const t = usePageI18n();
+  const { memberId } = useResolvedMember();
   const [items, setItems] = useState<InitiativeMetrics[]>([]);
   const [alerts, setAlerts] = useState<AlertsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,10 +80,12 @@ export default function CrossTribeIsland() {
   const [selectedKind, setSelectedKind] = useState<KindFilter>('research_tribe');
 
   useEffect(() => {
+    // #2974 (F6): a primeira chamada espera o membro resolvido (useResolvedMember), sem prazo e sem laço próprio.
+    if (!memberId) return;
     let cancelled = false;
     const load = async () => {
       const sb = (window as any).navGetSb?.();
-      if (!sb) { setTimeout(load, 300); return; }
+      if (!sb) return;
       setLoading(true);
       try {
         const p_kind = selectedKind === 'all' ? null : selectedKind;
@@ -101,7 +105,7 @@ export default function CrossTribeIsland() {
     };
     load();
     return () => { cancelled = true; };
-  }, [selectedKind]);
+  }, [selectedKind, memberId]);
 
   const sortedItems = useMemo(() => {
     const copy = [...items];
@@ -171,6 +175,7 @@ export default function CrossTribeIsland() {
     </div>
   );
 
+  if (!memberId) return null;
   if (loading) return <div className="space-y-4">{FilterBar}<div className="text-center py-20 text-[var(--text-muted)]">{t('comp.crossTribe.loading', 'Loading comparison...')}</div></div>;
   if (error) return <div className="space-y-4">{FilterBar}<div className="text-center py-20 text-red-500">{error}</div></div>;
   if (items.length === 0) {
