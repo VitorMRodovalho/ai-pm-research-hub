@@ -4,7 +4,7 @@
   "title": "ADR-0022 Notification Types Catalog (W1.6)",
   "description": "Source of truth for notifications.type → delivery_mode mapping. Producers and the SQL helper public._delivery_mode_for(text) reference this catalog. Contract test tests/contracts/adr-0022-delivery-mode.test.mjs ensures the SQL helper stays in sync. New types added to notifications must be added here in the same migration.",
   "version": "W1.10",
-  "updated_at": "2026-11-02",
+  "updated_at": "2026-11-06",
   "delivery_modes": {
     "transactional_immediate": "Sent within ~5 min via send-transactional-emails EF cron. Use for time-critical / high-priority notifications.",
     "digest_weekly": "Bundled into the single weekly digest, Monday 12:00 UTC (09:00 Brasilia), via generate_weekly_member_digest_cron. Default for most types.",
@@ -289,6 +289,10 @@
     "selection_evaluator_assigned": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2393 M2 (ADR-0134 section 4, D22): the management assigned pilot applications to an outside evaluator. ONE notification per assignment batch (evaluator, opening, part) with the count, the part and the deadline, never a candidate name or email. Immediate, because the objective part has 7 days from the assignment. Not candidate-facing, so it honors suppress_all."
+    },
+    "selection_pilot_divergence": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#2393, amendment of 2026-11-06 to ADR-0134 section 4: in a line pilot application, the vacancy leader scores the objective part next to 1 outside evaluator, and audit replaces control. When the per-application divergence detector (#2542) opens a NEW high_variance alert on a pilot application (none was open for that part), the management (manage_platform) gets one notification per recipient, with the application id prefix, the opening and the part, never a candidate name or email. Immediate, because the case must be reviewed before the decision. Not candidate-facing, so it honors suppress_all."
     }
   },
   "implementation": {

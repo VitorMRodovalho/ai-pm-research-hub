@@ -6320,6 +6320,8 @@ const ptBR: Record<string, string> = {
   'admin.selection.pilotOnlyHint': 'Mostra só as candidaturas de vaga piloto da linha, que ficam fora da avaliação geral do comitê (ADR-0134).',
   'admin.selection.pilotBadge': 'Piloto da linha',
   'admin.selection.pilotBadgeHint': 'Vaga piloto da linha: fora da avaliação geral do comitê (ADR-0134).',
+  'admin.selection.divergenceBadge': 'Divergência',
+  'admin.selection.divergenceBadgeHint': 'As duas notas de uma parte da candidatura piloto diferem mais de 30% da média: revise o caso antes de decidir (ADR-0134).',
   'admin.selection.hiddenByFilter': 'ocultos por filtro',
   'admin.selection.myPending': '⏳ Minhas pendentes',
   'admin.selection.videoFilterAll': '🎥 Todos vídeos',

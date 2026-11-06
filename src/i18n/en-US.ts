@@ -6312,6 +6312,8 @@ const enUS: Record<string, string> = {
   'admin.selection.pilotOnlyHint': 'Shows only applications to a line pilot opening, which stay out of the committee\'s general evaluation (ADR-0134).',
   'admin.selection.pilotBadge': 'Line pilot',
   'admin.selection.pilotBadgeHint': 'Line pilot opening: out of the committee\'s general evaluation (ADR-0134).',
+  'admin.selection.divergenceBadge': 'Divergence',
+  'admin.selection.divergenceBadgeHint': 'The two scores of one part of the pilot application differ by more than 30% of the mean: review the case before deciding (ADR-0134).',
   'admin.selection.hiddenByFilter': 'hidden by filter',
   'admin.selection.myPending': '⏳ My pending',
   'admin.selection.videoFilterAll': '🎥 All videos',

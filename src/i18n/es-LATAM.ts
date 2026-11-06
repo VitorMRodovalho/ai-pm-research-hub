@@ -6313,6 +6313,8 @@ const esLATAM: Record<string, string> = {
   'admin.selection.pilotOnlyHint': 'Muestra solo las candidaturas de vacante piloto de la línea, que quedan fuera de la evaluación general del comité (ADR-0134).',
   'admin.selection.pilotBadge': 'Piloto de la línea',
   'admin.selection.pilotBadgeHint': 'Vacante piloto de la línea: fuera de la evaluación general del comité (ADR-0134).',
+  'admin.selection.divergenceBadge': 'Divergencia',
+  'admin.selection.divergenceBadgeHint': 'Las dos notas de una parte de la candidatura piloto difieren más del 30% del promedio: revise el caso antes de decidir (ADR-0134).',
   'admin.selection.hiddenByFilter': 'ocultos por filtro',
   'admin.selection.myPending': '⏳ Mis pendientes',
   'admin.selection.videoFilterAll': '🎥 Todos los videos',
