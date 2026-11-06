@@ -476,23 +476,29 @@ const BR_UFS = new Set(['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'M
   'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO']);
 
 /**
- * Determine chapter slug. Priority:
+ * Determine chapter slug from the affiliation answer only. An affiliation that starts with "Não" / "ainda não" /
+ * "atualmente não" / "já fui" (ie, candidate explicitly says they aren't affiliated) returns null before any
+ * strategy. Otherwise, priority:
  * 1. PMI-XX / PMI_XX / PMI/XX / PMI XX patterns, where XX is a Brazilian UF
  * 2. Full state name (Goiás, Minas Gerais, ...)
- * 3. Standalone UF abbreviation (GO, MG, ...) with word boundary, but ONLY if
- *    affiliation doesn't start with "Não" / "ainda não" / "atualmente não"
- *    (ie, candidate explicitly says they aren't affiliated)
- * 4. Fallback to applicantState mapping
+ * 3. Standalone UF abbreviation (GO, MG, ...) with word boundary
  *
- * Returns null when ambiguous ("MG e DF") or explicitly-not-affiliated.
+ * Returns null when ambiguous ("MG e DF"), explicitly-not-affiliated, or when the answer names no chapter: the
+ * profile state is not a fallback (#3012).
  */
 export function parseChapterFromAffiliation(
   affiliation: string,
-  state: string,
+  _state: string,
   _country: string
 ): string | null {
   const aff = (affiliation || '').trim();
   const affLower = aff.toLowerCase();
+
+  // #3012: chapter holds affiliation only, so an answer that denies it yields no chapter, even when it names one
+  // ("Ainda não sou, mas pretendo me filiar ao PMI-XX"). This check used to guard only strategies 2 and 3, so
+  // strategy 1 ran before it. "a?inda" also takes the "inda não" typo.
+  const NEGATIVE_PREFIX = /^(n[aã]o|atualmente n[aã]o|a?inda n[aã]o|j[aá] fui)\b/i;
+  if (NEGATIVE_PREFIX.test(affLower)) return null;
 
   // Strategy 1: explicit PMI-XX / PMI_XX / PMI/XX / PMI XX, only when XX is a UF (#3004). Without the u flag, \b
   // saw the "á" of "Goiás" as a word boundary, so "PMI Goiás" became PMI-GOI; and any 2 or 3 letters passed, so
@@ -521,38 +527,25 @@ export function parseChapterFromAffiliation(
     CE: 'PMI-CE', PE: 'PMI-PE', SP: 'PMI-SP', RJ: 'PMI-RJ',
     PR: 'PMI-PR', SC: 'PMI-SC', BA: 'PMI-BA', ES: 'PMI-ES'
   };
-  // Detect "não" / "ainda não" / "atualmente não" prefix — candidate is NOT affiliated
-  const NEGATIVE_PREFIX = /^(n[aã]o|atualmente n[aã]o|ainda n[aã]o|j[aá] fui)\b/i;
-  const isNegative = NEGATIVE_PREFIX.test(affLower);
-
-  if (!isNegative) {
-    // Strategy 2: full state name in affiliation
-    for (const [name, chap] of Object.entries(STATE_FULL_TO_CHAPTER)) {
-      if (affLower.includes(name)) return chap;
-    }
-
-    // Strategy 3: standalone UF abbreviation with word boundary in affiliation.
-    // Only apply if EXACTLY ONE UF found (avoid "MG e DF" ambiguity).
-    const ufMatches = new Set<string>();
-    const ufRegex = /\b(GO|DF|MG|RS|CE|PE|SP|RJ|PR|SC|BA|ES)\b/g;
-    let m;
-    while ((m = ufRegex.exec(aff)) !== null) {
-      ufMatches.add(m[1]!.toUpperCase());
-    }
-    if (ufMatches.size === 1) {
-      const onlyUf = [...ufMatches][0]!;
-      return UF_TO_CHAPTER[onlyUf] ?? null;
-    }
+  // Strategy 2: full state name in affiliation
+  for (const [name, chap] of Object.entries(STATE_FULL_TO_CHAPTER)) {
+    if (affLower.includes(name)) return chap;
   }
 
-  // Strategy 4: applicantState (rarely populated by PMI per HAR analysis)
-  if (state) {
-    const sl = state.trim().toLowerCase();
-    if (STATE_FULL_TO_CHAPTER[sl]) return STATE_FULL_TO_CHAPTER[sl];
-    const upper = state.trim().toUpperCase();
-    if (UF_TO_CHAPTER[upper]) return UF_TO_CHAPTER[upper];
+  // Strategy 3: standalone UF abbreviation with word boundary in affiliation.
+  // Only apply if EXACTLY ONE UF found (avoid "MG e DF" ambiguity).
+  const ufMatches = new Set<string>();
+  const ufRegex = /\b(GO|DF|MG|RS|CE|PE|SP|RJ|PR|SC|BA|ES)\b/g;
+  let m;
+  while ((m = ufRegex.exec(aff)) !== null) {
+    ufMatches.add(m[1]!.toUpperCase());
+  }
+  if (ufMatches.size === 1) {
+    const onlyUf = [...ufMatches][0]!;
+    return UF_TO_CHAPTER[onlyUf] ?? null;
   }
 
+  // #3012: no fallback to applicantState. The profile state is where the person lives, not the chapter they joined.
   return null;
 }
 
