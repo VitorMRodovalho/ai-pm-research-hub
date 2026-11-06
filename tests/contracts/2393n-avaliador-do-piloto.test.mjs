@@ -4,8 +4,10 @@
  *   Autoridade (procedimento V4): o kind selection_evaluator não é atado a espécie de iniciativa (etapa 0), não
  *     exige termo no alfa (D21) e tem data de fim; a ação evaluate_assigned_application tem um par só, em
  *     organização.
- *   Regra única: _avaliador_do_piloto decide quem avalia (atribuição ativa, ação, calibragem, sem conflito e SEM
- *     vínculo na iniciativa da vaga). Fila, formulário e envio a usam; a atribuição recusa pelas mesmas razões.
+ *   Regra única: _avaliador_do_piloto decide quem avalia (atribuição ativa, ação, calibragem, sem conflito e sem
+ *     impedimento na linha). Fila, formulário e envio a usam; a atribuição recusa pelas mesmas razões.
+ *   M2b (emenda de 06/11/2026 à §4): _impedimento_na_linha. No vídeo, todo vínculo na iniciativa da vaga impede. Na
+ *     objetiva, entra o líder ativo da vaga, e só se nenhum outro avaliador ativo da candidatura for de dentro.
  *   Revisão cega (ADR-0059): o formulário só lê a avaliação de quem chama, e as notas do piloto só a gestão lê.
  *   Corte: a candidatura piloto não entra no corte do ciclo, nem como candidata nem na mediana.
  *   D23: o avaliador de fora não recebe nome, e-mail nem LinkedIn, nem a triagem por IA antes da nota.
@@ -46,10 +48,10 @@ test('#2393n V4: a ação evaluate_assigned_application tem um par só, avaliado
   assert.deepEqual(pares, ['selection_evaluator×evaluator×organization'], 'a ação ganhou outro par ou mudou de escopo');
 });
 
-test('#2393n: a regra única exige atribuição, ação, calibragem, ausência de conflito e de vínculo na linha', () => {
+test('#2393n: a regra única exige atribuição, ação, calibragem, ausência de conflito e de impedimento na linha', () => {
   const c = captura('_avaliador_do_piloto');
   assert.match(c,
-    /WHERE a\.application_id = p_application_id AND a\.part = p_part AND a\.evaluator_member_id = p_member_id AND a\.withdrawn_at IS NULL AND public\.can_by_member\(p_member_id, 'evaluate_assigned_application'\) AND EXISTS \(SELECT 1 FROM public\.selection_evaluator_calibrations c WHERE c\.member_id = p_member_id AND c\.opportunity_id = vo\.opportunity_id AND c\.part = p_part\) AND NOT public\.selection_coi_recused\(p_member_id, sa\.cycle_id\) AND NOT EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = m\.person_id AND e\.initiative_id = vo\.initiative_id AND e\.status IN \('active', 'suspended'\)\)/,
+    /WHERE a\.application_id = p_application_id AND a\.part = p_part AND a\.evaluator_member_id = p_member_id AND a\.withdrawn_at IS NULL AND public\.can_by_member\(p_member_id, 'evaluate_assigned_application'\) AND EXISTS \(SELECT 1 FROM public\.selection_evaluator_calibrations c WHERE c\.member_id = p_member_id AND c\.opportunity_id = vo\.opportunity_id AND c\.part = p_part\) AND NOT public\.selection_coi_recused\(p_member_id, sa\.cycle_id\) AND public\._impedimento_na_linha\(p_member_id, p_application_id, p_part\) IS NULL \);/,
     'a regra de quem avalia perdeu uma condição');
   assert.match(c, /JOIN public\.vep_opportunities vo ON vo\.opportunity_id = sa\.vep_opportunity_id AND vo\.evaluation_track = 'line_pilot' JOIN public\.members m ON m\.id = a\.evaluator_member_id AND m\.is_active/,
     'a regra deixou de valer só para o piloto ou para membro ativo');
@@ -60,7 +62,8 @@ test('#2393n: a atribuição recusa, tudo ou nada, antes de gravar e de avisar',
   for (const [cond, motivo] of [
     [/IF NOT public\.can_by_member\(p_member_id, 'evaluate_assigned_application'\) THEN v_motivos := v_motivos \|\| 'sem o vínculo de avaliador'::text;/, 'sem vínculo'],
     [/IF NOT EXISTS \(SELECT 1 FROM public\.selection_evaluator_calibrations c WHERE c\.member_id = p_member_id AND c\.opportunity_id = p_opportunity_id AND c\.part = p_part\) THEN v_motivos := v_motivos \|\| 'sem calibragem desta vaga e parte'::text;/, 'calibragem'],
-    [/IF EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = v_member\.person_id AND e\.initiative_id = v_vo\.initiative_id AND e\.status IN \('active', 'suspended'\)\) THEN v_motivos := v_motivos \|\| 'tem vínculo na iniciativa da vaga/, 'vínculo na linha'],
+    [/LOOP v_impedimento := public\._impedimento_na_linha\(p_member_id, v_app\.id, p_part\); IF v_app\.id IS NULL /, 'a regra da linha, por candidatura e por parte'],
+    [/ELSIF v_impedimento IS NOT NULL THEN v_motivos := v_motivos \|\| \(left\(v_app\.id::text, 8\) \|\| ': ' \|\| v_impedimento\); END IF; END LOOP;/, 'impedimento na linha'],
     [/ELSIF public\.selection_coi_recused\(p_member_id, v_app\.cycle_id\) THEN v_motivos := v_motivos \|\| \(left\(v_app\.id::text, 8\) \|\| ': conflito de interesse'\);/, 'conflito'],
     [/AND a\.evaluator_member_id <> p_member_id\) >= 2 THEN v_motivos := v_motivos \|\| \(left\(v_app\.id::text, 8\) \|\| ': já tem 2 avaliadores nesta parte'\);/, 'dois por parte'],
   ]) assert.match(c, cond, `a atribuição deixou de recusar: ${motivo}`);
@@ -68,6 +71,34 @@ test('#2393n: a atribuição recusa, tudo ou nada, antes de gravar e de avisar',
   assert.ok(recusa > 0 && recusa < c.indexOf('INSERT INTO public.selection_evaluation_assignments'), 'a recusa não vem antes de gravar');
   assert.ok(c.indexOf('INSERT INTO public.selection_evaluation_assignments') < c.indexOf("PERFORM public.create_notification( p_member_id, 'selection_evaluator_assigned',"),
     'o aviso deixou de vir depois de gravar, ou de ir ao avaliador');
+});
+
+test('#2393n M2b (ADR-0134 §4, emenda de 06/11/2026): na objetiva, o líder da vaga com 1 de fora; no vídeo, só de fora', () => {
+  const c = captura('_impedimento_na_linha');
+  assert.match(c, /^CREATE OR REPLACE FUNCTION public\._impedimento_na_linha\(p_member_id uuid, p_application_id uuid, p_part text\) RETURNS text LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = '' AS /,
+    'a regra mudou de assinatura, de segurança ou de search_path');
+  assert.match(c, /SELECT m\.person_id, vo\.initiative_id INTO v_pessoa, v_iniciativa FROM public\.selection_applications sa JOIN public\.vep_opportunities vo ON vo\.opportunity_id = sa\.vep_opportunity_id AND vo\.evaluation_track = 'line_pilot' JOIN public\.members m ON m\.id = p_member_id WHERE sa\.id = p_application_id;/,
+    'a regra deixou de valer só para a candidatura piloto, ou de ler a pessoa do avaliador');
+  // Cada passo casa a condição com o que ela devolve, e a ordem importa: a falha fechada vem antes do "não impede".
+  const passos = [
+    [/IF NOT FOUND THEN RETURN 'candidatura de vaga piloto ou membro inexistente'; END IF;/, 'falha fechada sem candidatura piloto ou membro'],
+    [/IF NOT EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = v_pessoa AND e\.initiative_id = v_iniciativa AND e\.status IN \('active', 'suspended'\)\) THEN RETURN NULL; END IF;/, 'sem vínculo na linha, não impede'],
+    [/IF p_part IS DISTINCT FROM 'objective' THEN RETURN 'tem vínculo na iniciativa da vaga /, 'no vídeo, todo vínculo impede'],
+    [/IF NOT EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = v_pessoa AND e\.initiative_id = v_iniciativa AND e\.role = 'leader' AND e\.status = 'active'\) THEN RETURN 'tem vínculo na iniciativa da vaga e não é o líder dela /, 'na objetiva, só o líder ativo'],
+    [/IF EXISTS \(SELECT 1 FROM public\.selection_evaluation_assignments a JOIN public\.members m2 ON m2\.id = a\.evaluator_member_id WHERE a\.application_id = p_application_id AND a\.part = 'objective' AND a\.withdrawn_at IS NULL AND a\.evaluator_member_id <> p_member_id AND EXISTS \(SELECT 1 FROM public\.engagements e WHERE e\.person_id = m2\.person_id AND e\.initiative_id = v_iniciativa AND e\.status IN \('active', 'suspended'\)\)\) THEN RETURN 'a objetiva desta candidatura já tem um avaliador de dentro da linha /, 'no máximo 1 de dentro por candidatura'],
+    [/RETURN NULL; END;/, 'o fim que libera'],
+  ];
+  let antes = -1;
+  for (const [re, rotulo] of passos) {
+    const m = c.match(re);
+    assert.ok(m, `a regra perdeu: ${rotulo}`);
+    assert.ok(m.index > antes, `fora de ordem: ${rotulo}`);
+    antes = m.index;
+  }
+  const mig = todas().filter((x) => x.s.includes('CREATE OR REPLACE FUNCTION public._impedimento_na_linha(')).pop();
+  assert.match(mig.s, /REVOKE ALL ON FUNCTION public\._impedimento_na_linha\(uuid, uuid, text\) FROM PUBLIC, anon, authenticated;/,
+    'a regra ficou exposta ao cliente');
+  assert.doesNotMatch(mig.s, /GRANT [^;]* ON FUNCTION public\._impedimento_na_linha/, 'a regra ganhou GRANT');
 });
 
 test('#2393n: a recusa com motivo literal junta texto ao array, e não um literal de array (22P02)', () => {
@@ -82,8 +113,9 @@ test('#2393n: a recusa com motivo literal junta texto ao array, e não um litera
     const semCast = [...c.matchAll(new RegExp(`\\b${v} \\|\\| '(?:[^']|'')*'(?!::)`, 'g'))].map((m) => m[0]);
     assert.deepEqual(semCast, [], `${v} recebe literal sem cast, e o literal vira array (22P02)`);
   }
-  assert.equal([...c.matchAll(/\bv_motivos := v_motivos \|\| '(?:[^']|'')*'::text;/g)].length, 4,
-    'as 4 recusas com motivo literal deixaram de existir ou de ter o cast');
+  // Eram 4; a M2b levou a recusa por vínculo na linha para dentro do laço, como texto calculado.
+  assert.equal([...c.matchAll(/\bv_motivos := v_motivos \|\| '(?:[^']|'')*'::text;/g)].length, 3,
+    'as 3 recusas com motivo literal deixaram de existir ou de ter o cast');
 });
 
 test('#2393n: o formulário abre ao avaliador atribuído, esconde o contato e só lê a avaliação de quem chama', () => {
