@@ -3182,6 +3182,7 @@ const ptBR: Record<string, string> = {
   'webinars.emptyHint': 'Em breve novos webinars serão anunciados.',
   'webinars.join': 'Participar',
   'webinars.linkSoon': 'Link em breve',
+  'webinars.liveNow': 'Ao vivo agora',
   'webinars.watchReplay': 'Assistir replay',
   'webinars.participants': 'participantes',
 

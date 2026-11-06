@@ -8,25 +8,30 @@
  * O QUE ESTE GUARD AFIRMA
  *   A. a migration cria get_public_webinars como SECURITY DEFINER e filtra status confirmed/completed E iniciativa
  *      nao confidencial, na mesma clausula WHERE;
- *   B. o link de entrada so sai para webinar confirmado e futuro; gravacao e presentes, so para concluido;
+ *   B. o link de entrada so sai com phase nao nula, e phase so existe para webinar confirmado, decidida por
+ *      _meeting_window_phase ate scheduled_at + duration_min (antes acabava no inicio); gravacao e presentes, so para
+ *      concluido;
  *   C. a lista de campos nao tem notas, organizador, co-gestores nem card;
  *   D. EXECUTE revogado de PUBLIC e concedido a anon;
  *   E. a pagina chama get_public_webinars e nao chama list_webinars_v2;
  *   F. (banco) como anon, a RPC devolve lista so de confirmados/concluidos, so com as chaves permitidas, e
  *      list_webinars_v2 segue negada a anon (controle: o instrumento sabe dizer nao).
+ *
+ * A, B e C leem a captura VIGENTE da funcao (latestFunctionCapture), porque a funcao mudou depois da 2554; D le a
+ * migration 2554, que criou os grants (CREATE OR REPLACE os mantem).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { maskLineComments } from '../helpers/guard-pin-staleness.mjs';
+import { maskLineComments, latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const DIR = resolve(ROOT, 'supabase/migrations');
 const files = readdirSync(DIR).filter((f) => /^\d{14}_2554_webinars_publico\.sql$/.test(f));
 const SQL = files.length === 1 ? maskLineComments(readFileSync(join(DIR, files[0]), 'utf8')) : '';
-// O bloco que decide: o corpo da funcao, do CREATE ate o fim do $function$.
-const FN = (SQL.match(/CREATE OR REPLACE FUNCTION public\.get_public_webinars\(\)[\s\S]*?\$function\$[\s\S]*?\$function\$/) || [''])[0];
+// O bloco que decide: a captura vigente da funcao, do CREATE ate o fim do $function$.
+const FN = maskLineComments(latestFunctionCapture(ROOT, 'get_public_webinars').block);
 const SELECT_LIST = (FN.match(/SELECT\s+w\.id,[\s\S]*?FROM public\.webinars w/) || [''])[0];
 const WHERE = (FN.match(/WHERE w\.status[\s\S]*?\)\s*r;/) || [''])[0];
 const PAGE = readFileSync(resolve(ROOT, 'src/pages/webinars.astro'), 'utf8')
@@ -35,7 +40,7 @@ const PAGE = readFileSync(resolve(ROOT, 'src/pages/webinars.astro'), 'utf8')
 
 const ALLOWED_KEYS = new Set([
   'id', 'title', 'description', 'scheduled_at', 'duration_min', 'status', 'chapter_code',
-  'tribe_name', 'meeting_link', 'youtube_url', 'attendee_count',
+  'tribe_name', 'meeting_link', 'phase', 'youtube_url', 'attendee_count',
 ]);
 
 test('A: uma migration, SECURITY DEFINER, filtro de status e de confidencial no mesmo WHERE', () => {
@@ -45,8 +50,13 @@ test('A: uma migration, SECURITY DEFINER, filtro de status e de confidencial no 
   assert.match(WHERE, /WHERE w\.status IN \('confirmed', 'completed'\)\s+AND NOT public\.is_confidential_initiative\(w\.initiative_id\)/);
 });
 
-test('B: link so para confirmado e futuro; gravacao e presentes so para concluido', () => {
-  assert.match(SELECT_LIST, /CASE WHEN w\.status = 'confirmed' AND w\.scheduled_at > now\(\) THEN w\.meeting_link END AS meeting_link/);
+test('B: link so com phase, phase so para confirmado ate o fim; gravacao e presentes so para concluido', () => {
+  assert.match(SELECT_LIST, /CASE WHEN ph\.phase IS NOT NULL THEN w\.meeting_link END AS meeting_link,\s+ph\.phase,/);
+  assert.match(
+    FN,
+    /CROSS JOIN LATERAL \(\s*SELECT CASE WHEN w\.status = 'confirmed'\s+THEN public\._meeting_window_phase\(w\.scheduled_at, w\.duration_min, now\(\)\)\s+END AS phase\s*\) ph\s+WHERE w\.status IN/,
+    'phase vem do helper com inicio, duracao e now(), so para confirmado',
+  );
   assert.match(SELECT_LIST, /CASE WHEN w\.status = 'completed' THEN w\.youtube_url END AS youtube_url/);
   assert.match(SELECT_LIST, /CASE WHEN w\.status = 'completed' THEN\s+\(SELECT count\(\*\) FROM public\.attendance a[^)]*\)\s+END AS attendee_count/);
   // nenhum outro caminho entrega o link
@@ -88,7 +98,9 @@ test('F: como anon, a RPC publica responde e list_webinars_v2 segue negada', {
   for (const r of rows) {
     assert.ok(['confirmed', 'completed'].includes(r.status), `status publico (veio ${r.status})`);
     for (const k of Object.keys(r)) assert.ok(ALLOWED_KEYS.has(k), `chave fora da leitura publica: ${k}`);
-    if (r.status !== 'confirmed') assert.equal(r.meeting_link, null, 'link so para confirmado e futuro');
+    if (r.status !== 'confirmed') assert.equal(r.meeting_link, null, 'link so para confirmado');
+    assert.ok('phase' in r, 'a resposta traz phase (a funcao viva e a desta captura)');
+    if (r.meeting_link !== null) assert.ok(['upcoming', 'live'].includes(r.phase), `link so com phase (veio ${r.phase})`);
   }
   const ctrl = await call('list_webinars_v2');
   assert.ok(ctrl.status === 401 || ctrl.status === 403 || ctrl.status === 404,

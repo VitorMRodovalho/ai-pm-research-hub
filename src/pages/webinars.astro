@@ -19,10 +19,12 @@ const sb = createClient(
 // #2554: RPC publica, executavel por anon; so os campos desta pagina (list_webinars_v2 e do admin)
 const { data: rawWebinars } = await sb.rpc('get_public_webinars');
 const webinars = Array.isArray(rawWebinars) ? rawWebinars : [];
-const now = Date.now();
 
+// A fase vem do banco (get_public_webinars.phase, por _meeting_window_phase): o confirmado fica na lista, e com o
+// link, do anúncio até scheduled_at + duration_min. O relógio do Worker não decide mais; antes a lista e o link
+// acabavam no início do webinar.
 const upcoming = webinars.filter((w: any) =>
-  w.status === 'confirmed' && new Date(w.scheduled_at).getTime() > now
+  w.status === 'confirmed' && (w.phase === 'upcoming' || w.phase === 'live')
 );
 const replays = webinars.filter((w: any) =>
   w.status === 'completed' && w.youtube_url
@@ -70,6 +72,11 @@ function fmtTime(iso: string): string {
                 <article class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
                   <div class="flex items-start justify-between gap-4 flex-wrap">
                     <div class="min-w-0 flex-1">
+                      {w.phase === 'live' && (
+                        <span class="inline-flex items-center gap-1 mb-1.5 text-[.68rem] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200">
+                          <span class="w-1.5 h-1.5 rounded-full bg-red-600" aria-hidden="true"></span>{t('webinars.liveNow', lang)}
+                        </span>
+                      )}
                       <h3 class="text-base font-bold text-navy">{w.title}</h3>
                       {w.description && <p class="text-sm text-[var(--text-secondary)] mt-1">{w.description}</p>}
                       <div class="flex items-center gap-3 flex-wrap mt-3 text-[.78rem] text-[var(--text-secondary)]">
