@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Loader2, CalendarClock, GripVertical, Check, CheckCheck, UserX, Trash2, RefreshCw, ExternalLink, Award } from 'lucide-react';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { rpcChecked } from '../../lib/rpc-checked';
+import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 type Lang = 'pt-BR' | 'en-US' | 'es-LATAM';
 
@@ -43,6 +44,7 @@ const LOCALE_MAP: Record<Lang, string> = { 'pt-BR': 'pt-BR', 'en-US': 'en-US', '
 
 export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }) {
   const t = usePageI18n();
+  const { memberId } = useResolvedMember();
   const getSb = useCallback(() => (window as any).navGetSb?.(), []);
   const [events, setEvents] = useState<EventRow[]>([]);
   const [formats, setFormats] = useState<Record<string, Record<string, string>>>({});
@@ -54,8 +56,9 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
   const toast = (msg: string, kind: 'success' | 'error' = 'success') => (window as any).toast?.(msg, kind);
 
   const load = useCallback(async () => {
+    // #2974 (F2): a primeira chamada espera o membro resolvido (useResolvedMember), sem prazo e sem laço próprio.
     const sb = getSb();
-    if (!sb) { setTimeout(load, 300); return; }
+    if (!sb) return;
     setError(false);
     const [{ data: agenda, error: err }, { data: fmtRows }] = await Promise.all([
       // #1071: 'both' so a General Meeting that already started/ended stays reachable —
@@ -74,7 +77,7 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
     setLoading(false);
   }, [getSb]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (memberId) load(); }, [load, memberId]);
 
   const fmtLabel = (slug: string): string => formats[slug]?.[lang] || formats[slug]?.['pt-BR'] || slug;
   const fmtDate = (iso: string): string => {
@@ -132,6 +135,7 @@ export default function AdminAgendaVivaPanel({ lang = 'pt-BR' }: { lang?: Lang }
     finally { setBusy(null); }
   };
 
+  if (!memberId) return null;
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-20 justify-center text-[var(--text-muted)]">

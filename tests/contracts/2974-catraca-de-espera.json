@@ -78,7 +78,9 @@
    "base": [
     "src/pages/admin/agenda-viva.astro"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/pages/admin/agenda-viva.astro"
+   ]
   },
   "so_nav_member": {
    "base": [
@@ -256,7 +258,9 @@
     "src/hooks/useBoard.ts",
     "src/hooks/usePilots.ts"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/components/admin/AdminAgendaVivaPanel.tsx"
+   ]
   }
  },
  "isentos": {
