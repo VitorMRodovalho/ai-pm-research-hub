@@ -9,6 +9,14 @@ import {
   SINGLETON_BLOCKED,
   FATAL_EXCEPTION,
 } from './helpers/dev-server-watch.mjs';
+import {
+  CAMINHO_SEM_SSR,
+  LOCAL,
+  SAIDA_NAO_MEDIDO,
+  avaliarModuloCliente,
+  conferirSsr,
+  mensagemNaoMedido,
+} from './helpers/served-db-url.mjs';
 
 const START_TIMEOUT_MS = 45_000;
 // Medido na irmã `scripts/smoke-routes.mjs`: com SIGTERM no grupo o `npm` morre e o `astro dev`
@@ -58,7 +66,9 @@ function resolveAvailablePort(preferredPort) {
   });
 }
 
-async function waitForServer() {
+// #2974: a sonda de prontidão recebe o caminho. A primeira é CAMINHO_SEM_SSR, que não toca o banco; a de `/`, que faz
+// o SSR do BaseLayout e lê o banco, só roda depois que a guarda conferiu que o banco servido é local.
+async function waitForServer(caminho) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < START_TIMEOUT_MS) {
     // #2279: o `astro dev` é SINGLETON. Se outro servidor já está de pé, ele imprime o aviso e
@@ -74,14 +84,32 @@ async function waitForServer() {
       );
     }
     try {
-      const res = await fetch(`${base}/`, { redirect: 'manual' });
-      if (res.status >= 200 && res.status < 500) return;
+      const res = await fetch(`${base}${caminho}`, { redirect: 'manual' });
+      if (res.status >= 200 && res.status < 500) return res;
     } catch {
       // retry until server becomes available
     }
     await sleep(500);
   }
   throw new Error(`Server did not start within ${START_TIMEOUT_MS}ms`);
+}
+
+// #2974: o teste só abre página contra um banco local. A guarda lê o valor que o dev server SERVE, e não o ambiente,
+// porque o adaptador do Cloudflare sobrescreve o ambiente com as [vars] do wrangler.toml (veja served-db-url.mjs).
+async function recusarNaoMedido(avaliacao) {
+  console.error(mensagemNaoMedido('browser-guards', avaliacao));
+  await matarServidor();
+  process.exit(SAIDA_NAO_MEDIDO);
+}
+
+async function exigirBancoLocal() {
+  const modulo = await waitForServer(CAMINHO_SEM_SSR);
+  const cliente = avaliarModuloCliente(await modulo.text());
+  if (cliente.estado !== LOCAL) await recusarNaoMedido(cliente);
+  // Só agora o SSR roda, e o valor que ele serve tem de ser o mesmo que o cliente recebeu.
+  const pagina = await waitForServer('/');
+  const ssr = conferirSsr(await pagina.text(), cliente.valor);
+  if (ssr.estado !== LOCAL) await recusarNaoMedido(ssr);
 }
 
 /** Re-emite a saída do dev server (o passo continua vendo tudo) e classifica o que passa. */
@@ -144,7 +172,7 @@ async function run() {
   process.once('SIGTERM', encerrar(143));
   process.once('SIGINT', encerrar(130));
 
-  await waitForServer();
+  await exigirBancoLocal();
   const browser = await chromium.launch({ headless: true });
   try {
     const ENTRAR = textoPtBr('admin.signInToView');

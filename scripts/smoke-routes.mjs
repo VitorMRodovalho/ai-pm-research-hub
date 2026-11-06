@@ -26,6 +26,14 @@ import {
   assertContentWithResamples,
   SINGLETON_BLOCKED,
 } from '../tests/helpers/dev-server-watch.mjs';
+import {
+  CAMINHO_SEM_SSR,
+  LOCAL,
+  SAIDA_NAO_MEDIDO,
+  avaliarModuloCliente,
+  conferirSsr,
+  mensagemNaoMedido,
+} from '../tests/helpers/served-db-url.mjs';
 
 // #2485: o destino do /hackathon mora em src/lib/canonical.ts, que e TypeScript; este script roda em
 // Node puro, entao le a constante do TEXTO e reprova se ela sumir, em vez de afirmar contra vazio.
@@ -89,7 +97,9 @@ async function req(path, init = {}) {
   }
 }
 
-async function waitForServer() {
+// #2974: a sonda de prontidão recebe o caminho. A primeira é CAMINHO_SEM_SSR, que não toca o banco; a de `/`, que faz
+// o SSR do BaseLayout e lê o banco, só roda depois que a guarda conferiu que o banco servido é local.
+async function waitForServer(caminho) {
   const startedAt = Date.now();
   let ultimoErro = '(nenhuma resposta)';
   while (Date.now() - startedAt < BOOT_TIMEOUT_MS) {
@@ -108,13 +118,13 @@ async function waitForServer() {
       );
     }
     try {
-      const res = await fetch(`${BASE}/`, {
+      const res = await fetch(`${BASE}${caminho}`, {
         redirect: 'manual',
         signal: AbortSignal.timeout(REQ_TIMEOUT_MS),
       });
       if (res.status >= 200 && res.status < 500) {
-        console.log(`[smoke] servidor pronto em ${ms(startedAt)}`);
-        return;
+        console.log(`[smoke] servidor pronto em ${ms(startedAt)} (${caminho})`);
+        return res;
       }
       ultimoErro = `status ${res.status}`;
     } catch (err) {
@@ -127,6 +137,23 @@ async function waitForServer() {
     `[smoke] o servidor nao subiu em ${BOOT_TIMEOUT_MS}ms (ultimo erro: ${ultimoErro}). ` +
       'Isto e boot, nao rota: subir SMOKE_BOOT_TIMEOUT_MS ou investigar o dev server.',
   );
+}
+
+// #2974: o smoke só exerce rota contra um banco local. A guarda lê o valor que o dev server SERVE, e não o ambiente,
+// porque o adaptador do Cloudflare sobrescreve o ambiente com as [vars] do wrangler.toml (veja served-db-url.mjs).
+// Quem recusa lança com `saida`; o `finally` do run() mata o servidor e o catch sai com esse código.
+function naoMedido(avaliacao) {
+  return Object.assign(new Error(mensagemNaoMedido('[smoke]', avaliacao)), { saida: SAIDA_NAO_MEDIDO });
+}
+
+async function exigirBancoLocal() {
+  const modulo = await waitForServer(CAMINHO_SEM_SSR);
+  const cliente = avaliarModuloCliente(await modulo.text());
+  if (cliente.estado !== LOCAL) throw naoMedido(cliente);
+  // Só agora o SSR roda, e o valor que ele serve tem de ser o mesmo que o cliente recebeu.
+  const pagina = await waitForServer('/');
+  const ssr = conferirSsr(await pagina.text(), cliente.valor);
+  if (ssr.estado !== LOCAL) throw naoMedido(ssr);
 }
 
 async function assertOk(path) {
@@ -291,7 +318,7 @@ async function run() {
   process.once('SIGINT', encerrar(130));
 
   try {
-    await waitForServer();
+    await exigirBancoLocal();
 
     // Orcamento PROPRIO das assercoes: estourar aqui e um diagnostico ("as rotas nao terminaram"),
     // enquanto estourar no teto do workflow nao diz nada sobre qual das duas fases travou.
@@ -320,5 +347,5 @@ async function run() {
 
 run().catch((err) => {
   console.error(err.message || err);
-  process.exit(1);
+  process.exit(err?.saida ?? 1);
 });

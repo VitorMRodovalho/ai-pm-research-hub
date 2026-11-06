@@ -63,7 +63,23 @@ while [ "$attempt" -le "$max_attempts" ]; do
   log="${log_dir}/browser-guards-attempt-${attempt}.log"
   echo "[browser-guards] attempt ${attempt}/${max_attempts}"
   # `pipefail` garante que o status vem do npm, nao do tee.
-  if npm run test:browser:guards 2>&1 | tee "$log"; then
+  npm run test:browser:guards 2>&1 | tee "$log"
+  status=${PIPESTATUS[0]}
+  # #2974: saida 3 e "nao medido": o dev server nao serve um banco local, e o harness recusou antes de abrir pagina.
+  # E configuracao, nao flake; a tentativa 2 subiria o mesmo servidor com o mesmo valor, entao nao ha retry.
+  if [ "$status" -eq 3 ]; then
+    echo "[browser-guards] NAO MEDIDO na tentativa ${attempt}: o dev server nao serve um banco local; sem retry"
+    if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+      {
+        echo "### browser_guards NAO MEDIDO"
+        echo
+        echo "O dev server nao serve um PUBLIC_SUPABASE_URL local, e o harness recusou antes de abrir pagina (#2974)."
+        echo "O valor servido vem do wrangler.toml, do .dev.vars ou do .env, nunca do ambiente do passo."
+      } >> "$GITHUB_STEP_SUMMARY"
+    fi
+    exit 3
+  fi
+  if [ "$status" -eq 0 ]; then
     echo "[browser-guards] success on attempt ${attempt}"
     if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
       {
