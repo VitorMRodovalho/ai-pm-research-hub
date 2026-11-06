@@ -3176,6 +3176,7 @@ const esLATAM: Record<string, string> = {
   'webinars.join': 'Participar',
   'webinars.linkSoon': 'Enlace pronto',
   'webinars.liveNow': 'En vivo ahora',
+  'webinars.timeZoneLabel': 'hora de Brasilia',
   'webinars.watchReplay': 'Ver replay',
   'webinars.participants': 'participantes',
 

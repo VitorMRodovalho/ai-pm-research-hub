@@ -5,6 +5,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
+import { BRASILIA_TIME_ZONE } from '../components/governance/brasiliaTime';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const locale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-ES' : 'pt-BR';
@@ -30,17 +31,19 @@ const replays = webinars.filter((w: any) =>
   w.status === 'completed' && w.youtube_url
 );
 
+// A página é SSR: sem timeZone, toLocale* formata no fuso do Worker (UTC), e um webinar das 19h de Brasília saía
+// como 22:00. Data e hora são de Brasília, e a hora leva o rótulo.
 function fmtDate(iso: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return String(iso).slice(0, 10);
-  return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric' });
+  return d.toLocaleDateString(locale, { day: '2-digit', month: 'long', year: 'numeric', timeZone: BRASILIA_TIME_ZONE });
 }
 function fmtTime(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', timeZone: BRASILIA_TIME_ZONE });
 }
 ---
 
@@ -81,7 +84,7 @@ function fmtTime(iso: string): string {
                       {w.description && <p class="text-sm text-[var(--text-secondary)] mt-1">{w.description}</p>}
                       <div class="flex items-center gap-3 flex-wrap mt-3 text-[.78rem] text-[var(--text-secondary)]">
                         <span class="font-semibold">{fmtDate(w.scheduled_at)}</span>
-                        <span>{fmtTime(w.scheduled_at)}</span>
+                        <span>{fmtTime(w.scheduled_at)} ({t('webinars.timeZoneLabel', lang)})</span>
                         <span>&middot;</span>
                         <span>{w.duration_min} min</span>
                         {w.tribe_name && <><span>&middot;</span><span>{w.tribe_name}</span></>}

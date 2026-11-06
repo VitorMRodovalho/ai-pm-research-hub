@@ -8,6 +8,9 @@
  *      SECURITY DEFINER, e só service_role a executa direto (PUBLIC, anon e authenticated, não);
  *   P. a página monta "Próximos" pela phase do banco (upcoming ou live), sem relógio próprio, e mostra o selo de ao
  *      vivo só em live; a chave do selo existe nos 3 dicionários;
+ *   T. a página é SSR, e o Worker roda em UTC: a data e a hora do webinar formatam em BRASILIA_TIME_ZONE
+ *      ('America/Sao_Paulo'), cada toLocale* da página leva o fuso nas próprias opções, e a hora sai com o rótulo
+ *      "horário de Brasília" (chave nos 3 dicionários);
  *   L. (banco) o helper nas bordas, chamado pela service_role, e recusado ao anon. Controles: a mesma chamada sabe
  *      dizer 'live' e nulo, e a recusa ao anon mostra que o grant decide.
  * O vínculo phase → link dentro da RPC fica no guard 2554 (B), que lê a captura vigente.
@@ -65,6 +68,38 @@ test('P: "Próximos" sai da phase do banco, sem relógio próprio, e o selo só 
   for (const dict of ['pt-BR', 'en-US', 'es-LATAM']) {
     const src = readFileSync(resolve(ROOT, `src/i18n/${dict}.ts`), 'utf8');
     assert.match(src, /'webinars\.liveNow': '[^']+',/, `webinars.liveNow em ${dict}`);
+  }
+});
+
+test('T: data e hora em Brasília, com o fuso nas opções de cada formatação, e a hora com o rótulo', () => {
+  const tz = readFileSync(resolve(ROOT, 'src/components/governance/brasiliaTime.ts'), 'utf8');
+  assert.match(tz, /export const BRASILIA_TIME_ZONE = 'America\/Sao_Paulo';/);
+  assert.match(PAGE, /import \{ BRASILIA_TIME_ZONE \} from '\.\.\/components\/governance\/brasiliaTime';/);
+  const fn = (name) => (PAGE.match(new RegExp(`function ${name}\\(iso: string\\): string \\{[\\s\\S]*?\\n\\}`)) || [''])[0];
+  assert.match(
+    fn('fmtDate'),
+    /return d\.toLocaleDateString\(locale, \{ day: '2-digit', month: 'long', year: 'numeric', timeZone: BRASILIA_TIME_ZONE \}\);/,
+    'fmtDate formata a data no fuso de Brasília',
+  );
+  assert.match(
+    fn('fmtTime'),
+    /return d\.toLocaleTimeString\(locale, \{ hour: '2-digit', minute: '2-digit', timeZone: BRASILIA_TIME_ZONE \}\);/,
+    'fmtTime formata a hora no fuso de Brasília',
+  );
+  const calls = [...PAGE.matchAll(/\.toLocale(?:Date|Time)?String\(([^)]*)\)/g)];
+  assert.ok(calls.length >= 2, `as duas formatações da página (achou ${calls.length})`);
+  for (const [whole, args] of calls) {
+    assert.match(args, /timeZone: BRASILIA_TIME_ZONE/, `formatação sem fuso: ${whole}`);
+  }
+  assert.match(
+    PAGE,
+    /<span>\{fmtTime\(w\.scheduled_at\)\} \(\{t\('webinars\.timeZoneLabel', lang\)\}\)<\/span>/,
+    'a hora sai com o rótulo do fuso',
+  );
+  const want = { 'pt-BR': 'horário de Brasília', 'en-US': 'Brasília time', 'es-LATAM': 'hora de Brasilia' };
+  for (const [dict, label] of Object.entries(want)) {
+    const src = readFileSync(resolve(ROOT, `src/i18n/${dict}.ts`), 'utf8');
+    assert.ok(src.includes(`'webinars.timeZoneLabel': '${label}',`), `webinars.timeZoneLabel em ${dict}`);
   }
 });
 
