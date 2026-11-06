@@ -179,6 +179,102 @@ executor não prova pós-condição. O esperado é `status=serving` e `isDraft=F
 ⚠️ **Id de vídeo pode começar com hífen.** `--video-id -029XsTWqwo` é lido como flag pelo argparse e
 falha; a forma com `=` é a que funciona.
 
+## Cartões da Reunião Geral (padrão do GP desde 05/11/2026)
+
+Quatro peças, só com a marca do Núcleo, feitas pelo skill `branded-video` (HyperFrames) com os
+tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus Jakarta Sans):
+
+1. **Abertura**, 12 s em duas cenas: título e data; depois o aviso em português, com espanhol e
+   inglês abaixo (reunião aberta e gravada, câmera e nome opcionais, o e-mail para pedir corte ou
+   desfoque, opiniões de quem fala, o Núcleo não é programa do PMI, Inc.).
+2. **Folha de rosto** em tela cheia antes de cada bloco, 5 s: tema como foi reservado, tribo,
+   liderança e pesquisadores.
+3. **Rótulo** de nome, 5 s, transparente, na primeira fala de quem apresenta. Só membro.
+4. **Encerramento**, 8 s: data e hora da próxima Geral e o site.
+
+### Texto
+
+- Os nomes da folha de rosto saem dos engajamentos ATIVOS no banco na data da reunião, com a
+  grafia do cadastro, em ordem alfabética sem acento. Grafia errada se corrige no cadastro, não no
+  cartão: o cartão espera a correção e a releitura.
+- Nenhum travessão nem meia-risca, contados com controle positivo. Nome de pessoa dentro de
+  `white-space:nowrap`: sem isso, um sobrenome composto quebrou no meio da linha.
+- O texto final vai ao GP ANTES de renderizar.
+- Quem é de fora sem consentimento nunca entra em cartão nem em rótulo.
+
+### Render (HyperFrames 0.9.17, local)
+
+- `HYPERFRAMES_TELEMETRY=0 DO_NOT_TRACK=1 npx --yes hyperframes@0.9.17 render <dir> -o x.mp4 --fps 24 --quality delivery`.
+  A gravação do Meet é de 24 fps, e o padrão do CLI é 30.
+- Rótulo com `--format mov`: ProRes 4444 `yuva444p12le`, alfa confiável.
+- Nada da rede na hora do render: GSAP, as fontes (woff2 do `@fontsource/plus-jakarta-sans`) e o
+  símbolo "Capítulo" negativo de `public/brand/` ficam copiados em `assets/` do projeto.
+- Composição em 1920x1080, reduzida na montagem para a resolução da gravação (1280x720) com
+  `scale=1280:720:flags=lanczos`. A gravação não é ampliada.
+
+### Montagem em dois passos
+
+1. **Master:** a gravação crua passa por desfoques (retângulo e janela de tempo), bipes, cortes e
+   pausas encurtadas num grafo só. Sai em `-crf 14` com áudio PCM, para a segunda geração não perder.
+   Confira a contagem de quadros contra o plano antes de seguir.
+2. **Final:** o master é fatiado com `trim`/`atrim` nos pontos de inserção, e os cartões entram com
+   `anullsrc` pelo filtro `concat`. Os rótulos entram com `setpts=PTS-STARTPTS+T/TB` e
+   `overlay=0:0:eof_action=pass:enable='between(t,T,T+5)'`. O loudnorm roda sobre a faixa inteira.
+
+- **Ponto de inserção da folha de rosto:** numa pausa medida pela energia do áudio (janela de 10 ms,
+  abaixo de -40 dBFS), entre o convite de quem conduz e a primeira fala de quem apresenta. Nunca no
+  carimbo do Gemini: ele marca o começo de um trecho da transcrição (75 s em média, até 122 s
+  medidos em 05/11), e numa troca de bloco caiu mais de 30 s antes dela.
+- **O rótulo só entra com a pessoa em tela cheia.** Com tela compartilhada, ele cobriria o conteúdo.
+  ⚠️ **O OCR a cada 2 s não basta para escolher a janela.** Em 05/11 ele deu tela cheia contínua a
+  uma pessoa, e o orador ativo alternava com quem conduzia a cada 2 a 4 s: o primeiro render pôs o
+  nome de um sobre o rosto do outro, em 2 dos 5 rótulos. O que funcionou:
+  - medir a janela quadro a quadro, comparando a área do rótulo nativo do Meet com um recorte de
+    referência da pessoa;
+  - quando o rótulo nativo fica sobre fundo claro e varia, usar como referência um trecho estático do
+    fundo da própria pessoa;
+  - escolher uma janela estável bem maior que os 5 s, contada depois do encurtamento das pausas;
+  - provar no master: 0 quadro fora da pessoa nos 5 s de cada rótulo, e um controle negativo (a
+    referência de outra pessoa na mesma janela reprova todos os quadros).
+- Os capítulos dos blocos começam no cartão.
+- **Áudio:** quando o pico verdadeiro da gravação passa do teto, o loudnorm linear cai no modo
+  dinâmico. Ganho fixo com limitador custou quase 1 LU em 05/11, pelos picos da gravação. O que
+  fechou foi o loudnorm dinâmico com os valores medidos e o alvo um pouco acima de -14, conferido
+  pelo `ebur128`.
+  ⚠️ **O AAC sobe o pico verdadeiro.** Com teto -1,5 no PCM, o MP4 final mediu -1,0 dBTP. Use teto
+  -2,0 e meça no arquivo final, não no master.
+
+### Quem é de fora, sem aviso e consentimento
+
+- A gravação do Meet é de orador ativo. Quem é de fora aparece quando fala, no quadro inteiro ou no
+  quadro à direita da tela compartilhada. Também aparece DENTRO de telas compartilhadas: na janela
+  flutuante do Meet e na grade do Meet que quem apresenta mostra ao trocar de aba. Procure os três.
+- **Bordas por quadro:** o OCR do rótulo a cada 2 s semeia as janelas. A comparação do rótulo com um
+  recorte de referência (diferença média absoluta), quadro a quadro, dá a borda. Em 05/11 a separação
+  ficou em ≤ 0,7 dentro e ≥ 19,4 fora. A janela flutuante, a grade e a barra de favoritos saem pelo
+  mesmo método, com outro recorte de referência.
+- **Nome lido em voz alta:** bipe de 1 kHz sobre a palavra, e a voz em volta fica. A borda vem do
+  whisperx e da energia; nome emendado na palavra seguinte se corta no vale de energia entre as duas.
+  Conferência no arquivo final:
+  - transcreva a janela no final e no cru (o controle) e veja o nome sumir só no final;
+  - meça a fração de 1 kHz dentro e fora de cada bipe.
+  - A janela curta demais engana: em 05/11 nem o cru transcreveu o nome numa janela de 3 s, e a
+    prova veio com 20 s.
+- ⚠️ **Quem é de fora também diz o PRÓPRIO nome.** Ao se apresentar, a pessoa diz o nome e a
+  organização que representa. Em 05/11 o bipe cobriu o rótulo lido por quem conduzia, e a
+  autoapresentação passou para a prévia. Quem pegou foi a legenda do final, não a conferência
+  do bipe. Antes de fechar a lista de bipes, leia no cru TODAS as falas de cada conta de fora
+  (as janelas do desfoque dão onde estão) e procure "eu sou", "meu nome", "me chamo" e
+  "representando" na transcrição inteira.
+- **Quando só o bipe muda, refaça só o áudio.** Recorte a parte de áudio do grafo do master e
+  reempacote com o vídeo antigo (`-c copy`). Prove por dois lados: o md5 do vídeo
+  (`-map 0:v -c copy -f md5 -`) igual ao anterior, e um teste nulo amostra a amostra contra o
+  áudio antigo, em que só os trechos novos podem diferir. Em 05/11 isso levou 17 s, contra 27 min
+  do master inteiro. O `enable` do ffmpeg vale por quadro de áudio, então a borda pode passar
+  cerca de 20 ms do pedido.
+- Barra de favoritos de navegador em tela compartilhada traz nomes de empresa e de serviço: desfoque.
+- A ata cita quem é de fora sem nome.
+
 ## Regras de metadado
 
 - **Título:** prefixo `YYYY-MM-DD - `, data do EVENTO e não do upload. Teto de 100 caracteres.
