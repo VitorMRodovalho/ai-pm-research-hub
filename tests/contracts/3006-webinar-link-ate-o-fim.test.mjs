@@ -19,7 +19,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { maskLineComments, latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+import { maskLineComments, maskJsComments, latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const CAP = latestFunctionCapture(ROOT, '_meeting_window_phase');
@@ -39,10 +39,10 @@ const DECIDE = flex(`
                  + COALESCE(p_close_after, '0 minutes'::interval) THEN 'ended'
     ELSE NULL
   END`);
-const PAGE = readFileSync(resolve(ROOT, 'src/pages/webinars.astro'), 'utf8')
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .replace(/^\s*\/\/.*$/gm, '')
-  .replace(/<!--[\s\S]*?-->/g, '');
+// Astro: comentário JS no frontmatter, {/* */} no template e <!-- --> no HTML viram espaço, com as linhas mantidas
+// (a mesma forma dos guards 2553).
+const maskAstro = (src) => maskJsComments(src).replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
+const PAGE = maskAstro(readFileSync(resolve(ROOT, 'src/pages/webinars.astro'), 'utf8'));
 
 test('H: o helper decide a fase na ordem certa, e só service_role o executa direto', () => {
   assert.match(FN, /RETURNS text\s+LANGUAGE sql\s+STABLE\s+SET search_path = pg_catalog, pg_temp\s+AS \$function\$/);
