@@ -601,18 +601,18 @@ async function run() {
     assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
     await blogPage.close();
 
-    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags e o painel do admin esperam pelo gateAdminPage. Sem
-    // sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
+    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags, o painel do admin e a vep-reconciliation esperam pelo
+    // gateAdminPage. Sem sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
     const escondido = (p, sel) => p.evaluate((s) => document.querySelector(s)?.classList.contains('hidden') === true, sel);
-    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard']]) {
+    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard'], ['vep-reconciliation', 'vep-reconciliation']]) {
       await page.goto(rota ? `${base}/admin/${rota}` : `${base}/admin`, { waitUntil: 'networkidle' });
       const aviso = page.locator(`#${id}-notice`);
       await aviso.waitFor({ state: 'visible' });
       assert.equal((await aviso.textContent() || '').trim(), ENTRAR, `sem sessão, /admin/${rota} tem de mostrar o texto de admin.signInToView`);
       assert.equal(await escondido(page, `#${id}-content`), true, `sem sessão, /admin/${rota} ainda mostra o conteúdo`);
     }
-    // Com membro, na agenda-recorrente: negada, o texto de antes; capacidades que falharam, o texto de falha; o papel
-    // que o predicado aceita mostra o conteúdo e esconde o aviso.
+    // Com membro, na agenda-recorrente: negada, o texto de antes, também quando as capacidades falharam (o predicado só
+    // lê o membro, então a recusa é certa); o papel que o predicado aceita mostra o conteúdo e esconde o aviso.
     const agendaPage = await browser.newPage({ locale: 'pt-BR' });
     await agendaPage.goto(`${base}/admin/agenda-recorrente`, { waitUntil: 'networkidle' });
     const agendaMostra = (texto) => agendaPage.waitForFunction(
@@ -625,10 +625,13 @@ async function run() {
     await agendaMostra(textoPtBr('admin.deniedAdmin'));
     assert.equal(await escondido(agendaPage, '#recurring-agenda-content'), true, 'negada, a agenda-recorrente ainda mostra o conteúdo');
     await agendaPage.evaluate(() => {
+      // apaga o aviso, para que só uma nova decisão do portão volte a preenchê-lo
+      const aviso = document.getElementById('recurring-agenda-notice');
+      if (aviso) aviso.textContent = '';
       window.navCapabilitiesFailed = () => true;
       window.dispatchEvent(new CustomEvent('nav:member'));
     });
-    await agendaMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    await agendaMostra(textoPtBr('admin.deniedAdmin'));
     await agendaPage.evaluate(() => {
       window.navCapabilitiesFailed = () => false;
       window.navGetMember = () => ({ auth_id: 'agenda-manager-test', operational_role: 'manager', designations: [], is_superadmin: false });
@@ -657,6 +660,33 @@ async function run() {
     await painelPage.waitForFunction(() => document.getElementById('admin-dashboard-content')?.classList.contains('hidden') === false);
     assert.equal(await escondido(painelPage, '#admin-dashboard-notice'), true, 'liberado, o painel do admin ainda mostra o aviso');
     await painelPage.close();
+
+    // A stakeholder, no BaseLayout: sem sessão, pede para entrar no lugar do carregando; negada, o texto de antes, também
+    // com as capacidades falhas (o predicado só lê o membro); liberada, o app aparece e o aviso e o carregando somem.
+    const stakePage = await browser.newPage({ locale: 'pt-BR' });
+    await stakePage.goto(`${base}/stakeholder`, { waitUntil: 'networkidle' });
+    const stakeMostra = (texto) => stakePage.waitForFunction(
+      (t) => document.getElementById('stakeholder-denied')?.classList.contains('hidden') === false
+        && (document.getElementById('stakeholder-denied-text')?.textContent || '').trim() === t, texto);
+    await stakeMostra(ENTRAR);
+    assert.equal(await escondido(stakePage, '#stakeholder-loading'), true, 'sem sessão, a stakeholder ainda mostra o carregando');
+    assert.equal(await escondido(stakePage, '#stakeholder-app'), true, 'sem sessão, a stakeholder mostra o app');
+    await stakePage.evaluate(() => {
+      window.navCapabilitiesFailed = () => true;
+      window.navGetMember = () => ({ id: 'stake-researcher-test', auth_id: 'stake-researcher-test', operational_role: 'researcher', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await stakeMostra(textoPtBr('stakeholder.accessDenied'));
+    assert.equal(await escondido(stakePage, '#stakeholder-app'), true, 'negada, a stakeholder mostra o app');
+    await stakePage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.navGetMember = () => ({ id: 'stake-sponsor-test', auth_id: 'stake-sponsor-test', operational_role: 'observer', designations: ['sponsor'], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await stakePage.waitForFunction(() => document.getElementById('stakeholder-app')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(stakePage, '#stakeholder-denied'), true, 'liberada, a stakeholder ainda mostra o aviso');
+    assert.equal(await escondido(stakePage, '#stakeholder-loading'), true, 'liberada, a stakeholder ainda mostra o carregando');
+    await stakePage.close();
 
     const curatorshipPage = await browser.newPage({ locale: 'pt-BR' });
     await curatorshipPage.goto(`${base}/admin/curatorship`, { waitUntil: 'networkidle' });

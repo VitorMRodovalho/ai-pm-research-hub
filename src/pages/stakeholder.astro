@@ -10,9 +10,10 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
 <BaseLayout title={t('stakeholder.title', lang) || 'Chapter Dashboard'} activePage="stakeholder" lang={lang}>
   <Toast />
+  <span id="admin-signin-to-view" class="hidden">{t('admin.signInToView', lang)}</span>
   <div id="stakeholder-denied" class="hidden max-w-lg mx-auto px-4 py-20 text-center">
     <div class="text-4xl mb-4">🔒</div>
-    <p class="text-sm text-[var(--text-secondary)]">{t('stakeholder.accessDenied', lang) || 'Access restricted to chapter sponsors and leadership.'}</p>
+    <p id="stakeholder-denied-text" class="text-sm text-[var(--text-secondary)]">{t('stakeholder.accessDenied', lang) || 'Access restricted to chapter sponsors and leadership.'}</p>
   </div>
   <div id="stakeholder-loading" class="max-w-lg mx-auto px-4 py-20 text-center">
     <p class="text-sm text-[var(--text-muted)]">{t('common.loading', lang) || 'Loading...'}</p>
@@ -41,40 +42,47 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 </BaseLayout>
 
 <script>
-  function boot() {
-    const sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
+  import { adminSignInText, gateAdminPage } from '../lib/member-ready';
 
-    const check = () => {
-      const m = (window as any).navGetMember?.();
-      if (!m) { setTimeout(check, 300); return; }
-
-      const allowed = m.is_superadmin === true
-        || ['manager', 'deputy_manager'].includes(m.operational_role || '')
-        || m.operational_role === 'chapter_liaison'
-        || (m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison', 'chapter_board'].includes(d));
-
-      const loading = document.getElementById('stakeholder-loading');
-      if (loading) loading.classList.add('hidden');
-
-      if (!allowed) {
-        document.getElementById('stakeholder-denied')?.classList.remove('hidden');
-        return;
-      }
-      document.getElementById('stakeholder-app')?.classList.remove('hidden');
-
-      // Show welcome banner for chapter_board on first visit
-      const isBoard = (m.designations || []).includes('chapter_board');
-      const dismissed = localStorage.getItem('chapter_board_welcome_dismissed');
-      if (isBoard && !dismissed) {
-        document.getElementById('chapter-board-welcome')?.classList.remove('hidden');
-      }
-    };
-
-    window.addEventListener('nav:member', ((e: CustomEvent) => { if (e.detail) check(); }) as EventListener);
-    check();
+  function hasStakeholderAccess(m: any): boolean {
+    return m.is_superadmin === true
+      || ['manager', 'deputy_manager'].includes(m.operational_role || '')
+      || m.operational_role === 'chapter_liaison'
+      || (m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison', 'chapter_board'].includes(d));
   }
-  boot();
+
+  const STAKEHOLDER_DENIED_TEXT = document.getElementById('stakeholder-denied-text')?.textContent?.trim() || '';
+
+  function showStakeholderNotice(text: string) {
+    document.getElementById('stakeholder-loading')?.classList.add('hidden');
+    const p = document.getElementById('stakeholder-denied-text');
+    if (p) p.textContent = text;
+    document.getElementById('stakeholder-denied')?.classList.remove('hidden');
+    document.getElementById('stakeholder-app')?.classList.add('hidden');
+  }
+
+  function showStakeholderPage(m: any) {
+    document.getElementById('stakeholder-loading')?.classList.add('hidden');
+    document.getElementById('stakeholder-denied')?.classList.add('hidden');
+    document.getElementById('stakeholder-app')?.classList.remove('hidden');
+
+    // Show welcome banner for chapter_board on first visit
+    const isBoard = (m.designations || []).includes('chapter_board');
+    const dismissed = localStorage.getItem('chapter_board_welcome_dismissed');
+    if (isBoard && !dismissed) {
+      document.getElementById('chapter-board-welcome')?.classList.remove('hidden');
+    }
+  }
+
+  // #2974 (F2): a espera é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a
+  // tela pede para entrar. O predicado do allow é o de antes, e ele não lê capacidade: sem onLoadFailed, a recusa
+  // mostra o texto de negado mesmo quando get_caller_capabilities falhou.
+  gateAdminPage({
+    allow: hasStakeholderAccess,
+    onAllowed: (m) => showStakeholderPage(m),
+    onDenied: () => showStakeholderNotice(STAKEHOLDER_DENIED_TEXT),
+    onNoSession: () => showStakeholderNotice(adminSignInText()),
+  });
 
   // Dismiss welcome banner
   document.getElementById('dismiss-welcome')?.addEventListener('click', () => {

@@ -8,6 +8,9 @@
  *   antes. Nos três casos o aviso aparece e o conteúdo some.
  * - Liberada, o conteúdo aparece e o aviso some, para o caso de o Nav resolver de novo depois de uma recusa.
  * - A tela não espera mais por conta própria: nada de setTimeout nem de leitura do membro fora do portão.
+ * - O texto de falha de carga só existe onde a recusa pode ser falsa: a tela tem onLoadFailed se e só se o predicado
+ *   lê capacidade. Um predicado que só lê o membro decide igual com ou sem get_caller_capabilities.
+ * - O span admin-signin-to-view, que o adminSignInText lê, aparece uma vez só no que monta a tela (página e layouts).
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -38,7 +41,20 @@ const TELAS = [
     arq: 'src/pages/admin/index.astro', id: 'admin-dashboard', nome: 'AdminDashboard', texto: "t('admin.deniedAdmin', lang)",
     ilha: 'AdminDashboardIsland', predicado: TIER_B.replace("d === 'curator'; });", "d === 'curator' || d === 'chapter_board'; });"),
   },
+  {
+    arq: 'src/pages/admin/vep-reconciliation.astro', id: 'vep-reconciliation', nome: 'VepReconciliation', texto: "t('admin.deniedAdmin', lang)",
+    ilha: 'VepReconciliationIsland', predicado: TIER_B,
+  },
 ];
+// A stakeholder usa o BaseLayout e tem o próprio aviso (cadeado e parágrafo), então tem bloco próprio abaixo.
+const STAKEHOLDER = {
+  arq: 'src/pages/stakeholder.astro', nome: 'Stakeholder', assinatura: 'function hasStakeholderAccess(m: any): boolean {',
+  predicado: "return m.is_superadmin === true || ['manager', 'deputy_manager'].includes(m.operational_role || '') || " +
+    "m.operational_role === 'chapter_liaison' || " +
+    "(m.designations || []).some((d: string) => ['sponsor', 'chapter_liaison', 'chapter_board'].includes(d));",
+};
+// Ler capacidade é o que torna a recusa possivelmente falsa quando get_caller_capabilities falha.
+const LE_CAPACIDADE = /__nucleoCanFor|\bcanFor(?:AdminEntry)?\(|__nucleoCapabilities/;
 
 const ler = (arq) => readFileSync(resolve(ROOT, arq), 'utf8');
 
@@ -72,13 +88,17 @@ for (const t of TELAS) {
 
   test(`${t.arq}: decide pelo gateAdminPage; sem sessão pede para entrar, falha de carga tem texto próprio`, () => {
     const s = norm(maskJsComments(ler(t.arq)));
+    // A falha de carga só entra quando o predicado lê capacidade (o teste "se e só se" abaixo amarra as duas coisas).
+    const leCapacidade = LE_CAPACIDADE.test(norm(t.predicado));
     assert.match(s, new RegExp(
       `gateAdminPage\\(\\{ allow: has${t.nome}Access, onAllowed: \\(\\) => show${t.nome}Page\\(\\), ` +
       `onDenied: \\(\\) => show${t.nome}Notice\\(${CONST}\\), ` +
       `onNoSession: \\(\\) => show${t.nome}Notice\\(adminSignInText\\(\\)\\), ` +
-      `onLoadFailed: \\(\\) => show${t.nome}Notice\\(adminLoadFailedText\\(\\)\\), \\}\\);`,
+      (leCapacidade ? `onLoadFailed: \\(\\) => show${t.nome}Notice\\(adminLoadFailedText\\(\\)\\), ` : '') + '\\}\\);',
     ), 'o portão não liga cada caso ao seu aviso');
-    assert.match(s, /import \{ adminLoadFailedText, adminSignInText, gateAdminPage \} from '\.\.\/\.\.\/lib\/member-ready';/);
+    assert.match(s, leCapacidade
+      ? /import \{ adminLoadFailedText, adminSignInText, gateAdminPage \} from '\.\.\/\.\.\/lib\/member-ready';/
+      : /import \{ adminSignInText, gateAdminPage \} from '\.\.\/\.\.\/lib\/member-ready';/);
   });
 
   test(`${t.arq}: o aviso esconde o conteúdo, e liberar mostra o conteúdo e esconde o aviso`, () => {
@@ -111,8 +131,86 @@ for (const t of TELAS) {
   });
 }
 
-// ── Ilhas do painel do admin e dos certificados: a primeira chamada espera o useResolvedMember, sem prazo, e se repete
-// quando o membro muda; sem membro, a ilha não mostra nada. Quem vê é o predicado de antes, ligado ao setAuthorized.
+// O que monta a tela: a página e a cadeia de layouts (o AdminLayout embrulha o BaseLayout, que traz o Nav).
+function montagem(arq) {
+  const src = ler(arq);
+  const arqs = [arq];
+  if (/import AdminLayout from '[^']*layouts\/AdminLayout\.astro';/.test(src)) arqs.push('src/layouts/AdminLayout.astro');
+  if (/import (?:Admin|Base)Layout from '[^']*layouts\/(?:Admin|Base)Layout\.astro';/.test(src)) {
+    arqs.push('src/layouts/BaseLayout.astro', 'src/components/nav/Nav.astro');
+  }
+  return arqs;
+}
+
+const PORTOES = [
+  ...TELAS.map((t) => ({ arq: t.arq, assinatura: `function has${t.nome}Access(member: any): boolean {` })),
+  { arq: STAKEHOLDER.arq, assinatura: STAKEHOLDER.assinatura },
+];
+for (const t of PORTOES) {
+  test(`${t.arq}: tem onLoadFailed se e só se o predicado lê capacidade`, () => {
+    const s = maskJsComments(ler(t.arq));
+    const c = corpo(s, t.assinatura);
+    assert.ok(c !== null, 'o predicado não foi encontrado');
+    const le = LE_CAPACIDADE.test(c);
+    assert.equal(/\bonLoadFailed\s*:/.test(s), le, le
+      ? 'o predicado lê capacidade e a tela não tem o texto de falha de carga'
+      : 'o predicado só lê o membro e a tela mostra falha de carga numa recusa certa');
+  });
+
+  test(`${t.arq}: o texto de entrar aparece uma vez só no que monta a tela`, () => {
+    const arqs = montagem(t.arq);
+    assert.ok(arqs.length > 1, 'a tela não usa o AdminLayout nem o BaseLayout');
+    const n = arqs.reduce((soma, a) => soma + ler(a).split('id="admin-signin-to-view"').length - 1, 0);
+    assert.equal(n, 1, `admin-signin-to-view aparece ${n} vezes em ${arqs.join(', ')}`);
+  });
+}
+
+// ── A stakeholder: mesmo portão, no BaseLayout. O aviso é o cadeado com o parágrafo, e só o texto do parágrafo muda.
+test(`${STAKEHOLDER.arq}: o allow é o predicado de antes`, () => {
+  const c = corpo(maskJsComments(ler(STAKEHOLDER.arq)), STAKEHOLDER.assinatura);
+  assert.ok(c !== null, 'hasStakeholderAccess não encontrada');
+  assert.equal(norm(c), norm(STAKEHOLDER.predicado), 'o predicado do allow mudou');
+});
+
+test(`${STAKEHOLDER.arq}: decide pelo gateAdminPage; sem sessão pede para entrar`, () => {
+  const s = norm(maskJsComments(ler(STAKEHOLDER.arq)));
+  assert.match(s, /gateAdminPage\(\{ allow: hasStakeholderAccess, onAllowed: \(m\) => showStakeholderPage\(m\), onDenied: \(\) => showStakeholderNotice\(STAKEHOLDER_DENIED_TEXT\), onNoSession: \(\) => showStakeholderNotice\(adminSignInText\(\)\), \}\);/,
+    'o portão não liga cada caso ao seu aviso');
+  assert.match(s, /import \{ adminSignInText, gateAdminPage \} from '\.\.\/lib\/member-ready';/);
+});
+
+test(`${STAKEHOLDER.arq}: o aviso esconde o carregando e o app, e liberar mostra o app e esconde os dois`, () => {
+  const src = ler(STAKEHOLDER.arq);
+  const s = norm(maskJsComments(src));
+  assert.match(src, /<span id="admin-signin-to-view" class="hidden">\{t\('admin\.signInToView', lang\)\}<\/span>/,
+    'falta o texto de entrar, que o BaseLayout não traz');
+  assert.match(src, /<div id="stakeholder-denied" class="hidden /, 'o aviso não nasce escondido');
+  assert.match(divConteudo(src, 'stakeholder-denied') || '',
+    /<p id="stakeholder-denied-text" class="[^"]*">\{t\('stakeholder\.accessDenied', lang\) \|\| '[^']*'\}<\/p>/,
+    'o parágrafo do aviso não tem o texto de negado');
+  assert.match(src, /<div id="stakeholder-app" class="hidden /, 'o app não nasce escondido');
+  assert.match(divConteudo(src, 'stakeholder-app') || '', /<ChapterDashboard client:load\b/, 'o app não envolve o painel do capítulo');
+  assert.match(s, /const STAKEHOLDER_DENIED_TEXT = document\.getElementById\('stakeholder-denied-text'\)\?\.textContent\?\.trim\(\) \|\| '';/,
+    'o texto de negado não vem do aviso');
+  assert.match(s, /function showStakeholderNotice\(text: string\) \{ document\.getElementById\('stakeholder-loading'\)\?\.classList\.add\('hidden'\); const p = document\.getElementById\('stakeholder-denied-text'\); if \(p\) p\.textContent = text; document\.getElementById\('stakeholder-denied'\)\?\.classList\.remove\('hidden'\); document\.getElementById\('stakeholder-app'\)\?\.classList\.add\('hidden'\); \}/,
+    'o aviso não aparece no lugar do carregando e do app');
+  const pagina = corpo(maskJsComments(src), 'function showStakeholderPage(m: any) {');
+  assert.ok(pagina !== null, 'showStakeholderPage não encontrada');
+  assert.match(norm(pagina), /^document\.getElementById\('stakeholder-loading'\)\?\.classList\.add\('hidden'\); document\.getElementById\('stakeholder-denied'\)\?\.classList\.add\('hidden'\); document\.getElementById\('stakeholder-app'\)\?\.classList\.remove\('hidden'\);/,
+    'liberar não mostra o app nem esconde o carregando e o aviso');
+  assert.ok(norm(pagina).includes("const isBoard = (m.designations || []).includes('chapter_board'); const dismissed = localStorage.getItem('chapter_board_welcome_dismissed'); if (isBoard && !dismissed) { document.getElementById('chapter-board-welcome')?.classList.remove('hidden'); }"),
+    'a faixa de boas-vindas da diretoria mudou');
+});
+
+test(`${STAKEHOLDER.arq}: não espera mais por conta própria`, () => {
+  const s = maskJsComments(ler(STAKEHOLDER.arq));
+  assert.doesNotMatch(s, /setTimeout/, 'a tela voltou a se reagendar');
+  assert.doesNotMatch(s, /navGetMember|navGetSb|navMember|nav:member|getSession|__nucleoCapabilities/, 'a tela lê o membro fora do portão');
+});
+
+// ── Ilhas do painel do admin, dos certificados, da vep-reconciliation e do workspace: a primeira chamada espera o
+// useResolvedMember, sem prazo, e se repete quando o membro muda; sem membro, a ilha não mostra nada. Onde há
+// predicado, quem vê é o de antes, ligado ao setAuthorized.
 const PRED_VOLUNTARIADO = "if (!(m.is_superadmin || ['manager', 'deputy_manager'].includes(m.operational_role) || " +
   "(m.designations || []).includes('chapter_board'))) return; setAuthorized(true);";
 const ILHAS = [
@@ -125,6 +223,14 @@ const ILHAS = [
   },
   { arq: 'src/components/admin/VolunteerComplianceWidget.tsx', retorno: 'if (!memberId || !authorized || !data?.summary) return null;', predicado: PRED_VOLUNTARIADO },
   { arq: 'src/components/admin/VolunteerAgreementPanel.tsx', retorno: 'if (!memberId || !authorized || !summary) return null;', predicado: PRED_VOLUNTARIADO },
+  {
+    arq: 'src/components/admin/VepReconciliationIsland.tsx', retorno: 'if (!memberId) return null;',
+    predicado: "const isAdmin = m.is_superadmin || canForAdminEntry() || ['manager', 'deputy_manager'].includes(m.operational_role) || " +
+      "(m.designations || []).some((d: string) => d === 'deputy_manager' || d === 'curator' || d === 'chapter_board'); " +
+      'if (!isAdmin) { setAuthorized(false); return; } setAuthorized(true);',
+  },
+  { arq: 'src/components/workspace/MyCardsWidget.tsx', retorno: 'if (!memberId || cards === null) return null;', predicado: null },
+  { arq: 'src/components/workspace/MyActionItemsWidget.tsx', retorno: 'if (!memberId || items === null) return null;', predicado: null },
 ];
 
 function corpoDoLoad(s) {
