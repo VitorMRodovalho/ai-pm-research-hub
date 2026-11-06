@@ -179,6 +179,13 @@ jobs:
           PUBLIC_SUPABASE_ANON_KEY: 'mock-key-for-build'
         run: npm run build
 
+      - name: Point the dev server at the mock DB
+        # #2974: o @astrojs/cloudflare sobrescreve o ambiente do processo com as [vars] do wrangler.toml, que trazem o
+        # PUBLIC_SUPABASE_URL de producao, e o env do passo nao chega a pagina. O .dev.vars ganha das [vars] e do .env.
+        # O harness confere o valor servido e recusa com saida 3 se nao for local.
+        # Guard: tests/contracts/2974-harness-serve-banco-local.test.mjs.
+        run: printf 'PUBLIC_SUPABASE_URL=http://127.0.0.1:9999\nPUBLIC_SUPABASE_ANON_KEY=mock-key-for-build\n' > .dev.vars
+
       - name: Smoke Test Routes
         env:
           PUBLIC_SUPABASE_URL: 'http://127.0.0.1:9999'
@@ -220,6 +227,13 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install chromium
 
+      - name: Point the dev server at the mock DB
+        # #2974: o @astrojs/cloudflare sobrescreve o ambiente do processo com as [vars] do wrangler.toml, que trazem o
+        # PUBLIC_SUPABASE_URL de producao, e o env do passo nao chega a pagina. O .dev.vars ganha das [vars] e do .env.
+        # O harness confere o valor servido e recusa com saida 3 se nao for local.
+        # Guard: tests/contracts/2974-harness-serve-banco-local.test.mjs.
+        run: printf 'PUBLIC_SUPABASE_URL=http://127.0.0.1:9999\nPUBLIC_SUPABASE_ANON_KEY=mock-key-for-build\n' > .dev.vars
+
       - name: Run browser guards
         # URL precisa DNS-resolvable (workerd-strict) — ver Build step acima.
         env:
@@ -258,6 +272,13 @@ jobs:
 
       - name: Install Playwright browser
         run: npx playwright install chromium
+
+      - name: Point the dev server at the mock DB
+        # #2974: o @astrojs/cloudflare sobrescreve o ambiente do processo com as [vars] do wrangler.toml, que trazem o
+        # PUBLIC_SUPABASE_URL de producao, e o env do passo nao chega a pagina. O .dev.vars ganha das [vars] e do .env.
+        # O harness confere o valor servido e recusa com saida 3 se nao for local.
+        # Guard: tests/contracts/2974-harness-serve-banco-local.test.mjs.
+        run: printf 'PUBLIC_SUPABASE_URL=http://127.0.0.1:9999\nPUBLIC_SUPABASE_ANON_KEY=mock-key-for-build\n' > .dev.vars
 
       - name: Run dark mode visual snapshots
         run: npm run test:visual:dark

@@ -3,6 +3,8 @@ node_modules/
 .env
 .env.*
 !.env.example
+# #2974: no astro dev o .dev.vars ganha das [vars] do wrangler.toml e do .env; o dos testes aponta para o banco falso
+.dev.vars*
 
 # Claude Code local settings (not committed)
 .claude/settings.local.json
