@@ -40,6 +40,15 @@ test('canonical.ts: exists and exports CANONICAL_HOST + CANONICAL_ORIGIN', () =>
   assert.match(src, /CANONICAL_ORIGIN\s*=\s*`https:\/\/\$\{CANONICAL_HOST\}`/, 'ORIGIN derives from HOST');
 });
 
+// ── The OAuth/MCP identity host is nucleoia.org (GP decision 2026-11-06, option B) ─
+test('canonical.ts: CANONICAL_HOST is nucleoia.org and the dev tooling follows it', () => {
+  assert.match(read(MODULE_PATH), /export const CANONICAL_HOST\s*=\s*"nucleoia\.org";/, 'CANONICAL_HOST value');
+  assert.match(read('scripts/smoke-test.mjs'), /\|\| 'https:\/\/nucleoia\.org';/, 'smoke default base');
+  assert.match(read('scripts/smoke-test.mjs'), /location\?\.includes\('nucleoia\.org'\)/, 'smoke legacy-redirect assertion');
+  assert.match(read('scripts/audit-mcp-tool-matrix.mjs'), /const RUNTIME_URL = "https:\/\/nucleoia\.org\/mcp";/, 'audit runtime url');
+  assert.match(read('package.json'), /"smoke:prod":\s*"node scripts\/smoke-test\.mjs --base https:\/\/nucleoia\.org"/, 'smoke:prod base');
+});
+
 // ── RATCHET: the host literal lives ONLY in canonical.ts across all of src/ ───────
 test('canonical-host: no other file under src/ hardcodes the host literal', () => {
   const offenders = [];

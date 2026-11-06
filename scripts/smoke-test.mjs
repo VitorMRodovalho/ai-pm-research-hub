@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // GC-097 Phase 2 — Post-deploy smoke test
-// Usage: node scripts/smoke-test.mjs [--base https://nucleoia.vitormr.dev]
+// Usage: node scripts/smoke-test.mjs [--base https://nucleoia.org]
 
 import { strict as assert } from 'node:assert';
 
@@ -8,7 +8,7 @@ const baseArg = process.argv.find(a => a.startsWith('--base='));
 const baseIdx = process.argv.indexOf('--base');
 const BASE = baseArg ? baseArg.split('=')[1]
   : (baseIdx > -1 && process.argv[baseIdx + 1]?.startsWith('http') ? process.argv[baseIdx + 1] : null)
-  || 'https://nucleoia.vitormr.dev';
+  || 'https://nucleoia.org';
 
 const SUPABASE_URL = 'https://ldrfrvwhxsmgaabwmaik.supabase.co';
 const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkcmZydndoeHNtZ2FhYndtYWlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3MjU5NDQsImV4cCI6MjA4ODMwMTk0NH0.gzibKd7Jyck3Ya61vzrloX1YZt-0pNReTuefdi4mAmw';
@@ -46,7 +46,7 @@ await test('Legacy redirect: workers.dev → 301', async () => {
   const res = await fetch('https://platform.ai-pm-research-hub.workers.dev/', { redirect: 'manual' });
   assert.equal(res.status, 301);
   const location = res.headers.get('location');
-  assert.ok(location?.includes('nucleoia.vitormr.dev'), `Redirects to custom domain, got: ${location}`);
+  assert.ok(location?.includes('nucleoia.org'), `Redirects to custom domain, got: ${location}`);
 });
 
 await test('i18n: /en/ serves English', async () => {
