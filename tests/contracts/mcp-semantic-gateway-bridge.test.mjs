@@ -234,7 +234,7 @@ test('worker proxy preserves OAuth 401 + WWW-Authenticate gate', () => {
   // PPX-3 (audit 2026-07-20): the pointer is now PATH-SCOPED so /mcp/semantic advertises
   // its own resource (was the bare /.well-known/oauth-protected-resource which hardcoded
   // resource=/mcp). See docs/audit/2026-07-20_MCP_OAUTH_SYSTEMIC_AUDIT.md + oauth-dcr-hardening.test.mjs.
-  assert.match(PROXY, /resource_metadata="\$\{BASE\}\/\.well-known\/oauth-protected-resource\/mcp\/semantic"/, 'expected path-scoped resource_metadata pointer for the /mcp/semantic surface');
+  assert.match(PROXY, /resource_metadata="\$\{url\.origin\}\/\.well-known\/oauth-protected-resource\/mcp\/semantic"/, 'expected path-scoped resource_metadata pointer for the /mcp/semantic surface');
 });
 
 test('worker proxy does NOT refresh server-side (single-refresher model, #1053)', () => {
