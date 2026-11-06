@@ -7452,7 +7452,7 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.journeyFit': 'After the video: a conversation with the line leader.',
   'pmi.onboarding.journeyResult': 'Result: by email, by {date}.',
   'pmi.onboarding.journeyResultNoDate': 'Result: by email.',
-  'pmi.onboarding.journeyWho': 'Who evaluates: two people from outside the line review your résumé and your video, each without seeing the other\'s score. The line leader holds the conversation. The final decision is made by the Núcleo management.',
+  'pmi.onboarding.journeyWho': 'Who evaluates: the line leader and one person from outside the line review your résumé and answers, and two people from outside the line review your video. The line leader holds the conversation. The final decision is made by the Núcleo management.',
   'pmi.onboarding.consentDone': 'Done: your choice was recorded. The next steps will reach you by email.',
   'pmi.onboarding.consentDonePilot': 'Done: your choice was recorded. The next step is the video invitation, by email, by {date}.',
   'pmi.onboarding.helpLine': 'Need help or an accommodation to take part? Write to {email}.',

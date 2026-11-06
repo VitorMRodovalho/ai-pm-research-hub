@@ -7452,7 +7452,7 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.journeyFit': 'Después del video: una conversación con quien lidera la línea.',
   'pmi.onboarding.journeyResult': 'Resultado: por correo electrónico, hasta el {date}.',
   'pmi.onboarding.journeyResultNoDate': 'Resultado: por correo electrónico.',
-  'pmi.onboarding.journeyWho': 'Quién evalúa: dos personas de fuera de la línea evalúan su currículum y su video, cada una sin ver la nota de la otra. Quien lidera la línea hace la conversación. La decisión final es de la gestión del Núcleo.',
+  'pmi.onboarding.journeyWho': 'Quién evalúa: quien lidera la línea y una persona de fuera de ella evalúan su currículum y sus respuestas, y dos personas de fuera de la línea evalúan su video. Quien lidera la línea hace la conversación. La decisión final es de la gestión del Núcleo.',
   'pmi.onboarding.consentDone': 'Listo: su elección quedó registrada. Los próximos pasos llegan por correo electrónico.',
   'pmi.onboarding.consentDonePilot': 'Listo: su elección quedó registrada. El próximo paso es la invitación al video, por correo electrónico, hasta el {date}.',
   'pmi.onboarding.helpLine': '¿Necesita ayuda o alguna adaptación para participar? Escriba a {email}.',

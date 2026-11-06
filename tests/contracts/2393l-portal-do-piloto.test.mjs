@@ -6,7 +6,8 @@
  *       comitê do fluxo geral;
  *   C6: depois do consentimento, a pessoa vê que a escolha ficou registrada e o que vem a seguir;
  *   C10, C12: status com rótulo e validade do link com data;
- *   ux 6: as saídas "ajuda ou adaptação" e "desistir".
+ *   ux 6: as saídas "ajuda ou adaptação" e "desistir";
+ *   #3014 (emenda de 06/11/2026 à ADR-0134 §4): quem avalia, com o texto aprovado nas 3 línguas.
  * Tudo depende de 'opening' no payload (M1); sem ele, o portal fica como era.
  * Camada S (estática): cada asserção casa a condição com o resultado no trecho que decide.
  */
@@ -77,5 +78,21 @@ test('#2393l: as chaves do portal do piloto existem nas 3 línguas', () => {
     for (const k of CHAVES) assert.match(d, new RegExp(`\\n  'pmi\\.onboarding\\.${k}': '[^'\\n]{5,}`), `${lang}: falta ${k}`);
     for (const k of ['journeyVideo', 'consentDonePilot', 'journeyResult']) assert.match(d, new RegExp(`'pmi\\.onboarding\\.${k}': '[^'\\n]*\\{date\\}`), `${lang}: ${k} sem {date}`);
     assert.doesNotMatch(d.split('\n').filter((l) => /'pmi\.onboarding\.(journey|intro|consentDone|help|withdraw|period|expiresOn)/.test(l)).join('\n'), /—|–/, `${lang}: travessão no texto do piloto`);
+  }
+});
+
+test('#3014 (ADR-0134 §4, emenda de 06/11/2026): quem avalia é o texto aprovado, nas 3 línguas', () => {
+  // A objetiva passa a ser do líder da linha com uma pessoa de fora; o vídeo segue com duas de fora. Sem a promessa
+  // "cada uma sem ver a nota da outra": a gestão lê as notas do piloto, e um avaliador da objetiva pode ter esse papel.
+  const aprovado = {
+    'pt-BR': 'Quem avalia: o líder da linha e uma pessoa de fora dela avaliam seu currículo e suas respostas, e duas pessoas de fora da linha avaliam seu vídeo. O líder da linha faz a conversa. A decisão final é da gestão do Núcleo.',
+    'en-US': 'Who evaluates: the line leader and one person from outside the line review your résumé and answers, and two people from outside the line review your video. The line leader holds the conversation. The final decision is made by the Núcleo management.',
+    'es-LATAM': 'Quién evalúa: quien lidera la línea y una persona de fuera de ella evalúan su currículum y sus respuestas, y dos personas de fuera de la línea evalúan su video. Quien lidera la línea hace la conversación. La decisión final es de la gestión del Núcleo.',
+  };
+  for (const [lang, texto] of Object.entries(aprovado)) {
+    const linhas = readFileSync(resolve(ROOT, `src/i18n/${lang}.ts`), 'utf8').split('\n')
+      .filter((l) => l.startsWith("  'pmi.onboarding.journeyWho': "));
+    assert.equal(linhas.length, 1, `${lang}: journeyWho tem de aparecer uma vez`);
+    assert.equal(linhas[0], `  'pmi.onboarding.journeyWho': '${texto}',`, `${lang}: quem avalia não é o texto aprovado`);
   }
 });
