@@ -475,6 +475,16 @@ export function resolveReimportStatus(
  *
  * Same-cycle updates proceed with full field update as before.
  */
+/**
+ * #3019 — the PMI profile came in THIS import (the script marks pmi_data_fetched_at when the API returns it, and the
+ * mapper falls back to now() when any profile signal is present), or it is private, which Decision 5 clears.
+ */
+export function perfilVeioNestaImportacao(
+  payload: Pick<SelectionApplicationUpsert, 'community_profile_private' | 'pmi_data_fetched_at'>
+): boolean {
+  return payload.community_profile_private === true || payload.pmi_data_fetched_at != null;
+}
+
 export async function upsertSelectionApplication(
   db: SupabaseClient,
   payload: SelectionApplicationUpsert
@@ -491,6 +501,13 @@ export async function upsertSelectionApplication(
     .maybeSingle();
 
   if (existing) {
+    // #3019: the profile fields are rewritten only when the profile came in this import, or to clear a private one.
+    // Otherwise an import that could not fetch the profile wrote NULL over the good data already in the row. An
+    // `undefined` value drops out of the PATCH body, and PostgREST leaves that column as it is. The fields that can
+    // also come from the application itself (linkedin_url, applicant_city) keep the value that arrived, and only
+    // write NULL with the profile fetched.
+    const perfilNestaImportacao = perfilVeioNestaImportacao(payload);
+    const doPerfil = <T>(v: T): T | undefined => (perfilNestaImportacao ? v : undefined);
     // External-PMI-data refresh — fields that legitimately change post-cycle
     // (resume_url SAS rotation, profile data, certifications, chapter, VEP bucket).
     const commonRefresh = {
@@ -508,7 +525,7 @@ export async function upsertSelectionApplication(
       // non-reconciled rows refresh email from PMI exactly as before.
       email: existing.vep_reconciled_at ? existing.email : payload.email,
       phone: payload.phone,
-      linkedin_url: payload.linkedin_url,
+      linkedin_url: payload.linkedin_url ?? doPerfil(null),
       resume_url: payload.resume_url,
       // p195 Opção B+: include storage mirror path + sync timestamp in commonRefresh
       // so cross-cycle partial refresh also updates these (each new SAS rotation may
@@ -517,33 +534,33 @@ export async function upsertSelectionApplication(
       resume_synced_at: payload.resume_synced_at ?? null,
       chapter: payload.chapter,
       membership_status: payload.membership_status,
-      certifications: payload.certifications,
+      certifications: doPerfil(payload.certifications),
       chapter_affiliation: payload.chapter_affiliation,
       // p126 E2 Phase B fields (per ADR-0076 Princípio 1 + Migration 1)
-      applicant_city: payload.applicant_city,
-      profile_location: payload.profile_location,
-      profile_state: payload.profile_state,
-      profile_city: payload.profile_city,
-      profile_country: payload.profile_country,
-      pmi_memberships: payload.pmi_memberships,
-      profile_industry: payload.profile_industry,
-      profile_company: payload.profile_company,
-      profile_designation: payload.profile_designation,
-      profile_certifications: payload.profile_certifications,
-      profile_volunteer_interest: payload.profile_volunteer_interest,
-      profile_specialties: payload.profile_specialties,
-      profile_linkedin_url: payload.profile_linkedin_url,
-      profile_about_me: payload.profile_about_me,
-      service_history_count: payload.service_history_count,
-      service_history_chapters: payload.service_history_chapters,
-      service_first_start_date: payload.service_first_start_date,
-      service_latest_end_date: payload.service_latest_end_date,
+      applicant_city: payload.applicant_city ?? doPerfil(null),
+      profile_location: doPerfil(payload.profile_location),
+      profile_state: doPerfil(payload.profile_state),
+      profile_city: doPerfil(payload.profile_city),
+      profile_country: doPerfil(payload.profile_country),
+      pmi_memberships: doPerfil(payload.pmi_memberships),
+      profile_industry: doPerfil(payload.profile_industry),
+      profile_company: doPerfil(payload.profile_company),
+      profile_designation: doPerfil(payload.profile_designation),
+      profile_certifications: doPerfil(payload.profile_certifications),
+      profile_volunteer_interest: doPerfil(payload.profile_volunteer_interest),
+      profile_specialties: doPerfil(payload.profile_specialties),
+      profile_linkedin_url: doPerfil(payload.profile_linkedin_url),
+      profile_about_me: doPerfil(payload.profile_about_me),
+      service_history_count: doPerfil(payload.service_history_count),
+      service_history_chapters: doPerfil(payload.service_history_chapters),
+      service_first_start_date: doPerfil(payload.service_first_start_date),
+      service_latest_end_date: doPerfil(payload.service_latest_end_date),
       // #1316 — Núcleo contract for this opportunity (cohort determinant).
       nucleo_contract_start: payload.nucleo_contract_start,
       nucleo_contract_end: payload.nucleo_contract_end,
-      is_open_to_volunteer: payload.is_open_to_volunteer,
-      community_profile_private: payload.community_profile_private,
-      pmi_data_fetched_at: payload.pmi_data_fetched_at,
+      is_open_to_volunteer: doPerfil(payload.is_open_to_volunteer),
+      community_profile_private: doPerfil(payload.community_profile_private),
+      pmi_data_fetched_at: doPerfil(payload.pmi_data_fetched_at),
       consent_version: payload.consent_version,
       // p152 W1.2 hotfix6: vep_status_raw + vep_last_seen_at added to mapper p151
       // but never reached UPDATE SET clause — silently dropped on every ingest.
