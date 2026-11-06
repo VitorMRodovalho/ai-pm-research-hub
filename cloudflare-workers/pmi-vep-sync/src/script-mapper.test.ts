@@ -182,3 +182,52 @@ describe('#3004 parseChapterFromAffiliation', () => {
     expect(out.chapter).toBe('PMI-GO');
   });
 });
+
+/**
+ * #3012 — chapter holds affiliation only. The NEGATIVE_PREFIX check guarded strategies 2 and 3 only: strategy 1 ran
+ * before it, so an answer that denies affiliation still got the chapter it named. And strategy 4 filled the chapter
+ * from the profile state, which is where the person lives, not the chapter they joined; it is gone. Every row binds
+ * an answer and a state to the chapter it must yield.
+ */
+describe('#3012 parseChapterFromAffiliation with an answer that denies affiliation', () => {
+  it.each([
+    ['Ainda não sou filiada, mas pretendo me filiar ao PMI-GO', '', null],
+    ['Inda não sou filiado ao PMI-GO', '', null],
+    ['Não sou filiado ao PMI-DF', '', null],
+    ['Nao sou filiado, PMI GO', '', null],
+    ['Já fui filiado ao PMI-RJ', '', null],
+    ['Atualmente não, já fui do PMI-SP', '', null],
+    ['Não sou filiado, moro em Goiás', '', null],
+    ['Não sou', 'GO', null],
+    ['Ainda não sou', 'Goiás', null],
+  ])('a denial yields no chapter: %s (state %s) -> %s', (answer, state, chapter) => {
+    expect(parseChapterFromAffiliation(answer, state, '')).toBe(chapter);
+  });
+
+  it.each([
+    ['Sou filiada ao PMI-DF e não a outro capítulo', '', 'PMI-DF'],
+    ['Sim, PMI-GO', '', 'PMI-GO'],
+  ])('only the opening of the answer denies: %s (state %s) -> %s', (answer, state, chapter) => {
+    expect(parseChapterFromAffiliation(answer, state, '')).toBe(chapter);
+  });
+
+  it.each([
+    ['', 'GO'],
+    ['', 'Goiás'],
+    ['Sou membro do PMI Global', 'GO'],
+  ])('the profile state does not fill the chapter: %s (state %s) -> null', (answer, state) => {
+    expect(parseChapterFromAffiliation(answer, state, '')).toBeNull();
+  });
+
+  it('mapScriptToNucleo keeps the answer and writes no chapter when it denies affiliation', () => {
+    const opp = { role_default: 'x', essay_mapping: { '1': { field: 'chapter_affiliation', question: 'Filiação' } } } as any;
+    const app = {
+      applicationId: '1', _opportunityId: 'o', applicantName: 'N', applicantEmail: 'e@x.com',
+      _bucket: 'submitted', status: 'Submitted', applicantState: 'GO',
+    } as any;
+    const answer = 'Ainda não sou filiada, mas pretendo me filiar ao PMI-GO';
+    const out = mapScriptToNucleo(app, opp, [{ applicationId: '1', questionId: '1', response: answer }], 'cyc');
+    expect(out.chapter_affiliation).toBe(answer);
+    expect(out.chapter).toBeNull();
+  });
+});
