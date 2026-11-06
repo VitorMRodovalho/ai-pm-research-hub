@@ -173,8 +173,23 @@ executor não prova pós-condição. O esperado é `status=serving` e `isDraft=F
 
 ```bash
 ~/.venvs/youtube/bin/python ~/projects/_pmo/youtube/subir_legendas.py --video-id=<ID> \
-  --track pt=legenda-pt.vtt --track es=legenda_es.vtt --track en=legenda_en.vtt
+  --track pt-BR=legenda-pt.vtt --track es-419=legenda_es.vtt --track en=legenda_en.vtt
 ```
+
+⚠️ **O código antes do `=` vira o idioma da faixa, sem conversão.** `pt=` e `es=` sobem a faixa como
+português e espanhol genéricos, fora do padrão `pt-BR`/`es-419` do canal e dos metadados. Aconteceu
+duas vezes (em 08/10 e em 05/11/2026), as duas pelo exemplo antigo desta seção. A correção custa
+reenviar as faixas (400 unidades cada) e apagar as de código curto.
+
+**Checklist da subida, nesta ordem, antes de tornar público:**
+1. vídeo como não listado (`upload.py`);
+2. miniatura (`set_thumbnail.py`), conferida baixando a imagem servida e comparando com o arquivo;
+3. localizações es-419 e en;
+4. legendas `pt-BR`, `es-419` e `en`, relidas como `serving` e não rascunho;
+5. releitura pela API: privacidade, playlist, título, descrição, capítulos e idiomas.
+
+Em 05/11/2026 o vídeo subiu sem miniatura, porque o passo 2 não estava numa lista, e ela só entrou
+quando o GP lembrou.
 
 ⚠️ **Id de vídeo pode começar com hífen.** `--video-id -029XsTWqwo` é lido como flag pelo argparse e
 falha; a forma com `=` é a que funciona.
@@ -318,6 +333,10 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
   o YouTube gera essa resolução sozinho para vídeo HD. Baixe a imagem e olhe.
 - **Miniatura:** não reaproveitar o banner do evento. O texto dele é convite no futuro ("dia 4,
   19h"), errado para replay. Gerar variante com o design-kit.
+- **Miniatura da Reunião Geral:** na mesma linguagem dos cartões do vídeo, com os tokens de
+  `src/styles/theme.css`, a Plus Jakarta Sans e o símbolo negativo de `public/brand/`, e sem mascote.
+  O modelo anterior, com o fundo roxo do comms-kit, a fonte Lato e o mascote, saiu de uso em
+  06/11/2026 por decisão do GP: não combinava com os cartões nem com a comunicação atual.
 
 ## Subir como não listado e virar público depois
 
