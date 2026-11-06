@@ -3175,6 +3175,8 @@ const enUS: Record<string, string> = {
   'webinars.emptyHint': 'New webinars will be announced soon.',
   'webinars.join': 'Join',
   'webinars.linkSoon': 'Link coming soon',
+  'webinars.liveNow': 'Live now',
+  'webinars.timeZoneLabel': 'Brasília time',
   'webinars.watchReplay': 'Watch replay',
   'webinars.participants': 'participants',
 

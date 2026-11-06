@@ -31892,6 +31892,16 @@ export type Database = {
       }
       _management_daily_digest_cron: { Args: never; Returns: Json }
       _mask_email: { Args: { p_email: string }; Returns: string }
+      _meeting_window_phase: {
+        Args: {
+          p_close_after?: string
+          p_duration_min: number
+          p_now: string
+          p_open_before?: string
+          p_starts_at: string
+        }
+        Returns: string
+      }
       _member_current_term: { Args: { p_member_id: string }; Returns: string }
       _member_has_image_consent: {
         Args: { p_member_id: string }
