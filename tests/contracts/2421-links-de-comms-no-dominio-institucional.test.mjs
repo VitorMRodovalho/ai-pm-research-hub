@@ -48,16 +48,6 @@ const EXCECOES = [
     motivo: 'e o proprio SSOT: declara PLATFORM_ORIGIN, que precisa do literal.',
   },
   {
-    arquivo: 'supabase/functions/pmi-video-init-upload/index.ts',
-    motivo:
-      'ALLOWED_ORIGIN de CORS. O header `Origin` que o navegador manda carrega o host CANONICO, ' +
-      'nunca o alias com 301 — trocar quebraria o upload, e sem erro obvio.',
-  },
-  {
-    arquivo: 'supabase/functions/pmi-video-finalize-upload/index.ts',
-    motivo: 'ALLOWED_ORIGIN de CORS, mesmo motivo do init-upload.',
-  },
-  {
     arquivo: 'supabase/functions/sync-artia/index.ts',
     motivo: 'prosa em descricao de projeto no Artia (ferramenta interna). Texto, nao link clicavel.',
   },

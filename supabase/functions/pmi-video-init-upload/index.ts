@@ -28,22 +28,24 @@
  *   }
  */
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { PLATFORM_ORIGIN, origemDoPortal } from "../_shared/comms-host.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const PMI_VIDEO_DRIVE_FOLDER_ID = Deno.env.get("PMI_VIDEO_DRIVE_FOLDER_ID") ?? "";
 const VAULT_KEY = "google_drive_oauth_credentials";
 
-const ALLOWED_ORIGIN = "https://nucleoia.vitormr.dev";
-const cors = {
-  "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
-  "Access-Control-Max-Age": "86400",
-  "Vary": "Origin",
-};
-const json = (d: unknown, s = 200) =>
-  new Response(JSON.stringify(d), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
+// #3017: CORS pela origem da requisicao, contra os 3 hosts do portal (PORTAL_ORIGINS). Antes era um host fixo, e o
+// envio feito de nucleoia.pmigo.org.br ou de nucleoia.org era recusado pelo navegador.
+function corsPara(origem: string | null): Record<string, string> {
+  return {
+    ...(origem ? { "Access-Control-Allow-Origin": origem } : {}),
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Headers": "authorization, content-type, apikey, x-client-info",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin",
+  };
+}
 
 const PILLAR_KEYS = ["background", "communication", "proactivity", "teamwork", "culture_alignment"];
 const VIDEO_MIME_RE = /^video\//;
@@ -120,6 +122,15 @@ function buildFilename(opts: {
 }
 
 Deno.serve(async (req) => {
+  // Origem fora da lista: recusa antes de qualquer leitura. Sem header Origin (chamada que nao vem de navegador),
+  // segue sem Access-Control-Allow-Origin.
+  const origem = origemDoPortal(req);
+  if (req.headers.has("Origin") && origem === null) {
+    return new Response(JSON.stringify({ error: "origin_not_allowed" }), { status: 403, headers: { "Content-Type": "application/json", "Vary": "Origin" } });
+  }
+  const cors = corsPara(origem);
+  const json = (d: unknown, s = 200) =>
+    new Response(JSON.stringify(d), { status: s, headers: { ...cors, "Content-Type": "application/json" } });
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
@@ -201,8 +212,9 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json; charset=UTF-8",
         "X-Upload-Content-Type": mime_type,
         "X-Upload-Content-Length": String(size_bytes),
-        // Hint Google to allow CORS on subsequent PUT chunks from browser
-        "Origin": ALLOWED_ORIGIN,
+        // Google ties the CORS of the session URL to this Origin: the browser PUTs the chunks from the same host
+        // that called this function. Without a browser Origin, the canonical host, as before.
+        "Origin": origem ?? PLATFORM_ORIGIN,
       },
       body: JSON.stringify({
         name: finalFilename,
