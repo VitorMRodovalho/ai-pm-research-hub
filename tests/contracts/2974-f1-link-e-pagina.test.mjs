@@ -275,17 +275,29 @@ function clausula(st, kw) {
   return null;
 }
 
+// Um identificador do SQL, como o Postgres o lê: entre aspas vale como está (com `""` virando `"`), sem aspas vira
+// minúsculo. As migrations usam as duas formas para o nome da policy, às vezes na mesma policy.
+const IDENT = '(?:"(?:[^"]|"")+"|[A-Za-z_][\\w$]*)';
+const ident = (s) => (s.startsWith('"') ? s.slice(1, -1).replace(/""/g, '"') : s.toLowerCase());
+const RE_POLICY = new RegExp(`\\b(CREATE|ALTER|DROP)\\s+POLICY\\s+(?:IF\\s+EXISTS\\s+)?(${IDENT})\\s+ON\\s+(?:(${IDENT})\\s*\\.\\s*)?(${IDENT})`, 'gi');
+
 /**
  * A definição vigente de uma policy, lendo as migrations em ordem de arquivo: o CREATE POLICY a define, cada ALTER
  * POLICY depois dele troca o USING e o WITH CHECK que trouxer, e o DROP POLICY a remove (devolve null).
  */
 function politica(tabela, nome) {
   const dir = resolve(ROOT, 'supabase/migrations');
-  const re = new RegExp(`\\b(CREATE|ALTER|DROP)\\s+POLICY\\s+(?:IF\\s+EXISTS\\s+)?"${escRe(nome)}"\\s+ON\\s+(?:public\\.)?${escRe(tabela)}\\b`, 'gi');
+  const fontes = readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()
+    .map((f) => ({ f, sql: semComentarioSql(readFileSync(resolve(dir, f), 'utf8')) }));
+  return politicaEm(fontes, tabela, nome);
+}
+
+/** O mesmo, sobre fontes dadas ({ f, sql } já sem comentário, em ordem), para os controles com SQL escrito no teste. */
+function politicaEm(fontes, tabela, nome) {
   let atual = null;
-  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
-    const sql = semComentarioSql(readFileSync(resolve(dir, f), 'utf8'));
-    for (const m of sql.matchAll(re)) {
+  for (const { f, sql } of fontes) {
+    for (const m of sql.matchAll(RE_POLICY)) {
+      if (ident(m[2]) !== nome || ident(m[4]) !== tabela || (m[3] !== undefined && ident(m[3]) !== 'public')) continue;
       const fim = sql.indexOf(';', m.index);
       const st = sql.slice(m.index + m[0].length, fim < 0 ? sql.length : fim);
       const verbo = m[1].toUpperCase();
@@ -355,6 +367,26 @@ function chamaRpc(fonte, r) {
   }
   return false;
 }
+
+test('o extrator de policy lê o nome com e sem aspas, como o Postgres', () => {
+  // Migrations reais em que a leitura só com aspas erra: um ALTER sem aspas depois de um CREATE com aspas (ela ficava
+  // com o USING do CREATE), um DROP sem aspas no fim (ela via a policy viva) e CREATE e ALTER sem aspas (ela não via).
+  assert.equal(politica('attendance', 'attendance_read_members')?.file, '20260805000246_rls_phase2_authoritative_member.sql',
+    'controle: o ALTER POLICY sem aspas depois de um CREATE com aspas não foi lido');
+  assert.equal(politica('cycles', 'cycles_admin_write'), null, 'controle: o DROP POLICY sem aspas não removeu a policy');
+  assert.equal(politica('cr_approvals', 'cr_approvals_read_authenticated')?.file, '20260805000463_1408_governance_write_surface_hardening.sql',
+    'controle: a policy criada e alterada sem aspas não foi lida');
+  // Formas que nenhuma migration usa hoje, escritas aqui: sem aspas dobra para minúsculo, com aspas não dobra, a tabela
+  // entre aspas vale, e outro schema não é public.
+  const fontes = (...sqls) => sqls.map((sql, i) => ({ f: `${i}.sql`, sql }));
+  assert.equal(politicaEm(fontes('CREATE POLICY Leitura ON public.t USING (a);'), 't', 'leitura')?.using, 'a',
+    'controle: o nome sem aspas não dobrou para minúsculo');
+  assert.equal(politicaEm(fontes('CREATE POLICY "Leitura" ON public.t USING (a);'), 't', 'leitura'), null,
+    'controle: o nome entre aspas dobrou para minúsculo');
+  assert.equal(politicaEm(fontes('CREATE POLICY p ON t USING (a);', 'ALTER POLICY "p" ON "public"."t" USING (b);'), 't', 'p')?.using, 'b',
+    'controle: o ALTER com a tabela entre aspas não foi lido');
+  assert.equal(politicaEm(fontes('CREATE POLICY p ON outro.t USING (a);'), 't', 'p'), null, 'controle: a policy de outro schema contou');
+});
 
 test('a declaração é a pergunta das RPCs e das policies da tela, e a tela as usa', () => {
   // controle do extrator de policy: o bloco de rollback de 15/04 (comentado) não ressuscita a policy removida
