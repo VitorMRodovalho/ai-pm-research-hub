@@ -9,11 +9,15 @@
 //   PLATFORM_ORIGIN — o host canonico do deploy. Vale para CORS, OAuth, callback e
 //                     qualquer lugar em que o navegador ou um provedor COMPARA a string.
 //
-// ⚠️ POR QUE NAO E UM SO: `COMMS_ORIGIN` responde 301 para `PLATFORM_ORIGIN`. Um 301 e
-// otimo para um humano clicando e PESSIMO para uma comparacao exata. O header `Origin`
-// que o navegador manda numa requisicao CORS carrega o host canonico, nunca o alias, entao
-// trocar `ALLOWED_ORIGIN` por `COMMS_ORIGIN` quebraria o upload de video sem erro obvio.
-// Mesma logica para redirect_uri de OAuth.
+// ⚠️ POR QUE NAO E UM SO: quando este arquivo nasceu, `COMMS_ORIGIN` respondia 301 para
+// `PLATFORM_ORIGIN`. Um 301 e otimo para um humano clicando e PESSIMO para uma comparacao
+// exata. Mesma logica para redirect_uri de OAuth.
+//
+// ⚠️ ISSO MUDOU: desde o fim de 09/2026 o Worker serve os tres hosts direto, sem redirect
+// (medido em 2026-11-06: pmigo, .org e vitormr.dev em 200, e um caminho inexistente do pmigo
+// em 404). Entao o header `Origin` de uma pagina do portal pode ser QUALQUER um dos tres, e
+// CORS por um host so recusa os outros dois. Para CORS, compare com `PORTAL_ORIGINS` por
+// `origemDoPortal(req)`, e nunca com um literal nem com '*'.
 //
 // Medido ao vivo em 2026-09-22, com controle negativo e com query string:
 //
@@ -48,4 +52,19 @@ export function commsUrl(path: string): string {
   if (!path) return COMMS_ORIGIN;
   if (/^https?:\/\//i.test(path)) return path;
   return `${COMMS_ORIGIN}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+/**
+ * Os hosts de onde o navegador chama as Edge Functions do portal: o canonico do deploy, o
+ * institucional e o de SEO. Os tres servem a mesma aplicacao, sem redirect.
+ */
+export const PORTAL_ORIGINS: readonly string[] = [PLATFORM_ORIGIN, COMMS_ORIGIN, 'https://nucleoia.org'];
+
+/**
+ * A origem da requisicao, se for um dos hosts do portal; senao, null. Comparacao exata do header
+ * `Origin`, sem normalizar: o navegador manda esquema e host, sem barra nem caminho.
+ */
+export function origemDoPortal(req: Request): string | null {
+  const origem = req.headers.get('Origin');
+  return origem !== null && PORTAL_ORIGINS.includes(origem) ? origem : null;
 }
