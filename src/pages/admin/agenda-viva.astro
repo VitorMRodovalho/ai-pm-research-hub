@@ -23,31 +23,50 @@ const i18nBundle = buildPageI18n(['comp.agendaViva', 'comp.common'], lang);
   ]}
 >
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
-  <div class="max-w-[1000px] mx-auto px-4 pb-12">
+  <div id="agenda-viva-notice" class="hidden max-w-[1000px] mx-auto px-4 text-center py-20 text-[var(--text-muted)]">{t('admin.deniedAdmin', lang)}</div>
+  <div id="agenda-viva-content" class="max-w-[1000px] mx-auto px-4 pb-12">
     <AdminAgendaVivaPanel client:load lang={lang} />
   </div>
   <Toast />
 </AdminLayout>
 
-<script is:inline define:vars={{ deniedMsg: t('admin.deniedAdmin', lang) }}>
-  document.addEventListener('DOMContentLoaded', () => {
-    // UX gate only — the RPCs (manage_event) are the real boundary. Allow anyone
-    // holding manage_event at any scope (org or initiative) per V4 capabilities.
-    const check = () => {
-      const caps = window.__nucleoCapabilities;
-      if (!caps) { setTimeout(check, 300); return; }
-      const has = (arr) => Array.isArray(arr) && arr.includes('manage_event');
-      const isAllowed =
-        caps.is_superadmin ||
-        has(caps.org_actions) ||
-        Object.values(caps.initiative_actions || {}).some(has) ||
-        Object.values(caps.tribe_actions || {}).some(has);
-      if (!isAllowed) {
-        const host = document.querySelector('.max-w-\\[1000px\\]');
-        if (host) host.innerHTML =
-          '<div class="text-center py-20 text-[var(--text-muted)]">' + deniedMsg + '</div>';
-      }
-    };
-    check();
+<script>
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  // UX gate only — the RPCs (manage_event) are the real boundary. Allow anyone
+  // holding manage_event at any scope (org or initiative) per V4 capabilities.
+  // #2974 (F2): o portão chama o allow quando o Nav resolve o membro, e o Nav lê as capacidades antes disso. Sem
+  // capacidades (a carga falhou), o allow dá falso, e o portão mostra o texto de falha de carga em vez de esperar.
+  function hasAgendaVivaAccess(member: any): boolean {
+    const caps = (window as any).__nucleoCapabilities;
+    if (!caps) return false;
+    const has = (arr: any) => Array.isArray(arr) && arr.includes('manage_event');
+    return caps.is_superadmin ||
+      has(caps.org_actions) ||
+      Object.values(caps.initiative_actions || {}).some(has) ||
+      Object.values(caps.tribe_actions || {}).some(has);
+  }
+
+  const AGENDA_VIVA_DENIED_TEXT = document.getElementById('agenda-viva-notice')?.textContent?.trim() || '';
+
+  function showAgendaVivaNotice(text: string) {
+    const notice = document.getElementById('agenda-viva-notice');
+    if (notice) { notice.textContent = text; notice.classList.remove('hidden'); }
+    document.getElementById('agenda-viva-content')?.classList.add('hidden');
+  }
+
+  function showAgendaVivaPage() {
+    document.getElementById('agenda-viva-notice')?.classList.add('hidden');
+    document.getElementById('agenda-viva-content')?.classList.remove('hidden');
+  }
+
+  // #2974 (F2): a espera é a do gateAdminPage, que decide quando o Nav resolve o membro, sem prazo. Sem sessão, a
+  // tela pede para entrar. O predicado do allow é o de antes, e a espera pelas capacidades virou recusa.
+  gateAdminPage({
+    allow: hasAgendaVivaAccess,
+    onAllowed: () => showAgendaVivaPage(),
+    onDenied: () => showAgendaVivaNotice(AGENDA_VIVA_DENIED_TEXT),
+    onNoSession: () => showAgendaVivaNotice(adminSignInText()),
+    onLoadFailed: () => showAgendaVivaNotice(adminLoadFailedText()),
   });
 </script>
