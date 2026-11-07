@@ -5,7 +5,7 @@
 // Static parser: extracts per-tool name, description, RPC calls, table touches,
 // canV4 gates, external fetches, return shape hints from supabase/functions/nucleo-mcp/index.ts.
 //
-// Optional runtime cross-check: fetches tools/list via nucleoia.vitormr.dev/mcp,
+// Optional runtime cross-check: fetches tools/list via nucleoia.org/mcp,
 // flags drift between static parser and runtime tools/list.
 //
 // Outputs:
@@ -22,7 +22,7 @@ import { resolve, dirname } from "node:path";
 const SOURCE_PATH = "supabase/functions/nucleo-mcp/index.ts";
 const MATRIX_MD_PATH = "docs/reference/MCP_TOOL_MATRIX.md";
 const MATRIX_JSON_PATH = "docs/reference/mcp-tool-matrix.json";
-const RUNTIME_URL = "https://nucleoia.vitormr.dev/mcp";
+const RUNTIME_URL = "https://nucleoia.org/mcp";
 
 const DOMAIN_RULES = [
   [/^(get_my_|set_my_)/, "personal"],
