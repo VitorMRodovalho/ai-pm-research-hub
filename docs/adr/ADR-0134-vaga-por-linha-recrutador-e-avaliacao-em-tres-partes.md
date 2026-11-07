@@ -1,6 +1,6 @@
 # ADR-0134 - Vaga por linha de pesquisa e por organização: recrutador, avaliação em três partes e mecanismos por candidatura
 
-**Status:** Aceita (02/10/2026). Aprovada pelo GP nesta data ("1 e 2 aprovados para seguir"), depois das decisões de 01/10/2026, tomadas uma a uma sobre um caderno com contexto medido, opções e recomendação.
+**Status:** Aceita (02/10/2026). Aprovada pelo GP nesta data ("1 e 2 aprovados para seguir"), depois das decisões de 01/10/2026, tomadas uma a uma sobre um caderno com contexto medido, opções e recomendação. Emendada em 03/10/2026 (base legal do vídeo) e em 06/11/2026 (o líder da vaga na objetiva), nas seções do fim.
 **Pedido:** [#2393](https://github.com/VitorMRodovalho/ai-pm-research-hub/issues/2393) (direção do GP em 20/09/2026: vaga por tema de pesquisa, com o líder da tribo na seleção). Esta ADR responde as quatro perguntas que a #2393 deixou abertas.
 **Insumo:**
 - gap assessment do processo de vagas, com revisão nas três personas (candidatura, GP e líder recrutador, capítulo e parceiro);
@@ -78,7 +78,7 @@ Geral (Núcleo), organização e linha. A candidatura guarda o par pergunta e re
 
 | Parte | Quem | Como | Peso |
 |---|---|---|---|
-| Objetiva (currículo e respostas) | 2 avaliadores de fora da linha | régua do ciclo | 35% |
+| Objetiva (currículo e respostas) | o líder da vaga e 1 avaliador de fora da linha (emenda de 06/11/2026) | régua do ciclo | 35% |
 | Vídeo estruturado | 2 avaliadores de fora da linha | rubrica com âncoras por pergunta, escrita com o líder; nota antes da discussão | 45% |
 | Conversa de fit | líder da linha | critérios escritos antes (horas, fuso, idioma, competências da linha, alinhamento ao objetivo da pesquisa), com âncoras; aprofunda 1 ou 2 histórias do vídeo e confere a autoria | 20% |
 
@@ -94,11 +94,11 @@ Geral (Núcleo), organização e linha. A candidatura guarda o par pergunta e re
 
 ### 4. Independência e impedimento
 
-- **O líder fica impedido da avaliação objetiva e da avaliação do vídeo da própria vaga.** O impedimento vale na escrita (`submit_evaluation`, `submit_interview_scores`) **e** no despachante automático de avaliações (ADR-0022, D-sel-5). Esta ADR abre o lado da escrita que a ADR-0109 não cobre, com o precedente da ADR-0133 (3-B).
+- **O líder fica impedido da avaliação do vídeo da própria vaga.** Na objetiva, ele avalia com 1 avaliador de fora da linha, e nenhuma outra pessoa com vínculo na linha entra (emenda de 06/11/2026). O impedimento vale na escrita (`submit_evaluation`, `submit_interview_scores`) **e** no despachante automático de avaliações (ADR-0022, D-sel-5). Esta ADR abre o lado da escrita que a ADR-0109 não cobre, com o precedente da ADR-0133 (3-B).
 - **Avaliadores de fora da linha:** o comitê é ampliado por convite, com avaliadores voluntários como pesquisadores seniores e ex-líderes.
   - A autoridade vem de um vínculo próprio de avaliador (ADR-0007), com calibragem prévia obrigatória.
   - Cada avaliador lê só as candidaturas atribuídas a ele.
-- **No piloto (P2):** o vídeo é avaliado por 2 líderes de outras linhas que aceitarem. São Nível 3, como a R2 pede na avaliação qualitativa. A objetiva fica com convidados. O GP convida 4 pessoas e 1 reserva. O convite amplo é a direção para o ciclo 5, junto com a R3.
+- **No piloto (P2):** o vídeo é avaliado por 2 líderes de outras linhas que aceitarem. São Nível 3, como a R2 pede na avaliação qualitativa. A objetiva fica com o líder da vaga e 1 avaliador de fora da linha, os dois calibrados (emenda de 06/11/2026). Antes da emenda, ficava com convidados: o GP convidaria 4 pessoas e 1 reserva. O convite amplo é a direção para o ciclo 5, junto com a R3.
 - Revisão cega (ADR-0059) e recusa por conflito (ADR-0109) seguem valendo.
 
 ### 5. IA
@@ -181,7 +181,8 @@ O capítulo pedido nas boas-vindas a quem veio sem ele é **autodeclarado**, nun
 ## Invariantes
 
 - A aprovação final é do GP. A IA nunca decide (ADR-0067).
-- Dupla avaliação independente: 2 objetivas e 2 de vídeo, de fora da linha.
+- Dupla avaliação: 2 objetivas, do líder da vaga e de 1 avaliador de fora da linha, e 2 de vídeo, de fora da linha. Na objetiva, no máximo 1 avaliador de dentro da linha por candidatura, e só o líder da vaga (emenda de 06/11/2026).
+- A divergência entre as duas notas de uma parte é sinalizada por candidatura (ADR-0059, emendada pela seção 8) e chega a quem decide.
 - Revisão cega e recusa por conflito (ADRs 0059 e 0109).
 - Leitura de candidatura só com escopo, com registro em `pii_access_log`. Nenhuma superfície nova reusa `view_internal_analytics`.
 - Toda entrada nova de aprovação passa pela função canônica (ADR-0093).
@@ -261,3 +262,31 @@ A linha E4 do plano e o benchmark de 01/10 foram ajustados na mesma mudança.
 ## Nota de execução (03/11/2026, #2967): seção 5 no vídeo
 
 A função de borda `analyze-application-video` passa a só transcrever: Whisper e gravação do texto em `pmi_video_screenings`. Ela não chama modelo de texto, não baixa a miniatura do Drive, não lê o campo de nome e não grava em `selection_evaluation_ai_suggestions`. A descrição da ferramenta `analyze_application_video` no MCP reflete o mesmo contrato. Guard: `tests/contracts/analyze-application-video-transcription-only.test.mjs`.
+
+## Emenda (06/11/2026, #2393): na objetiva, o líder da vaga com 1 avaliador de fora
+
+**O que dizia.** A seção 4 impedia o líder da vaga nas duas partes avaliadas por pessoas, a objetiva e o vídeo. As 2 notas de cada parte vinham de fora da linha, e o líder só entrava no fit.
+
+**Decisão do GP (06/11/2026).** O líder da vaga entra na objetiva, ao lado de 1 avaliador de fora da linha. O GP pesou duas coisas: o líder não deve decidir sozinho a entrada, e o processo não deve travar nem deixar o dono da vaga fora da análise. O avaliador de fora tira o viés da linha, seja o GP no alfa ou outra pessoa sem vínculo com ela depois.
+
+**O motivo: auditoria no lugar de controle.** Impedir o líder é controle: a regra evita o viés antes que ele aconteça, ao custo de recrutar, calibrar e acompanhar mais convidados para cada vaga. Com várias linhas abrindo vaga, esse custo não escala. A emenda troca o controle por auditoria: o líder avalia, e uma divergência grande entre a nota dele e a da pessoa de fora vira sinal para quem decide.
+
+**Como fica.**
+
+| Parte | Quem avalia |
+|---|---|
+| Objetiva | o líder da vaga e 1 avaliador de fora da linha, os dois calibrados |
+| Vídeo | 2 avaliadores de fora da linha, sem mudança |
+| Fit | o líder da vaga, sem mudança |
+
+- Na objetiva, entra no máximo 1 avaliador de dentro da linha por candidatura, e só com vínculo de líder ativo na iniciativa da vaga. Qualquer outro vínculo na linha continua impedido nas duas partes.
+- A regra é conferida na atribuição e de novo a cada uso, pela regra única de quem avalia. Se a pessoa de fora entrar na linha depois de atribuída, as duas atribuições daquela candidatura param, e a gestão refaz.
+- A decisão final continua com o comitê, e a aprovação, com o GP (ADR-0109).
+
+**O farol.**
+- **Agora, humano.** O detector de divergência por candidatura (ADR-0059, emendada pela seção 8) marca a candidatura quando a maior nota de uma parte passa a menor em mais de 30% da média. O caso marcado vai para a revisão da gestão. Para isso, o sinal precisa chegar a quem decide. Em 06/11, ele só era gravado e ainda não chegava a nenhuma tela nem aviso. Fazer o sinal chegar é condição desta emenda, e não melhoria futura.
+- **Depois do alfa, a IA como mais um sinal.** Comparar a triagem por IA com a nota humana, com as escalas normalizadas, só onde o candidato consentiu na análise por IA. A IA nunca decide nem entra na nota (ADR-0067, D1; seção 5 desta ADR).
+
+**Risco conhecido.** Quando o avaliador de fora também é da gestão, ele pode ler as notas do piloto como gestão. Nesse caso, a independência entre as duas notas fica por conduta, e não por trava do sistema. O texto ao candidato deixou de prometer que nenhum avaliador vê a nota do outro.
+
+**Execução.** Uma migration troca o impedimento por vínculo na linha, nas funções de atribuição e de quem avalia, por uma regra única por candidatura e por parte. O texto de "quem avalia" no portal do candidato muda nas 3 línguas (#3014). O alerta de divergência chega a quem decide: na candidatura piloto, o alerta novo avisa a gestão na hora, sem o nome do candidato, e o painel mostra a parte divergente só à gestão (#3022).
