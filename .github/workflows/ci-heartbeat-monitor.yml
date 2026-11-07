@@ -269,7 +269,7 @@ jobs:
   monitor_deploy_lag:
     runs-on: ubuntu-latest
     env:
-      SITE_ORIGIN: https://nucleoia.vitormr.dev
+      SITE_ORIGIN: https://nucleoia.org
       GRACE_MINUTES: '60'
     steps:
       - name: Check deployed provenance against main

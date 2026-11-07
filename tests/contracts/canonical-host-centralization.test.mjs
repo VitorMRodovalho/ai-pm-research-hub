@@ -23,6 +23,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => (existsSync(resolve(ROOT, p)) ? readFileSync(resolve(ROOT, p), 'utf8') : '');
@@ -38,6 +39,17 @@ test('canonical.ts: exists and exports CANONICAL_HOST + CANONICAL_ORIGIN', () =>
   assert.match(src, /export const CANONICAL_ORIGIN\s*=/, 'exports CANONICAL_ORIGIN');
   // ORIGIN is derived from HOST (so a flip needs to touch only HOST)
   assert.match(src, /CANONICAL_ORIGIN\s*=\s*`https:\/\/\$\{CANONICAL_HOST\}`/, 'ORIGIN derives from HOST');
+});
+
+// ── The OAuth/MCP identity host is nucleoia.org (GP decision 2026-11-06, option B) ─
+test('canonical.ts: CANONICAL_HOST is nucleoia.org and the dev tooling follows it', () => {
+  assert.match(read(MODULE_PATH), /export const CANONICAL_HOST\s*=\s*"nucleoia\.org";/, 'CANONICAL_HOST value');
+  assert.match(read('scripts/smoke-test.mjs'), /\|\| 'https:\/\/nucleoia\.org';/, 'smoke default base');
+  // exact-host comparison (CodeQL js/incomplete-url-substring-sanitization): the host is parsed from
+  // Location and compared with assert.equal, not matched by substring
+  assert.match(maskJsComments(read('scripts/smoke-test.mjs')), /const host = location \? new URL\(location, 'https:\/\/platform\.ai-pm-research-hub\.workers\.dev\/'\)\.host : null;\s*assert\.equal\(host, 'nucleoia\.org',/, 'smoke legacy-redirect assertion');
+  assert.match(read('scripts/audit-mcp-tool-matrix.mjs'), /const RUNTIME_URL = "https:\/\/nucleoia\.org\/mcp";/, 'audit runtime url');
+  assert.match(read('package.json'), /"smoke:prod":\s*"node scripts\/smoke-test\.mjs --base https:\/\/nucleoia\.org"/, 'smoke:prod base');
 });
 
 // ── RATCHET: the host literal lives ONLY in canonical.ts across all of src/ ───────

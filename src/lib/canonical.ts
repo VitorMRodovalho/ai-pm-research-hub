@@ -3,6 +3,11 @@
 // SINGLE SOURCE OF TRUTH for the platform's canonical public host.
 //
 // The canonical domain flip (Rider — Ciclo 4) lives HERE and nowhere else.
+//
+// STATE: the OAuth/MCP identity host is `nucleoia.org` (GP decision 2026-11-06, option B). The old
+// host `nucleoia.vitormr.dev` keeps serving and keeps its own identity: the .well-known routes and the
+// 401 challenge of the three MCP routes derive from the REQUEST origin, so clients connected there
+// are not moved by this constant (guard: tests/contracts/mcp-challenge-host-from-request.test.mjs).
 // To flip the OAuth/MCP identity host, change CANONICAL_HOST below. Every public
 // host literal in `src/` lives in this file (CANONICAL_HOST, SEO_CANONICAL_HOST,
 // CERT_VERIFY_HOST). A contract test
@@ -38,7 +43,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Canonical public host (no scheme). The ONE place to change for a domain flip. */
-export const CANONICAL_HOST = "nucleoia.vitormr.dev";
+export const CANONICAL_HOST = "nucleoia.org";
 
 /** Canonical origin, e.g. `https://nucleoia.vitormr.dev`. Use for absolute URLs. */
 export const CANONICAL_ORIGIN = `https://${CANONICAL_HOST}`;

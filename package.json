@@ -9,7 +9,7 @@
     "build": "npm run clean && astro build --timings && node scripts/patch-worker-polyfill.mjs",
     "preview": "astro preview",
     "smoke": "node scripts/smoke-test.mjs",
-    "smoke:prod": "node scripts/smoke-test.mjs --base https://nucleoia.vitormr.dev",
+    "smoke:prod": "node scripts/smoke-test.mjs --base https://nucleoia.org",
     "astro": "astro",
     "test": "npm run test:structural && npm run test:behavioural",
     "test:structural": "node scripts/run-suite.mjs structural",
