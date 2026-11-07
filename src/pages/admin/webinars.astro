@@ -294,6 +294,7 @@ const WEBINARS_I18N = {
 <script>
   import { canEnterAdminRoute } from '../../lib/navigation.config';
   import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+  import { canForUnscoped } from '../../lib/permissions';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__WEBINARS_I18N) || {
@@ -374,10 +375,11 @@ const WEBINARS_I18N = {
   function isFuture(iso: string): boolean {
     return new Date(iso).getTime() > Date.now();
   }
+  // #2974: criar e editar pela tela pergunta o que upsert_webinar pergunta para criar (manage_member, sem recurso),
+  // e não mais papel ou designação V3. O servidor também aceita editar para o organizador e os co-gestores do webinar.
   function canEdit(): boolean {
     if (!MEMBER) return false;
-    return MEMBER.is_superadmin || ['manager','deputy_manager'].includes(MEMBER.operational_role)
-      || (MEMBER.designations || []).includes('co_gp');
+    return canForUnscoped('manage_member');
   }
 
   function nextAction(w: any): { label: string; href: string; tone: string; priority: number } {
