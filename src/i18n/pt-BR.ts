@@ -7460,7 +7460,7 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.journeyFit': 'Depois do vídeo: uma conversa com o líder da linha.',
   'pmi.onboarding.journeyResult': 'Resultado: por e-mail, até {date}.',
   'pmi.onboarding.journeyResultNoDate': 'Resultado: por e-mail.',
-  'pmi.onboarding.journeyWho': 'Quem avalia: duas pessoas de fora da linha avaliam seu currículo e seu vídeo, cada uma sem ver a nota da outra. O líder da linha faz a conversa. A decisão final é da gestão do Núcleo.',
+  'pmi.onboarding.journeyWho': 'Quem avalia: o líder da linha e uma pessoa de fora dela avaliam seu currículo e suas respostas, e duas pessoas de fora da linha avaliam seu vídeo. O líder da linha faz a conversa. A decisão final é da gestão do Núcleo.',
   'pmi.onboarding.consentDone': 'Pronto: sua escolha foi registrada. Os próximos passos chegam por e-mail.',
   'pmi.onboarding.consentDonePilot': 'Pronto: sua escolha foi registrada. O próximo passo é o convite do vídeo, por e-mail, até {date}.',
   'pmi.onboarding.helpLine': 'Precisa de ajuda ou de alguma adaptação para participar? Escreva para {email}.',
