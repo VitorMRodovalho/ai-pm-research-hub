@@ -46,7 +46,8 @@ await test('Legacy redirect: workers.dev → 301', async () => {
   const res = await fetch('https://platform.ai-pm-research-hub.workers.dev/', { redirect: 'manual' });
   assert.equal(res.status, 301);
   const location = res.headers.get('location');
-  assert.ok(location?.includes('nucleoia.org'), `Redirects to custom domain, got: ${location}`);
+  const host = location ? new URL(location, 'https://platform.ai-pm-research-hub.workers.dev/').host : null;
+  assert.equal(host, 'nucleoia.org', `Redirects to custom domain, got: ${location}`);
 });
 
 await test('i18n: /en/ serves English', async () => {
