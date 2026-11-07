@@ -601,10 +601,11 @@ async function run() {
     assert.equal(await blogPage.locator('#blog-denied').isVisible(), false, 'com a ação, o blog ainda mostra o aviso');
     await blogPage.close();
 
-    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags, o painel do admin e a vep-reconciliation esperam pelo
-    // gateAdminPage. Sem sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para sempre.
+    // #2974 (F2): agenda-recorrente, data-health, knowledge, tags, o painel do admin, a vep-reconciliation e a agenda-viva
+    // esperam pelo gateAdminPage. Sem sessão, cada uma pede para entrar e esconde o conteúdo, em vez de se reagendar para
+    // sempre.
     const escondido = (p, sel) => p.evaluate((s) => document.querySelector(s)?.classList.contains('hidden') === true, sel);
-    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard'], ['vep-reconciliation', 'vep-reconciliation']]) {
+    for (const [rota, id] of [['agenda-recorrente', 'recurring-agenda'], ['data-health', 'data-health'], ['knowledge', 'knowledge'], ['tags', 'tags'], ['', 'admin-dashboard'], ['vep-reconciliation', 'vep-reconciliation'], ['agenda-viva', 'agenda-viva']]) {
       await page.goto(rota ? `${base}/admin/${rota}` : `${base}/admin`, { waitUntil: 'networkidle' });
       const aviso = page.locator(`#${id}-notice`);
       await aviso.waitFor({ state: 'visible' });
@@ -660,6 +661,36 @@ async function run() {
     await painelPage.waitForFunction(() => document.getElementById('admin-dashboard-content')?.classList.contains('hidden') === false);
     assert.equal(await escondido(painelPage, '#admin-dashboard-notice'), true, 'liberado, o painel do admin ainda mostra o aviso');
     await painelPage.close();
+
+    // A agenda-viva decide só pelas capacidades: sem elas (a carga falhou), o texto de falha de carga, mesmo com um papel
+    // de gestão; sem manage_event, o texto de antes; com manage_event num escopo de iniciativa, o conteúdo aparece e o
+    // aviso some.
+    const vivaPage = await browser.newPage({ locale: 'pt-BR' });
+    await vivaPage.goto(`${base}/admin/agenda-viva`, { waitUntil: 'networkidle' });
+    const vivaMostra = (texto) => vivaPage.waitForFunction(
+      (t) => (document.getElementById('agenda-viva-notice')?.textContent || '').trim() === t, texto);
+    await vivaPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => true;
+      window.__nucleoCapabilities = null;
+      window.navGetMember = () => ({ id: 'viva-manager-test', auth_id: 'viva-manager-test', operational_role: 'manager', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await vivaMostra(textoPtBr('admin.capabilitiesLoadFailed'));
+    assert.equal(await escondido(vivaPage, '#agenda-viva-content'), true, 'sem capacidades, a agenda-viva ainda mostra o conteúdo');
+    await vivaPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['view_pii'], initiative_actions: { 'viva-ini': ['view_event'] }, tribe_actions: {} };
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await vivaMostra(textoPtBr('admin.deniedAdmin'));
+    assert.equal(await escondido(vivaPage, '#agenda-viva-content'), true, 'negada, a agenda-viva ainda mostra o conteúdo');
+    await vivaPage.evaluate(() => {
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: [], initiative_actions: { 'viva-ini': ['manage_event'] }, tribe_actions: {} };
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await vivaPage.waitForFunction(() => document.getElementById('agenda-viva-content')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(vivaPage, '#agenda-viva-notice'), true, 'liberada, a agenda-viva ainda mostra o aviso');
+    await vivaPage.close();
 
     // A stakeholder, no BaseLayout: sem sessão, pede para entrar no lugar do carregando; negada, o texto de antes, também
     // com as capacidades falhas (o predicado só lê o membro); liberada, o app aparece e o aviso e o carregando somem.
