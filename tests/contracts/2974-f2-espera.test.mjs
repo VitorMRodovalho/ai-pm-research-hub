@@ -9,6 +9,7 @@
  * - Liberada, o conteúdo aparece e o aviso some, para o caso de o Nav resolver de novo depois de uma recusa.
  * - A tela não espera mais por conta própria: nada de setTimeout nem de leitura do membro ou das capacidades fora do
  *   portão. A agenda-viva decide só pelas capacidades, e lê-las dentro do allow é o portão decidindo.
+ * - F6: a comparação de tribos entra na mesma tabela. O portão dela esperava window.navMember, que nada define.
  * - O texto de falha de carga só existe onde a recusa pode ser falsa: a tela tem onLoadFailed se e só se o predicado
  *   lê capacidade. Um predicado que só lê o membro decide igual com ou sem get_caller_capabilities.
  * - O span admin-signin-to-view, que o adminSignInText lê, aparece uma vez só no que monta a tela (página e layouts).
@@ -45,6 +46,12 @@ const TELAS = [
   {
     arq: 'src/pages/admin/vep-reconciliation.astro', id: 'vep-reconciliation', nome: 'VepReconciliation', texto: "t('admin.deniedAdmin', lang)",
     ilha: 'VepReconciliationIsland', predicado: TIER_B,
+  },
+  // F6: o portão antigo da comparação de tribos esperava window.navMember, que nada define, e nunca decidia. O allow
+  // é o predicado que a página já tinha (aprovado pelo GP com a matriz de antes e depois).
+  {
+    arq: 'src/pages/admin/tribes.astro', id: 'tribes', nome: 'Tribes', texto: "t('admin.tribes.denied', lang)",
+    ilha: 'CrossTribeIsland', predicado: TIER_B,
   },
   // A agenda-viva decide só pelas capacidades. Antes, `if (!caps) { setTimeout(check, 300); return; }` esperava por
   // elas sem fim; aqui o Nav já as leu quando o portão chama o allow, e sem elas a resposta é falso. O resto é o de antes.
@@ -249,6 +256,23 @@ const ILHAS = [
   // O painel da agenda-viva não tem predicado: quem decide é a página, e as RPCs (manage_event) são a fronteira.
   { arq: 'src/components/admin/AdminAgendaVivaPanel.tsx', retorno: 'if (!memberId) return null; if (loading) {', predicado: null },
 ];
+
+// ── A ilha da comparação de tribos (F6) carrega dentro do próprio useEffect, que depende do filtro de tipo: a espera
+// pelo membro fica no começo do efeito, e o membro entra nas dependências.
+const CROSS_TRIBE = 'src/components/islands/CrossTribeIsland.tsx';
+test(`${CROSS_TRIBE}: a primeira chamada espera o membro resolvido, sem laço próprio`, () => {
+  const s = norm(maskJsComments(ler(CROSS_TRIBE)));
+  assert.match(s, /import \{ useResolvedMember \} from '\.\.\/\.\.\/hooks\/useResolvedMember';/);
+  assert.match(s, /const \{ memberId \} = useResolvedMember\(\);/, 'a ilha não lê o membro resolvido');
+  assert.match(s, /useEffect\(\(\) => \{ if \(!memberId\) return; let cancelled = false; const load = async \(\) => \{ const sb = \(window as any\)\.navGetSb\?\.\(\); if \(!sb\) return; /,
+    'o efeito não espera o membro antes de carregar');
+  assert.match(s, /load\(\); return \(\) => \{ cancelled = true; \}; \}, \[selectedKind, memberId\]\);/, 'o efeito não se repete quando o membro muda');
+  assert.doesNotMatch(s, /setTimeout/, 'a ilha voltou a se reagendar');
+});
+
+test(`${CROSS_TRIBE}: sem membro, não mostra nada`, () => {
+  assert.ok(norm(maskJsComments(ler(CROSS_TRIBE))).includes('if (!memberId) return null; if (loading) return'), 'a ilha mostra conteúdo sem membro');
+});
 
 // O load vai até o fechamento do useCallback, com a lista de dependências que ele tiver (o painel da agenda-viva
 // depende de getSb).
