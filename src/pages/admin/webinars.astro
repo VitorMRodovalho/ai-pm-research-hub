@@ -341,6 +341,9 @@ const WEBINARS_I18N = {
   let MEMBER: any = null;
   let ALL_WEBINARS: any[] = [];
   let coManagerIds: string[] = [];
+  // #3028: o card ligado ao webinar aberto no modal. Ao editar, upsert_webinar grava board_item_id = p_board_item_id,
+  // sem COALESCE, então a tela reenvia este valor para não apagar o vínculo.
+  let editingBoardItemId: string | null = null;
   let allActiveMembers: { id: string; name: string; operational_role: string }[] = [];
 
   function showDenied() {
@@ -641,6 +644,9 @@ const WEBINARS_I18N = {
     coManagerIds = w?.co_managers?.map((cm: any) => cm.id) || [];
     loadActiveMembers().then(renderCoManagerSelector);
 
+    // Card ligado: vem de list_webinars_v2 e volta no salvar da edição (#3028)
+    editingBoardItemId = w?.board_item_id ?? null;
+
     if (w) {
       titleEl.textContent = T.modalEditTitle;
       idEl.value = w.id;
@@ -747,7 +753,10 @@ const WEBINARS_I18N = {
         p_notes: notes || null,
         p_co_manager_ids: coManagerIds.length > 0 ? coManagerIds : null,
       };
-      if (id) params.p_id = id;
+      if (id) {
+        params.p_id = id;
+        params.p_board_item_id = editingBoardItemId;
+      }
 
       const { error } = await sb.rpc('upsert_webinar', params);
       if (error) throw error;
