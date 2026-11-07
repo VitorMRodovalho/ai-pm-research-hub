@@ -17,14 +17,12 @@ import {
 // rotating Supabase refresh token → forced re-login each ~1h). Claude refreshes via
 // /oauth/token. decodeJwtPayload is imported only to read `sub` for the rate limit.
 import { decodeJwtPayload } from '../../lib/mcp-refresh';
-import { CANONICAL_ORIGIN } from '../../lib/canonical';
 
 async function kvLog(_endpoint: string, _data: any) {
   // No-op: KV debug logs disabled to protect free tier write limit (1k/day).
 }
 
 const UPSTREAM = 'https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/semantic';
-const BASE = CANONICAL_ORIGIN;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +31,7 @@ const CORS_HEADERS = {
   'Access-Control-Expose-Headers': 'Mcp-Session-Id',
 };
 
-export const ALL: APIRoute = async ({ request }) => {
+export const ALL: APIRoute = async ({ request, url }) => {
   const reqBody = request.method === 'POST' ? await request.clone().text() : null;
   await kvLog("mcp-semantic-request", {
     method: request.method,
@@ -49,14 +47,16 @@ export const ALL: APIRoute = async ({ request }) => {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  // RFC 9728: if no Authorization header, return 401 to trigger OAuth flow
+  // RFC 9728: if no Authorization header, return 401 to trigger OAuth flow.
+  // The metadata URL follows the host the client connected on (url.origin), the same rule the
+  // .well-known routes use, so each host advertises its own identity and stays self-consistent.
   const authHeader = request.headers.get('authorization');
   if (!authHeader) {
     return new Response(JSON.stringify({ error: 'unauthorized', error_description: 'Bearer token required' }), {
       status: 401,
       headers: {
         'Content-Type': 'application/json',
-        'WWW-Authenticate': `Bearer resource_metadata="${BASE}/.well-known/oauth-protected-resource/mcp/semantic"`,
+        'WWW-Authenticate': `Bearer resource_metadata="${url.origin}/.well-known/oauth-protected-resource/mcp/semantic"`,
         ...CORS_HEADERS,
       },
     });

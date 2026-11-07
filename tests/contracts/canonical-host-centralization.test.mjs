@@ -70,10 +70,11 @@ test('canonical-host: no other file under src/ hardcodes the host literal', () =
 // list — they derive issuer/resource from the REQUEST origin (url.origin) so
 // the same metadata serves the canonical host and the institutional alias.
 // The host-literal ratchet above still covers them (no hardcoded hosts).
+// The three MCP proxy routes (mcp.ts, mcp/semantic.ts, mcp/actions.ts) left the list for the same
+// reason: their 401 challenge derives from the request origin. That is asserted in
+// tests/contracts/mcp-challenge-host-from-request.test.mjs.
 const CRITICAL = [
   ['src/middleware.ts', /from ["']\.\/lib\/canonical["']/],
-  ['src/pages/mcp.ts', /from ["']\.\.\/lib\/canonical["']/],
-  ['src/pages/mcp/semantic.ts', /from ["']\.\.\/\.\.\/lib\/canonical["']/],
   ['src/lib/certificates/pdf.ts', /from ["']\.\.\/canonical["']/],
 ];
 
