@@ -64,7 +64,7 @@ const COMMS_I18N = {
 <AdminLayout title={t('admin.comms.meta', lang)} breadcrumbs={[{label: t('admin.breadcrumb.content', lang)},{label: t('admin.comms.meta', lang)}]}>
   <style>
     @media print {
-      nav, aside, header, footer, .no-print, #admin-sections, #btn-export-csv, #btn-export-pdf { display: none !important; }
+      nav, aside, header, footer, .no-print, #admin-sections, #comms-staleness-banner, #btn-export-csv, #btn-export-pdf { display: none !important; }
       body { background: white !important; color: black !important; }
       #comms-panel { padding: 0 !important; }
       section, div { break-inside: avoid; }
@@ -102,6 +102,9 @@ const COMMS_I18N = {
       <span id="ai18n-comms-time-hour" class="hidden">{t('admin.comms.timeHourAgo', lang)}</span>
       <span id="ai18n-comms-time-day" class="hidden">{t('admin.comms.timeDayAgo', lang)}</span>
       <span id="ai18n-comms-no-channel" class="hidden">{t('admin.comms.noChannel', lang)}</span>
+
+      <!-- Faixa de dado parado: para todos que entram (#2974), acima dos números que ela explica -->
+      <div id="comms-staleness-banner" class="hidden"></div>
 
       <!-- S1: Executive KPI Cards -->
       <section id="kpi-section" class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -313,11 +316,10 @@ const COMMS_I18N = {
         </div>
       </section>
 
-      <!-- S6: Channel Admin (comms_leader+ only) -->
+      <!-- S6: Channel Admin (manage_comms) -->
       <div id="admin-sections" class="space-y-6">
         <!-- Token Alerts -->
         <div id="comms-token-alerts" class="hidden space-y-2"></div>
-        <div id="comms-staleness-banner" class="hidden"></div>
 
         <!-- Channel Config -->
         <section id="comms-channels" class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl overflow-hidden">
@@ -374,6 +376,7 @@ const COMMS_I18N = {
 <script>
   import { canEnterAdminRoute } from '../../lib/navigation.config';
   import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+  import { canForUnscoped } from '../../lib/permissions';
 
   // PT-BR fallbacks (graceful degradation if define:vars injection fails)
   const T = (typeof window !== 'undefined' && (window as any).__COMMS_I18N) || {
@@ -416,13 +419,11 @@ const COMMS_I18N = {
     return String(n);
   }
 
+  // #2974: a grade de canais, os alertas de token e os botões de configurar e de dispensar perguntam o que
+  // admin_manage_comms_channel e comms_acknowledge_alert perguntam (manage_comms, sem recurso), e não papel ou designação V3.
   function canManageChannels(member: any): boolean {
     if (!member) return false;
-    if (member.is_superadmin) return true;
-    const role = String(member.operational_role || '');
-    if (['manager', 'deputy_manager'].includes(role)) return true;
-    const desigs: string[] = Array.isArray(member.designations) ? member.designations : [];
-    return desigs.includes('comms_leader');
+    return canForUnscoped('manage_comms');
   }
 
   // ── S1: Executive KPIs with period comparison ──
@@ -1056,12 +1057,12 @@ const COMMS_I18N = {
     wireTopContentFilter();  // OPP-190.H
     loadCommsCalendar();  // p159 S#1 T7 / Q4
     loadCommsFunnel();    // p159 S#2 Q2 MP-1 Phase A
+    loadStalenessBanner();  // #2974: lê só comms_channel_status, sem a varredura de token
 
-    // Admin sections (leader+ only)
+    // Admin sections (manage_comms only)
     if (canManageChannels(currentMember)) {
       loadChannelConfig();
       loadTokenAlerts();
-      loadStalenessBanner();
     } else {
       document.getElementById('admin-sections')?.classList.add('hidden');
     }

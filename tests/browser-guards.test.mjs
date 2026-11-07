@@ -555,6 +555,61 @@ async function run() {
     assert.equal(await commsOpsPage.locator('#commsops-denied').isVisible(), false, 'com a ação, a comms-ops ainda mostra o aviso');
     await commsOpsPage.close();
 
+    // #2974: em /admin/comms, a faixa de dado parado vai para todos que entram; a grade de canais, os alertas de token
+    // (cuja RPC varre e escreve) e os botões de configurar e de dispensar, só para manage_comms. Primeiro quem entra só
+    // por view_internal_analytics, depois quem tem manage_comms sem papel nem designação V3.
+    const abrirComms = async (acoes) => {
+      const p = await browser.newPage({ locale: 'pt-BR' });
+      await p.goto(`${base}/admin/comms`, { waitUntil: 'networkidle' });
+      await p.evaluate((orgActions) => {
+        const parado = new Date(Date.now() - 10 * 86400000).toISOString();
+        const recente = new Date().toISOString();
+        const canais = [
+          { channel: 'instagram', sync_status: 'active', last_sync_at: parado, has_oauth_token: true, config: null },
+          { channel: 'linkedin', sync_status: 'token_expired', last_sync_at: recente, has_oauth_token: true, config: null },
+        ];
+        window.__commsRpcs = [];
+        const vazio = { data: [], error: null };
+        const cadeia = {
+          select() { return cadeia; }, eq() { return cadeia; }, in() { return cadeia; }, order() { return cadeia; },
+          gte() { return cadeia; }, lte() { return cadeia; }, limit() { return cadeia; },
+          then(ok, erro) { return Promise.resolve(vazio).then(ok, erro); },
+        };
+        const fakeSb = {
+          rpc(name) {
+            window.__commsRpcs.push(name);
+            if (name === 'comms_channel_status') return Promise.resolve({ data: canais, error: null });
+            if (name === 'comms_check_token_expiry') {
+              return Promise.resolve({ data: { alerts_created: 0, active_alerts: [{ id: 'alerta-1', alert_type: 'urgent', message: 'Token vence' }] }, error: null });
+            }
+            return Promise.resolve(vazio);
+          },
+          from() { return cadeia; },
+        };
+        const fakeMember = { auth_id: 'comms-v4-test', operational_role: 'researcher', designations: [], is_superadmin: false };
+        window.navCapabilitiesFailed = () => false;
+        window.__nucleoCapabilities = { is_superadmin: false, org_actions: orgActions, initiative_actions: {}, tribe_actions: {} };
+        window.navGetMember = () => fakeMember;
+        window.navGetSb = () => fakeSb;
+        window.dispatchEvent(new CustomEvent('nav:member', { detail: fakeMember }));
+      }, acoes);
+      await p.locator('#comms-panel').waitFor({ state: 'visible' });
+      await p.waitForFunction(() => document.querySelectorAll('#comms-staleness-banner > div').length === 2
+        && document.getElementById('comms-staleness-banner')?.classList.contains('hidden') === false);
+      return p;
+    };
+    const commsLeitor = await abrirComms(['view_internal_analytics']);
+    assert.equal(await commsLeitor.locator('#admin-sections').isVisible(), false, 'só com view_internal_analytics, o bloco de canais aparece');
+    assert.equal(await commsLeitor.locator('[data-action="config-channel"], [data-ack]').count(), 0, 'só com view_internal_analytics, há botão de configurar ou de dispensar');
+    assert.deepEqual(await commsLeitor.evaluate(() => window.__commsRpcs.filter((n) => n === 'comms_check_token_expiry')), [],
+      'só com view_internal_analytics, a página disparou a varredura de token');
+    await commsLeitor.close();
+    const commsGestor = await abrirComms(['manage_comms']);
+    await commsGestor.locator('[data-ack="alerta-1"]').waitFor({ state: 'visible' });
+    assert.equal(await commsGestor.locator('#admin-sections').isVisible(), true, 'com manage_comms, o bloco de canais não aparece');
+    assert.equal(await commsGestor.locator('#comms-channels-grid [data-action="config-channel"]').count(), 2, 'com manage_comms, a grade não tem o botão de configurar');
+    await commsGestor.close();
+
     // #2974 (F1): o blog decide pela ação V4 que a policy de blog_posts pede. Sem sessão, o pedido para entrar; a
     // designação comms_team sozinha não abre; capacidades que falharam dão o texto de falha; com a ação, abre.
     await page.goto(`${base}/admin/blog`, { waitUntil: 'networkidle' });
