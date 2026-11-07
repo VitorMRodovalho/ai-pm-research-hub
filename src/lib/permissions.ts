@@ -55,7 +55,6 @@ export type Permission =
   | 'admin.campaigns'
   | 'admin.analytics'
   | 'admin.analytics.chapter'
-  | 'admin.blog'
   | 'admin.publications'
   | 'admin.curation'
   | 'admin.governance.view'
@@ -119,7 +118,7 @@ export const TIER_PERMISSIONS: Record<OperationalTier, Permission[]> = {
   manager: [
     'admin.access', 'admin.members.view', 'admin.members.manage',
     'admin.events.manage', 'admin.campaigns', 'admin.analytics',
-    'admin.blog', 'admin.publications', 'admin.curation',
+    'admin.publications', 'admin.curation',
     'admin.governance.view',
     'admin.sustainability', 'admin.portfolio', 'admin.partners',
     'admin.simulation', 'admin.gamification', 'admin.filiacao',
