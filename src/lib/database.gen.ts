@@ -31825,6 +31825,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      _impedimento_na_linha: {
+        Args: { p_application_id: string; p_member_id: string; p_part: string }
+        Returns: string
+      }
       _in_cycle_view: {
         Args: {
           p_completed: string
