@@ -208,6 +208,8 @@ const CHAMADORES = [
   '_token_do_piloto_vale_o_processo', 'get_opening_application',
   // #2393 M2: as notas do piloto só a gestão lê (guard 2393n).
   'get_evaluation_results',
+  // #2393, emenda de 06/11/2026 à ADR-0134 §4: o detector de divergência avisa a gestão só na candidatura piloto (guard 2393p).
+  '_trg_evaluation_divergence',
 ].sort();
 
 test('#2393c S: as funções que chamam o helper são exatamente as auditadas', () => {

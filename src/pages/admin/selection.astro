@@ -323,6 +323,8 @@ const SEL_I18N = {
   showShadowVep: t('admin.selection.showShadowVep', lang),
   pilotBadge: t('admin.selection.pilotBadge', lang),
   pilotBadgeHint: t('admin.selection.pilotBadgeHint', lang),
+  divergenceBadge: t('admin.selection.divergenceBadge', lang),
+  divergenceBadgeHint: t('admin.selection.divergenceBadgeHint', lang),
   // p152 Wave 3.7: hidden-by-filter inline count
   hiddenByFilter: t('admin.selection.hiddenByFilter', lang),
   // p153 GAP-152.3: VEP status raw badge inline (selection list row name cell)
@@ -1102,6 +1104,8 @@ const SEL_I18N = {
     showShadowVep: '🔁 Mostrar shadow VEP',
     pilotBadge: 'Piloto da linha',
     pilotBadgeHint: 'Vaga piloto da linha: fora da avaliação geral do comitê (ADR-0134).',
+    divergenceBadge: 'Divergência',
+    divergenceBadgeHint: 'As duas notas de uma parte da candidatura piloto diferem mais de 30% da média: revise o caso antes de decidir (ADR-0134).',
     hiddenByFilter: 'ocultos por filtro',
     vepBadge: {
       submitted: 'VEP·Subm', active: 'VEP·Ativ', withdrawn: 'VEP·Saiu',
@@ -2449,6 +2453,10 @@ const SEL_I18N = {
         : `<span class="font-mono">${esc(oppId)}</span>${oppTitle ? `<div class="text-[10px] text-[var(--text-muted)] truncate max-w-[160px]">${esc(oppTitle)}</div>` : ''}`
           // #2393 fatia 3: selo da vaga piloto da linha, que fica fora da avaliação geral do comitê
           + (r.evaluation_track === 'line_pilot' ? `<div><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700" title="${esc(T.pilotBadgeHint || '')}">${esc(T.pilotBadge || 'Piloto da linha')}</span></div>` : '');
+      // #2393 (emenda de 06/11/2026 à ADR-0134 §4): o farol da auditoria. O painel só manda divergence_types à gestão.
+      const divergenceCell = Array.isArray(r.divergence_types) && r.divergence_types.length > 0
+        ? `<div><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800" data-testid="divergence-badge" title="${esc(T.divergenceBadgeHint || '')}">⚠ ${esc(T.divergenceBadge || 'Divergência')}</span></div>`
+        : '';
       const statusLabel = STATUS_LABELS[r.status] || r.status?.replace(/_/g, ' ') || '—';
       const noMembership = !r.membership_status || r.membership_status === 'No';
       // Wave 3a-0 #740 — chapter SSOT. The old display preferred `chapter_canonical`,
@@ -2513,7 +2521,7 @@ const SEL_I18N = {
         <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
         <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
-        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(oppTitle)}">${oppCell}</td>
+        <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(oppTitle)}">${oppCell}${divergenceCell}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
         <td class="px-4 py-2.5 text-[12px] font-mono" title="${esc(pertFullTooltip(r.objective_score, currentCycle?.pert_cutoff))}">
           <div class="${r.objective_score != null ? `font-semibold ${bandColorClass(r.objective_score, currentCycle?.pert_cutoff) || 'text-[var(--text-primary)]'}` : 'text-[var(--text-muted)]'} px-1.5 py-0.5 rounded inline-block">${objectiveScore}</div>
