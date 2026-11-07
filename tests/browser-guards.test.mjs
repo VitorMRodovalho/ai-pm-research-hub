@@ -930,6 +930,54 @@ async function run() {
     // At least one of these sections should exist in the DOM
     assert.ok(hasUpcoming > 0 || hasPast > 0 || hasEmpty > 0, 'Public webinars page has content sections');
 
+    // #3028: editar um webinar pela tela reenvia o board_item_id que ele já tem, porque upsert_webinar grava o
+    // parâmetro sem COALESCE. Abre o webinar com card e cancela, edita o sem card (vai NULL, não o card do anterior),
+    // e depois edita o com card (vai o card dele).
+    const vinculoPage = await browser.newPage({ locale: 'pt-BR' });
+    await vinculoPage.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
+    await vinculoPage.evaluate(() => {
+      const lista = [
+        { id: 'w-com-card', title: 'Com card', scheduled_at: '2099-12-01T15:00:00Z', duration_min: 60, status: 'planned', chapter_code: 'ALL', board_item_id: 'card-do-webinar', board_item_title: 'Card', board_item_status: 'todo', co_managers: [] },
+        { id: 'w-sem-card', title: 'Sem card', scheduled_at: '2099-12-02T15:00:00Z', duration_min: 60, status: 'planned', chapter_code: 'ALL', board_item_id: null, co_managers: [] },
+      ];
+      window.__upserts = [];
+      const fakeSb = {
+        rpc(name, params) {
+          if (name === 'list_webinars_v2') return Promise.resolve({ data: lista, error: null });
+          if (name === 'upsert_webinar') { window.__upserts.push(params); return Promise.resolve({ data: {}, error: null }); }
+          return Promise.resolve({ data: [], error: null });
+        },
+        from() {
+          return { select() { return this; }, eq() { return this; }, order() { return Promise.resolve({ data: [], error: null }); } };
+        },
+      };
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['manage_member'], initiative_actions: {}, tribe_actions: {} };
+      window.navGetMember = () => ({ id: 'vinculo-gestor-test', auth_id: 'vinculo-gestor-test', operational_role: 'manager', designations: [], is_superadmin: false });
+      window.navGetSb = () => fakeSb;
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await vinculoPage.waitForFunction(() => document.querySelector('[data-edit="w-sem-card"]') && document.querySelector('[data-edit="w-com-card"]'));
+    const editarESalvar = (p, id) => p.evaluate((i) => {
+      document.querySelector(`[data-edit="${i}"]`).click();
+      document.getElementById('btn-modal-save').click();
+    }, id);
+    await vinculoPage.evaluate(() => {
+      document.querySelector('[data-edit="w-com-card"]').click();
+      document.getElementById('btn-modal-cancel').click();
+    });
+    await editarESalvar(vinculoPage, 'w-sem-card');
+    await vinculoPage.waitForFunction(() => window.__upserts.length === 1);
+    await vinculoPage.waitForFunction(() => document.getElementById('webinar-modal')?.classList.contains('hidden') === true);
+    await editarESalvar(vinculoPage, 'w-com-card');
+    await vinculoPage.waitForFunction(() => window.__upserts.length === 2);
+    const upserts = await vinculoPage.evaluate(() => window.__upserts.map((u) => ({ p_id: u.p_id, tem: 'p_board_item_id' in u, card: u.p_board_item_id })));
+    assert.deepEqual(upserts, [
+      { p_id: 'w-sem-card', tem: true, card: null },
+      { p_id: 'w-com-card', tem: true, card: 'card-do-webinar' },
+    ], 'editar pela tela não reenviou o board_item_id de cada webinar');
+    await vinculoPage.close();
+
     const analyticsPage = await browser.newPage({ locale: 'pt-BR' });
     await analyticsPage.goto(`${base}/admin/analytics`, { waitUntil: 'networkidle' });
     // #2974 (F1): primeiro sem sessão (pede para entrar); depois a designação V3 sozinha, que não abre analytics, e o
