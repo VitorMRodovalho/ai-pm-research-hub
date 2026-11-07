@@ -7,7 +7,8 @@
  * - Sem sessão, a tela pede para entrar; quando as capacidades falham, mostra o texto de falha; negada, o texto de
  *   antes. Nos três casos o aviso aparece e o conteúdo some.
  * - Liberada, o conteúdo aparece e o aviso some, para o caso de o Nav resolver de novo depois de uma recusa.
- * - A tela não espera mais por conta própria: nada de setTimeout nem de leitura do membro fora do portão.
+ * - A tela não espera mais por conta própria: nada de setTimeout nem de leitura do membro ou das capacidades fora do
+ *   portão. A agenda-viva decide só pelas capacidades, e lê-las dentro do allow é o portão decidindo.
  * - O texto de falha de carga só existe onde a recusa pode ser falsa: a tela tem onLoadFailed se e só se o predicado
  *   lê capacidade. Um predicado que só lê o membro decide igual com ou sem get_caller_capabilities.
  * - O span admin-signin-to-view, que o adminSignInText lê, aparece uma vez só no que monta a tela (página e layouts).
@@ -44,6 +45,16 @@ const TELAS = [
   {
     arq: 'src/pages/admin/vep-reconciliation.astro', id: 'vep-reconciliation', nome: 'VepReconciliation', texto: "t('admin.deniedAdmin', lang)",
     ilha: 'VepReconciliationIsland', predicado: TIER_B,
+  },
+  // A agenda-viva decide só pelas capacidades. Antes, `if (!caps) { setTimeout(check, 300); return; }` esperava por
+  // elas sem fim; aqui o Nav já as leu quando o portão chama o allow, e sem elas a resposta é falso. O resto é o de antes.
+  {
+    arq: 'src/pages/admin/agenda-viva.astro', id: 'agenda-viva', nome: 'AgendaViva', texto: "t('admin.deniedAdmin', lang)",
+    ilha: 'AdminAgendaVivaPanel',
+    predicado: 'const caps = (window as any).__nucleoCapabilities; if (!caps) return false; ' +
+      "const has = (arr: any) => Array.isArray(arr) && arr.includes('manage_event'); " +
+      'return caps.is_superadmin || has(caps.org_actions) || Object.values(caps.initiative_actions || {}).some(has) || ' +
+      'Object.values(caps.tribe_actions || {}).some(has);',
   },
 ];
 // A stakeholder usa o BaseLayout e tem o próprio aviso (cadeado e parágrafo), então tem bloco próprio abaixo.
@@ -127,7 +138,11 @@ for (const t of TELAS) {
   test(`${t.arq}: não espera mais por conta própria`, () => {
     const s = maskJsComments(ler(t.arq));
     assert.doesNotMatch(s, /setTimeout/, 'a tela voltou a se reagendar');
-    assert.doesNotMatch(s, /navGetMember|navMember|nav:member|getSession|__nucleoCapabilities/, 'a tela lê o membro fora do portão');
+    // Dentro do allow, ler as capacidades é o portão decidindo; o predicado está preso pelo teste acima.
+    const c = corpo(s, `function has${t.nome}Access(member: any): boolean {`);
+    assert.ok(c !== null, `has${t.nome}Access não encontrada`);
+    assert.doesNotMatch(s.replace(c, ''), /navGetMember|navMember|nav:member|getSession|__nucleoCapabilities/,
+      'a tela lê o membro ou as capacidades fora do portão');
   });
 }
 
@@ -231,13 +246,17 @@ const ILHAS = [
   },
   { arq: 'src/components/workspace/MyCardsWidget.tsx', retorno: 'if (!memberId || cards === null) return null;', predicado: null },
   { arq: 'src/components/workspace/MyActionItemsWidget.tsx', retorno: 'if (!memberId || items === null) return null;', predicado: null },
+  // O painel da agenda-viva não tem predicado: quem decide é a página, e as RPCs (manage_event) são a fronteira.
+  { arq: 'src/components/admin/AdminAgendaVivaPanel.tsx', retorno: 'if (!memberId) return null; if (loading) {', predicado: null },
 ];
 
+// O load vai até o fechamento do useCallback, com a lista de dependências que ele tiver (o painel da agenda-viva
+// depende de getSb).
 function corpoDoLoad(s) {
   const a = s.indexOf('const load = useCallback(async () => {');
   if (a < 0) return null;
-  const b = s.indexOf('}, []);', a);
-  return b < 0 ? null : s.slice(a, b);
+  const m = /\}, \[[\w, ]*\]\);/.exec(s.slice(a));
+  return m ? s.slice(a, a + m.index) : null;
 }
 
 for (const i of ILHAS) {
