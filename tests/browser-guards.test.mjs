@@ -721,6 +721,20 @@ async function run() {
     assert.equal(await escondido(tribosPage, '#tribes-notice'), true, 'liberada, a comparação de tribos ainda mostra o aviso');
     await tribosPage.close();
 
+    // #2974: em /admin/webinars, criar pergunta manage_member, como upsert_webinar. Quem tem manage_member sem papel
+    // nem designação V3 entra e vê o botão de criar; antes, só superadmin, papel de gestão ou co_gp o viam.
+    const webinarsPage = await browser.newPage({ locale: 'pt-BR' });
+    await webinarsPage.goto(`${base}/admin/webinars`, { waitUntil: 'networkidle' });
+    await webinarsPage.evaluate(() => {
+      window.navCapabilitiesFailed = () => false;
+      window.__nucleoCapabilities = { is_superadmin: false, org_actions: ['manage_member'], initiative_actions: {}, tribe_actions: {} };
+      window.navGetMember = () => ({ id: 'webinars-researcher-test', auth_id: 'webinars-researcher-test', operational_role: 'researcher', designations: [], is_superadmin: false });
+      window.dispatchEvent(new CustomEvent('nav:member'));
+    });
+    await webinarsPage.waitForFunction(() => document.getElementById('webinars-content')?.classList.contains('hidden') === false);
+    assert.equal(await escondido(webinarsPage, '#btn-new-webinar'), false, 'com manage_member e sem papel V3, o botão de criar webinar não aparece');
+    await webinarsPage.close();
+
     // A stakeholder, no BaseLayout: sem sessão, pede para entrar no lugar do carregando; negada, o texto de antes, também
     // com as capacidades falhas (o predicado só lê o membro); liberada, o app aparece e o aviso e o carregando somem.
     const stakePage = await browser.newPage({ locale: 'pt-BR' });
