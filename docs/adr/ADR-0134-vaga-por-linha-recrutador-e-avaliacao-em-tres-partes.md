@@ -289,4 +289,4 @@ A função de borda `analyze-application-video` passa a só transcrever: Whisper
 
 **Risco conhecido.** Quando o avaliador de fora também é da gestão, ele pode ler as notas do piloto como gestão. Nesse caso, a independência entre as duas notas fica por conduta, e não por trava do sistema. O texto ao candidato deixou de prometer que nenhum avaliador vê a nota do outro.
 
-**Execução.** Uma migration troca o impedimento por vínculo na linha, nas funções de atribuição e de quem avalia, por uma regra única por candidatura e por parte. O texto de "quem avalia" no portal do candidato muda nas 3 línguas (#3014).
+**Execução.** Uma migration troca o impedimento por vínculo na linha, nas funções de atribuição e de quem avalia, por uma regra única por candidatura e por parte. O texto de "quem avalia" no portal do candidato muda nas 3 línguas (#3014). O alerta de divergência chega a quem decide: na candidatura piloto, o alerta novo avisa a gestão na hora, sem o nome do candidato, e o painel mostra a parte divergente só à gestão (#3022).
