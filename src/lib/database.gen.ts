@@ -31993,6 +31993,7 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: string
       }
+      _portal_origin: { Args: never; Returns: string }
       _prazo_do_resultado_do_piloto: { Args: never; Returns: string }
       _prior_gates_satisfied: {
         Args: { p_chain_id: string; p_gate_kind: string }

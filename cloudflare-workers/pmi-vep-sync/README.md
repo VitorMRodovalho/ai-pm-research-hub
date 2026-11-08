@@ -135,7 +135,7 @@ o seed. Atualizar a cada re-seed (ex: `manual_seed_2026_04_30_vitor`).
   - `PMI_VEP_OAUTH_CLIENT_ID`
   - `PMI_VEP_OAUTH_CLIENT_SECRET`
   - `GP_NOTIFICATION_EMAIL`
-  - `ONBOARDING_BASE_URL` (ex: `https://nucleoia.pmigo.org.br/pmi-onboarding`, o domínio institucional que vai nos e-mails)
+  - `ONBOARDING_BASE_URL` (`https://nucleoia.org/pmi-onboarding`, o mesmo host que `public._portal_origin()` dá aos links montados no banco)
 - [ ] Deploy em staging primeiro: `wrangler deploy --env staging`
 - [ ] Smoke test manual: trigger via dashboard + `wrangler tail`
 
