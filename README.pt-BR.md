@@ -18,7 +18,7 @@
 
 [🇺🇸 English](README.md) · [🇪🇸 Español](README.es.md)
 
-[**Plataforma**](https://nucleoia.vitormr.dev) · [**Servidor MCP**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governanca**](docs/GOVERNANCE_CHANGELOG.md)
+[**Plataforma**](https://nucleoia.org) · [**Servidor MCP**](https://nucleoia.org/mcp/semantic) · [**Blog**](https://nucleoia.org/blog) · [**Governanca**](docs/GOVERNANCE_CHANGELOG.md)
 
 </div>
 
@@ -123,7 +123,7 @@ graph LR
 Qualquer membro pode conectar Claude, ChatGPT, Perplexity, Cursor ou VS Code a plataforma via Model Context Protocol. As tools sao autenticadas via OAuth 2.1 (servidor OAuth nativo do Supabase, #1210 - o cliente de IA renova direto no Supabase Auth, independente da sessao do navegador) com Row Level Security. O servidor expoe tres superficies: `/mcp` (342 registro completo), `/semantic` (52 de intencao, SPEC-280) e `/actions` (88 overflow do cap de 256/conector). Contagens ao vivo em `/health`; `tools/list` e a fonte de verdade.
 
 ```
-https://nucleoia.vitormr.dev/mcp
+https://nucleoia.org/mcp/semantic
 ```
 
 ```mermaid

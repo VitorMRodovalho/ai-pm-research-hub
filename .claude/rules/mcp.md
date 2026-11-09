@@ -127,20 +127,20 @@ Three surfaces:
 
 **The exact tool count changes every session — never recite it from memory or pin it here.** Get the live count:
 ```bash
-curl -sS -X POST https://nucleoia.vitormr.dev/mcp -H 'Authorization: Bearer test' \
+curl -sS -X POST https://nucleoia.org/mcp -H 'Authorization: Bearer test' \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' | grep -oE '"name":"[^"]+"' | wc -l
 # or structured per-surface report:
 curl https://ldrfrvwhxsmgaabwmaik.supabase.co/functions/v1/nucleo-mcp/health
 ```
 The per-session tool-count change-history is archived at `docs/audit/MCP_RULES_TOOLCOUNT_HISTORY_ARCHIVED_2026-05-30.md`.
 
-Worker proxy paths (`nucleoia.vitormr.dev`): `/mcp` → EF `/nucleo-mcp/mcp`; `/mcp/semantic` → EF `/nucleo-mcp/semantic`.
+Worker proxy paths (`nucleoia.org`; `nucleoia.vitormr.dev` is co-hosted with its own OAuth identity): `/mcp` → EF `/nucleo-mcp/mcp`; `/mcp/semantic` → EF `/nucleo-mcp/semantic`.
 Both shave the SDK `execution.taskSupport` field via post-process strip (Perplexity-spec compat). See
 `docs/MCP_SETUP_GUIDE.md` for client routing.
 
 - Transport: `@modelcontextprotocol/sdk@1.32.2` `WebStandardStreamableHTTPServerTransport` (native).
 - Tool params: Zod schemas (`z.string()`, `z.number()`, …) — NOT plain JSON Schema objects.
-- Auth: OAuth 2.1 via Workers (nucleoia.vitormr.dev) → Supabase JWT. All tools log to `mcp_usage_log`.
+- Auth: OAuth 2.1 via Workers (nucleoia.org; nucleoia.vitormr.dev co-hosted) → Supabase JWT. All tools log to `mcp_usage_log`.
 - Health observability tools: `get_invitation_health`, `get_lgpd_cron_health`, `get_digest_health`, `get_ots_pipeline_health`.
 
 **Audit-script note:** `scripts/audit-mcp-tool-matrix.mjs` hardcodes the /mcp endpoint and treats all `mcp.tool(`
