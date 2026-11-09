@@ -7,9 +7,14 @@
 # certificados PDF ja emitidos (src/lib/canonical.ts). O link precisa continuar
 # abrindo a pagina de verificacao no host canonico, com o caminho preservado.
 #
+# Medido em 2026-11-09 (#3018): nucleoia.pmigo.org.br/verify/<codigo> responde
+# 200 direto, sem passar por este redirect, e quem ainda chega aqui e o host
+# ai-pm-research-hub.pages.dev. O destino passou a ser o host canonico
+# nucleoia.org (CANONICAL_HOST em src/lib/canonical.ts).
+#
 # Ate 2026-09-19 este redirect vivia num artefato SUBIDO A MAO em 2026-06-11
 # (deployment ad_hoc, commit_hash vazio, sem clone nem build), fora do controle
 # de versao. Ver ADR-0130.
 #
 # :splat preserva o caminho; a query string e repassada por padrao.
-/*  https://nucleoia.vitormr.dev/:splat  301
+/*  https://nucleoia.org/:splat  301

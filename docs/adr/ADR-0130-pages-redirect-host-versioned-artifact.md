@@ -80,3 +80,13 @@ Este ADR é reaberto se qualquer uma ocorrer:
 | a zona `pmigo.org.br` migrar para a Cloudflare | reavaliar: com zona própria, uma Redirect Rule substitui o projeto Pages inteiro |
 | o nó PMO decidir mover os hostnames para conta institucional | o redirect muda de dono, e este ADR é substituído |
 | `CERT_VERIFY_HOST` deixar de ser `nucleoia.pmigo.org.br` | o redirect vira legado e pode ser aposentado depois do último certificado emitido com o host antigo |
+
+## Emenda 1 (2026-11-09, #3018): destino passa a ser `nucleoia.org`
+
+O destino da regra muda de `https://nucleoia.vitormr.dev/:splat` para `https://nucleoia.org/:splat`,
+o `CANONICAL_HOST` atual. O mecanismo, o script e o rollback não mudam.
+
+Medido em 09/11/2026: `nucleoia.pmigo.org.br/verify/<codigo>` responde `200` direto, sem passar por
+este projeto, e `ai-pm-research-hub.pages.dev` respondia `301` para `nucleoia.vitormr.dev`. Quem
+ainda chega a este redirect é o host `pages.dev`. `nucleoia.vitormr.dev` continua servindo, então um
+`301` antigo guardado em cache por um navegador ainda leva a uma página que responde.

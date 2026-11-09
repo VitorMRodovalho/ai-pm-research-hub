@@ -14,7 +14,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SRC_DIR="${ROOT_DIR}/infra/pages-redirect"
 PROJECT="ai-pm-research-hub"
-CANONICAL="https://nucleoia.vitormr.dev"
+CANONICAL="https://nucleoia.org"
 
 PROD=0
 [[ "${1:-}" == "--prod" ]] && PROD=1
@@ -36,7 +36,7 @@ fi
 
 if [[ "${PROD}" -eq 1 ]]; then
   BRANCH="main"
-  echo "== PRODUCAO: isto troca o que nucleoia.pmigo.org.br serve =="
+  echo "== PRODUCAO: isto troca o que o projeto Pages serve (ai-pm-research-hub.pages.dev) =="
 else
   BRANCH="preview-$(date -u +%Y%m%d%H%M%S)"
   echo "== PREVIEW (${BRANCH}): producao nao e tocada =="
