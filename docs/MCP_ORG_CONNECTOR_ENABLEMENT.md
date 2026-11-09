@@ -23,11 +23,13 @@ own data, so the outcome is ~equivalent to an org connector at zero plan cost. T
 **already works** (308 tools loaded) → Workstream A is proven end-to-end. The org-admin content in §1/§3 below remains
 valid as the **Team/Enterprise playbook** if the org ever upgrades.
 
+> **Member connector address (2026-11-09):** `https://nucleoia.org/mcp/semantic`. `nucleoia.vitormr.dev` keeps serving with its own OAuth identity, so connectors added there keep working.
+
 ## TL;DR
 
 | | |
 |---|---|
-| **Current path (individual plan)** | Distribute the **member self-add** instruction (§3b): each member adds `https://nucleoia.vitormr.dev/mcp` in *Customize → Connectors*. RLS scopes each user. |
+| **Current path (individual plan)** | Distribute the **member self-add** instruction (§3b): each member adds `https://nucleoia.org/mcp/semantic` in *Customize → Connectors*. RLS scopes each user. |
 | **Team/Enterprise playbook** (if upgraded) | PM adds the server in **Organization settings → Connectors** (§1/§3); members enable individually. |
 | **What's done (platform side)** | OAuth 2.1 DCR + PKCE, native Supabase OAuth server with per-client refresh chains (#1210 — the earlier KV/server-side auto-refresh model was retired), `offline_access`+`refresh_token` advertised live, docs corrected, decision recorded. **Personal connector verified working live.** |
 | **Risk** | Low. No code change. The connector already works as a per-user custom connector today. |
@@ -43,12 +45,12 @@ Use these exact values when adding the connector in the Claude.ai organization s
 | **Name** | `Núcleo IA` |
 | **Short description** | Query and manage the AI & PM Research Hub (initiatives, tribes, boards, events, governance, gamification) from your AI assistant in natural language. |
 | **Long description** | Núcleo IA is the MCP server of PMI's Brazilian *AI & Project Management Research Hub*. It exposes the full implementation-tool catalog across personal, tribe, board, events, governance, communications, selection, gamification and knowledge domains, with role-based authority (`can()` / RLS) and full audit logging. OAuth 2.1 + PKCE secures every call; Row Level Security enforces per-member data scope (no PII in tool responses). |
-| **Server URL (`/mcp`)** | `https://nucleoia.vitormr.dev/mcp` — full catalog (recommended default for Claude.ai) |
-| **Semantic URL (`/mcp/semantic`)** | `https://nucleoia.vitormr.dev/mcp/semantic` — bridge-first gateway for strict clients (Claude.ai does not need this) |
-| **Canonical docs URL** | `https://nucleoia.vitormr.dev/docs/mcp` (live tool catalog) · setup guide: [`docs/MCP_SETUP_GUIDE.md`](MCP_SETUP_GUIDE.md) |
-| **Privacy page** | `https://nucleoia.vitormr.dev/privacy` |
-| **Icon** | `https://nucleoia.vitormr.dev/favicon.svg` — ⚠️ see note in §6 (a square PNG may be required by the UI) |
-| **Tool count** | Full catalog — **do not pin a number**; the live per-surface count is at `https://nucleoia.vitormr.dev/mcp` → `tools/list`, or the structured `/health` report (see §2). |
+| **Server URL (`/mcp/semantic`)** | `https://nucleoia.org/mcp/semantic`: member default since 2026-07-18 (one connector, fits every client's tool cap) |
+| **Full catalog URL (`/mcp`)** | `https://nucleoia.org/mcp`: power-user escape-hatch |
+| **Canonical docs URL** | `https://nucleoia.org/docs/mcp` (live tool catalog) · setup guide: [`docs/MCP_SETUP_GUIDE.md`](MCP_SETUP_GUIDE.md) |
+| **Privacy page** | `https://nucleoia.org/privacy` |
+| **Icon** | `https://nucleoia.org/favicon.svg` — ⚠️ see note in §6 (a square PNG may be required by the UI) |
+| **Tool count** | Full catalog — **do not pin a number**; the live per-surface count is at `https://nucleoia.org/mcp` → `tools/list`, or the structured `/health` report (see §2). |
 
 ### OAuth 2.1 endpoints (already implemented, no setup needed)
 
@@ -87,11 +89,11 @@ All measured live on **2026-06-07** (re-measure before relying on any number —
 **OAuth metadata advertises refresh capability** (the #234 hotfix `7192b01e`, now in `main`):
 
 ```
-GET https://nucleoia.vitormr.dev/.well-known/oauth-authorization-server
+GET https://nucleoia.org/.well-known/oauth-authorization-server
   grant_types_supported : [ "authorization_code", "refresh_token" ]
   scopes_supported      : [ "mcp:tools", "offline_access" ]
 
-GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
+GET https://nucleoia.org/.well-known/oauth-protected-resource
   scopes_supported      : [ "mcp:tools", "offline_access" ]
 ```
 
@@ -133,7 +135,7 @@ GET https://nucleoia.vitormr.dev/.well-known/oauth-protected-resource
 > `https://claude.ai/admin-settings/connectors`, and cannot be done from the codebase. ~10 minutes.
 
 1. **Claude.ai → Organization settings → Connectors** (`https://claude.ai/admin-settings/connectors`) → **Add**.
-2. Paste the **Server URL**: `https://nucleoia.vitormr.dev/mcp`.
+2. Paste the **Server URL**: `https://nucleoia.org/mcp/semantic`.
 3. Fill **Name** / **description** / **icon** / **docs URL** from §1. **Leave "Advanced settings" (OAuth Client
    ID / Secret) blank** — the server self-registers via DCR; no client_id/secret to paste.
 4. Save. Claude.ai performs OAuth discovery against `/.well-known/oauth-*` and registers via `/oauth/register`.
@@ -161,11 +163,11 @@ we don't have.
 be). Distribute this short instruction (e.g. in a chapter announcement or the wiki):
 
 > **Conecte o Claude ao Núcleo IA (1x):** No Claude.ai → **Customize → Connectors** → **Add custom connector** →
-> cole `https://nucleoia.vitormr.dev/mcp` → **Save**. Uma janela abre → faça login com a sua conta do Núcleo e
+> cole `https://nucleoia.org/mcp/semantic` → **Save**. Uma janela abre → faça login com a sua conta do Núcleo e
 > aprove o acesso. Pronto: pergunte ao Claude, ex. *"quais são meus próximos eventos do Núcleo?"*. Você só vê os
 > seus próprios dados. (Não preencha "Advanced settings"/OAuth — deixe em branco.)
 
-EN: *Claude.ai → Customize → Connectors → Add custom connector → paste `https://nucleoia.vitormr.dev/mcp` → Save →
+EN: *Claude.ai → Customize → Connectors → Add custom connector → paste `https://nucleoia.org/mcp/semantic` → Save →
 log in with your Núcleo account + approve. Leave Advanced/OAuth blank.*
 
 No "smoke" beyond this is needed — the PM's own personal connector already proves the flow (308 tools, OAuth + refresh
@@ -212,7 +214,7 @@ If any step fails, capture the error and check `mcp_usage_log` + the Worker logs
 2. **Run the member OAuth smoke** (§4) and record the result on #234.
 3. **Observe 7-day continuity** and confirm criterion #1 on #234, then close the issue.
 4. **Icon format:** only `favicon.svg` exists. If the org-connector UI requires a raster icon, export a **square
-   PNG** (≥512×512) and host it (e.g. `public/connector-icon.png` → `https://nucleoia.vitormr.dev/connector-icon.png`).
+   PNG** (≥512×512) and host it (e.g. `public/connector-icon.png` → `https://nucleoia.org/connector-icon.png`).
    Optional for org-internal use.
 
 ---
@@ -261,7 +263,7 @@ Você vai me ajudar a registrar um connector MCP customizado no nível da ORGANI
 Use "Ask before acting" e PARE para minha aprovação antes de qualquer Save/confirmar.
 
 Dados do connector:
-- Server URL: https://nucleoia.vitormr.dev/mcp
+- Server URL: https://nucleoia.org/mcp/semantic
 - Nome: Núcleo IA
 - Descrição: Consulte e gerencie o AI & PM Research Hub (iniciativas, tribos, boards, eventos,
   governança, gamificação) em linguagem natural.
@@ -272,7 +274,7 @@ Passos:
 1. Vá em Organization settings → Connectors (sou Owner).
 2. Clique em Add (custom connector / remote MCP server).
 3. Cole a Server URL acima. Preencha Nome + Descrição se houver campos. Deixe Advanced/OAuth em branco.
-4. Salve. Em seguida o fluxo OAuth abre um redirect para nucleoia.vitormr.dev —
+4. Salve. Em seguida o fluxo OAuth abre um redirect para nucleoia.org —
    PARE e me deixe fazer o login + aprovar o consentimento.
 5. Depois que eu aprovar, confirme que o connector aparece como "Connected" e que as tools carregam
    (faça um teste do tipo "quais são meus próximos eventos do Núcleo?").

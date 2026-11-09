@@ -18,7 +18,7 @@
 
 [🇧🇷 Português](README.pt-BR.md) · [🇪🇸 Español](README.es.md)
 
-[**Live Platform**](https://nucleoia.vitormr.dev) · [**MCP Server**](https://nucleoia.vitormr.dev/mcp) · [**Blog**](https://nucleoia.vitormr.dev/blog) · [**Governance**](https://nucleoia.vitormr.dev/governance) · [**Site Map & Access Tiers**](docs/SITE_MAP.md)
+[**Live Platform**](https://nucleoia.org) · [**MCP Server**](https://nucleoia.org/mcp/semantic) · [**Blog**](https://nucleoia.org/blog) · [**Governance**](https://nucleoia.org/governance) · [**Site Map & Access Tiers**](docs/SITE_MAP.md)
 
 </div>
 
@@ -129,12 +129,12 @@ The server exposes **three surfaces** (live counts at `/health`; the `tools/list
 
 | Surface | URL | Tools | Purpose |
 |---------|-----|-------|---------|
-| **`/mcp`** | `nucleoia.vitormr.dev/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. |
-| **`/semantic`** | `nucleoia.vitormr.dev/mcp/semantic` | 52 | Intent-level semantic gateway (SPEC-280 / #1383). One tool per user intent (~7:1 consolidation) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + confidential-visibility gates as a contract. Use when a strict client rejects the full catalog. |
-| **`/actions`** | `nucleoia.vitormr.dev/mcp/actions` | 88 | Overflow surface for the Claude connector's 256-tool-per-connector cap (#1377) — re-exposes the write/action tail the alphabetical cut would drop. Consumed alongside `/mcp` as a second connector. |
+| **`/mcp`** | `nucleoia.org/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. |
+| **`/semantic`** | `nucleoia.org/mcp/semantic` | 52 | Intent-level semantic gateway (SPEC-280 / #1383). One tool per user intent (~7:1 consolidation) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; writes carry authority + confidential-visibility gates as a contract. Use when a strict client rejects the full catalog. |
+| **`/actions`** | `nucleoia.org/mcp/actions` | 88 | Overflow surface for the Claude connector's 256-tool-per-connector cap (#1377) — re-exposes the write/action tail the alphabetical cut would drop. Consumed alongside `/mcp` as a second connector. |
 
 ```
-https://nucleoia.vitormr.dev/mcp
+https://nucleoia.org/mcp/semantic
 ```
 
 ```mermaid

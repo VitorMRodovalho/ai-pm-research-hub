@@ -90,10 +90,10 @@ Refactor arquitetural completo: 6 ADRs (0004-0009), 30 migrations, 7 fases. Ver 
 - Novos tipos de iniciativa = config no admin, não código (ADR-0009)
 
 ## Platform
-- **URL:** https://nucleoia.vitormr.dev
+- **URL:** https://nucleoia.org (canonical since 2026-11-06; `nucleoia.vitormr.dev` and `nucleoia.pmigo.org.br` keep serving)
 - **Supabase:** `ldrfrvwhxsmgaabwmaik` (sa-east-1)
 - **Stack:** Astro v7 (Cloudflare Workers) · Supabase Postgres + Edge Functions (Deno) · Cloudflare worker `pmi-vep-sync` (wrangler 4.x)
-- **MCP server:** `nucleo-mcp` em `supabase/functions/nucleo-mcp/` — OAuth 2.1 + custom domain `nucleoia.vitormr.dev/mcp` (ver `.claude/rules/mcp.md`)
+- **MCP server:** `nucleo-mcp` em `supabase/functions/nucleo-mcp/` — OAuth 2.1 + custom domain; member connector `https://nucleoia.org/mcp/semantic`, full catalog `/mcp` (ver `.claude/rules/mcp.md`)
 - **Wiki:** GitHub org `nucleo-ia-gp` — repos `wiki` (private, Obsidian vault) + `frameworks` (public, CC-BY-SA / MIT). Synced to `wiki_pages` table via FTS. Scope: narrative knowledge only (ADR-0010) — operational data stays in SQL.
 - **LGPD:** Art. 18 cycle complete (consent gate + export + delete + anonymize cron 5y).
 - **Current state (counts, last commits, session handoffs):** NOT pinned in CLAUDE.md (per Anthropic guidance — frequently-changing data bloats context). Use `/audit` skill, MCP tools `get_admin_dashboard` / `get_invitation_health`, or read `memory/handoff_p*.md` + `git log` when needed.
@@ -127,7 +127,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 
 ## Key Architecture Decisions (do NOT re-litigate)
 1. `checkOrigin: false` + manual CSRF in middleware (Astro's check blocks OAuth/MCP POSTs)
-2. Custom domain `nucleoia.vitormr.dev` (`.workers.dev` has Bot Fight Mode blocking datacenter IPs)
+2. Custom domain, not `.workers.dev` (Bot Fight Mode blocks datacenter IPs there). Canonical host `nucleoia.org` since 2026-11-06; `nucleoia.vitormr.dev` stays co-hosted (`src/lib/canonical.ts`)
 3. `@modelcontextprotocol/sdk@1.32.2` + WebStandardStreamableHTTPServerTransport + Zod 4 schemas for MCP
 4. Webinars table is source of truth (not events filtered by type)
 5. Board items read-all for Tier 1+ members (curators need cross-board access). **Carve-out (ADR-0105, #785):** confidential initiatives (`initiatives.visibility='confidential'`) are EXCLUDED from this read-all — their board/events/artifacts/docs are visible only to engaged members + GP (`manage_platform`). Gate = `rls_can_see_initiative()`; curation excludes confidential by default. Any new SECDEF read RPC over initiative-linked tables MUST apply the gate (see `docs/reference/V4_AUTHORITY_MODEL.md`).

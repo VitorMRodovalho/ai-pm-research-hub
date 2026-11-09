@@ -1,6 +1,6 @@
 # Site Map & Access Tiers / Mapa do Site & Niveis de Acesso / Mapa del Sitio & Niveles de Acceso
 
-> **Canonical URL:** [nucleoia.vitormr.dev](https://nucleoia.vitormr.dev)
+> **Canonical URL:** [nucleoia.org](https://nucleoia.org)
 > **Trilingual:** PT-BR (default) + EN-US (`/en/`) + ES-LATAM (`/es/`)
 > **Source of truth:** [`src/lib/navigation.config.ts`](../src/lib/navigation.config.ts)
 
@@ -187,4 +187,4 @@ Requires `admin` tier or specific designations. Full governance and management t
 
 ---
 
-*Generated from `navigation.config.ts` on 2026-04-08. For live access, visit [nucleoia.vitormr.dev](https://nucleoia.vitormr.dev).*
+*Generated from `navigation.config.ts` on 2026-04-08. For live access, visit [nucleoia.org](https://nucleoia.org).*

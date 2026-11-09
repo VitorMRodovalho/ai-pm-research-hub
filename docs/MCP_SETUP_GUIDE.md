@@ -4,7 +4,9 @@
 
 MCP (Model Context Protocol) is an open protocol that allows AI assistants to interact with external services. The Núcleo server exposes **three surfaces**: `/mcp` (the full internal capability registry), `/mcp/semantic` (an intent-level semantic gateway with a stable envelope), and `/mcp/actions` (an overflow surface for connectors with a per-connector tool cap). All surfaces let you query and manage project data from your AI assistant using natural language. A dynamic knowledge layer adapts guidance to each member's role and permissions.
 
-> **Member onboarding (2026-07-18):** the member-facing default route is now the single semantic connector `https://nucleoia.vitormr.dev/mcp/semantic` (one connector, fits every client's tool cap, alpha). The full `/mcp` registry is the documented escape-hatch when a client rejects the semantic connector or a capability is missing. The member-facing quick-start (single source of truth, on the live site, trilingual) is `/docs/mcp/conectar`; this repo-only guide is the technical reference behind it. Feedback: GH #1428.
+> **Member onboarding (2026-07-18):** the member-facing default route is now the single semantic connector `https://nucleoia.org/mcp/semantic` (one connector, fits every client's tool cap, alpha). The full `/mcp` registry is the documented escape-hatch when a client rejects the semantic connector or a capability is missing. The member-facing quick-start (single source of truth, on the live site, trilingual) is `/docs/mcp/conectar`; this repo-only guide is the technical reference behind it. Feedback: GH #1428.
+
+> **Member connector address (2026-11-09):** `https://nucleoia.org/mcp/semantic`. `nucleoia.vitormr.dev` keeps serving with its own OAuth identity, so connectors added there keep working.
 
 ## Endpoints
 
@@ -12,9 +14,9 @@ Live counts are at `/health`; the `tools/list` response is the source of truth. 
 
 | Endpoint | Tools | Purpose | Recommended clients |
 |----------|-------|---------|---------------------|
-| `https://nucleoia.vitormr.dev/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
-| `https://nucleoia.vitormr.dev/mcp/semantic` | 52 | **Intent-level semantic gateway (SPEC-280 / #1383, `nucleo-ia-semantic` v0.11.0).** One tool per user intent (~7:1 consolidation over the raw registry) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; write tools carry authority + confidential-visibility (#785) gates as a contract. **Member-facing default route** (single connector, alpha), and the surface for strict clients and store/directory submissions. | Members onboarding (default), Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
-| `https://nucleoia.vitormr.dev/mcp/actions` | 88 | **Overflow surface (#1377).** The Claude connector ingests at most 256 tools per connector, alphabetically, dropping the write/action tail. `/actions` re-exposes that dropped tail as a second connector, reusing the same tool definitions. | Claude.ai / Claude Code, consumed alongside `/mcp` as a second connector |
+| `https://nucleoia.org/mcp` | 342 | Full internal capability registry. Default for clients that accept large catalogs. | Claude.ai, Claude Code, Cursor / VS Code, ChatGPT developer mode, Manus AI |
+| `https://nucleoia.org/mcp/semantic` | 52 | **Intent-level semantic gateway (SPEC-280 / #1383, `nucleo-ia-semantic` v0.11.0).** One tool per user intent (~7:1 consolidation over the raw registry) with a stable envelope `{ok,data,summary,warnings,next_actions,audit}`; write tools carry authority + confidential-visibility (#785) gates as a contract. **Member-facing default route** (single connector, alpha), and the surface for strict clients and store/directory submissions. | Members onboarding (default), Perplexity, OpenAI Apps SDK review, Anthropic Connectors Directory review, future store/directory submissions |
+| `https://nucleoia.org/mcp/actions` | 88 | **Overflow surface (#1377).** The Claude connector ingests at most 256 tools per connector, alphabetically, dropping the write/action tail. `/actions` re-exposes that dropped tail as a second connector, reusing the same tool definitions. | Claude.ai / Claude Code, consumed alongside `/mcp` as a second connector |
 
 All endpoints share the same OAuth 2.1 flow (same account, same login). For **member onboarding**, use the single `/semantic` connector (default). For power users on the full registry, `/mcp` is the escape-hatch, with `/actions` as a second connector for the write tail that the 256-tool per-connector cap drops. Strict clients and store/directory submissions also target `/semantic`.
 
@@ -61,7 +63,7 @@ The 52 semantic tools cover seven intent domains (full catalog: [`docs/reference
 
 1. Open Claude.ai → Settings → Integrations → MCP
 2. Click "Add MCP Server"
-3. Paste URL: `https://nucleoia.vitormr.dev/mcp`
+3. Paste URL: `https://nucleoia.org/mcp/semantic`
 4. A browser window opens — log in with your Núcleo account
 5. Approve the OAuth consent
 6. Done — ask Claude anything about the project
@@ -80,7 +82,7 @@ Claude Code doesn't auto-initiate OAuth. Workaround:
   "mcpServers": {
     "nucleo-ia": {
       "type": "url",
-      "url": "https://nucleoia.vitormr.dev/mcp",
+      "url": "https://nucleoia.org/mcp/semantic",
       "headers": {
         "Authorization": "Bearer YOUR_TOKEN_HERE"
       }
@@ -94,7 +96,7 @@ Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth 
 ### Cursor / VS Code
 
 1. Open Settings → MCP Servers → Add
-2. URL: `https://nucleoia.vitormr.dev/mcp`
+2. URL: `https://nucleoia.org/mcp/semantic`
 3. Authentication: OAuth (automatic flow)
 4. Save and test
 
@@ -103,7 +105,7 @@ Manual bearer tokens copied into Claude Code expire in 1 hour. Prefer the OAuth 
 1. Go to chatgpt.com → Settings → Apps → Connectors → Advanced
 2. Click "New App"
 3. Name: `Nucleo-IA`
-4. MCP Server URL: `https://nucleoia.vitormr.dev/mcp`
+4. MCP Server URL: `https://nucleoia.org/mcp/semantic`
 5. Authentication: OAuth
 6. Check "I understand and want to continue"
 7. Click Create
@@ -201,7 +203,7 @@ Your AI Client → Workers Proxy → Supabase Edge Function (nucleo-mcp)
          (.well-known/)           (your JWT → your data)
 ```
 
-The Workers proxy at `nucleoia.vitormr.dev` routes:
+The Workers proxy at `nucleoia.org` (and at the co-hosted `nucleoia.vitormr.dev`, with its own OAuth identity) routes:
 - `/mcp` → Supabase Edge Function `nucleo-mcp` (`/nucleo-mcp/mcp`)
 - `/mcp/semantic` → `nucleo-mcp` `/nucleo-mcp/semantic` (semantic gateway)
 - `/mcp/actions` → `nucleo-mcp` `/nucleo-mcp/actions` (overflow surface)

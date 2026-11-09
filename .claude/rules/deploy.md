@@ -54,9 +54,9 @@ paths:
   --status applied <timestamp>` + `NOTIFY pgrst` (GC-097 ritual — see `.claude/rules/database.md`).
 
 ## Domain Architecture
-- Canonical: `nucleoia.vitormr.dev` (custom domain on Cloudflare zone vitormr.dev)
+- Canonical: `nucleoia.org` since 2026-11-06 (`CANONICAL_HOST` in `src/lib/canonical.ts`); `nucleoia.vitormr.dev` (Cloudflare zone vitormr.dev) and `nucleoia.pmigo.org.br` keep serving
 - Legacy: `platform.ai-pm-research-hub.workers.dev` (301 redirect via middleware)
-- MCP endpoint: `nucleoia.vitormr.dev/mcp`
+- MCP endpoint: `nucleoia.org/mcp/semantic` (member connector) and `nucleoia.org/mcp` (full catalog)
 - Supabase: `ldrfrvwhxsmgaabwmaik.supabase.co`
 
 ## CSRF Middleware
