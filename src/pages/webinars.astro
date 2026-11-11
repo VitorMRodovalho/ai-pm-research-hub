@@ -91,11 +91,14 @@ function fmtTime(iso: string): string {
                         {w.chapter_code !== 'ALL' && <><span>&middot;</span><span class="font-semibold">PMI-{w.chapter_code}</span></>}
                       </div>
                     </div>
-                    <div class="shrink-0">
+                    <div class="shrink-0 flex flex-col items-start sm:items-end gap-2">
                       {w.meeting_link
                         ? <a href={w.meeting_link} target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">{t('webinars.join', lang)}</a>
                         : <span class="text-[.78rem] text-[var(--text-muted)]">{t('webinars.linkSoon', lang)}</span>
                       }
+                      {w.sympla_event_url && (
+                        <a href={w.sympla_event_url} target="_blank" rel="noopener" class="px-4 py-2 rounded-xl border border-navy text-navy text-sm font-semibold no-underline hover:bg-navy hover:text-white">{t('webinars.symplaOptional', lang)}</a>
+                      )}
                     </div>
                   </div>
                 </article>
