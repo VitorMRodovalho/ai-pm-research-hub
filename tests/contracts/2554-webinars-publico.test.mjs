@@ -8,12 +8,13 @@
  * O QUE ESTE GUARD AFIRMA
  *   A. a migration cria get_public_webinars como SECURITY DEFINER e filtra status confirmed/completed E iniciativa
  *      nao confidencial, na mesma clausula WHERE;
- *   B. o link de entrada so sai com phase nao nula, e phase so existe para webinar confirmado, decidida por
+ *   B. o link de entrada e o do Sympla (W4) so saem com phase nao nula, e phase so existe para webinar confirmado, decidida por
  *      _meeting_window_phase ate scheduled_at + duration_min (antes acabava no inicio); gravacao e presentes, so para
  *      concluido;
  *   C. a lista de campos nao tem notas, organizador, co-gestores nem card;
  *   D. EXECUTE revogado de PUBLIC e concedido a anon;
  *   E. a pagina chama get_public_webinars e nao chama list_webinars_v2;
+ *   G. a pagina so mostra o botao do Sympla quando o link vem, com a chave nos 3 dicionarios;
  *   F. (banco) como anon, a RPC devolve lista so de confirmados/concluidos, so com as chaves permitidas, e
  *      list_webinars_v2 segue negada a anon (controle: o instrumento sabe dizer nao).
  *
@@ -40,7 +41,7 @@ const PAGE = readFileSync(resolve(ROOT, 'src/pages/webinars.astro'), 'utf8')
 
 const ALLOWED_KEYS = new Set([
   'id', 'title', 'description', 'scheduled_at', 'duration_min', 'status', 'chapter_code',
-  'tribe_name', 'meeting_link', 'phase', 'youtube_url', 'attendee_count',
+  'tribe_name', 'meeting_link', 'phase', 'sympla_event_url', 'youtube_url', 'attendee_count',
 ]);
 
 test('A: uma migration, SECURITY DEFINER, filtro de status e de confidencial no mesmo WHERE', () => {
@@ -61,6 +62,9 @@ test('B: link so com phase, phase so para confirmado ate o fim; gravacao e prese
   assert.match(SELECT_LIST, /CASE WHEN w\.status = 'completed' THEN\s+\(SELECT count\(\*\) FROM public\.attendance a[^)]*\)\s+END AS attendee_count/);
   // nenhum outro caminho entrega o link
   assert.equal((SELECT_LIST.match(/meeting_link/g) || []).length, 2, 'meeting_link so dentro do CASE');
+  // W4 (GP 11/11/2026): a inscricao opcional no Sympla segue a mesma regra do link de entrada
+  assert.match(SELECT_LIST, /ph\.phase,\s+CASE WHEN ph\.phase IS NOT NULL THEN w\.sympla_event_url END AS sympla_event_url,/);
+  assert.equal((SELECT_LIST.match(/sympla_event_url/g) || []).length, 2, 'sympla_event_url so dentro do CASE');
 });
 
 test('C: sem notas, organizador, co-gestores nem card', () => {
@@ -83,6 +87,17 @@ test('E: a pagina publica chama get_public_webinars e nao list_webinars_v2', () 
 const URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const ANON = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
+test('G: o botao do Sympla so aparece com o link, e a chave existe nos 3 dicionarios (W4)', () => {
+  assert.match(
+    PAGE,
+    /\{w\.sympla_event_url && \(\s*<a href=\{w\.sympla_event_url\} target="_blank" rel="noopener"[^>]*>\{t\('webinars\.symplaOptional', lang\)\}<\/a>\s*\)\}/,
+  );
+  for (const loc of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const dict = readFileSync(resolve(ROOT, `src/i18n/${loc}.ts`), 'utf8');
+    assert.match(dict, /\n  'webinars\.symplaOptional': '[^']+',\n/, `webinars.symplaOptional em ${loc}`);
+  }
+});
+
 test('F: como anon, a RPC publica responde e list_webinars_v2 segue negada', {
   skip: (!URL || !ANON) ? 'sem SUPABASE_URL + chave anon (baseline offline)' : false,
 }, async () => {
@@ -101,6 +116,7 @@ test('F: como anon, a RPC publica responde e list_webinars_v2 segue negada', {
     if (r.status !== 'confirmed') assert.equal(r.meeting_link, null, 'link so para confirmado');
     assert.ok('phase' in r, 'a resposta traz phase (a funcao viva e a desta captura)');
     if (r.meeting_link !== null) assert.ok(['upcoming', 'live'].includes(r.phase), `link so com phase (veio ${r.phase})`);
+    if (r.sympla_event_url != null) assert.ok(['upcoming', 'live'].includes(r.phase), `Sympla so com phase (veio ${r.phase})`);
   }
   const ctrl = await call('list_webinars_v2');
   assert.ok(ctrl.status === 401 || ctrl.status === 403 || ctrl.status === 404,

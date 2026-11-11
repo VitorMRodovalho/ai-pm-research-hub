@@ -3175,6 +3175,7 @@ const esLATAM: Record<string, string> = {
   'webinars.emptyHint': 'Pronto se anunciarán nuevos webinars.',
   'webinars.join': 'Participar',
   'webinars.linkSoon': 'Enlace pronto',
+  'webinars.symplaOptional': 'Inscripción opcional en Sympla',
   'webinars.liveNow': 'En vivo ahora',
   'webinars.timeZoneLabel': 'hora de Brasilia',
   'webinars.watchReplay': 'Ver replay',
