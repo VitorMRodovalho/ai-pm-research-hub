@@ -83,10 +83,12 @@ test('#1710 A: o gestor deixou de ser elegivel a TODA reuniao de tribo', () => {
   const { body, file } = capturaMaisRecente();
   const codigo = achatado(body);
 
+  // #3048: "tribo propria" passou a ser o VINCULO volunteer com a tribo do evento na data da
+  // reuniao (ou presenca registrada), nao a tribo atual. O gestor sem vinculo continua fora.
   assert.match(
     codigo,
-    /WHEN ge\.type = 'tribo' AND \(m\.tribe_id = ge\.tribe_id OR \(p_tribe_id IS NOT NULL AND ge\.tribe_id = p_tribe_id\)\) THEN true/i,
-    `${file}: o ramo 'tribo' tem de exigir tribo propria (ou o escopo explicito da chamada)`,
+    /WHEN ge\.type = 'tribo' AND ge\.initiative_id IS NOT NULL THEN \(\s*\(EXISTS \(SELECT 1 FROM public\.engagements v3048 [^)]*v3048\.kind = 'volunteer'\)\s*AND public\._member_engaged_on\(m\.id, ge\.initiative_id, ge\.date, 'volunteer'\)\)/i,
+    `${file}: o ramo 'tribo' tem de exigir vinculo proprio com a tribo do evento`,
   );
   assert.doesNotMatch(
     codigo,

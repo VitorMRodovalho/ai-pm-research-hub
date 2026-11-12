@@ -31907,6 +31907,15 @@ export type Database = {
         Returns: string
       }
       _member_current_term: { Args: { p_member_id: string }; Returns: string }
+      _member_engaged_on: {
+        Args: {
+          p_date: string
+          p_initiative_id: string
+          p_kind?: string
+          p_member_id: string
+        }
+        Returns: boolean
+      }
       _member_has_image_consent: {
         Args: { p_member_id: string }
         Returns: boolean
