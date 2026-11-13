@@ -327,10 +327,21 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
   delas repetida em dois tópicos diferentes. Conferir de 3 a 5 por amostra não basta quando o erro
   é sistemático: confira todos, procurando a frase-âncora de cada tópico.
 - **Playlist** resolvida pelo SSOT `src/data/youtube-playlists.ts`, nunca id chumbado.
-- **Miniatura:** a regra abaixo vale para vídeo PÚBLICO. Para reunião interna não listada o padrão
-  da casa é **frame automático**: medido em 18/09, as miniaturas das três Lideranças do Ciclo 4 são
-  frames do próprio vídeo, não peças desenhadas. ⚠️ `maxres` presente NÃO prova miniatura custom —
-  o YouTube gera essa resolução sozinho para vídeo HD. Baixe a imagem e olhe.
+- **Capa = miniatura (Liderança e Reunião Geral, decisão do GP de 13/11/2026, vale a partir da
+  Liderança #17):** o vídeo abre com um cartão de capa de 3 a 5 s, e a MESMA imagem sobe como
+  miniatura. A capa leva série, número, data e um tema curto; sem nome de pessoa, sem mascote e
+  sem nada de trecho cortado. Gerador: `~/projects/_pmo/youtube/capa-reuniao/make_capa.py`
+  (HyperFrames, mesmos tokens dos cartões). Substitui o padrão antigo de frame automático para
+  reunião não listada, e a Geral deixa de ter cartão e miniatura em peças diferentes.
+  - O cartão entra como `card` no `keep.json`, e o remap desloca legenda, capítulos e ata. Nunca
+    deslocar à mão.
+  - Miniatura por `set_thumbnail.py`, conferida baixando a imagem servida e olhando. ⚠️ `maxres`
+    presente NÃO prova miniatura custom: o YouTube gera essa resolução sozinho para vídeo HD.
+- **After hours da Liderança (mesma decisão, revisada na tarde de 13/11):** a reunião tem 1h30, e o
+  "after hours" opcional fica NO MESMO vídeo, que já é não listado. Na marca de 1h30 entra um cartão
+  "after hours", no desenho da capa e gerado pelo mesmo `make_capa.py`, como `card` no `keep.json`, com
+  um capítulo "After hours". Os cortes de privacidade valem também nesse trecho. Nunca subir o after
+  hours como vídeo separado.
 - **Miniatura:** não reaproveitar o banner do evento. O texto dele é convite no futuro ("dia 4,
   19h"), errado para replay. Gerar variante com o design-kit.
 - **Miniatura da Reunião Geral:** na mesma linguagem dos cartões do vídeo, com os tokens de
