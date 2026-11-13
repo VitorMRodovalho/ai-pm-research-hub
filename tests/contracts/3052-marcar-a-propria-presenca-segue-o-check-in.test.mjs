@@ -6,8 +6,9 @@
  * `manage_event` ficou presente num encontro 5 dias no futuro, contornando a janela, a audiencia
  * e (desde #3050) o status que `register_own_presence` aplica.
  *
- * REGRA: dentro do ramo proprio, quando a marcacao e de PRESENCA e quem marca nao gere o evento,
- * a decisao e de `register_own_presence`, e a recusa dela volta antes do INSERT. Uma implementacao
+ * REGRA: dentro do ramo proprio, quando a marcacao e de PRESENCA e quem marca nao tem a capacidade
+ * manage_event ESCOPADA ao evento (`_manage_event_scope_ok`; o Path Y de `_can_manage_event`, #3054,
+ * nao conta), a decisao e de `register_own_presence`, e a recusa dela volta antes do INSERT. Uma implementacao
  * da regra so: o detector reprova copia local de janela ou de status neste corpo.
  *
  * O detector recebe o corpo como dado: julga a captura corrente e as adulteradas pela mesma funcao.
@@ -29,7 +30,7 @@ export function violacoes(corpoBruto) {
   const ramo = corpo.match(/IF v_caller_id = p_member_id THEN(.*?)ELSIF NOT public\._can_manage_event\(p_event_id\) THEN/i);
   if (!ramo) return ['ramo de autoatendimento ausente'];
   const r = ramo[1];
-  const delega = /IF p_present AND NOT public\._can_manage_event\(p_event_id\) THEN v_gate := public\.register_own_presence\(p_event_id\); IF NOT COALESCE\(\(v_gate ->> 'success'\)::boolean, false\) THEN RETURN v_gate; END IF; END IF;/i;
+  const delega = /IF p_present AND NOT public\._manage_event_scope_ok\(v_caller_id, p_event_id\) THEN v_gate := public\.register_own_presence\(p_event_id\); IF NOT COALESCE\(\(v_gate ->> 'success'\)::boolean, false\) THEN RETURN v_gate; END IF; END IF;/i;
   if (!delega.test(r)) v.push('o ramo proprio nao delega a presenca a register_own_presence com retorno da recusa');
   if (/self_checkin_window_hours|'cancelled'|event_audience_rules/i.test(corpo)) {
     v.push('regra do check-in copiada neste corpo (deveria viver so em register_own_presence)');
@@ -46,11 +47,12 @@ test('#3052: captura corrente delega a presenca propria a register_own_presence'
 
 test('#3052: mutacoes fazem o detector reprovar', () => {
   const corpo = captura();
-  const bloco = /IF p_present AND NOT public\._can_manage_event\(p_event_id\) THEN[\s\S]*?RETURN v_gate;\s*END IF;\s*END IF;/i;
+  const bloco = /IF p_present AND NOT public\._manage_event_scope_ok\(v_caller_id, p_event_id\) THEN[\s\S]*?RETURN v_gate;\s*END IF;\s*END IF;/i;
   const mutacoes = {
     'ramo volta a NULL': corpo.replace(bloco, 'NULL;'),
     'recusa engolida': corpo.replace(/RETURN v_gate;/i, 'NULL;'),
-    'delegacao vira so-para-gestor': corpo.replace(/IF p_present AND NOT public\._can_manage_event/i, 'IF p_present AND public._can_manage_event'),
+    'delegacao vira so-para-gestor': corpo.replace(/IF p_present AND NOT public\._manage_event_scope_ok/i, 'IF p_present AND public._manage_event_scope_ok'),
+    'Path Y volta a escapar': corpo.replace(/IF p_present AND NOT public\._manage_event_scope_ok\(v_caller_id, p_event_id\)/i, 'IF p_present AND NOT public._can_manage_event(p_event_id)'),
     'sucesso presumido': corpo.replace(/COALESCE\(\(v_gate ->> 'success'\)::boolean, false\)/i, "COALESCE((v_gate ->> 'success')::boolean, true) OR true"),
     'regra copiada': corpo.replace(/v_gate := public\.register_own_presence\(p_event_id\);/i,
       "v_gate := public.register_own_presence(p_event_id); IF (SELECT status FROM public.events WHERE id = p_event_id) = 'cancelled' THEN RETURN v_gate; END IF;"),
