@@ -45,7 +45,7 @@ export interface AttendanceGridData {
 
 export interface CheckInResult {
   success: boolean;
-  error?: 'checkin_window_expired' | 'checkin_too_early' | 'not_authenticated' | 'event_not_found';
+  error?: 'checkin_window_expired' | 'checkin_too_early' | 'not_authenticated' | 'event_not_found' | 'event_cancelled' | 'not_in_audience';
   message?: string;
 }
 
