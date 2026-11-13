@@ -88,11 +88,11 @@ for (const { proname, chave } of ALVOS) {
     const codigo = achatado(body);
     // Marcar/limpar a PROPRIA presenca nunca dependeu de manage_event. Escopar o gate sem manter
     // este ramo trocaria um buraco por uma parede: o membro comum perderia o proprio registro.
-    assert.match(
-      codigo,
-      /IF v_caller_id = p_member_id THEN NULL;/i,
-      `${file}: ${proname} perdeu o ramo de autoatendimento`,
-    );
+    // #3052: o ramo pode carregar a regra do check-in proprio (mark_member_present delega a
+    // register_own_presence), mas nunca recusar por PAPEL: nada de RAISE entre o ramo e o ELSIF.
+    const ramo = codigo.match(/IF v_caller_id = p_member_id THEN(.*?)ELSIF NOT public\._can_manage_event\(p_event_id\) THEN/i);
+    assert.ok(ramo, `${file}: ${proname} perdeu o ramo de autoatendimento`);
+    assert.doesNotMatch(ramo[1], /RAISE/i, `${file}: ${proname} passou a recusar o proprio membro por excecao`);
   });
 }
 
