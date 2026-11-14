@@ -473,11 +473,9 @@ Deno.serve(async (req) => {
       })
       .select("id")
       .single();
-    if (logErr) {
-      console.warn("[pmi-ai-triage] ai_processing_log INSERT failed:", logErr.message);
-    } else {
-      logId = logRow?.id ?? null;
-    }
+    // #3069: sem registro, não há triagem. O aviso solto deixou 5 meses de notas sem rastro da versão do prompt.
+    if (logErr) throw new Error(`ai_processing_log_insert_failed: ${logErr.message}`);
+    logId = logRow?.id ?? null;
 
     const response = await callAnthropicTriage(userPrompt, rubric);
     const t1 = Date.now();

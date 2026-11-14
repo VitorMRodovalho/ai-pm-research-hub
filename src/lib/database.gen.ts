@@ -489,6 +489,7 @@ export type Database = {
           organization_id: string
           output_tokens: number | null
           prompt_hash: string | null
+          prompt_version: string | null
           purpose: string
           response_hash: string | null
           status: string
@@ -510,6 +511,7 @@ export type Database = {
           organization_id?: string
           output_tokens?: number | null
           prompt_hash?: string | null
+          prompt_version?: string | null
           purpose: string
           response_hash?: string | null
           status?: string
@@ -531,6 +533,7 @@ export type Database = {
           organization_id?: string
           output_tokens?: number | null
           prompt_hash?: string | null
+          prompt_version?: string | null
           purpose?: string
           response_hash?: string | null
           status?: string
