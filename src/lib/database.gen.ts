@@ -28327,6 +28327,7 @@ export type Database = {
           start_date: string | null
           time_commitment: string | null
           title: string
+          triage_profile: string
           vep_url: string | null
           video_invite_by: string | null
         }
@@ -28352,6 +28353,7 @@ export type Database = {
           start_date?: string | null
           time_commitment?: string | null
           title: string
+          triage_profile?: string
           vep_url?: string | null
           video_invite_by?: string | null
         }
@@ -28377,6 +28379,7 @@ export type Database = {
           start_date?: string | null
           time_commitment?: string | null
           title?: string
+          triage_profile?: string
           vep_url?: string | null
           video_invite_by?: string | null
         }

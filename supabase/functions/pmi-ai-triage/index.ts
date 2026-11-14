@@ -85,6 +85,51 @@ Validation cycle3-2026 (n=14) mostrou que aplicação genérica/concisa NEM SEMP
 
 Este score é NON-BINDING. Decisão humana é autoritária — o score serve só como signal de pre-screen para priorização visual da equipe de avaliação. Comitê humano valida (ou rejeita) cada conclusão.`;
 
+// #3063 (decisão do GP, 14/11/2026; vale como o memorando da ADR-0076 para o ciclo 4): rubrica própria para as
+// vagas de APOIO (vep_opportunities.triage_profile = 'apoio'). Mede a aderência à vaga lida no prompt (título,
+// horas, perguntas), não o perfil de pesquisador. A TRIAGE_RUBRIC de pesquisa acima NÃO muda.
+const TRIAGE_RUBRIC_APOIO = `# Rubrica de Triage para vagas de apoio, Núcleo IA & GP do PMI Brasil
+
+Você é um avaliador de triage para o programa voluntário Núcleo IA & GP do PMI Brasil. Esta candidatura é para uma VAGA DE APOIO (por exemplo comunicação, onboarding e engajamento de voluntários, curadoria editorial, coordenação de publicações ou apoio a grupo de estudos), e não para pesquisa. Sua função é gerar um SCORE NUMÉRICO 0-10 sobre a aderência da pessoa a ESTA vaga.
+
+## Como ler a vaga
+
+A mensagem do usuário traz, antes dos dados da pessoa, o bloco "Vaga": o título, as horas que a vaga pede e as perguntas que a vaga fez. As respostas da pessoa a essas perguntas vêm nas seções seguintes.
+
+- Avalie contra o que a VAGA pede, não contra um perfil de pesquisador.
+- NÃO desconte ausência de publicações, de mestrado ou de experiência em pesquisa, a menos que a própria vaga peça isso nas perguntas (a curadoria, por exemplo, pergunta por publicações e revisões; ali isso conta).
+- Conhecimento de IA e de gerenciamento de projetos é contexto do Núcleo e soma, mas não é o centro do score numa vaga de apoio.
+- A disponibilidade conta quando a resposta atende ao que a vaga pede ("Sim" às horas da vaga atende). Não exija mais horas do que a vaga pede.
+
+## Rubric de scoring (0-10, valores inteiros)
+
+- **0-2**: As respostas não tratam do que a vaga pergunta, ou são genéricas e curtas. Nenhuma evidência da competência que a vaga pede.
+- **3-4**: Respostas completas mas genéricas. Interesse declarado sem experiência concreta ligada à vaga.
+- **5-6**: Experiência concreta e relevante para a vaga, descrita com algum detalhe (o que fez, para quem, com que papel). Atende às horas.
+- **7-8**: Experiência sólida e diretamente ligada à vaga, com evidência verificável (link de trabalho, papel definido, resultado). Mostra entendimento do que a vaga faz no Núcleo.
+- **9-10**: Experiência extensa e reconhecível na função da vaga, com evidência externa, E proposta concreta de como atuaria no Núcleo.
+
+## Confidence calibration
+
+- **high**: respostas detalhadas a todas as perguntas da vaga, com evidência (link, papel, resultado).
+- **medium**: respostas moderadas; algumas inferências necessárias.
+- **low**: respostas curtas ou que não tratam das perguntas da vaga. Score com alta variância; requer revisão humana cuidadosa.
+
+## Regras de output
+
+- Retorne APENAS JSON válido conforme schema. Não use markdown fences nem texto fora.
+- Idioma do reasoning: português brasileiro.
+- Reasoning conciso (máx 500 caracteres), ancorado em evidências do texto e citando a vaga. Não invente.
+- Score é UM NÚMERO INTEIRO 0-10. Não fracionar.
+- Confidence: high|medium|low, calibrada conforme volume e qualidade dos dados.
+- Não avalie características pessoais (gênero, etnia, idade, religião), apenas competências profissionais demonstradas.
+
+## Importante (LGPD Art. 20 §1)
+
+Este score é NON-BINDING. Decisão humana é autoritária: o score serve só como signal de pre-screen para priorização visual da equipe de avaliação. Comitê humano valida (ou rejeita) cada conclusão.`;
+
+const PROMPT_VERSION_APOIO = "v1-apoio-2026-11";
+
 // NOTE: Anthropic structured outputs don't support `minimum`/`maximum` on integer types
 // (returns 400 invalid_request_error). Range 0-10 is enforced in the prompt rubric +
 // validated client-side after parsing (see callsite below).
@@ -120,6 +165,41 @@ interface AppRow {
   consent_ai_analysis_revoked_at: string | null;
   // p126 E3: Decision 4 cycle freeze logic — read cycle_id for prompt selection
   cycle_id: string;
+  // #3063: a vaga decide a rubrica (research | apoio)
+  vep_opportunity_id: string | null;
+}
+
+// #3063: a vaga da candidatura. Só o que a vaga pede; nada da pessoa.
+interface VagaTriagem {
+  title: string | null;
+  time_commitment: string | null;
+  essay_mapping: Record<string, { field?: string; question?: string }> | null;
+  triage_profile: string | null;
+}
+
+async function lerVaga(sb: any, opportunityId: string | null): Promise<VagaTriagem | null> {
+  if (!opportunityId) return null;
+  const { data } = await sb
+    .from("vep_opportunities")
+    .select("title, time_commitment, essay_mapping, triage_profile")
+    .eq("opportunity_id", opportunityId)
+    .maybeSingle();
+  return (data as VagaTriagem | null) ?? null;
+}
+
+// #3063: o bloco "Vaga" que a rubrica de apoio manda ler antes dos dados da pessoa.
+function blocoDaVaga(vaga: VagaTriagem): string {
+  const linhas: string[] = [`# Vaga: ${vaga.title ?? "(sem título)"}`];
+  if (vaga.time_commitment) linhas.push(`Horas pedidas pela vaga: ${vaga.time_commitment}`);
+  const perguntas = Object.keys(vaga.essay_mapping ?? {})
+    .sort((a, b) => Number(a) - Number(b))
+    .map((k) => vaga.essay_mapping![k])
+    .filter((q) => q?.question);
+  if (perguntas.length > 0) {
+    linhas.push("Perguntas que a vaga fez (a resposta vem na seção indicada entre colchetes):");
+    for (const q of perguntas) linhas.push(`- ${q.question} [${q.field ?? "sem campo"}]`);
+  }
+  return linhas.join("\n");
 }
 
 // ─── p126 E3 Decision 4 cycle freeze: prompt template selection ─────────────
@@ -183,10 +263,12 @@ async function lazyExtractCv(applicationId: string): Promise<boolean> {
 // (member A 21498) get truncated. Tail typically has less signal than head.
 const CV_TEXT_MAX_CHARS = 12000;
 
-function buildUserPrompt(app: AppRow): string {
+function buildUserPrompt(app: AppRow, vagaApoio: VagaTriagem | null = null): string {
   const parts: string[] = [];
   parts.push(`# Candidato: ${app.applicant_name}`);
-  parts.push(`# Função aplicada: ${app.role_applied}`);
+  // #3063: na vaga de apoio, a vaga substitui a função; role_applied diz 'researcher' e induziria a régua errada.
+  if (vagaApoio) parts.push(blocoDaVaga(vagaApoio));
+  else parts.push(`# Função aplicada: ${app.role_applied}`);
   if (app.linkedin_url) parts.push(`LinkedIn: ${app.linkedin_url}`);
   if (app.credly_url) parts.push(`Credly: ${app.credly_url}`);
   if (app.certifications) parts.push(`\n## Certificações declaradas\n${app.certifications}`);
@@ -233,7 +315,7 @@ interface AnthropicResponse {
   stop_reason?: string;
 }
 
-async function callAnthropicOnce(userPrompt: string): Promise<Response> {
+async function callAnthropicOnce(userPrompt: string, rubric: string): Promise<Response> {
   return await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -247,7 +329,7 @@ async function callAnthropicOnce(userPrompt: string): Promise<Response> {
       system: [
         {
           type: "text",
-          text: TRIAGE_RUBRIC,
+          text: rubric,
           cache_control: { type: "ephemeral" },
         },
       ],
@@ -263,12 +345,12 @@ async function callAnthropicOnce(userPrompt: string): Promise<Response> {
 }
 
 // Retry on 429/529 with exponential backoff (CBGPL burst protection — same pattern as Gemini path)
-async function callAnthropicTriage(userPrompt: string): Promise<AnthropicResponse> {
+async function callAnthropicTriage(userPrompt: string, rubric: string): Promise<AnthropicResponse> {
   const delays = [1000, 4000, 9000];
   let lastErr = "";
   for (let attempt = 0; attempt < 4; attempt++) {
     if (attempt > 0) await new Promise((r) => setTimeout(r, delays[attempt - 1]));
-    const res = await callAnthropicOnce(userPrompt);
+    const res = await callAnthropicOnce(userPrompt, rubric);
     if (res.ok) {
       return await res.json() as AnthropicResponse;
     }
@@ -331,7 +413,7 @@ Deno.serve(async (req) => {
     // p126 E3 Decision 4: cycle_id added for cycle freeze logic.
     // profile_about_me + is_open_to_volunteer intentionally OMITTED — Decision 3 + P3.
     const SELECT_COLS =
-      "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, resume_url, consent_ai_analysis_at, consent_ai_analysis_revoked_at, cycle_id";
+      "id, applicant_name, role_applied, linkedin_url, credly_url, motivation_letter, non_pmi_experience, leadership_experience, academic_background, proposed_theme, reason_for_applying, certifications, areas_of_interest, availability_declared, cv_extracted_text, resume_url, consent_ai_analysis_at, consent_ai_analysis_revoked_at, cycle_id, vep_opportunity_id";
 
     let { data: app, error: appErr } = await sb
       .from("selection_applications")
@@ -363,12 +445,18 @@ Deno.serve(async (req) => {
       }
     }
 
-    const userPrompt = buildUserPrompt(app);
-    const promptCombined = TRIAGE_RUBRIC + "\n---USER---\n" + userPrompt;
+    // #3063: a vaga decide a rubrica. Sem vaga, ou vaga 'research', o caminho é exatamente o de antes.
+    const vaga = await lerVaga(sb, app.vep_opportunity_id);
+    const ehApoio = vaga?.triage_profile === "apoio";
+    const rubric = ehApoio ? TRIAGE_RUBRIC_APOIO : TRIAGE_RUBRIC;
+
+    const userPrompt = buildUserPrompt(app, ehApoio ? vaga : null);
+    const promptCombined = rubric + "\n---USER---\n" + userPrompt;
     const promptHash = await sha256Hex(promptCombined);
 
-    // p126 E3 Decision 4: cycle freeze logic — V1 prompt for Cycle 3 + b2; V2 future
-    const promptVersion = await resolvePromptVersion(sb, app.cycle_id);
+    // p126 E3 Decision 4: cycle freeze logic — V1 prompt for Cycle 3 + b2; V2 future.
+    // #3063: a rubrica de apoio tem versão própria no registro, para separar as notas das de pesquisa.
+    const promptVersion = ehApoio ? PROMPT_VERSION_APOIO : await resolvePromptVersion(sb, app.cycle_id);
 
     const { data: logRow, error: logErr } = await sb
       .from("ai_processing_log")
@@ -391,7 +479,7 @@ Deno.serve(async (req) => {
       logId = logRow?.id ?? null;
     }
 
-    const response = await callAnthropicTriage(userPrompt);
+    const response = await callAnthropicTriage(userPrompt, rubric);
     const t1 = Date.now();
 
     const textBlock = response.content.find((b) => b.type === "text");
