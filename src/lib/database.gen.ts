@@ -33989,6 +33989,10 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: Json
       }
+      get_application_resume_path: {
+        Args: { p_application_id: string }
+        Returns: Json
+      }
       get_application_returning_context: {
         Args: { p_application_id: string }
         Returns: Json
