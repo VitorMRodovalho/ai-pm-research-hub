@@ -11198,11 +11198,13 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
   );
 
   // ── W4 · application_get (R) — one candidature 360°; RPCs self-gate + COI ──────
+  // #3067: validade do link assinado do CV (scope 'cv').
+  const CV_LINK_TTL_S = 600;
   mcp.tool(
     "application_get",
     "One application, 360° (absorbs get_application_score_breakdown/interviews/gate_attempts/returning_context + get_application_onboarding_pct). Set `scope`: 'scores' (score breakdown + blind-review state), 'interviews' (schedule/notes — committee-visible since #1383 W4), 'gate_attempts' (authority-gate audit trail), 'returning' (prior-cycle context), 'onboarding' (onboarding %). All require application_id. Authority enforced by each RPC: committee-of-this-cycle OR manage_member/curate_content, plus ADR-0109 COI recusal. Candidate PII (high) stays behind those gates. Stable envelope.",
     {
-      scope: z.enum(["scores", "interviews", "gate_attempts", "returning", "onboarding"]).describe("Which slice of the application."),
+      scope: z.enum(["scores", "interviews", "gate_attempts", "returning", "onboarding", "cv"]).describe("Which slice of the application. 'cv' (#3067): a 10-minute signed URL to the resume PDF; needs view_pii, logged in pii_access_log."),
       application_id: z.string().describe("selection_applications.id (UUID)."),
     },
     async (params: { scope: string; application_id: string }) => {
@@ -11218,6 +11220,24 @@ function registerSemanticTools(mcp: McpServer, sb: Sb) {
         case "gate_attempts": ({ data, error } = await sb.rpc("get_application_gate_attempts", { p_application_id: params.application_id })); source = "get_application_gate_attempts"; break;
         case "returning": ({ data, error } = await sb.rpc("get_application_returning_context", { p_application_id: params.application_id })); source = "get_application_returning_context"; break;
         case "onboarding": ({ data, error } = await sb.rpc("get_application_onboarding_pct", { p_application_id: params.application_id })); source = "get_application_onboarding_pct"; break;
+        case "cv": {
+          // #3067: a RPC dá o caminho só a quem tem view_pii (o portão do bucket) e registra o acesso; o link é criado
+          // com o cliente do PRÓPRIO usuário, então a política do storage decide de novo. Link curto: 10 minutos.
+          source = "get_application_resume_path";
+          ({ data, error } = await sb.rpc("get_application_resume_path", { p_application_id: params.application_id }));
+          if (!error && data && (data as any).resume_storage_path) {
+            const path = String((data as any).resume_storage_path);
+            const signed = await sb.storage.from("selection-resumes").createSignedUrl(path, CV_LINK_TTL_S);
+            if (signed.error || !signed.data?.signedUrl) {
+              error = { message: `signed_url_failed: ${signed.error?.message ?? "no url"}` };
+            } else {
+              data = { resume_storage_path: path, signed_url: signed.data.signedUrl, expires_in_s: CV_LINK_TTL_S };
+            }
+          } else if (!error) {
+            data = { resume_storage_path: null, signed_url: null, note: "Esta candidatura não tem CV no storage." };
+          }
+          break;
+        }
         default: return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: "invalid_input", message: `Unknown scope '${params.scope}'.` }));
       }
       if (error) { await logUsage(sb, member.id, "application_get", false, error.message, start); return ok(buildSemanticError({ tool: "application_get", semantic_domain: dom, code: selErr("application_get", error.message), message: error.message, action: /recused/i.test(error.message) ? "ADR-0109 conflict-of-interest recusal." : /unauthor/i.test(error.message) ? "Requires committee membership of this cycle or manage_member." : undefined })); }
