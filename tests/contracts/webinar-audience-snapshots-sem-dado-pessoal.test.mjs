@@ -40,3 +40,13 @@ test('webinar_audience_snapshots: RLS ligada, anon sem acesso, authenticated só
   assert.match(code, /CREATE POLICY \w+ ON public\.webinar_audience_snapshots\s+FOR SELECT TO authenticated/,
     `${file}: a única política é de leitura`);
 });
+
+test('webinar_audience_snapshots: a política vigente só deixa membro ler', () => {
+  // A última migration que define o USING da política é a que vale no banco.
+  const files = readdirSync(MIG_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const re = /(?:CREATE|ALTER) POLICY was_select_authenticated ON public\.webinar_audience_snapshots[\s\S]*?USING\s*\(([\s\S]*?)\);/;
+  const defs = files.map((f) => ({ f, m: stripComments(readFileSync(join(MIG_DIR, f), 'utf8')).match(re) })).filter((x) => x.m);
+  assert.ok(defs.length >= 1, 'alguma migration define o USING da política');
+  const { f, m } = defs[defs.length - 1];
+  assert.match(m[1], /^\(SELECT public\.rls_is_member\(\)\)$/, `${f}: USING tem de ser só rls_is_member() (achado: ${m[1]})`);
+});
