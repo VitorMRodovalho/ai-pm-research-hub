@@ -29084,6 +29084,135 @@ export type Database = {
           },
         ]
       }
+      webinar_audience_snapshots: {
+        Row: {
+          attendees: number
+          attendees_live: number | null
+          created_at: string
+          created_by: string | null
+          exported_at: string
+          id: string
+          new_registrants: number | null
+          notes: string | null
+          raw_file_ref: string | null
+          registrations: number
+          repeat_registrants: number | null
+          source: string
+          source_event_id: string
+          webinar_id: string
+        }
+        Insert: {
+          attendees: number
+          attendees_live?: number | null
+          created_at?: string
+          created_by?: string | null
+          exported_at: string
+          id?: string
+          new_registrants?: number | null
+          notes?: string | null
+          raw_file_ref?: string | null
+          registrations: number
+          repeat_registrants?: number | null
+          source: string
+          source_event_id: string
+          webinar_id: string
+        }
+        Update: {
+          attendees?: number
+          attendees_live?: number | null
+          created_at?: string
+          created_by?: string | null
+          exported_at?: string
+          id?: string
+          new_registrants?: number | null
+          notes?: string | null
+          raw_file_ref?: string | null
+          registrations?: number
+          repeat_registrants?: number | null
+          source?: string
+          source_event_id?: string
+          webinar_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "webinar_audience_snapshots_webinar_id_fkey"
+            columns: ["webinar_id"]
+            isOneToOne: false
+            referencedRelation: "webinars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       webinar_lifecycle_events: {
         Row: {
           action: string
