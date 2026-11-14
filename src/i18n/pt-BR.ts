@@ -3182,7 +3182,7 @@ const ptBR: Record<string, string> = {
   'webinars.emptyHint': 'Em breve novos webinars serão anunciados.',
   'webinars.join': 'Participar',
   'webinars.linkSoon': 'Link em breve',
-  'webinars.symplaOptional': 'Inscrição opcional no Sympla',
+  'webinars.symplaOptional': 'Inscrição no Sympla',
   'webinars.liveNow': 'Ao vivo agora',
   'webinars.timeZoneLabel': 'horário de Brasília',
   'webinars.watchReplay': 'Assistir replay',
