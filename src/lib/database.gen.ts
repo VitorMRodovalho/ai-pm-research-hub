@@ -32293,6 +32293,10 @@ export type Database = {
         Args: { p_tribe_id: number }
         Returns: string
       }
+      _vaga_da_candidatura: {
+        Args: { p_application_id: string; p_com_perguntas: boolean }
+        Returns: Json
+      }
       _validate_gates_shape: { Args: { p_gates: Json }; Returns: boolean }
       _volunteer_term_signed_digest_cron: { Args: never; Returns: Json }
       _wiki_can_author: {
