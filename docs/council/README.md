@@ -6,7 +6,7 @@
 
 ## O que é
 
-Council é um conjunto de **12 sub-agents especializados** (em `.claude/agents/`) que funcionam como conselheiros por domínio. Invocação é **tiered** para não pesar o projeto:
+Council é um conjunto de **13 sub-agents especializados** (em `.claude/agents/`) que funcionam como conselheiros por domínio. Invocação é **tiered** para não pesar o projeto:
 
 ```
 Tier 1 (always):     platform-guardian + code-reviewer
@@ -16,15 +16,16 @@ Tier 3 (strategic):  /council-review full sweep em milestones
 
 Cada agent é **conselheiro, não executor**. Outputs são documentos markdown com veredito, rationale, e ações recomendadas. Main loop (Claude no driver seat) decide qual ação tomar.
 
-## Composição (12 agents)
+## Composição (13 agents)
 
-### Business & Product (4)
+### Business & Product (5)
 | Agent | Scope |
 |---|---|
 | `product-leader` | Priorização, roadmap, trade-offs UX vs dívida técnica, métricas de sucesso |
 | `ux-leader` | Friction audit, journey maps, onboarding, progressive disclosure, mobile/a11y |
 | `c-level-advisor` | Visão 3-5 anos, sustentabilidade, optionality A/B/C, positioning LIM/Detroit |
 | `stakeholder-persona` | Rotating: gp-leader / active-volunteer / sponsor-liaison — voz do usuário real |
+| `marketing-comms-advisor` | Peça, formato por canal, campanha, parceria de divulgação e medição; as pessoas são o sujeito do feito (base: plugin oficial `marketing` da Anthropic) |
 
 ### Tech (4)
 | Agent | Scope |
@@ -57,6 +58,7 @@ Cada agent é **conselheiro, não executor**. Outputs são documentos markdown c
 | DB migration nova | `data-architect` + (`security-engineer` se toca PII/RLS) |
 | Nova MCP tool | `ai-engineer` + `senior-software-engineer` + (`security-engineer` se PII) |
 | UI/frontend change | `ux-leader` + (`stakeholder-persona` se afeta journey) |
+| Post, reel, campanha ou divulgação com capítulo | `marketing-comms-advisor` |
 | Auth/consent flow | `security-engineer` + `legal-counsel` |
 | Policy/terms doc | `legal-counsel` + `accountability-advisor` + (`c-level-advisor` se institutional) |
 | Refactor grande (>400 LOC) | `senior-software-engineer` + `product-leader` (ROI) |
