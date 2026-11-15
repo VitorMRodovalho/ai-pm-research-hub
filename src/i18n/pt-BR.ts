@@ -3362,7 +3362,7 @@ const ptBR: Record<string, string> = {
   'data.tribe3.d2': 'Plano de Ação Inteligente personalizado',
   'data.tribe3.d3': 'Relatório técnico com resultados da POC',
 
-  'data.tribe4.name': 'Cultura & Change',
+  'data.tribe4.name': 'Cultura & Transformação Organizacional',
   'data.tribe4.quadrantLabel': 'Q3 — Liderança Organizacional',
   'data.tribe4.desc': 'Sem cultura, a IA escala o caos. Com 80%+ dos projetos em ambientes multiculturais, precisamos de Inteligência Cultural. O "internal stickiness" bloqueia fluxo de informação — é o inimigo invisível dos projetos.',
   'data.tribe4.d1': 'Entregas mensais práticas (ferramentas de uso imediato)',
@@ -3667,7 +3667,7 @@ const ptBR: Record<string, string> = {
   'gamification.tribeName.1': 'Radar Tecnológico',
   'gamification.tribeName.2': 'Agentes Autônomos',
   'gamification.tribeName.3': 'TMO & PMO do Futuro',
-  'gamification.tribeName.4': 'Cultura & Change',
+  'gamification.tribeName.4': 'Cultura & Transformação Organizacional',
   'gamification.tribeName.5': 'Talentos & Upskilling',
   'gamification.tribeName.6': 'ROI & Portfólio',
   'gamification.tribeName.7': 'Governança & Trustworthy AI',

@@ -38,7 +38,7 @@ export const DESIG_COLORS: Record<string, string> = {
 
 export const TRIBE_NAMES: Record<number, string> = {
   1: 'Radar Tecnológico', 2: 'Agentes Autônomos', 3: 'TMO & PMO do Futuro',
-  4: 'Cultura & Change', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
+  4: 'Cultura & Transformação Organizacional', 5: 'Talentos & Upskilling', 6: 'ROI & Portfólio',
   7: 'Governança & Trustworthy AI', 8: 'Inclusão & Colaboração'
 };
 
