@@ -150,7 +150,7 @@ supabase functions deploy <name> --no-verify-jwt  # Deploy EF
 - V4 refactor invariants (historical, archived): `docs/refactor/refactor-in-progress-RULES-ARCHIVED.md`
 
 ## Council (multi-agent review structure)
-12 agentes **consultivos** em `.claude/agents/` (não modificam código; o main loop decide), em 3 tiers: **Tier 1**
+13 agentes **consultivos** em `.claude/agents/` (não modificam código; o main loop decide), em 3 tiers: **Tier 1**
 `platform-guardian` + `code-reviewer` em início/fim de sessão e mudanças estruturais; **Tier 2** o agente do
 domínio (tabela em `docs/council/README.md`); **Tier 3** `/council-review [topic]` em milestones, com saída em
 `docs/council/`. Decision log em `docs/council/decisions/`.
