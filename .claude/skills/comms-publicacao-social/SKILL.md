@@ -64,8 +64,32 @@ parecida: ela pertence a outra pessoa.
 
 ## LinkedIn, pelo navegador
 
-Não existe colaboração como no Instagram; o equivalente é pedir republicação. Menção **não se faz
-colando URL**: as URLs servem para achar o perfil certo antes.
+Menção **não se faz colando URL**: as URLs servem para achar o perfil certo antes.
+
+### ✅ Colaboração existe, e entra até DEPOIS de publicar
+
+Medido em 14/11/2026, na página do Núcleo. Esta seção dizia que o LinkedIn não tinha colaboração;
+hoje tem. O composer da página mostra o botão **"Add collaborators"**: até 5 páginas ou conexões,
+como no Instagram. O menu "Create" da página também oferece "Publish a collaborative post", que abre o
+mesmo composer.
+
+- **Post já publicado:** o menu do post (os três pontos) não mostra nada de colaborador. O caminho é
+  **Edit post**, depois "Add collaborators", escolher, Save no diálogo e **Save no editor**. O aviso é
+  "We'll send the invite(s) once you post"; reaberto, o editor mostra "with 2 others". Não precisa
+  apagar nem republicar.
+- **Escolha a página pela busca de EMPRESAS, não pela lista do diálogo.** Procurando um capítulo, o
+  diálogo trouxe duas páginas de nome quase igual, e a busca de empresas devolveu uma só, a do
+  capítulo. O link de LinkedIn no rodapé do site do evento estava morto. É a mesma armadilha das
+  arrobas sósias do Instagram.
+- ⚠️ **O convite precisa ser aceito.** Até lá, o post no ar não mostra linha de colaboradores.
+  Confira no post depois do aceite, não no editor.
+- ⚠️ **O editor da edição não é o do post novo.** O post novo usa Quill (`.ql-container.__quill`); a
+  edição usa TipTap/ProseMirror (`div.tiptap.ProseMirror`) e já mostra o link trocado pelo `lnkd.in`.
+  Para conferir o texto antes de salvar, junte o `textContent` dos `<p>` filhos com `\n` (o `<p>`
+  vazio é a linha em branco), desfaça a troca do `lnkd.in` e compare o hash com o arquivo de origem.
+  Salvar a edição só para pôr colaborador não pode mudar uma letra do texto.
+
+Para quem não é página nem conexão, o caminho continua sendo pedir republicação.
 
 ### ⚠️ Menção inline: o limite é da AUTOMAÇÃO, não do editor
 
