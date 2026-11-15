@@ -3355,7 +3355,7 @@ const enUS: Record<string, string> = {
   'data.tribe3.d2': 'Personalized Smart Action Plan',
   'data.tribe3.d3': 'Technical report with PoC results',
 
-  'data.tribe4.name': 'Culture & Change',
+  'data.tribe4.name': 'Culture & Organizational Transformation',
   'data.tribe4.quadrantLabel': 'Q3 — Organizational Leadership',
   'data.tribe4.desc': 'Without culture, AI scales chaos. With 80%+ of projects in multicultural environments, we need Cultural Intelligence. "Internal stickiness" blocks information flow — it\'s the invisible enemy of projects.',
   'data.tribe4.d1': 'Monthly practical deliverables (ready-to-use tools)',
@@ -3660,7 +3660,7 @@ const enUS: Record<string, string> = {
   'gamification.tribeName.1': 'Tech Radar',
   'gamification.tribeName.2': 'Autonomous Agents',
   'gamification.tribeName.3': 'TMO & PMO of the Future',
-  'gamification.tribeName.4': 'Culture & Change',
+  'gamification.tribeName.4': 'Culture & Organizational Transformation',
   'gamification.tribeName.5': 'Talent & Upskilling',
   'gamification.tribeName.6': 'ROI & Portfolio',
   'gamification.tribeName.7': 'Governance & Trustworthy AI',
