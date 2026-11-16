@@ -9,7 +9,6 @@ import { applyResidencyConditionals } from "./conditional-clauses";
 import {
   NUCLEO_LOGO_DATA_URI,
   PMIGO_HOST_DATA_URI,
-  NIA_FACE_DATA_URI,
   CHAPTERS_STRIP_DATA_URI,
 } from "./cert-assets";
 import { t, type Lang } from "../../i18n/utils";
@@ -17,11 +16,15 @@ import { t, type Lang } from "../../i18n/utils";
 /**
  * Recognition (Ciclo 3 redesign) — the landscape, print-friendly certificate for
  * champions (excellence) and cycle-conclusion (participation). Design sign-off with
- * Vitor 2026-07-03 (docs/certificates-proposal/): A4 landscape, light ground, NIA as
- * a medallion seal, PMI-GO host + 15-chapter strip, dual GP signatures ("do Núcleo"),
+ * Vitor 2026-07-03 (docs/certificates-proposal/): A4 landscape, light ground, a
+ * medallion seal, PMI-GO host + 15-chapter strip, dual GP signatures ("do Núcleo"),
  * verify URL on the chapter host. Data mapping is intentionally centralized in
  * `buildRecognitionHTML` so issuance can drive it via title (ribbon) + description
  * (pill / team) with zero DB migration.
+ *
+ * Brand: header, watermark and medallion all use the current Núcleo symbol
+ * (`NUCLEO_LOGO_DATA_URI`, from public/brand). The medallion held the mascot
+ * illustration until it was retired; keep it on the brand symbol.
  */
 const RECOGNITION_TYPES = new Set(["excellence", "participation", "contribution", "event_participation"]);
 
@@ -697,8 +700,8 @@ export function buildRecognitionHTML(certData: CertificateData): string {
     .rc-team{font-size:11.5pt;color:#2c3644;margin-top:1mm}
     .rc-meta{font-size:10pt;color:#8792a0;margin-top:4mm}
     .rc-seal{position:absolute;right:22mm;top:43%;transform:translateY(-50%);z-index:2;width:34mm;text-align:center}
-    .rc-medal{width:30mm;height:30mm;margin:0 auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 38%,#fdfaf0,#f0e6c6);border:1.6px solid #b0892e;box-shadow:0 0 0 1.1mm #FCFBF9,0 0 0 1.5mm #d9c98f;display:flex;align-items:flex-end;justify-content:center}
-    .rc-nia{width:24mm;height:auto;margin-bottom:0.5mm}
+    .rc-medal{width:30mm;height:30mm;margin:0 auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 38%,#fdfaf0,#f0e6c6);border:1.6px solid #b0892e;box-shadow:0 0 0 1.1mm #FCFBF9,0 0 0 1.5mm #d9c98f;display:flex;align-items:center;justify-content:center}
+    .rc-medlogo{width:21mm;height:21mm}
     .rc-ribbon2{display:inline-block;margin-top:2.4mm;background:#1a365d;color:#f3e6c4;font-family:Arial,Helvetica,sans-serif;font-size:7.5pt;font-weight:700;letter-spacing:1.5px;padding:1.3mm 4.5mm;border-radius:1mm}
     .rc-bottom{position:absolute;left:0;right:0;bottom:11mm;text-align:center;z-index:2}
     .rc-signs{display:flex;justify-content:center;gap:44mm}
@@ -734,7 +737,7 @@ export function buildRecognitionHTML(certData: CertificateData): string {
       ${teamHtml}
       ${metaHtml}
     </div>
-    <div class="rc-seal"><div class="rc-medal"><img class="rc-nia" src="${NIA_FACE_DATA_URI}" alt="NIA" /></div><div class="rc-ribbon2">${sealLabel}</div></div>
+    <div class="rc-seal"><div class="rc-medal"><img class="rc-medlogo" src="${NUCLEO_LOGO_DATA_URI}" alt="" /></div><div class="rc-ribbon2">${sealLabel}</div></div>
     <div class="rc-bottom">
       <div class="rc-signs">
         <div class="rc-sig">${gpSigImg}<div class="rc-sigline"></div><div class="rc-signame">Vitor Maia Rodovalho, PMP</div><div class="rc-sigrole">${tpl.roleGestor}</div></div>
