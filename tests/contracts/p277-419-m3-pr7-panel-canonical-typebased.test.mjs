@@ -21,6 +21,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const MIG = resolve(ROOT, 'supabase/migrations/20260805000074_p277_419_m3_pr7_panel_canonical_typebased.sql');
@@ -34,34 +35,38 @@ const skipMsg = 'Skipped: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY required';
 const body = existsSync(MIG) ? readFileSync(MIG, 'utf8') : '';
 const code = body.replace(/--[^\n]*/g, '');
 const spec = existsSync(SPEC) ? readFileSync(SPEC, 'utf8') : '';
+// As propriedades do PAINEL sao afirmadas sobre a captura VIGENTE (#1932): a migration do PR7 fica
+// fixada so para o que ela entregou sozinha (o DROP do resumo orfao, mais abaixo).
+const panel = latestFunctionCapture(ROOT, 'get_attendance_panel').block;
+const panelCode = panel.replace(/--[^\n]*/g, '');
 
 test('m3 PR7: get_attendance_panel converges onto _attendance_eligible_events (same 18-col shape)', () => {
   assert.ok(existsSync(MIG), 'migration exists');
-  assert.match(body, /CREATE OR REPLACE FUNCTION public\.get_attendance_panel\(p_cycle_start date DEFAULT NULL::date, p_cycle_end date DEFAULT NULL::date\)/);
+  assert.match(panel, /CREATE OR REPLACE FUNCTION public\.get_attendance_panel\(p_cycle_start date DEFAULT NULL::date, p_cycle_end date DEFAULT NULL::date\)/);
   // canonical eligibility source, per-member, replaces the dead tag/audience-rule selection
-  assert.match(code, /CROSS JOIN LATERAL public\._attendance_eligible_events\(a\.id, p_cycle_start\) el/);
+  assert.match(panelCode, /CROSS JOIN LATERAL public\._attendance_eligible_events\(a\.id, p_cycle_start\) el/);
   // 18-col shape preserved (spot-check the full TABLE signature is intact)
-  assert.match(body, /RETURNS TABLE\(member_id uuid, member_name text, tribe_name text, tribe_id integer, operational_role text,[\s\S]*cohort_avg_pct numeric, cohort_percentile numeric, cohort_size integer\)/);
+  assert.match(panel, /RETURNS TABLE\(member_id uuid, member_name text, tribe_name text, tribe_id integer, operational_role text,[\s\S]*cohort_avg_pct numeric, cohort_percentile numeric, cohort_size integer\)/);
   // general bucket = non-tribo eligible, tribe bucket = tribo eligible; excused excluded (D1)
-  assert.match(code, /FILTER \(WHERE el\.event_type <> 'tribo' AND att\.excused IS NOT TRUE\)/);
-  assert.match(code, /FILTER \(WHERE el\.event_type =  'tribo' AND att\.present = true\)/);
+  assert.match(panelCode, /FILTER \(WHERE el\.event_type <> 'tribo' AND att\.excused IS NOT TRUE\)/);
+  assert.match(panelCode, /FILTER \(WHERE el\.event_type =  'tribo' AND att\.present = true\)/);
 });
 
 test('m3 PR7: the dead tag/audience-rule model is fully removed (no general_meeting/tribe_meeting/is_event_mandatory)', () => {
-  assert.ok(!/general_meeting|tribe_meeting/.test(code), 'panel no longer selects events by tag');
-  assert.ok(!/is_event_mandatory_for_member/.test(code), 'panel no longer delegates to the audience-rule helper');
-  assert.ok(!/event_tag_assignments|event_audience_rules/.test(code), 'no tag/audience-rule tables referenced');
+  assert.ok(!/general_meeting|tribe_meeting/.test(panelCode), 'panel no longer selects events by tag');
+  assert.ok(!/is_event_mandatory_for_member/.test(panelCode), 'panel no longer delegates to the audience-rule helper');
+  assert.ok(!/event_tag_assignments|event_audience_rules/.test(panelCode), 'no tag/audience-rule tables referenced');
 });
 
 test('m3 PR7: D2 gate + privileged/own-row visibility + C+B cohort aggregate preserved', () => {
-  assert.match(code, /WHERE m\.auth_id = auth\.uid\(\) AND m\.is_active = true/, 'D2 active-member gate');
-  assert.match(code, /v_privileged := public\.can_by_member\(v_caller_id, 'manage_event'\)/);
-  assert.match(code, /WHERE v_privileged OR c\.id = v_caller_id/, 'non-privileged caller gets only own row');
+  assert.match(panelCode, /WHERE m\.auth_id = auth\.uid\(\) AND m\.is_active = true/, 'D2 active-member gate');
+  assert.match(panelCode, /v_privileged := public\.can_by_member\(v_caller_id, 'manage_event'\)/);
+  assert.match(panelCode, /WHERE v_privileged OR c\.id = v_caller_id/, 'non-privileged caller gets only own row');
   // C+B anonymous aggregate columns still computed only for the non-privileged caller's own row
-  assert.match(code, /CASE WHEN NOT v_privileged AND c\.id = v_caller_id THEN \(SELECT avg_pct FROM cohort\)/);
-  assert.match(code, /CASE WHEN NOT v_privileged AND c\.id = v_caller_id THEN \(SELECT sz FROM cohort\)/);
+  assert.match(panelCode, /CASE WHEN NOT v_privileged AND c\.id = v_caller_id THEN \(SELECT avg_pct FROM cohort\)/);
+  assert.match(panelCode, /CASE WHEN NOT v_privileged AND c\.id = v_caller_id THEN \(SELECT sz FROM cohort\)/);
   // no GRANT/REVOKE — CREATE OR REPLACE preserves the existing ACL (panel is called by authenticated users)
-  assert.ok(!/GRANT|REVOKE/.test(code), 'no grant churn (preserve existing ACL for authenticated callers)');
+  assert.ok(!/GRANT|REVOKE/.test(panelCode), 'no grant churn (preserve existing ACL for authenticated callers)');
 });
 
 test('m3 PR7 (review MED): C+B cohort population == canonical engagement cohort (not the looser active+eligible set)', () => {
@@ -69,11 +74,11 @@ test('m3 PR7 (review MED): C+B cohort population == canonical engagement cohort 
   // so the non-privileged standing card's cohort_avg matches the public home headline 76.2 (was 53.7 over 50 ppl).
   // All 3 cohort-defining clauses (cohort, caller numerator, caller denominator) carry the canonical filter.
   const canonicalFilter = /c(?:2|3)?\.cca = true AND c(?:2|3)?\.op_role IN \('researcher','tribe_leader','manager'\)/g;
-  const hits = code.match(canonicalFilter) || [];
+  const hits = panelCode.match(canonicalFilter) || [];
   assert.ok(hits.length >= 3, `canonical cohort filter on all 3 cohort clauses (found ${hits.length})`);
   // current_cycle_active threaded through active → computed for the filter to reference
-  assert.match(code, /m\.current_cycle_active AS cca/);
-  assert.match(code, /SELECT a\.id, a\.m_name, a\.t_name, a\.t_id, a\.op_role, a\.is_curator, a\.cca/);
+  assert.match(panelCode, /m\.current_cycle_active AS cca/);
+  assert.match(panelCode, /SELECT a\.id, a\.m_name, a\.t_name, a\.t_id, a\.op_role, a\.is_curator, a\.cca/);
 });
 
 test('m3 PR7: orphan get_attendance_summary dropped', () => {
