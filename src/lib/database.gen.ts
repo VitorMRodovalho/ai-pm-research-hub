@@ -35140,6 +35140,7 @@ export type Database = {
           estimated_cost_brl: number
           id: string
           presentation_date: string
+          primary_author_id: string
           primary_author_name: string
           status: Database["public"]["Enums"]["submission_status"]
           submission_date: string
