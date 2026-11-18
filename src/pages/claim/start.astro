@@ -21,6 +21,19 @@ const CLAIM_I18N = {
   identifierHint: t('claim.identifierHint', lang),
   backWorkspace: t('claim.backWorkspace', lang),
 };
+// Visitante que entra sem ser membro nem candidato é levado a esta tela pelo banner "Conta não
+// cadastrada" e não tem conta pendente para vincular. A resposta do RPC é genérica de propósito
+// (não revela quais e-mails existem), então o caminho dele precisa estar escrito na página, visível
+// antes de digitar: candidatura pela seção #join da home (sempre renderizada; o bloco #vagas só
+// aparece quando há vaga aberta) e a Reunião Geral aberta à comunidade.
+const NOT_APPLIED = {
+  title: t('claim.notApplied.title', lang),
+  body: t('claim.notApplied.body', lang),
+  apply: t('claim.notApplied.apply', lang),
+  geral: t('claim.notApplied.geral', lang),
+  applyHref: `${langPrefix}/#join`,
+  geralHref: `${langPrefix}/reunioes-gerais`,
+};
 ---
 <BaseLayout title={CLAIM_I18N.startTitle} activePage="profile" lang={lang}>
   <div class="max-w-xl mx-auto py-12 px-4">
@@ -51,6 +64,16 @@ const CLAIM_I18N = {
       </form>
 
       <div id="claim-status" class="mt-5 text-sm text-[var(--text-secondary)] hidden"></div>
+
+      <section id="claim-not-applied" aria-labelledby="claim-not-applied-title"
+        class="mt-6 rounded-lg border border-[var(--border-default)] bg-[var(--surface-hover,#f1f5f9)] px-4 py-3">
+        <h2 id="claim-not-applied-title" class="text-sm font-semibold text-[var(--text-primary)] mb-1">{NOT_APPLIED.title}</h2>
+        <p class="text-xs text-[var(--text-secondary)] leading-relaxed mb-2">{NOT_APPLIED.body}</p>
+        <ul class="text-sm grid gap-1.5 pl-0 m-0 list-none">
+          <li><a id="claim-not-applied-apply" href={NOT_APPLIED.applyHref} class="text-[var(--brand-primary)] font-semibold hover:underline">{NOT_APPLIED.apply} →</a></li>
+          <li><a id="claim-not-applied-geral" href={NOT_APPLIED.geralHref} class="text-[var(--brand-primary)] font-semibold hover:underline">{NOT_APPLIED.geral} →</a></li>
+        </ul>
+      </section>
 
       <p class="text-xs text-[var(--text-muted)] mt-6 leading-relaxed">{CLAIM_I18N.fallbackAdmin}</p>
 
