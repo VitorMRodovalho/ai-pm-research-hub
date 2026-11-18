@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Toast from '../../components/ui/Toast.astro';
 import LoadingSkeleton from '../../components/ui/LoadingSkeleton.astro';
 import InitiativeBoardWrapper from '../../components/initiatives/InitiativeBoardWrapper';
 import TribeGamificationTab from '../../components/tribes/TribeGamificationTab';
@@ -111,7 +110,6 @@ const INIT_I18N = {
 };
 ---
 <BaseLayout title="Iniciativa" activePage="initiatives" lang={lang}>
-  <Toast />
   <div class="max-w-[1400px] mx-auto px-4 py-8">
     <div id="init-loading" class="text-center py-10 text-[var(--text-muted)]">{INIT_I18N.loading}</div>
     <div id="init-denied" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">

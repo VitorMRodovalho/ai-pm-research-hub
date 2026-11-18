@@ -3,7 +3,6 @@ import AdminLayout from '../../layouts/AdminLayout.astro';
 import DiversityDashboard from '../../components/selection/DiversityDashboard';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
-import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -862,7 +861,6 @@ const SEL_I18N = {
     </div>
   </div>
 
-  <Toast />
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
 </AdminLayout>
 
@@ -1366,8 +1364,8 @@ const SEL_I18N = {
     }
   }
 
-  // #1973 — delega ao toast GLOBAL (`src/components/ui/Toast.astro`, ja importado nesta
-  // pagina). Antes esta funcao era uma implementacao LOCAL que procurava `#toast-container`,
+  // #1973 — delega ao toast GLOBAL (`src/components/ui/Toast.astro`, montado pelo
+  // BaseLayout desde 17/11/2026). Antes esta funcao era uma implementacao LOCAL que procurava `#toast-container`,
   // id que nao existe em lugar nenhum: o componente renderiza `#toast`. Como a local
   // SOMBREIA a global, as chamadas caiam num `if (!el) return` e toda mensagem desta tela
   // evaporava — sucesso e erro. Foi assim que um entrevistador clicou em concluir, recebeu

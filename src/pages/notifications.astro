@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
-import Toast from '../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 ---
@@ -41,7 +40,6 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
     <div id="notif-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
-  <Toast />
   <span id="i18n-notifLoadError" class="hidden">{t('notifications.loadError', lang)}</span>
   <span id="i18n-notifManagementDigest" class="hidden">{t('notifications.managementDigestSummary', lang)}</span>
 </BaseLayout>

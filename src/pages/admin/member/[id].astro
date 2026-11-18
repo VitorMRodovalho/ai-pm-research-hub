@@ -1,6 +1,5 @@
 ---
 import AdminLayout from '../../../layouts/AdminLayout.astro';
-import Toast from '../../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../../i18n/utils';
 import { buildPageI18n } from '../../../i18n/pageI18n';
 
@@ -80,7 +79,6 @@ const MEMBER_EDIT_I18N = {
 ---
 <AdminLayout title={isNew ? t('admin.memberEdit.titleNew', lang) : t('comp.memberDetail.editTitle', lang)} breadcrumbs={[{label:t('common.back', lang)},{label:t('admin.members.title', lang)}]}>
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
-  <Toast />
   <div class="max-w-2xl mx-auto px-4 py-8">
     <div class="flex items-center gap-3 mb-6">
       <a href={`${langPrefix}/admin`} class="text-[var(--text-muted)] hover:text-navy transition-all text-sm no-underline">← {t('common.back', lang)}</a>

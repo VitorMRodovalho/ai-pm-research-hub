@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import ChapterDashboard from '../components/chapter/ChapterDashboard';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
@@ -9,7 +8,6 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 
 <BaseLayout title={t('stakeholder.title', lang) || 'Chapter Dashboard'} activePage="stakeholder" lang={lang}>
-  <Toast />
   <span id="admin-signin-to-view" class="hidden">{t('admin.signInToView', lang)}</span>
   <div id="stakeholder-denied" class="hidden max-w-lg mx-auto px-4 py-20 text-center">
     <div class="text-4xl mb-4">🔒</div>

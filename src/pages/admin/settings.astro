@@ -1,7 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -221,7 +220,6 @@ const SETTINGS_I18N = {
 
     <div id="settings-loading" class="text-center py-16 text-[var(--text-muted)]">{t('common.loading', lang)}</div>
   </div>
-  <Toast />
   <span id="ai18n-nor" class="hidden">{t('admin.noResults', lang)}</span>
   <span id="ai18n-lod" class="hidden">{t('admin.loadError', lang)}</span>
   <span id="ai18n-sav" class="hidden">{t('admin.saveError', lang)}</span>

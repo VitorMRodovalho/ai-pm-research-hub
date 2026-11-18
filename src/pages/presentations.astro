@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -15,7 +14,6 @@ const PRES_I18N = {
 };
 ---
 <BaseLayout title={PRES_I18N.pageTitle} activePage="presentations" lang={lang}>
-  <Toast />
   <section class="max-w-5xl mx-auto px-4 pt-24 pb-16">
     <h1 class="text-2xl font-extrabold text-navy mb-6">{PRES_I18N.pageTitle}</h1>
 

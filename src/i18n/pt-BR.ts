@@ -1811,6 +1811,7 @@ const ptBR: Record<string, string> = {
   'attendance.modal.recordedMeetings': '🔴 Reuniões gravadas',
   'attendance.modal.createEvent': 'Criar Evento',
   'attendance.modal.save': 'Salvar',
+  'attendance.modal.notes': 'Notas',
   'attendance.modal.newEventTitle': 'Criar Evento',
   'attendance.modal.editEventTitle': '✏️ Editar Evento',
   'attendance.modal.recurringTitle': '🔁 Criar Série Recorrente',
@@ -4780,6 +4781,7 @@ const ptBR: Record<string, string> = {
   'comp.nav.visitor': 'Visitante',
   'comp.nav.member': 'Membro',
   'comp.nav.observer': 'Observador',
+  'comp.nav.leader': 'Líder',
   'comp.nav.researchTribes': 'Tribos de Pesquisa',
 
   // Common
@@ -5674,6 +5676,7 @@ const ptBR: Record<string, string> = {
   'eventDetail.showcaseTitle': 'Título',
   'eventDetail.save': 'Salvar',
   'eventDetail.cancel': 'Cancelar',
+  'eventDetail.agenda': 'Pauta',
 
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Pauta',

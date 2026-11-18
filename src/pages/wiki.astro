@@ -17,7 +17,6 @@
  * Fase A da descoberta (27/09, GP aprovou o protótipo): a jornada principal é ENCONTRAR, não cadastrar.
  */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import { buildPageI18n } from '../i18n/pageI18n';
 
@@ -54,7 +53,6 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       <section id="wiki-view" aria-live="polite"></section>
     </div>
   </div>
-  <Toast />
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
 </BaseLayout>
 

@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Toast from '../../components/ui/Toast.astro';
 import OnboardingCockpitNudge from '../../components/onboarding/OnboardingCockpitNudge';
 import MapConsentNudge from '../../components/onboarding/MapConsentNudge';
 import HomepageHero from '../../components/sections/HomepageHero.astro';
@@ -27,7 +26,6 @@ const i18nBundle = buildPageI18n(['comp.agendaViva'], lang);
 ---
 <BaseLayout title={t('meta.title', lang)} activePage="home" lang={lang} alternates="prefix">
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
-  <Toast />
   <OnboardingCockpitNudge client:load lang={lang} />
   <MapConsentNudge client:load lang={lang}
     consentText={t('profile.allowPreciseLocationMapLabel', lang)}

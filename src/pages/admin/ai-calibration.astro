@@ -1,7 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import AiCalibrationIsland from '../../components/admin/AiCalibrationIsland';
-import Toast from '../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -19,5 +18,4 @@ const i18nBundle = buildPageI18n(['comp.aiCalibration', 'comp.common'], lang);
   <div class="max-w-[1100px] mx-auto px-4 pb-12">
     <AiCalibrationIsland client:load />
   </div>
-  <Toast />
 </AdminLayout>

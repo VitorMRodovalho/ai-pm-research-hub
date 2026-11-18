@@ -11,7 +11,6 @@
 // avaliador já pode chamar hoje. Deliberadamente NÃO chama get_selection_dashboard
 // (que exige view_internal_analytics), nem expõe import, decisão ou diversidade.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
@@ -55,7 +54,6 @@ const ME_I18N = {
 };
 ---
 <BaseLayout title={t('myEvals.title', lang)} activePage="my-evals" lang={lang}>
-  <Toast />
   <div class="max-w-[900px] mx-auto px-4 py-8">
     <header class="mb-6">
       <h1 class="text-2xl font-bold text-navy">{ME_I18N.heading}</h1>
@@ -117,8 +115,8 @@ const ME_I18N = {
     String(s ?? '').replace(/[&<>"']/g, (c) =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 
-  // #1973 — delega ao toast GLOBAL (`src/components/ui/Toast.astro`, ja importado nesta
-  // pagina). Antes esta funcao era uma implementacao LOCAL que procurava `#toast-container`,
+  // #1973 — delega ao toast GLOBAL (`src/components/ui/Toast.astro`, montado pelo
+  // BaseLayout desde 17/11/2026). Antes esta funcao era uma implementacao LOCAL que procurava `#toast-container`,
   // id que nao existe em lugar nenhum: o componente renderiza `#toast`. Como a local
   // SOMBREIA a global, as chamadas caiam num `if (!el) return` e toda mensagem desta tela
   // evaporava — sucesso e erro. Foi assim que um entrevistador clicou em concluir, recebeu

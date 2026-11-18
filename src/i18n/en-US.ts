@@ -1806,6 +1806,7 @@ const enUS: Record<string, string> = {
   'attendance.modal.recordedMeetings': '🔴 Recorded meetings',
   'attendance.modal.createEvent': 'Create Event',
   'attendance.modal.save': 'Save',
+  'attendance.modal.notes': 'Notes',
   'attendance.modal.newEventTitle': 'Create Event',
   'attendance.modal.editEventTitle': '✏️ Edit Event',
   'attendance.modal.recurringTitle': '🔁 Create Recurring Series',
@@ -4773,6 +4774,7 @@ const enUS: Record<string, string> = {
   'comp.nav.visitor': 'Visitor',
   'comp.nav.member': 'Member',
   'comp.nav.observer': 'Observer',
+  'comp.nav.leader': 'Leader',
   'comp.nav.researchTribes': 'Research Tribes',
 
   // Common
@@ -5666,6 +5668,7 @@ const enUS: Record<string, string> = {
   'eventDetail.showcaseTitle': 'Title',
   'eventDetail.save': 'Save',
   'eventDetail.cancel': 'Cancel',
+  'eventDetail.agenda': 'Agenda',
 
   // ── meetings (meeting journey) ──
   'meetings.agenda.title': 'Agenda',

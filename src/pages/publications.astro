@@ -7,6 +7,8 @@ import PublicationsBoardIsland from '../components/boards/PublicationsBoardIslan
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
+// Valores do enum submission_target_type; o rótulo de cada um é publications.target.<valor> nos 3 dicionários.
+const TARGET_TYPES = ['pmi_global_conference', 'pmi_chapter_event', 'academic_journal', 'academic_conference', 'webinar', 'blog_post', 'other'] as const;
 ---
 
 <BaseLayout title={t('publications.publicTitle', lang)} activePage="publications" lang={lang} alternates="query">
@@ -98,28 +100,22 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
       <h3 class="text-lg font-bold text-navy mb-4">+ {t('publications.new', lang)}</h3>
       <form id="my-new-form" class="space-y-3">
         <div>
-          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTitle', lang)}</label>
+          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.form.title', lang)}</label>
           <input name="title" required class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
         </div>
         <div>
-          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formAbstract', lang)}</label>
+          <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.form.abstract', lang)}</label>
           <textarea name="abstract" rows="3" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTargetType', lang)}</label>
+            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.form.targetType', lang)}</label>
             <select name="target_type" required class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
-              <option value="pmi_global_conference">{t('publications.target.pmi_global', lang)}</option>
-              <option value="pmi_chapter_event">{t('publications.target.pmi_chapter', lang)}</option>
-              <option value="academic_journal">{t('publications.target.journal', lang)}</option>
-              <option value="academic_conference">{t('publications.target.conference', lang)}</option>
-              <option value="webinar">{t('publications.target.webinar', lang)}</option>
-              <option value="blog_post">{t('publications.target.blog', lang)}</option>
-              <option value="other">Outro</option>
+              {TARGET_TYPES.map((v) => <option value={v}>{t(`publications.target.${v}`, lang)}</option>)}
             </select>
           </div>
           <div>
-            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.formTargetName', lang)}</label>
+            <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.form.targetName', lang)}</label>
             <input name="target_name" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
           </div>
         </div>
@@ -127,7 +123,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
           <label class="text-[.7rem] font-semibold text-[var(--text-muted)] block mb-1">{t('publications.estimatedCost', lang)}</label>
           <input name="estimated_cost" type="number" step="0.01" min="0" class="w-full px-3 py-2 border border-[var(--border-default)] rounded-lg text-sm">
         </div>
-        <button type="submit" class="w-full py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer hover:opacity-90">Salvar</button>
+        <button type="submit" id="my-new-submit" class="w-full py-2.5 bg-navy text-white rounded-xl text-sm font-bold cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-wait">{t('publications.form.save', lang)}</button>
       </form>
     </div>
   </div>
@@ -167,6 +163,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
 <span id="pub-i18n-read" class="hidden">{t('publications.readMore', lang)}</span>
 <span id="pub-i18n-featured" class="hidden">{t('publications.featured', lang)}</span>
 <span id="pub-i18n-createError" class="hidden">{t('publications.createError', lang)}</span>
+<span id="pub-i18n-created" class="hidden">{t('publications.created', lang)}</span>
 <script is:inline define:vars={{ langPrefix }}>window.__LANG_PREFIX = langPrefix;</script>
 <span id="pub-i18n-page" class="hidden">{t('publications.page.openPage', lang)}</span>
 
@@ -362,11 +359,9 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
       });
       if (error) throw error;
 
+      // A lista traz primary_author_id desde a migration da correção de "Minhas submissões".
       const myId = member.id;
-      const mySubs = (data || []).filter((s: any) =>
-        s.primary_author_id === myId ||
-        (s.authors || []).some((a: any) => a.member_id === myId)
-      );
+      const mySubs = (data || []).filter((s: any) => s.primary_author_id === myId);
 
       loading?.classList.add('hidden');
 
@@ -374,6 +369,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
         empty?.classList.remove('hidden');
         return;
       }
+      empty?.classList.add('hidden');
 
       list.innerHTML = mySubs.map((s: any) => {
         const sColor = STATUS_COLORS[s.status] || 'bg-gray-100 text-gray-700';
@@ -427,7 +423,7 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
         ${sub.target_name ? `<div class="text-[.75rem]"><strong>Destino:</strong> ${escHtml(sub.target_name)}</div>` : ''}
         ${sub.target_url ? `<div class="text-[.75rem]"><a href="${escHtml(sub.target_url)}" target="_blank" rel="noopener" class="text-teal hover:underline">Link externo</a></div>` : ''}
         ${sub.primary_author_name ? `<div class="text-[.75rem]"><strong>Autor principal:</strong> ${escHtml(sub.primary_author_name)}</div>` : ''}
-        ${sub.estimated_cost ? `<div class="text-[.75rem]"><strong>Custo estimado:</strong> R$ ${Number(sub.estimated_cost).toFixed(2)}</div>` : ''}
+        ${sub.estimated_cost_brl ? `<div class="text-[.75rem]"><strong>Custo estimado:</strong> R$ ${Number(sub.estimated_cost_brl).toFixed(2)}</div>` : ''}
         <div class="text-[.7rem] text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)]">
           Criado em ${sub.created_at ? new Date(sub.created_at).toLocaleDateString('pt-BR') : '-'}
         </div>
@@ -455,31 +451,47 @@ const i18nBundle = buildPageI18n(['comp.pubBoard', 'comp.common'], lang);
     if (e.target === e.currentTarget) document.getElementById('my-new-modal')?.classList.add('hidden');
   });
 
+  // Um envio por vez: o botão fica desabilitado até a resposta chegar, e só a primeira submissão em voo vale.
+  let creatingSubmission = false;
   document.getElementById('my-new-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (creatingSubmission) return;
     const sb = (window as any).navGetSb?.();
     const member = (window as any).navGetMember?.();
     if (!sb || !member) return;
 
-    const fd = new FormData(e.target as HTMLFormElement);
-    const { error } = await sb.rpc('create_publication_submission', {
-      p_title: fd.get('title'),
-      p_abstract: fd.get('abstract') || null,
-      p_target_type: fd.get('target_type'),
-      p_target_name: fd.get('target_name') || null,
-      p_primary_author_id: member.id,
-      p_tribe_id: member.tribe_id || null,
-      p_estimated_cost_brl: fd.get('estimated_cost') ? Number(fd.get('estimated_cost')) : 0,
-    });
+    const form = e.target as HTMLFormElement;
+    const submitBtn = document.getElementById('my-new-submit') as HTMLButtonElement | null;
+    const errorMsg = document.getElementById('pub-i18n-createError')?.textContent || 'Error creating submission';
+    creatingSubmission = true;
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      const fd = new FormData(form);
+      const { error } = await sb.rpc('create_publication_submission', {
+        p_title: fd.get('title'),
+        p_abstract: fd.get('abstract') || null,
+        p_target_type: fd.get('target_type'),
+        p_target_name: fd.get('target_name') || null,
+        p_primary_author_id: member.id,
+        p_tribe_id: member.tribe_id || null,
+        p_estimated_cost_brl: fd.get('estimated_cost') ? Number(fd.get('estimated_cost')) : 0,
+      });
 
-    if (error) {
-      (window as any).toast?.(document.getElementById('pub-i18n-createError')?.textContent || 'Error creating submission', 'error');
-      return;
+      if (error) {
+        (window as any).toast?.(errorMsg, 'error');
+        return;
+      }
+      (window as any).toast?.(document.getElementById('pub-i18n-created')?.textContent || 'Submission created!', 'success');
+      document.getElementById('my-new-modal')?.classList.add('hidden');
+      form.reset();
+      loadMySubmissions();
+    } catch (err) {
+      console.warn('Create submission:', err);
+      (window as any).toast?.(errorMsg, 'error');
+    } finally {
+      creatingSubmission = false;
+      if (submitBtn) submitBtn.disabled = false;
     }
-    (window as any).toast?.('Submissão criada!', 'success');
-    document.getElementById('my-new-modal')?.classList.add('hidden');
-    (e.target as HTMLFormElement).reset();
-    loadMySubmissions();
   });
 
   // Show internal board section if logged in
