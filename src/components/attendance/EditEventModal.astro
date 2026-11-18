@@ -140,7 +140,7 @@ const lang: Lang = getLangFromURL(Astro.url.pathname);
                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy">
           </div>
           <div class="flex flex-col gap-1.5 sm:col-span-2">
-            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.notes', lang) || 'Notas'}</label>
+            <label class="text-[12px] font-semibold text-[var(--text-secondary)]">{t('attendance.modal.notes', lang)}</label>
             <textarea id="edit-ev-notes" rows="2" placeholder="Observações sobre este evento..."
                    class="px-3 py-2 rounded-lg border-[1.5px] border-[var(--border-default)] text-[13px] focus:outline-none focus:border-navy resize-y"></textarea>
           </div>

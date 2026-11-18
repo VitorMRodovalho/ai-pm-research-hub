@@ -1,7 +1,6 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -237,7 +236,6 @@ const LANG_FOR_CRITERIA = (lang === 'en-US' || lang === 'es-LATAM') ? lang : 'pt
       </div>
     </div>
   </div>
-  <Toast />
 </AdminLayout>
 
 <script is:inline define:vars={{ GAM_I18N, CRITERIA_FALLBACK, LANG_FOR_CRITERIA }}>

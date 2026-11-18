@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Toast from '../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -18,7 +17,6 @@ const CLAIM_I18N = {
 };
 ---
 <BaseLayout title={CLAIM_I18N.confirmTitle} activePage="profile" lang={lang}>
-  <Toast />
   <div class="max-w-xl mx-auto py-12 px-4">
     <div class="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-lg p-8 shadow-sm">
       <h1 class="text-xl font-semibold text-[var(--text-primary)] mb-6">{CLAIM_I18N.confirmTitle}</h1>

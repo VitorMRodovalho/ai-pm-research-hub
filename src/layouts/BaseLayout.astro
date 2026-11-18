@@ -5,6 +5,7 @@ import OtherHostAppNotice from '../components/notifications/OtherHostAppNotice.a
 import AnnouncementBanner from '../components/ui/AnnouncementBanner.astro';
 import PushInvite from '../components/notifications/PushInvite.astro';
 import AuthModal from '../components/ui/AuthModal.astro';
+import Toast from '../components/ui/Toast.astro';
 // TierViewerBar disabled — feature incomplete, never worked reliably
 import HelpFloatingButton from '../components/help/HelpFloatingButton';
 import PrivacyGateModal from '../components/privacy/PrivacyGateModal';
@@ -411,5 +412,7 @@ const CHANNEL_ICON: Record<ChannelKey, { label: string; path: string }> = {
       });
     })();
   </script>
+  <!-- window.toast para todas as páginas (e o AdminLayout, que envolve este): montado só aqui. -->
+  <Toast />
 </body>
 </html>

@@ -5,7 +5,6 @@
  * portão de iniciativa confidencial (ADR-0105). Obra ausente, despublicada ou confidencial = 404.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import Toast from '../../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { createClient } from '@supabase/supabase-js';
 import { SEO_CANONICAL_ORIGIN } from '../../lib/canonical';
@@ -97,7 +96,6 @@ const btn = 'inline-flex items-center min-h-[44px] px-4 rounded-lg text-sm font-
     </Fragment>
   )}
   {!pub && <meta slot="head" name="robots" content="noindex" />}
-  <Toast />
 
   <div class="max-w-[860px] mx-auto px-4 py-10">
     <nav aria-label={t('publications.page.backToList', lang)}>

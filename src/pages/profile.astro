@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
@@ -266,7 +265,6 @@ const PROFILE_I18N = {
 };
 ---
 <BaseLayout title={t('profile.title', lang)} activePage="profile" lang={lang}>
-  <Toast />
   <ConfirmModal />
   <div class="max-w-2xl mx-auto px-4 py-10">
     <h1 class="text-2xl font-extrabold text-navy mb-6">{t('profile.heading', lang)}</h1>

@@ -7,7 +7,6 @@
 // Todos os totais/subtotais derivam do MESMO conjunto de fatos buscado — para uma
 // feature "auditável", subtotal do pilar == soma dos fatos visíveis, por construção.
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -53,7 +52,6 @@ const MP_I18N = {
 };
 ---
 <BaseLayout title={t('myPoints.title', lang)} activePage="my-points" lang={lang}>
-  <Toast />
   <div class="max-w-[900px] mx-auto px-4 py-8">
     <!-- Admin context banner (?member=) -->
     <div id="admin-banner" class="hidden mb-5">

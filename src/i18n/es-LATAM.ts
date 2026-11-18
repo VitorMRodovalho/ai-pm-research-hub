@@ -1806,6 +1806,7 @@ const esLATAM: Record<string, string> = {
   'attendance.modal.recordedMeetings': '🔴 Reuniones grabadas',
   'attendance.modal.createEvent': 'Crear Evento',
   'attendance.modal.save': 'Guardar',
+  'attendance.modal.notes': 'Notas',
   'attendance.modal.newEventTitle': 'Crear Evento',
   'attendance.modal.editEventTitle': '✏️ Editar Evento',
   'attendance.modal.recurringTitle': '🔁 Crear Serie Recurrente',
@@ -4774,6 +4775,7 @@ const esLATAM: Record<string, string> = {
   'comp.nav.visitor': 'Visitante',
   'comp.nav.member': 'Miembro',
   'comp.nav.observer': 'Observador',
+  'comp.nav.leader': 'Líder',
   'comp.nav.researchTribes': 'Tribus de Investigación',
 
   // Common
@@ -5667,6 +5669,7 @@ const esLATAM: Record<string, string> = {
   'eventDetail.showcaseTitle': 'Título',
   'eventDetail.save': 'Guardar',
   'eventDetail.cancel': 'Cancelar',
+  'eventDetail.agenda': 'Agenda',
 
   // ── meetings (meeting journey) ─��
   'meetings.agenda.title': 'Agenda',

@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import ConfirmModal from '../components/ui/ConfirmModal.astro';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton.astro';
 import KpiDashboard from '../components/workspace/KpiDashboard';
@@ -100,7 +99,6 @@ const WK = {
 };
 ---
 <BaseLayout title={WK.meta} activePage="workspace" lang={lang}>
-  <Toast />
   <ConfirmModal />
   <div class="max-w-[1200px] mx-auto px-4 py-8">
     <!-- Header -->
@@ -648,10 +646,7 @@ const WK = {
         const canSubmit = hasPermission(member, 'content.submit_publication');
         if (canSubmit) {
           const { data: allSubs } = await sb.rpc('get_publication_submissions', { p_status: null, p_tribe_id: null });
-          const mySubs = (allSubs || []).filter((s: any) =>
-            s.primary_author_id === member.id ||
-            (s.authors || []).some((a: any) => a.member_id === member.id)
-          );
+          const mySubs = (allSubs || []).filter((s: any) => s.primary_author_id === member.id);
           const $myPubsSection = document.getElementById('wk-my-pubs');
           const $myPubsCard = document.getElementById('wk-my-pubs-card');
           if ($myPubsSection && $myPubsCard) {

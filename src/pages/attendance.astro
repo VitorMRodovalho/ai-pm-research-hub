@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Toast from '../components/ui/Toast.astro';
 import KpiBar from '../components/attendance/KpiBar.astro';
 import NewEventModal from '../components/attendance/NewEventModal.astro';
 import RecurringModal from '../components/attendance/RecurringModal.astro';
@@ -20,7 +19,6 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 ---
 
 <BaseLayout title={t('attendance.meta', lang)} activePage="attendance" lang={lang}>
-  <Toast />
 
   <!-- AUTH GATE (hidden by default, shown only if no session) -->
   <div id="auth-gate" class="hidden items-center justify-center min-h-screen bg-[var(--surface-base)]">

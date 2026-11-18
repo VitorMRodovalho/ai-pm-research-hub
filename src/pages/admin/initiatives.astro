@@ -4,7 +4,6 @@
 // (já tem botão "Adicionar Membro" via manage_initiative_engagement). p155 (2026-05-13).
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
-import Toast from '../../components/ui/Toast.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -143,7 +142,6 @@ const INIT_I18N = {
       </div>
     </div>
   </div>
-  <Toast />
 </AdminLayout>
 
 <script is:inline define:vars={{ INIT_I18N, langPrefix }}>
