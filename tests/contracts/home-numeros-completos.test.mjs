@@ -34,7 +34,8 @@ describe('home: números completos (GP 19/11/2026)', () => {
     assert.match(SQL, /extract\(year FROM \(now\(\) AT TIME ZONE 'America\/Sao_Paulo'\)\)::int AS yr/);
     assert.match(SQL, /extract\(year FROM coalesce\(ps\.acceptance_date, ps\.presentation_date, ps\.submission_date, ps\.created_at::date\)\)::int = y\.yr/);
     assert.match(SQL, /AND NOT EXISTS \(SELECT 1 FROM public\.initiatives i WHERE i\.id = ps\.initiative_id AND i\.visibility = 'confidential'\)/);
-    assert.match(SQL, /GRANT EXECUTE ON FUNCTION public\.get_public_publication_outcomes\(\) TO anon/);
+    assert.match(SQL, /CREATE OR REPLACE FUNCTION public\.get_public_publication_outcomes\(\)\s+RETURNS jsonb\s+LANGUAGE sql\s+STABLE\s+SECURITY DEFINER\s+SET search_path TO 'public', 'pg_temp'/);
+    assert.match(SQL, /REVOKE ALL ON FUNCTION public\.get_public_publication_outcomes\(\) FROM PUBLIC;\s+GRANT EXECUTE ON FUNCTION public\.get_public_publication_outcomes\(\) TO anon, authenticated, service_role;/);
   });
 
   it('B: os loaders devolvem null quando a leitura falha ou vem fora do formato', () => {
@@ -55,9 +56,9 @@ describe('home: números completos (GP 19/11/2026)', () => {
   it('D: rótulos novos e do hero nos 3 idiomas', () => {
     for (const [p, src] of DICTS) {
       for (const k of KEYS) assert.match(src, new RegExp(`'${k.replace('.', '\\.')}': '[^']+'`), `${p} ${k}`);
-      for (const ph of ['{published}', '{presented}', '{congress}', '{chapter}', '{evaluation}']) {
-        assert.match(src, new RegExp(`'kpis\\.publicationsText': '[^']*${ph.replace(/[{}]/g, '\\$&')}`), `${p} ${ph}`);
-      }
+      const text = src.match(/'kpis\.publicationsText': '([^']*)'/)?.[1] ?? '';
+      const found = (text.match(/\{[a-z]+\}/g) ?? []).sort();
+      assert.deepEqual(found, ['{chapter}', '{congress}', '{evaluation}', '{presented}', '{published}'], `${p} placeholders`);
       assert.match(src, /'kpis\.chaptersNote': '[^']*\{signed\}[^']*\{unsigned\}/, p);
     }
     const pt = DICTS[0][1];
