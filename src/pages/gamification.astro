@@ -241,7 +241,9 @@ const SCORING_I18N = {
         <span class="text-amber-600 text-lg flex-shrink-0">ℹ️</span>
         <p class="text-amber-800 text-[.78rem] font-medium flex-1">
           {t('guest.limitedAccess', lang)}
-          <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 font-semibold underline ml-1">{t('guest.contactEmail', lang)}</a>
+          <a id="guest-apply-cta" href={`${langPrefix}/#join`} class="text-amber-800 font-semibold underline ml-1">{t('guest.applyCta', lang)}</a>
+          {' · '}
+          <a id="guest-claim-cta" href={`${langPrefix}/claim/start`} class="text-amber-800 font-semibold underline">{t('claim.cta', lang)}</a>
         </p>
       </div>
     </div>

@@ -4713,9 +4713,11 @@ const ptBR: Record<string, string> = {
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Sua conta foi autenticada, mas ainda não está cadastrada no Núcleo.',
-  'guest.contactAdmin': 'Entre em contato com o gestor do projeto para ser incluído como membro.',
+  'guest.contactAdmin': 'A entrada no Núcleo é pela seleção: veja como participar e candidate-se. Se você já foi aprovado(a) e entrou com outro e-mail, vincule sua conta pelo botão abaixo.',
   'guest.contactEmail': 'nucleoia@pmigo.org.br',
-  'guest.limitedAccess': 'Você tem acesso limitado. Cadastre-se como membro para participar.',
+  'guest.limitedAccess': 'Você tem acesso limitado porque sua conta ainda não está cadastrada no Núcleo. A entrada é pela seleção; se você já foi aprovado(a) e entrou com outro e-mail, vincule sua conta.',
+  'guest.questions': 'Dúvidas:',
+  'guest.applyCta': 'Como participar',
   'guest.navNotFound': 'Conta não cadastrada',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──
