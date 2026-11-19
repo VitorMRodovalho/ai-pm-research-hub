@@ -1594,7 +1594,7 @@ const ptBR: Record<string, string> = {
   'gamification.cert.search': 'Buscar por nome, título ou código',
   // ── CPMAI Prep Course (GC-120) ──
   'cpmai.title': "Grupo de Estudos CPMAI · Piloto",
-  'cpmai.subtitle': "Grupo de estudos do Núcleo IA & GP sobre a metodologia CPMAI, à luz dos padrões do PMI. Não é curso preparatório para a prova.",
+  'cpmai.subtitle': "Grupo de estudos entre pares do Núcleo IA & GP sobre a metodologia PMI-CPMAI. Não substitui o curso oficial do PMI.",
   'cpmai.disclaimer': "Este grupo de estudos é uma iniciativa do Núcleo IA & GP e NÃO substitui o curso oficial do PMI de 21 horas, que é pré-requisito obrigatório para agendar o exame PMI-CPMAI™.",
   'cpmai.restricted': "Esta página é só para participantes do grupo de estudos e para a gestão. A entrada no grupo é feita pela gestão do Núcleo: fale com ela se quiser participar.",
   'cpmai.not_found': "O grupo de estudos ainda não está disponível.",
