@@ -4706,9 +4706,12 @@ const esLATAM: Record<string, string> = {
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Tu cuenta fue autenticada, pero aún no está registrada en el Núcleo.',
-  'guest.contactAdmin': 'Contacta al gestor del proyecto para ser incluido como miembro.',
+  'guest.contactAdmin': 'La entrada al Núcleo es por la selección: ve cómo participar y postúlate. Si ya fuiste aprobado(a) e iniciaste sesión con otro correo, vincula tu cuenta.',
   'guest.contactEmail': 'nucleoia@pmigo.org.br',
-  'guest.limitedAccess': 'Tienes acceso limitado. Regístrate como miembro para participar.',
+  'guest.limitedAccess': 'Tienes acceso limitado porque tu cuenta aún no está registrada en el Núcleo. La entrada es por la selección; si ya fuiste aprobado(a) e iniciaste sesión con otro correo, vincula tu cuenta.',
+  'guest.questions': 'Dudas:',
+  'guest.applyCta': 'Cómo participar',
+  'guest.claimCta': 'Ya fui aprobado(a): vincular cuenta',
   'guest.navNotFound': 'Cuenta no registrada',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──

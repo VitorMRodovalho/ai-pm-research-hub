@@ -297,10 +297,20 @@ const PROFILE_I18N = {
         <div class="text-4xl mb-3">🔒</div>
         <h2 class="text-lg font-bold text-navy mb-2">{t('guest.notRegistered', lang)}</h2>
         <p class="text-[var(--text-secondary)] text-sm mb-4">{t('guest.contactAdmin', lang)}</p>
-        <a href={`mailto:${t('guest.contactEmail', lang)}`}
-           class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
-          ✉️ {t('guest.contactEmail', lang)}
-        </a>
+        {/* Quem cai aqui está logado sem linha em members: ou foi aprovado e entrou com outro e-mail
+            (vínculo em /claim/start) ou nunca se candidatou (entrada pela seleção, seção #join da
+            home). O gestor fica como contato para dúvidas, não como o caminho de entrada. */}
+        <div class="flex flex-wrap justify-center gap-3">
+          <a id="guest-apply-cta" href={`${langPrefix}/#join`}
+             class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
+            {t('guest.applyCta', lang)}
+          </a>
+          <a id="guest-claim-cta" href={`${langPrefix}/claim/start`}
+             class="inline-block px-5 py-2.5 border border-[var(--border-default)] text-[var(--text-primary)] rounded-xl font-semibold text-sm no-underline hover:bg-[var(--surface-hover)] transition-all">
+            {t('guest.claimCta', lang)}
+          </a>
+        </div>
+        <p class="text-xs text-[var(--text-muted)] mt-4">{t('guest.questions', lang)} <a href={`mailto:${t('guest.contactEmail', lang)}`} class="underline">{t('guest.contactEmail', lang)}</a></p>
       </div>
     </div>
   </div>

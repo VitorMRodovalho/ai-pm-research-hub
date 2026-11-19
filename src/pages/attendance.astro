@@ -34,7 +34,11 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
       <p id="auth-not-found-msg" class="hidden mt-4 text-[13px] text-amber-700">
         {t('guest.notRegistered', lang)} {t('guest.contactAdmin', lang)}
         <br />
-        <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 font-semibold underline">{t('guest.contactEmail', lang)}</a>
+        <a id="guest-apply-cta" href={`${langPrefix}/#join`} class="text-amber-800 font-semibold underline">{t('guest.applyCta', lang)}</a>
+        {' · '}
+        <a id="guest-claim-cta" href={`${langPrefix}/claim/start`} class="text-amber-800 font-semibold underline">{t('guest.claimCta', lang)}</a>
+        <br />
+        {t('guest.questions', lang)} <a href={`mailto:${t('guest.contactEmail', lang)}`} class="text-amber-800 underline">{t('guest.contactEmail', lang)}</a>
       </p>
     </div>
   </div>
