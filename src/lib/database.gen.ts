@@ -35059,6 +35059,7 @@ export type Database = {
         Args: { p_slug: string }
         Returns: Json
       }
+      get_public_publication_outcomes: { Args: never; Returns: Json }
       get_public_publications: {
         Args: {
           p_cycle?: string

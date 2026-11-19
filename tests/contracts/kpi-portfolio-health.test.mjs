@@ -78,7 +78,7 @@ test('the goal block reads exec_portfolio_health on the server, with the label f
   assert.match(homeData, /const rows = await rpc<unknown\[\]>\('exec_portfolio_health'\);/);
   assert.match(homeData, /label: String\(r\.label\?\.\[l\] \?\? r\.label\?\.pt \?\? r\.metric_key \?\? ''\),\s+current: isNum\(r\.current\) \? r\.current : null,\s+target: isNum\(r\.target\) && r\.target > 0 \? r\.target : null,/);
   const section = readFileSync(KPI_SECTION, 'utf8');
-  assert.match(section, /const goals = await loadHomeGoals\(lang\);/);
+  assert.match(section, /const \[goals, pubs, agreements\] = await Promise\.all\(\[loadHomeGoals\(lang\), /);
   assert.match(section, /\{goals\.map\(\(g\) => \{/);
 });
 

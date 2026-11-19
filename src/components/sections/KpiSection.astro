@@ -8,14 +8,29 @@
  * Nenhuma meta sai da tela. Sem leitura, o bloco diz que as metas estão indisponíveis, sem número de reserva.
  */
 import { t, type Lang } from '../../i18n/utils';
-import { loadHomeGoals, goalState, currentYearBrt, type HomeGoal } from '../../lib/publicHomeData';
+import { loadHomeGoals, loadPublicationOutcomes, loadChapterAgreements, goalNote, PUBLICATIONS_AFTER_GOAL, goalState, currentYearBrt, type HomeGoal } from '../../lib/publicHomeData';
 
 interface Props { lang?: Lang; }
 const { lang = 'pt-BR' } = Astro.props;
 
-const goals = await loadHomeGoals(lang);
 const locale = lang === 'pt-BR' ? 'pt-BR' : lang === 'en-US' ? 'en-US' : 'es';
 const nf = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+const [goals, pubs, agreements] = await Promise.all([loadHomeGoals(lang), loadPublicationOutcomes(), loadChapterAgreements()]);
+const year = currentYearBrt();
+// GP 19/11/2026: a nota diz o que o número conta. Sem a leitura dos acordos, a meta de capítulos fica sem nota.
+const noteFor = (key: string): string => {
+  const note = goalNote(key);
+  if (note?.kind === 'chapters' && agreements)
+    return t('kpis.chaptersNote', lang).replace('{signed}', String(agreements.signed)).replace('{unsigned}', String(agreements.unsigned));
+  if (note?.kind === 'impactHours') return t('kpis.impactHoursNote', lang);
+  return '';
+};
+const pubsText = pubs
+  ? t('kpis.publicationsText', lang)
+      .replace('{published}', nf.format(pubs.published)).replace('{presented}', nf.format(pubs.presented))
+      .replace('{congress}', nf.format(pubs.presentedCongress)).replace('{chapter}', nf.format(pubs.presentedChapterEvent))
+      .replace('{evaluation}', nf.format(pubs.underEvaluation))
+  : '';
 const withUnit = (g: HomeGoal, v: number) =>
   g.unit === 'percent' ? `${nf.format(v)}%` : g.unit === 'hours' ? `${nf.format(v)} h` : nf.format(v);
 const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', lang), behind: '', unavailable: '' };
@@ -42,6 +57,7 @@ const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', la
             ? t('kpis.ofTarget', lang).replace('{current}', withUnit(g, g.current)).replace('{target}', withUnit(g, g.target))
             : t('kpis.goalUnavailable', lang);
           return (
+            <>
             <li class="grid gap-1.5" data-kpi={g.key} data-state={state}>
               <div class="flex justify-between gap-3 text-[.95rem]">
                 <span>{g.label}</span>
@@ -50,7 +66,17 @@ const stateLabel = { surpassed: t('kpis.surpassed', lang), met: t('kpis.met', la
               <div class="h-2.5 rounded-full bg-[var(--surface-section-cool)] overflow-hidden" role="img" aria-label={`${g.label}: ${text}`}>
                 {state !== 'unavailable' && <div class={`h-full rounded-full ${state === 'behind' ? 'bg-teal' : 'bg-emerald-600'}`} style={`width:${pct}%`}></div>}
               </div>
+              {noteFor(g.key) && <p class="text-[.8rem] text-[var(--text-secondary)] m-0" data-kpi-note={g.key}>{noteFor(g.key)}</p>}
             </li>
+            {g.key === PUBLICATIONS_AFTER_GOAL && pubsText && (
+              <li class="grid gap-1.5" data-kpi="publication_outcomes">
+                <div class="flex justify-between gap-3 text-[.95rem]">
+                  <span>{t('kpis.publications', lang).replace('{year}', year)}</span>
+                  <b class="tabular-nums text-right">{pubsText}</b>
+                </div>
+              </li>
+            )}
+            </>
           );
         })}
       </ul>
