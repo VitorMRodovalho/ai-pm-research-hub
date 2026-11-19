@@ -474,7 +474,7 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
       const { error } = await sb.rpc('move_board_item', {
         p_item_id: itemId,
         p_new_status: item.status || 'backlog',
-        p_position: 0,
+        p_new_position: 0,
       });
       if (error) {
         rollbackMove(itemId, previousLane);
@@ -487,7 +487,7 @@ export default function TribeKanbanIsland({ tribeId, initiativeId, i18n }: { tri
       const { error } = await sb.rpc('move_board_item', {
         p_item_id: itemId,
         p_new_status: targetLane,
-        p_position: 0,
+        p_new_position: 0,
       });
       if (error) {
         rollbackMove(itemId, previousLane);
