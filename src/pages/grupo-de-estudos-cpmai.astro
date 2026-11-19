@@ -1,0 +1,102 @@
+---
+/**
+ * /grupo-de-estudos-cpmai: página pública da 1ª turma do Grupo de Estudos PMI-CPMAI.
+ *
+ * Estática: sem leitura de banco e sem login. Os textos vêm dos 3 dicionários (`cpmaiGroupPage.*`); endereços e a
+ * chave de abertura das inscrições (SYMPLA_URL) vêm de src/lib/cpmaiStudyGroupPage.ts. Indexável, ao contrário do
+ * /cpmai, que é o painel restrito dos participantes e segue fora do sitemap e com noindex.
+ * /en e /es são meta refresh para ?lang=, como as demais páginas públicas com alternates="query".
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import { SYMPLA_URL, PMI_CPMAI_STEPS_URL, VOLUNTEER_OPENINGS } from '../lib/cpmaiStudyGroupPage';
+
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const k = (key: string) => t(`cpmaiGroupPage.${key}`, lang);
+const STUDY_ITEMS = ['study.item1', 'study.item2', 'study.item3', 'study.item4'] as const;
+---
+
+<BaseLayout
+  title={k('metaTitle')}
+  description={k('metaDescription')}
+  activePage="grupo-de-estudos-cpmai"
+  lang={lang}
+  alternates="query"
+>
+  <div class="max-w-[820px] mx-auto px-4 py-10 space-y-10">
+    <header class="text-center space-y-3">
+      <h1 class="text-2xl md:text-3xl font-extrabold text-navy">{k('title')}</h1>
+      <p class="text-sm font-semibold text-[var(--text-secondary)]">{k('subline')}</p>
+    </header>
+
+    <section class="space-y-3 text-[15px] text-[var(--text-secondary)]">
+      <p>{k('intro1')}</p>
+      <p>{k('intro2')}</p>
+    </section>
+
+    <section aria-labelledby="cpmai-group-study" class="space-y-3">
+      <h2 id="cpmai-group-study" class="text-xl font-extrabold text-navy">{k('study.title')}</h2>
+      <ul class="space-y-2 list-disc pl-5 text-[15px] text-[var(--text-secondary)]">
+        {STUDY_ITEMS.map((item) => <li>{k(item)}</li>)}
+      </ul>
+    </section>
+
+    <section aria-labelledby="cpmai-group-prep" class="space-y-3">
+      <h2 id="cpmai-group-prep" class="text-xl font-extrabold text-navy">{k('prep.title')}</h2>
+      <p class="text-[15px] text-[var(--text-secondary)]">{k('prep.body1')}</p>
+      <p class="text-[15px] text-[var(--text-secondary)]">{k('prep.body2')}</p>
+      <a
+        href={PMI_CPMAI_STEPS_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="inline-block text-[14px] font-semibold text-navy underline hover:no-underline"
+      >{k('prep.stepsLink')} →</a>
+    </section>
+
+    <section
+      aria-labelledby="cpmai-group-enroll"
+      class="rounded-xl border border-[var(--border-default)] bg-[var(--surface-card)] p-6 space-y-3 text-center"
+    >
+      <h2 id="cpmai-group-enroll" class="text-xl font-extrabold text-navy">{k('enroll.title')}</h2>
+      {SYMPLA_URL ? (
+        <a
+          href={SYMPLA_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-block rounded-lg bg-navy px-6 py-3 text-[15px] font-bold text-white hover:opacity-90"
+        >{k('enroll.cta')}</a>
+      ) : (
+        <p class="text-[15px] font-semibold text-[var(--text-primary)]">{k('enroll.soon')}</p>
+      )}
+      <p class="text-[14px] text-[var(--text-secondary)]">{k('enroll.discounts')}</p>
+    </section>
+
+    <section aria-labelledby="cpmai-group-team" class="space-y-3">
+      <h2 id="cpmai-group-team" class="text-xl font-extrabold text-navy">{k('team.title')}</h2>
+      <p class="text-[15px] text-[var(--text-secondary)]">{k('team.intro')}</p>
+      <ul class="grid gap-3 sm:grid-cols-2">
+        {VOLUNTEER_OPENINGS.map((o) => (
+          <li class="rounded-lg border border-[var(--border-default)] bg-[var(--surface-card)] p-4 space-y-1">
+            <p class="text-[15px] font-bold text-[var(--text-primary)]">{t(o.labelKey, lang)}</p>
+            <a
+              href={o.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-block text-[13px] font-semibold text-navy underline hover:no-underline"
+            >{k('team.linkLabel')} →</a>
+          </li>
+        ))}
+      </ul>
+    </section>
+
+    <section aria-labelledby="cpmai-group-chapter" class="space-y-3">
+      <h2 id="cpmai-group-chapter" class="text-xl font-extrabold text-navy">{k('chapter.title')}</h2>
+      <p class="text-[15px] text-[var(--text-secondary)]">{k('chapter.body')}</p>
+    </section>
+
+    <footer class="pt-6 border-t border-[var(--border-default)] space-y-1 text-center text-[13px] text-[var(--text-muted)]">
+      <p>{k('footer.realization')}</p>
+      <p>{k('footer.trademark')}</p>
+    </footer>
+  </div>
+</BaseLayout>
