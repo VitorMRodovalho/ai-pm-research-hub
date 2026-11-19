@@ -236,7 +236,7 @@ export default function PublicationsBoardIsland() {
     const { error } = await sb.rpc('move_board_item', {
       p_item_id: itemId,
       p_new_status: nextLane,
-      p_position: 0,
+      p_new_position: 0,
     });
     if (error) {
       windowRef?.toast?.(error.message || t('comp.pubBoard.errorMoveCard', 'Falha ao mover card'), 'error');
@@ -257,7 +257,7 @@ export default function PublicationsBoardIsland() {
     const { error } = await sb.rpc('move_board_item', {
       p_item_id: item.id,
       p_new_status: targetLane.key,
-      p_position: 0,
+      p_new_position: 0,
     });
     if (error) {
       windowRef?.toast?.(error.message || t('comp.pubBoard.errorMoveCard', 'Falha ao mover card'), 'error');
