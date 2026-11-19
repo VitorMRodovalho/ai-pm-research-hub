@@ -74,6 +74,50 @@ export async function loadHomeGoals(lang: Lang): Promise<HomeGoal[] | null> {
   return goals.length ? goals : null;
 }
 
+// ── O que completa as metas (GP 19/11/2026) ──────────────────────────────────────────────────────────────────────
+// A meta da curadoria fica como está, e logo abaixo dela vêm as publicações do ano com avaliação externa, em quebra
+// (get_public_publication_outcomes). A meta de capítulos ganha a nota de quantos têm acordo assinado (get_chapter_metrics,
+// a mesma base do hero). Leitura que falha devolve null, e a linha ou a nota não aparecem: nunca número de reserva.
+export interface PublicationOutcomes {
+  published: number;
+  presented: number;
+  presentedCongress: number;
+  presentedChapterEvent: number;
+  underEvaluation: number;
+}
+
+export async function loadPublicationOutcomes(): Promise<PublicationOutcomes | null> {
+  const d = await rpc<Record<string, unknown>>('get_public_publication_outcomes');
+  const keys = ['published', 'presented', 'presented_congress', 'presented_chapter_event', 'under_evaluation'];
+  if (!d || !keys.every((k) => isNum(d[k]))) return null;
+  const n = d as Record<string, number>;
+  return {
+    published: n.published,
+    presented: n.presented,
+    presentedCongress: n.presented_congress,
+    presentedChapterEvent: n.presented_chapter_event,
+    underEvaluation: n.under_evaluation,
+  };
+}
+
+export interface ChapterAgreements { engaged: number; signed: number; unsigned: number; }
+
+export async function loadChapterAgreements(): Promise<ChapterAgreements | null> {
+  const d = await rpc<Record<string, unknown>>('get_chapter_metrics');
+  if (!d || !isNum(d.engaged) || !isNum(d.signed) || d.signed > d.engaged) return null;
+  return { engaged: d.engaged, signed: d.signed, unsigned: d.engaged - d.signed };
+}
+
+// Onde cada complemento entra. As chaves moram aqui, e não na seção: a seção desenha toda meta que a RPC devolve, sem
+// mapa por meta (kpi-portfolio-health, #2553 D9). Uma chave que some da RPC só tira a nota, nunca a meta.
+export const PUBLICATIONS_AFTER_GOAL = 'articles_published';
+export type GoalNote = { kind: 'chapters' } | { kind: 'impactHours' };
+const GOAL_NOTES: Record<string, GoalNote> = {
+  chapters_participating: { kind: 'chapters' },
+  impact_hours: { kind: 'impactHours' },
+};
+export const goalNote = (key: string): GoalNote | null => GOAL_NOTES[key] ?? null;
+
 /** atingida = igual ao alvo; superada = acima; atrás = abaixo (a barra mostra o real); sem número = indisponível. */
 export function goalState(g: Pick<HomeGoal, 'current' | 'target'>): 'surpassed' | 'met' | 'behind' | 'unavailable' {
   if (g.current === null || g.target === null) return 'unavailable';

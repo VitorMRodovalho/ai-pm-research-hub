@@ -33,7 +33,7 @@ describe('#2553 dados da home do banco', () => {
 
   it('A2: metas: o estado sai do atual contra o alvo, e o título leva o ano de Brasília', () => {
     assert.match(DATA, /return g\.current > g\.target \? 'surpassed' : g\.current === g\.target \? 'met' : 'behind';/);
-    assert.match(KPI, /const goals = await loadHomeGoals\(lang\);/);
+    assert.match(KPI, /const \[goals, pubs, agreements\] = await Promise\.all\(\[loadHomeGoals\(lang\), loadPublicationOutcomes\(\), loadChapterAgreements\(\)\]\);/);
     assert.match(KPI, /\{t\('kpis\.title', lang\)\.replace\('\{year\}', currentYearBrt\(\)\)\}/);
     assert.match(KPI, /const pct = g\.current !== null && g\.target !== null \? Math\.min\(100, Math\.round\(\(g\.current \/ g\.target\) \* 100\)\) : 0;/);
     assert.match(KPI, /\) : \(\s+<p class="[^"]*" id="kpi-unavailable">\{t\('kpis\.unavailable', lang\)\}<\/p>/);
