@@ -41,8 +41,8 @@ for (const [file, startMark, endMark, textKey] of BLOCKS) {
     assert.match(block, new RegExp(`\\{t\\('${esc(textKey)}', lang\\)\\}`), `o bloco mostra ${textKey}`);
     assert.match(block, /<a id="guest-apply-cta" href=\{`\$\{langPrefix\}\/#join`\}[^>]*>\s*\{t\('guest\.applyCta', lang\)\}/,
       'o link "como participar" leva à seção #join da home, no idioma da página');
-    assert.match(block, /<a id="guest-claim-cta" href=\{`\$\{langPrefix\}\/claim\/start`\}[^>]*>\s*\{t\('claim\.cta', lang\)\}/,
-      'o link de vínculo leva a /claim/start com o rótulo do botão do header');
+    assert.match(block, /<a id="guest-claim-cta" href=\{`\$\{langPrefix\}\/claim\/start`\}[^>]*>\s*\{t\('guest\.claimCta', lang\)\}/,
+      'o link de vínculo leva a /claim/start com um rótulo que diz vincular (guest.claimCta), não o "Próximos passos" do header');
     const firstLink = block.match(/<a [^>]*>/);
     assert.ok(firstLink && /id="guest-apply-cta"/.test(firstLink[0]), 'a primeira ação do bloco é a candidatura, não o e-mail do gestor');
     for (const tag of block.match(/<a [^>]*mailto:[^>]*>/g) || []) {
@@ -65,7 +65,12 @@ test('i18n: o texto do visitante sem cadastro descreve a entrada pela seleção 
       assert.doesNotMatch(v, /ser incluíd|added as a member|incluido como miembro|cadastre-se|register as a member|regístrate/i,
         `${k} em ${d} não promete inclusão pelo gestor nem cadastro livre`);
       assert.doesNotMatch(v, /—/, `${k} em ${d} sem travessão longo`);
+      assert.doesNotMatch(v, /abaixo|ao lado|below|beside|abajo|al lado/i,
+        `${k} em ${d} não aponta posição: em attendance e gamification o link não fica "abaixo" do texto`);
     }
     for (const k of ['guest.applyCta', 'guest.questions']) assert.ok(val(k), `${k} em ${d}`);
+    const claimCta = val('guest.claimCta');
+    assert.ok(claimCta, `guest.claimCta em ${d}`);
+    assert.match(claimCta, /vincul|link/i, `guest.claimCta em ${d} diz vincular, que é o que o texto manda fazer`);
   }
 });

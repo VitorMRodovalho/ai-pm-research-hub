@@ -4706,11 +4706,12 @@ const enUS: Record<string, string> = {
 
   // ── Guest (authenticated but not registered) ──
   'guest.notRegistered': 'Your account was authenticated, but is not yet registered in the Hub.',
-  'guest.contactAdmin': 'Joining the Núcleo is through the selection: see how to take part and apply. If you were already approved and signed in with a different email, link your account with the button below.',
+  'guest.contactAdmin': 'Joining the Núcleo is through the selection: see how to take part and apply. If you were already approved and signed in with a different email, link your account.',
   'guest.contactEmail': 'nucleoia@pmigo.org.br',
   'guest.limitedAccess': 'You have limited access because your account is not registered in the Núcleo yet. Joining is through the selection; if you were already approved and signed in with a different email, link your account.',
   'guest.questions': 'Questions:',
   'guest.applyCta': 'How to take part',
+  'guest.claimCta': 'Already approved: link account',
   'guest.navNotFound': 'Account not registered',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──
