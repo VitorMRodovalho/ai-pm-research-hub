@@ -146,6 +146,24 @@ test('G. a tela mostra o motivo só com o portão fechado, nas 3 línguas', () =
   }
 });
 
+test('G2. #3107: no escopo "todos", o portão aberto mostra o caminho, nas 3 línguas', () => {
+  const island = maskJsComments(readFileSync(resolve(ROOT, 'src/components/admin/AffiliationQueueIsland.tsx'), 'utf8'));
+  assert.match(
+    island,
+    /\{r\.affiliation_gate\?\.open && \(\s+<span data-testid="aq-gate-path"[^>]*>\s+\{t\(`comp\.affiliationQueue\.gatePath_\$\{r\.affiliation_gate\.path \?\? 'unknown'\}`/,
+  );
+  for (const d of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const dict = readFileSync(resolve(ROOT, `src/i18n/${d}.ts`), 'utf8');
+    for (const k of ['vep', 'manual', 'unknown']) {
+      assert.match(dict, new RegExp(`'comp\\.affiliationQueue\\.gatePath_${k}': '[^']+'`), `${d}: gatePath_${k}`);
+    }
+  }
+  // os caminhos que a tela traduz são os que o portão devolve aberto
+  const gate = maskLineComments(latestFunctionCapture(ROOT, 'affiliation_gate').body);
+  const paths = new Set([...gate.matchAll(/'path', '([a-z_]+)'/g)].map((m) => m[1]));
+  assert.deepEqual([...paths].sort(), ['manual', 'vep']);
+});
+
 // ── F. banco ────────────────────────────────────────────────────────────────
 test(canRun ? 'F. sem sessão (auth.uid NULL), a fila recusa' : skipMsg, { skip: !canRun }, async () => {
   await assert.rejects(
