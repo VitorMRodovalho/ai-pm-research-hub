@@ -32937,6 +32937,15 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      affiliation_nudge_enabled: { Args: never; Returns: boolean }
+      affiliation_nudge_plan: {
+        Args: never
+        Returns: {
+          member_id: string
+          variant: string
+        }[]
+      }
+      affiliation_nudge_text: { Args: { p_variant: string }; Returns: Json }
       affiliation_vep_snapshot: { Args: { p_member_id: string }; Returns: Json }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
@@ -33946,6 +33955,7 @@ export type Database = {
       get_admin_dashboard: { Args: never; Returns: Json }
       get_adoption_dashboard: { Args: never; Returns: Json }
       get_affiliation_chapter_rollup: { Args: never; Returns: Json }
+      get_affiliation_nudge_panel: { Args: never; Returns: Json }
       get_affiliation_verification_queue: {
         Args: { p_scope?: string }
         Returns: Json
@@ -36488,7 +36498,7 @@ export type Database = {
         Returns: string
       }
       nudge_entry_chapter_cohort: {
-        Args: { p_cycle_id?: string; p_dry_run?: boolean }
+        Args: { p_dry_run?: boolean }
         Returns: Json
       }
       offboard_member: {
@@ -37312,6 +37322,10 @@ export type Database = {
       send_attendance_reminders_cron: { Args: never; Returns: Json }
       send_notification_to_tribe: {
         Args: { p_body: string; p_link?: string; p_title: string }
+        Returns: Json
+      }
+      set_affiliation_nudge_enabled: {
+        Args: { p_enabled: boolean; p_reason: string }
         Returns: Json
       }
       set_board_item_artifact_type: {
