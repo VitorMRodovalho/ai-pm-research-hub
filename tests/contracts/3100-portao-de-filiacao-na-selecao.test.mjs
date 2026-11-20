@@ -103,7 +103,7 @@ test('F. rotulos nos 3 idiomas', () => {
   ];
   for (const p of ['src/i18n/pt-BR.ts', 'src/i18n/en-US.ts', 'src/i18n/es-LATAM.ts']) {
     const src = readFileSync(resolve(ROOT, p), 'utf8');
-    for (const k of keys) assert.match(src, new RegExp(`'${k.replace(/\./g, '\\.')}': '[^']+'`), `${p} ${k}`);
+    for (const k of keys) assert.match(src, new RegExp(`'${k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}': '[^']+'`), `${p} ${k}`);
   }
   // os motivos que a tela traduz sao exatamente os que o portao devolve fechado
   const gate = maskLineComments(latestFunctionCapture(ROOT, 'affiliation_gate').body);
