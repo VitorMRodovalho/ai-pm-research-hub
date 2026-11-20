@@ -1842,6 +1842,7 @@
    "/admin/tribes",
    "/admin/selection",
    "/admin/filiacao",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/adoption",
    "/admin/certificates",
@@ -2241,6 +2242,7 @@
   ],
   "sidebar": [
    "/admin/filiacao",
+   "/admin/jornadas",
    "/admin/webinars",
    "/help"
   ]

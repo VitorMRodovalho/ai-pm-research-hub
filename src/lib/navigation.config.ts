@@ -42,6 +42,8 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/initiatives': { actions: ['manage_platform'], rpcs: ['create_initiative'] },
   // A fila e as verificações pedem manage_member ou a designação filiacao_director.
   '/admin/filiacao': { actions: ['manage_member'], designations: ['filiacao_director'], rpcs: ['get_affiliation_verification_queue'] },
+  // A jornada de onboarding pede manage_member; marcar pelo GP e reabrir pedem manage_platform no servidor.
+  '/admin/jornadas': { actions: ['manage_member'], rpcs: ['get_onboarding_journey_admin'] },
   // As transições de papel pedem view_internal_analytics (pelo helper) ou view_aggregate_analytics.
   '/admin/analytics': { actions: ['view_internal_analytics', 'view_aggregate_analytics'], rpcs: ['exec_role_transitions'] },
   // O funil e o retrato pedem view_internal_analytics ou view_aggregate_analytics; o retrato aceita também o
@@ -372,6 +374,7 @@ export const ADMIN_SIDEBAR_SECTIONS: AdminSidebarSection[] = [
       { href: '/admin/tribes', label: { 'pt-BR': 'Comparação de Tribos', 'en-US': 'Tribes Comparison', 'es-LATAM': 'Comparación de Tribus' }, icon: 'GitCompare', permission: 'admin.access' },
       { href: '/admin/selection', label: { 'pt-BR': 'Processo Seletivo', 'en-US': 'Selection Process', 'es-LATAM': 'Proceso Selectivo' }, icon: 'UserPlus', permission: 'admin.members.manage', routeKey: 'admin_selection' },
       { href: '/admin/filiacao', label: { 'pt-BR': 'Filiação', 'en-US': 'Affiliation', 'es-LATAM': 'Afiliación' }, icon: 'SearchCheck' }, // acesso: ADMIN_ROUTE_ACCESS
+      { href: '/admin/jornadas', label: { 'pt-BR': 'Jornadas de Onboarding', 'en-US': 'Onboarding Journeys', 'es-LATAM': 'Jornadas de Onboarding' }, icon: 'Route' }, // acesso: ADMIN_ROUTE_ACCESS
       { href: '/admin/vep-reconciliation', label: { 'pt-BR': 'Reconciliação VEP', 'en-US': 'VEP Reconciliation', 'es-LATAM': 'Reconciliación VEP' }, icon: 'ArrowLeftRight', permission: 'admin.access' },
       { href: '/admin/adoption', label: { 'pt-BR': 'Adoção', 'en-US': 'Adoption', 'es-LATAM': 'Adopción' }, icon: 'Activity', permission: 'admin.analytics' },
       { href: '/admin/certificates', label: { 'pt-BR': 'Certificados & Termos', 'en-US': 'Certificates & Agreements', 'es-LATAM': 'Certificados y Acuerdos' }, icon: 'FileCheck', permission: 'admin.access' },

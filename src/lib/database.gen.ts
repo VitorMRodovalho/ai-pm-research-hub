@@ -32868,6 +32868,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      admin_reopen_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
+        Returns: Json
+      }
       admin_resolve_anomaly: {
         Args: { p_anomaly_id: string; p_notes: string }
         Returns: Json
@@ -35034,6 +35038,10 @@ export type Database = {
       get_onboarding_blocked_cohort: { Args: never; Returns: Json }
       get_onboarding_contacts: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
+      get_onboarding_journey_admin: {
+        Args: { p_member_id?: string }
+        Returns: Json
+      }
       get_onboarding_status: {
         Args: { p_application_id: string }
         Returns: Json
