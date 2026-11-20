@@ -23,15 +23,19 @@ test('workspace.astro uses nav:member event listener (not waitForAuth polling)',
   assert.ok(!content.includes('function waitForAuth'), 'Must not use old waitForAuth polling pattern');
 });
 
-test('workspace.astro checks session directly as fallback', () => {
+// #3106: a espera do workspace passou ao primitivo de src/lib/member-ready.ts (emenda à ADR-0083, #2974). A
+// intenção desta seção continua a mesma: não travar quando o Nav demora. waitMemberResolved espera sem prazo e
+// decide pelo estado do Nav, inclusive a sessão sem cadastro, que a leitura direta não distinguia.
+test('workspace.astro waits for the Nav resolution through member-ready (no own session fallback)', () => {
   const content = readFile('src/pages/workspace.astro');
-  assert.ok(content.includes('sb.auth.getSession'), 'Must check session directly as fallback');
-  assert.ok(content.includes("sb.rpc('get_member_by_auth')"), 'Must call get_member_by_auth RPC');
+  assert.match(content, /import \{[^}]*\bwaitMemberResolved\b[^}]*\} from '\.\.\/lib\/member-ready';/, 'Must import waitMemberResolved');
+  assert.match(content, /const resolved = await waitMemberResolved\(\);/, 'Must wait for the Nav resolution');
+  assert.ok(!content.includes("sb.rpc('get_member_by_auth')"), 'The member comes from the Nav, not from a second read');
 });
 
-test('workspace.astro checks navGetMember first', () => {
+test('workspace.astro tells no-session from session-without-member', () => {
   const content = readFile('src/pages/workspace.astro');
-  assert.ok(content.includes('navGetMember'), 'Must check navGetMember for already-loaded member');
+  assert.match(content, /readMemberResolution\(window as any\)\?\.kind === 'no-member'/, 'Must read the Nav state to pick login vs guest block');
 });
 
 test('workspace.astro auth pattern matches attendance.astro pattern', () => {
@@ -40,9 +44,9 @@ test('workspace.astro auth pattern matches attendance.astro pattern', () => {
   // Both should use the same 3-step auth pattern
   assert.ok(workspace.includes("nav:member"), 'workspace must use nav:member');
   assert.ok(attendance.includes("nav:member"), 'attendance must use nav:member');
-  assert.ok(workspace.includes('navGetMember'), 'workspace must check navGetMember');
+  // #3106: workspace resolve pelo member-ready (que lê navGetMember e navAuthState); attendance segue no padrão antigo.
+  assert.ok(workspace.includes('waitMemberResolved'), 'workspace must wait through member-ready');
   assert.ok(attendance.includes('navGetMember'), 'attendance must check navGetMember');
-  assert.ok(workspace.includes('getSession'), 'workspace must check getSession');
   assert.ok(attendance.includes('getSession'), 'attendance must check getSession');
 });
 

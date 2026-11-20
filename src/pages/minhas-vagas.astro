@@ -12,6 +12,7 @@
 // aviso ao líder e o endereço direto, e quem decide o acesso é a RPC.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const STATUS_KEYS = ['submitted', 'screening', 'objective_eval', 'interview_pending', 'interview_scheduled',
@@ -88,6 +89,8 @@ const MV_I18N = {
       <p class="text-sm text-[var(--text-muted)]" id="mv-notice-msg">{MV_I18N.empty}</p>
     </div>
 
+    <GuestNoMember lang={lang} id="mv-guest" />
+
     <section id="mv-list" class="hidden">
       <div id="mv-filter" class="hidden mb-4 text-sm text-[var(--text-secondary)]"></div>
       <div id="mv-omitted" class="hidden mb-4 text-xs text-[var(--text-muted)]"></div>
@@ -105,10 +108,10 @@ const MV_I18N = {
   window.__MY_OPENINGS_I18N = typeof MV_I18N !== 'undefined' ? MV_I18N : {};
 </script>
 <script>
+  import { waitMemberResolved } from '../lib/member-ready';
   const I: Record<string, any> = (typeof window !== 'undefined' && (window as any).__MY_OPENINGS_I18N) || {};
 
   let sb: any = null;
-  let bootRetries = 0;
   const vagaFiltro = new URLSearchParams(window.location.search).get('vaga');
 
   const $ = (id: string) => document.getElementById(id);
@@ -117,8 +120,8 @@ const MV_I18N = {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
   const urlSegura = (s: unknown) => (/^https?:\/\//i.test(String(s ?? '')) ? String(s) : '');
 
-  function showOnly(which: 'loading' | 'notice' | 'list' | 'detail') {
-    ['mv-loading', 'mv-notice', 'mv-list', 'mv-detail'].forEach((id) => {
+  function showOnly(which: 'loading' | 'notice' | 'guest' | 'list' | 'detail') {
+    ['mv-loading', 'mv-notice', 'mv-guest', 'mv-list', 'mv-detail'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `mv-${which}`);
     });
   }
@@ -308,15 +311,13 @@ const MV_I18N = {
   }
 
   /* ── boot ────────────────────────────────────────── */
-  function boot() {
+  // #3106: decide pelo estado do Nav, sem prazo. Antes, 4 s sem membro viravam "login necessário",
+  // inclusive para quem já tinha entrado ou para o membro cujo Nav demorou.
+  async function boot() {
+    const r = await waitMemberResolved();
+    if (r.kind === 'no-session') { showNotice(I.loginRequired); return; }
+    if (r.kind === 'no-member') { showOnly('guest'); return; }
     sb = (window as any).navGetSb?.();
-    const member = (window as any).navGetMember?.();
-    if (!sb || !member) {
-      bootRetries += 1;
-      if (bootRetries >= 20) { showNotice(I.loginRequired); return; }
-      setTimeout(boot, 200);
-      return;
-    }
     // Voltar só reexibe a lista já carregada: pedir de novo gravaria outro registro por candidatura.
     $('mv-back')?.addEventListener('click', () => { showOnly('list'); });
     loadList();

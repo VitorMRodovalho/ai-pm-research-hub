@@ -8,6 +8,7 @@
 // feature "auditável", subtotal do pilar == soma dos fatos visíveis, por construção.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
@@ -75,6 +76,7 @@ const MP_I18N = {
         <p class="text-[var(--text-muted)] text-sm">{MP_I18N.loginRequired}</p>
       </div>
     </div>
+    <GuestNoMember lang={lang} id="mp-guest" />
 
     <!-- Loading -->
     <div id="mp-loading" class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-8 text-center">
@@ -135,6 +137,7 @@ const MP_I18N = {
 </script>
 <script>
   import { isRegisteredMember } from '../lib/routing';
+  import { waitMemberResolved } from '../lib/member-ready';
   import { canFor } from '../lib/permissions';
   import { localizeI18n, PILLAR_EMOJI } from '../lib/gamification-catalog';
 
@@ -469,25 +472,14 @@ const MP_I18N = {
   });
 
   // ── BOOT ──
+  // #3106: decide pelo estado do Nav. Sessão sem cadastro via o pedido de login, que não resolve para quem
+  // já entrou; e, se o Nav resolvia antes de esta tela ouvir, o carregando ficava para sempre.
   async function boot() {
+    const r = await waitMemberResolved();
     sb = (window as any).navGetSb?.();
-    if (!sb) { setTimeout(boot, 200); return; }
-
-    const proceed = (m: any) => {
-      if (isRegisteredMember(m)) { MEMBER = m; start(); return true; }
-      return false;
-    };
-
-    window.addEventListener('nav:member', ((ev: CustomEvent) => { proceed(ev.detail); }) as EventListener);
-    window.addEventListener('nav:guest-with-session', (() => {
-      show('mp-loading', false); show('mp-gate', true);
-    }) as EventListener);
-
-    if (proceed((window as any).navGetMember?.())) return;
-
-    // No member yet — wait briefly for nav to resolve session; then show gate.
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) { show('mp-loading', false); show('mp-gate', true); }
+    if (r.kind === 'member' && isRegisteredMember(r.member)) { MEMBER = r.member; start(); return; }
+    show('mp-loading', false);
+    show(r.kind === 'no-session' ? 'mp-gate' : 'mp-guest', true);
   }
   boot();
 </script>

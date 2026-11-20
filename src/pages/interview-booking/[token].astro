@@ -11,6 +11,8 @@ const { token } = Astro.params;
 
 let payload: any = null;
 let errorMessage: string | null = null;
+// #3106: falha de banco ou de rede não é link expirado. Quem lê 'link expirado' conclui que perdeu o link.
+let loadFailed = false;
 
 if (!token || token.length < 16) {
   errorMessage = 'invalid_token_format';
@@ -24,12 +26,15 @@ if (!token || token.length < 16) {
     if (error) {
       errorMessage = error.message?.includes('Invalid or expired') ? 'invalid_or_expired'
         : error.message?.includes('does not have interview_booking') ? 'wrong_scope'
-        : `rpc_error: ${error.message}`;
+        : 'rpc_error';
+      if (errorMessage === 'rpc_error') { loadFailed = true; console.error('validate_interview_booking_token failed:', error.message); }
     } else {
       payload = data;
     }
   } catch (e: any) {
-    errorMessage = `network_error: ${e?.message ?? 'unknown'}`;
+    errorMessage = 'network_error';
+    loadFailed = true;
+    console.error('validate_interview_booking_token network failure:', e?.message ?? 'unknown');
   }
 }
 
@@ -56,7 +61,17 @@ const formattedExpiry = payload?.expires_at
 
 <BaseLayout title={pageTitle} description={pageDesc} lang={lang}>
   <main class="max-w-2xl mx-auto px-4 py-8 md:py-12">
-    {errorMessage ? (
+    {errorMessage && loadFailed ? (
+      <div id="token-load-failed" class="bg-amber-50 border border-amber-200 rounded-lg p-6 text-amber-900">
+        <h1 class="text-2xl font-bold mb-3">{t('tokenLink.loadFailedTitle', lang)}</h1>
+        <p class="mb-4">{t('tokenLink.loadFailedBody', lang)}</p>
+        <a href={Astro.url.pathname + Astro.url.search} class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90">{t('tokenLink.retry', lang)}</a>
+        <p class="text-sm font-mono text-amber-800 mt-4">code: {errorMessage}</p>
+        <p class="mt-4">
+          <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
+        </p>
+      </div>
+    ) : errorMessage ? (
       <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-red-800">
         <h1 class="text-2xl font-bold mb-3">{t('interview.booking.error.expiredTitle', lang)}</h1>
         <p class="mb-4">{t('interview.booking.error.expiredBody', lang)}</p>

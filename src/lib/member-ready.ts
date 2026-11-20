@@ -51,6 +51,24 @@ export function onMemberResolved(cb: (r: MemberResolution) => void, win?: NavWin
   };
 }
 
+/**
+ * #3106: espera a PRIMEIRA resolução do Nav, sem prazo, e para de ouvir. Para telas de membro que carregam uma vez:
+ * 'no-session' pede login, 'no-member' mostra o bloco de sessão sem cadastro, 'member' carrega a tela.
+ */
+export function waitMemberResolved(win?: NavWindow): Promise<MemberResolution> {
+  return new Promise((resolve) => {
+    let done = false;
+    let stop: (() => void) | null = null;
+    stop = onMemberResolved((r) => {
+      if (done) return;
+      done = true;
+      stop?.();
+      resolve(r);
+    }, win);
+    if (done) stop();
+  });
+}
+
 export interface AdminGate {
   /** A permissão da tela. É a única coisa que leva a onDenied quando há sessão. */
   allow: (member: any) => boolean;
