@@ -9,7 +9,16 @@
 --                    revogado), VEP Active/Complete, presença em reunião, presença em reunião de tribo;
 --      clique        etapa que o catálogo diz que fecha por clique;
 --      sem_evidencia etapa de fato fechada sem a evidência: é o sinal de auditoria.
---    Portão: manage_member (diretorias e gestão). Leitura sem escrita.
+--    Quem lê e o que vê (decisão do GP, 20/11). O recorte é feito AQUI, nunca só na tela:
+--      todos os membros   manage_member, ou as designações voluntariado_director, filiacao_director,
+--                         certificacao_director, deputy_manager, co_gp;
+--      o próprio capítulo as designações sponsor (presidências) e chapter_vice_president, escopadas pelo
+--                         capítulo de quem chama (caminho 3 do V4_AUTHORITY_MODEL, como chapter_board);
+--      a própria linha    o líder de linha: entra por manage_initiative sem recurso (o volunteer × leader o
+--                         recebe na tribo legada) e vê os membros das tribos em que tem vínculo leader ou
+--                         co_leader ativo e vigente.
+--    O Coordenador de Programa (organograma 2027) ainda não tem designação no banco; entra quando tiver.
+--    Leitura sem escrita.
 -- 2. admin_reopen_onboarding_step: a correção do GP. Reabre uma etapa fechada, com nota obrigatória, e guarda
 --    no metadata o que havia antes (reopen_history). Portão: manage_platform.
 --
@@ -25,19 +34,48 @@ CREATE OR REPLACE FUNCTION public.get_onboarding_journey_admin(p_member_id uuid 
 AS $function$
 DECLARE
   v_caller_id uuid;
+  v_designations text[];
+  v_chapter text;
+  v_global boolean;
+  v_chapter_scope boolean;
+  v_lines integer[];
   v_result jsonb;
 BEGIN
-  SELECT id INTO v_caller_id FROM members WHERE auth_id = auth.uid();
-  IF v_caller_id IS NULL OR NOT public.can_by_member(v_caller_id, 'manage_member') THEN
-    RAISE EXCEPTION 'Unauthorized: manage_member required' USING ERRCODE = 'insufficient_privilege';
+  SELECT id, COALESCE(designations, '{}'::text[]), chapter INTO v_caller_id, v_designations, v_chapter
+  FROM members WHERE auth_id = auth.uid();
+  IF v_caller_id IS NULL THEN
+    RAISE EXCEPTION 'Unauthorized: not a member' USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  v_global := public.can_by_member(v_caller_id, 'manage_member')
+    OR v_designations && ARRAY['voluntariado_director', 'filiacao_director', 'certificacao_director', 'deputy_manager', 'co_gp']::text[];
+  v_chapter_scope := v_designations && ARRAY['sponsor', 'chapter_vice_president']::text[]
+    AND COALESCE(v_chapter, '') <> '';
+  SELECT array_agg(DISTINCT i.legacy_tribe_id) INTO v_lines
+  FROM engagements e
+  JOIN members lm ON lm.person_id = e.person_id
+  JOIN initiatives i ON i.id = e.initiative_id
+  WHERE lm.id = v_caller_id AND e.status = 'active' AND e.role IN ('leader', 'co_leader')
+    AND i.legacy_tribe_id IS NOT NULL
+    AND e.start_date <= CURRENT_DATE AND (e.end_date IS NULL OR e.end_date >= CURRENT_DATE);
+  IF NOT public.can_by_member(v_caller_id, 'manage_initiative') THEN
+    v_lines := NULL;
+  END IF;
+
+  IF NOT (v_global OR v_chapter_scope OR v_lines IS NOT NULL) THEN
+    RAISE EXCEPTION 'Unauthorized: requires manage_member, a director designation, a chapter presidency or an active line leadership'
+      USING ERRCODE = 'insufficient_privilege';
   END IF;
 
   WITH mem AS (
     SELECT m.id, m.name, m.chapter, m.tribe_id, m.operational_role, m.member_status, m.email
     FROM members m
-    WHERE (p_member_id IS NULL AND m.member_status = 'active'
-           AND EXISTS (SELECT 1 FROM onboarding_progress op0 WHERE op0.member_id = m.id))
-       OR m.id = p_member_id
+    WHERE ((p_member_id IS NULL AND m.member_status = 'active'
+            AND EXISTS (SELECT 1 FROM onboarding_progress op0 WHERE op0.member_id = m.id))
+           OR m.id = p_member_id)
+      AND (v_global
+           OR (v_chapter_scope AND m.chapter = v_chapter)
+           OR m.tribe_id = ANY (v_lines))
   ),
   jr AS (
     SELECT mem.id AS member_id, s.id AS step_key, s.step_order, s.closed_by AS step_closed_by,
@@ -87,6 +125,9 @@ BEGIN
     FROM jr r
   )
   SELECT jsonb_build_object(
+    'scope', jsonb_build_object('global', v_global,
+                                'chapter', CASE WHEN v_chapter_scope THEN v_chapter END,
+                                'lines', to_jsonb(v_lines)),
     'steps', (SELECT jsonb_agg(jsonb_build_object(
                 'id', s.id, 'step_order', s.step_order, 'closed_by', s.closed_by, 'is_required', s.is_required,
                 'label_pt', s.label_pt, 'label_en', s.label_en, 'label_es', s.label_es) ORDER BY s.step_order)

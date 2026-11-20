@@ -35,6 +35,7 @@ interface MemberRow {
   steps: StepRow[] | null;
 }
 interface CatalogStep { id: string; step_order: number; closed_by: 'member' | 'fact'; is_required: boolean; label_pt: string; label_en: string | null; label_es: string | null }
+interface Scope { global: boolean; chapter: string | null; lines: number[] | null }
 type Filter = 'all' | 'fact_pending' | 'gp' | 'no_evidence' | 'fact_unclosed';
 type Action = { memberId: string; stepKey: string; kind: 'complete' | 'reopen' } | null;
 
@@ -63,6 +64,7 @@ export default function OnboardingJourneyIsland() {
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [canCorrect, setCanCorrect] = useState(false);
+  const [scope, setScope] = useState<Scope | null>(null);
 
   const load = useCallback(async () => {
     const sb = getSb();
@@ -75,6 +77,7 @@ export default function OnboardingJourneyIsland() {
     } else {
       setCatalog(Array.isArray(data?.steps) ? data.steps : []);
       setMembers(Array.isArray(data?.members) ? data.members : []);
+      setScope(data?.scope ?? null);
     }
     setCanCorrect(canForUnscoped('manage_platform'));
     setLoading(false);
@@ -183,6 +186,15 @@ export default function OnboardingJourneyIsland() {
           <RefreshCw className="w-3 h-3" />{t('comp.onboardingJourney.reload', 'Atualizar')}
         </button>
       </div>
+      {scope && (
+        <p className="text-xs text-[var(--text-muted)]">
+          {scope.global
+            ? t('comp.onboardingJourney.scopeGlobal', 'Você vê todos os membros.')
+            : [scope.chapter ? `${t('comp.onboardingJourney.scopeChapter', 'Você vê o seu capítulo')}: ${scope.chapter}` : '',
+               scope.lines && scope.lines.length ? `${t('comp.onboardingJourney.scopeLines', 'Você vê a sua linha')}: ${scope.lines.join(', ')}` : '']
+                .filter(Boolean).join(' · ')}
+        </p>
+      )}
       <p className="text-sm text-[var(--text-secondary)]">{t('comp.onboardingJourney.intro', 'Cada etapa mostra como fechou: pelo fato, por clique da pessoa ou pelo GP. "Sem evidência" é uma etapa de fato fechada sem o fato registrado; é o que auditar.')}</p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">

@@ -42,8 +42,14 @@ export const ADMIN_ROUTE_ACCESS: Record<string, AdminRouteAccess> = {
   '/admin/initiatives': { actions: ['manage_platform'], rpcs: ['create_initiative'] },
   // A fila e as verificações pedem manage_member ou a designação filiacao_director.
   '/admin/filiacao': { actions: ['manage_member'], designations: ['filiacao_director'], rpcs: ['get_affiliation_verification_queue'] },
-  // A jornada de onboarding pede manage_member; marcar pelo GP e reabrir pedem manage_platform no servidor.
-  '/admin/jornadas': { actions: ['manage_member'], rpcs: ['get_onboarding_journey_admin'] },
+  // A jornada de onboarding: manage_member e as diretorias veem todos; presidências e vice, o próprio capítulo; o
+  // líder de linha (manage_initiative sem recurso, pela tribo legada), a própria linha. O recorte é do servidor.
+  // Marcar pelo GP e reabrir pedem manage_platform no servidor.
+  '/admin/jornadas': {
+    actions: ['manage_member', 'manage_initiative'],
+    designations: ['voluntariado_director', 'filiacao_director', 'certificacao_director', 'deputy_manager', 'co_gp', 'sponsor', 'chapter_vice_president'],
+    rpcs: ['get_onboarding_journey_admin'],
+  },
   // As transições de papel pedem view_internal_analytics (pelo helper) ou view_aggregate_analytics.
   '/admin/analytics': { actions: ['view_internal_analytics', 'view_aggregate_analytics'], rpcs: ['exec_role_transitions'] },
   // O funil e o retrato pedem view_internal_analytics ou view_aggregate_analytics; o retrato aceita também o

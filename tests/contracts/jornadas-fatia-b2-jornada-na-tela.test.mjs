@@ -26,12 +26,24 @@ test('C0. a migration existe', () => {
   assert.equal(migFiles.length, 1, `esperava 1 migration, achei ${migFiles.length}`);
 });
 
-test('C1. a leitura pede manage_member antes de ler qualquer coisa', () => {
+test('C1. o portão: global, capítulo ou linha, decidido antes de ler qualquer coisa', () => {
   const b = cap('get_onboarding_journey_admin');
-  const gate = b.search(/IF v_caller_id IS NULL OR NOT public\.can_by_member\(v_caller_id, 'manage_member'\) THEN\s+RAISE EXCEPTION/);
+  assert.match(b, /v_global := public\.can_by_member\(v_caller_id, 'manage_member'\)\s+OR v_designations && ARRAY\['voluntariado_director', 'filiacao_director', 'certificacao_director', 'deputy_manager', 'co_gp'\]::text\[\];/);
+  assert.match(b, /v_chapter_scope := v_designations && ARRAY\['sponsor', 'chapter_vice_president'\]::text\[\]\s+AND COALESCE\(v_chapter, ''\) <> '';/);
+  assert.match(b, /WHERE lm\.id = v_caller_id AND e\.status = 'active' AND e\.role IN \('leader', 'co_leader'\)\s+AND i\.legacy_tribe_id IS NOT NULL\s+AND e\.start_date <= CURRENT_DATE AND \(e\.end_date IS NULL OR e\.end_date >= CURRENT_DATE\);/);
+  assert.match(b, /IF NOT public\.can_by_member\(v_caller_id, 'manage_initiative'\) THEN\s+v_lines := NULL;\s+END IF;/);
+  const gate = b.search(/IF NOT \(v_global OR v_chapter_scope OR v_lines IS NOT NULL\) THEN\s+RAISE EXCEPTION/);
   assert.ok(gate > 0, 'portão ausente');
   assert.ok(gate < b.indexOf('WITH mem AS'), 'o portão tem de vir antes da leitura');
-  assert.doesNotMatch(b, /'manage_platform'/, 'a leitura não pergunta manage_platform: quem lê são diretorias e gestão');
+  assert.doesNotMatch(b, /'manage_platform'/, 'a leitura não pergunta manage_platform');
+});
+
+test('C9. o recorte é do servidor: quem não é global só recebe o próprio capítulo ou a própria linha', () => {
+  const b = cap('get_onboarding_journey_admin');
+  const mem = b.slice(b.indexOf('WITH mem AS'), b.indexOf('jr AS ('));
+  assert.match(mem, /AND \(v_global\s+OR \(v_chapter_scope AND m\.chapter = v_chapter\)\s+OR m\.tribe_id = ANY \(v_lines\)\)\s+\),/,
+    'o filtro de escopo tem de estar no conjunto de membros, valendo também para a leitura de um membro só');
+  assert.match(b, /'scope', jsonb_build_object\('global', v_global,/, 'a tela mostra o recorte que o servidor aplicou');
 });
 
 test('C2. a fonte: GP vence, o catálogo diz clique, a evidência decide entre fato e sem_evidencia', () => {
@@ -66,7 +78,8 @@ test('C5. sem anon nas duas funções', () => {
 
 test('C6. a tela não fica órfã: entrada de rota, link na sidebar e redirects', () => {
   const nav = src('src/lib/navigation.config.ts');
-  assert.match(nav, /'\/admin\/jornadas': \{ actions: \['manage_member'\], rpcs: \['get_onboarding_journey_admin'\] \}/);
+  // as ações e designações são conferidas contra o portão pelo guard 2974-f1; aqui, que a rota existe e lê a RPC.
+  assert.match(nav, /'\/admin\/jornadas': \{[^}]*rpcs: \['get_onboarding_journey_admin'\],\s*\}/);
   assert.match(nav, /\{ href: '\/admin\/jornadas', label: \{[^}]*\}, icon: 'Route' \}/, 'link na sidebar ausente');
   assert.match(src('src/components/admin/AdminSidebar.tsx'), /const ICONS[^;]*\bRoute,/, 'o ícone tem de estar no mapa, senão o link some');
   for (const l of ['en', 'es']) assert.ok(existsSync(resolve(ROOT, `src/pages/${l}/admin/jornadas.astro`)), `redirect ${l} ausente`);
