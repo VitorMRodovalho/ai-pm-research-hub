@@ -35,7 +35,6 @@ const MY = cap('get_my_affiliation_gate');
 const APPROVE = cap('approve_selection_application');
 const LIST = cap('get_volunteers_with_closed_affiliation_gate');
 const PAGE = maskJsComments(readFileSync(resolve(ROOT, 'src/pages/admin/selection.astro'), 'utf8'));
-const ISLAND = maskJsComments(readFileSync(resolve(ROOT, 'src/components/admin/AffiliationQueueIsland.tsx'), 'utf8'));
 
 test('A. a regra do primeiro termo mora num lugar so', () => {
   assert.match(FIRST.body, /RETURN CASE\s+WHEN EXISTS \(SELECT 1 FROM public\.members WHERE id = p_member_id AND operational_role IS DISTINCT FROM 'guest'\)\s+THEN jsonb_build_object\('open', true, 'path', 'renewal'\)\s+ELSE public\.affiliation_gate\(p_member_id\)\s+END;/);
@@ -77,7 +76,7 @@ test('D. grants', () => {
   assert.match(APPROVE.sql, /REVOKE ALL ON FUNCTION public\.approve_selection_application\(uuid, jsonb\) FROM PUBLIC, anon;/);
 });
 
-test('E. a selecao avisa nos tres caminhos de aprovacao; a fila mostra a lista', () => {
+test('E. a selecao avisa nos tres caminhos de aprovacao', () => {
   assert.match(PAGE, /function affiliationGateClosedReason\(data: any\): string \| null \{\s+const gate = data\?\.canonical\?\.affiliation_gate;\s+if \(!gate \|\| gate\.open !== false\) return null;/);
   // modal
   assert.match(PAGE, /const gateReason = newStatus === 'approved' \? affiliationGateClosedReason\(data\) : null;\s+if \(gateReason\) warnAffiliationGate\(row\.applicant_name \|\| '', gateReason\);/);
@@ -88,21 +87,13 @@ test('E. a selecao avisa nos tres caminhos de aprovacao; a fila mostra a lista',
   assert.match(PAGE, /if \(gateClosed\.length\) \{[\s\S]{0,400}?alert\(tpl\.replace\('\{n\}', String\(gateClosed\.length\)\)/);
   assert.match(PAGE, /function warnAffiliationGate\(name: string, reason: string\) \{[\s\S]{0,400}?alert\(tpl\.replace\('\{name\}', name\)\.replace\('\{reason\}', affiliationReasonLabel\(reason\)\)\);/);
 
-  assert.match(ISLAND, /sb\.rpc\('get_volunteers_with_closed_affiliation_gate'\)\s+\.then\(\(\{ data: cg \}: any\) => setClosedGate\(Array\.isArray\(cg\) \? cg : \[\]\)\)/);
-  assert.match(ISLAND, /\{closedGate\.length > 0 && \(/);
-  // agrupado por quem age: so o que a regra nao validou ('unknown') pede a Diretoria
-  assert.match(ISLAND, /function closedGateGroup\(reason: string \| null\)[^{]*\{\s+return reason === 'not_affiliated' \|\| reason === 'entry_chapter_required' \? reason : 'unknown';/);
-  assert.match(ISLAND, /rows: closedGate\.filter\(r => closedGateGroup\(r\.reason\) === g\)[\s\S]{0,300}?t\(`comp\.affiliationQueue\.closedGateReason\.\$\{g\}`[\s\S]{0,200}?t\(`comp\.affiliationQueue\.closedGateAction\.\$\{g\}`/);
 });
 
 test('F. rotulos nos 3 idiomas', () => {
   const keys = [
     'admin.selection.affiliationGateWarn', 'admin.selection.affiliationGateBulkWarn',
     ...['not_affiliated', 'entry_chapter_required', 'unknown'].flatMap((r) => [
-      `admin.selection.affiliationGateReason.${r}`, `comp.affiliationQueue.closedGateReason.${r}`,
-      `comp.affiliationQueue.closedGateAction.${r}`]),
-    'comp.affiliationQueue.closedGateTitle', 'comp.affiliationQueue.closedGateHint',
-    'comp.affiliationQueue.closedGateFirstTerm', 'comp.affiliationQueue.closedGateRenewal',
+      `admin.selection.affiliationGateReason.${r}`]),
   ];
   for (const p of ['src/i18n/pt-BR.ts', 'src/i18n/en-US.ts', 'src/i18n/es-LATAM.ts']) {
     const src = readFileSync(resolve(ROOT, p), 'utf8');

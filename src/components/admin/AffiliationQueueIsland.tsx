@@ -223,24 +223,6 @@ function termMeta(status: TermStatus, t: (k: string, f?: string) => string): { e
 // #1192 — chapter-filter option row read straight from chapter_registry (the SSOT).
 interface RegistryChapter { chapter_code: string; state: string; }
 
-// #3100 — quem tem vinculo volunteer ativo e o portao de filiacao fechado (get_volunteers_with_closed_affiliation_gate).
-// A regra e o motivo vem do servidor (affiliation_gate); a tela so mostra.
-// #3100: motivo fora dos dois que a pessoa resolve sozinha cai em 'unknown', que e o unico que pede a Diretoria.
-function closedGateGroup(reason: string | null): 'unknown' | 'not_affiliated' | 'entry_chapter_required' {
-  return reason === 'not_affiliated' || reason === 'entry_chapter_required' ? reason : 'unknown';
-}
-
-interface ClosedGateRow {
-  member_id: string;
-  name: string;
-  chapter: string | null;
-  operational_role: string | null;
-  first_term: boolean;
-  engagement_start: string | null;
-  reason: string | null;
-  chapters: string[];
-}
-
 // #1364 — per-chapter reconciliation row from get_affiliation_chapter_rollup(). `chapter` is
 // members.chapter ('PMI-XX', the /admin/members roster axis); in_queue mirrors this queue's cohort.
 interface ChapterRollupEntry { chapter: string; total_active: number; in_queue: number; verified_out: number; }
@@ -294,7 +276,6 @@ export default function AffiliationQueueIsland() {
   const [search, setSearch] = useState('');
   const [registry, setRegistry] = useState<RegistryChapter[]>([]);               // #1192
   const [rollup, setRollup] = useState<ChapterRollupEntry[]>([]);                // #1364
-  const [closedGate, setClosedGate] = useState<ClosedGateRow[]>([]);              // #3100
   const [allRows, setAllRows] = useState<QueueRow[]>([]);                        // #1364b full roster
   const [allLoaded, setAllLoaded] = useState(false);                            // #1364b lazy-load latch
   const [allLoading, setAllLoading] = useState(false);                          // #1364b
@@ -342,10 +323,6 @@ export default function AffiliationQueueIsland() {
     // #1364 — per-chapter reconciliation (full roster vs this queue) for the chapter-filter banner.
     sb.rpc('get_affiliation_chapter_rollup')
       .then(({ data: rd }: any) => setRollup(Array.isArray(rd) ? rd : []))
-      .catch(() => {});
-    // #3100 — voluntarios ativos com o portao fechado; falha de leitura nao derruba a fila.
-    sb.rpc('get_volunteers_with_closed_affiliation_gate')
-      .then(({ data: cg }: any) => setClosedGate(Array.isArray(cg) ? cg : []))
       .catch(() => {});
     setLoading(false);
     // #1364b — keep the full-roster tab in sync after a verify/refresh, if it was already loaded.
@@ -563,37 +540,6 @@ export default function AffiliationQueueIsland() {
         <ShieldCheck size={18} className="text-teal-600 mt-0.5 flex-shrink-0" />
         <p>{t('comp.affiliationQueue.intro', 'Verifique a filiação PMI dos membros: (1) membresia ativa e (2) filiação a um capítulo brasileiro em dia. O dado de filiação do VEP é exibido quando disponível; quando o candidato mantém a comunidade PMI privada ou ainda não é filiado, preencha manualmente.')}</p>
       </div>
-
-      {/* #3100 — voluntarios ativos com o portao de filiacao fechado */}
-      {closedGate.length > 0 && (
-        <div className="mb-5 text-[13px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-          <p className="font-semibold">{t('comp.affiliationQueue.closedGateTitle', 'Voluntários ativos sem filiação verificada ({n})').replace('{n}', String(closedGate.length))}</p>
-          <p className="mt-1 text-[12px]">{t('comp.affiliationQueue.closedGateHint', 'Têm vínculo de voluntário ativo, mas o portão de filiação está fechado. Quem ainda não assinou o Termo de Voluntariado fica parado nele.')}</p>
-          {/* Agrupado por quem age: so 'unknown' (a regra nao conseguiu validar) pede a Diretoria. */}
-          {(['unknown', 'not_affiliated', 'entry_chapter_required'] as const)
-            .map(g => ({ g, rows: closedGate.filter(r => closedGateGroup(r.reason) === g) }))
-            .filter(x => x.rows.length > 0)
-            .map(({ g, rows }) => (
-              <div key={g} className="mt-3">
-                <p className="font-medium">{t(`comp.affiliationQueue.closedGateReason.${g}`, g)} ({rows.length})</p>
-                <p className="text-[12px] text-amber-700">{t(`comp.affiliationQueue.closedGateAction.${g}`, '')}</p>
-                <ul className="mt-1 space-y-1">
-                  {rows.map(r => (
-                    <li key={r.member_id} className="flex flex-wrap items-center gap-2">
-                      <span className="font-medium">{r.name}</span>
-                      {r.chapter && <span className="text-amber-700">{r.chapter}</span>}
-                      <span className={`px-1.5 py-0.5 rounded text-[11px] ${r.first_term ? 'bg-amber-200 text-amber-900' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-                        {r.first_term
-                          ? t('comp.affiliationQueue.closedGateFirstTerm', 'aguarda o termo')
-                          : t('comp.affiliationQueue.closedGateRenewal', 'termo já assinado')}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-        </div>
-      )}
 
       {/* tabs */}
       <div className="flex items-center gap-2 mb-4">
