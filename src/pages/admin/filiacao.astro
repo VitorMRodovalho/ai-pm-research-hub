@@ -6,10 +6,11 @@
  */
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import AffiliationQueueIsland from '../../components/admin/AffiliationQueueIsland';
+import AffiliationNudgePanel from '../../components/admin/AffiliationNudgePanel';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
-const i18nBundle = buildPageI18n(['comp.affiliationQueue', 'comp.common'], lang);
+const i18nBundle = buildPageI18n(['comp.affiliationQueue', 'comp.affiliationNudge', 'comp.common'], lang);
 ---
 
 <AdminLayout
@@ -22,6 +23,7 @@ const i18nBundle = buildPageI18n(['comp.affiliationQueue', 'comp.common'], lang)
   <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
   <div class="max-w-[1200px] mx-auto px-4 pb-12">
     <AffiliationQueueIsland client:load />
+    <AffiliationNudgePanel client:load />
   </div>
   <span id="filiacao-denied-text" class="hidden">{t('admin.deniedAdmin', lang)}</span>
 </AdminLayout>
