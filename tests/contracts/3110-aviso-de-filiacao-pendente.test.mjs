@@ -39,6 +39,7 @@ const MIG = (() => {
   return maskLineComments(readFileSync(resolve(MIGRATIONS, f[0]), 'utf8'));
 })();
 const KEY = "'affiliation.action_needed_nudge'";
+const escRe = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test('A. o plano mora num lugar só, e a coorte é o portão fechado', () => {
   assert.match(PLAN, /FROM public\.members m\s+WHERE m\.member_status = 'active'\s+AND public\.affiliation_needs_review\(m\.id\)/);
@@ -79,8 +80,8 @@ test('D. nada sai em ensaio nem desligado; dedupe; tipo, link e variante gravada
 });
 
 test('E. liga/desliga: nasce desligado, falha fechada, ligar é da gestão, pausar é da fila, auditado', () => {
-  assert.match(MIG, new RegExp(`INSERT INTO public\\.platform_settings \\(key, value, description, change_reason\\)\\s+VALUES \\(\\s+${KEY.replace(/\./g, '\\.')},\\s+'\\{"enabled": false\\}'::jsonb,`));
-  assert.match(ON, new RegExp(`SELECT COALESCE\\(\\s+\\(SELECT \\(ps\\.value ->> 'enabled'\\)::boolean IS TRUE\\s+FROM public\\.platform_settings ps WHERE ps\\.key = ${KEY.replace(/\./g, '\\.')}\\),\\s+false\\);`));
+  assert.match(MIG, new RegExp(`INSERT INTO public\\.platform_settings \\(key, value, description, change_reason\\)\\s+VALUES \\(\\s+${escRe(KEY)},\\s+'\\{"enabled": false\\}'::jsonb,`));
+  assert.match(ON, new RegExp(`SELECT COALESCE\\(\\s+\\(SELECT \\(ps\\.value ->> 'enabled'\\)::boolean IS TRUE\\s+FROM public\\.platform_settings ps WHERE ps\\.key = ${escRe(KEY)}\\),\\s+false\\);`));
   assert.match(SET, /IF p_enabled THEN\s+IF NOT public\.can_by_member\(v_caller_id, 'manage_platform'\) THEN\s+RAISE EXCEPTION/);
   assert.match(SET, /ELSE\s+IF NOT \('filiacao_director' = ANY\(COALESCE\(v_caller_designations, '\{\}'::text\[\]\)\)\)\s+AND NOT public\.can_by_member\(v_caller_id, 'manage_member'\)\s+AND NOT public\.can_by_member\(v_caller_id, 'manage_platform'\) THEN\s+RAISE EXCEPTION/);
   assert.match(SET, /IF p_reason IS NULL OR btrim\(p_reason\) = '' THEN\s+RAISE EXCEPTION 'Reason is required';/);
