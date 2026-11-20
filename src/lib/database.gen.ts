@@ -32933,6 +32933,7 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      affiliation_vep_snapshot: { Args: { p_member_id: string }; Returns: Json }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean

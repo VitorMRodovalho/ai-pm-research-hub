@@ -8,6 +8,9 @@
  *
  * O QUE ESTE GUARD AFIRMA
  *   A. caminho A le source = 'pmi_vep' em capitulo ativo do registro, e pede o capitulo de entrada quando ha mais de um;
+ *      desde a #3107 (opcao b do GP, 20/11/2026), o caminho A le SO o snapshot VEP mais recente (classify_entry_chapter):
+ *      capitulos participantes com filiacao ativa; a linha member_chapter_affiliations deixa de ser condicao. O motivo
+ *      do portao fechado sai do mesmo snapshot. A, B e C leem a CAPTURA VIGENTE de affiliation_gate;
  *   B. caminho B vem DEPOIS de A, le a verificacao ativa, nao vencida, metodo vep_sync ou sede_manual, em capitulo ativo;
  *   C. nenhuma outra origem de afiliacao (legacy, admin_import, self_declared) abre o portao;
  *   D. o termo (ultima captura) consulta o portao so para guest, ANTES do perfil, devolve affiliation_required, e grava a
@@ -31,7 +34,8 @@ const DIR = resolve(ROOT, 'supabase/migrations');
 const files = readdirSync(DIR).filter((f) => /^\d{14}_2585_portao_de_filiacao\.sql$/.test(f));
 const SQL = files.length === 1 ? maskLineComments(readFileSync(join(DIR, files[0]), 'utf8')) : '';
 const fn = (name) => (SQL.match(new RegExp(String.raw`CREATE OR REPLACE FUNCTION public\.${name}\([\s\S]*?\$function\$[\s\S]*?\$function\$`)) || [''])[0];
-const GATE = fn('affiliation_gate');
+// #3107: o portao e invariante corrente, entao le a captura vigente (#1932); D a G seguem lendo a migration da #2585.
+const GATE = maskLineComments(latestFunctionCapture(ROOT, 'affiliation_gate').block);
 
 test('a migration existe', () => {
   assert.equal(files.length, 1, `esperava 1 migration da #2585, achei ${files.length}`);
@@ -39,9 +43,34 @@ test('a migration existe', () => {
 });
 
 test('A. caminho A: pmi_vep em capitulo ativo, escolha de entrada com mais de um', () => {
-  assert.match(GATE, /FROM public\.member_chapter_affiliations a\s+JOIN public\.chapter_registry cr ON cr\.chapter_code = a\.chapter_code AND cr\.is_active\s+WHERE a\.person_id = v_person_id AND a\.source = 'pmi_vep';/);
+  assert.match(GATE, /SELECT array_agg\(cr\.chapter_code ORDER BY cr\.chapter_code\) INTO v_vep\s+FROM public\.chapter_registry cr\s+WHERE cr\.is_active\s+AND COALESCE\(v_snapshot -> 'active_br_codes', '\[\]'::jsonb\) \? cr\.chapter_code;/,
+    '#3107: o caminho A sao os capitulos participantes ativos no snapshot');
+  assert.doesNotMatch(GATE, /member_chapter_affiliations/, '#3107 (b): o portao nao le a linha de afiliacao');
   assert.match(GATE, /IF array_length\(v_vep, 1\) > 1 AND \(v_entry IS NULL OR NOT v_entry = ANY\(v_vep\)\) THEN\s+RETURN jsonb_build_object\('open', false, 'reason', 'entry_chapter_required'/);
   assert.match(GATE, /RETURN jsonb_build_object\('open', true, 'path', 'vep',/);
+});
+
+test('A2. (#3107) o snapshot: uma funcao so, a candidatura mais recente COM dado da VEP, por todos os e-mails', () => {
+  const SNAP = maskLineComments(latestFunctionCapture(ROOT, 'affiliation_vep_snapshot').body);
+  assert.match(
+    SNAP,
+    /\|\| public\.classify_entry_chapter\(sa\.pmi_memberships, sa\.community_profile_private, sa\.pmi_data_fetched_at\)\s+FROM public\.members m\s+JOIN public\.selection_applications sa\s+ON sa\.pmi_data_fetched_at IS NOT NULL\s+AND \(lower\(sa\.email\) = lower\(m\.email\)\s+OR lower\(sa\.email\) IN \(SELECT lower\(me\.email\) FROM public\.member_emails me WHERE me\.member_id = m\.id\)\)\s+WHERE m\.id = p_member_id\s+ORDER BY sa\.pmi_data_fetched_at DESC\s+LIMIT 1;/,
+  );
+  const lido = GATE.indexOf('v_snapshot := public.affiliation_vep_snapshot(p_member_id);');
+  const usado = GATE.indexOf('? cr.chapter_code');
+  assert.ok(lido > 0 && usado > lido, 'o portao le o snapshot pela funcao, antes do caminho A');
+  assert.match(GATE, /'reason', CASE WHEN v_snapshot ->> 'bucket' = 'not_affiliated' THEN 'not_affiliated' ELSE 'unknown' END/,
+    'o motivo sai do mesmo snapshot');
+  assert.doesNotMatch(GATE, /FROM public\.selection_applications/, 'o portao nao copia a selecao do snapshot');
+});
+
+test('A3. (#3107) affiliation_vep_snapshot e interna', () => {
+  const f = readdirSync(DIR).filter((n) => /_3107_portao_le_a_validade_do_snapshot\.sql$/.test(n));
+  assert.equal(f.length, 1);
+  const mig = maskLineComments(readFileSync(join(DIR, f[0]), 'utf8'));
+  assert.match(mig, /REVOKE ALL ON FUNCTION public\.affiliation_vep_snapshot\(uuid\) FROM public, anon, authenticated;/);
+  assert.match(mig, /GRANT EXECUTE ON FUNCTION public\.affiliation_vep_snapshot\(uuid\) TO service_role;/);
+  assert.doesNotMatch(maskLineComments(latestFunctionCapture(ROOT, 'affiliation_vep_snapshot').block), /SECURITY DEFINER/);
 });
 
 test('B. caminho B depois de A: verificacao ativa, vigente, metodo fechado, capitulo ativo', () => {
