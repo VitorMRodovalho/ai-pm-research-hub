@@ -32929,6 +32929,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      affiliation_needs_review: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean
@@ -35423,10 +35427,6 @@ export type Database = {
       get_volunteer_agreement_status: { Args: never; Returns: Json }
       get_volunteer_funnel_stats: {
         Args: { p_cycle_id?: string }
-        Returns: Json
-      }
-      get_volunteers_with_closed_affiliation_gate: {
-        Args: never
         Returns: Json
       }
       get_webinar_lifecycle: { Args: { p_webinar_id: string }; Returns: Json }

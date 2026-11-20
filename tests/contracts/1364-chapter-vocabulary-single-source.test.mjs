@@ -36,14 +36,17 @@ const ISLAND = 'src/components/admin/AffiliationQueueIsland.tsx';
 // ---------- static (offline) ----------
 
 test('rollup RPC migration creates a gated, aggregate SECURITY DEFINER function', () => {
+  // Grants e NOTIFY sao entrega da migration original (fixar e o teste certo para isso). O corpo e invariante
+  // CORRENTE: le a captura vigente (#1932), que desde a #3105 conta in_queue pela mesma funcao da fila.
   const src = read(MIGRATION);
-  assert.match(src, /CREATE OR REPLACE FUNCTION public\.get_affiliation_chapter_rollup\(\)/,
+  const cur = latestFunctionCapture(REPO_ROOT, 'get_affiliation_chapter_rollup').block;
+  assert.match(cur, /CREATE OR REPLACE FUNCTION public\.get_affiliation_chapter_rollup\(\)/,
     'migration must create get_affiliation_chapter_rollup');
-  assert.match(src, /SECURITY DEFINER/, 'must be SECURITY DEFINER');
-  assert.match(src, /SET search_path TO 'public', 'pg_temp'/, 'must pin search_path');
+  assert.match(cur, /SECURITY DEFINER/, 'must be SECURITY DEFINER');
+  assert.match(cur, /SET search_path TO 'public', 'pg_temp'/, 'must pin search_path');
   // same audience gate as the queue: filiacao_director OR manage_member
-  assert.match(src, /filiacao_director/, 'must gate on filiacao_director designation');
-  assert.match(src, /can_by_member\(v_caller_id, 'manage_member'\)/, 'must gate on manage_member authority');
+  assert.match(cur, /filiacao_director/, 'must gate on filiacao_director designation');
+  assert.match(cur, /can_by_member\(v_caller_id, 'manage_member'\)/, 'must gate on manage_member authority');
   // grants: revoked from anon, granted to authenticated (mirrors the queue RPC)
   assert.match(src, /REVOKE ALL ON FUNCTION public\.get_affiliation_chapter_rollup\(\) FROM public, anon;/,
     'must revoke from public, anon');
@@ -51,9 +54,10 @@ test('rollup RPC migration creates a gated, aggregate SECURITY DEFINER function'
     'must grant to authenticated, service_role');
   assert.match(src, /NOTIFY pgrst, 'reload schema';/, 'must reload PostgREST schema');
   // aggregate-only: no per-member PII logging call (unlike the queue RPC). Match a CALL, not a mention.
-  assert.doesNotMatch(src, /PERFORM\s+public\.log_pii_access/, 'rollup is aggregate-only — must not log PII access');
-  // in_queue predicate must mirror the queue cohort, not invent a new one
-  assert.match(src, /member_is_pre_onboarding/, 'in_queue must reuse the canonical pre-onboarding helper');
+  assert.doesNotMatch(cur, /PERFORM\s+public\.log_pii_access/, 'rollup is aggregate-only — must not log PII access');
+  // in_queue predicate must mirror the queue cohort, not invent a new one (#3105: the same function the queue reads)
+  assert.match(cur, /count\(\*\) FILTER \(WHERE public\.affiliation_needs_review\(m\.id\)\) AS in_queue/,
+    'in_queue must reuse the queue cohort function');
 });
 
 test('FE surfaces the reconciliation on the chapter filter', () => {
