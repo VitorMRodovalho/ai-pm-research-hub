@@ -51,6 +51,12 @@ interface AffiliationGate {
   chapters?: string[];
 }
 
+// #3108 — vencimento efetivo da filiação e de onde ele vem, pela mesma função que o radar lê.
+interface AffiliationExpiry {
+  expires_on: string | null;
+  source: 'vep' | 'manual' | null;
+}
+
 interface QueueRow {
   member_id: string;
   name: string;
@@ -59,6 +65,7 @@ interface QueueRow {
   operational_role: string | null;
   is_pre_onboarding: boolean;
   affiliation_gate?: AffiliationGate | null; // #3105
+  affiliation_expiry?: AffiliationExpiry;
   pmi_id_verified: boolean;
   vep_status_raw: string | null;
   vep_last_seen_at: string | null;
@@ -754,6 +761,14 @@ export default function AffiliationQueueIsland() {
                             {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
                           </div>
                           <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
+                          {r.affiliation_expiry && (
+                            <div data-testid="aq-effective-expiry" className="text-[.7rem] text-[var(--text-secondary)]">
+                              {r.affiliation_expiry.expires_on
+                                ? t('comp.affiliationQueue.effExpiry', 'vence em {date}').replace('{date}', fmtDate(r.affiliation_expiry.expires_on))
+                                : t('comp.affiliationQueue.effExpiryNone', 'sem vencimento conhecido')}
+                              {r.affiliation_expiry.source && <> · {t(`comp.affiliationQueue.effExpirySource_${r.affiliation_expiry.source}`, r.affiliation_expiry.source)}</>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>
