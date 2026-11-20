@@ -37,10 +37,21 @@ interface HistoryRow {
   created_at: string; action: string; target_type: string; target_id: string | null; metadata: Record<string, unknown> | null;
   actor_name: string | null; target_name: string | null;
 }
+interface RubricItem {
+  key: string; label: string; question: string | null; anchors: { weak: string; medium: string; strong: string };
+  min_level: number | null;
+}
+interface Rubric {
+  id: string; opportunity_id: string; part: 'video' | 'fit'; version: number; items: RubricItem[]; created_at: string;
+  created_by_name: string | null; is_current: boolean; locked: boolean;
+}
 interface AdminData {
   openings: Opening[]; applications: Application[]; members: MemberLite[]; evaluators: Evaluator[];
-  calibrations: Calibration[]; assignments: Assignment[]; history: HistoryRow[];
+  calibrations: Calibration[]; assignments: Assignment[]; history: HistoryRow[]; rubrics?: Rubric[];
 }
+type DraftItem = { key: string; label: string; question: string; weak: string; medium: string; strong: string; min_level: string };
+const RUBRIC_PARTS = ['video', 'fit'] as const;
+const emptyItem = (): DraftItem => ({ key: '', label: '', question: '', weak: '', medium: '', strong: '', min_level: '' });
 
 const STATE_TONE: Record<Assignment['state'], string> = {
   submitted: 'bg-emerald-100 text-emerald-700',
@@ -56,6 +67,7 @@ const PT_FALLBACK: Record<string, string> = {
   'state.pending': 'Pendente', 'state.draft': 'Rascunho', 'state.overdue': 'Vencida', 'state.submitted': 'Enviada', 'state.withdrawn': 'Retirada',
   'action.granted': 'Vínculo dado', 'action.extended': 'Data de fim alterada', 'action.ended': 'Vínculo encerrado',
   'action.calibrated': 'Calibragem registrada', 'action.assigned': 'Atribuição feita', 'action.assignment_withdrawn': 'Atribuição retirada',
+  'action.rubric_saved': 'Rubrica salva',
 };
 
 const inputCls = 'px-2 py-1.5 text-[12px] border border-[var(--border-default)] rounded-lg bg-[var(--surface-input)] text-[var(--text-primary)]';
@@ -81,7 +93,10 @@ export default function SelectionEvaluatorsTab() {
   const tr = (k: string, fb: string) => t(`admin.selection.evaluators.${k}`, fb);
   const partLabel = (p: string) => tr(`part.${p}`, PT_FALLBACK[`part.${p}`] || p);
   const stateLabel = (s: string) => tr(`state.${s}`, PT_FALLBACK[`state.${s}`] || s);
-  const actionLabel = (a: string) => { const k = `action.${a.replace('selection_evaluator.', '')}`; return tr(k, PT_FALLBACK[k] || a); };
+  const actionLabel = (a: string) => {
+    const k = a === 'selection_rubric.saved' ? 'action.rubric_saved' : `action.${a.replace('selection_evaluator.', '')}`;
+    return tr(k, PT_FALLBACK[k] || a);
+  };
 
   const [data, setData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -109,6 +124,11 @@ export default function SelectionEvaluatorsTab() {
   const [wdReason, setWdReason] = useState('');
   const [filterOpp, setFilterOpp] = useState('');
   const [filterState, setFilterState] = useState('');
+  // #3120: editor da rubrica
+  const [rubOpp, setRubOpp] = useState('');
+  const [rubPart, setRubPart] = useState<'video' | 'fit'>('video');
+  const [rubDraft, setRubDraft] = useState<DraftItem[]>([emptyItem(), emptyItem(), emptyItem()]);
+  const [rubEditing, setRubEditing] = useState(false);
 
   const load = useCallback(async () => {
     const sb = (window as any).navGetSb?.();
@@ -120,6 +140,7 @@ export default function SelectionEvaluatorsTab() {
       const first = d.openings[0]?.opportunity_id || '';
       setCalOpp((v) => v || first);
       setAsgOpp((v) => v || first);
+      setRubOpp((v) => v || first);
     } catch (e: any) {
       setMsg({ kind: 'err', text: e?.message || String(e) });
     } finally {
@@ -152,6 +173,26 @@ export default function SelectionEvaluatorsTab() {
     return o ? `${o.opportunity_id} · ${o.title}` : id;
   }, [data]);
   const asgCandidates = useMemo(() => (data?.applications || []).filter((a) => a.opportunity_id === asgOpp), [data, asgOpp]);
+  const rubrics = useMemo(() => data?.rubrics || [], [data]);
+  const currentRubric = useMemo(() => rubrics.find((r) => r.opportunity_id === rubOpp && r.part === rubPart && r.is_current) || null, [rubrics, rubOpp, rubPart]);
+  function startEdit() {
+    const base = currentRubric?.items?.length
+      ? currentRubric.items.map((i) => ({ key: i.key, label: i.label, question: i.question || '', weak: i.anchors?.weak || '', medium: i.anchors?.medium || '', strong: i.anchors?.strong || '', min_level: i.min_level != null ? String(i.min_level) : '' }))
+      : (rubPart === 'video' ? [emptyItem(), emptyItem(), emptyItem()] : [emptyItem()]);
+    setRubDraft(base);
+    setRubEditing(true);
+  }
+  function setItem(i: number, field: keyof DraftItem, value: string) {
+    setRubDraft((d) => d.map((it, j) => (j === i ? { ...it, [field]: value } : it)));
+  }
+  async function saveRubric() {
+    const items = rubDraft.map((it) => ({
+      key: it.key.trim(), label: it.label.trim(), question: it.question.trim() || null,
+      anchors: { weak: it.weak.trim(), medium: it.medium.trim(), strong: it.strong.trim() },
+      min_level: rubPart === 'fit' && it.min_level ? Number(it.min_level) : null,
+    }));
+    if (await run('save_selection_rubric', { p_opportunity_id: rubOpp, p_part: rubPart, p_items: items }, tr('okRubric', 'Rubrica salva como versão nova.'))) setRubEditing(false);
+  }
   const assignments = useMemo(() => (data?.assignments || []).filter((a) =>
     (!filterOpp || a.opportunity_id === filterOpp) && (!filterState || a.state === filterState)), [data, filterOpp, filterState]);
 
@@ -402,6 +443,96 @@ export default function SelectionEvaluatorsTab() {
         </form>
       </section>
 
+      {/* ── Rubricas (#3120) ── */}
+      <section className={cardCls} data-testid="rubrics">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="text-[14px] font-bold text-navy">{tr('rubricsTitle', 'Rubricas por vaga e parte')}</h3>
+          <div className="flex gap-2">
+            <select className={inputCls} value={rubOpp} onChange={(ev) => { setRubOpp(ev.target.value); setRubEditing(false); }} aria-label={tr('colOpening', 'Vaga')}>
+              {data.openings.map((o) => <option key={o.opportunity_id} value={o.opportunity_id}>{oppTitle(o.opportunity_id)}</option>)}
+            </select>
+            <select className={inputCls} value={rubPart} onChange={(ev) => { setRubPart(ev.target.value as 'video' | 'fit'); setRubEditing(false); }} aria-label={tr('colPart', 'Parte')}>
+              {RUBRIC_PARTS.map((p) => <option key={p} value={p}>{partLabel(p)}</option>)}
+            </select>
+          </div>
+        </div>
+        <p className="text-[11px] text-[var(--text-muted)]">{tr('rubricHint', 'Cada item tem nota 1 (fraco), 2 (médio) ou 3 (forte), com a âncora escrita de cada nível. Vídeo: de 3 a 5 perguntas. Fit: os critérios, com mínimo opcional; nota abaixo dele exige justificativa. Salvar cria uma versão nova; a parte trava na primeira nota enviada.')}</p>
+        {!rubEditing && (
+          <div className="space-y-2">
+            {currentRubric ? (
+              <>
+                <p className="text-[12px] text-[var(--text-secondary)]">
+                  <strong className="text-navy">{tr('version', 'Versão')} {currentRubric.version}</strong> · {fmtDate(currentRubric.created_at)} · {currentRubric.created_by_name || '—'}
+                  {currentRubric.locked && <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600">{tr('locked', 'Travada')}</span>}
+                </p>
+                <ol className="list-decimal pl-5 space-y-2">
+                  {currentRubric.items.map((it) => (
+                    <li key={it.key} className="text-[12px] text-[var(--text-primary)]">
+                      <strong>{it.label}</strong> <span className="font-mono text-[10px] text-[var(--text-muted)]">{it.key}</span>
+                      {it.question && <div className="text-[var(--text-secondary)] whitespace-pre-wrap">{it.question}</div>}
+                      <div className="grid sm:grid-cols-3 gap-2 mt-1">
+                        <div><span className="font-bold">1 · {tr('levelWeak', 'Fraco')}</span> {it.anchors?.weak}</div>
+                        <div><span className="font-bold">2 · {tr('levelMedium', 'Médio')}</span> {it.anchors?.medium}</div>
+                        <div><span className="font-bold">3 · {tr('levelStrong', 'Forte')}</span> {it.anchors?.strong}</div>
+                      </div>
+                      {it.min_level != null && <div className="text-amber-700">{tr('minLevel', 'Mínimo')}: {it.min_level}</div>}
+                    </li>
+                  ))}
+                </ol>
+              </>
+            ) : (
+              <p className="text-[12px] text-[var(--text-muted)]">{tr('emptyRubric', 'Esta vaga ainda não tem rubrica desta parte.')}</p>
+            )}
+            <button type="button" className={btnCls} disabled={busy || !rubOpp || !!currentRubric?.locked} onClick={startEdit}>
+              {currentRubric ? tr('newVersion', 'Nova versão') : tr('createRubric', 'Criar rubrica')}
+            </button>
+            {rubrics.filter((r) => r.opportunity_id === rubOpp && r.part === rubPart && !r.is_current).length > 0 && (
+              <p className="text-[11px] text-[var(--text-muted)]">{tr('olderVersions', 'Versões anteriores')}: {rubrics.filter((r) => r.opportunity_id === rubOpp && r.part === rubPart && !r.is_current).map((r) => `v${r.version} (${fmtDate(r.created_at)})`).join(', ')}</p>
+            )}
+          </div>
+        )}
+        {rubEditing && (
+          <div className="space-y-3">
+            {rubDraft.map((it, i) => (
+              <fieldset key={i} className="border border-[var(--border-subtle)] rounded-lg p-3 space-y-2" data-rubric-row={i}>
+                <div className="flex gap-2 flex-wrap items-end">
+                  <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">{tr('itemKey', 'Chave')}
+                    <input type="text" className={inputCls} value={it.key} onChange={(ev) => setItem(i, 'key', ev.target.value)} placeholder="ex.: q1" />
+                  </label>
+                  <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)] grow">{tr('itemLabel', 'Rótulo')}
+                    <input type="text" className={inputCls} value={it.label} onChange={(ev) => setItem(i, 'label', ev.target.value)} />
+                  </label>
+                  {rubPart === 'fit' && (
+                    <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">{tr('minLevel', 'Mínimo')}
+                      <select className={inputCls} value={it.min_level} onChange={(ev) => setItem(i, 'min_level', ev.target.value)}>
+                        <option value="">{tr('noMinimum', 'Sem mínimo')}</option>
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                      </select>
+                    </label>
+                  )}
+                  <button type="button" className={btnGhost} onClick={() => setRubDraft((d) => d.filter((_, j) => j !== i))}>{tr('removeItem', 'Remover')}</button>
+                </div>
+                <label className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">{rubPart === 'video' ? tr('itemQuestion', 'Pergunta') : tr('itemDescription', 'Descrição (opcional)')}
+                  <textarea className={inputCls} rows={2} value={it.question} onChange={(ev) => setItem(i, 'question', ev.target.value)} />
+                </label>
+                <div className="grid sm:grid-cols-3 gap-2">
+                  {(['weak', 'medium', 'strong'] as const).map((lv, n) => (
+                    <label key={lv} className="flex flex-col gap-1 text-[11px] text-[var(--text-secondary)]">{n + 1} · {tr(`level${lv[0].toUpperCase()}${lv.slice(1)}`, lv)}
+                      <textarea className={inputCls} rows={2} value={it[lv]} onChange={(ev) => setItem(i, lv, ev.target.value)} />
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+            <div className="flex gap-2 flex-wrap">
+              <button type="button" className={btnGhost} onClick={() => setRubDraft((d) => [...d, emptyItem()])}>{tr('addItem', 'Adicionar item')}</button>
+              <button type="button" className={btnCls} disabled={busy} onClick={saveRubric}>{tr('saveRubric', 'Salvar versão')}</button>
+              <button type="button" className={btnGhost} onClick={() => setRubEditing(false)}>{tr('cancel', 'Cancelar')}</button>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* ── Histórico ── */}
       <section className={cardCls}>
         <h3 className="text-[14px] font-bold text-navy">{tr('historyTitle', 'Histórico')}</h3>
@@ -439,6 +570,7 @@ function historyDetail(h: HistoryRow, partLabel: (p: string) => string, tr: (k: 
   if (m.opportunity_id) bits.push(String(m.opportunity_id));
   if (m.part) bits.push(partLabel(String(m.part)));
   if (m.material_version) bits.push(String(m.material_version));
+  if (h.action === 'selection_rubric.saved' && m.version != null) bits.push(`v${m.version}`);
   if (Array.isArray(m.application_ids)) bits.push(tr('detailApplications', '{n} candidatura(s)').replace('{n}', String(m.application_ids.length)));
   if (m.end_date_before) bits.push(`${fmtDate(String(m.end_date_before))} → ${fmtDate(String(m.end_date))}`);
   else if (m.end_date) bits.push(`→ ${fmtDate(String(m.end_date))}`);

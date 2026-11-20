@@ -13,7 +13,7 @@
  *   C. assign aceita fit, com 1 avaliador por candidatura no fit (antes da regra dos 2), e grava o histórico depois de
  *      gravar a atribuição;
  *   D. calibragem aceita fit e grava o histórico depois de gravar;
- *   E. grant grava granted quando não havia vínculo e extended quando havia, lendo a data de fim anterior;
+ *   E. grant grava granted quando não havia vínculo ativo e extended quando havia (pela existência do vínculo, #3120);
  *   F. withdraw grava o histórico só depois de achar a atribuição;
  *   G. end_selection_evaluator: só a gestão; motivo obrigatório; encerra hoje com status offboarded; retira as
  *      atribuições ativas DAQUELA pessoa; grava o histórico; executável por authenticated e não por anon;
@@ -41,7 +41,8 @@ const MIG = (() => {
 const MIG_SQL = norm(readFileSync(resolve(MIG_DIR, MIG), 'utf8'));
 const cap = (n) => {
   const c = latestFunctionCapture(ROOT, n);
-  assert.equal(c.file, MIG, `${n}: a captura vigente é a da #3119`);
+  // A captura vigente é a da #3119 ou uma posterior (a #3120 reescreve a leitura da aba para somar as rubricas).
+  assert.ok(c.file >= MIG, `${n}: a captura vigente (${c.file}) é anterior à da #3119`);
   return norm(c.block);
 };
 
@@ -82,10 +83,12 @@ test('D. calibragem aceita fit e grava o histórico depois de gravar', () => {
   assert.ok(grava > 0 && hist > grava, 'o histórico da calibragem não vem depois de gravar');
 });
 
-test('E. grant grava granted ou extended pela data de fim anterior', () => {
+// #3120: a 1ª versão (3119) decidia por `v_fim_antes IS NULL`, e um vínculo ativo antigo com end_date nula virava
+// "granted". A regra é a EXISTÊNCIA do vínculo ativo, lida antes do INSERT que a apagaria.
+test('E. grant grava granted sem vínculo ativo anterior e extended com ele', () => {
   const c = cap('grant_selection_evaluator');
-  assert.match(c, /SELECT e\.id, e\.end_date INTO v_eng, v_fim_antes FROM public\.engagements e WHERE e\.person_id = v_member\.person_id AND e\.kind = 'selection_evaluator' AND e\.status = 'active'/);
-  assert.match(c, /VALUES \(v_caller, CASE WHEN v_fim_antes IS NULL THEN 'selection_evaluator\.granted' ELSE 'selection_evaluator\.extended' END, 'member', p_member_id, jsonb_build_object\('engagement_id', v_eng, 'end_date', p_end_date, 'end_date_before', v_fim_antes,/);
+  assert.match(c, /SELECT e\.id, e\.end_date INTO v_eng, v_fim_antes FROM public\.engagements e WHERE e\.person_id = v_member\.person_id AND e\.kind = 'selection_evaluator' AND e\.status = 'active' ORDER BY e\.start_date DESC LIMIT 1; v_existia := v_eng IS NOT NULL; IF v_existia THEN UPDATE/);
+  assert.match(c, /VALUES \(v_caller, CASE WHEN NOT v_existia THEN 'selection_evaluator\.granted' ELSE 'selection_evaluator\.extended' END, 'member', p_member_id, jsonb_build_object\('engagement_id', v_eng, 'end_date', p_end_date, 'end_date_before', v_fim_antes,/);
 });
 
 test('F. withdraw grava o histórico só depois de achar a atribuição', () => {
