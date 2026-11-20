@@ -69,3 +69,12 @@ test('#3104: outra falta ou justificativa volta recusada, depois de todos os ram
     assert.ok(g > 0 && g < body.indexOf('INSERT INTO public.attendance'), `${file}: o portão ${gate} continua antes de gravar`);
   }
 });
+
+test('#3104 × #3100: a audiência all_active_operational continua passando pelo helper', () => {
+  const { file, body } = latestBody();
+  assert.match(body,
+    /OR \(ar\.target_type = 'all_active_operational'\s+AND public\._in_all_active_operational\(v_member_id\)\)/,
+    `${file}: a regra all_active_operational decide por _in_all_active_operational, que inclui quem está em onboarding (#3100)`);
+  assert.doesNotMatch(body, /ar\.target_type = 'all_active_operational'\s+AND COALESCE\(v_member_active, false\) = true/,
+    `${file}: a audiência não voltou à regra antiga, que tirava da Geral quem está em onboarding`);
+});

@@ -87,8 +87,7 @@ BEGIN
             ))
             OR (ar.target_type = 'tribe' AND v_member_tribe IS NOT NULL AND v_member_tribe::text = ar.target_value)
             OR (ar.target_type = 'all_active_operational'
-                AND COALESCE(v_member_active, false) = true
-                AND v_member_role <> 'guest')
+                AND public._in_all_active_operational(v_member_id))
             OR (ar.target_type = 'specific_members' AND EXISTS (
               SELECT 1 FROM public.event_invited_members im
               WHERE im.event_id = p_event_id AND im.member_id = v_member_id
