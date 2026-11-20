@@ -32924,6 +32924,10 @@ export type Database = {
         }
         Returns: Json
       }
+      affiliation_effective_expiry: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       affiliation_gate: { Args: { p_member_id: string }; Returns: Json }
       affiliation_gate_first_term: {
         Args: { p_member_id: string }
