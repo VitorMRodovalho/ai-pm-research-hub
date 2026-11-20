@@ -34535,6 +34535,10 @@ export type Database = {
         Args: { p_document_id: string; p_version_id: string }
         Returns: Json
       }
+      get_governance_document_newer_draft: {
+        Args: { p_document_id: string }
+        Returns: Json
+      }
       get_governance_document_reader: {
         Args: { p_document_id: string }
         Returns: Json

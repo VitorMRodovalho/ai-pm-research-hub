@@ -38,6 +38,9 @@ const I18N = {
   printPdfBtn: t('governance.document.printPdfBtn', lang, 'Imprimir / PDF'),
   copyLinkBtn: t('governance.document.copyLinkBtn', lang, 'Copiar link'),
   copiedLink: t('governance.document.copiedLink', lang, 'Link copiado'),
+  newerDraftTitle: t('governance.document.newerDraftTitle', lang, 'Há uma versão mais recente em revisão'),
+  newerDraftBody: t('governance.document.newerDraftBody', lang, 'Esta página mostra a versão vigente. A versão mais recente ainda está em revisão e não foi lacrada.'),
+  newerDraftLink: t('governance.document.newerDraftLink', lang, 'Abrir a versão em revisão'),
 };
 ---
 
@@ -56,6 +59,11 @@ const I18N = {
     <div id="doc-empty" class="hidden rounded-xl border border-amber-200 bg-amber-50 px-4 py-6 text-center text-amber-800 text-sm">
       {I18N.empty}
     </div>
+    <section id="doc-newer-draft-banner" class="hidden mb-4 rounded-xl border border-sky-300 bg-sky-50 px-4 py-3 text-sky-950">
+      <p class="text-[12px] font-extrabold">{I18N.newerDraftTitle}: <span id="doc-newer-draft-label"></span></p>
+      <p class="text-[12px] mt-1">{I18N.newerDraftBody}</p>
+      <a id="doc-newer-draft-link" href="#" class="inline-block mt-2 text-[12px] font-bold text-sky-800 underline">{I18N.newerDraftLink}</a>
+    </section>
     <section id="doc-draft-preview-banner" class="hidden mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950">
       <div class="flex items-start justify-between gap-3 flex-wrap">
         <div class="min-w-0">
@@ -146,6 +154,22 @@ const I18N = {
             copyBtn.textContent = window.location.href;
           }
         });
+      }
+
+      // GP 19/11/2026: na versão vigente, avisa quando existe uma versão mais nova em revisão que quem lê pode abrir.
+      // Quem decide se a pessoa abre é a RPC (delega à prévia); falha na leitura só deixa o aviso escondido.
+      if (!isDraftPreview) {
+        try {
+          var nd = await sb.rpc('get_governance_document_newer_draft', { p_document_id: DOC_ID });
+          var newer = nd && !nd.error && nd.data ? nd.data.newer : null;
+          if (newer && newer.version_id) {
+            document.getElementById('doc-newer-draft-label').textContent = newer.version_label || ('v' + newer.version_number);
+            var u = new URL(window.location.href);
+            u.searchParams.set('version', newer.version_id);
+            document.getElementById('doc-newer-draft-link').setAttribute('href', u.pathname + u.search);
+            document.getElementById('doc-newer-draft-banner').classList.remove('hidden');
+          }
+        } catch (e) { /* aviso fica escondido */ }
       }
 
       // Mount HTML — TAP brings its own inline <style>, so we extract body+styles
