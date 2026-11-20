@@ -16,7 +16,9 @@ import { createClient } from '@supabase/supabase-js';
 
 const maskSql = (s) => s.replace(/--[^\n]*/g, '');
 const read = (p) => maskJsComments(readFileSync(p, 'utf8'));
-const MIG = readdirSync('supabase/migrations').filter((f) => f.endsWith('_get_public_publication_outcomes.sql')).sort().at(-1);
+// a captura mais recente da função, qualquer que seja o nome do arquivo (a 2ª corrigiu o fuso do created_at)
+const MIG = readdirSync('supabase/migrations').filter((f) => f.endsWith('.sql')).sort()
+  .filter((f) => /CREATE OR REPLACE FUNCTION public\.get_public_publication_outcomes\(\)/.test(readFileSync(`supabase/migrations/${f}`, 'utf8'))).at(-1);
 const SQL = maskSql(readFileSync(`supabase/migrations/${MIG}`, 'utf8'));
 const DATA = read('src/lib/publicHomeData.ts');
 const KPI = read('src/components/sections/KpiSection.astro');
@@ -32,7 +34,7 @@ describe('home: números completos (GP 19/11/2026)', () => {
     assert.match(SQL, /'presented_congress', count\(\*\) FILTER \(WHERE status = 'presented' AND target_type IS DISTINCT FROM 'pmi_chapter_event'\)/);
     assert.match(SQL, /'under_evaluation', count\(\*\) FILTER \(WHERE status IN \('submitted', 'under_review'\)\)/);
     assert.match(SQL, /extract\(year FROM \(now\(\) AT TIME ZONE 'America\/Sao_Paulo'\)\)::int AS yr/);
-    assert.match(SQL, /extract\(year FROM coalesce\(ps\.acceptance_date, ps\.presentation_date, ps\.submission_date, ps\.created_at::date\)\)::int = y\.yr/);
+    assert.match(SQL, /extract\(year FROM coalesce\(ps\.acceptance_date, ps\.presentation_date, ps\.submission_date, \(ps\.created_at AT TIME ZONE 'America\/Sao_Paulo'\)::date\)\)::int = y\.yr/);
     assert.match(SQL, /AND NOT EXISTS \(SELECT 1 FROM public\.initiatives i WHERE i\.id = ps\.initiative_id AND i\.visibility = 'confidential'\)/);
     assert.match(SQL, /CREATE OR REPLACE FUNCTION public\.get_public_publication_outcomes\(\)\s+RETURNS jsonb\s+LANGUAGE sql\s+STABLE\s+SECURITY DEFINER\s+SET search_path TO 'public', 'pg_temp'/);
     assert.match(SQL, /REVOKE ALL ON FUNCTION public\.get_public_publication_outcomes\(\) FROM PUBLIC;\s+GRANT EXECUTE ON FUNCTION public\.get_public_publication_outcomes\(\) TO anon, authenticated, service_role;/);
