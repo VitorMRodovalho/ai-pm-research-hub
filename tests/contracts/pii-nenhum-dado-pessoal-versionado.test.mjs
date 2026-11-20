@@ -45,6 +45,7 @@ export const PERMITIDOS = new Set([
   'nucleoia@pmigo.org.br',
   'contato@pmigo.org.br',
   'dpo@pmigo.org.br',
+  'certificacao@pmigo.org.br', // caixa da Diretoria de Certificacao do PMI-GO (pagina do grupo de estudos CPMAI)
   'presidencia@pmiam.org', 'presidencia@pmiba.org.br', 'presidencia@pmice.org.br',
   'presidencia@pmies.org.br', 'presidencia@pmigo.org.br', 'presidencia@pmimg.org.br',
   'presidencia@pmipe.org.br', 'presidencia@pmirio.org.br', 'presidencia@pmirs.org.br',
