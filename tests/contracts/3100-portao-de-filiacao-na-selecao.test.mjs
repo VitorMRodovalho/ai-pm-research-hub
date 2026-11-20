@@ -101,7 +101,8 @@ test('F. rotulos nos 3 idiomas', () => {
   }
   // os motivos que a tela traduz sao exatamente os que o portao devolve fechado
   const gate = maskLineComments(latestFunctionCapture(ROOT, 'affiliation_gate').body);
-  const motivos = new Set([...gate.matchAll(/'reason', (?:'([a-z_]+)'|CASE WHEN v_bucket = 'not_affiliated' THEN '([a-z_]+)' ELSE '([a-z_]+)' END)/g)]
+  // #3107: o motivo do fechado passou a ler o bucket do snapshot (v_snapshot ->> 'bucket'); antes, v_bucket.
+  const motivos = new Set([...gate.matchAll(/'reason', (?:'([a-z_]+)'|CASE WHEN (?:v_bucket|v_snapshot ->> 'bucket') = 'not_affiliated' THEN '([a-z_]+)' ELSE '([a-z_]+)' END)/g)]
     .flatMap((m) => m.slice(1).filter(Boolean)));
   assert.deepEqual([...motivos].sort(), ['entry_chapter_required', 'not_affiliated', 'unknown']);
 });

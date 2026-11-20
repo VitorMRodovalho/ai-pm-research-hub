@@ -43,6 +43,7 @@ type TermStatus = 'valid' | 'expiring' | 'expired' | 'none' | 'unsigned';
 
 // #3105 — o portão do termo (affiliation_gate), devolvido pela fila em cada linha: caminho quando aberto, motivo quando
 // fechado. A fila padrão é exatamente quem tem o portão fechado; a tela só mostra o motivo, quem decide é o servidor.
+// #3107: no escopo "todos", quem tem o portão aberto mostra o caminho (VEP ou verificação manual).
 interface AffiliationGate {
   open: boolean;
   path?: 'vep' | 'manual' | string;
@@ -743,6 +744,11 @@ export default function AffiliationQueueIsland() {
                             {r.affiliation_gate && !r.affiliation_gate.open && (
                               <span data-testid="aq-gate-reason" className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold">
                                 {t(`comp.affiliationQueue.gateReason_${r.affiliation_gate.reason ?? 'unknown'}`, r.affiliation_gate.reason ?? 'unknown')}
+                              </span>
+                            )}
+                            {r.affiliation_gate?.open && (
+                              <span data-testid="aq-gate-path" className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold">
+                                {t(`comp.affiliationQueue.gatePath_${r.affiliation_gate.path ?? 'unknown'}`, r.affiliation_gate.path ?? 'unknown')}
                               </span>
                             )}
                             {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
