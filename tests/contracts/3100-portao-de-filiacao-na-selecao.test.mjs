@@ -9,19 +9,19 @@
  *      affiliation_gate. E get_my_affiliation_gate delega a ela, sem uma segunda copia da regra;
  *   B. approve_selection_application le o portao DEPOIS do vinculo e das afiliacoes pmi_vep, devolve no resultado e
  *      grava no log, e NAO bloqueia: nenhum desvio de fluxo depende do portao;
- *   C. get_volunteers_with_closed_affiliation_gate tem a audiencia da fila de filiacao (filiacao_director ou
- *      manage_member) e lista vinculo volunteer ativo cujo affiliation_gate nao abriu, com o motivo do proprio portao;
- *   D. grants: o portao do primeiro termo nao e executavel por anon nem authenticated; a lista nao por anon;
+ *   C. get_volunteers_with_closed_affiliation_gate foi APOSENTADA na #3105: a fila de filiacao a absorveu (mesma
+ *      audiencia, portao cru, motivo em cada linha). A migration da #3105 a remove e confere a remocao;
+ *   D. grants: o portao do primeiro termo nao e executavel por anon nem authenticated;
  *   E. a tela de selecao avisa nos tres caminhos de aprovacao, so quando a decisao e approved e o portao veio fechado;
  *      a fila de filiacao chama a lista e mostra o motivo;
  *   F. os rotulos existem nos 3 idiomas;
- *   G. (banco) anon nao executa a lista;
+ *   G. (banco) a lista nao existe mais (404 pela REST);
  *   H. audiencia 'all_active_operational' (GP, 19/11/2026): guest com vinculo volunteer ativo entra; register_own_presence
  *      e get_my_meetings chamam a mesma funcao; o selo de faltas fica de fora de proposito.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { latestFunctionCapture, maskJsComments, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
@@ -33,7 +33,12 @@ const cap = (name) => {
 const FIRST = cap('affiliation_gate_first_term');
 const MY = cap('get_my_affiliation_gate');
 const APPROVE = cap('approve_selection_application');
-const LIST = cap('get_volunteers_with_closed_affiliation_gate');
+const MIG_3105 = (() => {
+  const dir = resolve(ROOT, 'supabase/migrations');
+  const f = readdirSync(dir).filter((n) => /^\d{14}_3105_fila_de_filiacao_le_o_portao\.sql$/.test(n));
+  assert.equal(f.length, 1, 'a migration da #3105 existe uma vez');
+  return maskLineComments(readFileSync(resolve(dir, f[0]), 'utf8'));
+})();
 const PAGE = maskJsComments(readFileSync(resolve(ROOT, 'src/pages/admin/selection.astro'), 'utf8'));
 
 test('A. a regra do primeiro termo mora num lugar so', () => {
@@ -57,22 +62,17 @@ test('B. a aprovacao le o portao depois do vinculo, devolve e registra, e nao bl
   assert.equal((b.match(/v_affiliation_gate/g) || []).length, 4, 'v_affiliation_gate: declaracao, leitura, log e retorno; outro uso e desvio de fluxo');
 });
 
-test('C. a lista: audiencia da fila de filiacao, vinculo volunteer ativo, portao cru fechado', () => {
-  const b = LIST.body;
-  assert.match(b, /IF NOT \('filiacao_director' = ANY\(COALESCE\(v_caller_designations, '\{\}'::text\[\]\)\)\)\s+AND NOT public\.can_by_member\(v_caller_id, 'manage_member'\) THEN\s+RAISE EXCEPTION/);
-  assert.match(b, /IF v_caller_id IS NULL THEN\s+RAISE EXCEPTION/);
-  assert.match(b, /WHERE e\.person_id = m\.person_id AND e\.kind = 'volunteer' AND e\.status = 'active'\s+\) v ON v\.engagement_start IS NOT NULL/);
-  assert.match(b, /public\.affiliation_gate\(m\.id\) AS gate[\s\S]*?WHERE NOT COALESCE\(\(x\.gate ->> 'open'\)::boolean, false\)/);
-  assert.match(b, /'first_term',\s+x\.operational_role = 'guest',/);
-  assert.match(b, /'reason',\s+x\.gate ->> 'reason',/);
-  assert.match(LIST.block, /RETURNS jsonb\s+LANGUAGE plpgsql\s+STABLE SECURITY DEFINER\s+SET search_path TO 'public', 'pg_temp'/);
+test('C. a lista da #3101 foi aposentada pela #3105: a fila a absorveu', () => {
+  assert.match(MIG_3105, /DROP FUNCTION IF EXISTS public\.get_volunteers_with_closed_affiliation_gate\(\);/);
+  assert.match(MIG_3105, /IF EXISTS \(SELECT 1 FROM pg_proc WHERE pronamespace = 'public'::regnamespace\s+AND proname = 'get_volunteers_with_closed_affiliation_gate'\) THEN\s+RAISE EXCEPTION/);
+  const fila = maskLineComments(latestFunctionCapture(ROOT, 'get_affiliation_verification_queue').body);
+  assert.match(fila, /OR public\.affiliation_needs_review\(m\.id\)/, 'a fila e o portao fechado');
+  assert.match(fila, /'affiliation_gate', public\.affiliation_gate\(c\.member_id\),/, 'e traz o motivo do portao');
 });
 
 test('D. grants', () => {
   assert.match(FIRST.sql, /REVOKE ALL ON FUNCTION public\.affiliation_gate_first_term\(uuid\) FROM PUBLIC, anon, authenticated;/);
   assert.doesNotMatch(FIRST.sql, /GRANT[^;]*affiliation_gate_first_term\(uuid\)[^;]*\b(anon|authenticated)\b/);
-  assert.match(LIST.sql, /REVOKE ALL ON FUNCTION public\.get_volunteers_with_closed_affiliation_gate\(\) FROM PUBLIC, anon;\s+GRANT EXECUTE ON FUNCTION public\.get_volunteers_with_closed_affiliation_gate\(\) TO authenticated, service_role;/);
-  assert.doesNotMatch(LIST.sql, /GRANT[^;]*get_volunteers_with_closed_affiliation_gate\(\)[^;]*\banon\b/);
   assert.match(APPROVE.sql, /REVOKE ALL ON FUNCTION public\.approve_selection_application\(uuid, jsonb\) FROM PUBLIC, anon;/);
 });
 
@@ -126,12 +126,12 @@ test('H. audiencia da organizacao: guest com vinculo volunteer ativo entra, pela
 const URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const ANON = process.env.PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
-test('G. (banco) anon nao executa a lista', { skip: URL && ANON ? false : 'SUPABASE_URL + anon key required' }, async () => {
+test('G. (banco) a lista nao existe mais', { skip: URL && ANON ? false : 'SUPABASE_URL + anon key required' }, async () => {
   const r = await fetch(`${URL}/rest/v1/rpc/get_volunteers_with_closed_affiliation_gate`, {
     method: 'POST',
     headers: { apikey: ANON, Authorization: `Bearer ${ANON}`, 'Content-Type': 'application/json' },
     body: '{}',
   });
-  // 401/403 = a funcao existe e anon foi negado. 404 seria funcao ausente, e nao pode passar por "negado".
-  assert.ok([401, 403].includes(r.status), `anon recebeu HTTP ${r.status}`);
+  // 404 = a funcao nao existe (PGRST202). 401/403 seria a funcao ainda la, so negada.
+  assert.equal(r.status, 404, `a REST respondeu ${r.status}`);
 });

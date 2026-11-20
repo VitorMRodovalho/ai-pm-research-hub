@@ -1,29 +1,42 @@
 /**
  * #659 — get_affiliation_verification_queue (Pasta Diretoria de Filiação, epic #660 step 2)
  *
- * Locks the cohort-read RPC contract (migration 20260805000155):
- *   - function-anchored gate: filiacao_director designation OR view_internal_analytics OR
- *     manage_member; fail-closed on auth.uid() NULL (unauthenticated → Forbidden);
- *   - the queue surfaces the federated-gate data (pmi_memberships) + the pre-onboarding flag,
- *     reusing the admin_list_members pre-onboarding LATERAL verbatim;
- *   - cohort = pre-onboarding OR unverified OR never-verified active members;
- *   - LGPD Art. 37 nominal-read trail via log_pii_access_batch;
- *   - hardened grants (REVOKE public/anon; GRANT authenticated/service_role).
+ * Reescrito na #3105. A versão anterior fixava a migration original (20260805000155) e afirmava o predicado de
+ * coorte "pré-onboarding OU pmi_id_verified=false OU nunca verificado". A função foi redefinida 9 vezes depois disso,
+ * e a #3105 trocou o critério: a fila é quem a regra NÃO validou, ou seja, quem tem vínculo ativo que exige termo e o
+ * portão de filiação (affiliation_gate) fechado. Este guard lê a CAPTURA VIGENTE de cada função.
  *
- * The RPC reads auth.uid() (no member param), so the service-role harness can only exercise the
- * unauthenticated path behaviourally (auth.uid()=NULL → Forbidden); the rest is locked by
- * source-contract assertions (mirrors p625-c0). Behavioural test needs SUPABASE_URL +
- * SUPABASE_SERVICE_ROLE_KEY; source tests run offline.
+ * Trava:
+ *   A. o critério de "precisa de verificação humana" mora numa função só (affiliation_needs_review), que liga o
+ *      vínculo que exige termo ao portão fechado;
+ *   B. a fila (escopo padrão) e o rollup leem essa função, e nenhum dos dois volta a copiar o predicado antigo;
+ *   C. cada linha da fila traz o resultado do portão;
+ *   D. o resto do contrato de #659: audiência de leitura = de escrita, fail-closed sem sessão, pmi_memberships e
+ *      pré-onboarding expostos, trilha do Art. 37;
+ *   E. a função nova é interna (não executável por anon/authenticated); grants da fila na assinatura (text);
+ *   F. (banco) sem sessão, a fila recusa.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { latestFunctionCapture, maskLineComments, maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 
-const MIG = readFileSync(
-  fileURLToPath(new URL('../../supabase/migrations/20260805000155_659_affiliation_verification_queue.sql', import.meta.url)),
-  'utf8',
-);
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
+const body = (fn) => maskLineComments(latestFunctionCapture(ROOT, fn).body);
+const block = (fn) => maskLineComments(latestFunctionCapture(ROOT, fn).block);
+
+const QUEUE = body('get_affiliation_verification_queue');
+const ROLLUP = body('get_affiliation_chapter_rollup');
+const NEEDS = body('affiliation_needs_review');
+
+const MIG_3105 = (() => {
+  const f = readdirSync(MIGRATIONS).filter((n) => /^\d{14}_3105_fila_de_filiacao_le_o_portao\.sql$/.test(n));
+  assert.equal(f.length, 1, 'a migration da #3105 existe uma vez');
+  return maskLineComments(readFileSync(resolve(MIGRATIONS, f[0]), 'utf8'));
+})();
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,41 +57,97 @@ async function rpc(fn, args) {
   return res.json();
 }
 
-// ── Source contract (offline) ───────────────────────────────────────────────
-test('659: gate is function-anchored + read==write audience (filiacao_director OR manage_member)', () => {
-  assert.match(MIG, /'filiacao_director' = ANY\(COALESCE\(v_caller_designations/, 'gate must check the filiacao_director designation');
-  assert.match(MIG, /can_by_member\(v_caller_id, 'manage_member'\)/, 'platform manager authority');
-  // M-1: a BULK cohort read must NOT be wider than the write gate — no view_internal_analytics arm.
-  assert.doesNotMatch(MIG, /can_by_member\(v_caller_id, 'view_internal_analytics'\)/, 'read audience must not exceed the write gate');
-  assert.match(MIG, /RAISE EXCEPTION 'Forbidden: authentication required'/, 'unauthenticated → fail-closed');
-  assert.match(MIG, /RAISE EXCEPTION 'Forbidden: requires filiacao_director/, 'unauthorized → fail-closed');
+// O bloco que decide a coorte da fila: do WHERE do CTE até o fim do CTE.
+function cohortWhere(q) {
+  const i = q.indexOf("WHERE m.member_status = 'active'");
+  assert.ok(i > 0, 'a fila tem o WHERE de membros ativos');
+  const j = q.indexOf('SELECT', i);
+  assert.ok(j > i, 'o WHERE termina antes do SELECT final');
+  return q.slice(i, j);
+}
+
+// ── A. uma regra só ─────────────────────────────────────────────────────────
+test('A. affiliation_needs_review: vinculo ativo que exige termo E portao fechado', () => {
+  assert.match(
+    NEEDS,
+    /JOIN public\.engagements e ON e\.person_id = m\.person_id AND e\.status = 'active'\s+JOIN public\.engagement_kinds ek ON ek\.slug = e\.kind AND ek\.requires_agreement IS TRUE\s+WHERE m\.id = p_member_id/,
+    'a pessoa precisa ter vínculo ativo de tipo que exige termo',
+  );
+  assert.match(
+    NEEDS,
+    /\)\s+AND NOT COALESCE\(\(public\.affiliation_gate\(p_member_id\) ->> 'open'\)::boolean, false\)/,
+    'e o portão cru precisa estar fechado (nulo conta como fechado)',
+  );
+  assert.doesNotMatch(NEEDS, /affiliation_gate_first_term/, 'o portão cru, não o do primeiro termo');
 });
 
-test('659: surfaces pmi_memberships + pre-onboarding flag (reuses admin_list_members LATERAL verbatim)', () => {
-  assert.match(MIG, /'pmi_memberships'/, 'federated-gate detail must be surfaced');
-  assert.match(MIG, /'is_pre_onboarding'/, 'pre-onboarding flag must be surfaced');
-  assert.match(MIG, /e\.person_id = m\.person_id AND e\.status = 'active'/, 'pre-onboarding LATERAL anchor (engagement)');
-  assert.match(MIG, /ek\.requires_agreement IS NOT TRUE OR e\.agreement_certificate_id IS NOT NULL/, 'pre-onboarding LATERAL anchor (agreement)');
+// ── B. fila e rollup leem a regra ───────────────────────────────────────────
+test('B1. a fila: escopo all OU affiliation_needs_review, e nada do predicado antigo', () => {
+  const w = cohortWhere(QUEUE);
+  assert.match(w, /AND \(\s+p_scope = 'all'\s+OR public\.affiliation_needs_review\(m\.id\)\s+\)/, 'coorte = all OU precisa de verificação');
+  assert.doesNotMatch(w, /pmi_id_verified/, 'o cache pmi_id_verified não decide a coorte');
+  assert.doesNotMatch(w, /member_affiliation_verifications/, '"nunca verificado" não decide a coorte');
+  assert.doesNotMatch(w, /pre\.flag/, 'pré-onboarding sozinho não decide a coorte');
 });
 
-test('659: cohort predicate = pre-onboarding OR unverified OR never-verified', () => {
-  assert.match(MIG, /COALESCE\(pre\.flag, false\)/, 'pre-onboarding branch');
-  assert.match(MIG, /COALESCE\(m\.pmi_id_verified, false\) = false/, 'cache-unverified branch');
-  assert.match(MIG, /SELECT 1 FROM public\.member_affiliation_verifications mv/, 'never-verified branch (alias mv, distinct from the latest-verification LATERAL alias mav)');
+test('B2. o rollup conta in_queue pela mesma funcao', () => {
+  assert.match(ROLLUP, /count\(\*\) FILTER \(WHERE public\.affiliation_needs_review\(m\.id\)\) AS in_queue/);
+  assert.doesNotMatch(ROLLUP, /pmi_id_verified|member_affiliation_verifications|member_is_pre_onboarding/,
+    'o rollup não copia o predicado antigo');
 });
 
-test('659: LGPD Art.37 nominal-read trail via log_pii_access_batch', () => {
-  assert.match(MIG, /log_pii_access_batch\(/, 'must log the nominal read');
-  assert.match(MIG, /'affiliation_verification_queue'/, 'distinct audit context');
+// ── C. o motivo em cada linha ───────────────────────────────────────────────
+test('C. cada linha da fila traz o resultado do portao', () => {
+  assert.match(QUEUE, /'affiliation_gate', public\.affiliation_gate\(c\.member_id\),/);
 });
 
-test('659: hardened grants (no public/anon; authenticated + service_role only)', () => {
-  assert.match(MIG, /REVOKE ALL ON FUNCTION public\.get_affiliation_verification_queue\(\) FROM public, anon/, 'revoke public/anon');
-  assert.match(MIG, /GRANT EXECUTE ON FUNCTION public\.get_affiliation_verification_queue\(\) TO authenticated, service_role/, 'grant authenticated/service_role');
+// ── D. o contrato de #659 que continua ──────────────────────────────────────
+test('D1. audiência de leitura = de escrita (filiacao_director OU manage_member), fail-closed', () => {
+  assert.match(QUEUE, /IF v_caller_id IS NULL THEN\s+RAISE EXCEPTION 'Forbidden: authentication required'/);
+  assert.match(
+    QUEUE,
+    /IF NOT \('filiacao_director' = ANY\(COALESCE\(v_caller_designations, '\{\}'::text\[\]\)\)\)\s+AND NOT public\.can_by_member\(v_caller_id, 'manage_member'\) THEN\s+RAISE EXCEPTION 'Forbidden: requires filiacao_director/,
+  );
+  assert.doesNotMatch(QUEUE, /view_internal_analytics/, 'a leitura em lote não é mais larga que a escrita');
 });
 
-// ── Behavioural (DB) ────────────────────────────────────────────────────────
-test(canRun ? '659: unauthenticated caller (auth.uid NULL) is denied (function exists + fail-closed)' : skipMsg, { skip: !canRun }, async () => {
+test('D2. expõe pmi_memberships e a bandeira de pré-onboarding', () => {
+  assert.match(QUEUE, /'pmi_memberships', COALESCE\(c\.pmi_memberships, '\[\]'::jsonb\)/);
+  assert.match(QUEUE, /'is_pre_onboarding', c\.is_pre_onboarding/);
+  assert.match(QUEUE, /ek\.requires_agreement IS NOT TRUE OR e\.agreement_certificate_id IS NOT NULL/);
+});
+
+test('D3. trilha do Art. 37 pela leitura em lote', () => {
+  assert.match(QUEUE, /PERFORM public\.log_pii_access_batch\(\s+v_member_ids,[\s\S]*?'affiliation_verification_queue'/);
+});
+
+// ── E. grants ───────────────────────────────────────────────────────────────
+test('E. affiliation_needs_review é interna; a fila segue com o grant da assinatura (text)', () => {
+  assert.match(MIG_3105, /REVOKE ALL ON FUNCTION public\.affiliation_needs_review\(uuid\) FROM public, anon, authenticated;/);
+  assert.match(MIG_3105, /GRANT EXECUTE ON FUNCTION public\.affiliation_needs_review\(uuid\) TO service_role;/);
+  assert.doesNotMatch(block('affiliation_needs_review'), /SECURITY DEFINER/, 'função auxiliar sem SECURITY DEFINER próprio');
+  const scope = readFileSync(resolve(MIGRATIONS, '20260805000437_1364b_affiliation_queue_scope_all.sql'), 'utf8');
+  assert.match(scope, /REVOKE ALL ON FUNCTION public\.get_affiliation_verification_queue\(text\) FROM public, anon;/);
+  assert.match(scope, /GRANT EXECUTE ON FUNCTION public\.get_affiliation_verification_queue\(text\) TO authenticated, service_role;/);
+});
+
+// ── G. tela ─────────────────────────────────────────────────────────────────
+test('G. a tela mostra o motivo só com o portão fechado, nas 3 línguas', () => {
+  const island = maskJsComments(readFileSync(resolve(ROOT, 'src/components/admin/AffiliationQueueIsland.tsx'), 'utf8'));
+  assert.match(
+    island,
+    /\{r\.affiliation_gate && !r\.affiliation_gate\.open && \(\s+<span data-testid="aq-gate-reason"[^>]*>\s+\{t\(`comp\.affiliationQueue\.gateReason_\$\{r\.affiliation_gate\.reason \?\? 'unknown'\}`/,
+  );
+  for (const d of ['pt-BR', 'en-US', 'es-LATAM']) {
+    const dict = readFileSync(resolve(ROOT, `src/i18n/${d}.ts`), 'utf8');
+    for (const k of ['not_affiliated', 'unknown', 'entry_chapter_required']) {
+      assert.match(dict, new RegExp(`'comp\\.affiliationQueue\\.gateReason_${k}': '`), `${d}: gateReason_${k}`);
+    }
+  }
+});
+
+// ── F. banco ────────────────────────────────────────────────────────────────
+test(canRun ? 'F. sem sessão (auth.uid NULL), a fila recusa' : skipMsg, { skip: !canRun }, async () => {
   await assert.rejects(
     () => rpc('get_affiliation_verification_queue', {}),
     /Forbidden: authentication required/,
