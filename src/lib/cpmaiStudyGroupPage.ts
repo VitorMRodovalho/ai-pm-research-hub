@@ -5,7 +5,7 @@
 // e nenhum botão; quando receber o endereço do evento no Sympla, a página passa a mostrar o botão. Preço e lote
 // nunca entram no site: eles ficam no Sympla. O guard tests/contracts/grupo-de-estudos-cpmai-pagina-publica.test.mjs
 // acompanha os dois ramos.
-export const SYMPLA_URL: string | null = null;
+export const SYMPLA_URL: string | null = 'https://www.sympla.com.br/evento-online/grupo-de-estudos-pmi-cpmai--1-turma/3661455';
 
 /** Etapas oficiais da certificação, na página do PMI. */
 export const PMI_CPMAI_STEPS_URL = 'https://www.pmi.org/certifications/ai-project-management-cpmai';
