@@ -93,6 +93,14 @@ const SEL_I18N = {
   confirmInlineReject: t('admin.selection.confirmInlineReject', lang),
   inlineApproveToast: t('admin.selection.inlineApproveToast', lang),
   inlineRejectToast: t('admin.selection.inlineRejectToast', lang),
+  // #3100 — o portao de filiacao devolvido pela aprovacao
+  affiliationGateWarn: t('admin.selection.affiliationGateWarn', lang),
+  affiliationGateBulkWarn: t('admin.selection.affiliationGateBulkWarn', lang),
+  affiliationGateReason: {
+    not_affiliated: t('admin.selection.affiliationGateReason.not_affiliated', lang),
+    entry_chapter_required: t('admin.selection.affiliationGateReason.entry_chapter_required', lang),
+    unknown: t('admin.selection.affiliationGateReason.unknown', lang),
+  },
   bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
   allChaptersOption: t('admin.selection.allChapters', lang),
   allOpportunitiesOption: t('admin.selection.allOpportunities', lang),
@@ -2896,6 +2904,8 @@ const SEL_I18N = {
         if (data?.error) throw new Error(data.error);
         const msg = newStatus === 'approved' ? 'Candidato aprovado — onboarding iniciado' : 'Candidato atualizado';
         toast(msg);
+        const gateReason = newStatus === 'approved' ? affiliationGateClosedReason(data) : null;
+        if (gateReason) warnAffiliationGate(row.applicant_name || '', gateReason);
         modal.classList.add('hidden');
         loadDashboard();
       } catch (e: any) {
@@ -4945,6 +4955,25 @@ const SEL_I18N = {
     if (countEl) countEl.textContent = `${checks.length} selecionado${checks.length !== 1 ? 's' : ''}`;
   }
 
+  // #3100 — a aprovacao devolve o portao de filiacao (approve_selection_application -> affiliation_gate, que
+  // admin_update_application repassa em `canonical`). A tela so le o que o servidor decidiu: nao recalcula a regra.
+  // E aviso, nao bloqueio: o dado da VEP da candidatura e uma foto da busca, e a verificacao manual da Diretoria de
+  // Filiacao so pode ser gravada depois que o membro existe.
+  function affiliationGateClosedReason(data: any): string | null {
+    const gate = data?.canonical?.affiliation_gate;
+    if (!gate || gate.open !== false) return null;
+    return String(gate.reason || 'unknown');
+  }
+  function affiliationReasonLabel(reason: string): string {
+    const labels = T.affiliationGateReason || {};
+    return labels[reason] || labels.unknown || reason;
+  }
+  function warnAffiliationGate(name: string, reason: string) {
+    const tpl = T.affiliationGateWarn
+      || '{name}: aprovação registrada, mas sem filiação verificada a um capítulo participante ({reason}). O Termo de Voluntariado só abre depois disso; acompanhe em /admin/filiacao.';
+    alert(tpl.replace('{name}', name).replace('{reason}', affiliationReasonLabel(reason)));
+  }
+
   // p155 F3: single-row decision (inline button on final_eval rows)
   async function inlineDecide(appId: string, name: string, decision: 'approved' | 'rejected') {
     const confirmTpl = decision === 'approved' ? T.confirmInlineApprove : T.confirmInlineReject;
@@ -4959,6 +4988,8 @@ const SEL_I18N = {
       if (data?.error) throw new Error(data.error);
       const toastTpl = decision === 'approved' ? T.inlineApproveToast : T.inlineRejectToast;
       toast((toastTpl || '').replace('{name}', name));
+      const gateReason = decision === 'approved' ? affiliationGateClosedReason(data) : null;
+      if (gateReason) warnAffiliationGate(name, gateReason);
       loadDashboard();
     } catch (e: any) {
       toast(e.message || 'Erro ao salvar', 'error');
@@ -4978,6 +5009,7 @@ const SEL_I18N = {
     // cause in the toast instead of a generic "N erro(s)" count (the #603 missing-column /
     // NOT NULL failures were diagnosed blind because the error was swallowed here).
     let firstError = '';
+    const gateClosed: string[] = [];  // #3100 — aprovados com o portao de filiacao fechado
     for (const id of ids) {
       try {
         const updateData: any = { status: decision };
@@ -4991,6 +5023,9 @@ const SEL_I18N = {
         // contador de SUCESSO e o lote reportava "N atualizado(s)" incluindo quem não gravou.
         if (data?.error) throw new Error(data.error);
         ok++;
+        if (decision === 'approved' && affiliationGateClosedReason(data)) {
+          gateClosed.push(allRows.find(r => r.id === id)?.applicant_name || id);
+        }
       } catch (e: any) {
         fail++;
         if (!firstError) firstError = e?.message || String(e);
@@ -5000,6 +5035,11 @@ const SEL_I18N = {
       toast(`${ok} atualizado(s), ${fail} erro(s): ${firstError || 'desconhecido'}`, 'error');
     } else {
       toast(`${ok} atualizado(s)`);
+    }
+    if (gateClosed.length) {
+      const tpl = T.affiliationGateBulkWarn
+        || '{n} aprovado(s) sem filiação verificada a um capítulo participante: {names}. O Termo de Voluntariado só abre depois disso; acompanhe em /admin/filiacao.';
+      alert(tpl.replace('{n}', String(gateClosed.length)).replace('{names}', gateClosed.join(', ')));
     }
     if (bulkFeedback) (document.getElementById('bulk-feedback') as HTMLInputElement).value = '';
     loadDashboard();
