@@ -225,6 +225,11 @@ interface RegistryChapter { chapter_code: string; state: string; }
 
 // #3100 — quem tem vinculo volunteer ativo e o portao de filiacao fechado (get_volunteers_with_closed_affiliation_gate).
 // A regra e o motivo vem do servidor (affiliation_gate); a tela so mostra.
+// #3100: motivo fora dos dois que a pessoa resolve sozinha cai em 'unknown', que e o unico que pede a Diretoria.
+function closedGateGroup(reason: string | null): 'unknown' | 'not_affiliated' | 'entry_chapter_required' {
+  return reason === 'not_affiliated' || reason === 'entry_chapter_required' ? reason : 'unknown';
+}
+
 interface ClosedGateRow {
   member_id: string;
   name: string;
@@ -564,20 +569,29 @@ export default function AffiliationQueueIsland() {
         <div className="mb-5 text-[13px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
           <p className="font-semibold">{t('comp.affiliationQueue.closedGateTitle', 'Voluntários ativos sem filiação verificada ({n})').replace('{n}', String(closedGate.length))}</p>
           <p className="mt-1 text-[12px]">{t('comp.affiliationQueue.closedGateHint', 'Têm vínculo de voluntário ativo, mas o portão de filiação está fechado. Quem ainda não assinou o Termo de Voluntariado fica parado nele.')}</p>
-          <ul className="mt-2 space-y-1">
-            {closedGate.map(r => (
-              <li key={r.member_id} className="flex flex-wrap items-center gap-2">
-                <span className="font-medium">{r.name}</span>
-                {r.chapter && <span className="text-amber-700">{r.chapter}</span>}
-                <span>{t(`comp.affiliationQueue.closedGateReason.${r.reason || 'unknown'}`, r.reason || 'unknown')}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[11px] ${r.first_term ? 'bg-amber-200 text-amber-900' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
-                  {r.first_term
-                    ? t('comp.affiliationQueue.closedGateFirstTerm', 'aguarda o termo')
-                    : t('comp.affiliationQueue.closedGateRenewal', 'termo já assinado')}
-                </span>
-              </li>
+          {/* Agrupado por quem age: so 'unknown' (a regra nao conseguiu validar) pede a Diretoria. */}
+          {(['unknown', 'not_affiliated', 'entry_chapter_required'] as const)
+            .map(g => ({ g, rows: closedGate.filter(r => closedGateGroup(r.reason) === g) }))
+            .filter(x => x.rows.length > 0)
+            .map(({ g, rows }) => (
+              <div key={g} className="mt-3">
+                <p className="font-medium">{t(`comp.affiliationQueue.closedGateReason.${g}`, g)} ({rows.length})</p>
+                <p className="text-[12px] text-amber-700">{t(`comp.affiliationQueue.closedGateAction.${g}`, '')}</p>
+                <ul className="mt-1 space-y-1">
+                  {rows.map(r => (
+                    <li key={r.member_id} className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium">{r.name}</span>
+                      {r.chapter && <span className="text-amber-700">{r.chapter}</span>}
+                      <span className={`px-1.5 py-0.5 rounded text-[11px] ${r.first_term ? 'bg-amber-200 text-amber-900' : 'bg-[var(--surface-section-cool)] text-[var(--text-secondary)]'}`}>
+                        {r.first_term
+                          ? t('comp.affiliationQueue.closedGateFirstTerm', 'aguarda o termo')
+                          : t('comp.affiliationQueue.closedGateRenewal', 'termo já assinado')}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
         </div>
       )}
 

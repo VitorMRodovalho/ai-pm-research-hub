@@ -90,14 +90,17 @@ test('E. a selecao avisa nos tres caminhos de aprovacao; a fila mostra a lista',
 
   assert.match(ISLAND, /sb\.rpc\('get_volunteers_with_closed_affiliation_gate'\)\s+\.then\(\(\{ data: cg \}: any\) => setClosedGate\(Array\.isArray\(cg\) \? cg : \[\]\)\)/);
   assert.match(ISLAND, /\{closedGate\.length > 0 && \(/);
-  assert.match(ISLAND, /t\(`comp\.affiliationQueue\.closedGateReason\.\$\{r\.reason \|\| 'unknown'\}`/);
+  // agrupado por quem age: so o que a regra nao validou ('unknown') pede a Diretoria
+  assert.match(ISLAND, /function closedGateGroup\(reason: string \| null\)[^{]*\{\s+return reason === 'not_affiliated' \|\| reason === 'entry_chapter_required' \? reason : 'unknown';/);
+  assert.match(ISLAND, /rows: closedGate\.filter\(r => closedGateGroup\(r\.reason\) === g\)[\s\S]{0,300}?t\(`comp\.affiliationQueue\.closedGateReason\.\$\{g\}`[\s\S]{0,200}?t\(`comp\.affiliationQueue\.closedGateAction\.\$\{g\}`/);
 });
 
 test('F. rotulos nos 3 idiomas', () => {
   const keys = [
     'admin.selection.affiliationGateWarn', 'admin.selection.affiliationGateBulkWarn',
     ...['not_affiliated', 'entry_chapter_required', 'unknown'].flatMap((r) => [
-      `admin.selection.affiliationGateReason.${r}`, `comp.affiliationQueue.closedGateReason.${r}`]),
+      `admin.selection.affiliationGateReason.${r}`, `comp.affiliationQueue.closedGateReason.${r}`,
+      `comp.affiliationQueue.closedGateAction.${r}`]),
     'comp.affiliationQueue.closedGateTitle', 'comp.affiliationQueue.closedGateHint',
     'comp.affiliationQueue.closedGateFirstTerm', 'comp.affiliationQueue.closedGateRenewal',
   ];
