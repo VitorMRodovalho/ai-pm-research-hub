@@ -362,7 +362,8 @@ export default function PMIOnboardingPortal({
     try {
       const { data, error } = await sb.rpc('request_portal_account_setup', { p_token: token });
       if (error) throw new Error(error.message);
-      setAccessState((data as any)?.state ?? 'sent');
+      // #3148: sem estado, o cliente não sabe se o pedido foi aceito; não presume que o link saiu
+      setAccessState((data as any)?.state ?? 'error');
     } catch (e: any) {
       setAccessState('error');
       setErrorMsg(e?.message ?? String(e));
