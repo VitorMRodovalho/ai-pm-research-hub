@@ -38,6 +38,13 @@ function typeKeys() {
   return [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]);
 }
 
+test('#3141: a remoção de comentário HTML não deixa sobrar um comentário montado pela passada anterior', () => {
+  // numa passada só, '<!<!-- a -->-- b -->' vira '<!-- b -->', e o link escondido ali contaria como visível
+  assert.equal(stripHtmlComments('<!<!-- a -->-- b --><a data-notif-settings-link>'), '<a data-notif-settings-link>');
+  assert.equal(stripHtmlComments('<!<!<!-- a -->-- b -->-- c -->x'), 'x');
+  assert.equal(stripHtmlComments('sem comentário'), 'sem comentário');
+});
+
 test('#3141: o perfil não grava nem lê preferências; o cartão leva à tela única', () => {
   assert.doesNotMatch(PROFILE, /update_notification_preferences/, 'perfil: sem o RPC que gravava colunas que ninguém lê');
   assert.doesNotMatch(PROFILE, /from\('notification_preferences'\)/, 'perfil: sem leitura própria das preferências');
