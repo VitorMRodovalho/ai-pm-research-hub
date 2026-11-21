@@ -148,7 +148,8 @@ test('#2393n: a fila mostra ao avaliador só o que a regra única libera, sem no
   // única continua decidindo quem vê.
   assert.match(c, /WHERE a\.evaluator_member_id = v_caller_member_id AND a\.withdrawn_at IS NULL AND \(a\.part = 'objective' OR \(a\.part IN \('video', 'fit'\) AND public\._rubrica_vigente_id\(sa\.id, a\.part\) IS NOT NULL AND \(a\.part <> 'fit' OR public\._fit_aberto\(sa\.id\)\)\)\) AND sa\.status <> ALL \(v_terminal\) AND public\._avaliador_do_piloto\(v_caller_member_id, sa\.id, a\.part\)/,
     'a fila do piloto deixou de passar pela regra única');
-  assert.match(c, /IF v_piloto IS NULL THEN RAISE EXCEPTION 'Unauthorized: caller is not on this cycle committee' USING ERRCODE = 'insufficient_privilege'; END IF; RETURN jsonb_build_object\( 'cycle_code', v_cycle\.cycle_code, 'cycle_phase', v_cycle\.phase, 'pending', v_piloto,/,
+  // #3130: com atribuição ativa e nada aberto agora, a fila volta vazia; a recusa fica para quem não tem atribuição.
+  assert.match(c, /IF v_piloto IS NULL AND NOT EXISTS \( SELECT 1 FROM public\.selection_evaluation_assignments a WHERE a\.evaluator_member_id = v_caller_member_id AND a\.withdrawn_at IS NULL\) THEN RAISE EXCEPTION 'Unauthorized: caller is not on this cycle committee' USING ERRCODE = 'insufficient_privilege'; END IF; v_piloto := COALESCE\(v_piloto, '\[\]'::jsonb\); RETURN jsonb_build_object\( 'cycle_code', v_cycle\.cycle_code, 'cycle_phase', v_cycle\.phase, 'pending', v_piloto,/,
     'fora do comitê, a fila deixou de mostrar só o piloto, ou deixou de recusar quem não tem atribuição');
 });
 
