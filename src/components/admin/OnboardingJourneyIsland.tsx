@@ -149,6 +149,7 @@ export default function OnboardingJourneyIsland() {
     switch (e.kind) {
       case 'certificate': return `${t('comp.onboardingJourney.evCertificate', 'Termo assinado')} ${e.verification_code || ''} ${when}`.trim();
       case 'vep': return `${t('comp.onboardingJourney.evVep', 'VEP')}: ${e.vep_status || ''} ${when}`.trim();
+      case 'profile': return t('comp.onboardingJourney.evProfile', 'perfil com os dados do Termo');
       case 'trail': return `${t('comp.onboardingJourney.evTrail', 'Trilha')}: ${e.courses ?? 0} ${t('comp.onboardingJourney.evTrailCourses', 'curso(s)')} ${when}`.trim();
       case 'attendance':
       case 'tribe_attendance': return `${t('comp.onboardingJourney.evAttendance', 'Presença')}: ${e.restricted ? t('comp.onboardingJourney.evRestricted', 'evento restrito') : (e.title || '')} ${when}`.trim();
