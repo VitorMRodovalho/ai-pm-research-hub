@@ -7978,6 +7978,8 @@ const esLATAM: Record<string, string> = {
   'comp.onboardingJourney.evVep': 'VEP',
   'comp.onboardingJourney.evAttendance': 'Asistencia',
   'comp.onboardingJourney.evRestricted': 'evento restringido',
+  'comp.onboardingJourney.beforeTerm': 'antes del Término',
+  'comp.onboardingJourney.beforeTermHint': 'El vínculo aún espera el Término: la jornada sigue el rol que otorgará.',
   'comp.onboardingJourney.evTrail': 'Ruta',
   'comp.onboardingJourney.evTrailCourses': 'curso(s)',
   'comp.onboardingJourney.noteRequired': 'Escriba la justificación (mínimo 3 caracteres).',

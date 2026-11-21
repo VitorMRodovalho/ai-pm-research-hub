@@ -31,6 +31,7 @@ interface MemberRow {
   chapter: string | null;
   tribe_id: number | null;
   operational_role: string | null;
+  journey_role?: string | null;
   member_status: string;
   steps: StepRow[] | null;
 }
@@ -247,6 +248,9 @@ export default function OnboardingJourneyIsland() {
                   className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--surface-hover)]">
                   {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   <span className="font-semibold">{m.name}</span>
+                  {m.journey_role && m.journey_role !== m.operational_role && (
+                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px]" title={t('comp.onboardingJourney.beforeTermHint', 'O vínculo ainda espera o Termo: a jornada vale pelo papel que ele dará.')}>{t('comp.onboardingJourney.beforeTerm', 'antes do Termo')}</span>
+                  )}
                   <span className="text-xs text-[var(--text-muted)]">{m.chapter || ''}</span>
                   <span className="ml-auto text-xs">{done}/{steps.length}</span>
                 </button>

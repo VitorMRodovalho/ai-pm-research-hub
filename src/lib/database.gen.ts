@@ -32220,6 +32220,10 @@ export type Database = {
         Args: { p_created: boolean; p_door: string; p_partner_id: string }
         Returns: number
       }
+      _onboarding_journey_role: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
       _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
