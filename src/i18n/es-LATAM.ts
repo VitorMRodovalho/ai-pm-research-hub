@@ -7986,6 +7986,7 @@ const esLATAM: Record<string, string> = {
   'comp.onboardingJourney.beforeTermHint': 'El vínculo aún espera el Término: la jornada sigue el rol que otorgará.',
   'comp.onboardingJourney.evTrail': 'Ruta',
   'comp.onboardingJourney.evTrailCourses': 'curso(s)',
+  'comp.onboardingJourney.evProfile': 'perfil con los datos del Término',
   'comp.onboardingJourney.noteRequired': 'Escriba la justificación (mínimo 3 caracteres).',
   'comp.onboardingJourney.countPending': 'Pendientes',
   'comp.onboardingJourney.countNoEvidence': 'Sin evidencia',

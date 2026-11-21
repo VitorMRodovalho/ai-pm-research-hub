@@ -7995,6 +7995,7 @@ const ptBR: Record<string, string> = {
   'comp.onboardingJourney.beforeTermHint': 'O vínculo ainda espera o Termo: a jornada vale pelo papel que ele dará.',
   'comp.onboardingJourney.evTrail': 'Trilha',
   'comp.onboardingJourney.evTrailCourses': 'curso(s)',
+  'comp.onboardingJourney.evProfile': 'perfil com os dados do Termo',
   'comp.onboardingJourney.noteRequired': 'Escreva a justificativa (mínimo de 3 caracteres).',
   'comp.onboardingJourney.countPending': 'Pendentes',
   'comp.onboardingJourney.countNoEvidence': 'Sem evidência',

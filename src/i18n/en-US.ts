@@ -7986,6 +7986,7 @@ const enUS: Record<string, string> = {
   'comp.onboardingJourney.beforeTermHint': 'The engagement still awaits the Term: the journey follows the role it will grant.',
   'comp.onboardingJourney.evTrail': 'Trail',
   'comp.onboardingJourney.evTrailCourses': 'course(s)',
+  'comp.onboardingJourney.evProfile': 'profile has the Volunteer Term data',
   'comp.onboardingJourney.noteRequired': 'Write the reason (at least 3 characters).',
   'comp.onboardingJourney.countPending': 'Pending',
   'comp.onboardingJourney.countNoEvidence': 'No evidence',

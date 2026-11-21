@@ -40,7 +40,8 @@ function detectBlock(step) {
   return DETECT.slice(start, next === -1 ? DETECT.lastIndexOf('END;') : next);
 }
 
-const APPLIES = /public\.onboarding_step_applies\(s\.applies_to_role, m\.operational_role\)/;
+// Jornadas fatia C: os blocos do lote leem o papel pela jornada (#3152); a fila da filiação continua no cache.
+const APPLIES = /public\.onboarding_step_applies\(s\.applies_to_role, public\._onboarding_journey_role\(m\.id\)\)/;
 const PENDING_ONLY = /ON CONFLICT \(member_id, step_key\) DO UPDATE\s+SET status = 'completed', completed_at = now\(\), updated_at = now\(\),\s+metadata = COALESCE\(onboarding_progress\.metadata, '\{\}'::jsonb\) \|\| EXCLUDED\.metadata\s+WHERE onboarding_progress\.status IN \('pending', 'overdue'\);/;
 
 test('#2718 há exatamente uma migration da fatia 2', () => {

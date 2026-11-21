@@ -32196,6 +32196,7 @@ export type Database = {
         Args: { p_from_url: string; p_member_id: string; p_to_url: string }
         Returns: Json
       }
+      _member_profile_ready: { Args: { p_member_id: string }; Returns: boolean }
       _member_term_has_image_clause: {
         Args: { p_member_id: string }
         Returns: boolean
