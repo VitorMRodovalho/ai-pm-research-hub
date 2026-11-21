@@ -1974,6 +1974,7 @@ const enUS: Record<string, string> = {
   'attendance.msg.eventsCreated': '{n} events created ✅',
   'attendance.msg.recurringError': 'Error creating series',
   'attendance.msg.eventUpdated': 'Event updated ✅',
+  'attendance.msg.eventLinkRefused': 'Event saved, but the initiative did not change: {reason}',
   'attendance.msg.eventSaveError': 'Error saving',
   'attendance.msg.tagsAudienceSaveError': 'The event was saved, but its tags or audience were not recorded. Edit the event to try again',
   'attendance.msg.eventEditOpenError': 'Could not open the editor for this event',
