@@ -7982,6 +7982,8 @@ const enUS: Record<string, string> = {
   'comp.onboardingJourney.evVep': 'VEP',
   'comp.onboardingJourney.evAttendance': 'Attendance',
   'comp.onboardingJourney.evRestricted': 'restricted event',
+  'comp.onboardingJourney.beforeTerm': 'before the Term',
+  'comp.onboardingJourney.beforeTermHint': 'The engagement still awaits the Term: the journey follows the role it will grant.',
   'comp.onboardingJourney.evTrail': 'Trail',
   'comp.onboardingJourney.evTrailCourses': 'course(s)',
   'comp.onboardingJourney.noteRequired': 'Write the reason (at least 3 characters).',
