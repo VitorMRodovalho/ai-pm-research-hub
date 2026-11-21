@@ -18675,6 +18675,7 @@ export type Database = {
       onboarding_steps: {
         Row: {
           applies_to_role: string[] | null
+          closed_by: string
           created_at: string | null
           description_en: string | null
           description_es: string | null
@@ -18689,6 +18690,7 @@ export type Database = {
         }
         Insert: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -18703,6 +18705,7 @@ export type Database = {
         }
         Update: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -32572,6 +32575,10 @@ export type Database = {
       }
       admin_check_ingestion_source_timeout: {
         Args: { p_source: string; p_started_at: string }
+        Returns: Json
+      }
+      admin_complete_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
         Returns: Json
       }
       admin_create_member: {

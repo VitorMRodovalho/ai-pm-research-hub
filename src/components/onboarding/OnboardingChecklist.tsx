@@ -12,6 +12,8 @@ interface Step {
   description_es: string;
   icon: string;
   is_required: boolean;
+  // Jornadas fatia B: 'fact' = só um fato fecha (onboarding_steps.closed_by); a pessoa não marca.
+  closed_by?: 'member' | 'fact';
   status: string;
   completed_at: string | null;
 }
@@ -33,9 +35,9 @@ function getDesc(s: Step, lang: string): string {
 }
 
 const L: Record<string, Record<string, string>> = {
-  'pt-BR': { title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', credlyMissing: 'Seu perfil não tem Credly: a plataforma só vê o curso pelo badge do Credly.', connectCredly: 'Conectar Credly no perfil', chooseTribe: 'Escolher sua tribo' },
-  'en-US': { title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', credlyMissing: 'Your profile has no Credly: the platform only sees the course through the Credly badge.', connectCredly: 'Connect Credly on your profile', chooseTribe: 'Choose your tribe' },
-  'es-LATAM': { title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', credlyMissing: 'Su perfil no tiene Credly: la plataforma solo ve el curso por la insignia de Credly.', connectCredly: 'Conectar Credly en el perfil', chooseTribe: 'Elegir tu tribu' },
+  'pt-BR': { vepByFact: 'Fecha sozinho quando o VEP mostrar sua posição aceita. Já aceitou e não fechou? Fale com a gestão do programa.', title: 'Complete seu Onboarding', progress: 'concluídos', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Dispensar', done: 'Concluído', pending: 'Pendente', accept: 'Li e aceito', complete: 'Onboarding concluído! 🎉', markDone: 'Marcar como feito', visitTribe: 'Visitar tribo', viewTrail: 'Ver Trilha', step: 'Passo', of: 'de', attendanceCta: '📅 Ver reuniões', credlyMissing: 'Seu perfil não tem Credly: a plataforma só vê o curso pelo badge do Credly.', connectCredly: 'Conectar Credly no perfil', chooseTribe: 'Escolher sua tribo' },
+  'en-US': { vepByFact: 'Closes on its own once VEP shows your position as accepted. Already accepted and it did not close? Contact the program team.', title: 'Complete your Onboarding', progress: 'completed', expand: 'View all', collapse: 'Minimize', hide: 'Dismiss', done: 'Done', pending: 'Pending', accept: 'I have read and accept', complete: 'Onboarding complete! Welcome! 🎉', markDone: 'Mark as done', visitTribe: 'Visit stream', viewTrail: 'View Trail', step: 'Step', of: 'of', attendanceCta: '📅 View meetings', credlyMissing: 'Your profile has no Credly: the platform only sees the course through the Credly badge.', connectCredly: 'Connect Credly on your profile', chooseTribe: 'Choose your tribe' },
+  'es-LATAM': { vepByFact: 'Se cierra solo cuando VEP muestre su posición aceptada. ¿Ya aceptó y no se cerró? Contacte al equipo del programa.', title: 'Complete su Integración', progress: 'completados', expand: 'Ver todos', collapse: 'Minimizar', hide: 'Descartar', done: 'Hecho', pending: 'Pendiente', accept: 'He leído y acepto', complete: '¡Integración completa! 🎉', markDone: 'Marcar como hecho', visitTribe: 'Visitar línea', viewTrail: 'Ver Ruta', step: 'Paso', of: 'de', attendanceCta: '📅 Ver reuniones', credlyMissing: 'Su perfil no tiene Credly: la plataforma solo ve el curso por la insignia de Credly.', connectCredly: 'Conectar Credly en el perfil', chooseTribe: 'Elegir tu tribu' },
 };
 
 // Steps that carry a bespoke CTA below. Any other step (e.g. the #1103 role-scoped
@@ -297,7 +299,10 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                         {l.attendanceCta}
                       </a>
                     )}
-                    {s.step_id === 'vep_acceptance' && (
+                    {s.step_id === 'vep_acceptance' && s.closed_by === 'fact' && (
+                      <p className="w-full text-[10px] text-[var(--text-muted)]">{l.vepByFact}</p>
+                    )}
+                    {s.step_id === 'vep_acceptance' && s.closed_by !== 'fact' && (
                       <button onClick={() => completeStep(s.step_id)}
                         className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
                         ✓ {l.markDone}
@@ -311,10 +316,12 @@ export default function OnboardingChecklist({ lang = 'pt-BR' }: Props) {
                             🔬 {l.visitTribe}
                           </a>
                         )}
-                        <button onClick={() => completeStep(s.step_id)}
-                          className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
-                          ✓ {l.markDone}
-                        </button>
+                        {s.closed_by !== 'fact' && (
+                          <button onClick={() => completeStep(s.step_id)}
+                            className="px-2.5 py-1 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px] font-semibold cursor-pointer bg-transparent hover:bg-[var(--surface-hover)]">
+                            ✓ {l.markDone}
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

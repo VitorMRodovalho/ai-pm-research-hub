@@ -7577,6 +7577,7 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.progressTitle': 'Process steps',
   'pmi.onboarding.completedOn': 'Completed on',
   'pmi.onboarding.markDone': 'Mark as done',
+  'pmi.onboarding.closesByFact': 'Closes on its own once the platform records it',
   'pmi.onboarding.evaluationPhase': 'Evaluation phase',
   'pmi.onboarding.evaluationBody': 'Your application will be reviewed by the Selection Committee. Cycle criteria and timelines are public. Watch this page for updates; you will receive an email when there is a decision.',
   'pmi.onboarding.approvedTitle': 'You have been approved!',

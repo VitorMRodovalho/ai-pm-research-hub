@@ -36,6 +36,8 @@ interface StepCatalogEntry {
   icon: string | null;
   is_required: boolean;
   applies_to_role: string[] | null;
+  /** Jornadas fatia B: 'fact' = só um fato fecha a etapa; o portal não oferece o botão. Ausente = clique. */
+  closed_by?: 'member' | 'fact';
   label: Partial<Record<Lang, string>>;
   description: Partial<Record<Lang, string>>;
 }
@@ -1032,7 +1034,12 @@ export default function PMIOnboardingPortal({
                       </div>
                     )}
                   </div>
-                  {!done && (
+                  {!done && stepCatalog.get(step.step_key)?.closed_by === 'fact' && (
+                    <span className="text-xs text-gray-500 flex-shrink-0 max-w-[12rem] text-right">
+                      {T('pmi.onboarding.closesByFact')}
+                    </span>
+                  )}
+                  {!done && stepCatalog.get(step.step_key)?.closed_by !== 'fact' && (
                     <button
                       disabled={busyStep === step.step_key}
                       onClick={() => handleStepUpdate(step.step_key, 'completed')}
