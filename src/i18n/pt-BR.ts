@@ -7996,6 +7996,8 @@ const ptBR: Record<string, string> = {
   'comp.onboardingJourney.evVep': 'VEP',
   'comp.onboardingJourney.evAttendance': 'Presença',
   'comp.onboardingJourney.evRestricted': 'evento restrito',
+  'comp.onboardingJourney.evTrail': 'Trilha',
+  'comp.onboardingJourney.evTrailCourses': 'curso(s)',
   'comp.onboardingJourney.noteRequired': 'Escreva a justificativa (mínimo de 3 caracteres).',
   'comp.onboardingJourney.countPending': 'Pendentes',
   'comp.onboardingJourney.countNoEvidence': 'Sem evidência',

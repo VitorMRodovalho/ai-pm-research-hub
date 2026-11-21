@@ -12,7 +12,7 @@ import { canForUnscoped } from '../../lib/permissions';
 import { useResolvedMember } from '../../hooks/useResolvedMember';
 
 type Source = 'gp' | 'fato' | 'clique' | 'sem_evidencia' | null;
-interface Evidence { kind: string; at?: string | null; title?: string | null; restricted?: boolean; vep_status?: string | null; verification_code?: string | null }
+interface Evidence { kind: string; at?: string | null; title?: string | null; restricted?: boolean; courses?: number | null; vep_status?: string | null; verification_code?: string | null }
 interface GpMark { member_id: string | null; name: string | null; note: string | null; at: string | null }
 interface ReopenEntry { reopened_by: string; reopen_note: string; reopened_at: string; previous_status: string; previous_closed_by: string | null }
 interface StepRow {
@@ -148,6 +148,7 @@ export default function OnboardingJourneyIsland() {
     switch (e.kind) {
       case 'certificate': return `${t('comp.onboardingJourney.evCertificate', 'Termo assinado')} ${e.verification_code || ''} ${when}`.trim();
       case 'vep': return `${t('comp.onboardingJourney.evVep', 'VEP')}: ${e.vep_status || ''} ${when}`.trim();
+      case 'trail': return `${t('comp.onboardingJourney.evTrail', 'Trilha')}: ${e.courses ?? 0} ${t('comp.onboardingJourney.evTrailCourses', 'curso(s)')} ${when}`.trim();
       case 'attendance':
       case 'tribe_attendance': return `${t('comp.onboardingJourney.evAttendance', 'Presença')}: ${e.restricted ? t('comp.onboardingJourney.evRestricted', 'evento restrito') : (e.title || '')} ${when}`.trim();
       default: return e.kind;

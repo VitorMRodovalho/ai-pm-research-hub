@@ -101,7 +101,7 @@ test('C7. os botões do GP só aparecem a quem pode, e marcar só vale para etap
 test('C8. a fonte é a do servidor: a tela não deriva fato nem copia a lista de etapas de fato', () => {
   const s = src('src/components/admin/OnboardingJourneyIsland.tsx');
   assert.match(s, /const isFact = useCallback\(\(id: string\) => stepById\.get\(id\)\?\.closed_by === 'fact'/);
-  assert.doesNotMatch(s, /'(?:volunteer_term|vep_acceptance|meet_tribe|first_meeting)'/, 'a tela tem nome de etapa de fato escrito à mão');
+  assert.doesNotMatch(s, /'(?:volunteer_term|vep_acceptance|meet_tribe|first_meeting|start_trail)'/, 'a tela tem nome de etapa de fato escrito à mão');
 });
 
 test('C10. a evidência de primeira reunião só mostra título e id do evento a quem pode ver a iniciativa (#785)', () => {
@@ -131,4 +131,18 @@ test('C11. emulação do #785 sobre o .sql: toda SECDEF que lê events/initiativ
     const gated = /rls_can_see_(initiative|board|item)|confidential/.test(body);
     if (secdef && reads && !writer && !revokedAuth) assert.ok(gated, `${name} seria acusada pelo #785`);
   }
+});
+
+test('C12. start_trail vira etapa de fato, e a leitura a vê pelo mesmo fato do lote (ponto de trilha)', () => {
+  const m = MIG.match(/UPDATE public\.onboarding_steps SET closed_by = 'fact' WHERE id = '([a-z_]+)';/);
+  assert.ok(m, 'UPDATE do catálogo ausente');
+  assert.equal(m[1], 'start_trail');
+  assert.ok(MIG.indexOf(m[0]) < MIG.indexOf('CREATE OR REPLACE FUNCTION public.get_onboarding_journey_admin'), 'o catálogo muda antes da leitura');
+  const b = cap('get_onboarding_journey_admin');
+  assert.match(b, /WHEN 'start_trail' THEN \([^;]*?FROM gamification_points gp\s+WHERE gp\.member_id = mem\.id AND gp\.category = 'trail'\s+HAVING count\(\*\) > 0\)/,
+    'sem a evidência, os concluídos pelo lote apareceriam como sem_evidencia');
+  const det = maskLineComments(latestFunctionCapture(ROOT, 'auto_detect_onboarding_completions').block);
+  assert.match(det, /SELECT DISTINCT gp\.member_id, 'start_trail', 'completed', now\(\)\s+FROM gamification_points gp WHERE gp\.category = 'trail'/,
+    'a evidência da tela é a mesma regra do lote que fecha a etapa');
+  assert.match(src('src/components/admin/OnboardingJourneyIsland.tsx'), /case 'trail': return `\$\{t\('comp\.onboardingJourney\.evTrail'/);
 });

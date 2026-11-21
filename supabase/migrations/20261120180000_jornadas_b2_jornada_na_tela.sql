@@ -22,8 +22,13 @@
 -- 2. admin_reopen_onboarding_step: a correção do GP. Reabre uma etapa fechada, com nota obrigatória, e guarda
 --    no metadata o que havia antes (reopen_history). Portão: manage_platform.
 --
+-- 3. start_trail passa a etapa de fato (decisão do GP, 21/11). O fato é o do lote auto_detect_onboarding_completions:
+--    existe linha em gamification_points com category 'trail'. A leitura acima usa a mesma regra como evidência.
+--
 -- Não toca fila, portão, radar nem nudge da filiação.
 -- Guard: tests/contracts/jornadas-fatia-b2-jornada-na-tela.test.mjs.
+
+UPDATE public.onboarding_steps SET closed_by = 'fact' WHERE id = 'start_trail';
 
 CREATE OR REPLACE FUNCTION public.get_onboarding_journey_admin(p_member_id uuid DEFAULT NULL)
  RETURNS jsonb
@@ -94,6 +99,13 @@ BEGIN
                WHERE (sa.id = op.application_id OR lower(sa.email) = lower(mem.email))
                  AND sa.vep_status_raw IN ('Active', 'Complete')
                ORDER BY sa.vep_last_seen_at DESC NULLS LAST LIMIT 1)
+             WHEN 'start_trail' THEN (
+               -- a mesma regra do lote auto_detect_onboarding_completions: existe ponto de trilha.
+               SELECT jsonb_build_object('kind', 'trail', 'courses', count(*),
+                                         'at', min(COALESCE(gp.occurred_at, gp.created_at)))
+               FROM gamification_points gp
+               WHERE gp.member_id = mem.id AND gp.category = 'trail'
+               HAVING count(*) > 0)
              WHEN 'first_meeting' THEN (
                -- o fato decide pela EXISTÊNCIA da presença, em qualquer evento; o título e o id só saem
                -- a quem pode ver a iniciativa do evento (ADR-0105, #785): evento de iniciativa
