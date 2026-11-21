@@ -232,6 +232,9 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
 1. **Master:** a gravação crua passa por desfoques (retângulo e janela de tempo), bipes, cortes e
    pausas encurtadas num grafo só. Sai em `-crf 14` com áudio PCM, para a segunda geração não perder.
    Confira a contagem de quadros contra o plano antes de seguir.
+   ⚠️ **Ponha o `enable` também no `boxblur`, não só no `overlay`.** Sem ele, o desfoque é calculado
+   em todo quadro: medido em 20/11/2026, o master saiu a 0,58x (2,6 h previstas) e, com o `enable`
+   no `boxblur`, a 7,2x (12 min).
 2. **Final:** o master é fatiado com `trim`/`atrim` nos pontos de inserção, e os cartões entram com
    `anullsrc` pelo filtro `concat`. Os rótulos entram com `setpts=PTS-STARTPTS+T/TB` e
    `overlay=0:0:eof_action=pass:enable='between(t,T,T+5)'`. O loudnorm roda sobre a faixa inteira.
@@ -240,6 +243,14 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
   abaixo de -40 dBFS), entre o convite de quem conduz e a primeira fala de quem apresenta. Nunca no
   carimbo do Gemini: ele marca o começo de um trecho da transcrição (75 s em média, até 122 s
   medidos em 05/11), e numa troca de bloco caiu mais de 30 s antes dela.
+- **Tela compartilhada: varra o trecho inteiro, quadro a quadro, antes de propor o desfoque.**
+  Olhar a prévia não basta. Em 20/11/2026, classificar cada quadro (é layout de tela compartilhada?
+  a faixa esquerda é slide uniforme ou barra de abas? o quadro bate com a referência de uma tela
+  sensível?) achou três coisas que a prévia não mostrava: o e-mail pessoal de quem apresentava num
+  menu de perfil aberto, a aba do Meet com a grade e o chat, e o gerenciador de arquivos com nomes de
+  arquivos. Leve ao GP os quadros já com o desfoque aplicado.
+- **Legenda não atravessa cartão.** Os cartões são mudos, e o whisperx estica palavra por cima
+  deles. Quebre o cue na borda de cada cartão ao ressegmentar, e mantenha o corte de cue como rede.
 - **O rótulo só entra com a pessoa em tela cheia.** Com tela compartilhada, ele cobriria o conteúdo.
   ⚠️ **O OCR a cada 2 s não basta para escolher a janela.** Em 05/11 ele deu tela cheia contínua a
   uma pessoa, e o orador ativo alternava com quem conduzia a cada 2 a 4 s: o primeiro render pôs o
@@ -329,8 +340,9 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
 - **Playlist** resolvida pelo SSOT `src/data/youtube-playlists.ts`, nunca id chumbado.
 - **Capa = miniatura (Liderança e Reunião Geral, decisão do GP de 13/11/2026, vale a partir da
   Liderança #17):** o vídeo abre com um cartão de capa de 3 a 5 s, e a MESMA imagem sobe como
-  miniatura. A capa leva série, número, data e um tema curto; sem nome de pessoa, sem mascote e
-  sem nada de trecho cortado. Gerador: `~/projects/_pmo/youtube/capa-reuniao/make_capa.py`
+  miniatura. A capa leva série, número, data e um tema curto; sem nome de pessoa escrito, sem
+  mascote e sem nada de trecho cortado. Na Reunião Geral, leva também o rosto dos protagonistas
+  (ver abaixo). Gerador: `~/projects/_pmo/youtube/capa-reuniao/make_capa.py`
   (HyperFrames, mesmos tokens dos cartões). Substitui o padrão antigo de frame automático para
   reunião não listada, e a Geral deixa de ter cartão e miniatura em peças diferentes.
   - O cartão entra como `card` no `keep.json`, e o remap desloca legenda, capítulos e ata. Nunca
@@ -348,6 +360,24 @@ tokens de `src/styles/theme.css` (gradiente do hero, navy, laranja, teal, Plus J
   `src/styles/theme.css`, a Plus Jakarta Sans e o símbolo negativo de `public/brand/`, e sem mascote.
   O modelo anterior, com o fundo roxo do comms-kit, a fonte Lato e o mascote, saiu de uso em
   06/11/2026 por decisão do GP: não combinava com os cartões nem com a comunicação atual.
+- **A capa da Reunião Geral mostra os protagonistas da noite** (decisão do GP, 20/11/2026: "O núcleo
+  é feito de pessoas e temos que valorizar pessoas"). Layout aprovado, chamado "Palco":
+  - título de uma linha, de 4 a 6 palavras, legível em 168x94;
+  - um retrato grande por apresentador, em retângulo arredondado (não círculo pequeno), tirado do
+    próprio vídeo e só de membro;
+  - a MESMA regra de recorte para todos: olhos a 42% da altura da forma e olho-queixo em 36%,
+    centrado no meio dos olhos, com o mesmo tratamento de cor. Marque olhos e queixo numa grade,
+    nunca a olho;
+  - uma etiqueta com o TEMA sob cada pessoa, sem nome escrito (a dupla do mesmo bloco divide a
+    etiqueta);
+  - o canto inferior direito livre, onde o YouTube põe a duração.
+  A primeira tentativa, com rostos pequenos em círculos recortados a olho, foi reprovada por escala
+  e centralização. Medida em 168x94, cada rosto tinha 8 px e a capa tinha 9 elementos.
+- **Toda capa passa por um revisor de marketing ANTES de ir ao GP.** É um subagente que não recebe
+  o raciocínio da lane: só a imagem, o HTML, os quadros-fonte e estas restrições. Ele reduz a capa
+  para 320x180 e 168x94, com o selo de duração simulado, e devolve a crítica e duas alternativas com
+  medidas. Quem só apresentou com tela compartilhada existe apenas no quadro lateral de 320x180 da
+  gravação: o rosto fica com uns 80 px e perde nitidez no cartão em tela cheia.
 
 ## Subir como não listado e virar público depois
 
