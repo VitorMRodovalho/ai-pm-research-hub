@@ -144,7 +144,9 @@ test('#2393n: o envio abre ao avaliador atribuído e tira o piloto do corte do c
 test('#2393n: a fila mostra ao avaliador só o que a regra única libera, sem nome e com prazo', () => {
   const c = captura('get_my_pending_evaluations');
   assert.match(c, /'applicant_name', 'Candidatura ' \|\| left\(sa\.id::text, 8\),/, 'a fila do piloto voltou a mostrar o nome');
-  assert.match(c, /WHERE a\.evaluator_member_id = v_caller_member_id AND a\.withdrawn_at IS NULL AND a\.part = 'objective' AND sa\.status <> ALL \(v_terminal\) AND public\._avaliador_do_piloto\(v_caller_member_id, sa\.id, a\.part\)/,
+  // #3120: vídeo e fit entram na fila quando a vaga tem rubrica da parte (o fit, depois da 1ª nota de vídeo); a regra
+  // única continua decidindo quem vê.
+  assert.match(c, /WHERE a\.evaluator_member_id = v_caller_member_id AND a\.withdrawn_at IS NULL AND \(a\.part = 'objective' OR \(a\.part IN \('video', 'fit'\) AND public\._rubrica_vigente_id\(sa\.id, a\.part\) IS NOT NULL AND \(a\.part <> 'fit' OR public\._fit_aberto\(sa\.id\)\)\)\) AND sa\.status <> ALL \(v_terminal\) AND public\._avaliador_do_piloto\(v_caller_member_id, sa\.id, a\.part\)/,
     'a fila do piloto deixou de passar pela regra única');
   assert.match(c, /IF v_piloto IS NULL THEN RAISE EXCEPTION 'Unauthorized: caller is not on this cycle committee' USING ERRCODE = 'insufficient_privilege'; END IF; RETURN jsonb_build_object\( 'cycle_code', v_cycle\.cycle_code, 'cycle_phase', v_cycle\.phase, 'pending', v_piloto,/,
     'fora do comitê, a fila deixou de mostrar só o piloto, ou deixou de recusar quem não tem atribuição');
