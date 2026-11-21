@@ -1819,6 +1819,7 @@ const ptBR: Record<string, string> = {
   'attendance.roster': 'Chamada',
   'attendance.hours': 'horas',
   'attendance.noEvents': 'Nenhum evento encontrado.',
+  'attendance.loadFailed': "Não conseguimos carregar os eventos agora. Recarregue a página em instantes.",
   'attendance.modal.cancel': 'Cancelar',
   'attendance.modal.close': 'Fechar',
   'attendance.modal.title': 'Título',
@@ -5805,6 +5806,8 @@ const ptBR: Record<string, string> = {
   // revogado, rejeitado, substituído) colapsa num único estado indistinguível.
   'verify.invalid': 'Este código não corresponde a um documento válido.',
   'verify.invalidHint': 'Verifique o código e tente novamente.',
+  'verify.unavailable': "Não foi possível verificar este código agora.",
+  'verify.unavailableHint': "Isso não diz nada sobre o documento. Tente de novo em instantes.",
   'verify.type': 'Tipo',
   'verify.issuedTo': 'Emitido para',
   'verify.issuedAt': 'Data',
@@ -6008,6 +6011,7 @@ const ptBR: Record<string, string> = {
   // Certificates page
   'certificates.title': 'Meus Certificados',
   'certificates.empty': 'Nenhum certificado encontrado.',
+  'certificates.loadFailed': "Não conseguimos carregar seus certificados agora. Recarregue a página em instantes.",
   'certificates.signTerm': 'Assinar Termo de Voluntariado',
   'certificates.verify': 'Verificar',
   'certificates.download': '📥 Baixar PDF',
