@@ -33801,6 +33801,10 @@ export type Database = {
         Returns: string[]
       }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
+      end_selection_evaluator: {
+        Args: { p_member_id: string; p_reason: string }
+        Returns: Json
+      }
       enqueue_curation_drive_grant_for_member: {
         Args: { p_item_id: string; p_member_id: string; p_reason?: string }
         Returns: undefined
@@ -35320,6 +35324,7 @@ export type Database = {
         Args: { p_alert_threshold?: number }
         Returns: Json
       }
+      get_selection_evaluators_admin: { Args: never; Returns: Json }
       get_selection_health: { Args: never; Returns: Json }
       get_selection_pipeline_metrics: {
         Args: { p_chapter?: string; p_cycle_id?: string }

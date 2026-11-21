@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import DiversityDashboard from '../../components/selection/DiversityDashboard';
+import SelectionEvaluatorsTab from '../../components/selection/SelectionEvaluatorsTab';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 
@@ -476,6 +477,8 @@ const SEL_I18N = {
         -->
         <button data-sel-tab="import" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
         <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabCommitteeRouting', lang)}</button>
+        <!-- #3119: avaliadores do piloto (vínculo, calibragem, atribuição, histórico) → só manage_platform -->
+        <button data-sel-tab="evaluators" data-sel-requires="manage_platform" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.evaluators.tab', lang)}</button>
         <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabDiversity', lang)}</button>
       </div>
 
@@ -786,6 +789,11 @@ const SEL_I18N = {
       </div>
 
       <!-- TAB: DIVERSITY (CR-040) -->
+      <!-- TAB: AVALIADORES (#3119). A ilha só hidrata quando a aba fica visível, e a leitura recusa quem não é gestão. -->
+      <div id="tab-evaluators" data-sel-requires="manage_platform" class="hidden space-y-4">
+        <SelectionEvaluatorsTab client:visible />
+      </div>
+
       <div id="tab-diversity" class="hidden space-y-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6">
           <div class="flex items-center justify-between mb-4">
@@ -1430,7 +1438,7 @@ const SEL_I18N = {
       btn.classList.toggle('border-transparent', !isActive);
       btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
     });
-    ['pipeline', 'import', 'committee', 'diversity'].forEach(t => {
+    ['pipeline', 'import', 'committee', 'evaluators', 'diversity'].forEach(t => {
       document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== name);
     });
   }
