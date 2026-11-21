@@ -7572,6 +7572,7 @@ const ptBR: Record<string, string> = {
   'pmi.onboarding.progressTitle': 'Etapas do processo',
   'pmi.onboarding.completedOn': 'Concluída em',
   'pmi.onboarding.markDone': 'Marcar como concluída',
+  'pmi.onboarding.closesByFact': 'Fecha sozinha quando a plataforma registrar o fato',
   'pmi.onboarding.evaluationPhase': 'Fase de avaliação',
   'pmi.onboarding.evaluationBody': 'Sua candidatura será revisada pelo Comitê de Seleção. Critérios e prazos do ciclo são públicos. Acompanhe esta página para atualizações; você receberá email quando houver decisão.',
   'pmi.onboarding.approvedTitle': 'Você foi aprovado(a)!',

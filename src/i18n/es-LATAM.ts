@@ -7564,6 +7564,7 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.progressTitle': 'Etapas del proceso',
   'pmi.onboarding.completedOn': 'Completada en',
   'pmi.onboarding.markDone': 'Marcar como concluida',
+  'pmi.onboarding.closesByFact': 'Se cierra sola cuando la plataforma registre el hecho',
   'pmi.onboarding.evaluationPhase': 'Fase de evaluación',
   'pmi.onboarding.evaluationBody': 'Su candidatura será revisada por el Comité de Selección. Criterios y plazos del ciclo son públicos. Siga esta página para actualizaciones; recibirá un email cuando haya decisión.',
   'pmi.onboarding.approvedTitle': '¡Ha sido aprobado(a)!',
