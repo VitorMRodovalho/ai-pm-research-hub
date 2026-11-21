@@ -90,6 +90,15 @@ const { code } = Astro.params;
     </div>`;
   }
 
+  // #3144: falha de transporte ou do servidor não é "documento inválido". O limite de taxa da #991
+  // chega como dado ({valid:false}), não como erro, então separar este caso não reabre o oráculo.
+  function renderUnavailable(lang: Lang): string {
+    return `<div class="bg-[var(--surface-hover)] border border-[var(--border-default)] rounded-xl p-6 text-center" data-verify-unavailable>
+        <p class="font-semibold text-[var(--text-primary)]">${t('verify.unavailable', lang)}</p>
+        <p class="text-sm text-[var(--text-muted)] mt-1">${t('verify.unavailableHint', lang)}</p>
+      </div>`;
+  }
+
   async function doVerify(code: string) {
     const lang = ((window as any).__verifyLang || 'pt-BR') as Lang;
     const loading = document.getElementById('verify-loading');
@@ -110,7 +119,7 @@ const { code } = Astro.params;
     if (!sb) {
       if (loading) loading.classList.add('hidden');
       result.classList.remove('hidden');
-      result.innerHTML = renderResult(null, lang);
+      result.innerHTML = renderUnavailable(lang);
       return;
     }
 
@@ -124,7 +133,7 @@ const { code } = Astro.params;
       console.error('Verify failed:', err);
       if (loading) loading.classList.add('hidden');
       result.classList.remove('hidden');
-      result.innerHTML = renderResult(null, lang);
+      result.innerHTML = renderUnavailable(lang);
     }
   }
 
