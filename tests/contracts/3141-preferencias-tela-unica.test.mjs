@@ -17,8 +17,18 @@ import { maskJsComments as mask } from '../helpers/guard-pin-staleness.mjs';
 
 const ROOT = process.cwd();
 const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
-// o cartão é HTML dentro de template: comentário HTML também some da tela
-const PROFILE = mask(read('src/pages/profile.astro')).replace(/<!--[\s\S]*?-->/g, '');
+// o cartão é HTML dentro de template: comentário HTML também some da tela. A remoção repete até
+// estabilizar, para um comentário montado por remoções anteriores também sair.
+function stripHtmlComments(src) {
+  let out = src;
+  let prev;
+  do {
+    prev = out;
+    out = out.replace(/<!--[\s\S]*?-->/g, '');
+  } while (out !== prev);
+  return out;
+}
+const PROFILE = stripHtmlComments(mask(read('src/pages/profile.astro')));
 const SETTINGS = mask(read('src/pages/settings/notifications.astro'));
 const NEW_TYPES = ['curation_status', 'attendance_detractor', 'cr_approved', 'certificate_issued'];
 
