@@ -95,7 +95,14 @@ BEGIN
                  AND sa.vep_status_raw IN ('Active', 'Complete')
                ORDER BY sa.vep_last_seen_at DESC NULLS LAST LIMIT 1)
              WHEN 'first_meeting' THEN (
-               SELECT jsonb_build_object('kind', 'attendance', 'event_id', e.id, 'title', e.title, 'at', e.date)
+               -- o fato decide pela EXISTÊNCIA da presença, em qualquer evento; o título e o id só saem
+               -- a quem pode ver a iniciativa do evento (ADR-0105, #785): evento de iniciativa
+               -- confidencial vira 'restricted' para a presidência ou o líder de linha.
+               SELECT jsonb_build_object('kind', 'attendance', 'at', e.date)
+                      || CASE WHEN public.rls_can_see_initiative(e.initiative_id)
+                              THEN jsonb_build_object('event_id', e.id, 'title', e.title)
+                              ELSE jsonb_build_object('restricted', true)
+                         END
                FROM attendance a JOIN events e ON e.id = a.event_id
                WHERE a.member_id = mem.id AND a.present
                ORDER BY e.date ASC NULLS LAST LIMIT 1)

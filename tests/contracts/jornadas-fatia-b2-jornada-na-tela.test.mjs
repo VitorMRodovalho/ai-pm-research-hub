@@ -21,6 +21,7 @@ const migFiles = readdirSync(MIG_DIR).filter((f) => /^\d{14}_jornadas_b2_jornada
 const MIG = migFiles.length === 1 ? maskLineComments(readFileSync(join(MIG_DIR, migFiles[0]), 'utf8')) : '';
 const cap = (n) => maskLineComments(latestFunctionCapture(ROOT, n).block);
 const src = (p) => maskJsComments(readFileSync(resolve(ROOT, p), 'utf8'));
+const RAW = migFiles.length === 1 ? readFileSync(join(MIG_DIR, migFiles[0]), 'utf8') : '';
 
 test('C0. a migration existe', () => {
   assert.equal(migFiles.length, 1, `esperava 1 migration, achei ${migFiles.length}`);
@@ -101,4 +102,33 @@ test('C8. a fonte é a do servidor: a tela não deriva fato nem copia a lista de
   const s = src('src/components/admin/OnboardingJourneyIsland.tsx');
   assert.match(s, /const isFact = useCallback\(\(id: string\) => stepById\.get\(id\)\?\.closed_by === 'fact'/);
   assert.doesNotMatch(s, /'(?:volunteer_term|vep_acceptance|meet_tribe|first_meeting)'/, 'a tela tem nome de etapa de fato escrito à mão');
+});
+
+test('C10. a evidência de primeira reunião só mostra título e id do evento a quem pode ver a iniciativa (#785)', () => {
+  const b = cap('get_onboarding_journey_admin');
+  const fm = b.slice(b.indexOf("WHEN 'first_meeting' THEN ("), b.indexOf("WHEN 'meet_tribe' THEN ("));
+  assert.match(fm, /SELECT jsonb_build_object\('kind', 'attendance', 'at', e\.date\)\s+\|\| CASE WHEN public\.rls_can_see_initiative\(e\.initiative_id\)\s+THEN jsonb_build_object\('event_id', e\.id, 'title', e\.title\)\s+ELSE jsonb_build_object\('restricted', true\)\s+END\s+FROM attendance a JOIN events e/,
+    'título e id do evento só dentro do portão de visibilidade');
+  assert.equal((fm.match(/e\.title/g) || []).length, 1, 'o título do evento aparece só no ramo do portão');
+  assert.equal((fm.match(/'event_id'/g) || []).length, 1, 'o id do evento aparece só no ramo do portão');
+  const mt = b.slice(b.indexOf("WHEN 'meet_tribe' THEN ("), b.indexOf('END AS evidence'));
+  assert.match(mt, /AND i\.legacy_tribe_id IS NOT NULL/, 'meet_tribe só lê evento de tribo: a confidencial tem legacy_tribe_id NULL');
+  const s = src('src/components/admin/OnboardingJourneyIsland.tsx');
+  assert.match(s, /\$\{e\.restricted \? t\('comp\.onboardingJourney\.evRestricted', 'evento restrito'\) : \(e\.title \|\| ''\)\}/,
+    'a tela diz que o evento é restrito em vez de deixar em branco');
+});
+
+test('C11. emulação do #785 sobre o .sql: toda SECDEF que lê events/initiatives e authenticated executa referencia o portão', () => {
+  // mesmo critério de _audit_secdef_initiative_reader_gates (mig 20260805000426), sobre o corpo cru (o prosrc leva comentário).
+  const fns = [...RAW.matchAll(/CREATE (?:OR REPLACE )?FUNCTION public\.(\w+)\(([^)]*)\)[\s\S]*?AS \$(\w*)\$([\s\S]*?)\$\3\$/g)];
+  assert.ok(fns.length >= 2, 'esperava as duas funções da migration');
+  for (const [hdr, name, , , body] of fns) {
+    const secdef = /SECURITY DEFINER/.test(hdr);
+    const reads = /(board_items|project_boards|board_members|board_lifecycle_events|board_item_|board_drive_links|meeting_action_items)/.test(body)
+      || /\bevents\b/.test(body) || /\binitiatives\b/.test(body);
+    const writer = /(INSERT |UPDATE |DELETE )/.test(body.toUpperCase());
+    const revokedAuth = new RegExp(`REVOKE[^;]*FUNCTION public\\.${name}\\([^;]*FROM[^;]*authenticated`).test(RAW);
+    const gated = /rls_can_see_(initiative|board|item)|confidential/.test(body);
+    if (secdef && reads && !writer && !revokedAuth) assert.ok(gated, `${name} seria acusada pelo #785`);
+  }
 });

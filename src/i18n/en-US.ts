@@ -7986,6 +7986,7 @@ const enUS: Record<string, string> = {
   'comp.onboardingJourney.evCertificate': 'Signed agreement',
   'comp.onboardingJourney.evVep': 'VEP',
   'comp.onboardingJourney.evAttendance': 'Attendance',
+  'comp.onboardingJourney.evRestricted': 'restricted event',
   'comp.onboardingJourney.noteRequired': 'Write the reason (at least 3 characters).',
   'comp.onboardingJourney.countPending': 'Pending',
   'comp.onboardingJourney.countNoEvidence': 'No evidence',

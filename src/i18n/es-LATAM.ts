@@ -7986,6 +7986,7 @@ const esLATAM: Record<string, string> = {
   'comp.onboardingJourney.evCertificate': 'Acuerdo firmado',
   'comp.onboardingJourney.evVep': 'VEP',
   'comp.onboardingJourney.evAttendance': 'Asistencia',
+  'comp.onboardingJourney.evRestricted': 'evento restringido',
   'comp.onboardingJourney.noteRequired': 'Escriba la justificación (mínimo 3 caracteres).',
   'comp.onboardingJourney.countPending': 'Pendientes',
   'comp.onboardingJourney.countNoEvidence': 'Sin evidencia',
