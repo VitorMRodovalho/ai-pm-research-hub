@@ -1,6 +1,6 @@
 # ADR-0135 - Esteira de comunicação entregue ao time voluntário: método num repositório privado, peça no Drive, estado no card do Hub
 
-**Status:** Proposta (20/11/2026). Os pesos dos critérios e as decisões da seção "Decidido" foram escolhidos pelo GP em 20/11/2026, em caixas de decisão. A ADR vira Aceita com o "aprovado" do GP sobre este texto.
+**Status:** Aceita (21/11/2026), com o "aprovado" do GP sobre este texto. Proposta em 20/11/2026. Os pesos dos critérios e as decisões da seção "Decidido" foram escolhidos pelo GP em 20/11/2026, em caixas de decisão.
 **Relacionadas:** ADR-0002 do portfólio (visibilidade de repositório), ADR-0010 (wiki narrativa, dado operacional em SQL), ADR-0026 (`manage_comms`), ADR-0007 (`can()`), ADR-0008 (palestrante externo), ADR-0107/0108/0124 (acesso a Drive pelo vínculo), ADR-0133, ADR-0134.
 
 ---
