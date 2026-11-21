@@ -1826,6 +1826,7 @@ const enUS: Record<string, string> = {
   'attendance.roster': 'Roll Call',
   'attendance.hours': 'hours',
   'attendance.noEvents': 'No events found.',
+  'attendance.loadFailed': "We couldn't load the events right now. Reload the page in a moment.",
   'attendance.modal.cancel': 'Cancel',
   'attendance.modal.close': 'Close',
   'attendance.modal.title': 'Title',
@@ -5809,6 +5810,8 @@ const enUS: Record<string, string> = {
   // revoked, rejected, superseded) collapses to a single indistinguishable state.
   'verify.invalid': 'This code does not match a valid document.',
   'verify.invalidHint': 'Please check the code and try again.',
+  'verify.unavailable': "We couldn't verify this code right now.",
+  'verify.unavailableHint': "This says nothing about the document. Try again in a moment.",
   'verify.type': 'Type',
   'verify.issuedTo': 'Issued to',
   'verify.issuedAt': 'Date',
@@ -6012,6 +6015,7 @@ const enUS: Record<string, string> = {
   // Certificates page
   'certificates.title': 'My Certificates',
   'certificates.empty': 'No certificates found.',
+  'certificates.loadFailed': "We couldn't load your certificates right now. Reload the page in a moment.",
   'certificates.signTerm': 'Sign Volunteer Agreement',
   'certificates.verify': 'Verify',
   'certificates.download': '📥 Download PDF',

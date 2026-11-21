@@ -1826,6 +1826,7 @@ const esLATAM: Record<string, string> = {
   'attendance.roster': 'Lista',
   'attendance.hours': 'horas',
   'attendance.noEvents': 'No se encontraron eventos.',
+  'attendance.loadFailed': "No pudimos cargar los eventos ahora. Recarga la página en unos instantes.",
   'attendance.modal.cancel': 'Cancelar',
   'attendance.modal.close': 'Cerrar',
   'attendance.modal.title': 'Título',
@@ -5810,6 +5811,8 @@ const esLATAM: Record<string, string> = {
   // revocado, rechazado, reemplazado) colapsa en un único estado indistinguible.
   'verify.invalid': 'Este código no corresponde a un documento válido.',
   'verify.invalidHint': 'Verifique el código e intente nuevamente.',
+  'verify.unavailable': "No fue posible verificar este código ahora.",
+  'verify.unavailableHint': "Esto no dice nada sobre el documento. Intenta de nuevo en unos instantes.",
   'verify.type': 'Tipo',
   'verify.issuedTo': 'Emitido para',
   'verify.issuedAt': 'Fecha',
@@ -6013,6 +6016,7 @@ const esLATAM: Record<string, string> = {
   // Certificates page
   'certificates.title': 'Mis Certificados',
   'certificates.empty': 'No se encontraron certificados.',
+  'certificates.loadFailed': "No pudimos cargar tus certificados ahora. Recarga la página en unos instantes.",
   'certificates.signTerm': 'Firmar Acuerdo de Voluntariado',
   'certificates.verify': 'Verificar',
   'certificates.download': '📥 Descargar PDF',
