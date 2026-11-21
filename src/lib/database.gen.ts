@@ -26146,6 +26146,7 @@ export type Database = {
           id: string
           notes: string | null
           organization_id: string
+          rubric_id: string | null
           scores: Json
           submitted_at: string | null
           weighted_subtotal: number | null
@@ -26159,6 +26160,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          rubric_id?: string | null
           scores?: Json
           submitted_at?: string | null
           weighted_subtotal?: number | null
@@ -26172,6 +26174,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          rubric_id?: string | null
           scores?: Json
           submitted_at?: string | null
           weighted_subtotal?: number | null
@@ -26273,6 +26276,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "selection_opening_rubrics"
             referencedColumns: ["id"]
           },
         ]
@@ -26770,6 +26780,117 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_opening_rubrics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          items: Json
+          opportunity_id: string
+          organization_id: string
+          part: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items: Json
+          opportunity_id: string
+          organization_id: string
+          part: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          opportunity_id?: string
+          organization_id?: string
+          part?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "vep_opportunities"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -31829,6 +31950,10 @@ export type Database = {
           occurrences: number
         }[]
       }
+      _criterios_da_rubrica: {
+        Args: { p_application_id: string; p_part: string }
+        Returns: Json
+      }
       _curation_assign_one: {
         Args: {
           p_assigned_by: string
@@ -31918,6 +32043,7 @@ export type Database = {
         Args: { p_filename: string }
         Returns: string
       }
+      _fit_aberto: { Args: { p_application_id: string }; Returns: boolean }
       _gate_threshold_met: {
         Args: { p_chain_id: string; p_gate: Json }
         Returns: boolean
@@ -32207,6 +32333,14 @@ export type Database = {
         Returns: undefined
       }
       _roster_seal_marker: { Args: never; Returns: string }
+      _rubrica_travada: {
+        Args: { p_opportunity_id: string; p_part: string }
+        Returns: boolean
+      }
+      _rubrica_vigente_id: {
+        Args: { p_application_id: string; p_part: string }
+        Returns: string
+      }
       _seal_event_attendance_apply: {
         Args: { p_actor_id: string; p_dry_run?: boolean; p_event_id: string }
         Returns: Json
@@ -37176,6 +37310,10 @@ export type Database = {
           p_tribe_id?: number
         }
         Returns: string
+      }
+      save_selection_rubric: {
+        Args: { p_items: Json; p_opportunity_id: string; p_part: string }
+        Returns: Json
       }
       schedule_comms_post: {
         Args: {
