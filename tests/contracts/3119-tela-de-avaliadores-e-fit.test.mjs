@@ -144,6 +144,8 @@ test('J. a ilha chama cada função por rpcChecked, relê depois de escrever e p
   assert.match(ISLAND, /const PARTS = \['objective', 'video', 'fit'\] as const;/);
 });
 
+const escRe = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 test('K. todo rótulo da ilha existe nos 3 idiomas', () => {
   const keys = new Set([...ISLAND.matchAll(/tr\('([A-Za-z.]+)', /g)].map((m) => m[1]));
   for (const p of ['objective', 'video', 'fit']) keys.add(`part.${p}`);
@@ -153,6 +155,6 @@ test('K. todo rótulo da ilha existe nos 3 idiomas', () => {
   assert.ok(keys.size > 60, `poucas chaves achadas (${keys.size}): o recorte quebrou`);
   for (const lang of ['pt-BR', 'en-US', 'es-LATAM']) {
     const d = readFileSync(resolve(ROOT, `src/i18n/${lang}.ts`), 'utf8');
-    for (const k of keys) assert.match(d, new RegExp(`'admin\\.selection\\.evaluators\\.${k.replace(/\./g, '\\.')}': '`), `${lang}: ${k}`);
+    for (const k of keys) assert.match(d, new RegExp(`'admin\\.selection\\.evaluators\\.${escRe(k)}': '`), `${lang}: ${k}`);
   }
 });
