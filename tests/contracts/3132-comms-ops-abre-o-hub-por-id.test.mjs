@@ -25,12 +25,32 @@ const PAGE = resolve(ROOT, 'src/pages/admin/comms-ops.astro');
 const WORKSPACE = resolve(ROOT, 'src/pages/workspace.astro');
 const UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
+/**
+ * Corta cada trecho de `open` até `close`, por varredura de índice, e repete até não sobrar `open`.
+ * Uma passada só deixaria um comentário montado por aninhamento (`<!<!---->-- ... -->`). Comentário
+ * sem fecho corta até o fim: o detector então não acha a tag e reprova, em vez de aprovar.
+ */
+function cutBetween(src, open, close) {
+  let text = src;
+  while (text.includes(open)) {
+    let out = '';
+    let i = 0;
+    for (;;) {
+      const a = text.indexOf(open, i);
+      if (a < 0) { out += text.slice(i); break; }
+      out += text.slice(i, a);
+      const b = text.indexOf(close, a + open.length);
+      if (b < 0) break;
+      i = b + close.length;
+    }
+    text = out;
+  }
+  return text;
+}
+
 /** Remove comentário HTML, de bloco e de linha inteira, sem tocar em `//` dentro de string. */
 function stripComments(src) {
-  return src
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/[^\n]*$/gm, '');
+  return cutBetween(cutBetween(src, '<!--', '-->'), '/*', '*/').replace(/^\s*\/\/[^\n]*$/gm, '');
 }
 
 /** O id que o `<BoardEngine>` da página recebe, ou um motivo de reprovação. */
@@ -83,4 +103,7 @@ test('controle: o detector reprova as formas que o bug tinha', () => {
   }
   const literal = `---\n---\n<BoardEngine client:load boardId="${id}" />`;
   assert.equal(boardIdOfCommsOps(literal).id, id, 'o detector recusou a forma certa com id literal');
+  // Comentário montado por aninhamento: uma passada só deixaria a tag antiga à vista e contaria 2 tags.
+  const aninhada = `${literal}\n<!<!---->-- <BoardEngine client:load domainKey="communication" /> -->`;
+  assert.equal(boardIdOfCommsOps(aninhada).id, id, 'o detector não removeu o comentário aninhado');
 });
