@@ -18675,6 +18675,7 @@ export type Database = {
       onboarding_steps: {
         Row: {
           applies_to_role: string[] | null
+          closed_by: string
           created_at: string | null
           description_en: string | null
           description_es: string | null
@@ -18689,6 +18690,7 @@ export type Database = {
         }
         Insert: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -18703,6 +18705,7 @@ export type Database = {
         }
         Update: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -32217,6 +32220,10 @@ export type Database = {
         Args: { p_created: boolean; p_door: string; p_partner_id: string }
         Returns: number
       }
+      _onboarding_journey_role: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
       _ots_list_pending: { Args: { p_limit?: number }; Returns: Json }
@@ -32574,6 +32581,10 @@ export type Database = {
         Args: { p_source: string; p_started_at: string }
         Returns: Json
       }
+      admin_complete_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
+        Returns: Json
+      }
       admin_create_member: {
         Args: {
           p_chapter_code?: string
@@ -32859,6 +32870,10 @@ export type Database = {
       }
       admin_remove_tribe_selection: {
         Args: { p_member_id: string }
+        Returns: Json
+      }
+      admin_reopen_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
         Returns: Json
       }
       admin_resolve_anomaly: {
@@ -35027,6 +35042,10 @@ export type Database = {
       get_onboarding_blocked_cohort: { Args: never; Returns: Json }
       get_onboarding_contacts: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
+      get_onboarding_journey_admin: {
+        Args: { p_member_id?: string }
+        Returns: Json
+      }
       get_onboarding_status: {
         Args: { p_application_id: string }
         Returns: Json

@@ -1,0 +1,49 @@
+---
+/**
+ * /admin/jornadas — jornada de onboarding para diretorias e gestão (jornadas, fatia B parte 2).
+ * Ver: manage_member. Corrigir (marcar pelo GP, reabrir): manage_platform. As RPCs são o limite real.
+ */
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import OnboardingJourneyIsland from '../../components/admin/OnboardingJourneyIsland';
+import { t, getLangFromURL, type Lang } from '../../i18n/utils';
+import { buildPageI18n } from '../../i18n/pageI18n';
+const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
+const i18nBundle = buildPageI18n(['comp.onboardingJourney', 'comp.common'], lang);
+---
+
+<AdminLayout
+  title={t('admin.breadcrumb.journeys', lang)}
+  breadcrumbs={[
+    { label: t('admin.breadcrumb.people', lang) },
+    { label: t('admin.breadcrumb.journeys', lang) },
+  ]}
+>
+  <script id="page-i18n" type="application/json" set:html={i18nBundle}></script>
+  <div id="jornadas-root" class="max-w-[1200px] mx-auto px-4 pb-12">
+    <OnboardingJourneyIsland client:load />
+  </div>
+  <span id="jornadas-denied-text" class="hidden">{t('admin.deniedAdmin', lang)}</span>
+</AdminLayout>
+
+<script>
+  // Portão de UX: quem decide é get_onboarding_journey_admin (manage_member). Mesma entrada do link na sidebar.
+  import { canEnterAdminRoute } from '../../lib/navigation.config';
+  import { adminLoadFailedText, adminSignInText, gateAdminPage } from '../../lib/member-ready';
+
+  function showJornadasNotice(text: string) {
+    const box = document.getElementById('jornadas-root');
+    if (!box) return;
+    const div = document.createElement('div');
+    div.className = 'text-center py-20 text-[var(--text-muted)]';
+    div.textContent = text;
+    box.replaceChildren(div);
+  }
+
+  gateAdminPage({
+    allow: (m) => canEnterAdminRoute('/admin/jornadas', m),
+    onAllowed: () => {},
+    onDenied: () => showJornadasNotice(document.getElementById('jornadas-denied-text')?.textContent?.trim() || ''),
+    onNoSession: () => showJornadasNotice(adminSignInText()),
+    onLoadFailed: () => showJornadasNotice(adminLoadFailedText()),
+  });
+</script>

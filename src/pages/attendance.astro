@@ -187,6 +187,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 <script is:inline define:vars={{ __ATTENDANCE_I18N: JSON.stringify({
   loading: t('attendance.loading', lang),
   noEvents: t('attendance.noEvents', lang),
+  loadFailed: t('attendance.loadFailed', lang),
   hours: t('attendance.hours', lang),
   dateLocale: t('attendance.dateLocale', lang),
   roleManager: t('attendance.role.manager', lang),
@@ -306,6 +307,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   const I18N = (window as any).__ATTENDANCE_I18N || {
     loading: 'Carregando...',
     noEvents: 'Nenhum evento encontrado.',
+    loadFailed: 'Não conseguimos carregar os eventos agora. Recarregue a página em instantes.',
     hours: 'horas',
     dateLocale: 'pt-BR',
     roleManager: 'Gerente de Projeto',
@@ -1082,13 +1084,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
     try {
-      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 500, p_offset: 0 });
+      // #3144: o supabase-js não lança em erro de RPC; sem isto, a falha virava "Nenhum evento encontrado"
+      const { data, error } = await sb.rpc('get_events_with_attendance', { p_limit: 500, p_offset: 0 });
+      if (error) throw error;
       ALL_EVENTS = data || [];
       renderEvents();
     } catch (e) {
       console.warn('Attendance: failed to load events:', e);
-      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load events. Please try again later.</div>`;
-      toast('Failed to load events.', 'error');
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm" data-events-load-failed>${I18N.loadFailed}</div>`;
+      toast(I18N.loadFailed, 'error');
     }
   }
 
