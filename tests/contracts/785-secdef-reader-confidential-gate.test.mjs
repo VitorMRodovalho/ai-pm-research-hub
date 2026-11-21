@@ -58,6 +58,8 @@ const ALLOWLIST = {
   exec_cycle_report: 'manage_platform OR view_chapter_dashboards; all reads tribe-scoped via legacy_tribe_id (confidential NULL → safe)',
   exec_tribe_dashboard: 'manage_platform OR view_chapter_dashboards; tribe/initiative-scoped (research_tribe; confidential NULL → safe)',
   platform_activity_summary: 'gp-only (manage_platform gate — sees confidential anyway)',
+  // #3119: aba Avaliadores de /admin/selection. Le initiatives so para o titulo da iniciativa da vaga piloto.
+  get_selection_evaluators_admin: 'gp-only (manage_platform gate, sees confidential anyway); initiatives read only for the pilot opening title',
   detect_operational_alerts: 'system/cron aggregate, manage_platform-gated + tribe-scoped',
   check_code_schema_drift: 'dev helper, no member data',
   // #2292 — contadores de auditoria do ledger de presenca. Le `events` so para RESOLVER o
