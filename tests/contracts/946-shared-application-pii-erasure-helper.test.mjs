@@ -41,6 +41,8 @@ const sql = existsSync(MIGRATION) ? readFileSync(MIGRATION, 'utf8') : '';
 // #905 (10/10/2026): o anonimizador de pré-membro foi redefinido depois desta migration (trava R3). O que
 // se afirma sobre ele é a definição VIGENTE, não o texto fixado aqui (#1932).
 const premember = maskLineComments(latestFunctionCapture(join(__dirname, '../..'), 'anonymize_premember_applications').body);
+// #3112 (20/11/2026): o anonimizador de membro também foi redefinido depois desta migration (limpa persons). Mesma regra.
+const inactive = maskLineComments(latestFunctionCapture(join(__dirname, '../..'), 'anonymize_inactive_members').body);
 
 // ─────────────────────────────────────────────────────────────────────────
 // (A) Static migration-file guard — always runs
@@ -73,13 +75,12 @@ test('#946 helper is locked down (REVOKE PUBLIC/anon/authenticated, keep service
 
 test('#946 BOTH anonymizers are (re)defined and call the shared helper', () => {
   assert.ok(sql);
-  assert.ok(
-    sql.includes('CREATE OR REPLACE FUNCTION public.anonymize_inactive_members('),
-    'member anonymizer must be redefined',
+  // the CURRENT member anonymizer erases each application through the shared helper
+  assert.match(
+    inactive,
+    /v_child := public\._erase_application_pii\(v_app_id\);/,
+    'member anonymizer must erase each application through _erase_application_pii',
   );
-  // the member path invokes the helper here (definition + >= 1 call site in this migration)
-  const calls = (sql.match(/public\._erase_application_pii\(/g) || []).length;
-  assert.ok(calls >= 2, `expected the helper definition + the member call site, found ${calls} occurrences of public._erase_application_pii(`);
   // the CURRENT pre-member anonymizer erases through the shared helper, only outside the dry run
   assert.match(
     premember,
