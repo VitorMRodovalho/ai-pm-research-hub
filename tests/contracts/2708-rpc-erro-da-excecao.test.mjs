@@ -25,8 +25,6 @@ const EXCECOES = [];
 
 // Melhor-esforço por desenho: nenhuma tela afirma sucesso sobre estas chamadas.
 const MELHOR_ESFORCO = {
-  'src/components/nav/Nav.astro|try_auto_link_ghost#1': 'só usa o resultado se vier; sem vínculo a pessoa segue como visitante',
-  'src/components/nav/Nav.astro|try_auto_link_ghost#2': 'idem, no caminho do evento de sessão',
   'src/layouts/BaseLayout.astro|record_member_activity#1': 'telemetria de página, disparada sem esperar',
   'src/pages/blog/[slug].astro|increment_blog_view#1': 'contador de visualização',
   'src/pages/help.astro|dismiss_onboarding#1': 'o aviso de boas-vindas some na hora; se a gravação falhar, ele volta na próxima visita',

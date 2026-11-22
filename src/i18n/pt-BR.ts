@@ -4748,6 +4748,11 @@ const ptBR: Record<string, string> = {
   'guest.applyCta': 'Como participar',
   'guest.claimCta': 'Já fui aprovado(a): vincular conta',
   'guest.navNotFound': 'Conta não cadastrada',
+  'nav.memberFailed': 'Sua conta não carregou',
+  'nav.memberFailedReload': 'Recarregar',
+  'memberFailed.title': 'Não conseguimos carregar sua conta agora',
+  'memberFailed.body': 'Você entrou, mas a leitura do seu cadastro falhou. Costuma passar em instantes: recarregue a página.',
+  'memberFailed.reload': 'Recarregar',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──
   'claim.cta': 'Próximos passos',

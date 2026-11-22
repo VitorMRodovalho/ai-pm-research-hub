@@ -19,6 +19,7 @@ import CredlyNudge from '../components/onboarding/CredlyNudge';
 import GeneralGroupCard from '../components/onboarding/GeneralGroupCard';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -116,6 +117,7 @@ const WK = {
       </button>
     </div>
     <GuestNoMember lang={lang} id="wk-guest" />
+    <MemberLoadFailed lang={lang} id="wk-failed" />
 
     <!-- Loading -->
     <div id="wk-loading" class="space-y-6">
@@ -371,11 +373,16 @@ const WK = {
       // sem cadastro, o bloco da #3086: pedir login a quem já entrou não resolve. O Nav dispara nav:member com
       // null também para a sessão sem cadastro, então o membro nulo sozinho não diz qual dos dois é.
       const $guest = document.getElementById('wk-guest');
+      const $failed = document.getElementById('wk-failed');
       function showNoMember() {
         $loading?.classList.add('hidden');
-        const noMember = readMemberResolution(window as any)?.kind === 'no-member';
+        const kind = readMemberResolution(window as any)?.kind;
+        const noMember = kind === 'no-member';
+        // #3106 N1: a leitura do membro falhou; nem o bloco de sem cadastro nem o pedido de login.
+        const failed = kind === 'member-failed';
         $guest?.classList.toggle('hidden', !noMember);
-        $authGate?.classList.toggle('hidden', noMember);
+        $failed?.classList.toggle('hidden', !failed);
+        $authGate?.classList.toggle('hidden', noMember || failed);
       }
 
       // Entrar pelo modal nesta tela dispara nav:member de novo, e a tela carrega sem recarregar a página.
@@ -401,6 +408,7 @@ const WK = {
         // Re-run data loading when member becomes available later
         $authGate?.classList.add('hidden');
         $guest?.classList.add('hidden');
+        $failed?.classList.add('hidden');
         $loading?.classList.remove('hidden');
         await loadWorkspaceData();
       }

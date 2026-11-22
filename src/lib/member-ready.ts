@@ -14,13 +14,15 @@
 export type MemberResolution =
   | { kind: 'member'; member: any; capabilitiesFailed: boolean }
   | { kind: 'no-member' }
-  | { kind: 'no-session' };
+  | { kind: 'no-session' }
+  /** #3106 N1: há sessão e a leitura do membro falhou. Não se sabe se há cadastro: nem 'no-member' nem login. */
+  | { kind: 'member-failed' };
 
 export interface NavWindow {
   addEventListener: (type: string, fn: () => void) => void;
   removeEventListener: (type: string, fn: () => void) => void;
   navGetMember?: () => any;
-  navAuthState?: () => 'pending' | 'no-session' | 'resolved';
+  navAuthState?: () => 'pending' | 'no-session' | 'resolved' | 'member-failed';
   navCapabilitiesFailed?: () => boolean;
 }
 
@@ -30,11 +32,12 @@ export function readMemberResolution(win: NavWindow): MemberResolution | null {
   if (member) return { kind: 'member', member, capabilitiesFailed: win.navCapabilitiesFailed?.() === true };
   const state = win.navAuthState?.();
   if (state === 'no-session') return { kind: 'no-session' };
+  if (state === 'member-failed') return { kind: 'member-failed' };
   if (state === 'resolved') return { kind: 'no-member' };
   return null;
 }
 
-/** Chama cb com o estado atual, se já resolvido, e de novo a cada nav:member ou nav:no-session. */
+/** Chama cb com o estado atual, se já resolvido, e de novo a cada nav:member, nav:no-session ou nav:member-failed. */
 export function onMemberResolved(cb: (r: MemberResolution) => void, win?: NavWindow): () => void {
   const w: NavWindow | null = win ?? (typeof window === 'undefined' ? null : (window as unknown as NavWindow));
   if (!w) return () => {};
@@ -44,10 +47,12 @@ export function onMemberResolved(cb: (r: MemberResolution) => void, win?: NavWin
   };
   w.addEventListener('nav:member', check);
   w.addEventListener('nav:no-session', check);
+  w.addEventListener('nav:member-failed', check);
   check();
   return () => {
     w.removeEventListener('nav:member', check);
     w.removeEventListener('nav:no-session', check);
+    w.removeEventListener('nav:member-failed', check);
   };
 }
 
@@ -93,6 +98,11 @@ export function gateAdminPage(gate: AdminGate, win?: NavWindow): () => void {
     if (done) return;
     if (r.kind === 'no-session') {
       gate.onNoSession();
+      return;
+    }
+    // #3106 N1: a leitura do membro falhou, então a recusa seria falsa. Sem onLoadFailed, onDenied, como antes.
+    if (r.kind === 'member-failed') {
+      (gate.onLoadFailed ?? gate.onDenied)();
       return;
     }
     const member = r.kind === 'member' ? r.member : null;

@@ -35,7 +35,7 @@ test('workspace.astro waits for the Nav resolution through member-ready (no own 
 
 test('workspace.astro tells no-session from session-without-member', () => {
   const content = readFile('src/pages/workspace.astro');
-  assert.match(content, /readMemberResolution\(window as any\)\?\.kind === 'no-member'/, 'Must read the Nav state to pick login vs guest block');
+  assert.match(content, /const kind = readMemberResolution\(window as any\)\?\.kind;\s+const noMember = kind === 'no-member';/, 'Must read the Nav state to pick login vs guest block');
 });
 
 test('workspace.astro auth pattern matches attendance.astro pattern', () => {

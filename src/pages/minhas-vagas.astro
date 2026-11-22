@@ -13,6 +13,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const STATUS_KEYS = ['submitted', 'screening', 'objective_eval', 'interview_pending', 'interview_scheduled',
@@ -90,6 +91,7 @@ const MV_I18N = {
     </div>
 
     <GuestNoMember lang={lang} id="mv-guest" />
+    <MemberLoadFailed lang={lang} id="mv-failed" />
 
     <section id="mv-list" class="hidden">
       <div id="mv-filter" class="hidden mb-4 text-sm text-[var(--text-secondary)]"></div>
@@ -120,8 +122,8 @@ const MV_I18N = {
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
   const urlSegura = (s: unknown) => (/^https?:\/\//i.test(String(s ?? '')) ? String(s) : '');
 
-  function showOnly(which: 'loading' | 'notice' | 'guest' | 'list' | 'detail') {
-    ['mv-loading', 'mv-notice', 'mv-guest', 'mv-list', 'mv-detail'].forEach((id) => {
+  function showOnly(which: 'loading' | 'notice' | 'guest' | 'failed' | 'list' | 'detail') {
+    ['mv-loading', 'mv-notice', 'mv-guest', 'mv-failed', 'mv-list', 'mv-detail'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `mv-${which}`);
     });
   }
@@ -317,6 +319,7 @@ const MV_I18N = {
     const r = await waitMemberResolved();
     if (r.kind === 'no-session') { showNotice(I.loginRequired); return; }
     if (r.kind === 'no-member') { showOnly('guest'); return; }
+    if (r.kind === 'member-failed') { showOnly('failed'); return; }
     sb = (window as any).navGetSb?.();
     // Voltar só reexibe a lista já carregada: pedir de novo gravaria outro registro por candidatura.
     $('mv-back')?.addEventListener('click', () => { showOnly('list'); });
