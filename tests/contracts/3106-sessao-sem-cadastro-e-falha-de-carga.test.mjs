@@ -54,9 +54,9 @@ const PAGES = [
   ['src/pages/minhas-vagas.astro', 'mv-guest',
     /const r = await waitMemberResolved\(\);\s+if \(r\.kind === 'no-session'\) \{ showNotice\(I\.loginRequired\); return; \}\s+if \(r\.kind === 'no-member'\) \{ showOnly\('guest'\); return; \}/],
   ['src/pages/minha-pontuacao.astro', 'mp-guest',
-    /const r = await waitMemberResolved\(\);[\s\S]{0,120}?if \(r\.kind === 'member' && isRegisteredMember\(r\.member\)\) \{ MEMBER = r\.member; start\(\); return; \}\s+show\('mp-loading', false\);\s+show\(r\.kind === 'no-session' \? 'mp-gate' : 'mp-guest', true\);/],
+    /const r = await waitMemberResolved\(\);[\s\S]{0,120}?if \(r\.kind === 'member' && isRegisteredMember\(r\.member\)\) \{ MEMBER = r\.member; start\(\); return; \}\s+show\('mp-loading', false\);\s+show\(r\.kind === 'no-session' \? 'mp-gate' : r\.kind === 'member-failed' \? 'mp-failed' : 'mp-guest', true\);/],
   ['src/pages/workspace.astro', 'wk-guest',
-    /const noMember = readMemberResolution\(window as any\)\?\.kind === 'no-member';\s+\$guest\?\.classList\.toggle\('hidden', !noMember\);\s+\$authGate\?\.classList\.toggle\('hidden', noMember\);/],
+    /const kind = readMemberResolution\(window as any\)\?\.kind;\s+const noMember = kind === 'no-member';[\s\S]{0,200}?\$guest\?\.classList\.toggle\('hidden', !noMember\);[\s\S]{0,80}?\$authGate\?\.classList\.toggle\('hidden', noMember \|\| failed\);/],
 ];
 
 for (const [file, id, branch] of PAGES) {

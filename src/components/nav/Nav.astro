@@ -113,6 +113,8 @@ const jsI18n = JSON.stringify({
   volunteerAgreement: t('nav.volunteer', lang),
   user: t('nav.user', lang),
   guestNotFound: t('guest.navNotFound', lang),
+  memberFailed: t('nav.memberFailed', lang),
+  memberFailedReload: t('nav.memberFailedReload', lang),
   claimCta: t('claim.cta', lang),
   drawerMeuEspaco: t('nav.drawerSection.meuEspaco', lang),
   drawerMinhaTribo: t('nav.drawerSection.minhaTribo', lang),
@@ -318,7 +320,8 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
   // #2973: em que pé está a leitura da sessão. 'pending' até o getSession voltar; 'no-session' sem sessão (ou
   // depois do logout); 'resolved' quando o membro foi buscado, tenha vindo cadastro ou não. As telas decidem
   // acesso por aqui e pelo nav:member, em vez de contar tentativas.
-  let _authState: 'pending' | 'no-session' | 'resolved' = 'pending';
+  // #3106 N1: 'member-failed' quando a leitura do membro falhou. Não é 'resolved': não se sabe se há cadastro.
+  let _authState: 'pending' | 'no-session' | 'resolved' | 'member-failed' = 'pending';
   // #2974 (E1): get_caller_capabilities falhou na última leitura. Sem esta marca, "não carregou" e "não tem a
   // capacidade" são o mesmo null, e canFor() devolve falso nos dois casos.
   let _capFailed = false;
@@ -767,6 +770,20 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
       </div>`;
   }
 
+  // #3106 N1: a leitura do membro falhou. A pessoa entrou, então não é "Conta não cadastrada" nem "Entrar".
+  function renderMemberFailed() {
+    const el = document.getElementById('nav-auth');
+    if (!el) return;
+    el.innerHTML = `
+      <div class="flex items-center gap-2" data-nav-member-failed>
+        <span class="text-amber-400 text-[.73rem] font-semibold hidden sm:inline">${i18n.memberFailed || 'Could not load your account'}</span>
+        <button data-action="reload"
+          class="px-2.5 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-[.7rem] font-semibold hover:bg-white/20 transition-all cursor-pointer">
+          ${i18n.memberFailedReload || 'Reload'}
+        </button>
+      </div>`;
+  }
+
   // ── Notification badge polling ──
   let notifInterval: ReturnType<typeof setInterval> | null = null;
   async function updateNotifBadge() {
@@ -1046,6 +1063,9 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     if (action === 'logout') {
       (window as any).doLogout?.();
     }
+    if (action === 'reload') {
+      window.location.reload();
+    }
     if (action === 'toggle-theme') {
       toggleTheme();
     }
@@ -1210,6 +1230,48 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
   }
 
+  /**
+   * Lê o membro da sessão e anuncia o resultado. #3106 N1: se a leitura FALHAR, a pessoa não é tratada como
+   * visitante. Antes, o erro de get_member_by_auth virava "sem dado", e o header dizia "Conta não cadastrada" a um
+   * membro real, com as telas mostrando o caminho de quem nunca se candidatou. Agora o estado é 'member-failed':
+   * o header pede para recarregar, e nav:member e nav:guest-with-session não disparam.
+   */
+  async function resolveSessionMember() {
+    // Fire member + capabilities in parallel — both are bootstrap-time reads
+    // and independent, so single round-trip latency.
+    const [memberRes] = await Promise.all([
+      sb.rpc('get_member_by_auth'),
+      loadCapabilities(),
+    ]);
+    let failed = !!memberRes.error;
+    let data = failed ? null : memberRes.data;
+    // Ghost auto-resolution: if no member found, try linking by email
+    if (!failed && !data) {
+      const autoLink = await sb.rpc('try_auto_link_ghost');
+      if (autoLink.error) {
+        failed = true;
+      } else if (autoLink.data) {
+        data = autoLink.data;
+        // The link may have created authoritative engagements — refresh capabilities.
+        await loadCapabilities();
+      }
+    }
+    if (failed) {
+      _member = null;
+      _authState = 'member-failed';
+      renderMemberFailed();
+      window.dispatchEvent(new CustomEvent('nav:member-failed'));
+      return;
+    }
+    _member = data;
+    _authState = 'resolved';
+    renderAuth();
+    window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
+    if (!isRegisteredMember(_member)) {
+      window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
+    }
+  }
+
   async function bootNav() {
     const { data: { session } } = await sb.auth.getSession();
     syncAuthCookie(session);
@@ -1219,54 +1281,14 @@ const NAV_PUBLIC_SUPABASE_ANON_KEY = (import.meta.env.PUBLIC_SUPABASE_ANON_KEY |
     }
     if (session) {
       _user = session.user;
-      // Fire member + capabilities in parallel — both are bootstrap-time reads
-      // and independent, so single round-trip latency.
-      const [memberRes] = await Promise.all([
-        sb.rpc('get_member_by_auth'),
-        loadCapabilities(),
-      ]);
-      let data = memberRes.data;
-      // Ghost auto-resolution: if no member found, try linking by email
-      if (!data) {
-        const autoLink = await sb.rpc('try_auto_link_ghost');
-        if (autoLink.data) {
-          data = autoLink.data;
-          // The link may have created authoritative engagements — refresh capabilities.
-          await loadCapabilities();
-        }
-      }
-      _member = data;
-      _authState = 'resolved';
-      renderAuth();
-      window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
-      if (!isRegisteredMember(_member)) {
-        window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
-      }
+      await resolveSessionMember();
     }
     sb.auth.onAuthStateChange(async (event, session) => {
       syncAuthCookie(session);
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
         _user = session?.user ?? null;
         if (_user && !_member) {
-          const [memberRes] = await Promise.all([
-            sb.rpc('get_member_by_auth'),
-            loadCapabilities(),
-          ]);
-          let data = memberRes.data;
-          if (!data) {
-            const autoLink = await sb.rpc('try_auto_link_ghost');
-            if (autoLink.data) {
-              data = autoLink.data;
-              await loadCapabilities();
-            }
-          }
-          _member = data;
-          _authState = 'resolved';
-          renderAuth();
-          window.dispatchEvent(new CustomEvent('nav:member', { detail: _member }));
-          if (!isRegisteredMember(_member)) {
-            window.dispatchEvent(new CustomEvent('nav:guest-with-session', { detail: { user: _user } }));
-          }
+          await resolveSessionMember();
         }
       }
       if (event === 'SIGNED_OUT') {

@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../i18n/utils';
 import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
@@ -9,7 +10,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <main class="max-w-[720px] mx-auto px-4 py-8" id="va-app">
     <div class="text-center py-12 text-[var(--text-muted)]" id="va-loading">...</div>
   </main>
-  <div class="max-w-[720px] mx-auto px-4 pb-8"><GuestNoMember lang={lang} id="va-guest" /></div>
+  <div class="max-w-[720px] mx-auto px-4 pb-8"><GuestNoMember lang={lang} id="va-guest" /><MemberLoadFailed lang={lang} id="va-failed" /></div>
 </BaseLayout>
 
 <script is:inline define:vars={{ lang }}>
@@ -303,6 +304,12 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (resolution.kind === 'no-member') {
       app.innerHTML = '';
       document.getElementById('va-guest')?.classList.remove('hidden');
+      return;
+    }
+    // #3106 N1: a leitura do membro falhou. Não é sessão sem cadastro nem falta de login.
+    if (resolution.kind === 'member-failed') {
+      app.innerHTML = '';
+      document.getElementById('va-failed')?.classList.remove('hidden');
       return;
     }
     if (!member) {

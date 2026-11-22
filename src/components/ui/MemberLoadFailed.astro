@@ -1,0 +1,21 @@
+---
+/**
+ * Bloco para quem ENTROU e cuja leitura do cadastro FALHOU (#3106 N1). Não é "sem cadastro" (GuestNoMember) nem
+ * "faça login": a pessoa pode ser membro, e o Nav não conseguiu ler. Nasce escondido; a página mostra quando o Nav
+ * resolve com kind 'member-failed'. Recarregar volta à mesma página.
+ */
+import { t, type Lang } from '../../i18n/utils';
+
+interface Props { lang: Lang; id: string }
+const { lang, id } = Astro.props;
+---
+<div id={id} class="hidden" data-member-load-failed>
+  <div class="bg-[var(--surface-card)] rounded-2xl border border-[var(--border-default)] p-8 text-center">
+    <h2 class="text-lg font-bold text-navy mb-2">{t('memberFailed.title', lang)}</h2>
+    <p class="text-[var(--text-secondary)] text-sm mb-4">{t('memberFailed.body', lang)}</p>
+    <a id={`${id}-reload`} href={Astro.url.pathname + Astro.url.search}
+       class="inline-block px-5 py-2.5 bg-navy text-white rounded-xl font-semibold text-sm no-underline hover:opacity-90 transition-all">
+      {t('memberFailed.reload', lang)}
+    </a>
+  </div>
+</div>

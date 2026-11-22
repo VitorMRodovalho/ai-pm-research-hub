@@ -4741,6 +4741,11 @@ const enUS: Record<string, string> = {
   'guest.applyCta': 'How to take part',
   'guest.claimCta': 'Already approved: link account',
   'guest.navNotFound': 'Account not registered',
+  'nav.memberFailed': 'Your account did not load',
+  'nav.memberFailedReload': 'Reload',
+  'memberFailed.title': 'We could not load your account right now',
+  'memberFailed.body': 'You are signed in, but reading your record failed. It usually clears up in a moment: reload the page.',
+  'memberFailed.reload': 'Reload',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──
   'claim.cta': 'Next steps',

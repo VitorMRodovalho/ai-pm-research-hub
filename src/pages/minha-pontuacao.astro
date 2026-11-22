@@ -9,6 +9,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 
@@ -77,6 +78,7 @@ const MP_I18N = {
       </div>
     </div>
     <GuestNoMember lang={lang} id="mp-guest" />
+    <MemberLoadFailed lang={lang} id="mp-failed" />
 
     <!-- Loading -->
     <div id="mp-loading" class="bg-[var(--surface-card)] rounded-xl border border-[var(--border-default)] p-8 text-center">
@@ -479,7 +481,8 @@ const MP_I18N = {
     sb = (window as any).navGetSb?.();
     if (r.kind === 'member' && isRegisteredMember(r.member)) { MEMBER = r.member; start(); return; }
     show('mp-loading', false);
-    show(r.kind === 'no-session' ? 'mp-gate' : 'mp-guest', true);
+    // #3106 N1: leitura do membro que falhou não é sessão sem cadastro.
+    show(r.kind === 'no-session' ? 'mp-gate' : r.kind === 'member-failed' ? 'mp-failed' : 'mp-guest', true);
   }
   boot();
 </script>

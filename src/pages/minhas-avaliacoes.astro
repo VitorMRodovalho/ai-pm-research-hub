@@ -13,6 +13,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
 import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const ME_I18N = {
@@ -81,6 +82,7 @@ const ME_I18N = {
     </div>
 
     <GuestNoMember lang={lang} id="me-guest" />
+    <MemberLoadFailed lang={lang} id="me-failed" />
 
     <!-- Lista de pendências -->
     <section id="me-list" class="hidden">
@@ -139,8 +141,8 @@ const ME_I18N = {
     (window as any).toast?.(msg, type);
   }
 
-  function showOnly(which: 'loading' | 'denied' | 'guest' | 'list' | 'form') {
-    ['me-loading', 'me-denied', 'me-guest', 'me-list', 'me-form'].forEach((id) => {
+  function showOnly(which: 'loading' | 'denied' | 'guest' | 'failed' | 'list' | 'form') {
+    ['me-loading', 'me-denied', 'me-guest', 'me-failed', 'me-list', 'me-form'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `me-${which}`);
     });
   }
@@ -421,6 +423,7 @@ const ME_I18N = {
     const r = await waitMemberResolved();
     if (r.kind === 'no-session') { showDenied(I.loginRequired); return; }
     if (r.kind === 'no-member') { showOnly('guest'); return; }
+    if (r.kind === 'member-failed') { showOnly('failed'); return; }
     sb = (window as any).navGetSb?.();
     $('me-back')?.addEventListener('click', () => { loadPending(); });
     loadPending();

@@ -4741,6 +4741,11 @@ const esLATAM: Record<string, string> = {
   'guest.applyCta': 'Cómo participar',
   'guest.claimCta': 'Ya fui aprobado(a): vincular cuenta',
   'guest.navNotFound': 'Cuenta no registrada',
+  'nav.memberFailed': 'Tu cuenta no cargó',
+  'nav.memberFailedReload': 'Recargar',
+  'memberFailed.title': 'No pudimos cargar tu cuenta ahora',
+  'memberFailed.body': 'Iniciaste sesión, pero falló la lectura de tu registro. Suele resolverse en un momento: recarga la página.',
+  'memberFailed.reload': 'Recargar',
 
   // ── WS-B: self-service account claim (login email ≠ VEP email) ──
   'claim.cta': 'Próximos pasos',
