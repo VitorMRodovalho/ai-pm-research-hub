@@ -72,3 +72,30 @@ offboarding scan, grant side) plus a **GP-triggered provisioner** for the folder
 Same gate as #209: schedule the reconcile cron ONLY after the EF is deployed and the SA-role prerequisite
 is confirmed (a `dry_run` reconcile returns a plan without granting). The weekly alert cron is pure SQL and
 safe to schedule immediately.
+
+---
+
+## Emenda 1: o acesso termina com o vínculo com a iniciativa (#3147, 22/11/2026)
+
+**Decisões do GP (21 e 22/11/2026):** revogar ao fim do vínculo com a iniciativa, com aviso e controle pela tela;
+7 dias entre o aviso e a revogação, e em iniciativa confidencial o acesso sai no primeiro ciclo; quem tem
+`manage_platform` não entra na fila (vê a confidencial pela ADR-0105); a primeira lista passa pelo GP antes de a
+revogação automática ligar.
+
+1. **A concessão ganha o estado `revoked`** (#3135), com `revoked_at`, `revoked_by` e `revoked_via`
+   (`membership_queue` ou `offboarding_audit`). O índice de concessão viva não muda: uma linha revogada sai dele, e o
+   reconcile pode conceder de novo quando a pessoa volta.
+2. **A fila é uma tabela própria**, `drive_membership_revocations`, e não linhas em `drive_offboarding_audit`. Ali a
+   invariante AL afirma que nenhuma linha aberta aponta para membro ativo, e esta fila é justamente de membro ativo.
+3. **Quem fica com acesso é o predicado do roster** (`get_initiative_drive_roster`), num helper só
+   (`_drive_grant_keeps_access`), usado para entrar na fila, para aprovar e para cancelar.
+4. **O executor é o da ADR-0107**, sem mudança na EF: `get_drive_revocation_row` e `mark_drive_revocation_done` acham
+   também o item novo pelo id, e o cron `revoke-drive-drain-hourly` drena as duas filas.
+5. **O ciclo** (`enqueue_membership_drive_revocations`, de hora em hora) também alinha o ledger com a trilha de
+   desligamento. O id da permissão do Drive se repete quando o acesso volta, então a revogação só fecha a concessão se
+   veio depois do último envio dela.
+6. **A chave** `site_config.drive_membership_revoke_enabled` nasce desligada: a fila se forma e aparece na tela, sem
+   aviso nem revogação automática. A gestão aprova à mão o que precisa sair antes.
+7. **A tela** fica em `/admin/members/drive-teardown`, abaixo da fila de desligamento, e mostra também o que está
+   aberto nela. A gestão segura, solta, desfaz (mantém o acesso daquela concessão), aprova já, e pede revogação
+   avulsa de qualquer concessão viva.

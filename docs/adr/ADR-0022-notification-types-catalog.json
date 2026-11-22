@@ -222,6 +222,10 @@
       "delivery_mode": "transactional_immediate",
       "rationale": "#2454 (2026-09-24) — a concessao de acesso ao Drive do Nucleo falhou por motivo que nao e do destinatario (provavel falta do papel de organizador da conta de servico na pasta, ADR-0094). Vai a quem tem manage_platform, uma vez por falha, porque e acao do administrador do Google Workspace."
     },
+    "drive_access_revocation_scheduled": {
+      "delivery_mode": "transactional_immediate",
+      "rationale": "#3147 (2026-11-22): o vinculo da pessoa com a iniciativa terminou e o acesso de edicao a pasta dela no Drive vai sair: em 7 dias, ou no proprio ciclo em iniciativa confidencial (decisoes do GP de 21 e 22/11/2026). Emitido por enqueue_membership_drive_revocations, uma vez por item da fila, so com a chave drive_membership_revoke_enabled ligada; quem tem manage_platform nao entra na fila. Imediato: a pessoa tem o prazo para avisar que continua na iniciativa."
+    },
     "leader_review_requested": {
       "delivery_mode": "transactional_immediate",
       "rationale": "#2444 (2026-09-24) — o card concluiu o peer review e aguarda a revisao do lider (Manual 4.2 etapa 6). Emitido por notify_leader_on_review a cada lider ativo da iniciativa do quadro (engagements role=leader), com link para o quadro; quem fez o peer review nao se avisa. Imediato porque caia no ELSE (digest_weekly) e nunca gerou uma linha: 16 cards ficaram parados desde maio."
