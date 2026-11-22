@@ -39,7 +39,9 @@ const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
 const maskHtmlComments = (s) => s.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
 const INVITE_RE = /chat\.whatsapp\.com\/[A-Za-z0-9]{10,}/;
 
-const PRE = maskJsComments(read('src/components/onboarding/PreOnboardingChecklist.tsx'));
+// Jornadas fatia D: o PreOnboardingChecklist saiu com a pré-jornada. Quem pede o grupo de onboarding agora é o
+// bloco de entrada na tribo (#2888), e a afirmação E passou para ele.
+const TRIBE_REQ = maskJsComments(read('src/components/tribe/TribeRequestBlock.tsx'));
 const TERM = maskHtmlComments(maskJsComments(read('src/pages/volunteer-agreement.astro')));
 const CARD = maskJsComments(read('src/components/onboarding/GeneralGroupCard.tsx'));
 const WORKSPACE = maskHtmlComments(read('src/pages/workspace.astro'));
@@ -110,10 +112,10 @@ test('H: nenhum convite de grupo do WhatsApp em arquivo versionado', () => {
   assert.deepEqual(achados, [], 'convite de grupo versionado: o convite mora no banco');
 });
 
-test('E: o pré-onboarding pede o grupo de onboarding à RPC e só mostra o bloco com link', () => {
-  assert.match(PRE, /sb\.rpc\('get_community_group_link', \{ p_group: 'onboarding' \}\)/);
-  assert.match(PRE, /if \(groupRes\.data\?\.success && groupRes\.data\.whatsapp_url\) \{\s+setGroupUrl\(groupRes\.data\.whatsapp_url\);/);
-  assert.match(PRE, /\{groupUrl && \(\s+<div[^>]*>[\s\S]*?href=\{groupUrl\}/, 'o bloco e o link dependem do retorno da RPC');
+test('E: o bloco de entrada na tribo pede o grupo de onboarding à RPC e só mostra o link com convite', () => {
+  assert.match(TRIBE_REQ, /sb\.rpc\('get_community_group_link', \{ p_group: 'onboarding' \}\)/);
+  assert.match(TRIBE_REQ, /const groupUrl = groupRes\?\.data\?\.success && typeof groupRes\.data\.whatsapp_url === 'string' \? groupRes\.data\.whatsapp_url : null;/);
+  assert.match(TRIBE_REQ, /\{groupUrl && \(\s+<[^>]*>[\s\S]*?href=\{groupUrl\}/, 'o bloco e o link dependem do retorno da RPC');
 });
 
 test('F: a tela do termo e o card do workspace pedem o grupo geral à RPC', () => {

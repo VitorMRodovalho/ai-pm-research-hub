@@ -58,7 +58,8 @@ test('C2. a etapa de perfil fecha só pelo fato', () => {
 test('C3. a checagem da aprovação usa a regra única, só em etapa aberta e onde a etapa vale', () => {
   const b = cap('check_pre_onboarding_auto_steps');
   assert.match(b, /v_profile_complete := public\._member_profile_ready\(p_member_id\);/);
-  const blk = b.slice(b.indexOf("op.step_key = 'complete_profile'"), b.indexOf("step_key = 'setup_credly'"));
+  // Jornadas fatia D: os ramos depois do perfil saíram, então o bloco vai até o RETURN.
+  const blk = b.slice(b.indexOf("op.step_key = 'complete_profile'"), b.lastIndexOf('RETURN json_build_object('));
   assert.match(blk, /op\.step_key = 'complete_profile' AND op\.status IN \('pending', 'overdue'\)\s+AND v_profile_complete\s+AND EXISTS \(SELECT 1 FROM onboarding_steps s\s+WHERE s\.id = 'complete_profile'\s+AND public\.onboarding_step_applies\(s\.applies_to_role, public\._onboarding_journey_role\(p_member_id\)\)\);/);
   assert.doesNotMatch(b, /v_profile_complete := v_member\./, 'a regra antiga de 7 campos voltou');
 });

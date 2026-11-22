@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-11-14T19:36:58.631Z",
+  "generated_at": "2026-11-22T01:15:30.274Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 394,
+  "total": 393,
   "runtime_status": "skipped (--runtime not passed)",
   "by_domain": {
     "personal": 23,
     "events": 19,
     "gamification": 17,
-    "board": 80,
+    "board": 79,
     "tribe": 124,
     "comms": 19,
     "knowledge": 13,
@@ -3325,19 +3325,6 @@
       "external_fetch_count": 0,
       "uses_service_role": false,
       "return_shape_hint": "{ action: \"withdraw_from_initiative\", preview: true, target: { initiative: initRes.data ||"
-    },
-    {
-      "name": "get_pre_onboarding_leaderboard",
-      "description": "Returns the leaderboard of pre-members (candidates in onboarding) ranked by step completion + XP earned during selection. Useful for cycle organizers tracking candidate engagement before formal selection.",
-      "domain": "board",
-      "rpcs": [
-        "get_pre_onboarding_leaderboard"
-      ],
-      "tables": [],
-      "canV4_actions": [],
-      "external_fetch_count": 0,
-      "uses_service_role": false,
-      "return_shape_hint": "data"
     },
     {
       "name": "get_tribe_gamification",
