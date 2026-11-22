@@ -7669,6 +7669,9 @@ const esLATAM: Record<string, string> = {
   'pmi.onboarding.meta.description': 'Complete su onboarding de candidatura voluntaria PMI',
   'pmi.onboarding.error.expiredTitle': 'Enlace expirado o inválido',
   'pmi.onboarding.error.expiredBody': 'El enlace de onboarding ya no es válido. Contáctenos si cree que es un error.',
+  'tokenLink.loadFailedTitle': 'No pudimos abrir tu enlace ahora',
+  'tokenLink.loadFailedBody': 'Tu enlace puede seguir siendo válido: la falla fue nuestra al cargar la página. Intenta de nuevo en unos instantes y, si continúa, contáctanos.',
+  'tokenLink.retry': 'Intentar de nuevo',
   // p135 Ω-B: Interview Booking page (was inline-dict)
   'interview.booking.meta.title': 'Agenda tu entrevista — Núcleo IA & GP',
   'interview.booking.meta.description': 'Elige un horario para tu entrevista de selección',

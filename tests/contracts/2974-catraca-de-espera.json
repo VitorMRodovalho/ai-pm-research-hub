@@ -35,7 +35,10 @@
     "src/pages/profile/verify-secondary.astro",
     "src/pages/workspace.astro"
    ],
-   "corrigidas": []
+   "corrigidas": [
+    "src/pages/minhas-avaliacoes.astro",
+    "src/pages/minhas-vagas.astro"
+   ]
   },
   "sem_limite_membro": {
    "base": [
@@ -155,6 +158,7 @@
     "src/pages/admin/comms.astro",
     "src/pages/admin/initiatives.astro",
     "src/pages/admin/webinars.astro",
+    "src/pages/minha-pontuacao.astro",
     "src/pages/stakeholder.astro"
    ]
   },
@@ -220,7 +224,10 @@
     "src/pages/admin/knowledge.astro",
     "src/pages/admin/report.astro",
     "src/pages/admin/tags.astro",
-    "src/pages/admin/vep-reconciliation.astro"
+    "src/pages/admin/vep-reconciliation.astro",
+    "src/pages/minhas-avaliacoes.astro",
+    "src/pages/minhas-vagas.astro",
+    "src/pages/volunteer-agreement.astro"
    ]
   },
   "ilha_sem_membro": {

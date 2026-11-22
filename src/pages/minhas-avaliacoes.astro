@@ -12,6 +12,7 @@
 // (que exige view_internal_analytics), nem expõe import, decisão ou diversidade.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const ME_I18N = {
@@ -79,6 +80,8 @@ const ME_I18N = {
       <p class="font-semibold text-amber-800" id="me-denied-msg">{ME_I18N.notCommittee}</p>
     </div>
 
+    <GuestNoMember lang={lang} id="me-guest" />
+
     <!-- Lista de pendências -->
     <section id="me-list" class="hidden">
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-5">
@@ -116,10 +119,10 @@ const ME_I18N = {
   window.__MY_EVALS_I18N = typeof ME_I18N !== 'undefined' ? ME_I18N : {};
 </script>
 <script>
+  import { waitMemberResolved } from '../lib/member-ready';
   const I: Record<string, any> = (typeof window !== 'undefined' && (window as any).__MY_EVALS_I18N) || {};
 
   let sb: any = null;
-  let bootRetries = 0;
 
   const $ = (id: string) => document.getElementById(id);
   const esc = (s: unknown) =>
@@ -136,8 +139,8 @@ const ME_I18N = {
     (window as any).toast?.(msg, type);
   }
 
-  function showOnly(which: 'loading' | 'denied' | 'list' | 'form') {
-    ['me-loading', 'me-denied', 'me-list', 'me-form'].forEach((id) => {
+  function showOnly(which: 'loading' | 'denied' | 'guest' | 'list' | 'form') {
+    ['me-loading', 'me-denied', 'me-guest', 'me-list', 'me-form'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `me-${which}`);
     });
   }
@@ -412,15 +415,13 @@ const ME_I18N = {
   }
 
   /* ── boot ────────────────────────────────────────── */
-  function boot() {
+  // #3106: decide pelo estado do Nav, sem prazo. Antes, 4 s sem membro viravam "login necessário",
+  // inclusive para quem já tinha entrado ou para o membro cujo Nav demorou.
+  async function boot() {
+    const r = await waitMemberResolved();
+    if (r.kind === 'no-session') { showDenied(I.loginRequired); return; }
+    if (r.kind === 'no-member') { showOnly('guest'); return; }
     sb = (window as any).navGetSb?.();
-    const member = (window as any).navGetMember?.();
-    if (!sb || !member) {
-      bootRetries += 1;
-      if (bootRetries >= 20) { showDenied(I.loginRequired); return; }
-      setTimeout(boot, 200);
-      return;
-    }
     $('me-back')?.addEventListener('click', () => { loadPending(); });
     loadPending();
   }

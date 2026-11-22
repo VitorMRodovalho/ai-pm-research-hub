@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
@@ -8,6 +9,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   <main class="max-w-[720px] mx-auto px-4 py-8" id="va-app">
     <div class="text-center py-12 text-[var(--text-muted)]" id="va-loading">...</div>
   </main>
+  <div class="max-w-[720px] mx-auto px-4 pb-8"><GuestNoMember lang={lang} id="va-guest" /></div>
 </BaseLayout>
 
 <script is:inline define:vars={{ lang }}>
@@ -21,6 +23,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   const lp: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
   import { getSupabase } from '../lib/supabase';
   import { t } from '../i18n/utils';
+  import { waitMemberResolved } from '../lib/member-ready';
   import type { Lang } from '../i18n/utils';
   import { phoneVisibleNotice } from '../lib/whatsapp-group-notice';
 
@@ -293,22 +296,14 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     if (!sb) { try { sb = getSupabase(); } catch {} }
     if (!sb) { app.innerHTML = `<p class="text-center py-12 text-[var(--text-muted)]">${t('volunteer.error', lang)}</p>`; return; }
 
-    // Get member — retry loop in case navGetMember loads async
-    let member = (window as any).navGetMember?.();
-    if (!member) {
-      // Wait up to 5s for navGetMember to return data, then fallback to RPC
-      const deadline = Date.now() + 5000;
-      while (!member && Date.now() < deadline) {
-        await new Promise(r => setTimeout(r, 250));
-        member = (window as any).navGetMember?.();
-      }
-      // Last-resort: call get_member_by_auth directly
-      if (!member) {
-        try {
-          const { data: m } = await sb.rpc('get_member_by_auth');
-          if (m) member = m;
-        } catch {}
-      }
+    // #3106: quem decide é o estado do Nav, sem prazo de tentativas. Antes, 5 s sem membro viravam
+    // "Login necessário" com botão Entrar, inclusive para quem já tinha entrado.
+    const resolution = await waitMemberResolved();
+    const member = resolution.kind === 'member' ? resolution.member : null;
+    if (resolution.kind === 'no-member') {
+      app.innerHTML = '';
+      document.getElementById('va-guest')?.classList.remove('hidden');
+      return;
     }
     if (!member) {
       app.innerHTML = `<div class="text-center py-12"><p class="text-[var(--text-muted)]">${esc(t('volunteer.loginRequired', lang))}</p><button class="mt-3 px-4 py-2 bg-navy text-white rounded-lg border-0 cursor-pointer text-sm font-semibold" onclick="document.dispatchEvent(new CustomEvent('open-auth'))">${esc(t('volunteer.loginButton', lang))}</button></div>`;

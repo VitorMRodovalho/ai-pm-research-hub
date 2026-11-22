@@ -7669,6 +7669,9 @@ const enUS: Record<string, string> = {
   'pmi.onboarding.meta.description': 'Complete your PMI volunteer application onboarding',
   'pmi.onboarding.error.expiredTitle': 'Link expired or invalid',
   'pmi.onboarding.error.expiredBody': 'The onboarding link is no longer valid. Please contact our team if you believe this is an error.',
+  'tokenLink.loadFailedTitle': 'We could not open your link right now',
+  'tokenLink.loadFailedBody': 'Your link may still be valid: the failure was ours while loading the page. Please try again in a few moments and, if it keeps happening, get in touch.',
+  'tokenLink.retry': 'Try again',
   // p135 Ω-B: Interview Booking page (was inline-dict)
   'interview.booking.meta.title': 'Schedule your interview — Núcleo IA & GP',
   'interview.booking.meta.description': 'Pick a time slot for your selection interview',

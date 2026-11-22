@@ -18,6 +18,7 @@ import EntryChapterNudge from '../components/onboarding/EntryChapterNudge';
 import CredlyNudge from '../components/onboarding/CredlyNudge';
 import GeneralGroupCard from '../components/onboarding/GeneralGroupCard';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -114,6 +115,7 @@ const WK = {
         {WK.authBtn}
       </button>
     </div>
+    <GuestNoMember lang={lang} id="wk-guest" />
 
     <!-- Loading -->
     <div id="wk-loading" class="space-y-6">
@@ -285,6 +287,7 @@ const WK = {
     // truthy object or role. Pre-onboarding guests ARE registered (have id) and
     // must reach /workspace; the genuine no-member case yields null → auth gate.
     import { isRegisteredMember } from '../lib/routing';
+    import { readMemberResolution, waitMemberResolved } from '../lib/member-ready';
     // p123 i18n nav: prefix preserves /en /es when navigating between sections
     const LP: string = (typeof window !== 'undefined' && (window as any).__LANG_PREFIX) || '';
     // ── Workspace Cockpit — client-side orchestration ──
@@ -364,35 +367,32 @@ const WK = {
       let member: any = null;
       let _wsLoaded = false;
 
-      // Listen for future nav:member events
+      // #3106: sem membro, o que aparece depende do estado do Nav. Sem sessão, o pedido de login. Com sessão e
+      // sem cadastro, o bloco da #3086: pedir login a quem já entrou não resolve. O Nav dispara nav:member com
+      // null também para a sessão sem cadastro, então o membro nulo sozinho não diz qual dos dois é.
+      const $guest = document.getElementById('wk-guest');
+      function showNoMember() {
+        $loading?.classList.add('hidden');
+        const noMember = readMemberResolution(window as any)?.kind === 'no-member';
+        $guest?.classList.toggle('hidden', !noMember);
+        $authGate?.classList.toggle('hidden', noMember);
+      }
+
+      // Entrar pelo modal nesta tela dispara nav:member de novo, e a tela carrega sem recarregar a página.
       window.addEventListener('nav:member', ((e: CustomEvent) => {
         if (isRegisteredMember(e.detail)) {
           member = e.detail;
           onMemberReady();
         } else {
-          $loading?.classList.add('hidden');
-          $authGate?.classList.remove('hidden');
+          showNoMember();
         }
       }) as EventListener);
 
-      // 1) Check if nav already has a member loaded
-      const m = (window as any).navGetMember?.();
-      if (isRegisteredMember(m)) {
-        member = m;
-      } else {
-        // 2) Nav might not be ready yet — check session directly
-        const { data: { session } } = await sb.auth.getSession();
-        if (session) {
-          const { data } = await sb.rpc('get_member_by_auth');
-          if (data) {
-            member = data;
-          }
-        }
-      }
+      const resolved = await waitMemberResolved();
+      if (resolved.kind === 'member' && isRegisteredMember(resolved.member)) member = resolved.member;
 
       if (!isRegisteredMember(member)) {
-        $loading?.classList.add('hidden');
-        $authGate?.classList.remove('hidden');
+        showNoMember();
         return;
       }
 
@@ -400,6 +400,7 @@ const WK = {
         if (_wsLoaded) return;
         // Re-run data loading when member becomes available later
         $authGate?.classList.add('hidden');
+        $guest?.classList.add('hidden');
         $loading?.classList.remove('hidden');
         await loadWorkspaceData();
       }
