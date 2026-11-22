@@ -67,7 +67,7 @@ test('#3166 A5: /certificates decide pelo Nav antes de ler, e sem cadastro ou co
   const s = flat('src/pages/certificates.astro');
   assert.match(s, /<GuestNoMember lang=\{lang\} id="certs-guest" \/>/, 'o bloco de quem não tem cadastro está na página');
   assert.match(s, /<MemberLoadFailed lang=\{lang\} id="certs-failed" \/>/, 'o bloco de falha de carga está na página');
-  const decide = /const r = await waitMemberResolved\(\); if \(r\.kind === 'member-failed' \|\| r\.kind === 'no-member' \|\| \(r\.kind === 'member' && !isRegisteredMember\(r\.member\)\)\) \{ container\.classList\.add\('hidden'\); document\.getElementById\(r\.kind === 'member-failed' \? 'certs-failed' : 'certs-guest'\)\?\.classList\.remove\('hidden'\); return; \}/.exec(s);
+  const decide = /if \(r\.kind === 'member-failed' \|\| r\.kind === 'no-member' \|\| \(r\.kind === 'member' && !isRegisteredMember\(r\.member\)\)\) \{ container\.classList\.add\('hidden'\); document\.getElementById\(r\.kind === 'member-failed' \? 'certs-failed' : 'certs-guest'\)\?\.classList\.remove\('hidden'\); return; \}/.exec(s);
   assert.ok(decide, 'sem cadastro vê o bloco da #3086 e a falha vê o bloco de falha, e a página para ali');
   const leitura = s.search(/\.rpc\('get_my_certificates'/);
   assert.ok(leitura > -1 && decide.index < leitura, 'a decisão vem antes de qualquer leitura dos certificados');

@@ -6019,6 +6019,7 @@ const ptBR: Record<string, string> = {
   // Certificates page
   'certificates.title': 'Meus Certificados',
   'certificates.empty': 'Nenhum certificado encontrado.',
+  'certificates.loginRequired': 'Entre para ver seus certificados.',
   'certificates.loadFailed': "Não conseguimos carregar seus certificados agora. Recarregue a página em instantes.",
   'certificates.signTerm': 'Assinar Termo de Voluntariado',
   'certificates.verify': 'Verificar',
