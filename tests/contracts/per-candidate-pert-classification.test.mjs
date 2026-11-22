@@ -89,10 +89,11 @@ describe('p245 #229a per-candidate PERT classification', () => {
       );
     });
 
-    it('leader_score TD calls leaderExtraChip(r.leader_extra_pert_score, leader_extra_cutoff)', () => {
+    // #3118: o chip da régua líder só aparece em candidatura à trilha de líder (antes saía em toda linha).
+    it('leader_score TD calls leaderExtraChip(r.leader_extra_pert_score, leader_extra_cutoff), only for leader applications', () => {
       assert.match(
         SELECTION_PAGE,
-        /\$\{leaderExtraChip\(r\.leader_extra_pert_score, \(currentCycle as any\)\?\.leader_extra_cutoff\)\}/,
+        /\$\{r\.role_applied === 'leader' \? leaderExtraChip\(r\.leader_extra_pert_score, \(currentCycle as any\)\?\.leader_extra_cutoff\) : ''\}/,
         'leader_score TD must wire leader_extra_pert_score against leader_extra_cutoff (NOT pert_cutoff)'
       );
     });

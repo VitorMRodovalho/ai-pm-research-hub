@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-11-03T22:01:23.470Z",
+  "generated_at": "2026-11-22T01:15:30.241Z",
   "source": "supabase/functions/nucleo-mcp/index.ts",
-  "total": 394,
+  "total": 393,
   "by_domain": {
     "personal": 23,
     "tribe": 130,
-    "board": 80,
+    "board": 79,
     "events": 19,
     "governance": 26,
     "comms": 19,
@@ -17,7 +17,7 @@
     "health": 22
   },
   "by_permission": {
-    "read": 275,
+    "read": 274,
     "write": 108,
     "admin": 11
   },
@@ -1307,13 +1307,6 @@
     {
       "name": "get_portfolio_timeline",
       "description": "Timeline view of portfolio items by month. Returns aggregated counts (planned/in_progress/done) grouped by due_date month. Used for executive trend analysis. Gated by internal RPC auth.",
-      "domain": "board",
-      "permission": "read",
-      "is_sensitive": false
-    },
-    {
-      "name": "get_pre_onboarding_leaderboard",
-      "description": "Returns the leaderboard of pre-members (candidates in onboarding) ranked by step completion + XP earned during selection. Useful for cycle organizers tracking candidate engagement before formal selection.",
       "domain": "board",
       "permission": "read",
       "is_sensitive": false

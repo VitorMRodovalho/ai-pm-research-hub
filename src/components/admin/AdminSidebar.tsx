@@ -6,7 +6,7 @@ import {
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   ChevronLeft, ChevronRight, X,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
+  Library, SearchCheck, Route, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 } from 'lucide-react';
 import { ADMIN_SIDEBAR_SECTIONS as SECTIONS, isAdminSidebarItemVisible } from '../../lib/navigation.config';
 
@@ -17,7 +17,7 @@ const ICONS: Record<string, React.FC<{ size?: number }>> = {
   BarChart3, Briefcase, FileText, Building, FileBarChart, GitCompare,
   Mail, Leaf, Rocket, Settings, Shield, Handshake, HelpCircle,
   MonitorPlay, ClipboardList,
-  Library, SearchCheck, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
+  Library, SearchCheck, Route, Tag, FileCheck, Trophy, HardDrive, Shapes, SlidersHorizontal, CalendarDays, ArrowLeftRight, HeartPulse, CalendarClock,
 };
 
 /* ────────────────────────── Props ────────────────────────────── */

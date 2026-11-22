@@ -50,6 +50,17 @@ const ME_I18N = {
   fieldAreas: t('myEvals.field.areas', lang),
   fieldLinkedin: t('myEvals.field.linkedin', lang),
   scoreRequired: t('myEvals.scoreRequired', lang),
+  // #3120: piloto da linha, por parte (objetiva, vídeo, fit), com a rubrica da vaga em 3 níveis
+  partObjective: t('myEvals.part.objective', lang),
+  partVideo: t('myEvals.part.video', lang),
+  partFit: t('myEvals.part.fit', lang),
+  levelWeak: t('myEvals.level.weak', lang),
+  levelMedium: t('myEvals.level.medium', lang),
+  levelStrong: t('myEvals.level.strong', lang),
+  minLevelHint: t('myEvals.minLevelHint', lang),
+  justificationRequired: t('myEvals.justificationRequired', lang),
+  pickLevel: t('myEvals.pickLevel', lang),
+  rubricVersion: t('myEvals.rubricVersion', lang),
   locale: lang === 'es-LATAM' ? 'es' : lang,
 };
 ---
@@ -137,6 +148,13 @@ const ME_I18N = {
     showOnly('denied');
   }
 
+  // #3120: a parte da avaliação. A fila geral não manda `part` e é sempre a objetiva.
+  function partLabel(part: string) {
+    if (part === 'video') return I.partVideo || 'Vídeo';
+    if (part === 'fit') return I.partFit || 'Fit';
+    return I.partObjective || 'Objetiva';
+  }
+
   function roleLabel(role: string) {
     if (role === 'researcher') return I.roleResearcher || 'Pesquisador';
     if (role === 'leader') return I.roleLeader || 'Líder';
@@ -184,19 +202,20 @@ const ME_I18N = {
             <p class="font-semibold text-navy">${esc(p.applicant_name)}</p>
             <p class="text-xs text-[var(--text-muted)] mt-0.5">
               ${esc(roleLabel(p.role_applied))}
+              ${p.part ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-semibold" data-part="${esc(p.part)}">${esc(partLabel(p.part))}</span>` : ''}
               ${p.has_my_evaluation_in_progress
                 ? `<span class="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${esc(I.draftBadge)}</span>`
                 : ''}
             </p>
           </div>
-          <button type="button" data-eval-app="${esc(p.application_id)}"
+          <button type="button" data-eval-app="${esc(p.application_id)}" data-eval-part="${esc(p.part || 'objective')}"
             class="px-4 py-2 rounded-xl bg-navy text-white text-sm font-semibold hover:opacity-90">
             ${esc(I.evaluateBtn)}
           </button>
         </div>`).join('');
 
       host.querySelectorAll<HTMLButtonElement>('button[data-eval-app]').forEach((btn) => {
-        btn.addEventListener('click', () => openForm(btn.dataset.evalApp as string));
+        btn.addEventListener('click', () => openForm(btn.dataset.evalApp as string, btn.dataset.evalPart || 'objective'));
       });
     }
 
@@ -204,11 +223,11 @@ const ME_I18N = {
   }
 
   /* ── formulário ──────────────────────────────────── */
-  async function openForm(applicationId: string) {
+  async function openForm(applicationId: string, part: string = 'objective') {
     showOnly('loading');
     const { data, error } = await sb.rpc('get_evaluation_form', {
       p_application_id: applicationId,
-      p_evaluation_type: 'objective',
+      p_evaluation_type: part,
     });
     if (error) {
       showDenied(`${I.errorLoad} ${error.message}`);
@@ -254,12 +273,14 @@ const ME_I18N = {
 
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5">
         <h3 class="text-sm font-bold uppercase tracking-wide text-[var(--text-secondary)] mb-4">
-          ${esc(I.criteriaHeading)}</h3>
+          ${esc(I.criteriaHeading)} &middot; ${esc(partLabel(part))}${data?.rubric_version ? ` &middot; ${esc(I.rubricVersion || 'rubrica v')}${esc(data.rubric_version)}` : ''}</h3>
         ${locked
           ? `<div class="mb-4 px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold">
                ${esc(I.locked)}</div>`
           : ''}
         ${criteria.map((c) => {
+          // #3120: item de rubrica (vídeo ou fit) = 3 níveis com a âncora escrita de cada um, sem valor pré-marcado.
+          if (c.anchors) return rubricItem(c, locked);
           const cur = c.your_score ?? Math.ceil(Number(c.max ?? 10) / 2);
           return `
           <div class="mb-5 pb-5 border-b border-[var(--border)] last:border-0 last:mb-0 last:pb-0">
@@ -306,12 +327,38 @@ const ME_I18N = {
       });
     });
 
-    body.querySelector('#me-submit')?.addEventListener('click', () => submitForm(applicationId));
+    body.querySelector('#me-submit')?.addEventListener('click', () => submitForm(applicationId, part, criteria));
 
     showOnly('form');
   }
 
-  async function submitForm(applicationId: string) {
+  /* #3120: um item da rubrica da vaga. Os 3 níveis são rádios com a âncora ao lado; no fit, o mínimo do critério
+     aparece, e nota abaixo dele pede justificativa na nota do critério (o servidor recusa sem ela). */
+  function rubricItem(c: any, locked: boolean): string {
+    const levels: Array<[number, string, string]> = [
+      [1, I.levelWeak || 'Fraco', c.anchors?.weak], [2, I.levelMedium || 'Médio', c.anchors?.medium], [3, I.levelStrong || 'Forte', c.anchors?.strong],
+    ];
+    const min = c.min_level != null ? Number(c.min_level) : null;
+    return `
+          <div class="mb-5 pb-5 border-b border-[var(--border)] last:border-0 last:mb-0 last:pb-0" data-rubric-key="${esc(c.key)}">
+            <p class="font-semibold text-navy text-sm mb-1">${esc(c.label || c.key)}</p>
+            ${c.guide ? `<p class="text-xs text-[var(--text-secondary)] mb-2 whitespace-pre-wrap">${esc(c.guide)}</p>` : ''}
+            ${min != null ? `<p class="text-xs text-amber-700 mb-2" data-min-level="${esc(min)}">${esc(String(I.minLevelHint || 'Mínimo: {n}. Abaixo dele, justifique na nota do critério.').replace('{n}', String(min)))}</p>` : ''}
+            <div class="space-y-1.5">
+              ${levels.map(([v, name, anchor]) => `
+                <label class="flex items-start gap-2 text-sm cursor-pointer">
+                  <input type="radio" name="rub-${esc(c.key)}" value="${v}" data-eval-key="${esc(c.key)}" ${Number(c.your_score) === v ? 'checked' : ''} ${locked ? 'disabled' : ''} class="mt-1 accent-navy" />
+                  <span><strong class="text-navy">${v} &middot; ${esc(name)}</strong> <span class="text-[var(--text-secondary)]">${esc(anchor || '')}</span></span>
+                </label>`).join('')}
+            </div>
+            <textarea data-eval-note-key="${esc(c.key)}" rows="2" ${locked ? 'disabled' : ''}
+              placeholder="${esc(I.criterionNotePlaceholder)}"
+              class="mt-2 w-full text-sm rounded-xl border border-[var(--border)] px-3 py-2"
+              >${esc(c.your_criterion_note || '')}</textarea>
+          </div>`;
+  }
+
+  async function submitForm(applicationId: string, part: string = 'objective', criteria: any[] = []) {
     const body = $('me-form-body');
     if (!body) return;
     const btn = body.querySelector('#me-submit') as HTMLButtonElement | null;
@@ -320,6 +367,13 @@ const ME_I18N = {
     body.querySelectorAll<HTMLInputElement>('input[type="range"][data-eval-key]').forEach((s) => {
       if (s.dataset.evalKey) scores[s.dataset.evalKey] = parseInt(s.value, 10);
     });
+    // #3120: rubrica. Todo item precisa de um nível marcado; nenhum vem pré-marcado.
+    const rubricKeys = criteria.filter((c) => c.anchors).map((c) => String(c.key));
+    for (const k of rubricKeys) {
+      const r = body.querySelector<HTMLInputElement>(`input[type="radio"][data-eval-key="${CSS.escape(k)}"]:checked`);
+      if (!r) { toast(I.pickLevel || 'Marque um nível em cada item', 'error'); return; }
+      scores[k] = parseInt(r.value, 10);
+    }
     if (Object.keys(scores).length === 0) {
       toast(I.scoreRequired || 'Nenhum critério para pontuar', 'error');
       return;
@@ -330,12 +384,20 @@ const ME_I18N = {
       if (ta.dataset.evalNoteKey && ta.value.trim()) criterionNotes[ta.dataset.evalNoteKey] = ta.value.trim();
     });
     const notes = (body.querySelector('#me-notes') as HTMLTextAreaElement | null)?.value || '';
+    // #3120: no fit, nota abaixo do mínimo do critério pede justificativa naquele critério (o servidor confere igual).
+    for (const c of criteria) {
+      if (c.min_level == null || scores[c.key] == null) continue;
+      if (scores[c.key] < Number(c.min_level) && !criterionNotes[c.key]) {
+        toast(`${I.justificationRequired || 'Justifique a nota abaixo do mínimo em'} ${c.label || c.key}`, 'error');
+        return;
+      }
+    }
 
     if (btn) { btn.disabled = true; btn.textContent = I.submitting || '...'; }
     try {
       const { error } = await sb.rpc('submit_evaluation', {
         p_application_id: applicationId,
-        p_evaluation_type: 'objective',
+        p_evaluation_type: part,
         p_scores: scores,
         p_notes: notes,
         p_criterion_notes: criterionNotes,

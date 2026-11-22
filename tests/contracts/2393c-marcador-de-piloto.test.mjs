@@ -115,14 +115,16 @@ test('#2393c S: as atribuições do comitê tiram o piloto', () => {
 test('#2393c S (D1): o formulário recusa o piloto, salvo o avaliador atribuído, depois do portão e antes do registro de acesso', () => {
   const { corpo } = captura('get_evaluation_form');
   assert.match(corpo, new RegExp(ATRIBUIDO), 'a exceção deixou de vir só da regra única do avaliador do piloto');
-  assert.match(corpo, new RegExp(`RAISE EXCEPTION 'Unauthorized: not a committee member'; END IF; ${RECUSA} PERFORM public\\._log_application_pii_access\\(`),
+  // #3120: entre a recusa do piloto e o registro de acesso fica a trava da rubrica e do fit (recusa sem ler a candidatura).
+  assert.match(corpo, new RegExp(`RAISE EXCEPTION 'Unauthorized: not a committee member'; END IF; ${RECUSA} IF p_evaluation_type IN \\('video', 'fit'\\) THEN [^$]*? RAISE EXCEPTION 'O fit abre depois da primeira nota de vídeo enviada desta candidatura \\(ADR-0134 §3\\)' USING ERRCODE = 'check_violation'; END IF; END IF; PERFORM public\\._log_application_pii_access\\(`),
     'a recusa do piloto não está entre o portão do comitê e o registro de acesso');
 });
 
 test('#2393c S (D1): o envio de avaliação recusa o piloto, salvo o avaliador atribuído, antes de gravar', () => {
   const { corpo } = captura('submit_evaluation');
   assert.match(corpo, new RegExp(ATRIBUIDO), 'a exceção deixou de vir só da regra única do avaliador do piloto');
-  const m = corpo.match(new RegExp(`RAISE EXCEPTION 'Unauthorized: observer role does not evaluate' USING ERRCODE = 'insufficient_privilege'; END IF; ${RECUSA} IF EXISTS \\(`));
+  // #3120: entre a recusa do piloto e a checagem de envio fica a trava da rubrica e do fit (antes de gravar).
+  const m = corpo.match(new RegExp(`RAISE EXCEPTION 'Unauthorized: observer role does not evaluate' USING ERRCODE = 'insufficient_privilege'; END IF; ${RECUSA} IF p_evaluation_type IN \\('video', 'fit'\\) THEN [^$]*? RAISE EXCEPTION 'O fit abre depois da primeira nota de vídeo enviada desta candidatura \\(ADR-0134 §3\\)' USING ERRCODE = 'check_violation'; END IF; END IF; IF EXISTS \\(`));
   assert.ok(m, 'a recusa do piloto não está logo depois da recusa do observador');
   const grava = corpo.search(/INSERT INTO public\.selection_evaluations\b/);
   assert.ok(grava === -1 || m.index < grava, 'a recusa do piloto vem depois da gravação');

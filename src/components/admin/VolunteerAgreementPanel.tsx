@@ -96,7 +96,8 @@ const L: Record<string, Record<string, string>> = {
     exportCsv: 'Exportar CSV',
     notifyPending: 'Notificar Pendentes',
     notifyConfirm: 'Enviar notificação para todos os membros que ainda não assinaram o termo?',
-    notifySent: 'Notificações enviadas!',
+    notifySent: '{targets} aviso(s) emitido(s). {skipped} já avisado(s) nos últimos 7 dias.',
+    notifyNoneNew: 'Ninguém novo a avisar. {skipped} já avisado(s) nos últimos 7 dias.',
     notifyError: 'Erro ao enviar notificações',
     noData: 'Sem dados',
     search: 'Buscar membro...',
@@ -164,7 +165,8 @@ const L: Record<string, Record<string, string>> = {
     exportCsv: 'Export CSV',
     notifyPending: 'Notify Pending',
     notifyConfirm: 'Send notification to all members who haven\'t signed yet?',
-    notifySent: 'Notifications sent!',
+    notifySent: '{targets} notice(s) issued. {skipped} already notified in the last 7 days.',
+    notifyNoneNew: 'Nobody new to notify. {skipped} already notified in the last 7 days.',
     notifyError: 'Error sending notifications',
     noData: 'No data',
     search: 'Search member...',
@@ -232,7 +234,8 @@ const L: Record<string, Record<string, string>> = {
     exportCsv: 'Exportar CSV',
     notifyPending: 'Notificar Pendientes',
     notifyConfirm: '¿Enviar notificación a todos los miembros que aún no firmaron?',
-    notifySent: '¡Notificaciones enviadas!',
+    notifySent: '{targets} aviso(s) emitido(s). {skipped} ya avisado(s) en los últimos 7 días.',
+    notifyNoneNew: 'Nadie nuevo a quien avisar. {skipped} ya avisado(s) en los últimos 7 días.',
     notifyError: 'Error al enviar notificaciones',
     noData: 'Sin datos',
     search: 'Buscar miembro...',
@@ -434,7 +437,13 @@ export default function VolunteerAgreementPanel({ lang: propLang }: Props) {
       const { data, error } = await sb.rpc('notify_pending_volunteer_agreements', { p_lang: lang });
       if (error) throw error;
       if (data?.error) throw new Error(String(data.error));
-      (window as any).toast?.(t.notifySent, 'success');
+      // #3148: o RPC devolve targets (avisos emitidos) e skipped_recent (janela de 7 dias) para isto ser legível
+      const targets = Number(data?.targets ?? 0);
+      const skipped = String(Number(data?.skipped_recent ?? 0));
+      const msg = targets > 0
+        ? t.notifySent.replace('{targets}', String(targets)).replace('{skipped}', skipped)
+        : t.notifyNoneNew.replace('{skipped}', skipped);
+      (window as any).toast?.(msg, targets > 0 ? 'success' : 'info');
     } catch {
       (window as any).toast?.(t.notifyError, 'error');
     } finally {

@@ -210,6 +210,7 @@
     "src/components/admin/VepReconciliationWidget.tsx",
     "src/components/admin/VolunteerAgreementPanel.tsx",
     "src/components/admin/VolunteerComplianceWidget.tsx",
+    "src/components/onboarding/PreOnboardingChecklist.tsx",
     "src/components/workspace/MyActionItemsWidget.tsx",
     "src/components/workspace/MyCardsWidget.tsx",
     "src/pages/admin/agenda-recorrente.astro",

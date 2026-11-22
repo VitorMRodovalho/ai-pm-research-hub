@@ -187,6 +187,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
 <script is:inline define:vars={{ __ATTENDANCE_I18N: JSON.stringify({
   loading: t('attendance.loading', lang),
   noEvents: t('attendance.noEvents', lang),
+  loadFailed: t('attendance.loadFailed', lang),
   hours: t('attendance.hours', lang),
   dateLocale: t('attendance.dateLocale', lang),
   roleManager: t('attendance.role.manager', lang),
@@ -231,6 +232,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   msgEventsCreated: t('attendance.msg.eventsCreated', lang),
   msgRecurringError: t('attendance.msg.recurringError', lang),
   msgEventUpdated: t('attendance.msg.eventUpdated', lang),
+  msgEventLinkRefused: t('attendance.msg.eventLinkRefused', lang),
   msgEventSaveError: t('attendance.msg.eventSaveError', lang),
   msgTagsAudienceSaveError: t('attendance.msg.tagsAudienceSaveError', lang),
   msgEventEditOpenError: t('attendance.msg.eventEditOpenError', lang),
@@ -305,6 +307,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
   const I18N = (window as any).__ATTENDANCE_I18N || {
     loading: 'Carregando...',
     noEvents: 'Nenhum evento encontrado.',
+    loadFailed: 'Não conseguimos carregar os eventos agora. Recarregue a página em instantes.',
     hours: 'horas',
     dateLocale: 'pt-BR',
     roleManager: 'Gerente de Projeto',
@@ -349,6 +352,7 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     msgEventsCreated: '{n} eventos criados ✅',
     msgRecurringError: 'Erro ao criar série',
     msgEventUpdated: 'Evento atualizado ✅',
+    msgEventLinkRefused: 'Evento salvo, mas a iniciativa não mudou: {reason}',
     msgEventSaveError: 'Erro ao salvar',
     msgTagsAudienceSaveError: 'O evento foi salvo, mas as tags ou o público não foram gravados. Edite o evento para tentar de novo',
     msgEventEditOpenError: 'Não foi possível abrir a edição deste evento',
@@ -1080,13 +1084,15 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
     const el = document.getElementById('events-list')!;
     el.innerHTML = loadingRows(3);
     try {
-      const { data } = await sb.rpc('get_events_with_attendance', { p_limit: 500, p_offset: 0 });
+      // #3144: o supabase-js não lança em erro de RPC; sem isto, a falha virava "Nenhum evento encontrado"
+      const { data, error } = await sb.rpc('get_events_with_attendance', { p_limit: 500, p_offset: 0 });
+      if (error) throw error;
       ALL_EVENTS = data || [];
       renderEvents();
     } catch (e) {
       console.warn('Attendance: failed to load events:', e);
-      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm">Failed to load events. Please try again later.</div>`;
-      toast('Failed to load events.', 'error');
+      el.innerHTML = `<div class="text-center py-8 text-red-500 text-sm" data-events-load-failed>${I18N.loadFailed}</div>`;
+      toast(I18N.loadFailed, 'error');
     }
   }
 
@@ -1411,7 +1417,9 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           const { data: ahRows } = await sb.rpc('get_member_attendance_hours', { p_member_id: MEMBER.id });
           const ah = ahRows?.[0];
           if (ah) {
-            feedbackMsg += `\n+10 XP${evHours ? ' · +' + evHours + 'h' : ''}`;
+            // #3149: o XP não é decidido aqui (vem depois, pelo catálogo e só para tipo que pontua), e
+            // quem já estava presente não soma horas de novo
+            if (evHours && data.already_present !== true) feedbackMsg += `\n+${evHours}h`;
             feedbackMsg += `\n${I18N.feedbackCycleTotal}: ${Number(ah.total_hours).toFixed(1)}h · ${ah.total_events} ${I18N.feedbackEvents}`;
           }
         } catch (_) { /* fallback to simple toast */ }
@@ -2263,6 +2271,8 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           p_audience_level: audience
         });
         if (error) throw error;
+        // #3149: update_event recusa no corpo ({success:false}); antes, o ramo da série seguia e dizia "atualizados"
+        if (!data?.success) throw new Error(data?.error || I18N.msgEventSaveError);
         const updateFields: Record<string, any> = { type: editType, nature, visibility };
         if (timeStart) updateFields.time_start = timeStart;
         // #564: timezone now set by update_future_events_in_group (anchor + future) — no direct write here.
@@ -2284,17 +2294,23 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
         }
         const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
         if (rowUpdateError) throw rowUpdateError;
+        // #3149: a recusa do vínculo chega depois de os outros campos gravarem; a tela diz isso em vez do sucesso
+        let linkRefused: string | null = null;
         if (linkInitiativeId !== undefined) {
           const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
             p_event_id: id, p_initiative_id: linkInitiativeId });
-          if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
+          if (linkErr || !linkData?.success) {
+            console.warn('initiative link failed:', linkErr || linkData?.error);
+            linkRefused = String(linkErr?.message || linkData?.error || I18N.msgEventSaveError);
+          }
         }
         // #564: future-sibling timezone propagation now runs through update_future_events_in_group
         // (p_timezone) above — SECDEF bypasses RLS, so no silent partial-update on drifted siblings.
         await assignEventTagsAndAudience(id, tagIds, audience);
         closeModal('modal-edit-event');
         const count = futureData?.updated_count || 0;
-        toast(`${count} ${I18N.recurrenceFutureUpdated}`, 'success');
+        if (linkRefused) toast(I18N.msgEventLinkRefused.replace('{reason}', linkRefused), 'error');
+        else toast(`${count} ${I18N.recurrenceFutureUpdated}`, 'success');
         loadEvents(); loadKPIs();
       } else {
         // Update this event only (original behavior)
@@ -2327,14 +2343,20 @@ const i18nBundle = buildPageI18n(['attendance', 'meetings', 'comp.common', 'comp
           }
           const { error: rowUpdateError } = await sb.from('events').update(updateFields).eq('id', id);
           if (rowUpdateError) throw rowUpdateError;
+          // #3149: a recusa do vínculo chega depois de os outros campos gravarem; a tela diz isso em vez do sucesso
+          let linkRefused: string | null = null;
           if (linkInitiativeId !== undefined) {
             const { data: linkData, error: linkErr } = await sb.rpc('link_event_to_initiative', {
               p_event_id: id, p_initiative_id: linkInitiativeId });
-            if (linkErr || !linkData?.success) console.warn('initiative link failed:', linkErr || linkData?.error);
+            if (linkErr || !linkData?.success) {
+              console.warn('initiative link failed:', linkErr || linkData?.error);
+              linkRefused = String(linkErr?.message || linkData?.error || I18N.msgEventSaveError);
+            }
           }
           await assignEventTagsAndAudience(id, tagIds, audience);
           closeModal('modal-edit-event');
-          toast(I18N.msgEventUpdated, 'success');
+          if (linkRefused) toast(I18N.msgEventLinkRefused.replace('{reason}', linkRefused), 'error');
+          else toast(I18N.msgEventUpdated, 'success');
           loadEvents(); loadKPIs();
         } else toast(data?.error || I18N.msgEventSaveError, 'error');
       }

@@ -28,3 +28,15 @@ export async function rpcChecked<T = any>(sb: any, fn: string, args?: Record<str
   if (bodyError) throw new Error(bodyError);
   return data as T;
 }
+
+/**
+ * #3149: lança se o corpo recusou, com a `message` legível quando a função manda uma (a recusa de
+ * `register_own_presence`, delegada por `mark_member_present`, traz o código em `error` e o texto em
+ * `message`). Para quem já leu `error` do transporte e só precisa do canal do corpo.
+ */
+export function throwIfRefused(data: unknown): void {
+  const why = rpcBodyError(data);
+  if (!why) return;
+  const msg = (data as Record<string, unknown>).message;
+  throw new Error(typeof msg === 'string' && msg ? msg : why);
+}

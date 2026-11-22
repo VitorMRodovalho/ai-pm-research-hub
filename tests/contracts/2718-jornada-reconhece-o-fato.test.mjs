@@ -40,7 +40,8 @@ function detectBlock(step) {
   return DETECT.slice(start, next === -1 ? DETECT.lastIndexOf('END;') : next);
 }
 
-const APPLIES = /public\.onboarding_step_applies\(s\.applies_to_role, m\.operational_role\)/;
+// Jornadas fatia C: os blocos do lote leem o papel pela jornada (#3152); a fila da filiação continua no cache.
+const APPLIES = /public\.onboarding_step_applies\(s\.applies_to_role, public\._onboarding_journey_role\(m\.id\)\)/;
 const PENDING_ONLY = /ON CONFLICT \(member_id, step_key\) DO UPDATE\s+SET status = 'completed', completed_at = now\(\), updated_at = now\(\),\s+metadata = COALESCE\(onboarding_progress\.metadata, '\{\}'::jsonb\) \|\| EXCLUDED\.metadata\s+WHERE onboarding_progress\.status IN \('pending', 'overdue'\);/;
 
 test('#2718 há exatamente uma migration da fatia 2', () => {
@@ -70,7 +71,8 @@ test('#2718 regra 1: "Conheça sua tribo" fecha pela presença numa reunião da 
 });
 
 test('#2718 regra 1: o gatilho fecha no instante da presença, só a etapa da tribo e só pela tribo da pessoa', () => {
-  assert.match(PRESENCE, /UPDATE public\.onboarding_progress op\s+SET status = 'completed'[\s\S]*?WHERE op\.member_id = NEW\.member_id\s+AND op\.step_key = 'meet_tribe'\s+AND op\.status IN \('pending', 'overdue'\)\s+AND EXISTS \(SELECT 1 FROM public\.members m\s+JOIN public\.onboarding_steps s ON s\.id = 'meet_tribe'\s+JOIN public\.events e ON e\.id = NEW\.event_id\s+JOIN public\.initiatives i ON i\.id = e\.initiative_id\s+WHERE m\.id = NEW\.member_id\s+AND i\.legacy_tribe_id = m\.tribe_id\s+AND public\.onboarding_step_applies\(s\.applies_to_role, m\.operational_role\)\);/);
+  assert.match(PRESENCE, /UPDATE public\.onboarding_progress op\s+SET status = 'completed'[\s\S]*?WHERE op\.member_id = NEW\.member_id\s+AND op\.step_key = 'meet_tribe'\s+AND op\.status IN \('pending', 'overdue'\)\s+AND EXISTS \(SELECT 1 FROM public\.members m\s+JOIN public\.onboarding_steps s ON s\.id = 'meet_tribe'\s+JOIN public\.events e ON e\.id = NEW\.event_id\s+JOIN public\.initiatives i ON i\.id = e\.initiative_id\s+WHERE m\.id = NEW\.member_id\s+AND i\.legacy_tribe_id = m\.tribe_id\s+AND public\.onboarding_step_applies\(s\.applies_to_role, public\._onboarding_journey_role\(m\.id\)\)\);/,
+    'o gatilho de presença recorta pelo papel da jornada (#3156)');
   assert.match(MIG, /CREATE TRIGGER trg_complete_meet_tribe_on_presence\s+AFTER INSERT OR UPDATE OF present ON public\.attendance\s+FOR EACH ROW WHEN \(NEW\.present = true\)\s+EXECUTE FUNCTION public\._trg_complete_meet_tribe_on_presence\(\);/,
     'ausência materializada pelo selamento (present=false) não pode fechar a etapa');
   assert.match(MIG, /REVOKE ALL ON FUNCTION public\._trg_complete_meet_tribe_on_presence\(\) FROM PUBLIC, anon, authenticated;/);

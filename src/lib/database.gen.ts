@@ -18675,6 +18675,7 @@ export type Database = {
       onboarding_steps: {
         Row: {
           applies_to_role: string[] | null
+          closed_by: string
           created_at: string | null
           description_en: string | null
           description_es: string | null
@@ -18689,6 +18690,7 @@ export type Database = {
         }
         Insert: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -18703,6 +18705,7 @@ export type Database = {
         }
         Update: {
           applies_to_role?: string[] | null
+          closed_by?: string
           created_at?: string | null
           description_en?: string | null
           description_es?: string | null
@@ -26146,6 +26149,7 @@ export type Database = {
           id: string
           notes: string | null
           organization_id: string
+          rubric_id: string | null
           scores: Json
           submitted_at: string | null
           weighted_subtotal: number | null
@@ -26159,6 +26163,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          rubric_id?: string | null
           scores?: Json
           submitted_at?: string | null
           weighted_subtotal?: number | null
@@ -26172,6 +26177,7 @@ export type Database = {
           id?: string
           notes?: string | null
           organization_id?: string
+          rubric_id?: string | null
           scores?: Json
           submitted_at?: string | null
           weighted_subtotal?: number | null
@@ -26273,6 +26279,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_evaluations_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "selection_opening_rubrics"
             referencedColumns: ["id"]
           },
         ]
@@ -26770,6 +26783,117 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_nucleo_contract_status"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_opening_rubrics: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          items: Json
+          opportunity_id: string
+          organization_id: string
+          part: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items: Json
+          opportunity_id: string
+          organization_id: string
+          part: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          items?: Json
+          opportunity_id?: string
+          organization_id?: string
+          part?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "selection_opening_rubrics_opportunity_id_fkey"
+            columns: ["opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "vep_opportunities"
+            referencedColumns: ["opportunity_id"]
           },
         ]
       }
@@ -31829,6 +31953,10 @@ export type Database = {
           occurrences: number
         }[]
       }
+      _criterios_da_rubrica: {
+        Args: { p_application_id: string; p_part: string }
+        Returns: Json
+      }
       _curation_assign_one: {
         Args: {
           p_assigned_by: string
@@ -31918,6 +32046,7 @@ export type Database = {
         Args: { p_filename: string }
         Returns: string
       }
+      _fit_aberto: { Args: { p_application_id: string }; Returns: boolean }
       _gate_threshold_met: {
         Args: { p_chain_id: string; p_gate: Json }
         Returns: boolean
@@ -32067,6 +32196,7 @@ export type Database = {
         Args: { p_from_url: string; p_member_id: string; p_to_url: string }
         Returns: Json
       }
+      _member_profile_ready: { Args: { p_member_id: string }; Returns: boolean }
       _member_term_has_image_clause: {
         Args: { p_member_id: string }
         Returns: boolean
@@ -32090,6 +32220,10 @@ export type Database = {
       _notify_partner_lead_received: {
         Args: { p_created: boolean; p_door: string; p_partner_id: string }
         Returns: number
+      }
+      _onboarding_journey_role: {
+        Args: { p_member_id: string }
+        Returns: string
       }
       _operational_role_reconcile_cron: { Args: never; Returns: Json }
       _ots_claim_unstamped_assets: { Args: { p_limit?: number }; Returns: Json }
@@ -32207,6 +32341,14 @@ export type Database = {
         Returns: undefined
       }
       _roster_seal_marker: { Args: never; Returns: string }
+      _rubrica_travada: {
+        Args: { p_opportunity_id: string; p_part: string }
+        Returns: boolean
+      }
+      _rubrica_vigente_id: {
+        Args: { p_application_id: string; p_part: string }
+        Returns: string
+      }
       _seal_event_attendance_apply: {
         Args: { p_actor_id: string; p_dry_run?: boolean; p_event_id: string }
         Returns: Json
@@ -32438,6 +32580,10 @@ export type Database = {
       }
       admin_check_ingestion_source_timeout: {
         Args: { p_source: string; p_started_at: string }
+        Returns: Json
+      }
+      admin_complete_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
         Returns: Json
       }
       admin_create_member: {
@@ -32727,6 +32873,10 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: Json
       }
+      admin_reopen_onboarding_step: {
+        Args: { p_member_id: string; p_note: string; p_step_key: string }
+        Returns: Json
+      }
       admin_resolve_anomaly: {
         Args: { p_anomaly_id: string; p_notes: string }
         Returns: Json
@@ -32924,11 +33074,29 @@ export type Database = {
         }
         Returns: Json
       }
+      affiliation_effective_expiry: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       affiliation_gate: { Args: { p_member_id: string }; Returns: Json }
       affiliation_gate_first_term: {
         Args: { p_member_id: string }
         Returns: Json
       }
+      affiliation_needs_review: {
+        Args: { p_member_id: string }
+        Returns: boolean
+      }
+      affiliation_nudge_enabled: { Args: never; Returns: boolean }
+      affiliation_nudge_plan: {
+        Args: never
+        Returns: {
+          member_id: string
+          variant: string
+        }[]
+      }
+      affiliation_nudge_text: { Args: { p_variant: string }; Returns: Json }
+      affiliation_vep_snapshot: { Args: { p_member_id: string }; Returns: Json }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
         Returns: boolean
@@ -33783,6 +33951,10 @@ export type Database = {
         Returns: string[]
       }
       encrypt_sensitive: { Args: { val: string }; Returns: string }
+      end_selection_evaluator: {
+        Args: { p_member_id: string; p_reason: string }
+        Returns: Json
+      }
       enqueue_curation_drive_grant_for_member: {
         Args: { p_item_id: string; p_member_id: string; p_reason?: string }
         Returns: undefined
@@ -33937,6 +34109,7 @@ export type Database = {
       get_admin_dashboard: { Args: never; Returns: Json }
       get_adoption_dashboard: { Args: never; Returns: Json }
       get_affiliation_chapter_rollup: { Args: never; Returns: Json }
+      get_affiliation_nudge_panel: { Args: never; Returns: Json }
       get_affiliation_verification_queue: {
         Args: { p_scope?: string }
         Returns: Json
@@ -34870,6 +35043,10 @@ export type Database = {
       get_onboarding_blocked_cohort: { Args: never; Returns: Json }
       get_onboarding_contacts: { Args: never; Returns: Json }
       get_onboarding_dashboard: { Args: never; Returns: Json }
+      get_onboarding_journey_admin: {
+        Args: { p_member_id?: string }
+        Returns: Json
+      }
       get_onboarding_status: {
         Args: { p_application_id: string }
         Returns: Json
@@ -34968,7 +35145,6 @@ export type Database = {
         Returns: Json
       }
       get_portfolio_timeline: { Args: never; Returns: Json }
-      get_pre_onboarding_leaderboard: { Args: never; Returns: Json }
       get_previous_locked_version: {
         Args: { p_version_id: string }
         Returns: Json
@@ -35301,6 +35477,7 @@ export type Database = {
         Args: { p_alert_threshold?: number }
         Returns: Json
       }
+      get_selection_evaluators_admin: { Args: never; Returns: Json }
       get_selection_health: { Args: never; Returns: Json }
       get_selection_pipeline_metrics: {
         Args: { p_chapter?: string; p_cycle_id?: string }
@@ -35423,10 +35600,6 @@ export type Database = {
       get_volunteer_agreement_status: { Args: never; Returns: Json }
       get_volunteer_funnel_stats: {
         Args: { p_cycle_id?: string }
-        Returns: Json
-      }
-      get_volunteers_with_closed_affiliation_gate: {
-        Args: never
         Returns: Json
       }
       get_webinar_lifecycle: { Args: { p_webinar_id: string }; Returns: Json }
@@ -36483,7 +36656,7 @@ export type Database = {
         Returns: string
       }
       nudge_entry_chapter_cohort: {
-        Args: { p_cycle_id?: string; p_dry_run?: boolean }
+        Args: { p_dry_run?: boolean }
         Returns: Json
       }
       offboard_member: {
@@ -37157,6 +37330,10 @@ export type Database = {
         }
         Returns: string
       }
+      save_selection_rubric: {
+        Args: { p_items: Json; p_opportunity_id: string; p_part: string }
+        Returns: Json
+      }
       schedule_comms_post: {
         Args: {
           p_channel: string
@@ -37273,10 +37450,6 @@ export type Database = {
         }
         Returns: Json
       }
-      seed_pre_onboarding_steps: {
-        Args: { p_application_id: string; p_member_id?: string }
-        Returns: Json
-      }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
       selection_active_cycle_id: { Args: never; Returns: string }
       selection_coi_recused: {
@@ -37307,6 +37480,10 @@ export type Database = {
       send_attendance_reminders_cron: { Args: never; Returns: Json }
       send_notification_to_tribe: {
         Args: { p_body: string; p_link?: string; p_title: string }
+        Returns: Json
+      }
+      set_affiliation_nudge_enabled: {
+        Args: { p_enabled: boolean; p_reason: string }
         Returns: Json
       }
       set_board_item_artifact_type: {
