@@ -34505,18 +34505,6 @@ export type Database = {
         Returns: Json
       }
       get_duplicate_identity_candidates: { Args: never; Returns: Json }
-      get_entry_chapter_diagnosis: {
-        Args: { p_cycle_id?: string }
-        Returns: {
-          active_br_codes: string[]
-          applicant_name: string
-          application_id: string
-          bucket: string
-          entry_chapter_code: string
-          member_chapter: string
-          member_id: string
-        }[]
-      }
       get_essay_field: {
         Args: { p_index: string; p_mapping: Json }
         Returns: string
