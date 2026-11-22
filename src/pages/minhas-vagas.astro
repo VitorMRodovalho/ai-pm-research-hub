@@ -79,8 +79,9 @@ const MV_I18N = {
       <p class="text-xs text-[var(--text-muted)] mt-1">{t('myOpenings.logNote', lang)}</p>
     </header>
 
-    <!-- #2393 A4 (L5): o que o líder faz agora no alfa. Texto fixo da fase; quando houver etapa por vaga, vem do banco. -->
-    <div id="mv-next-step" class="mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">{MV_I18N.nextStep}</div>
+    <!-- #2393 A4 (L5): o que o líder faz agora no alfa. Texto fixo da fase; quando houver etapa por vaga, vem do banco.
+         #3166 A7: nasce escondido e só aparece com a lista de candidaturas; antes ia para qualquer pessoa. -->
+    <div id="mv-next-step" class="hidden mb-6 rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-900">{MV_I18N.nextStep}</div>
 
     <div id="mv-loading" class="text-center py-16">
       <p class="text-[var(--text-muted)] text-sm">{MV_I18N.loading}</p>
@@ -126,6 +127,8 @@ const MV_I18N = {
     ['mv-loading', 'mv-notice', 'mv-guest', 'mv-failed', 'mv-list', 'mv-detail'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `mv-${which}`);
     });
+    // #3166 A7: o próximo passo é de líder com candidaturas, e a lista só aparece quando há candidaturas.
+    $('mv-next-step')?.classList.toggle('hidden', which !== 'list');
   }
 
   function showNotice(msg: string) {
@@ -176,7 +179,9 @@ const MV_I18N = {
     }
 
     if (apps.length === 0) {
-      showNotice(I.empty);
+      // #3166 A7: com todas as candidaturas fora por conflito de interesse, "você não lidera vaga com
+      // candidaturas" era falso; o aviso diz quantas ficaram fora.
+      showNotice(omitidas > 0 ? `${I.omitted} ${omitidas}` : I.empty);
       return;
     }
 

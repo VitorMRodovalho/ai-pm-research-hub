@@ -45,9 +45,18 @@ if (!token || token.length < 16) {
 // NUNCA reintroduzir uma URL de calendário neste arquivo — guardado por teste de contrato.
 const calendarBaseUrl: string | null = payload?.booking_url ?? null;
 
+// #3166 A10: o token pode seguir válido depois que a candidatura muda de status, e a página oferecia agendar a
+// qualquer status. A CTA de agendar é da entrevista pendente; sem status lido, fica a CTA (comportamento anterior).
+// Já agendada, a agenda aparece só como caminho para remarcar. Os demais não veem o status, só que o link não serve.
+const appStatus: string | null = payload?.application_status ?? null;
+const bookingState: 'book' | 'scheduled' | 'closed' =
+  !appStatus || appStatus === 'interview_pending' ? 'book'
+  : appStatus === 'interview_scheduled' ? 'scheduled'
+  : 'closed';
+
 // Token válido sem destino resolvido é falha NOSSA, e merece um estado próprio: mandar o candidato
 // para a tela de "link expirado" o faria caçar um erro que não é dele.
-const noBookingUrl = !errorMessage && !calendarBaseUrl;
+const noBookingUrl = !errorMessage && bookingState === 'book' && !calendarBaseUrl;
 
 const pageTitle = t('interview.booking.meta.title', lang);
 const pageDesc = t('interview.booking.meta.description', lang);
@@ -79,6 +88,32 @@ const formattedExpiry = payload?.expires_at
         <p class="mt-4">
           <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
         </p>
+      </div>
+    ) : bookingState === 'closed' ? (
+      <div id="booking-closed" class="bg-slate-50 border border-slate-200 rounded-lg p-6 text-slate-800">
+        <h1 class="text-2xl font-bold mb-3">{t('interview.booking.closedTitle', lang)}</h1>
+        <p>
+          {t('interview.booking.questions', lang)}:{' '}
+          <a href="mailto:nucleoia@pmigo.org.br" class="underline">nucleoia@pmigo.org.br</a>
+        </p>
+      </div>
+    ) : bookingState === 'scheduled' ? (
+      <div id="booking-scheduled" class="space-y-6">
+        <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-6">
+          <h1 class="text-2xl font-bold mb-2 text-emerald-900">
+            {t('interview.booking.greeting', lang)}, {payload?.first_name ?? ''}
+          </h1>
+          <p class="text-lg text-emerald-800">{t('interview.booking.scheduledTitle', lang)}</p>
+        </div>
+        <div class="text-sm text-slate-600 space-y-2">
+          {calendarBaseUrl && (
+            <p><a id="booking-scheduled-calendar" href={calendarBaseUrl} target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">{t('interview.booking.cta', lang)}</a></p>
+          )}
+          <p>
+            {t('interview.booking.questions', lang)}:{' '}
+            <a href="mailto:nucleoia@pmigo.org.br" class="text-blue-600 underline">nucleoia@pmigo.org.br</a>
+          </p>
+        </div>
       </div>
     ) : noBookingUrl ? (
       <div class="bg-amber-50 border border-amber-200 rounded-lg p-6 text-amber-900">
