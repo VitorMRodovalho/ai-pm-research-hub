@@ -15,6 +15,7 @@ interface QueueRow {
   grant_id: string;
   initiative_title: string;
   is_confidential: boolean;
+  manual_only: boolean;
   member_name: string | null;
   member_status: string | null;
   permission_email: string | null;
@@ -159,7 +160,7 @@ export default function DriveMembershipRevocationIsland() {
       {!queue.enabled && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 flex gap-2">
           <PauseCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>{t('driveRevocation.disabled', 'A revogação automática está desligada: a fila se forma, mas ninguém é avisado nem revogado. Aprovar um item à mão executa só aquele item.')}</span>
+          <span>{t('driveRevocation.disabled', 'A revogação automática está desligada: a fila se forma, mas o ciclo não avisa nem revoga ninguém. "Revogar já" e a revogação avulsa revogam mesmo assim, só o item em que você agir.')}</span>
         </div>
       )}
 
@@ -211,6 +212,9 @@ export default function DriveMembershipRevocationIsland() {
                     <td className="px-3 py-2">
                       <span className="block">{statusLabel(r)}{r.approval_mode === 'auto' ? ` (${t('driveRevocation.auto', 'automático')})` : ''}</span>
                       {r.held_at && <span className="block text-xs text-[var(--text-muted)]">{r.hold_note}</span>}
+                      {r.manual_only && pending && (
+                        <span className="block text-xs text-amber-800">{t('driveRevocation.manualOnly', 'Pausa: o ciclo não avisa nem revoga; só sai se a gestão aprovar.')}</span>
+                      )}
                       {r.status === 'failed' && r.google_error && (
                         <span className="block text-xs text-red-700">{r.google_error.status ?? ''} {(r.google_error.message ?? '').slice(0, 120)}</span>
                       )}
@@ -231,7 +235,7 @@ export default function DriveMembershipRevocationIsland() {
                       <div className="flex flex-wrap gap-1.5">
                         {pending && (
                           <button type="button" disabled={busy === r.id}
-                            onClick={() => act(r.id, 'admin_approve_drive_membership_revocation', { p_revocation_id: r.id }, t('driveRevocation.okApproved', 'Aprovado: o acesso sai em até 1 hora.'))}
+                            onClick={() => act(r.id, 'admin_approve_drive_membership_revocation', { p_revocation_id: r.id }, t('driveRevocation.okApprovedNow', 'Aprovado: o acesso sai em até 1 hora, e a pessoa é avisada agora se ainda não tinha sido.'))}
                             className="inline-flex items-center gap-1 rounded bg-blue-600 text-white px-2 py-1 text-xs disabled:opacity-50">
                             <CheckCircle2 className="w-3.5 h-3.5" /> {t('driveRevocation.approveNow', 'Revogar já')}
                           </button>

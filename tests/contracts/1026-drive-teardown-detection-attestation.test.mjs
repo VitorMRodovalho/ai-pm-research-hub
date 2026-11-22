@@ -163,7 +163,8 @@ test('#1026-C static: panel page + island + per-locale redirects exist and reuse
   const read = (p) => readFileSync(resolve(ROOT, p), 'utf8');
   const page = read('src/pages/admin/members/drive-teardown.astro');
   assert.match(page, /DriveTeardownIsland/, 'page must mount the DriveTeardownIsland');
-  assert.match(page, /buildPageI18n\(\['driveTeardown', 'common'\]/, 'page must load the driveTeardown i18n bundle');
+  // #3147: the page also mounts the end-of-engagement queue, so a namespace may sit between the two
+  assert.match(page, /buildPageI18n\(\['driveTeardown',(?: '[A-Za-z]+',)* 'common'\]/, 'page must load the driveTeardown i18n bundle');
   const island = read('src/components/admin/members/DriveTeardownIsland.tsx');
   assert.match(island, /get_drive_teardown_overview/, 'island must call the new overview reader');
   assert.match(island, /admin_list_drive_revocation_audit/, 'drill-down reuses the existing per-grant reader (no redundant RPC)');

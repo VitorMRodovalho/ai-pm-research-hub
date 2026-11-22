@@ -90,12 +90,28 @@ revogação automática ligar.
 3. **Quem fica com acesso é o predicado do roster** (`get_initiative_drive_roster`), num helper só
    (`_drive_grant_keeps_access`), usado para entrar na fila, para aprovar e para cancelar.
 4. **O executor é o da ADR-0107**, sem mudança na EF: `get_drive_revocation_row` e `mark_drive_revocation_done` acham
-   também o item novo pelo id, e o cron `revoke-drive-drain-hourly` drena as duas filas.
+   também o item novo pelo id, e o cron `revoke-drive-drain-hourly` drena as duas filas. A leitura do executor é a
+   última conferência antes do Drive: o item de fim de vínculo cuja pessoa voltou ao roster, ou ganhou
+   `manage_platform`, entre a aprovação e o dreno devolve `stale_keeps_access`, a EF não age, e o ciclo cancela.
 5. **O ciclo** (`enqueue_membership_drive_revocations`, de hora em hora) também alinha o ledger com a trilha de
    desligamento. O id da permissão do Drive se repete quando o acesso volta, então a revogação só fecha a concessão se
    veio depois do último envio dela.
-6. **A chave** `site_config.drive_membership_revoke_enabled` nasce desligada: a fila se forma e aparece na tela, sem
-   aviso nem revogação automática. A gestão aprova à mão o que precisa sair antes.
+6. **A chave** `site_config.drive_membership_revoke_enabled` nasce desligada. Com ela desligada, o ciclo ainda alinha
+   o ledger, cancela o que deixou de valer e forma a fila, mas não avisa nem aprova ninguém. Revogam com a chave
+   desligada só as ações da gestão na tela: "revogar já" e a revogação avulsa.
 7. **A tela** fica em `/admin/members/drive-teardown`, abaixo da fila de desligamento, e mostra também o que está
    aberto nela. A gestão segura, solta, desfaz (mantém o acesso daquela concessão), aprova já, e pede revogação
-   avulsa de qualquer concessão viva.
+   avulsa de qualquer concessão viva. "Aprovar já" e avulsa recusam o titular com `manage_platform`; "aprovar já"
+   recusa também quem voltou ao roster.
+8. **O aviso** (decisões do GP de 22/11/2026, depois da revisão de segurança): vai por sino e e-mail, um por pessoa e
+   iniciativa, mesmo quando a pessoa tem duas concessões na mesma pasta (e-mail alternativo). "Aprovar já" avisa na
+   hora quem ainda não foi avisado, com o texto de acesso encerrado. A avulsa não avisa nem tem prazo. A
+   confidencialidade que decide o prazo é a da iniciativa no momento do aviso, não a da entrada na fila.
+9. **A pausa fica no manual, como na ADR-0107 Emenda 1, item 2.** O ciclo só avisa e aprova quem é `active` ou
+   `alumni`. O item de quem está `inactive` (reversível sem portão) fica na tela, com o motivo, até a gestão aprovar;
+   o aviso dessa aprovação não afirma que o vínculo terminou.
+10. **Um bloqueio não é para sempre.** Um item falho, ou um "manter" da gestão, impede a concessão de voltar à fila.
+    Quando a pessoa volta ao roster, esse item fecha como `engagement_restored`, e se o vínculo terminar de novo a
+    concessão entra limpa. A decisão original fica no `admin_audit_log`.
+11. **Fora desta emenda:** pasta de trabalho de mais de uma iniciativa (#3178; 0 casos em 22/11/2026, com guard que
+    avisa se aparecer) e acesso fora do ledger, como compartilhamento manual depois da revogação (#3179).

@@ -13,17 +13,23 @@
 --       isso a hora entra na comparação;
 --    b. cancela o item que deixou de valer: vínculo ativo de novo, manage_platform, concessão já fechada, ou a
 --       trilha de desligamento com item aberto na mesma permissão;
+--    b2. libera o bloqueio que deixou de importar: item falho ou "manter" da gestão cuja pessoa voltou ao roster;
 --    c. põe na fila a concessão cuja pessoa saiu do roster da iniciativa (o MESMO predicado de
 --       get_initiative_drive_roster), fora quem tem manage_platform (exceção nomeada do GP);
---    d. com a chave ligada, avisa a pessoa e marca o prazo: 7 dias, ou o próprio ciclo em iniciativa confidencial;
---    e. com a chave ligada, aprova o item vencido e não segurado, conferindo a condição de novo no UPDATE.
+--    d. com a chave ligada, avisa a pessoa e marca o prazo: 7 dias, ou o próprio ciclo em iniciativa confidencial
+--       (lida agora, não na entrada). Um aviso por pessoa e iniciativa, mesmo com dois e-mails. Quem está em pausa
+--       (inactive) não é avisado nem aprovado pelo ciclo: fica na tela até a gestão aprovar, como na ADR-0107;
+--    e. com a chave ligada, aprova o item vencido e não segurado de quem é active ou alumni, conferindo a condição de
+--       novo no UPDATE.
 -- 4. O executor é o que já existe: a EF revoke-drive-permission, sem mudança de código. get_drive_revocation_row e
 --    mark_drive_revocation_done passam a achar também o item da fila nova pelo id, e o cron revoke-drive-drain-hourly
---    drena as duas filas.
--- 5. Quatro funções de gestão (manage_platform): listar as duas filas, segurar ou soltar, desfazer, aprovar e pedir
---    uma revogação avulsa.
--- 6. A chave site_config.drive_membership_revoke_enabled nasce DESLIGADA: a fila se forma, mas ninguém é avisado nem
---    revogado até o GP ver a primeira lista (decisão 4).
+--    drena as duas filas. Na hora de executar, o item de fim de vínculo cuja pessoa voltou ao roster, ou ganhou
+--    manage_platform, devolve stale_keeps_access: a EF não age, e o passo b cancela.
+-- 5. Funções de gestão (manage_platform): listar as duas filas, segurar ou soltar, desfazer, aprovar já (que avisa
+--    na hora quem ainda não foi avisado) e pedir uma revogação avulsa (sem aviso).
+-- 6. A chave site_config.drive_membership_revoke_enabled nasce DESLIGADA. Com ela desligada, o ciclo ainda alinha o
+--    ledger (passo a), cancela e libera (b, b2) e forma a fila (c), mas não avisa nem aprova ninguém (d, e). O que
+--    revoga com a chave desligada é só a ação da gestão na tela: "aprovar já" e a avulsa (decisão 4).
 -- 7. _delivery_mode_for: o aviso novo é imediato.
 
 -- ── 1. O estado revogada na concessão (#3135) ──
@@ -120,6 +126,54 @@ $function$;
 REVOKE ALL ON FUNCTION public._drive_grant_keeps_access(uuid, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public._drive_grant_keeps_access(uuid, uuid) TO service_role;
 
+-- O aviso à pessoa, num lugar só, para o ciclo e para o "aprovar já". Um aviso por pessoa e iniciativa: quem tem e-mail
+-- alternativo tem duas concessões na mesma pasta, e recebe um aviso só. p_closing_now = o acesso sai neste ciclo.
+-- Quem não é active nem alumni (a pausa) recebe um texto que não afirma que o vínculo terminou.
+CREATE OR REPLACE FUNCTION public._drive_revocation_notify(p_revocation_id uuid, p_closing_now boolean)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE v record;
+BEGIN
+  SELECT x.id, x.member_id, x.initiative_id, x.due_at, i.title, m.member_status
+    INTO v
+    FROM public.drive_membership_revocations x
+    JOIN public.initiatives i ON i.id = x.initiative_id
+    LEFT JOIN public.members m ON m.id = x.member_id
+   WHERE x.id = p_revocation_id;
+  IF v.id IS NULL OR v.member_id IS NULL THEN RETURN false; END IF;
+  -- já avisado por outra concessão do mesmo par nos últimos 7 dias
+  IF EXISTS (SELECT 1 FROM public.drive_membership_revocations o
+              WHERE o.id <> v.id AND o.member_id = v.member_id AND o.initiative_id = v.initiative_id
+                AND o.notified_at IS NOT NULL AND o.notified_at > now() - interval '7 days'
+                AND o.status <> 'cancelled') THEN
+    RETURN false;
+  END IF;
+  PERFORM public.create_notification(
+    p_recipient_id => v.member_id,
+    p_type         => 'drive_access_revocation_scheduled'::text,
+    p_title        => CASE WHEN p_closing_now
+                        THEN 'Seu acesso à pasta de ' || v.title || ' no Drive foi encerrado'
+                        ELSE 'Seu acesso à pasta de ' || v.title || ' no Drive termina em 7 dias' END,
+    p_body         => CASE
+                        WHEN p_closing_now AND v.member_status IN ('active','alumni')
+                          THEN 'Seu vínculo com ' || v.title || ' terminou, e o acesso à pasta dela no Drive sai hoje. Se for engano, fale com a gestão do Núcleo.'
+                        WHEN p_closing_now
+                          THEN 'A gestão do Núcleo encerrou seu acesso à pasta de ' || v.title || ' no Drive. Se for engano, fale com a gestão do Núcleo.'
+                        ELSE 'Seu vínculo com ' || v.title || ' terminou, então o acesso à pasta dela no Drive será removido em '
+                             || to_char(v.due_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY')
+                             || '. Se você continua na iniciativa, fale com a liderança dela ou com a gestão do Núcleo antes dessa data.' END,
+    p_link         => NULL::text,
+    p_source_type  => 'drive_membership_revocations'::text,
+    p_source_id    => v.id);
+  RETURN true;
+END;
+$function$;
+REVOKE ALL ON FUNCTION public._drive_revocation_notify(uuid, boolean) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public._drive_revocation_notify(uuid, boolean) TO service_role;
+
 CREATE OR REPLACE FUNCTION public.enqueue_membership_drive_revocations()
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -133,7 +187,9 @@ DECLARE
   v_backfilled  int := 0;
   v_cancelled   int := 0;
   v_queued      int := 0;
+  v_released    int := 0;
   v_notified    int := 0;
+  v_sent        int := 0;
   v_approved    int := 0;
   v_ids         uuid[];
   r             record;
@@ -185,6 +241,21 @@ BEGIN
   )
   SELECT count(*) INTO v_cancelled FROM c;
 
+  -- b2. o bloqueio que deixou de importar. Uma falha ou um "manter" da gestão impede a concessão de voltar à fila
+  -- (passo c). Quando a pessoa volta ao roster, o bloqueio já não protege nada: o item fecha como engagement_restored,
+  -- e se o vínculo terminar de novo a concessão entra limpa. A decisão original fica no admin_audit_log.
+  WITH rel AS (
+    UPDATE public.drive_membership_revocations q
+       SET status = 'cancelled', cancel_reason = 'engagement_restored',
+           cancelled_at = coalesce(q.cancelled_at, now()), updated_at = now()
+      FROM public.drive_membership_grants g
+     WHERE g.id = q.grant_id
+       AND ( (q.status = 'failed' AND q.reason = 'engagement_ended') OR q.cancel_reason = 'management_kept' )
+       AND public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)
+    RETURNING q.id
+  )
+  SELECT count(*) INTO v_released FROM rel;
+
   -- c. entra na fila a concessão cuja pessoa saiu do roster da iniciativa
   WITH ins AS (
     INSERT INTO public.drive_membership_revocations (grant_id, initiative_id, member_id, reason, is_confidential)
@@ -192,9 +263,10 @@ BEGIN
       FROM public.drive_membership_grants g
       JOIN public.initiatives i ON i.id = g.initiative_id
      WHERE g.status = 'granted' AND g.permission_id IS NOT NULL
+       AND g.grantee_person_id IS NOT NULL AND g.grantee_member_id IS NOT NULL
        AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)
        -- exceção nomeada (GP, 22/11/2026): quem tem manage_platform vê a iniciativa confidencial pela ADR-0105
-       AND NOT coalesce(public.can_by_member(g.grantee_member_id, 'manage_platform'), true)
+       AND NOT public.can_by_member(g.grantee_member_id, 'manage_platform')
        -- já tem item aberto, falhou (vai à tela, e repetir só reavisaria) ou a gestão decidiu manter
        AND NOT EXISTS (SELECT 1 FROM public.drive_membership_revocations x
                        WHERE x.grant_id = g.id
@@ -209,65 +281,61 @@ BEGIN
   SELECT count(*) INTO v_queued FROM ins;
 
   IF v_on THEN
-    -- d. o aviso e o prazo. Item segurado não é avisado até soltar.
+    -- d. o aviso e o prazo. Item segurado não é avisado até soltar. A confidencialidade é a de agora, não a da entrada.
+    -- A pausa (inactive) fica fora: é reversível sem portão (ADR-0107 Emenda 1, item 2), e a gestão decide na tela.
     FOR r IN
-      SELECT x.id, x.member_id, x.is_confidential, i.title
+      SELECT x.id, (i.visibility = 'confidential') AS conf_now
         FROM public.drive_membership_revocations x
         JOIN public.initiatives i ON i.id = x.initiative_id
+        JOIN public.members m ON m.id = x.member_id
        WHERE x.status = 'pending' AND x.reason = 'engagement_ended'
          AND x.notified_at IS NULL AND x.held_at IS NULL
+         AND m.member_status IN ('active','alumni')
+       ORDER BY x.detected_at, x.id
        FOR UPDATE OF x
     LOOP
       UPDATE public.drive_membership_revocations
          SET notified_at = now(),
-             due_at = CASE WHEN r.is_confidential THEN now() ELSE now() + c_notice END,
+             due_at = CASE WHEN r.conf_now THEN now() ELSE now() + c_notice END,
+             is_confidential = r.conf_now,
              updated_at = now()
        WHERE id = r.id;
-      IF r.member_id IS NOT NULL THEN
-        PERFORM public.create_notification(
-          p_recipient_id => r.member_id,
-          p_type         => 'drive_access_revocation_scheduled'::text,
-          p_title        => CASE WHEN r.is_confidential
-                              THEN 'Seu acesso à pasta de ' || r.title || ' no Drive foi encerrado'
-                              ELSE 'Seu acesso à pasta de ' || r.title || ' no Drive termina em 7 dias' END,
-          p_body         => CASE WHEN r.is_confidential
-                              THEN 'Seu vínculo com ' || r.title || ' terminou, e o acesso à pasta dela no Drive sai hoje. Se for engano, fale com a gestão do Núcleo.'
-                              ELSE 'Seu vínculo com ' || r.title || ' terminou, então o acesso à pasta dela no Drive será removido em '
-                                   || to_char((now() + c_notice) AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY')
-                                   || '. Se você continua na iniciativa, fale com a liderança dela ou com a gestão do Núcleo antes dessa data.' END,
-          p_link         => NULL::text,
-          p_source_type  => 'drive_membership_revocations'::text,
-          p_source_id    => r.id);
+      IF public._drive_revocation_notify(r.id, r.conf_now) THEN
+        v_sent := v_sent + 1;
       END IF;
       v_notified := v_notified + 1;
     END LOOP;
 
-    -- e. vencido, avisado e não segurado: aprova, conferindo a condição de novo no próprio UPDATE
+    -- e. vencido, avisado e não segurado, de quem é active ou alumni: aprova, conferindo a condição de novo no UPDATE
     WITH ap AS (
       UPDATE public.drive_membership_revocations x
          SET status = 'approved', approval_mode = 'auto', approved_at = now(), updated_at = now()
-        FROM public.drive_membership_grants g
-       WHERE g.id = x.grant_id AND x.status = 'pending' AND x.reason = 'engagement_ended'
+        FROM public.drive_membership_grants g, public.members m
+       WHERE g.id = x.grant_id AND m.id = g.grantee_member_id
+         AND x.status = 'pending' AND x.reason = 'engagement_ended'
          AND x.held_at IS NULL AND x.notified_at IS NOT NULL AND x.due_at <= now()
          AND g.status = 'granted'
+         AND m.member_status IN ('active','alumni')
          AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)
-         AND NOT coalesce(public.can_by_member(g.grantee_member_id, 'manage_platform'), true)
+         AND NOT public.can_by_member(g.grantee_member_id, 'manage_platform')
       RETURNING x.id
     )
     SELECT array_agg(id) INTO v_ids FROM ap;
     v_approved := coalesce(cardinality(v_ids), 0);
   END IF;
 
-  IF v_backfilled + v_cancelled + v_queued + v_notified + v_approved > 0 THEN
+  IF v_backfilled + v_cancelled + v_released + v_queued + v_notified + v_approved > 0 THEN
     INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes, metadata)
     VALUES (NULL, 'drive_membership_revocation_cycle', 'drive_membership_revocations', NULL, '{}'::jsonb,
             jsonb_build_object('enabled', v_on, 'ledger_aligned', v_backfilled, 'cancelled', v_cancelled,
-                               'queued', v_queued, 'notified', v_notified, 'auto_approved', v_approved,
+                               'released', v_released, 'queued', v_queued, 'notified', v_notified,
+                               'notices_sent', v_sent, 'auto_approved', v_approved,
                                'approved_ids', to_jsonb(coalesce(v_ids, ARRAY[]::uuid[]))));
   END IF;
 
   RETURN jsonb_build_object('enabled', v_on, 'ledger_aligned', v_backfilled, 'cancelled', v_cancelled,
-                            'queued', v_queued, 'notified', v_notified, 'auto_approved', v_approved);
+                            'released', v_released, 'queued', v_queued, 'notified', v_notified,
+                            'notices_sent', v_sent, 'auto_approved', v_approved);
 END;
 $function$;
 REVOKE ALL ON FUNCTION public.enqueue_membership_drive_revocations() FROM PUBLIC, anon, authenticated;
@@ -292,8 +360,16 @@ BEGIN
       'is_shared_drive', v_row.is_shared_drive, 'approved_by', v_row.approved_by);
   END IF;
 
-  -- #3147: item da fila de fim de vínculo. A concessão que já não está 'granted' devolve outro status, e a EF não age.
-  SELECT r.id, CASE WHEN g.status = 'granted' THEN r.status ELSE 'grant_' || g.status END AS status,
+  -- #3147: item da fila de fim de vínculo. A EF só age em 'approved', e esta leitura é a última conferência antes do
+  -- Drive: a concessão que já não está 'granted' devolve grant_<status>; o item de fim de vínculo cuja pessoa voltou
+  -- ao roster, ou ganhou manage_platform, entre a aprovação e o dreno devolve stale_keeps_access, e o passo b cancela.
+  SELECT r.id,
+         CASE WHEN g.status IS DISTINCT FROM 'granted' THEN 'grant_' || g.status
+              WHEN r.reason = 'engagement_ended'
+               AND ( public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)
+                  OR coalesce(public.can_by_member(g.grantee_member_id, 'manage_platform'), false) )
+                THEN 'stale_keeps_access'
+              ELSE r.status END AS status,
          g.drive_folder_id, g.permission_id, g.permission_email, r.approved_by
     INTO v_m
     FROM public.drive_membership_revocations r
@@ -405,7 +481,11 @@ BEGIN
          coalesce(array_agg(DISTINCT q.member_id) FILTER (WHERE q.member_id IS NOT NULL), ARRAY[]::uuid[])
     INTO v_rows, v_ids
     FROM (
-      SELECT r.id, r.grant_id, r.initiative_id, i.title AS initiative_title, r.is_confidential,
+      SELECT r.id, r.grant_id, r.initiative_id, i.title AS initiative_title,
+             (i.visibility = 'confidential') AS is_confidential,
+             -- a pausa (e quem não é active nem alumni) não é avisada nem aprovada pelo ciclo: só a gestão
+             (r.reason = 'engagement_ended' AND m.member_status IS DISTINCT FROM 'active'
+                AND m.member_status IS DISTINCT FROM 'alumni') AS manual_only,
              r.member_id, m.name AS member_name, m.member_status, g.permission_email::text AS permission_email,
              g.drive_folder_url, r.reason, r.status, r.detected_at, r.notified_at, r.due_at,
              r.held_at, r.hold_note, r.approval_mode, r.approved_at, r.revoked_at, r.google_error,
@@ -523,30 +603,55 @@ $function$;
 REVOKE ALL ON FUNCTION public.admin_cancel_drive_revocation(uuid, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_cancel_drive_revocation(uuid, text) TO authenticated, service_role;
 
--- Aprovar já: a gestão executa antes do prazo (a primeira lista, o item confidencial). A EF roda pelo dreno, em até 1 h.
+-- Aprovar já: a gestão executa antes do prazo (a primeira lista, o item confidencial, a pausa). A EF roda pelo dreno,
+-- em até 1 h. Recusa quem fica com acesso (roster de volta ou manage_platform). O item de fim de vínculo ainda não
+-- avisado é avisado agora, com o texto de "foi encerrado" (decisão do GP, 22/11/2026).
 CREATE OR REPLACE FUNCTION public.admin_approve_drive_membership_revocation(p_revocation_id uuid)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path TO 'public', 'pg_temp'
 AS $function$
-DECLARE v_caller_id uuid; v_rev public.drive_membership_revocations;
+DECLARE v_caller_id uuid; v_rev public.drive_membership_revocations; v_g public.drive_membership_grants;
+        v_notify_now boolean; v_sent boolean := false;
 BEGIN
   v_caller_id := (SELECT id FROM public.members WHERE auth_id = auth.uid());
   IF v_caller_id IS NULL OR NOT public.can_by_member(v_caller_id, 'manage_platform') THEN
     RAISE EXCEPTION 'Unauthorized: GP only (manage_platform)';
   END IF;
+  SELECT * INTO v_rev FROM public.drive_membership_revocations WHERE id = p_revocation_id FOR UPDATE;
+  IF v_rev.id IS NULL OR v_rev.status <> 'pending' THEN
+    RAISE EXCEPTION 'Item % não está pendente', p_revocation_id;
+  END IF;
+  SELECT * INTO v_g FROM public.drive_membership_grants WHERE id = v_rev.grant_id;
+  IF v_g.status IS DISTINCT FROM 'granted' THEN
+    RAISE EXCEPTION 'A concessão do item % já não está ativa', p_revocation_id;
+  END IF;
+  IF coalesce(public.can_by_member(v_g.grantee_member_id, 'manage_platform'), false) THEN
+    RAISE EXCEPTION 'O titular tem manage_platform e fica com o acesso';
+  END IF;
+  IF v_rev.reason = 'engagement_ended' AND public._drive_grant_keeps_access(v_g.grantee_person_id, v_g.initiative_id) THEN
+    RAISE EXCEPTION 'A pessoa voltou ao roster da iniciativa; o item será cancelado no próximo ciclo';
+  END IF;
+  v_notify_now := v_rev.reason = 'engagement_ended' AND v_rev.notified_at IS NULL;
   UPDATE public.drive_membership_revocations
      SET status = 'approved', approval_mode = 'manual', approved_by = v_caller_id, approved_at = now(),
-         held_at = NULL, held_by = NULL, hold_note = NULL, updated_at = now()
+         held_at = NULL, held_by = NULL, hold_note = NULL,
+         notified_at = CASE WHEN v_notify_now THEN now() ELSE notified_at END,
+         due_at      = CASE WHEN v_notify_now THEN now() ELSE due_at END,
+         updated_at = now()
    WHERE id = p_revocation_id AND status = 'pending'
    RETURNING * INTO v_rev;
   IF v_rev.id IS NULL THEN RAISE EXCEPTION 'Item % não está pendente', p_revocation_id; END IF;
+  IF v_notify_now THEN
+    v_sent := public._drive_revocation_notify(v_rev.id, true);
+  END IF;
   INSERT INTO public.admin_audit_log (actor_id, action, target_type, target_id, changes, metadata)
   VALUES (v_caller_id, 'drive_membership_revocation_approved', 'drive_membership_revocations', v_rev.id,
           jsonb_build_object('status_after', 'approved', 'approval_mode', 'manual'),
-          jsonb_build_object('grant_id', v_rev.grant_id, 'reason', v_rev.reason));
-  RETURN jsonb_build_object('id', v_rev.id, 'status', v_rev.status);
+          jsonb_build_object('grant_id', v_rev.grant_id, 'reason', v_rev.reason,
+                             'notified_now', v_notify_now, 'notice_sent', v_sent));
+  RETURN jsonb_build_object('id', v_rev.id, 'status', v_rev.status, 'notified_now', v_notify_now, 'notice_sent', v_sent);
 END;
 $function$;
 REVOKE ALL ON FUNCTION public.admin_approve_drive_membership_revocation(uuid) FROM PUBLIC, anon;
@@ -574,17 +679,20 @@ BEGIN
   IF v_g.status <> 'granted' OR v_g.permission_id IS NULL THEN
     RAISE EXCEPTION 'Concessão % não está ativa (status %)', p_grant_id, v_g.status;
   END IF;
+  -- a exceção nomeada vale também aqui: quem tem manage_platform fica com o acesso
+  IF coalesce(public.can_by_member(v_g.grantee_member_id, 'manage_platform'), false) THEN
+    RAISE EXCEPTION 'O titular tem manage_platform e fica com o acesso';
+  END IF;
   SELECT (i.visibility = 'confidential') INTO v_conf FROM public.initiatives i WHERE i.id = v_g.initiative_id;
 
+  -- O item aberto da mesma concessão vira o pedido avulso: motivo manual, sem aviso, e o executor não o descarta se
+  -- a pessoa voltar ao roster (o pedido é da gestão, não do fim de vínculo).
   UPDATE public.drive_membership_revocations
-     SET status = 'approved', approval_mode = 'manual', approved_by = v_caller_id, approved_at = now(),
+     SET status = 'approved', reason = 'manual', approval_mode = 'manual', approved_by = v_caller_id, approved_at = now(),
          held_at = NULL, held_by = NULL, hold_note = NULL,
          note = btrim(p_note), updated_at = now()
-   WHERE grant_id = p_grant_id AND status = 'pending'
+   WHERE grant_id = p_grant_id AND status IN ('pending','approved')
    RETURNING * INTO v_rev;
-  IF v_rev.id IS NULL THEN
-    SELECT * INTO v_rev FROM public.drive_membership_revocations WHERE grant_id = p_grant_id AND status = 'approved';
-  END IF;
   IF v_rev.id IS NULL THEN
     INSERT INTO public.drive_membership_revocations
       (grant_id, initiative_id, member_id, reason, is_confidential, status, approval_mode, approved_by, approved_at, note)
