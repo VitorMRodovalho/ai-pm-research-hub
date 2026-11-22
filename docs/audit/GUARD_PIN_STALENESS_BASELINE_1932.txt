@@ -40,7 +40,6 @@ tests/contracts/1080-cycle-xp-bucket-taxonomy.test.mjs|get_member_cycle_xp
 tests/contracts/1130-vep-role-cohort-reconciliation.test.mjs|get_vep_role_cohort_reconciliation
 tests/contracts/1163-approve-selection-pmi-id-match.test.mjs|approve_selection_application
 tests/contracts/1221-merit-immutable-fatia1.test.mjs|check_schema_invariants
-tests/contracts/1224-entry-chapter-classifier.test.mjs|get_entry_chapter_diagnosis
 tests/contracts/1255-cancel-tribe-request.test.mjs|get_my_tribe_request_context
 tests/contracts/1256-leave-tribe-context.test.mjs|get_my_tribe_request_context
 tests/contracts/1257-leader-review-hardening.test.mjs|request_tribe_assignment
