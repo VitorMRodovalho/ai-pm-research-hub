@@ -31568,6 +31568,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      _anonymize_person_pii: {
+        Args: { p_member_id: string; p_person_id: string }
+        Returns: number
+      }
       _artia_safe_event_summary: {
         Args: { p_end_date: string; p_start_date: string }
         Returns: Json
