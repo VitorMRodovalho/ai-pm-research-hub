@@ -54,7 +54,14 @@ function stripHtmlComments(src) {
 const flat = (p) => stripHtmlComments(maskJs(read(p))).replace(/\s+/g, ' ');
 const DICT = (l) => read(`src/i18n/${l}.ts`);
 const LANGS = ['pt-BR', 'en-US', 'es-LATAM'];
-const keyIn = (src, k) => new RegExp(`'${k.replace(/\./g, '\\.')}': '([^']+)'`).exec(src)?.[1];
+// Lê o valor da chave sem montar regex com a chave (CodeQL js/incomplete-sanitization).
+function keyIn(src, k) {
+  const head = `'${k}': '`;
+  const a = src.indexOf(head);
+  if (a < 0) return undefined;
+  const b = src.indexOf("'", a + head.length);
+  return b < 0 ? undefined : src.slice(a + head.length, b);
+}
 
 test('#3166 A5: /certificates decide pelo Nav antes de ler, e sem cadastro ou com falha não vê "nenhum certificado"', () => {
   const s = flat('src/pages/certificates.astro');
