@@ -73,6 +73,8 @@ const WK = {
   tribeOpen: t('wk.tribeOpen', lang),
   tribeNoTribe: t('wk.tribeNoTribe', lang),
   tribeNoTribeDesc: t('wk.tribeNoTribeDesc', lang),
+  outsideTribes: t('wk.outsideTribes', lang),
+  outsideTribesCta: t('wk.outsideTribesCta', lang),
   commsHub: t('wk.commsHub', lang),
   commsBoard: t('wk.commsBoard', lang),
   pubBoard: t('wk.pubBoard', lang),
@@ -194,10 +196,15 @@ const WK = {
           <span class="text-lg">🏠</span> {WK.sectionMyTribe}
         </h2>
         <!-- No tribe state -->
+        <!-- #3166 A8: "peça para ser alocado" é só para pesquisador sem tribo; quem atua fora das tribos vê as iniciativas -->
         <div id="wk-no-tribe" class="hidden bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 text-center">
           <div class="text-2xl mb-2">🔍</div>
           <p class="font-semibold text-[var(--text-primary)]">{WK.tribeNoTribe}</p>
           <p class="text-sm text-[var(--text-secondary)] mt-1">{WK.tribeNoTribeDesc}</p>
+        </div>
+        <div id="wk-outside-tribes" class="hidden bg-[var(--surface-card)] border border-[var(--border-subtle)] rounded-2xl p-6 text-center">
+          <p class="font-semibold text-[var(--text-primary)]">{WK.outsideTribes}</p>
+          <a id="wk-outside-tribes-cta" href={`${langPrefix}/initiatives`} class="inline-block mt-3 text-sm font-semibold text-navy no-underline hover:underline">{WK.outsideTribesCta} &rarr;</a>
         </div>
         <!-- Tribe card (populated via JS) -->
         <div id="wk-tribe-card" class="hidden"></div>
@@ -539,8 +546,10 @@ const WK = {
             </a>
           `;
           $tribeCard?.classList.remove('hidden');
-        } else {
+        } else if (member.operational_role === 'researcher') {
           $noTribe?.classList.remove('hidden');
+        } else {
+          document.getElementById('wk-outside-tribes')?.classList.remove('hidden');
         }
       } else {
         // Has tribe but no board yet

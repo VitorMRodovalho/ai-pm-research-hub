@@ -1,12 +1,16 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLangFromURL, t, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 ---
 <BaseLayout title={t('certificates.title', lang)} activePage="certificates" lang={lang}>
   <main class="max-w-[700px] mx-auto px-4 py-8">
     <h1 class="text-xl font-bold text-[var(--text-primary)] mb-6">{t('certificates.title', lang)}</h1>
+    <GuestNoMember lang={lang} id="certs-guest" />
+    <MemberLoadFailed lang={lang} id="certs-failed" />
     <div id="certs-list" class="space-y-3">
       <p class="text-[var(--text-muted)] text-sm text-center py-8">...</p>
     </div>
@@ -22,6 +26,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
   import { downloadCertificatePDF, type CertificateData } from '../lib/certificates/pdf';
   import { t } from '../i18n/utils';
   import type { Lang } from '../i18n/utils';
+  import { isRegisteredMember } from '../lib/routing';
+  import { waitMemberResolved } from '../lib/member-ready';
 
   const TYPE_ICONS: Record<string, string> = {
     volunteer_agreement: '\uD83D\uDCC4',
@@ -46,8 +52,15 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     const container = document.getElementById('certs-list');
     if (!container) return;
 
+    // #3166 A5: decide pelo estado do Nav. A sessão sem cadastro lia "nenhum certificado" com a CTA do termo,
+    // que não serve a ela; e a leitura do membro que falhou não é lista vazia.
+    const r = await waitMemberResolved();
+    if (r.kind === 'member-failed' || r.kind === 'no-member' || (r.kind === 'member' && !isRegisteredMember(r.member))) {
+      container.classList.add('hidden');
+      document.getElementById(r.kind === 'member-failed' ? 'certs-failed' : 'certs-guest')?.classList.remove('hidden');
+      return;
+    }
     let sb = (window as any).navGetSb?.();
-    if (!sb) { await new Promise<void>(r => { const c = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(c, 300); }; setTimeout(c, 300); setTimeout(r, 5000); }); }
     if (!sb) { try { sb = getSupabase(); } catch {} }
     // #3144: sem cliente não há leitura; dizer "nenhum certificado" seria afirmar o que não se leu
     if (!sb) { container.innerHTML = `<p class="text-center text-red-600 text-sm" data-certs-load-failed>${t('certificates.loadFailed', lang)}</p>`; return; }

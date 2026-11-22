@@ -27,6 +27,8 @@ const ME_I18N = {
   progressLabel: t('myEvals.progressLabel', lang),
   pendingHeading: t('myEvals.pendingHeading', lang),
   noPending: t('myEvals.noPending', lang),
+  noCycle: t('myEvals.noCycle', lang),
+  notActiveMember: t('myEvals.notActiveMember', lang),
   draftBadge: t('myEvals.draftBadge', lang),
   roleResearcher: t('myEvals.role.researcher', lang),
   roleLeader: t('myEvals.role.leader', lang),
@@ -172,10 +174,16 @@ const ME_I18N = {
     const { data, error } = await sb.rpc('get_my_pending_evaluations');
 
     if (error) {
-      // A RPC levanta insufficient_privilege quando o chamador não está no comitê
-      // do ciclo em avaliação. Esse é o caso legítimo de "não é para você".
-      if (String(error.code) === '42501' || /not on this cycle committee/i.test(error.message || '')) {
+      // #3166 A6: a RPC levanta insufficient_privilege (42501) em dois casos, e o código não os separa.
+      // Fora do comitê do ciclo é "não é para você"; sem membro ativo é outra coisa, e dizer "comitê" a
+      // essa pessoa era errado. A mensagem é o que distingue.
+      const msg = error.message || '';
+      if (/not on this cycle committee/i.test(msg)) {
         showDenied(I.notCommittee);
+        return;
+      }
+      if (/^Not authenticated/i.test(msg)) {
+        showDenied(I.notActiveMember);
         return;
       }
       showDenied(`${I.errorLoad} ${error.message}`);
@@ -198,8 +206,11 @@ const ME_I18N = {
     if (!host) return;
 
     if (pending.length === 0) {
+      // #3166 A6: sem ciclo em avaliação a RPC devolve a fila vazia sem cycle_code; "você avaliou tudo"
+      // afirmava um trabalho que não existiu.
+      const emptyText = data?.cycle_code ? I.noPending : I.noCycle;
       host.innerHTML = `<div class="bg-white border border-[var(--border)] rounded-2xl p-8 text-center">
-        <p class="text-[var(--text-muted)] text-sm">${esc(I.noPending)}</p></div>`;
+        <p class="text-[var(--text-muted)] text-sm" data-me-empty="${data?.cycle_code ? 'done' : 'no-cycle'}">${esc(emptyText)}</p></div>`;
     } else {
       host.innerHTML = pending.map((p) => `
         <div class="bg-white border border-[var(--border)] rounded-2xl p-4 mb-3 flex items-center justify-between gap-3 flex-wrap">
