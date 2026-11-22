@@ -1969,6 +1969,7 @@ const ptBR: Record<string, string> = {
   'attendance.msg.eventsCreated': '{n} eventos criados ✅',
   'attendance.msg.recurringError': 'Erro ao criar série',
   'attendance.msg.eventUpdated': 'Evento atualizado ✅',
+  'attendance.msg.eventLinkRefused': 'Evento salvo, mas a iniciativa não mudou: {reason}',
   'attendance.msg.eventSaveError': 'Erro ao salvar',
   'attendance.msg.tagsAudienceSaveError': 'O evento foi salvo, mas as tags ou o público não foram gravados. Edite o evento para tentar de novo',
   'attendance.msg.eventEditOpenError': 'Não foi possível abrir a edição deste evento',
