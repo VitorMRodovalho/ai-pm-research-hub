@@ -155,8 +155,8 @@ function affiliationStatusKey(m: MemberRow): AffiliationKey {
 }
 
 /* #625 F1 — display chip for the affiliation farol. Reuses affiliationStatusKey for the bucket;
-   only the red sub-label (inactive vs expired) is refined here for the tooltip. Clickable chip
-   opens the verify modal. */
+   only the red sub-label (inactive vs expired) is refined here for the tooltip. The chip links to
+   /admin/filiacao, the one place where affiliation is verified (#3111). */
 function affiliationFarol(m: MemberRow, t: (key: string, fallback?: string) => string): { emoji: string; label: string; cls: string } {
   switch (affiliationStatusKey(m)) {
     case 'neutral':
@@ -596,115 +596,9 @@ export default function MemberListIsland() {
     setBulkSaving(false);
   };
 
-  // #625 F1: affiliation verification (individual modal + bulk VEP)
-  const [verifyMember, setVerifyMember] = useState<MemberRow | null>(null);
-  const [verifyActive, setVerifyActive] = useState(true);
-  const [verifyExpires, setVerifyExpires] = useState('');
-  const [verifyMethod, setVerifyMethod] = useState('sede_manual');
-  const [verifyObs, setVerifyObs] = useState('');
-  const [verifySaving, setVerifySaving] = useState(false);
-  const [bulkVerifying, setBulkVerifying] = useState(false);
-
-  const openVerify = (m: MemberRow) => {
-    setVerifyMember(m);
-    setVerifyActive(m.affiliation_active !== false);
-    setVerifyExpires(m.affiliation_expires_on || '');
-    setVerifyMethod('sede_manual');
-    setVerifyObs('');
-  };
-
-  const handleVerify = async () => {
-    if (!verifyMember) return;
-    const sb = getSb(); if (!sb) return;
-    setVerifySaving(true);
-    const { data, error } = await sb.rpc('verify_member_affiliation', {
-      p_member_id: verifyMember.id,
-      p_chapter: verifyMember.chapter || null,
-      p_active: verifyActive,
-      p_expires_on: verifyExpires || null,
-      p_method: verifyMethod,
-      p_obs: verifyObs || null,
-    });
-    setVerifySaving(false);
-    if (error || data?.error) {
-      (window as any).toast?.(error?.message || data?.error || t('comp.memberList.saveError', 'Erro ao salvar'), 'error');
-      return;
-    }
-    (window as any).toast?.(t('comp.memberList.verifyDone', 'Filiação verificada'), 'success');
-    setVerifyMember(null);
-    await fetchMembers();
-  };
-
-  // Bulk "marcar verificado via VEP" — the "25 em ≤1h" path on the pre_onboarding queue.
-  const handleBulkVerifyVep = async () => {
-    const sb = getSb(); if (!sb) return;
-    setBulkVerifying(true);
-    const { data, error } = await sb.rpc('verify_member_affiliations_bulk', {
-      p_member_ids: [...selectedIds],
-      p_method: 'vep_sync',
-    });
-    setBulkVerifying(false);
-    if (error || !data?.ok) {
-      (window as any).toast?.(error?.message || t('comp.memberList.operationError', 'Erro na operação'), 'error');
-      return;
-    }
-    const noVep = (data.no_vep_ids || []).length;
-    const notFound = (data.not_found_ids || []).length;
-    const warn = noVep + notFound > 0;
-    (window as any).toast?.(
-      `${data.count} ${t('comp.memberList.verifyDone', 'Filiação verificada')} (VEP)` +
-      (noVep ? ` · ${noVep} sem VEP` : '') + (notFound ? ` · ${notFound} não encontrado(s)` : ''),
-      warn ? 'warning' : 'success');
-    setSelectedIds(new Set());
-    await fetchMembers();
-  };
-
-  // #625 F1b: ateste de acesso (confidencialidade/finalidade) — gate just-in-time + re-aceite anual.
-  const [attestation, setAttestation] = useState<any>(null);
-  const [showAttest, setShowAttest] = useState(false);
-  const [attestChecked, setAttestChecked] = useState(false);
-  const [attesting, setAttesting] = useState(false);
-  const [pendingAttest, setPendingAttest] = useState<(() => void) | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const boot = () => {
-      const sb = getSb();
-      if (!sb) { if (!cancelled) setTimeout(boot, 400); return; }
-      sb.rpc('get_my_affiliation_attestation').then(({ data }: any) => { if (!cancelled && data) setAttestation(data); }).catch(() => {});
-    };
-    boot();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Gate de escrita: se o agente (filiacao_director) ainda não atestou, abre o modal antes da ação.
-  // manager/PM tem needs_attestation=false (servidor) → passa direto. Backstop server-side via trigger.
-  const requireAttest = (action: () => void) => {
-    if (attestation?.needs_attestation) {
-      setPendingAttest(() => action);
-      setAttestChecked(false);
-      setShowAttest(true);
-    } else {
-      action();
-    }
-  };
-
-  const handleAttest = async () => {
-    const sb = getSb(); if (!sb) return;
-    setAttesting(true);
-    const { data, error } = await sb.rpc('attest_affiliation_access', { p_signed_user_agent: navigator.userAgent });
-    setAttesting(false);
-    if (error || !data?.ok) {
-      (window as any).toast?.(error?.message || t('comp.memberList.operationError', 'Erro na operação'), 'error');
-      return;
-    }
-    const { data: att } = await sb.rpc('get_my_affiliation_attestation');
-    if (att) setAttestation(att);
-    setShowAttest(false);
-    const act = pendingAttest;
-    setPendingAttest(null);
-    act?.();
-  };
+  // #3111: a verificação de filiação (individual, em lote e o ateste de acesso) mora só em /admin/filiacao. Esta lista
+  // mostra o selo e leva para lá; antes havia aqui uma segunda superfície de verify_member_affiliation(s_bulk).
+  const filiacaoHref = `${locale === 'en-US' ? '/en' : locale === 'es-LATAM' ? '/es' : ''}/admin/filiacao`;
 
   return (
     <div className="max-w-[1200px] mx-auto">
@@ -822,9 +716,6 @@ export default function MemberListIsland() {
             <button onClick={() => setShowBulkStatus(true)} className="px-3 py-1.5 text-[13px] bg-amber-500 text-white rounded-lg border-0 cursor-pointer hover:bg-amber-600">
               {t('comp.memberList.changeStatus', 'Mudar Status')}
             </button>
-            <button onClick={() => requireAttest(handleBulkVerifyVep)} disabled={bulkVerifying} className="px-3 py-1.5 text-[13px] bg-indigo-600 text-white rounded-lg border-0 cursor-pointer hover:bg-indigo-700 disabled:opacity-50">
-              {bulkVerifying ? t('comp.memberList.verifying', 'Verificando...') : t('comp.memberList.bulkVerifyVep', 'Verificar filiação (VEP)')}
-            </button>
             <button onClick={() => setSelectedIds(new Set())} className="px-3 py-1.5 text-[13px] text-[var(--text-muted)] hover:text-[var(--text-primary)] bg-transparent border-0 cursor-pointer">
               {t('comp.memberList.cancel', 'Cancelar')}
             </button>
@@ -916,10 +807,10 @@ export default function MemberListIsland() {
                   <td className="px-3 py-2 text-[var(--text-secondary)] text-[.8rem]">{m.chapter || '—'}</td>
                   <td className="px-3 py-2 text-center">
                     {(() => { const f = affiliationFarol(m, t); return (
-                      <button onClick={() => requireAttest(() => openVerify(m))} title={`${f.label} — ${t('comp.memberList.verifyAffiliation', 'Verificar filiação')}`}
-                        className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border-0 cursor-pointer ${f.cls}`}>
+                      <a href={filiacaoHref} data-testid="ml-affiliation-link" title={`${f.label} — ${t('comp.memberList.verifyAffiliation', 'Verificar filiação')}`}
+                        className={`text-[11px] px-2 py-0.5 rounded-full font-semibold no-underline ${f.cls}`}>
                         {f.emoji}
-                      </button>
+                      </a>
                     ); })()}
                   </td>
                   <td className="px-3 py-2 text-center">
@@ -1227,75 +1118,6 @@ export default function MemberListIsland() {
         </div>
       )}
 
-      {/* #625 F1 — Affiliation verify modal */}
-      {verifyMember && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4" onClick={() => setVerifyMember(null)}>
-          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[440px] overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-[var(--border-default)]">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">{t('comp.memberList.verifyTitle', 'Verificar filiação de')} {verifyMember.full_name}</h3>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">{verifyMember.chapter || '—'}{verifyMember.vep_status_raw ? ` · VEP: ${verifyMember.vep_status_raw}` : ''}</p>
-            </div>
-            <div className="p-5 space-y-4">
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
-                <input type="checkbox" checked={verifyActive} onChange={e => setVerifyActive(e.target.checked)} className="accent-teal-500" />
-                {t('comp.memberList.verifyActiveLabel', 'Filiação PMI ativa')}
-              </label>
-              <div>
-                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">{t('comp.memberList.verifyExpiresLabel', 'Vencimento (opcional)')}</label>
-                <input type="date" value={verifyExpires} onChange={e => setVerifyExpires(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]" />
-              </div>
-              <div>
-                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">{t('comp.memberList.verifyMethodLabel', 'Método')}</label>
-                <select value={verifyMethod} onChange={e => setVerifyMethod(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)]">
-                  <option value="sede_manual">{t('comp.memberList.verifyMethodManual', 'Verificação manual (sede)')}</option>
-                  <option value="vep_sync">{t('comp.memberList.verifyMethodVep', 'VEP (sincronizado)')}</option>
-                  <option value="self_attested">{t('comp.memberList.verifyMethodSelf', 'Autodeclarado')}</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[.65rem] font-bold text-[var(--text-muted)] uppercase block mb-1">{t('comp.memberList.verifyObsLabel', 'Observação (sobre o resultado)')}</label>
-                <textarea value={verifyObs} maxLength={500} onChange={e => setVerifyObs(e.target.value)} rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--border-default)] text-sm bg-[var(--surface-card)] text-[var(--text-primary)] resize-none" />
-                <p className="text-[10px] text-amber-600 mt-1">⚠ {t('comp.memberList.verifyObsHint', 'Não inclua dados pessoais além do necessário.')}</p>
-              </div>
-            </div>
-            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex justify-end gap-2">
-              <button onClick={() => setVerifyMember(null)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
-              <button onClick={handleVerify} disabled={verifySaving} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                {verifySaving ? t('comp.memberList.verifying', 'Verificando...') : t('comp.memberList.verifySubmit', 'Registrar verificação')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* #625 F1b — Affiliation access attestation (confidentiality/purpose) gate */}
-      {showAttest && (
-        <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4" onClick={() => setShowAttest(false)}>
-          <div className="bg-[var(--surface-card)] rounded-2xl w-full max-w-[560px] overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
-            <div className="px-5 py-4 border-b border-[var(--border-default)] flex-shrink-0">
-              <h3 className="text-base font-bold text-[var(--text-primary)]">🔒 {t('comp.memberList.attestTitle', 'Acesso à verificação de filiação — dados pessoais de terceiros')}</h3>
-            </div>
-            <div className="p-5 overflow-y-auto flex-1">
-              <p className="text-[13px] text-[var(--text-secondary)] whitespace-pre-line leading-relaxed">{t('comp.memberList.attestBody', '')}</p>
-            </div>
-            <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex-shrink-0 space-y-3">
-              <label className="flex items-start gap-2 cursor-pointer text-sm text-[var(--text-primary)]">
-                <input type="checkbox" checked={attestChecked} onChange={e => setAttestChecked(e.target.checked)} className="accent-teal-500 mt-0.5" />
-                <span>{t('comp.memberList.attestCheckbox', 'Declaro estar ciente e de acordo.')}</span>
-              </label>
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setShowAttest(false)} className="px-4 py-2 rounded-lg text-[13px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-transparent hover:bg-[var(--surface-hover)] cursor-pointer">{t('comp.memberList.cancel', 'Cancelar')}</button>
-                <button onClick={handleAttest} disabled={!attestChecked || attesting} className="px-4 py-2 rounded-lg text-[13px] font-semibold bg-teal-600 text-white border-0 hover:bg-teal-700 cursor-pointer disabled:opacity-50">
-                  {attesting ? t('comp.memberList.attesting', 'Registrando...') : t('comp.memberList.attestConfirm', 'Confirmar e acessar')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

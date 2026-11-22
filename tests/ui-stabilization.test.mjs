@@ -1221,6 +1221,10 @@ test('generic board route exists and renders BoardEngine', () => {
 test('comms-ops page integrates both CommsDashboard and BoardEngine', () => {
   const page = read('src/pages/admin/comms-ops.astro');
   assert.equal(page.includes('CommsDashboard client:load'), true);
-  assert.equal(page.includes('BoardEngine client:load'), true);
-  assert.equal(page.includes('domainKey="communication"'), true);
+  // O board do Hub abre pelo id (#3132): a tag que decide recebe boardId e não recebe domainKey.
+  const boardTags = page.match(/<BoardEngine\b[^>]*>/g) ?? [];
+  assert.equal(boardTags.length, 1, `esperado 1 <BoardEngine>, achei ${boardTags.length}`);
+  assert.match(boardTags[0], /\bclient:load\b/);
+  assert.match(boardTags[0], /\bboardId=\{COMMS_HUB_BOARD_ID\}/);
+  assert.doesNotMatch(boardTags[0], /\bdomainKey\s*=/);
 });

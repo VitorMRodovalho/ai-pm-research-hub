@@ -4,6 +4,7 @@ import { AttendanceCell } from '../attendance/AttendanceCell';
 import { getTribePermissions } from '../../lib/tribePermissions';
 import { SELF_CHECKIN_WINDOW_HOURS } from '../../lib/attendance-window';
 import type { CellStatus } from '../attendance/types';
+import { throwIfRefused } from '../../lib/rpc-checked';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -176,8 +177,10 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
     const newPresent = currentStatus !== 'present';
     try {
       // #2708: o supabase-js não lança na recusa do banco; sem ler o `error`, o toast de sucesso saía.
-      const { error: presErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
+      // #3149: na autoatendência, mark_member_present delega a register_own_presence, que recusa no corpo
+      const { data: presData, error: presErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: newPresent });
       if (presErr) throw presErr;
+      throwIfRefused(presData);
       if (currentStatus === 'excused') {
         const { error: excErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
         if (excErr) throw excErr;
@@ -189,8 +192,9 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
         msg,
         undo: async () => {
           try {
-            const { error: undoErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !newPresent });
+            const { data: undoData, error: undoErr } = await sb.rpc('mark_member_present', { p_event_id: eventId, p_member_id: memberId, p_present: !newPresent });
             if (undoErr) throw undoErr;
+            throwIfRefused(undoData);
             await refreshGrid();
           } catch (e: any) {
             (window as any).toast?.(e?.message || 'Erro', 'error');
@@ -270,10 +274,11 @@ export default function TribeAttendanceTab({ tribeId, initiativeId }: Props) {
         });
         if (excErr) throw excErr;
       } else {
-        const { error: presErr } = await sb.rpc('mark_member_present', {
+        const { data: presData, error: presErr } = await sb.rpc('mark_member_present', {
           p_event_id: eventId, p_member_id: memberId, p_present: state === 'present',
         });
         if (presErr) throw presErr;
+        throwIfRefused(presData);
         if (current === 'excused') {
           const { error: clearErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
           if (clearErr) throw clearErr;

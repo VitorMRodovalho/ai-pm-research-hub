@@ -49,7 +49,8 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
     let sb = (window as any).navGetSb?.();
     if (!sb) { await new Promise<void>(r => { const c = () => { sb = (window as any).navGetSb?.(); if (sb) r(); else setTimeout(c, 300); }; setTimeout(c, 300); setTimeout(r, 5000); }); }
     if (!sb) { try { sb = getSupabase(); } catch {} }
-    if (!sb) { container.innerHTML = `<p class="text-center text-[var(--text-muted)] text-sm">${t('certificates.empty', lang)}</p>`; return; }
+    // #3144: sem cliente não há leitura; dizer "nenhum certificado" seria afirmar o que não se leu
+    if (!sb) { container.innerHTML = `<p class="text-center text-red-600 text-sm" data-certs-load-failed>${t('certificates.loadFailed', lang)}</p>`; return; }
 
     try {
       const { data, error } = await sb.rpc('get_my_certificates', { p_include_volunteer_agreements: true });
@@ -141,7 +142,7 @@ const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
       });
     } catch (e) {
       console.error('Certificates load failed:', e);
-      container.innerHTML = `<p class="text-center text-[var(--text-muted)] text-sm">${t('certificates.empty', lang)}</p>`;
+      container.innerHTML = `<p class="text-center text-red-600 text-sm" data-certs-load-failed>${t('certificates.loadFailed', lang)}</p>`;
     }
   })();
 </script>

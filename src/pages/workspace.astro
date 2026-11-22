@@ -11,7 +11,6 @@ import MyTasksIsland from '../components/workspace/MyTasksIsland';
 import MyCardsWidget from '../components/workspace/MyCardsWidget';
 import MyActionItemsWidget from '../components/workspace/MyActionItemsWidget';
 import OnboardingChecklist from '../components/onboarding/OnboardingChecklist';
-import PreOnboardingChecklist from '../components/onboarding/PreOnboardingChecklist';
 import PostPromotionJourney from '../components/onboarding/PostPromotionJourney';
 import TribeRequestBlock from '../components/tribe/TribeRequestBlock';
 import BuddyBlock from '../components/buddy/BuddyBlock';
@@ -123,9 +122,6 @@ const WK = {
       <LoadingSkeleton variant="profile" />
       <LoadingSkeleton variant="card" count={3} />
     </div>
-
-    <!-- Pre-Onboarding Checklist (approved candidates) -->
-    <PreOnboardingChecklist client:load lang={lang} />
 
     <!-- Onboarding Checklist -->
     <OnboardingChecklist client:load lang={lang} />

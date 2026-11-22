@@ -5722,17 +5722,7 @@ function registerTools(mcp: McpServer, sb: Sb) {
   });
 
   // ===== GAMIFICATION + CYCLES + ONBOARDING LEADERBOARD (issue #86 — coverage gap closure) =====
-  // 7 read tools wrapping existing SECDEF RPCs. No new SQL.
-
-  // TOOL: get_pre_onboarding_leaderboard (public/auth — pre-members ranking)
-  mcp.tool("get_pre_onboarding_leaderboard", "Returns the leaderboard of pre-members (candidates in onboarding) ranked by step completion + XP earned during selection. Useful for cycle organizers tracking candidate engagement before formal selection.", {}, async () => {
-    const start = Date.now();
-    const member = await getMember(sb);
-    const { data, error } = await sb.rpc("get_pre_onboarding_leaderboard");
-    if (error) { await logUsage(sb, member?.id || null, "get_pre_onboarding_leaderboard", false, error.message, start); return err(error.message); }
-    await logUsage(sb, member?.id || null, "get_pre_onboarding_leaderboard", true, undefined, start);
-    return ok(data);
-  });
+  // Read tools wrapping existing SECDEF RPCs. No new SQL. (Jornadas fatia D: get_pre_onboarding_leaderboard saiu com a pré-jornada.)
 
   // TOOL: get_tribe_gamification (any authenticated — internal tribe ranking)
   mcp.tool("get_tribe_gamification", "Returns the gamification ranking inside a specific tribe (1-8): members sorted by total XP for the current cycle, with breakdown by category (attendance, badges, showcases). Internal view for tribe leaders and members tracking team momentum.", {

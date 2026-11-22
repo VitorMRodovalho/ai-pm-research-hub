@@ -127,16 +127,19 @@ Deno.serve(async (req) => {
     const rt = await rr.text()
     console.log('[broadcast] resend:', rr.status, rt)
 
+    // #3148: no modo de teste só o endereço fixo recebe, sem cópia oculta; a contagem é de quem foi endereçado
+    const addressed = finalBcc.length
+
     if (!rr.ok) {
-      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
+      const { error: logErr1 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: addressed, status: 'failed', error_detail: 'Resend ' + rr.status + ': ' + rt }])
       if (logErr1) console.error('[broadcast] log err:', logErr1.message)
       return json({ success: false, error: 'Resend failed', status: rr.status, detail: rt }, 502)
     }
 
-    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: allBcc.length, status: 'sent', error_detail: null }])
+    const { error: logErr2 } = await sb.from('broadcast_log').insert([{ initiative_id: initiativeId, sender_id: c.id, subject: subj, body: bd, recipient_count: addressed, status: 'sent', error_detail: null }])
     if (logErr2) console.error('[broadcast] log err:', logErr2.message)
 
-    return json({ success: true, recipient_count: allBcc.length, tribe: tn, cc_management: ccMgmt })
+    return json({ success: true, sandbox, recipient_count: addressed, tribe: tn, cc_management: ccMgmt })
 
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e)

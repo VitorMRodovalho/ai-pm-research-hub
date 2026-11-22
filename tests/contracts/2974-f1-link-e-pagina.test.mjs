@@ -34,7 +34,8 @@ const SEM = { is_superadmin: false, org_actions: [], initiative_actions: {}, tri
 const P = { operational_role: 'researcher', designations: [], is_superadmin: false };
 const PAPEIS = ['manager', 'deputy_manager', 'tribe_leader', 'researcher', 'chapter_liaison', 'sponsor', 'observer', 'guest'];
 const DESIGNACOES = ['sponsor', 'chapter_liaison', 'curator', 'comms_team', 'comms_leader', 'comms_member', 'co_gp',
-  'deputy_manager', 'chapter_board', 'certificacao_director', 'filiacao_director', 'voluntariado_director'];
+  'deputy_manager', 'chapter_board', 'certificacao_director', 'filiacao_director', 'voluntariado_director',
+  'chapter_vice_president'];
 const ACOES = [...new Set([...ADMIN_TIER_ACTIONS, ...ROTAS.flatMap(([, a]) => a.actions), 'curate_content'])].sort();
 const FORMAS = [
   ...PAPEIS.map((p) => [`papel:${p}`, { ...P, operational_role: p }, SEM]),

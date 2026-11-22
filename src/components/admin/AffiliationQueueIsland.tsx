@@ -41,6 +41,22 @@ type CohortClass = 'current_selection' | 'carryover' | 'non_selection';
 // #1129 — volunteer-term validity vs CURRENT_DATE (server-side, 180d "expiring" window).
 type TermStatus = 'valid' | 'expiring' | 'expired' | 'none' | 'unsigned';
 
+// #3105 — o portão do termo (affiliation_gate), devolvido pela fila em cada linha: caminho quando aberto, motivo quando
+// fechado. A fila padrão é exatamente quem tem o portão fechado; a tela só mostra o motivo, quem decide é o servidor.
+// #3107: no escopo "todos", quem tem o portão aberto mostra o caminho (VEP ou verificação manual).
+interface AffiliationGate {
+  open: boolean;
+  path?: 'vep' | 'manual' | string;
+  reason?: 'not_affiliated' | 'unknown' | 'entry_chapter_required' | string;
+  chapters?: string[];
+}
+
+// #3108 — vencimento efetivo da filiação e de onde ele vem, pela mesma função que o radar lê.
+interface AffiliationExpiry {
+  expires_on: string | null;
+  source: 'vep' | 'manual' | null;
+}
+
 interface QueueRow {
   member_id: string;
   name: string;
@@ -48,6 +64,8 @@ interface QueueRow {
   chapter: string | null;
   operational_role: string | null;
   is_pre_onboarding: boolean;
+  affiliation_gate?: AffiliationGate | null; // #3105
+  affiliation_expiry?: AffiliationExpiry;
   pmi_id_verified: boolean;
   vep_status_raw: string | null;
   vep_last_seen_at: string | null;
@@ -549,7 +567,7 @@ export default function AffiliationQueueIsland() {
         </button>
         <button onClick={() => setTab('queue')}
           className={`px-3 py-1.5 text-[13px] rounded-lg border cursor-pointer ${tab === 'queue' ? 'bg-teal-600 text-white border-teal-600' : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:bg-[var(--surface-hover)]'}`}>
-          {t('comp.affiliationQueue.tabAll', 'Todos não-verificados')} ({rows.length})
+          {t('comp.affiliationQueue.tabAll', 'Precisam de verificação')} ({rows.length})
         </button>
         {/* #1364b — full active roster (verified + unverified) so the office can filter a chapter and
             see every member linked to it with each one's status. Lazy-loaded on first open. */}
@@ -730,9 +748,27 @@ export default function AffiliationQueueIsland() {
                           <div className="font-medium text-[var(--text-primary)] flex items-center gap-1.5">
                             {r.name}
                             {r.is_pre_onboarding && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 font-semibold">{t('comp.affiliationQueue.preBadge', 'pré')}</span>}
+                            {r.affiliation_gate && !r.affiliation_gate.open && (
+                              <span data-testid="aq-gate-reason" className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold">
+                                {t(`comp.affiliationQueue.gateReason_${r.affiliation_gate.reason ?? 'unknown'}`, r.affiliation_gate.reason ?? 'unknown')}
+                              </span>
+                            )}
+                            {r.affiliation_gate?.open && (
+                              <span data-testid="aq-gate-path" className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal-50 text-teal-700 font-semibold">
+                                {t(`comp.affiliationQueue.gatePath_${r.affiliation_gate.path ?? 'unknown'}`, r.affiliation_gate.path ?? 'unknown')}
+                              </span>
+                            )}
                             {r.pmi_id_verified && <span title={t('comp.affiliationQueue.pmiIdVerified', 'PMI ID verificado')} className="inline-flex"><BadgeCheck size={13} className="text-teal-600" /></span>}
                           </div>
                           <div className="text-[.7rem] text-[var(--text-muted)]">{r.email}</div>
+                          {r.affiliation_expiry && (
+                            <div data-testid="aq-effective-expiry" className="text-[.7rem] text-[var(--text-secondary)]">
+                              {r.affiliation_expiry.expires_on
+                                ? t('comp.affiliationQueue.effExpiry', 'vence em {date}').replace('{date}', fmtDate(r.affiliation_expiry.expires_on))
+                                : t('comp.affiliationQueue.effExpiryNone', 'sem vencimento conhecido')}
+                              {r.affiliation_expiry.source && <> · {t(`comp.affiliationQueue.effExpirySource_${r.affiliation_expiry.source}`, r.affiliation_expiry.source)}</>}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

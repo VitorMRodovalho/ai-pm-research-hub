@@ -270,7 +270,7 @@ describe('pertencimento parte 2: o que a home e o perfil entregam', () => {
 
   it('I: o perfil: quem tem a cláusula vê o consentimento e revoga; quem assinou antes lê o texto e autoriza', () => {
     assert.match(PROFILE, /<div id="self-image-consent-clause" class="hidden [^"]*"><\/div>\s+<label[^>]*id="self-image-consent-row">\s+<input type="checkbox" id="self-image-consent" class="mt-0\.5" disabled>\s+<span[^>]*><span id="self-image-consent-label">\$\{PROFILE_I18N\.imageConsentLabel\}<\/span> <span[^>]*>\$\{PROFILE_I18N\.imageConsentHint\}<\/span><\/span>/);
-    assert.match(PROFILE, /loadNotifPrefs\(\);\s+loadLinkedProviders\(\);\s+loadImageConsent\(\);/);
+    assert.match(PROFILE, /loadLinkedProviders\(\);\s+loadImageConsent\(\);/);
     const fn = PROFILE.slice(PROFILE.indexOf('async function loadImageConsent()'), PROFILE.indexOf("document.addEventListener('change', async (e) => {", PROFILE.indexOf('async function loadImageConsent()')));
     assert.match(fn, /const \{ data, error \} = await sb\.rpc\('get_my_image_consent'\);\s+if \(error \|\| !data\) return;\s+const withTerm = data\.term_has_clause === true;/);
     // sem a cláusula no termo, só autoriza quem tem o texto na tela; o estado vem do banco

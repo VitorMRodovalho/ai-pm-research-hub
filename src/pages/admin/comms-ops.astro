@@ -9,6 +9,11 @@ const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const langPrefix = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
 const i18nBundle = buildPageI18n(['comp.board', 'comp.card', 'comp.comms', 'common'], lang);
 
+// Board do Hub de Comunicação, aberto PELO ID. Pela chave de domínio sozinha, get_board_by_domain
+// devolve o board ativo mais novo com essa chave, e há vários; a página abria outro board.
+// O link "board-comms" do menu em workspace.astro usa o mesmo id.
+const COMMS_HUB_BOARD_ID = 'a6b78238-11aa-476a-b7e2-a674d224fd79';
+
 // Pre-render strings for inline TS script via define:vars (Ω-B+.4 p141)
 const COMMSOPS_I18N = {
   prepararBtn: t('admin.commsOps.prepararBtn', lang),
@@ -109,7 +114,7 @@ const COMMSOPS_I18N = {
 
       <!-- Board Kanban -->
       <div class="rounded-2xl border border-[var(--border-default)] bg-[var(--surface-card)] p-5 shadow-sm">
-        <BoardEngine client:load domainKey="communication" />
+        <BoardEngine client:load boardId={COMMS_HUB_BOARD_ID} />
       </div>
 
       <!-- Broadcast History -->

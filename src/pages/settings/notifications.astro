@@ -50,6 +50,10 @@ const i18nClient = {
     governance_vote_reminder: t('notification.type.governance_vote_reminder', lang),
     engagement_welcome: t('notification.type.engagement_welcome', lang),
     system: t('notification.type.system', lang),
+    curation_status: t('notification.type.curation_status', lang),
+    attendance_detractor: t('notification.type.attendance_detractor', lang),
+    cr_approved: t('notification.type.cr_approved', lang),
+    certificate_issued: t('notification.type.certificate_issued', lang),
   },
 };
 ---
@@ -287,6 +291,8 @@ const i18nClient = {
         'tribe_broadcast', 'attendance_reminder', 'card_assigned', 'card_status_changed',
         'webinar_status_confirmed', 'publication', 'governance_vote_reminder',
         'engagement_welcome', 'system',
+        // #3141: tipos que só o cartão antigo do perfil oferecia; esta é a tela única
+        'curation_status', 'attendance_detractor', 'cr_approved', 'certificate_issued',
       ];
       const { data: prefs } = await sb.from('notification_preferences')
         .select('muted_types').eq('member_id', (member as any).id).maybeSingle();
@@ -302,7 +308,9 @@ const i18nClient = {
       const savemutedBtn = document.getElementById('save-muted')!;
       const mutedStatus = document.getElementById('muted-status')!;
       savemutedBtn.addEventListener('click', async () => {
-        const muted: string[] = [];
+        // #3141: set_my_muted_notification_types substitui o array inteiro, então o que já estava
+        // silenciado e esta tela não lista continua silenciado em vez de sumir no salvar
+        const muted: string[] = currentMuted.filter(k => !NOTIFICATION_TYPE_KEYS.includes(k));
         list.querySelectorAll('input[type="checkbox"]:checked').forEach(el => {
           muted.push((el as HTMLInputElement).dataset.type!);
         });
@@ -312,7 +320,7 @@ const i18nClient = {
           mutedStatus.textContent = `${i18n.errorPrefix} ${error.message}`;
           mutedStatus.style.color = '#d32f2f';
         } else {
-          mutedStatus.textContent = i18n.mutedSavedOk.replace('{n}', String(muted.length));
+          mutedStatus.textContent = i18n.mutedSavedOk.replace('{n}', String(muted.filter(k => NOTIFICATION_TYPE_KEYS.includes(k)).length));
           mutedStatus.style.color = '#388e3c';
         }
       });

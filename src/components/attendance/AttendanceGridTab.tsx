@@ -11,6 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { usePageI18n } from '../../i18n/usePageI18n';
 import { canForAnyTribe } from '../../lib/permissions';
+import { throwIfRefused } from '../../lib/rpc-checked';
 import {
   Users,
   Percent,
@@ -352,10 +353,12 @@ export default function AttendanceGridTab() {
 
     setToggling(cellKey);
     try {
-      const { error: rpcErr } = await sb.rpc('mark_member_present', {
+      // #3149: na autoatendência, mark_member_present delega a register_own_presence, que recusa no corpo
+      const { data: rpcData, error: rpcErr } = await sb.rpc('mark_member_present', {
         p_event_id: eventId, p_member_id: memberId, p_present: nextState === 'present',
       });
       if (rpcErr) throw rpcErr;
+      throwIfRefused(rpcData);
       // If going from excused to absent, also clear excused flag
       if (current === 'excused') {
         const { error: clearErr } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
@@ -439,10 +442,11 @@ export default function AttendanceGridTab() {
         });
         if (error) throw error;
       } else {
-        const { error: e1 } = await sb.rpc('mark_member_present', {
+        const { data: d1, error: e1 } = await sb.rpc('mark_member_present', {
           p_event_id: eventId, p_member_id: memberId, p_present: state === 'present',
         });
         if (e1) throw e1;
+        throwIfRefused(d1);
         if (current === 'excused') {
           const { error: e2 } = await sb.rpc('mark_member_excused', { p_event_id: eventId, p_member_id: memberId, p_excused: false });
           if (e2) throw e2;

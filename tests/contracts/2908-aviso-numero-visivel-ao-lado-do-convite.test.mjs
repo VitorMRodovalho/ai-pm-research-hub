@@ -28,7 +28,8 @@ const ROOT = process.cwd();
 const read = (p) => maskJsComments(readFileSync(resolve(ROOT, p), 'utf8'));
 
 const PLACES = {
-  preOnboarding: 'src/components/onboarding/PreOnboardingChecklist.tsx',
+  // Jornadas fatia D: o cartão da pré-jornada (PreOnboardingChecklist) saiu; o grupo de onboarding fica no bloco de
+  // entrada na tribo, abaixo.
   generalCard: 'src/components/onboarding/GeneralGroupCard.tsx',
   termSuccess: 'src/pages/volunteer-agreement.astro',
   tribePage: 'src/pages/tribe/[id].astro',
@@ -47,11 +48,6 @@ function between(body, from, to, label) {
   assert.ok(stop > start, `${label}: "${to}" no longer follows "${from}"`);
   return body.slice(start, stop + to.length);
 }
-
-test('A: pre-onboarding card, the notice sits inside {groupUrl && (...)}, before the link', () => {
-  const block = between(read(PLACES.preOnboarding), '{groupUrl && (', 'href={groupUrl}', 'pre-onboarding card');
-  assert.match(block, /\{phoneVisibleNotice\(lang\)\}/, 'the onboarding group invite renders without the phone notice');
-});
 
 test('A: general group card, the notice sits in the render that only runs with an invite, before the link', () => {
   const block = between(read(PLACES.generalCard), 'if (hidden || !url) return null;', 'href={url}', 'general group card');
@@ -85,18 +81,6 @@ test('A: tribe dashboard, the notice is inside {waLink && (...)}', () => {
 test('A: tribe request block, the notice sits inside {groupUrl && (...)}, before the link', () => {
   const block = between(read(PLACES.tribeRequest), '{groupUrl && (', 'href={groupUrl}', 'tribe request block');
   assert.match(block, /\{phoneVisibleNotice\(lang\)\}/, 'the onboarding group invite in the tribe request block renders without the phone notice');
-});
-
-test('B: the pre-onboarding card names the group generically, in the 3 languages', () => {
-  const body = read(PLACES.preOnboarding);
-  for (const [label, re] of [
-    ['pt-BR', /helpBody:\s*'Entre no grupo de WhatsApp do onboarding do Núcleo:/],
-    ['en-US', /helpBody:\s*'Join the Hub onboarding WhatsApp group:/],
-    ['es-LATAM', /helpBody:\s*'Únase al grupo de WhatsApp de onboarding del Núcleo:/],
-  ]) assert.match(body, re, `card label (${label}) is not the generic one`);
-  const bodies = [...body.matchAll(/helpBody:\s*'([^']*)'/g)].map((m) => m[1]);
-  assert.equal(bodies.length, 3, `expected 3 helpBody strings, found ${bodies.length}`);
-  for (const b of bodies) assert.doesNotMatch(b, /pré-onboarding|pre-onboarding|pre-integración/i, `card still says pre-onboarding: ${b}`);
 });
 
 test('C: the files that ask for an invite are exactly the places that render the notice', () => {

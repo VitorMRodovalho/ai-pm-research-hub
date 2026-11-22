@@ -1,6 +1,7 @@
 ---
 import AdminLayout from '../../layouts/AdminLayout.astro';
 import DiversityDashboard from '../../components/selection/DiversityDashboard';
+import SelectionEvaluatorsTab from '../../components/selection/SelectionEvaluatorsTab';
 import { t, getLangFromURL, type Lang } from '../../i18n/utils';
 import { buildPageI18n } from '../../i18n/pageI18n';
 
@@ -93,6 +94,14 @@ const SEL_I18N = {
   confirmInlineReject: t('admin.selection.confirmInlineReject', lang),
   inlineApproveToast: t('admin.selection.inlineApproveToast', lang),
   inlineRejectToast: t('admin.selection.inlineRejectToast', lang),
+  // #3100 — o portao de filiacao devolvido pela aprovacao
+  affiliationGateWarn: t('admin.selection.affiliationGateWarn', lang),
+  affiliationGateBulkWarn: t('admin.selection.affiliationGateBulkWarn', lang),
+  affiliationGateReason: {
+    not_affiliated: t('admin.selection.affiliationGateReason.not_affiliated', lang),
+    entry_chapter_required: t('admin.selection.affiliationGateReason.entry_chapter_required', lang),
+    unknown: t('admin.selection.affiliationGateReason.unknown', lang),
+  },
   bulkSelectedSuffix: t('admin.selection.bulkSelectedSuffix', lang),
   allChaptersOption: t('admin.selection.allChapters', lang),
   allOpportunitiesOption: t('admin.selection.allOpportunities', lang),
@@ -324,6 +333,16 @@ const SEL_I18N = {
   pilotBadgeHint: t('admin.selection.pilotBadgeHint', lang),
   divergenceBadge: t('admin.selection.divergenceBadge', lang),
   divergenceBadgeHint: t('admin.selection.divergenceBadgeHint', lang),
+  // #3118: a coluna Pipeline do piloto, por parte (ADR-0134 §3)
+  pilotPartObjective: t('admin.selection.pilotPartObjective', lang),
+  pilotPartVideo: t('admin.selection.pilotPartVideo', lang),
+  pilotPartFit: t('admin.selection.pilotPartFit', lang),
+  pilotPartShortObjective: t('admin.selection.pilotPartShortObjective', lang),
+  pilotPartShortVideo: t('admin.selection.pilotPartShortVideo', lang),
+  pilotPartShortFit: t('admin.selection.pilotPartShortFit', lang),
+  pilotPartDetail: t('admin.selection.pilotPartDetail', lang),
+  pilotPartOverdue: t('admin.selection.pilotPartOverdue', lang),
+  pilotPartsMissing: t('admin.selection.pilotPartsMissing', lang),
   // p152 Wave 3.7: hidden-by-filter inline count
   hiddenByFilter: t('admin.selection.hiddenByFilter', lang),
   // p153 GAP-152.3: VEP status raw badge inline (selection list row name cell)
@@ -458,6 +477,8 @@ const SEL_I18N = {
         -->
         <button data-sel-tab="import" data-sel-requires="manage_member" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabImportCsv', lang)}</button>
         <button data-sel-tab="committee" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabCommitteeRouting', lang)}</button>
+        <!-- #3119: avaliadores do piloto (vínculo, calibragem, atribuição, histórico) → só manage_platform -->
+        <button data-sel-tab="evaluators" data-sel-requires="manage_platform" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.evaluators.tab', lang)}</button>
         <button data-sel-tab="diversity" class="sel-tab-btn px-4 py-2 text-sm font-semibold rounded-t-lg border-b-2 border-transparent text-[var(--text-secondary)] bg-transparent cursor-pointer hover:text-navy">{t('admin.selection.tabDiversity', lang)}</button>
       </div>
 
@@ -580,8 +601,8 @@ const SEL_I18N = {
             <table class="w-full text-left text-[13px]">
               <thead>
                 <tr class="bg-[var(--surface-base)] border-b border-[var(--border-default)]">
-                  <th class="px-2 py-2.5 w-8"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
-                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="applicant_name">{t('admin.selection.colName', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
+                  <th class="px-2 py-2.5 w-8 min-w-8 max-w-8 sticky left-0 z-20 bg-[var(--surface-base)]"><input type="checkbox" id="sel-check-all" class="cursor-pointer" /></th>
+                  <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy sticky left-8 z-20 bg-[var(--surface-base)] shadow-[1px_0_0_var(--border-default)]" data-sort="applicant_name">{t('admin.selection.colName', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="role_applied">{t('admin.selection.colTrack', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="vep_opportunity_id">{t('admin.selection.colOpportunity', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
                   <th class="px-4 py-2.5 font-bold text-[var(--text-secondary)] cursor-pointer hover:text-navy" data-sort="chapter">{t('admin.selection.chapter', lang)}<span class="sort-arrow ml-1 text-navy"></span></th>
@@ -768,6 +789,11 @@ const SEL_I18N = {
       </div>
 
       <!-- TAB: DIVERSITY (CR-040) -->
+      <!-- TAB: AVALIADORES (#3119). A ilha só hidrata quando a aba fica visível, e a leitura recusa quem não é gestão. -->
+      <div id="tab-evaluators" data-sel-requires="manage_platform" class="hidden space-y-4">
+        <SelectionEvaluatorsTab client:visible />
+      </div>
+
       <div id="tab-diversity" class="hidden space-y-4">
         <div class="bg-[var(--surface-card)] border border-[var(--border-default)] rounded-xl p-6">
           <div class="flex items-center justify-between mb-4">
@@ -1104,6 +1130,15 @@ const SEL_I18N = {
     pilotBadgeHint: 'Vaga piloto da linha: fora da avaliação geral do comitê (ADR-0134).',
     divergenceBadge: 'Divergência',
     divergenceBadgeHint: 'As duas notas de uma parte da candidatura piloto diferem mais de 30% da média: revise o caso antes de decidir (ADR-0134).',
+    pilotPartObjective: 'Nota objetiva',
+    pilotPartVideo: 'Nota do vídeo',
+    pilotPartFit: 'Fit',
+    pilotPartShortObjective: 'OB',
+    pilotPartShortVideo: 'VD',
+    pilotPartShortFit: 'FT',
+    pilotPartDetail: 'atribuídos {a}/{e} · calibrados {c}/{e} · enviados {s}/{e}',
+    pilotPartOverdue: '{n} com prazo vencido',
+    pilotPartsMissing: 'Partes do piloto sem dado no painel',
     hiddenByFilter: 'ocultos por filtro',
     vepBadge: {
       submitted: 'VEP·Subm', active: 'VEP·Ativ', withdrawn: 'VEP·Saiu',
@@ -1403,7 +1438,7 @@ const SEL_I18N = {
       btn.classList.toggle('border-transparent', !isActive);
       btn.classList.toggle('text-[var(--text-secondary)]', !isActive);
     });
-    ['pipeline', 'import', 'committee', 'diversity'].forEach(t => {
+    ['pipeline', 'import', 'committee', 'evaluators', 'diversity'].forEach(t => {
       document.getElementById(`tab-${t}`)?.classList.toggle('hidden', t !== name);
     });
   }
@@ -1689,6 +1724,44 @@ const SEL_I18N = {
   /* p92 Phase D — pipeline workflow indicators (5 mini-badges per candidate).
      Compact one-glance status for AI / peer review / interview / token usage / video.
      Each badge: dot color (emerald=done, amber=partial, gray=pending) + tooltip. */
+  /* #3118 (ADR-0134 §3): a candidatura piloto é avaliada em três partes, cada uma com o seu esperado (objetiva 2,
+     vídeo 2, fit 1). O painel manda pilot_parts só à gestão e só na linha piloto. Estado de cada parte:
+     done = envios >= esperado; ready = atribuídos e calibrados >= esperado, falta o envio; assigned = há atribuição,
+     mas falta atribuir ou calibrar; empty = nada atribuído. */
+  const PILOT_PARTS = ['objective', 'video', 'fit'] as const;
+  const PILOT_PART_KEY: Record<string, string> = { objective: 'Objective', video: 'Video', fit: 'Fit' };
+  function pilotPart(r: any, part: string): { e: number; a: number; c: number; s: number; o: number } | null {
+    const p = r?.pilot_parts?.[part];
+    if (!p) return null;
+    return { e: Number(p.expected ?? 0), a: Number(p.assigned ?? 0), c: Number(p.calibrated ?? 0), s: Number(p.submitted ?? 0), o: Number(p.overdue ?? 0) };
+  }
+  function pilotPartState(p: { e: number; a: number; c: number; s: number }): 'done' | 'ready' | 'assigned' | 'empty' {
+    if (p.e > 0 && p.s >= p.e) return 'done';
+    if (p.e > 0 && p.a >= p.e && p.c >= p.e) return 'ready';
+    if (p.a > 0) return 'assigned';
+    return 'empty';
+  }
+  function pilotPartDetail(p: { e: number; a: number; c: number; s: number; o: number }): string {
+    const base = String(T.pilotPartDetail || 'atribuídos {a}/{e} · calibrados {c}/{e} · enviados {s}/{e}')
+      .replace(/\{a\}/g, String(p.a)).replace(/\{c\}/g, String(p.c)).replace(/\{s\}/g, String(p.s)).replace(/\{e\}/g, String(p.e));
+    return p.o > 0 ? `${base} · ${String(T.pilotPartOverdue || '{n} com prazo vencido').replace('{n}', String(p.o))}` : base;
+  }
+  function pilotPartsBadges(r: any): string {
+    const tone: Record<string, string> = {
+      done: 'bg-emerald-100 text-emerald-700', ready: 'bg-amber-100 text-amber-700',
+      assigned: 'bg-blue-100 text-blue-700', empty: 'bg-gray-100 text-gray-400',
+    };
+    return PILOT_PARTS.map((part) => {
+      const k = PILOT_PART_KEY[part];
+      const p = pilotPart(r, part);
+      const short = T[`pilotPartShort${k}`] || k.slice(0, 2).toUpperCase();
+      if (!p) return `<span data-pilot-part="${part}" title="${esc(T.pilotPartsMissing || '')}" class="inline-flex items-center h-5 px-1 rounded text-[9px] font-bold bg-gray-100 text-gray-400">${esc(short)} —</span>`;
+      const st = pilotPartState(p);
+      const ring = p.o > 0 ? ' ring-1 ring-red-400' : '';
+      return `<span data-pilot-part="${part}" data-pilot-state="${st}" title="${esc(`${T[`pilotPart${k}`] || k}: ${pilotPartDetail(p)}`)}" class="inline-flex items-center h-5 px-1 rounded text-[9px] font-bold ${tone[st]}${ring}">${esc(short)} ${p.s}/${p.e}</span>`;
+    }).join('');
+  }
+
   function pipelineBadges(r: any): string {
     // p150 hotfix2: read from meta + peer_extra subgroups (fallback to flat for backwards compat)
     const aiDone = (r.meta?.ai_analysis_done ?? r.ai_analysis_done) === true;
@@ -1748,6 +1821,8 @@ const SEL_I18N = {
       return dot('bg-gray-100 text-gray-400', '—', 'Candidato ainda não decidiu sobre a rota de vídeos');
     })();
 
+    // #3118: na trilha piloto, as três partes do piloto no lugar do x/2 da avaliação geral, e sem a entrevista geral.
+    if (isPilotRow(r)) return `<div class="inline-flex items-center gap-1">${aiBadge}${pilotPartsBadges(r)}${tokenBadge}${videoBadge}</div>`;
     return `<div class="inline-flex items-center gap-1">${aiBadge}${peerBadge}${interviewBadge}${tokenBadge}${videoBadge}</div>`;
   }
 
@@ -1770,6 +1845,17 @@ const SEL_I18N = {
       { label: 'Entrevista', state: (r.meta?.interview_scheduled ?? r.interview_scheduled) ? 'done' : 'pending', detail: (r.meta?.interview_scheduled ?? r.interview_scheduled) ? 'Agendada' : 'Não agendada' },
       { label: 'Decisão', state: isTerminal ? 'done' : 'pending', detail: isTerminal ? (STATUS_LABELS[r.status] || r.status) : 'Em andamento' },
     ];
+    // #3118: na trilha piloto, a par-revisão e a entrevista da avaliação geral dão lugar às três partes do piloto.
+    if (isPilotRow(r)) {
+      const partStages = PILOT_PARTS.map((part) => {
+        const k = PILOT_PART_KEY[part];
+        const p = pilotPart(r, part);
+        const st = p ? pilotPartState(p) : 'empty';
+        return { label: String(T[`pilotPart${k}`] || k), state: st === 'done' ? 'done' : st === 'empty' ? 'pending' : 'current', detail: p ? pilotPartDetail(p) : String(T.pilotPartsMissing || '—') };
+      });
+      const keep = stages.filter((s) => s.label !== 'Par-revisão' && s.label !== 'Entrevista');
+      stages.splice(0, stages.length, ...keep.slice(0, 3), ...partStages, ...keep.slice(3));
+    }
 
     const colors: Record<string, { bg: string; brd: string; ic: string; tx: string; sub: string }> = {
       done:    { bg: 'bg-emerald-50', brd: 'border-emerald-200', ic: 'bg-emerald-500 text-white',                            tx: 'text-emerald-800', sub: 'text-emerald-600' },
@@ -1777,7 +1863,7 @@ const SEL_I18N = {
       pending: { bg: 'bg-gray-50',    brd: 'border-gray-200',    ic: 'bg-white text-gray-400 border border-gray-300',         tx: 'text-gray-500',    sub: 'text-gray-400' },
     };
 
-    return `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+    return `<div class="grid grid-cols-2 sm:grid-cols-3 ${stages.length === 7 ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-2">
       ${stages.map((s, i) => {
         const c = colors[s.state];
         const icon = s.state === 'done' ? '✓' : s.state === 'current' ? '●' : (i + 1).toString();
@@ -2515,9 +2601,9 @@ const SEL_I18N = {
           ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600" title="PROVISORIO (#2423): NAO significa filiacao expirada. Sai de service_latest_end_date (voluntariado). Confira a filiacao real na aba PMI.">⚪PMI</span>'
           : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem historico de SERVICO (Phase B pendente). Nada afirma sobre filiacao — veja a aba PMI.">?PMI</span>'
         : '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-50 text-red-700" title="Sem pmi_id (não cadastrado no PMI)">—</span>';
-      return `<tr class="hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
-        <td class="px-2 py-2.5 w-8" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
-        <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
+      return `<tr class="group hover:bg-[var(--surface-hover)] cursor-pointer" data-action="view-applicant" data-id="${esc(r.id)}">
+        <td class="px-2 py-2.5 w-8 min-w-8 max-w-8 sticky left-0 z-10 bg-[var(--surface-card)] group-hover:[background:linear-gradient(var(--surface-hover),var(--surface-hover)),var(--surface-card)]" onclick="event.stopPropagation()"><input type="checkbox" class="sel-row-check cursor-pointer" value="${esc(r.id)}" /></td>
+        <td class="px-4 py-2.5 font-semibold text-[var(--text-primary)] sticky left-8 z-10 bg-[var(--surface-card)] group-hover:[background:linear-gradient(var(--surface-hover),var(--surface-hover)),var(--surface-card)] shadow-[1px_0_0_var(--border-default)]">${esc(r.applicant_name)}${noMembership ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700" title="Sem membership PMI">!M</span>' : ''}${r.is_returning_member ? ' <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700" title="Retornante (ex-voluntário do Núcleo)">R</span>' : ''}${r.consent_ai_status === 'pending' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-700" title="${esc(T.consentPendingTooltip)}">🔒 ${esc(T.consentPendingBadge)}</span>` : ''}${r.consent_ai_status === 'revoked' ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700" title="${esc(T.consentRevokedTooltip)}">🔒 ${esc(T.consentRevokedBadge)}</span>` : ''}${r.extra_flags?.pdf_likely_invalid ? ` <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700" title="${esc(T.pdfInvalidTooltip)}">${esc(T.pdfInvalidBadge)}</span>` : ''}${reApplicantBadge(r)}${briefingBadge(r)}${aiTriageBadge(r)}${vepBadge(r)}</td>
         <td class="px-4 py-2.5 text-[12px]">${trackBadge}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(oppTitle)}">${oppCell}${divergenceCell}</td>
         <td class="px-4 py-2.5 text-[12px] text-[var(--text-secondary)]" title="${esc(chapterTooltip)}">${esc(chapterDisplay)}${chapterSourceBadge}${chapterDivergentBadge} ${memberBadge}</td>
@@ -2528,7 +2614,7 @@ const SEL_I18N = {
         </td>
         <td class="px-4 py-2.5 text-[12px] font-mono">
           <div class="${r.leader_score != null ? 'font-bold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${leaderScore}</div>
-          ${leaderExtraChip(r.leader_extra_pert_score, (currentCycle as any)?.leader_extra_cutoff)}
+          ${r.role_applied === 'leader' ? leaderExtraChip(r.leader_extra_pert_score, (currentCycle as any)?.leader_extra_cutoff) : ''}
         </td>
         <td class="px-4 py-2.5 text-[12px] font-mono">
           <div class="${r.interview_score != null ? 'font-semibold text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}">${r.interview_score != null ? Number(r.interview_score).toFixed(1) : '—'}</div>
@@ -2896,6 +2982,8 @@ const SEL_I18N = {
         if (data?.error) throw new Error(data.error);
         const msg = newStatus === 'approved' ? 'Candidato aprovado — onboarding iniciado' : 'Candidato atualizado';
         toast(msg);
+        const gateReason = newStatus === 'approved' ? affiliationGateClosedReason(data) : null;
+        if (gateReason) warnAffiliationGate(row.applicant_name || '', gateReason);
         modal.classList.add('hidden');
         loadDashboard();
       } catch (e: any) {
@@ -4945,6 +5033,25 @@ const SEL_I18N = {
     if (countEl) countEl.textContent = `${checks.length} selecionado${checks.length !== 1 ? 's' : ''}`;
   }
 
+  // #3100 — a aprovacao devolve o portao de filiacao (approve_selection_application -> affiliation_gate, que
+  // admin_update_application repassa em `canonical`). A tela so le o que o servidor decidiu: nao recalcula a regra.
+  // E aviso, nao bloqueio: o dado da VEP da candidatura e uma foto da busca, e a verificacao manual da Diretoria de
+  // Filiacao so pode ser gravada depois que o membro existe.
+  function affiliationGateClosedReason(data: any): string | null {
+    const gate = data?.canonical?.affiliation_gate;
+    if (!gate || gate.open !== false) return null;
+    return String(gate.reason || 'unknown');
+  }
+  function affiliationReasonLabel(reason: string): string {
+    const labels = T.affiliationGateReason || {};
+    return labels[reason] || labels.unknown || reason;
+  }
+  function warnAffiliationGate(name: string, reason: string) {
+    const tpl = T.affiliationGateWarn
+      || '{name}: aprovação registrada, mas sem filiação verificada a um capítulo participante ({reason}). O Termo de Voluntariado só abre depois disso; acompanhe em /admin/filiacao.';
+    alert(tpl.replace('{name}', name).replace('{reason}', affiliationReasonLabel(reason)));
+  }
+
   // p155 F3: single-row decision (inline button on final_eval rows)
   async function inlineDecide(appId: string, name: string, decision: 'approved' | 'rejected') {
     const confirmTpl = decision === 'approved' ? T.confirmInlineApprove : T.confirmInlineReject;
@@ -4959,6 +5066,8 @@ const SEL_I18N = {
       if (data?.error) throw new Error(data.error);
       const toastTpl = decision === 'approved' ? T.inlineApproveToast : T.inlineRejectToast;
       toast((toastTpl || '').replace('{name}', name));
+      const gateReason = decision === 'approved' ? affiliationGateClosedReason(data) : null;
+      if (gateReason) warnAffiliationGate(name, gateReason);
       loadDashboard();
     } catch (e: any) {
       toast(e.message || 'Erro ao salvar', 'error');
@@ -4978,6 +5087,7 @@ const SEL_I18N = {
     // cause in the toast instead of a generic "N erro(s)" count (the #603 missing-column /
     // NOT NULL failures were diagnosed blind because the error was swallowed here).
     let firstError = '';
+    const gateClosed: string[] = [];  // #3100 — aprovados com o portao de filiacao fechado
     for (const id of ids) {
       try {
         const updateData: any = { status: decision };
@@ -4991,6 +5101,9 @@ const SEL_I18N = {
         // contador de SUCESSO e o lote reportava "N atualizado(s)" incluindo quem não gravou.
         if (data?.error) throw new Error(data.error);
         ok++;
+        if (decision === 'approved' && affiliationGateClosedReason(data)) {
+          gateClosed.push(allRows.find(r => r.id === id)?.applicant_name || id);
+        }
       } catch (e: any) {
         fail++;
         if (!firstError) firstError = e?.message || String(e);
@@ -5000,6 +5113,11 @@ const SEL_I18N = {
       toast(`${ok} atualizado(s), ${fail} erro(s): ${firstError || 'desconhecido'}`, 'error');
     } else {
       toast(`${ok} atualizado(s)`);
+    }
+    if (gateClosed.length) {
+      const tpl = T.affiliationGateBulkWarn
+        || '{n} aprovado(s) sem filiação verificada a um capítulo participante: {names}. O Termo de Voluntariado só abre depois disso; acompanhe em /admin/filiacao.';
+      alert(tpl.replace('{n}', String(gateClosed.length)).replace('{names}', gateClosed.join(', ')));
     }
     if (bulkFeedback) (document.getElementById('bulk-feedback') as HTMLInputElement).value = '';
     loadDashboard();

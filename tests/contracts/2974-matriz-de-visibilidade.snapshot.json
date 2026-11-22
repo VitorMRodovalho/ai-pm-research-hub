@@ -773,6 +773,7 @@
    "/admin/members",
    "/admin/tribes",
    "/admin/selection",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/adoption",
    "/admin/certificates",
@@ -1188,6 +1189,7 @@
   ],
   "sidebar": [
    "/admin/selection",
+   "/admin/jornadas",
    "/help"
   ]
  },
@@ -1237,6 +1239,7 @@
    "/admin/members",
    "/admin/tribes",
    "/admin/selection",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/adoption",
    "/admin/certificates",
@@ -1354,6 +1357,7 @@
    "/admin",
    "/admin/members",
    "/admin/tribes",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/certificates",
    "/admin/knowledge",
@@ -1406,6 +1410,7 @@
    "/admin/members",
    "/admin/tribes",
    "/admin/filiacao",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/certificates",
    "/admin/knowledge",
@@ -1457,6 +1462,7 @@
    "/admin",
    "/admin/members",
    "/admin/tribes",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/certificates",
    "/admin/knowledge",
@@ -1637,6 +1643,7 @@
    "my-pending"
   ],
   "sidebar": [
+   "/admin/jornadas",
    "/help"
   ]
  },
@@ -1842,6 +1849,7 @@
    "/admin/tribes",
    "/admin/selection",
    "/admin/filiacao",
+   "/admin/jornadas",
    "/admin/vep-reconciliation",
    "/admin/adoption",
    "/admin/certificates",
@@ -2199,6 +2207,51 @@
    "/help"
   ]
  },
+ "acao:manage_initiative": {
+  "menu": [
+   "outputs",
+   "tribes",
+   "chapters",
+   "join",
+   "agenda",
+   "team",
+   "trail",
+   "kpis",
+   "workspace",
+   "library",
+   "onboarding",
+   "gamification",
+   "equipe",
+   "reunioes-gerais",
+   "presentations",
+   "attendance",
+   "meetings",
+   "my-initiatives",
+   "wiki",
+   "my-tribe",
+   "board-comms",
+   "board-publications",
+   "ia-pilots",
+   "blog",
+   "about",
+   "profile",
+   "my-points",
+   "stakeholder-dashboard",
+   "boards",
+   "governance",
+   "docs-mcp",
+   "notifications",
+   "help",
+   "certificates",
+   "volunteer-agreement",
+   "changelog",
+   "my-pending"
+  ],
+  "sidebar": [
+   "/admin/jornadas",
+   "/help"
+  ]
+ },
  "acao:manage_member": {
   "menu": [
    "outputs",
@@ -2241,6 +2294,7 @@
   ],
   "sidebar": [
    "/admin/filiacao",
+   "/admin/jornadas",
    "/admin/webinars",
    "/help"
   ]
@@ -2802,6 +2856,51 @@
    "/help"
   ]
  },
+ "tribo:manage_initiative": {
+  "menu": [
+   "outputs",
+   "tribes",
+   "chapters",
+   "join",
+   "agenda",
+   "team",
+   "trail",
+   "kpis",
+   "workspace",
+   "library",
+   "onboarding",
+   "gamification",
+   "equipe",
+   "reunioes-gerais",
+   "presentations",
+   "attendance",
+   "meetings",
+   "my-initiatives",
+   "wiki",
+   "my-tribe",
+   "board-comms",
+   "board-publications",
+   "ia-pilots",
+   "blog",
+   "about",
+   "profile",
+   "my-points",
+   "stakeholder-dashboard",
+   "boards",
+   "governance",
+   "docs-mcp",
+   "notifications",
+   "help",
+   "certificates",
+   "volunteer-agreement",
+   "changelog",
+   "my-pending"
+  ],
+  "sidebar": [
+   "/admin/jornadas",
+   "/help"
+  ]
+ },
  "tribo:manage_member": {
   "menu": [
    "outputs",
@@ -3354,6 +3453,50 @@
   ]
  },
  "iniciativa:manage_finance": {
+  "menu": [
+   "outputs",
+   "tribes",
+   "chapters",
+   "join",
+   "agenda",
+   "team",
+   "trail",
+   "kpis",
+   "workspace",
+   "library",
+   "onboarding",
+   "gamification",
+   "equipe",
+   "reunioes-gerais",
+   "presentations",
+   "attendance",
+   "meetings",
+   "my-initiatives",
+   "wiki",
+   "my-tribe",
+   "board-comms",
+   "board-publications",
+   "ia-pilots",
+   "blog",
+   "about",
+   "profile",
+   "my-points",
+   "stakeholder-dashboard",
+   "boards",
+   "governance",
+   "docs-mcp",
+   "notifications",
+   "help",
+   "certificates",
+   "volunteer-agreement",
+   "changelog",
+   "my-pending"
+  ],
+  "sidebar": [
+   "/help"
+  ]
+ },
+ "iniciativa:manage_initiative": {
   "menu": [
    "outputs",
    "tribes",
