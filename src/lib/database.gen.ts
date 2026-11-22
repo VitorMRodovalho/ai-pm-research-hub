@@ -35145,7 +35145,6 @@ export type Database = {
         Returns: Json
       }
       get_portfolio_timeline: { Args: never; Returns: Json }
-      get_pre_onboarding_leaderboard: { Args: never; Returns: Json }
       get_previous_locked_version: {
         Args: { p_version_id: string }
         Returns: Json
@@ -37449,10 +37448,6 @@ export type Database = {
           p_person_id: string
           p_template_slug: string
         }
-        Returns: Json
-      }
-      seed_pre_onboarding_steps: {
-        Args: { p_application_id: string; p_member_id?: string }
         Returns: Json
       }
       select_tribe: { Args: { p_tribe_id: number }; Returns: Json }
