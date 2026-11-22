@@ -19,7 +19,14 @@ import { maskJsComments } from '../helpers/guard-pin-staleness.mjs';
 import { waitMemberResolved } from '../../src/lib/member-ready.ts';
 
 const read = (p) => (existsSync(p) ? readFileSync(p, 'utf8') : '');
-const maskAstro = (src) => maskJsComments(src).replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' '));
+// Comentário HTML vira espaço, até o texto parar de mudar (CodeQL js/incomplete-multi-character-sanitization).
+function blankHtmlComments(src) {
+  let prev;
+  let out = src;
+  do { prev = out; out = out.replace(/<!--[\s\S]*?-->/g, (m) => m.replace(/[^\n]/g, ' ')); } while (out !== prev);
+  return out;
+}
+const maskAstro = (src) => blankHtmlComments(maskJsComments(src));
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const DICTS = ['pt-BR', 'en-US', 'es-LATAM'].map((l) => `src/i18n/${l}.ts`);
 const COMP = 'src/components/ui/GuestNoMember.astro';
