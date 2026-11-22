@@ -6011,6 +6011,7 @@ const enUS: Record<string, string> = {
   // Certificates page
   'certificates.title': 'My Certificates',
   'certificates.empty': 'No certificates found.',
+  'certificates.loginRequired': 'Sign in to see your certificates.',
   'certificates.loadFailed': "We couldn't load your certificates right now. Reload the page in a moment.",
   'certificates.signTerm': 'Sign Volunteer Agreement',
   'certificates.verify': 'Verify',

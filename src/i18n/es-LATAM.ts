@@ -6012,6 +6012,7 @@ const esLATAM: Record<string, string> = {
   // Certificates page
   'certificates.title': 'Mis Certificados',
   'certificates.empty': 'No se encontraron certificados.',
+  'certificates.loginRequired': 'Inicia sesión para ver tus certificados.',
   'certificates.loadFailed': "No pudimos cargar tus certificados ahora. Recarga la página en unos instantes.",
   'certificates.signTerm': 'Firmar Acuerdo de Voluntariado',
   'certificates.verify': 'Verificar',
