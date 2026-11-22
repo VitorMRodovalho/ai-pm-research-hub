@@ -131,7 +131,8 @@ test('#2708 presença: a duração recusada avisa sem desfazer o registro das pr
 test('#2708 presença: o desfazer da grade não engole a recusa', () => {
   const src = maskJsComments(readFileSync(join(ROOT, 'src/components/tribes/TribeAttendanceTab.tsx'), 'utf8'));
   assert.match(src,
-    /const \{ error: undoErr \} = await sb\.rpc\('mark_member_present'[^;]+;\s+if \(undoErr\) throw undoErr;\s+await refreshGrid\(\);\s+\} catch \(e: any\) \{\s+\(window as any\)\.toast\?\.\(e\?\.message \|\| 'Erro', 'error'\);/,
+    // #3149: o desfazer também lê a recusa do corpo (throwIfRefused) antes de recarregar a grade
+    /const \{ data: undoData, error: undoErr \} = await sb\.rpc\('mark_member_present'[^;]+;\s+if \(undoErr\) throw undoErr;\s+throwIfRefused\(undoData\);\s+await refreshGrid\(\);\s+\} catch \(e: any\) \{\s+\(window as any\)\.toast\?\.\(e\?\.message \|\| 'Erro', 'error'\);/,
     'o desfazer voltou a engolir o erro');
 });
 

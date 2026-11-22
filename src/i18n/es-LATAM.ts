@@ -1963,6 +1963,7 @@ const esLATAM: Record<string, string> = {
   'attendance.msg.eventsCreated': '{n} eventos creados ✅',
   'attendance.msg.recurringError': 'Error al crear serie',
   'attendance.msg.eventUpdated': 'Evento actualizado ✅',
+  'attendance.msg.eventLinkRefused': 'Evento guardado, pero la iniciativa no cambió: {reason}',
   'attendance.msg.eventSaveError': 'Error al guardar',
   'attendance.msg.tagsAudienceSaveError': 'El evento se guardó, pero las etiquetas o el público no se registraron. Edita el evento para intentarlo de nuevo',
   'attendance.msg.eventEditOpenError': 'No fue posible abrir la edición de este evento',
