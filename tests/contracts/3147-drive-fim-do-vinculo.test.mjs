@@ -26,7 +26,8 @@
  *   G13 (A6) um aviso por pessoa e iniciativa, mesmo com dois e-mails.
  *   G14 (A8) a avulsa recusa o titular com manage_platform.
  *   G15 (A5) falha e "manter" deixam de bloquear quando a pessoa volta ao roster.
- *   G16 (A4) nenhuma pasta de trabalho é de duas iniciativas (vivo; o predicado tem controle nos dois sentidos).
+ *   G16 (A4) o predicado de pasta de duas iniciativas diz sim e diz não. A camada viva que reprovava a pasta de duas
+ *       iniciativas saiu com a #3178, que passou a cobrir o caso (guard em 3178-3179-drive-pasta-e-acesso-fora-do-ledger).
  *   M  cada predicado reprova a mutação do seu defeito, pela MESMA função.
  *
  * A camada viva (DB-gated) roda os mesmos predicados sobre o corpo em produção.
@@ -79,7 +80,8 @@ const ROSTER = /e\.initiative_id = p_initiative_id AND e\.status = 'active' AND 
 export function mesmoPredicadoDoRoster(keepsBody, rosterBody) {
   const k = sql(keepsBody), r = sql(rosterBody);
   return {
-    keepsTemOPredicado: /JOIN public\.members m ON m\.person_id = e\.person_id WHERE e\.person_id = p_person_id AND e\.initiative_id = p_initiative_id AND e\.status = 'active' AND m\.member_status = 'active'/.test(k),
+    // #3178: o mesmo vínculo ativo e membro ativo, na iniciativa da concessão OU em iniciativa que usa a pasta
+    keepsTemOPredicado: /JOIN public\.members m ON m\.person_id = e\.person_id WHERE e\.person_id = p_person_id AND e\.status = 'active' AND m\.member_status = 'active' AND \( e\.initiative_id = p_initiative_id OR EXISTS/.test(k),
     // os dois ramos do roster (e-mail principal e secundário) usam a mesma condição
     rosterTemOPredicado: (r.match(/WHERE e\.initiative_id = p_initiative_id AND e\.status = 'active' AND m\.member_status = 'active'/g) || []).length === 2,
     keepsEExists: /SELECT EXISTS \( SELECT 1 FROM public\.engagements e/.test(k),
@@ -91,7 +93,7 @@ export function insertDaFila(enqueueBody) {
   const ins = slice(sql(enqueueBody), 'INSERT INTO public.drive_membership_revocations', 'RETURNING id');
   return {
     soConcessaoViva: /WHERE g\.status = 'granted' AND g\.permission_id IS NOT NULL/.test(ins),
-    foraDoRoster: /AND NOT public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id\)/.test(ins),
+    foraDoRoster: /AND NOT public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id, g\.drive_folder_id\)/.test(ins),
     excecaoManagePlatform: /AND NOT public\.can_by_member\(g\.grantee_member_id, 'manage_platform'\)/.test(ins),
     // A7: concessão sem pessoa ou sem membro não entra (o predicado do roster não decide sobre NULL)
     exigeTitular: /AND g\.grantee_person_id IS NOT NULL AND g\.grantee_member_id IS NOT NULL/.test(ins),
@@ -127,7 +129,7 @@ export function prazoEAprovacao(enqueueBody) {
       && !/is_confidential THEN/.test(d),
     seguradoNaoEAvisado: /x\.notified_at IS NULL AND x\.held_at IS NULL/.test(d),
     aprovaSoVencidoAvisadoSoltos: /x\.held_at IS NULL AND x\.notified_at IS NOT NULL AND \(x\.due_at <= now\(\) OR i\.visibility = 'confidential'\)/.test(ap),
-    reconfereRoster: /AND NOT public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id\)/.test(ap),
+    reconfereRoster: /AND NOT public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id, g\.drive_folder_id\)/.test(ap),
     reconfereExcecao: /AND NOT public\.can_by_member\(g\.grantee_member_id, 'manage_platform'\)/.test(ap),
     soConcessaoViva: /AND g\.status = 'granted'/.test(ap),
   };
@@ -152,7 +154,7 @@ export function executor(getBody, markBody) {
     getAchaOItemNovo: /FROM public\.drive_membership_revocations r JOIN public\.drive_membership_grants g ON g\.id = r\.grant_id WHERE r\.id = p_audit_id/.test(g),
     getSoAprovadoDeConcessaoViva: /CASE WHEN g\.status IS DISTINCT FROM 'granted' THEN 'grant_' \|\| g\.status/.test(g),
     // A1: na última leitura antes do Drive, o item de fim de vínculo de quem fica devolve outro status
-    getReconfereQuemFica: /WHEN r\.reason = 'engagement_ended' AND \( public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id\) OR coalesce\(public\.can_by_member\(g\.grantee_member_id, 'manage_platform'\), false\) \) THEN 'stale_keeps_access' ELSE r\.status END AS status/.test(g),
+    getReconfereQuemFica: /WHEN r\.reason = 'engagement_ended' AND \( public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id, g\.drive_folder_id\) OR coalesce\(public\.can_by_member\(g\.grantee_member_id, 'manage_platform'\), false\) \) THEN 'stale_keeps_access' ELSE r\.status END AS status/.test(g),
     markSoDoAprovado: /WHERE id = p_audit_id AND status = 'approved' RETURNING \* INTO v_rev;/.test(ramo),
     markFechaConcessaoSoNoSucesso: /IF p_status IN \('revoked','already_absent'\) THEN UPDATE public\.drive_membership_grants SET status = 'revoked', revoked_at = now\(\), revoked_by = v_rev\.approved_by, revoked_via = 'membership_queue', updated_at = now\(\) WHERE id = v_rev\.grant_id AND status = 'granted';/.test(ramo),
     // o portão de serviço vem antes de qualquer leitura, nas duas funções
@@ -179,7 +181,7 @@ export function alinhamento(enqueueBody) {
 export function cancelamento(enqueueBody) {
   const c = slice(sql(enqueueBody), 'WITH c AS', 'RETURNING q.id');
   return {
-    vinculoDeVolta: /q\.reason = 'engagement_ended' AND \( public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id\)/.test(c),
+    vinculoDeVolta: /q\.reason = 'engagement_ended' AND \( public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id, g\.drive_folder_id\)/.test(c),
     soAberto: /q\.status IN \('pending','approved'\)/.test(c),
     concessaoFechada: /WHEN g\.status IS DISTINCT FROM 'granted' THEN 'grant_closed'/.test(c),
   };
@@ -190,7 +192,7 @@ export function liberacao(enqueueBody) {
   const b2 = slice(sql(enqueueBody), 'WITH rel AS', 'RETURNING q.id');
   return {
     falhaOuManter: /\( \(q\.status = 'failed' AND q\.reason = 'engagement_ended'\) OR q\.cancel_reason = 'management_kept' \)/.test(b2),
-    soQuandoVoltaAoRoster: /AND public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id\)/.test(b2),
+    soQuandoVoltaAoRoster: /AND public\._drive_grant_keeps_access\(g\.grantee_person_id, g\.initiative_id, g\.drive_folder_id\)/.test(b2),
     fechaComoRestaurado: /SET status = 'cancelled', cancel_reason = 'engagement_restored'/.test(b2),
     antesDoInsert: sql(enqueueBody).indexOf('WITH rel AS') >= 0
       && sql(enqueueBody).indexOf('WITH rel AS') < sql(enqueueBody).indexOf('INSERT INTO public.drive_membership_revocations'),
@@ -204,7 +206,7 @@ export function aprovarJa(b) {
   const antes = up >= 0 ? s.slice(0, up) : '';
   return {
     recusaManagePlatform: /IF coalesce\(public\.can_by_member\(v_g\.grantee_member_id, 'manage_platform'\), false\) THEN RAISE EXCEPTION/.test(antes),
-    recusaRosterDeVolta: /IF v_rev\.reason = 'engagement_ended' AND public\._drive_grant_keeps_access\(v_g\.grantee_person_id, v_g\.initiative_id\) THEN RAISE EXCEPTION/.test(antes),
+    recusaRosterDeVolta: /IF v_rev\.reason = 'engagement_ended' AND public\._drive_grant_keeps_access\(v_g\.grantee_person_id, v_g\.initiative_id, v_g\.drive_folder_id\) THEN RAISE EXCEPTION/.test(antes),
     recusaConcessaoFechada: /IF v_g\.status IS DISTINCT FROM 'granted' THEN RAISE EXCEPTION/.test(antes),
     avisaSoFimDeVinculoNaoAvisado: /v_notify_now := v_rev\.reason = 'engagement_ended' AND v_rev\.notified_at IS NULL;/.test(s)
       && /IF v_notify_now THEN v_sent := public\._drive_revocation_notify\(v_rev\.id, true\); END IF;/.test(s),
@@ -420,13 +422,13 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   const L = body('admin_list_drive_revocation_queue');
 
   // M1 o vínculo encerrado deixa de entrar: a fila esquece o roster
-  assert.equal(insertDaFila(mut(E, "AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)\n       -- exceção", "-- exceção")).foraDoRoster, false);
+  assert.equal(insertDaFila(mut(E, "AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id, g.drive_folder_id)\n       -- exceção", "-- exceção")).foraDoRoster, false);
   // M2 quem tem manage_platform entra
   assert.equal(insertDaFila(mut(E, "AND NOT public.can_by_member(g.grantee_member_id, 'manage_platform')\n       -- já tem", "-- já tem")).excecaoManagePlatform, false);
   // M2b (A7) a concessão sem titular entra
   assert.equal(insertDaFila(mut(E, '       AND g.grantee_person_id IS NOT NULL AND g.grantee_member_id IS NOT NULL\n', '')).exigeTitular, false);
   // M3 o predicado de quem fica aceita vínculo de qualquer iniciativa (a segunda via vira qualquer via)
-  assert.equal(mesmoPredicadoDoRoster(mut(K, 'AND e.initiative_id = p_initiative_id ', ''), R).keepsTemOPredicado, false);
+  assert.equal(mesmoPredicadoDoRoster(mut(K, 'e.initiative_id = p_initiative_id', 'true'), R).keepsTemOPredicado, false);
   // M4 o predicado aceita membro não ativo
   assert.equal(mesmoPredicadoDoRoster(mut(K, "AND m.member_status = 'active'", ''), R).keepsTemOPredicado, false);
   // M5 a chave lida fail-open
@@ -444,7 +446,7 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   // M9 aprova o segurado
   assert.equal(prazoEAprovacao(mut(E, '         AND x.held_at IS NULL AND x.notified_at IS NOT NULL', '         AND x.notified_at IS NOT NULL')).aprovaSoVencidoAvisadoSoltos, false);
   // M10 a aprovação não reconfere o roster (corrida entre o aviso e o prazo)
-  const ap = "AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)\n         AND NOT public.can_by_member";
+  const ap = "AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id, g.drive_folder_id)\n         AND NOT public.can_by_member";
   assert.equal(prazoEAprovacao(mut(E, ap, 'AND NOT public.can_by_member')).reconfereRoster, false);
   // M11 o executor age na concessão já fechada
   assert.equal(executor(mut(G, "CASE WHEN g.status IS DISTINCT FROM 'granted' THEN 'grant_' || g.status", 'CASE WHEN false THEN NULL'), MK).getSoAprovadoDeConcessaoViva, false);
@@ -456,7 +458,7 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   // M13 a revogação antiga fecha a concessão nova (sem a hora)
   assert.equal(alinhamento(mut(E, '       AND a.revoked_at > coalesce(g.last_dispatched_at, g.granted_at)\n', '')).depoisDoUltimoEnvio, false);
   // M14 o vínculo de volta não cancela o item
-  assert.equal(cancelamento(mut(E, "AND ( public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)\n                  OR", 'AND ( false\n                  OR')).vinculoDeVolta, false);
+  assert.equal(cancelamento(mut(E, "AND ( public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id, g.drive_folder_id)\n                  OR", 'AND ( false\n                  OR')).vinculoDeVolta, false);
   // M15 a tela perde o portão confidencial
   assert.equal(leituraDaTela(mut(L, 'AND public.rls_can_see_initiative(r.initiative_id)', '')).portaoConfidencial, false);
   // M16 a tela deixa de mostrar a fila de desligamento
@@ -470,11 +472,11 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   const AV = body('admin_request_drive_revocation');
   const N = body('_drive_revocation_notify');
   // M19 (A1) o aprovar já aceita quem voltou ao roster
-  assert.equal(aprovarJa(mut(AP, "IF v_rev.reason = 'engagement_ended' AND public._drive_grant_keeps_access(v_g.grantee_person_id, v_g.initiative_id) THEN", 'IF false THEN')).recusaRosterDeVolta, false);
+  assert.equal(aprovarJa(mut(AP, "IF v_rev.reason = 'engagement_ended' AND public._drive_grant_keeps_access(v_g.grantee_person_id, v_g.initiative_id, v_g.drive_folder_id) THEN", 'IF false THEN')).recusaRosterDeVolta, false);
   // M20 (A1) o aprovar já aceita o titular com manage_platform
   assert.equal(aprovarJa(mut(AP, "  IF coalesce(public.can_by_member(v_g.grantee_member_id, 'manage_platform'), false) THEN", '  IF false THEN')).recusaManagePlatform, false);
   // M21 (A1) a recusa vai para depois do UPDATE (o item já foi aprovado quando a recusa chega)
-  const rec = "  IF v_rev.reason = 'engagement_ended' AND public._drive_grant_keeps_access(v_g.grantee_person_id, v_g.initiative_id) THEN\n    RAISE EXCEPTION 'A pessoa voltou ao roster da iniciativa; o item será cancelado no próximo ciclo';\n  END IF;\n";
+  const rec = "  IF v_rev.reason = 'engagement_ended' AND public._drive_grant_keeps_access(v_g.grantee_person_id, v_g.initiative_id, v_g.drive_folder_id) THEN\n    RAISE EXCEPTION 'A pessoa voltou ao roster da iniciativa; o item será cancelado no próximo ciclo';\n  END IF;\n";
   assert.equal(aprovarJa(mut(mut(AP, rec, ''), '  IF v_notify_now THEN\n', rec + '  IF v_notify_now THEN\n')).recusaRosterDeVolta, false);
   // M22 (A2) o aprovar já deixa de avisar
   assert.equal(aprovarJa(mut(AP, '    v_sent := public._drive_revocation_notify(v_rev.id, true);\n', '')).avisaSoFimDeVinculoNaoAvisado, false);
@@ -497,7 +499,7 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   // M31 (A5) a falha volta a bloquear para sempre
   assert.equal(liberacao(mut(E, "(q.status = 'failed' AND q.reason = 'engagement_ended') OR ", '')).falhaOuManter, false);
   // M32 (A5) libera sem a pessoa ter voltado ao roster
-  assert.equal(liberacao(mut(E, "       AND public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)\n    RETURNING q.id, q.grant_id,", "    RETURNING q.id, q.grant_id,")).soQuandoVoltaAoRoster, false);
+  assert.equal(liberacao(mut(E, "       AND public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id, g.drive_folder_id)\n    RETURNING q.id, q.grant_id,", "    RETURNING q.id, q.grant_id,")).soQuandoVoltaAoRoster, false);
 
   // fatia 2
   // M33 o aviso volta a ser calado por item fechado de outro episódio
@@ -558,17 +560,4 @@ test(dbGated ? '#3147 vivo: o corpo em produção passa nos mesmos predicados' :
   ok(avisoUmPorPar(await vivo('_drive_revocation_notify')));
   ok(avisoNoMesmoEpisodio(await vivo('_drive_revocation_notify')));
   ok(liberacaoAuditada(E)); ok(aprovacaoReleVisibilidade(E)); ok(encerradoNaAntecipacao(E));
-});
-
-test(dbGated ? '#3147 G16 vivo: nenhuma pasta de trabalho é de duas iniciativas' : `SKIP: ${skipMsg}`, { skip: !dbGated }, async () => {
-  // #3178: a revogação por iniciativa supõe uma pasta, uma
-  // iniciativa. Se aparecer uma pasta de duas, quem sai de uma perde a pasta que a outra ainda dá.
-  const sb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-  const { data, error } = await sb.from('initiative_drive_links')
-    .select('initiative_id, drive_folder_id, link_purpose, unlinked_at')
-    .eq('link_purpose', 'workspace').is('unlinked_at', null).limit(2000);
-  assert.equal(error, null, `initiative_drive_links: ${error?.message ?? ''}`);
-  assert.ok(Array.isArray(data) && data.length > 0, 'nenhum vínculo de pasta de trabalho lido: o instrumento não mediu');
-  assert.ok(data.length < 2000, 'a leitura bateu no limite: o resultado pode estar cortado');
-  assert.deepEqual(pastasDeMaisDeUmaIniciativa(data), [], 'pasta de trabalho de mais de uma iniciativa');
 });

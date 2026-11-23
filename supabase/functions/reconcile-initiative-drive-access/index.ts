@@ -15,6 +15,9 @@
  *   2. per initiative: get_initiative_drive_roster(initiative_id) → active member emails (PII-logged)
  *   3. per folder: listPermissions → diff roster vs present → POST the missing grants (writer)
  *   4. upsert_membership_drive_grants(rows) → idempotent ledger + admin_audit_log
+ *   5. #3179: per folder, record_drive_folder_acl(folder, acl) → the access the ledger does not know about
+ *      (a user permission with no live grant whose person does not keep access by the roster) goes to the
+ *      management review. Never revoked here: the origin is unknown. The classification lives in SQL.
  *
  * Body: { initiative_id?: string, dry_run?: boolean, source?: "pg_cron"|"provision"|"manual" }
  * Auth: service-role only (isServiceRoleToken, #738/#850). SA creds via Vault; absent → 503.
@@ -32,7 +35,16 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WORKSPACE_DOMAIN = "pmigo.org.br";
 const MAX_GRANTS_PER_RUN = 800; // defensive backstop; a full sweep is ~roster×folders (< a few hundred)
 
-interface DrivePermission { id?: string; type?: string; role?: string; emailAddress?: string; deleted?: boolean }
+interface DrivePermission {
+  id?: string; type?: string; role?: string; emailAddress?: string; deleted?: boolean;
+  permissionDetails?: Array<{ inherited?: boolean }>;
+}
+
+/** #3179: true when the Drive says the permission comes from a parent folder; null when it does not say. */
+function inheritedOf(p: DrivePermission): boolean | null {
+  if (!Array.isArray(p.permissionDetails) || p.permissionDetails.length === 0) return null;
+  return p.permissionDetails.every((d) => d.inherited === true);
+}
 
 /** All permissions on a folder, fully paginated (copy of the audit EF helper). */
 async function listPermissions(fileId: string, accessToken: string): Promise<DrivePermission[]> {
@@ -40,7 +52,7 @@ async function listPermissions(fileId: string, accessToken: string): Promise<Dri
   let pageToken: string | undefined;
   do {
     const url = new URL(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`);
-    url.searchParams.set("fields", "nextPageToken, permissions(id,type,role,emailAddress,deleted)");
+    url.searchParams.set("fields", "nextPageToken, permissions(id,type,role,emailAddress,deleted,permissionDetails(inherited))");
     url.searchParams.set("pageSize", "100");
     url.searchParams.set("supportsAllDrives", "true");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
@@ -89,7 +101,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "unauthorized", detail: "service-role only" }), { status: 401 });
   }
 
-  let body: { initiative_id?: string; dry_run?: boolean; source?: string; force_email?: string } = {};
+  let body: { initiative_id?: string; dry_run?: boolean; source?: string; force_email?: string; skip_acl_review?: boolean } = {};
   try { body = await req.json(); } catch { /* empty body ok */ }
   const dryRun = body.dry_run === true;
   const source = body.source ?? "manual";
@@ -97,6 +109,8 @@ Deno.serve(async (req) => {
   // them present (i.e. they only hold an INHERITED permission). Makes their access explicit + ledger-
   // tracked + self-healing, instead of fragile inheritance. Scope with initiative_id to bound the folders.
   const forceEmail = (body.force_email ?? "").trim().toLowerCase();
+  // #3179: the folder ACL review runs on every sweep, except a force_email run (scoped to one member) or when asked off.
+  const aclReview = !forceEmail && body.skip_acl_review !== true;
 
   const sa = await getServiceAccountKey();
   if (!sa.available) {
@@ -136,18 +150,21 @@ Deno.serve(async (req) => {
   const errors: string[] = [];
   let granted = 0, present = 0, failed = 0, foldersScanned = 0, grantsAttempted = 0;
   let capped = false;
+  const aclByFolder = new Map<string, DrivePermission[]>(); // #3179: one ACL per folder, even when two initiatives share it
 
   for (const t of targets) {
     if (capped) break; // cap reached on a prior folder — skip the remaining Drive round-trips
     let roster: Array<{ person_id: string; member_id: string; email: string }>;
     try { roster = await rosterFor(t.initiative_id); }
     catch (e) { errors.push(String(e)); continue; }
-    if (roster.length === 0) continue;
+    // #3179: a folder whose roster is empty is still read, because everyone left on it is outside the ledger's view.
+    if (roster.length === 0 && !aclReview) continue;
 
     let perms: DrivePermission[];
     try { perms = await listPermissions(t.drive_folder_id, accessToken); }
     catch (e) { errors.push(String(e)); continue; }
     foldersScanned++;
+    if (aclReview && !aclByFolder.has(t.drive_folder_id)) aclByFolder.set(t.drive_folder_id, perms);
     const present_by_email = new Map<string, DrivePermission>();
     for (const p of perms) {
       if (p.type === "user" && p.emailAddress && !p.deleted) present_by_email.set(p.emailAddress.toLowerCase(), p);
@@ -179,10 +196,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // #3179: the review of the access outside the ledger, one call per folder. The SA itself is never a finding.
+  const reviewFolders = async (dry: boolean) => {
+    const out: any[] = [];
+    for (const [folderId, perms] of aclByFolder) {
+      const acl = perms.map((p) => ({ id: p.id, type: p.type, role: p.role, emailAddress: p.emailAddress,
+                                      deleted: p.deleted === true, inherited: inheritedOf(p) }));
+      const { data, error } = await sb.rpc("record_drive_folder_acl", {
+        p_drive_folder_id: folderId, p_permissions: acl,
+        p_ignore_emails: [String(sa.key?.client_email ?? "")].filter((e) => e !== ""), p_dry_run: dry,
+      });
+      if (error) { errors.push(`acl_review ${folderId}: ${error.message}`); continue; }
+      out.push(data);
+    }
+    const sum = (k: string) => out.reduce((n, r) => n + (Number(r?.[k]) || 0), 0);
+    return { folders: out.length, findings: sum("findings"), findings_inherited: sum("findings_inherited"),
+             unknown_person: sum("unknown_person"), opened: sum("opened"), closed: sum("closed") };
+  };
+
   if (dryRun) {
+    const aclReviewResult = aclReview ? await reviewFolders(true) : null;
     return new Response(JSON.stringify({
       success: true, dry_run: true, source, targets: targets.length, folders_scanned: foldersScanned,
-      would_grant: plan.length, already_present: present, plan: plan.slice(0, 200), errors,
+      would_grant: plan.length, already_present: present, plan: plan.slice(0, 200),
+      acl_review: aclReviewResult, errors,
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
 
@@ -190,9 +227,12 @@ Deno.serve(async (req) => {
   const { data: up, error: upErr } = await sb.rpc("upsert_membership_drive_grants", { p_rows: rows });
   if (upErr) return new Response(JSON.stringify({ error: "upsert_error", detail: upErr.message, granted, failed }), { status: 500 });
 
+  // 5. after the ledger, so a grant made in this run already counts as live for the review
+  const aclReviewResult = aclReview ? await reviewFolders(false) : null;
+
   return new Response(JSON.stringify({
     success: true, source, targets: targets.length, folders_scanned: foldersScanned,
-    granted, already_present: present, failed, ledger: up, errors,
+    granted, already_present: present, failed, ledger: up, acl_review: aclReviewResult, errors,
     note: failed > 0 ? "some grants failed — if 403, the SA needs organizer/fileOrganizer on the folder (ADR-0094 G4.1)." : undefined,
   }), { status: 200, headers: { "Content-Type": "application/json" } });
 });
