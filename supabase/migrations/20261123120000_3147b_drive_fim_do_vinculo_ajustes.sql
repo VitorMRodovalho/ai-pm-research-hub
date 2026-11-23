@@ -8,7 +8,8 @@
 --    ganha uma linha no admin_audit_log com o estado de antes, porque o próprio item passa a dizer engagement_restored.
 -- 3. enqueue_membership_drive_revocations, passo e: relê a visibilidade da iniciativa. O item avisado com 7 dias cuja
 --    iniciativa ficou confidencial depois do aviso é aprovado neste ciclo, e o item grava a confidencialidade e o
---    prazo de fato.
+--    prazo de fato. Quem sai assim antes do prazo avisado recebe o aviso de "foi encerrado" no mesmo ciclo (decisão
+--    do GP de 23/11/2026), pelo mesmo helper, que deixa passar o "foi encerrado" depois de um "7 dias".
 --
 -- Fora isso, as duas funções ficam como na 20261123013234. A chave site_config.drive_membership_revoke_enabled não muda.
 
@@ -82,6 +83,9 @@ DECLARE
   v_sent        int := 0;
   v_approved    int := 0;
   v_ids         uuid[];
+  v_early       uuid[];
+  v_closed_early int := 0;
+  v_id          uuid;
   r             record;
 BEGIN
   -- pg_cron chama por SQL, sem JWT: aceita o cron e o service_role, recusa usuário REST (ADR-0028 p89).
@@ -207,14 +211,15 @@ BEGIN
 
     -- e. vencido, avisado e não segurado, de quem é active ou alumni: aprova, conferindo a condição de novo no UPDATE.
     -- A visibilidade é relida aqui: o item avisado com 7 dias cuja iniciativa ficou confidencial depois do aviso sai
-    -- neste ciclo, como sairia se já fosse confidencial na entrada (decisão do GP de 22/11/2026).
+    -- neste ciclo, como sairia se já fosse confidencial na entrada (decisão do GP de 22/11/2026). O prazo de antes vem de
+    -- o, a mesma linha antes do UPDATE: quem sai antes do prazo avisado recebe o "foi encerrado" (GP, 23/11/2026).
     WITH ap AS (
       UPDATE public.drive_membership_revocations x
          SET status = 'approved', approval_mode = 'auto', approved_at = now(), updated_at = now(),
              is_confidential = (i.visibility = 'confidential'),
              due_at = LEAST(x.due_at, now())
-        FROM public.drive_membership_grants g, public.members m, public.initiatives i
-       WHERE g.id = x.grant_id AND m.id = g.grantee_member_id AND i.id = x.initiative_id
+        FROM public.drive_membership_grants g, public.members m, public.initiatives i, public.drive_membership_revocations o
+       WHERE g.id = x.grant_id AND m.id = g.grantee_member_id AND i.id = x.initiative_id AND o.id = x.id
          AND x.status = 'pending' AND x.reason = 'engagement_ended'
          AND x.held_at IS NULL AND x.notified_at IS NOT NULL
          AND (x.due_at <= now() OR i.visibility = 'confidential')
@@ -222,10 +227,20 @@ BEGIN
          AND m.member_status IN ('active','alumni')
          AND NOT public._drive_grant_keeps_access(g.grantee_person_id, g.initiative_id)
          AND NOT public.can_by_member(g.grantee_member_id, 'manage_platform')
-      RETURNING x.id
+      RETURNING x.id, (o.due_at > now()) AS closing_early
     )
-    SELECT array_agg(id) INTO v_ids FROM ap;
+    SELECT array_agg(id ORDER BY id), array_agg(id ORDER BY id) FILTER (WHERE closing_early) INTO v_ids, v_early FROM ap;
     v_approved := coalesce(cardinality(v_ids), 0);
+
+    -- o aviso de "foi encerrado" de quem saiu antes do prazo avisado. A hora do aviso vai para notified_at ANTES de
+    -- avisar, item a item: o segundo item do mesmo par vê o primeiro como "foi encerrado" e não avisa de novo.
+    FOREACH v_id IN ARRAY coalesce(v_early, ARRAY[]::uuid[]) LOOP
+      UPDATE public.drive_membership_revocations SET notified_at = now(), updated_at = now() WHERE id = v_id;
+      IF public._drive_revocation_notify(v_id, true) THEN
+        v_sent := v_sent + 1;
+      END IF;
+      v_closed_early := v_closed_early + 1;
+    END LOOP;
   END IF;
 
   IF v_backfilled + v_cancelled + v_released + v_queued + v_notified + v_approved > 0 THEN
@@ -234,12 +249,14 @@ BEGIN
             jsonb_build_object('enabled', v_on, 'ledger_aligned', v_backfilled, 'cancelled', v_cancelled,
                                'released', v_released, 'queued', v_queued, 'notified', v_notified,
                                'notices_sent', v_sent, 'auto_approved', v_approved,
+                               'closed_early', v_closed_early,
                                'approved_ids', to_jsonb(coalesce(v_ids, ARRAY[]::uuid[]))));
   END IF;
 
   RETURN jsonb_build_object('enabled', v_on, 'ledger_aligned', v_backfilled, 'cancelled', v_cancelled,
                             'released', v_released, 'queued', v_queued, 'notified', v_notified,
-                            'notices_sent', v_sent, 'auto_approved', v_approved);
+                            'notices_sent', v_sent, 'auto_approved', v_approved,
+                            'closed_early', v_closed_early);
 END;
 $function$;
 REVOKE ALL ON FUNCTION public.enqueue_membership_drive_revocations() FROM PUBLIC, anon, authenticated;

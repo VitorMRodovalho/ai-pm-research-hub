@@ -110,7 +110,7 @@ revogação automática ligar.
    "Um por pessoa e iniciativa" vale dentro de um episódio (segunda fatia, 23/11/2026): só cala o aviso outro item
    do mesmo par ainda aberto e detectado a até 7 dias deste, e o aviso de acesso encerrado só é calado por outro
    aviso de acesso encerrado. Se a iniciativa fica confidencial depois de um aviso de 7 dias, o acesso sai no ciclo
-   seguinte, sem aviso novo.
+   seguinte, e a pessoa recebe nesse ciclo o aviso de acesso encerrado (decisão do GP, 23/11/2026).
 9. **A pausa fica no manual, como na ADR-0107 Emenda 1, item 2.** O ciclo só avisa e aprova quem é `active` ou
    `alumni`. O item de quem está `inactive` (reversível sem portão) fica na tela, com o motivo, até a gestão aprovar;
    o aviso dessa aprovação não afirma que o vínculo terminou.

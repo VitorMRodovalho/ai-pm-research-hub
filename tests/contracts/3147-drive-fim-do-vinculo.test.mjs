@@ -140,7 +140,7 @@ export function pausaNoManual(enqueueBody) {
   const d = slice(s, 'FOR r IN', 'LOOP');
   return {
     avisoSoActiveOuAlumni: /JOIN public\.members m ON m\.id = x\.member_id WHERE .* AND m\.member_status IN \('active','alumni'\)/.test(d),
-    aprovacaoSoActiveOuAlumni: /FROM public\.drive_membership_grants g, public\.members m, public\.initiatives i WHERE g\.id = x\.grant_id AND m\.id = g\.grantee_member_id AND i\.id = x\.initiative_id .* AND m\.member_status IN \('active','alumni'\)/.test(ap),
+    aprovacaoSoActiveOuAlumni: /FROM public\.drive_membership_grants g, public\.members m, public\.initiatives i, public\.drive_membership_revocations o WHERE g\.id = x\.grant_id AND m\.id = g\.grantee_member_id AND i\.id = x\.initiative_id AND o\.id = x\.id .* AND m\.member_status IN \('active','alumni'\)/.test(ap),
   };
 }
 
@@ -266,9 +266,24 @@ export function liberacaoAuditada(enqueueBody) {
 export function aprovacaoReleVisibilidade(enqueueBody) {
   const ap = slice(sql(enqueueBody), "SET status = 'approved', approval_mode = 'auto'", 'RETURNING x.id');
   return {
-    juntaAIniciativaDoItem: /public\.initiatives i WHERE .*AND i\.id = x\.initiative_id/.test(ap),
+    juntaAIniciativaDoItem: /public\.initiatives i, public\.drive_membership_revocations o WHERE .*AND i\.id = x\.initiative_id AND o\.id = x\.id/.test(ap),
     confidencialAgoraSai: /AND \(x\.due_at <= now\(\) OR i\.visibility = 'confidential'\)/.test(ap),
     gravaOQueValeu: /is_confidential = \(i\.visibility = 'confidential'\), due_at = LEAST\(x\.due_at, now\(\)\)/.test(ap),
+  };
+}
+
+/** G20 (fatia 2, decisão do GP de 23/11/2026): quem sai antes do prazo avisado recebe o "foi encerrado". O prazo de
+ * antes vem de o; o aviso sai só para esses ids, dentro da chave, com a hora gravada antes de avisar. */
+export function encerradoNaAntecipacao(enqueueBody) {
+  const s = sql(enqueueBody);
+  const dentro = ifBlock(s, 'IF v_on THEN');
+  const laco = slice(dentro, 'FOREACH v_id IN ARRAY', 'END LOOP;');
+  return {
+    prazoDeAntes: /RETURNING x\.id, \(o\.due_at > now\(\)\) AS closing_early \)/.test(dentro)
+      && /SELECT array_agg\(id ORDER BY id\), array_agg\(id ORDER BY id\) FILTER \(WHERE closing_early\) INTO v_ids, v_early FROM ap;/.test(dentro),
+    avisaEncerradoSoAosAntecipados: /^FOREACH v_id IN ARRAY coalesce\(v_early, ARRAY\[\]::uuid\[\]\) LOOP/.test(laco)
+      && /IF public\._drive_revocation_notify\(v_id, true\) THEN v_sent := v_sent \+ 1; END IF;/.test(laco),
+    horaAntesDoAviso: /LOOP UPDATE public\.drive_membership_revocations SET notified_at = now\(\), updated_at = now\(\) WHERE id = v_id; IF public\._drive_revocation_notify\(v_id, true\)/.test(laco),
   };
 }
 
@@ -378,10 +393,11 @@ test('#3147 G10-G15: executor, aprovar já, pausa, aviso por par, avulsa e liber
   ok(liberacao(body('enqueue_membership_drive_revocations')), 'a liberação do bloqueio mudou');
 });
 
-test('#3147 G17-G19 (fatia 2): aviso por episódio, liberação auditada e visibilidade relida no passo e', () => {
+test('#3147 G17-G20 (fatia 2): aviso por episódio, liberação auditada, visibilidade relida e encerrado antecipado', () => {
   ok(avisoNoMesmoEpisodio(body('_drive_revocation_notify')), 'o aviso deixou de ser por episódio');
   ok(liberacaoAuditada(body('enqueue_membership_drive_revocations')), 'a liberação deixou de ser auditada');
   ok(aprovacaoReleVisibilidade(body('enqueue_membership_drive_revocations')), 'o passo e deixou de reler a visibilidade');
+  ok(encerradoNaAntecipacao(body('enqueue_membership_drive_revocations')), 'quem sai antes do prazo deixou de receber o encerrado');
 });
 
 test('#3147 G16: o predicado de pasta compartilhada diz sim e diz não', () => {
@@ -503,6 +519,16 @@ test('#3147 M: cada predicado reprova a mutação do seu defeito', () => {
   assert.equal(aprovacaoReleVisibilidade(mut(E, "OR i.visibility = 'confidential')", 'OR x.is_confidential)')).confidencialAgoraSai, false);
   // M41 o passo e não grava o que valeu
   assert.equal(aprovacaoReleVisibilidade(mut(E, "             is_confidential = (i.visibility = 'confidential'),\n", '')).gravaOQueValeu, false);
+  // M42 quem sai antes do prazo recebe o texto de "termina em 7 dias"
+  assert.equal(encerradoNaAntecipacao(mut(E, '_drive_revocation_notify(v_id, true)', '_drive_revocation_notify(v_id, false)')).avisaEncerradoSoAosAntecipados, false);
+  // M43 a hora do aviso não é gravada antes de avisar: o par recebe dois "foi encerrado"
+  assert.equal(encerradoNaAntecipacao(mut(E, '      UPDATE public.drive_membership_revocations SET notified_at = now(), updated_at = now() WHERE id = v_id;\n', '')).horaAntesDoAviso, false);
+  // M44 o prazo de antes lido da linha nova (sempre falso: ninguém recebe o encerrado)
+  assert.equal(encerradoNaAntecipacao(mut(E, '(o.due_at > now()) AS closing_early', '(x.due_at > now()) AS closing_early')).prazoDeAntes, false);
+  // M45 o laço avisa todo aprovado, e não só quem saiu antes do prazo
+  assert.equal(encerradoNaAntecipacao(mut(E, 'FOREACH v_id IN ARRAY coalesce(v_early,', 'FOREACH v_id IN ARRAY coalesce(v_ids,')).avisaEncerradoSoAosAntecipados, false);
+  // M46 o filtro some: v_early vira todo aprovado
+  assert.equal(encerradoNaAntecipacao(mut(E, ' FILTER (WHERE closing_early)', '')).prazoDeAntes, false);
 });
 
 // ───────────────────────── vivo: os mesmos predicados sobre o corpo em produção ─────────────────────────
@@ -531,7 +557,7 @@ test(dbGated ? '#3147 vivo: o corpo em produção passa nos mesmos predicados' :
   ok(avulsa(await vivo('admin_request_drive_revocation')));
   ok(avisoUmPorPar(await vivo('_drive_revocation_notify')));
   ok(avisoNoMesmoEpisodio(await vivo('_drive_revocation_notify')));
-  ok(liberacaoAuditada(E)); ok(aprovacaoReleVisibilidade(E));
+  ok(liberacaoAuditada(E)); ok(aprovacaoReleVisibilidade(E)); ok(encerradoNaAntecipacao(E));
 });
 
 test(dbGated ? '#3147 G16 vivo: nenhuma pasta de trabalho é de duas iniciativas' : `SKIP: ${skipMsg}`, { skip: !dbGated }, async () => {
