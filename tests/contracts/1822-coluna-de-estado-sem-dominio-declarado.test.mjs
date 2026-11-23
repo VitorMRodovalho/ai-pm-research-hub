@@ -31,6 +31,12 @@
  * Linha de base: 56, medida em 16/08/2026. So encolhe. Declarar dominio sobre dado vivo e mudanca de
  * schema com risco proprio (o ensaio deste ratchet bateu em `pilots.status` na primeira tentativa),
  * entao a triagem de quais das 56 merecem dominio e decisao de produto, nao deste teste.
+ *
+ * 23/11/2026 (#3147): a base passou a 64 sem coluna nova sem dominio. O universo examinado e o das colunas
+ * de texto cujo NOME tem dominio declarado em alguma tabela. A fila drive_membership_revocations declarou
+ * dominio em `reason`, e 8 colunas `reason` antigas, de texto livre, entraram no exame (audit_event_collapse_backup,
+ * board_lifecycle_events, gamification_points, pii_access_log, responsibility_handoffs,
+ * selection_interviewer_blackouts, selection_ranking_snapshots, wiki_page_events). 56 + 8 = 64, medido no banco.
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -87,7 +93,7 @@ const dbGated = process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KE
 const skipMsg = 'requires SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY';
 const sb = () => createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
-const BASE = 56; // medida em 16/08/2026 — so encolhe
+const BASE = 64; // 56 em 16/08/2026; +8 colunas `reason` antigas que o nome declarado em #3147 trouxe ao exame (23/11/2026) — so encolhe
 
 test('#1822 DB: RATCHET — a base de coluna sem dominio declarado nao cresce', { skip: dbGated ? false : skipMsg }, async () => {
   const { data, error } = await sb().rpc('_audit_undeclared_state_domain');
