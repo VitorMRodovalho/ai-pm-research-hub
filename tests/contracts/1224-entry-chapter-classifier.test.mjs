@@ -19,6 +19,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
+import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
 
 const MIG = readFileSync(
   fileURLToPath(new URL('../../supabase/migrations/20260805000386_1224_derive_entry_chapter_from_pmi_memberships.sql', import.meta.url)),
@@ -26,6 +27,10 @@ const MIG = readFileSync(
 );
 // Comment-stripped view — executable SQL only.
 const CODE = MIG.replace(/--.*$/gm, '');
+// #1932/#3169: o classificador e afirmado contra a captura VIGENTE, nao contra o arquivo de origem.
+const ROOT = process.cwd();
+const CLS = latestFunctionCapture(ROOT, 'classify_entry_chapter');
+const CLS_CODE = CLS.block.replace(/--.*$/gm, '');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -52,7 +57,7 @@ const FUTURE = '31 Dec 2099';
 
 // ── Source contract (offline) ───────────────────────────────────────────────
 test('1224: migration defines the pure classifier and admin diagnosis', () => {
-  assert.match(CODE, /CREATE OR REPLACE FUNCTION public\.classify_entry_chapter\(/, 'classifier defined');
+  assert.match(CLS_CODE, /CREATE OR REPLACE FUNCTION public\.classify_entry_chapter\(/, 'classifier defined');
   assert.match(CODE, /CREATE OR REPLACE FUNCTION public\.get_entry_chapter_diagnosis\(/, 'diagnosis defined');
 });
 
@@ -64,7 +69,7 @@ test('1224: approve derives the entry chapter from pmi_memberships (not free tex
 });
 
 test('1224: classifier is STABLE (never a data-mutating derivation)', () => {
-  assert.match(CODE, /FUNCTION public\.classify_entry_chapter[\s\S]*?\bSTABLE\b/, 'classify_entry_chapter is STABLE');
+  assert.match(CLS_CODE, /FUNCTION public\.classify_entry_chapter\([^)]*\)\s+RETURNS jsonb\s+LANGUAGE plpgsql\s+STABLE\b/, 'classify_entry_chapter is STABLE');
 });
 
 // ── DB-aware: classifier buckets (deterministic synthetic inputs) ────────────

@@ -52,6 +52,8 @@ test('C. a migration recria só get_my_pending_evaluations e não mexe em grant'
 
 test('D. a tela: fila vazia é "nada pendente"; só a recusa é "não está no comitê"', () => {
   const ME = maskJsComments(readFileSync(resolve(ROOT, 'src/pages/minhas-avaliacoes.astro'), 'utf8'));
-  assert.match(ME, /if \(String\(error\.code\) === '42501' \|\| \/not on this cycle committee\/i\.test\(error\.message \|\| ''\)\) \{\s*showDenied\(I\.notCommittee\);/);
-  assert.match(ME, /if \(pending\.length === 0\) \{\s*host\.innerHTML = `[^`]*\$\{esc\(I\.noPending\)\}/);
+  // #3166 A6: a recusa de comitê é lida pela mensagem (o 42501 também sai para quem não é membro ativo), e a fila
+  // vazia sem ciclo em avaliação diz que não há ciclo. Fila vazia continua não sendo recusa.
+  assert.match(ME, /if \(\/not on this cycle committee\/i\.test\(msg\)\) \{\s*showDenied\(I\.notCommittee\);/);
+  assert.match(ME, /if \(pending\.length === 0\) \{[^}]*const emptyText = data\?\.cycle_code \? I\.noPending : I\.noCycle;\s*host\.innerHTML = `[^`]*\$\{esc\(emptyText\)\}/);
 });

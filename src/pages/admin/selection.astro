@@ -922,7 +922,7 @@ const SEL_I18N = {
 <script>
   import { canAccessAdminRoute } from '../../lib/admin/route-access.ts';
   import { canFor } from '../../lib/permissions.ts';
-  import { adminSignInText, onMemberResolved } from '../../lib/member-ready';
+  import { adminLoadFailedText, adminSignInText, onMemberResolved } from '../../lib/member-ready';
   import { rpcChecked } from '../../lib/rpc-checked';
   import { SELECTION_STATUS_TONE, GROUP_TONE, TONE_BADGE } from '../../lib/statusFarol';
   import { formatDateOnly, isDateOnlyString, isOverdueDateOnly } from '../../lib/date-only';
@@ -6931,6 +6931,8 @@ const SEL_I18N = {
   let eventsBound = false;
   onMemberResolved((r) => {
     if (r.kind === 'no-session') { showDenied(adminSignInText()); return; }
+    // #3106 N1: a leitura do membro falhou; "sem acesso" seria falso.
+    if (r.kind === 'member-failed') { showDenied(adminLoadFailedText()); return; }
     sb = (window as any).navGetSb?.();
     MEMBER = r.kind === 'member' ? r.member : null;
     if (MEMBER && !eventsBound) { eventsBound = true; bindEvents(); }

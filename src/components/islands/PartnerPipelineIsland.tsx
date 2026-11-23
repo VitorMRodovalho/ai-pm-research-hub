@@ -483,10 +483,6 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
     }
   };
 
-  const PREV_STATUS: Record<string, string> = {
-    contact: 'prospect', negotiation: 'contact', active: 'negotiation',
-  };
-
   if (loading) return <div className="text-center py-12 text-[var(--text-muted)]">{l.loading}</div>;
   if (!data) return null;
 
@@ -740,19 +736,8 @@ export default function PartnerPipelineIsland({ lang = 'pt-BR' }: { lang?: strin
             </div>
 
             <div className="flex flex-wrap gap-2 mt-5 pt-3 border-t border-[var(--border-subtle)]">
-              {PREV_STATUS[selected.status] && (
-                <button onClick={async () => {
-                  const sb = getSb(); if (!sb) return;
-                  const prev = PREV_STATUS[selected.status];
-                  const { error } = await sb.rpc('admin_update_partner_status', { p_partner_id: selected.id, p_new_status: prev, p_notes: 'Retrocedido via pipeline' });
-                  if (error) { (window as any).toast?.('Erro ao retroceder.', 'error'); return; }
-                  (window as any).toast?.('Status retrocedido.', 'success');
-                  setSelected(null); setLoading(true); await loadPipeline();
-                }}
-                  className="px-3 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-semibold hover:bg-gray-50 cursor-pointer">
-                  ← {cl[PREV_STATUS[selected.status]]}
-                </button>
-              )}
+              {/* #3166: o funil é só para a frente (ADR-0033); admin_update_partner_status recusa a volta
+                  com backward_transition_blocked, e o botão de retroceder dizia "Status retrocedido" sem mudar nada */}
               {NEXT_STATUS[selected.status] && (
                 <button onClick={() => handleAdvance(selected)}
                   className="px-3 py-2 rounded-lg bg-teal text-white text-xs font-semibold hover:opacity-90 cursor-pointer border-0">

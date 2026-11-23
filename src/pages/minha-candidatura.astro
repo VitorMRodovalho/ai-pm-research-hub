@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
 
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 const base = lang === 'pt-BR' ? '' : lang === 'en-US' ? '/en' : '/es';
@@ -88,6 +89,7 @@ const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 
         {I18N.loading}
       </div>
       <div id="me-status-error" class="hidden bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700"></div>
+      <GuestNoMember lang={lang} id="me-status-guest" />
       <div id="me-status-empty" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
         {I18N.empty}
       </div>
@@ -302,12 +304,15 @@ const dateLocale = lang === 'en-US' ? 'en-US' : lang === 'es-LATAM' ? 'es-AR' : 
     const { data, error } = await sb.rpc('get_my_application_status');
     hide('me-status-loading');
 
+    // #3106: aqui já há sessão, então not_authenticated quer dizer "sem cadastro de membro". Pedir login a
+    // quem já entrou não resolve; o bloco da #3086 aponta a seleção e o vínculo.
+    if (!error && data?.error === 'not_authenticated') {
+      show('me-status-guest');
+      return;
+    }
     if (error || (data && data.error)) {
       const errEl = $('me-status-error');
-      if (errEl) {
-        errEl.textContent = (data && data.error) ? I.notAuthenticated : I.error;
-        show('me-status-error');
-      }
+      if (errEl) { errEl.textContent = I.error; show('me-status-error'); }
       return;
     }
 

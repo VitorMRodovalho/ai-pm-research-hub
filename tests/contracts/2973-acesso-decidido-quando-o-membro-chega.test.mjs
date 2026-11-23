@@ -160,8 +160,14 @@ test('Nav: marca o estado da sessão em cada transição e avisa a falta de sess
   assert.match(nav, /\(window as any\)\.navAuthState = \(\) => _authState;/, 'navAuthState não exposto');
   assert.match(nav, /if \(!session\) \{ _authState = 'no-session'; window\.dispatchEvent\(new CustomEvent\('nav:no-session'\)\); \}/,
     'sem sessão o Nav precisa marcar no-session e disparar nav:no-session');
-  const resolvido = nav.match(/_member = data; _authState = 'resolved'; renderAuth\(\); window\.dispatchEvent\(new CustomEvent\('nav:member', \{ detail: _member \}\)\);/g) || [];
-  assert.equal(resolvido.length, 2, "boot e SIGNED_IN precisam marcar 'resolved' antes do nav:member");
+  // #3106 N1: boot e SIGNED_IN passam pela mesma resolveSessionMember, que marca 'resolved' antes do nav:member.
+  const ini = nav.indexOf('async function resolveSessionMember() {');
+  const fim = nav.indexOf('async function bootNav()', ini);
+  assert.ok(ini !== -1 && fim !== -1, 'resolveSessionMember não encontrada');
+  assert.match(nav.slice(ini, fim), /_member = data; _authState = 'resolved'; renderAuth\(\); window\.dispatchEvent\(new CustomEvent\('nav:member', \{ detail: _member \}\)\);/,
+    "resolveSessionMember precisa marcar 'resolved' antes do nav:member");
+  const chamadas = nav.match(/await resolveSessionMember\(\);/g) || [];
+  assert.equal(chamadas.length, 2, 'boot e SIGNED_IN precisam passar por resolveSessionMember');
   assert.match(nav, /if \(event === 'SIGNED_OUT'\) \{ _member = null; _user = null;[\s\S]*?_authState = 'no-session'; renderLoggedOut\(\); window\.dispatchEvent\(new CustomEvent\('nav:member', \{ detail: null \}\)\);/,
     "SIGNED_OUT precisa marcar 'no-session' antes do nav:member nulo");
 });
@@ -238,7 +244,7 @@ test('pilots: lê para todo membro cadastrado; sem cadastro, aviso; sem sessão,
 
 test('selection: decide no applyGate (canAccessAdminRoute) a cada resolução; sem sessão pede para entrar', () => {
   const c = ler('src/pages/admin/selection.astro').replace(/\s+/g, ' ');
-  assert.match(c, /onMemberResolved\(\(r\) => \{ if \(r\.kind === 'no-session'\) \{ showDenied\(adminSignInText\(\)\); return; \} sb = [^;]+; MEMBER = r\.kind === 'member' \? r\.member : null; [^}]*\} applyGate\(MEMBER\); \}\);/);
+  assert.match(c, /onMemberResolved\(\(r\) => \{ if \(r\.kind === 'no-session'\) \{ showDenied\(adminSignInText\(\)\); return; \} (?:\/\/[^\n]*?)?if \(r\.kind === 'member-failed'\) \{ showDenied\(adminLoadFailedText\(\)\); return; \} sb = [^;]+; MEMBER = r\.kind === 'member' \? r\.member : null; [^}]*\} applyGate\(MEMBER\); \}\);/);
   assert.match(c, /function applyGate\(m: any\) \{ if \(m && canAccessAdminRoute\(m, 'admin_selection'\)\) \{[\s\S]*?\} else \{ showDenied\(\); \} \}/,
     'o negado da selection precisa vir do else de canAccessAdminRoute');
 });

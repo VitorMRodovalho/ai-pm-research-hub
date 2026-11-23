@@ -12,6 +12,8 @@
 // (que exige view_internal_analytics), nem expõe import, decisão ou diversidade.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { t, getLangFromURL, type Lang } from '../i18n/utils';
+import GuestNoMember from '../components/ui/GuestNoMember.astro';
+import MemberLoadFailed from '../components/ui/MemberLoadFailed.astro';
 const lang: Lang = getLangFromURL(Astro.url.pathname + Astro.url.search);
 
 const ME_I18N = {
@@ -25,6 +27,8 @@ const ME_I18N = {
   progressLabel: t('myEvals.progressLabel', lang),
   pendingHeading: t('myEvals.pendingHeading', lang),
   noPending: t('myEvals.noPending', lang),
+  noCycle: t('myEvals.noCycle', lang),
+  notActiveMember: t('myEvals.notActiveMember', lang),
   draftBadge: t('myEvals.draftBadge', lang),
   roleResearcher: t('myEvals.role.researcher', lang),
   roleLeader: t('myEvals.role.leader', lang),
@@ -79,6 +83,9 @@ const ME_I18N = {
       <p class="font-semibold text-amber-800" id="me-denied-msg">{ME_I18N.notCommittee}</p>
     </div>
 
+    <GuestNoMember lang={lang} id="me-guest" />
+    <MemberLoadFailed lang={lang} id="me-failed" />
+
     <!-- Lista de pendências -->
     <section id="me-list" class="hidden">
       <div class="bg-white border border-[var(--border)] rounded-2xl p-5 mb-5">
@@ -116,10 +123,10 @@ const ME_I18N = {
   window.__MY_EVALS_I18N = typeof ME_I18N !== 'undefined' ? ME_I18N : {};
 </script>
 <script>
+  import { waitMemberResolved } from '../lib/member-ready';
   const I: Record<string, any> = (typeof window !== 'undefined' && (window as any).__MY_EVALS_I18N) || {};
 
   let sb: any = null;
-  let bootRetries = 0;
 
   const $ = (id: string) => document.getElementById(id);
   const esc = (s: unknown) =>
@@ -136,8 +143,8 @@ const ME_I18N = {
     (window as any).toast?.(msg, type);
   }
 
-  function showOnly(which: 'loading' | 'denied' | 'list' | 'form') {
-    ['me-loading', 'me-denied', 'me-list', 'me-form'].forEach((id) => {
+  function showOnly(which: 'loading' | 'denied' | 'guest' | 'failed' | 'list' | 'form') {
+    ['me-loading', 'me-denied', 'me-guest', 'me-failed', 'me-list', 'me-form'].forEach((id) => {
       $(id)?.classList.toggle('hidden', id !== `me-${which}`);
     });
   }
@@ -167,10 +174,16 @@ const ME_I18N = {
     const { data, error } = await sb.rpc('get_my_pending_evaluations');
 
     if (error) {
-      // A RPC levanta insufficient_privilege quando o chamador não está no comitê
-      // do ciclo em avaliação. Esse é o caso legítimo de "não é para você".
-      if (String(error.code) === '42501' || /not on this cycle committee/i.test(error.message || '')) {
+      // #3166 A6: a RPC levanta insufficient_privilege (42501) em dois casos, e o código não os separa.
+      // Fora do comitê do ciclo é "não é para você"; sem membro ativo é outra coisa, e dizer "comitê" a
+      // essa pessoa era errado. A mensagem é o que distingue.
+      const msg = error.message || '';
+      if (/not on this cycle committee/i.test(msg)) {
         showDenied(I.notCommittee);
+        return;
+      }
+      if (/^Not authenticated/i.test(msg)) {
+        showDenied(I.notActiveMember);
         return;
       }
       showDenied(`${I.errorLoad} ${error.message}`);
@@ -193,8 +206,11 @@ const ME_I18N = {
     if (!host) return;
 
     if (pending.length === 0) {
+      // #3166 A6: sem ciclo em avaliação a RPC devolve a fila vazia sem cycle_code; "você avaliou tudo"
+      // afirmava um trabalho que não existiu.
+      const emptyText = data?.cycle_code ? I.noPending : I.noCycle;
       host.innerHTML = `<div class="bg-white border border-[var(--border)] rounded-2xl p-8 text-center">
-        <p class="text-[var(--text-muted)] text-sm">${esc(I.noPending)}</p></div>`;
+        <p class="text-[var(--text-muted)] text-sm" data-me-empty="${data?.cycle_code ? 'done' : 'no-cycle'}">${esc(emptyText)}</p></div>`;
     } else {
       host.innerHTML = pending.map((p) => `
         <div class="bg-white border border-[var(--border)] rounded-2xl p-4 mb-3 flex items-center justify-between gap-3 flex-wrap">
@@ -412,15 +428,14 @@ const ME_I18N = {
   }
 
   /* ── boot ────────────────────────────────────────── */
-  function boot() {
+  // #3106: decide pelo estado do Nav, sem prazo. Antes, 4 s sem membro viravam "login necessário",
+  // inclusive para quem já tinha entrado ou para o membro cujo Nav demorou.
+  async function boot() {
+    const r = await waitMemberResolved();
+    if (r.kind === 'no-session') { showDenied(I.loginRequired); return; }
+    if (r.kind === 'no-member') { showOnly('guest'); return; }
+    if (r.kind === 'member-failed') { showOnly('failed'); return; }
     sb = (window as any).navGetSb?.();
-    const member = (window as any).navGetMember?.();
-    if (!sb || !member) {
-      bootRetries += 1;
-      if (bootRetries >= 20) { showDenied(I.loginRequired); return; }
-      setTimeout(boot, 200);
-      return;
-    }
     $('me-back')?.addEventListener('click', () => { loadPending(); });
     loadPending();
   }
