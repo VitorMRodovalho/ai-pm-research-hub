@@ -107,11 +107,16 @@ revogação automática ligar.
    iniciativa, mesmo quando a pessoa tem duas concessões na mesma pasta (e-mail alternativo). "Aprovar já" avisa na
    hora quem ainda não foi avisado, com o texto de acesso encerrado. A avulsa não avisa nem tem prazo. A
    confidencialidade que decide o prazo é a da iniciativa no momento do aviso, não a da entrada na fila.
+   "Um por pessoa e iniciativa" vale dentro de um episódio (segunda fatia, 23/11/2026): só cala o aviso outro item
+   do mesmo par ainda aberto e detectado a até 7 dias deste, e o aviso de acesso encerrado só é calado por outro
+   aviso de acesso encerrado. Se a iniciativa fica confidencial depois de um aviso de 7 dias, o acesso sai no ciclo
+   seguinte, sem aviso novo.
 9. **A pausa fica no manual, como na ADR-0107 Emenda 1, item 2.** O ciclo só avisa e aprova quem é `active` ou
    `alumni`. O item de quem está `inactive` (reversível sem portão) fica na tela, com o motivo, até a gestão aprovar;
    o aviso dessa aprovação não afirma que o vínculo terminou.
 10. **Um bloqueio não é para sempre.** Um item falho, ou um "manter" da gestão, impede a concessão de voltar à fila.
     Quando a pessoa volta ao roster, esse item fecha como `engagement_restored`, e se o vínculo terminar de novo a
-    concessão entra limpa. A decisão original fica no `admin_audit_log`.
+    concessão entra limpa. Cada item liberado grava no `admin_audit_log` (`drive_membership_revocation_released`) o
+    estado de antes, porque o próprio item passa a dizer `engagement_restored`.
 11. **Fora desta emenda:** pasta de trabalho de mais de uma iniciativa (#3178; 0 casos em 22/11/2026, com guard que
     avisa se aparecer) e acesso fora do ledger, como compartilhamento manual depois da revogação (#3179).
