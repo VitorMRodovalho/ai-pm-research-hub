@@ -43,10 +43,14 @@ const SQL_ONLY = MIG
   .replace(/COMMENT ON [\s\S]*?';/g, '')
   .split('\n').filter(l => !l.trim().startsWith('--')).join('\n');
 
-/** As que resolviam o ciclo padrao e passaram a delegar ao helper. */
+/**
+ * As que resolviam o ciclo padrao e passaram a delegar ao helper.
+ * `get_entry_chapter_diagnosis` saiu da lista: a #3170 a aposentou (DROP FUNCTION), e o guard
+ * 1224 afirma a aposentadoria. A cobertura viva da classe continua no ratchet abaixo, derivado
+ * de pg_proc, que deixa de ve-la quando ela some.
+ */
 const DELEGAM_AO_HELPER = [
   'get_diversity_dashboard',
-  'get_entry_chapter_diagnosis',
   'get_evaluator_calibration_stats',
   'get_selection_pipeline_metrics',
   'get_selection_rankings',

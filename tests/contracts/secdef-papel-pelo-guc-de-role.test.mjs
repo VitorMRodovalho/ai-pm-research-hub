@@ -81,13 +81,14 @@ test('nenhuma SECURITY DEFINER vigente decide papel por current_user, fora das e
 });
 
 // Cada corrigida decide pelo GUC de role NO statement que decide: a condicao amarrada ao que ela produz.
+// get_entry_chapter_diagnosis saiu daqui com a #3170, que a aposentou: funcao que nao existe nao tem
+// portao a afirmar, e latestFunctionCapture so le CREATE, entao seguiria verde sobre um corpo morto.
 const DECIDE = {
   record_drive_discovery: /IF\s+public\._request_is_rest_caller\(\)\s+THEN\s+DECLARE\s+v_caller_id\s+uuid;/,
   list_initiatives_missing_drive_workspace: /v_system\s*:=\s*\(NOT\s+public\._request_is_rest_caller\(\)\);\s*IF\s+NOT\s+v_system\s+THEN/,
   member_resolve_email: /IF\s+auth\.uid\(\)\s+IS\s+NULL\s+AND\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Not authenticated';\s+END IF;\s+IF\s+public\._request_is_rest_caller\(\)\s+AND\s+NOT\s+public\.rls_is_member\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized: member_resolve_email requires membership'/,
   check_schema_invariants: /IF\s+auth\.uid\(\)\s+IS\s+NULL\s+AND\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized/,
   get_cycle_renewal_radar: /ELSIF\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized/,
-  get_entry_chapter_diagnosis: /ELSIF\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized/,
   nudge_entry_chapter_cohort: /ELSIF\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'Unauthorized/,
   notify_missing_drive_workspaces: /IF\s+public\._request_is_rest_caller\(\)\s+THEN\s+RAISE\s+EXCEPTION\s+'service-role or cron only'/,
   auto_promote_eligible_leads_daily: /v_cron_context\s*:=\s*\(NOT\s+public\._request_is_rest_caller\(\)\);\s*IF\s+NOT\s+v_cron_context\s+THEN/,

@@ -7,6 +7,9 @@
  *     no_fetch | not_affiliated. "PMI-active" = expiryDate >= today (membership_status is a
  *     null-trap). resolve_br_chapter_code maps "<State>, Brazil Chapter"/aliases to the code.
  *   - get_entry_chapter_diagnosis(cycle) — admin/service diagnosis over the approved cohort.
+ *     Retired by #3170 (no caller left after the affiliation consolidation): the guard now asserts
+ *     that the newest migration touching it DROPS it, and the bucket/codes consistency it used to
+ *     check over the cohort is asserted on the classifier itself.
  *   - approve_selection_application — derives entry_chapter_code from a single active BR chapter
  *     and upserts every active BR affiliation (source='pmi_vep'); >1 active is left for
  *     self-declaration; 0 leaves the honest 'Outro'.
@@ -16,10 +19,11 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { unexpectedViolations, violationsMessage } from '../helpers/invariant-exceptions.mjs';
-import { latestFunctionCapture } from '../helpers/guard-pin-staleness.mjs';
+import { latestFunctionCapture, maskLineComments } from '../helpers/guard-pin-staleness.mjs';
 
 const MIG = readFileSync(
   fileURLToPath(new URL('../../supabase/migrations/20260805000386_1224_derive_entry_chapter_from_pmi_memberships.sql', import.meta.url)),
@@ -31,6 +35,24 @@ const CODE = MIG.replace(/--.*$/gm, '');
 const ROOT = process.cwd();
 const CLS = latestFunctionCapture(ROOT, 'classify_entry_chapter');
 const CLS_CODE = CLS.block.replace(/--.*$/gm, '');
+// #3170: with the diagnosis retired, approval is the classifier's consumer. Current capture.
+const APPROVE_CODE = latestFunctionCapture(ROOT, 'approve_selection_application').block.replace(/--.*$/gm, '');
+
+/**
+ * #3170: the newest migration whose EXECUTABLE SQL (line comments masked) names the function.
+ * latestFunctionCapture only sees CREATE, so it keeps returning a dropped function's last body;
+ * the retirement has to be read from the migration stream itself.
+ */
+function newestExecutableMention(name) {
+  const dir = join(ROOT, 'supabase/migrations');
+  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  for (let i = files.length - 1; i >= 0; i--) {
+    const sql = maskLineComments(readFileSync(join(dir, files[i]), 'utf8'));
+    if (sql.includes(name)) return { file: files[i], sql };
+  }
+  return null;
+}
+const DIAG = newestExecutableMention('get_entry_chapter_diagnosis');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -56,9 +78,32 @@ const BUCKETS = new Set(['resolved', 'ambiguous', 'profile_private', 'no_fetch',
 const FUTURE = '31 Dec 2099';
 
 // ── Source contract (offline) ───────────────────────────────────────────────
-test('1224: migration defines the pure classifier and admin diagnosis', () => {
+test('1224: the pure classifier is defined; the admin diagnosis is retired (#3170)', () => {
   assert.match(CLS_CODE, /CREATE OR REPLACE FUNCTION public\.classify_entry_chapter\(/, 'classifier defined');
-  assert.match(CODE, /CREATE OR REPLACE FUNCTION public\.get_entry_chapter_diagnosis\(/, 'diagnosis defined');
+  assert.ok(DIAG, 'some migration must name get_entry_chapter_diagnosis (else this assertion reads the void)');
+  // assert.ok, not match: a failing match would print the whole migration.
+  assert.ok(
+    /^\s*DROP\s+FUNCTION\s+public\.get_entry_chapter_diagnosis\(\s*uuid\s*\)\s*;/m.test(DIAG.sql),
+    `the newest migration naming the diagnosis (${DIAG.file}) must DROP it`,
+  );
+  assert.ok(
+    !/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.get_entry_chapter_diagnosis\s*\(/i.test(DIAG.sql),
+    `${DIAG.file} must not recreate the diagnosis it retires`,
+  );
+});
+
+test('1224: the classifier binds the bucket to the number of active codes', () => {
+  // The invariant the diagnosis used to check over the cohort, read where it is decided.
+  assert.match(
+    CLS_CODE,
+    /IF v_codes IS NOT NULL AND array_length\(v_codes, 1\) >= 1 THEN\s+RETURN jsonb_build_object\(\s*'bucket', CASE WHEN array_length\(v_codes, 1\) > 1 THEN 'ambiguous' ELSE 'resolved' END,\s*'active_br_codes', to_jsonb\(v_codes\)/,
+    'one active code => resolved, more than one => ambiguous, codes returned with the bucket',
+  );
+  assert.match(
+    CLS_CODE,
+    /WHEN COALESCE\(p_community_profile_private, false\) THEN 'profile_private'\s+WHEN p_pmi_data_fetched_at IS NULL\s+THEN 'no_fetch'\s+ELSE 'not_affiliated'\s+END,\s+'active_br_codes', '\[\]'::jsonb/,
+    'the three no-code buckets return an empty code list',
+  );
 });
 
 test('1224: approve derives the entry chapter from pmi_memberships (not free text)', () => {
@@ -70,6 +115,14 @@ test('1224: approve derives the entry chapter from pmi_memberships (not free tex
 
 test('1224: classifier is STABLE (never a data-mutating derivation)', () => {
   assert.match(CLS_CODE, /FUNCTION public\.classify_entry_chapter\([^)]*\)\s+RETURNS jsonb\s+LANGUAGE plpgsql\s+STABLE\b/, 'classify_entry_chapter is STABLE');
+});
+
+test('1224: approval classifies the applicant and reads the codes the classifier returned (#3170)', () => {
+  assert.match(
+    APPROVE_CODE,
+    /v_classify := public\.classify_entry_chapter\(\s*v_app\.pmi_memberships, v_app\.community_profile_private, v_app\.pmi_data_fetched_at\s*\);\s*v_br_codes := ARRAY\(SELECT jsonb_array_elements_text\(v_classify->'active_br_codes'\)\);/,
+    'approve_selection_application must classify the applicant enrichment and take active_br_codes from that result',
+  );
 });
 
 // ── DB-aware: classifier buckets (deterministic synthetic inputs) ────────────
@@ -124,10 +177,29 @@ test('1224: classifier — missing-enrichment precedence: private > no_fetch', {
   assert.equal(noFetch.bucket, 'no_fetch');
 });
 
-// ── DB-aware: diagnosis surface + invariant ──────────────────────────────────
-test('1224: diagnosis returns only known buckets and stays classifier-consistent', { skip: canRun ? false : skipMsg }, async () => {
-  const rows = await rpc('get_entry_chapter_diagnosis', {});
-  assert.ok(Array.isArray(rows) && rows.length > 0, 'diagnosis returns the current cohort');
+// ── DB-aware: classifier consistency + invariant ─────────────────────────────
+// #3170: was asserted over get_entry_chapter_diagnosis (retired). Same rule, on the live
+// classifier, over one synthetic input per bucket, so every bucket is reached.
+const MATRIX = [
+  { want: 'resolved', p_pmi_memberships: [{ chapterName: 'Goiás, Brazil Chapter', expiryDate: FUTURE }], p_community_profile_private: false, fetched: true },
+  { want: 'ambiguous', p_pmi_memberships: [{ chapterName: 'Goiás, Brazil Chapter', expiryDate: FUTURE }, { chapterName: 'Espírito Santo, Brazil Chapter', expiryDate: FUTURE }], p_community_profile_private: false, fetched: true },
+  { want: 'profile_private', p_pmi_memberships: null, p_community_profile_private: true, fetched: false },
+  { want: 'no_fetch', p_pmi_memberships: null, p_community_profile_private: false, fetched: false },
+  { want: 'not_affiliated', p_pmi_memberships: [{ chapterName: 'PMI Global', expiryDate: FUTURE }], p_community_profile_private: false, fetched: true },
+];
+
+test('1224: classifier returns only known buckets and stays code-consistent', { skip: canRun ? false : skipMsg }, async () => {
+  const rows = [];
+  for (const m of MATRIX) {
+    const r = await rpc('classify_entry_chapter', {
+      p_pmi_memberships: m.p_pmi_memberships,
+      p_community_profile_private: m.p_community_profile_private,
+      p_pmi_data_fetched_at: m.fetched ? new Date().toISOString() : null,
+    });
+    assert.equal(r.bucket, m.want);
+    rows.push(r);
+  }
+  assert.deepEqual(new Set(rows.map((r) => r.bucket)), BUCKETS, 'every bucket is reached');
   for (const r of rows) {
     assert.ok(BUCKETS.has(r.bucket), `unknown bucket ${r.bucket}`);
     if (r.bucket === 'resolved') assert.equal((r.active_br_codes || []).length, 1, 'resolved => exactly one active code');
