@@ -10002,6 +10002,9 @@ export type Database = {
           permission_id: string | null
           reconcile_source: string | null
           requested_at: string
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_via: string | null
           role: string
           status: string
           updated_at: string
@@ -10024,6 +10027,9 @@ export type Database = {
           permission_id?: string | null
           reconcile_source?: string | null
           requested_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_via?: string | null
           role?: string
           status?: string
           updated_at?: string
@@ -10046,6 +10052,9 @@ export type Database = {
           permission_id?: string | null
           reconcile_source?: string | null
           requested_at?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_via?: string | null
           role?: string
           status?: string
           updated_at?: string
@@ -10148,6 +10157,459 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_tribe_active_members"
             referencedColumns: ["initiative_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      drive_membership_revocations: {
+        Row: {
+          approval_mode: string | null
+          approved_at: string | null
+          approved_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          detected_at: string
+          due_at: string | null
+          google_error: Json | null
+          grant_id: string
+          held_at: string | null
+          held_by: string | null
+          hold_note: string | null
+          id: string
+          initiative_id: string
+          is_confidential: boolean
+          member_id: string | null
+          note: string | null
+          notified_at: string | null
+          reason: string
+          revoked_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approval_mode?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          detected_at?: string
+          due_at?: string | null
+          google_error?: Json | null
+          grant_id: string
+          held_at?: string | null
+          held_by?: string | null
+          hold_note?: string | null
+          id?: string
+          initiative_id: string
+          is_confidential?: boolean
+          member_id?: string | null
+          note?: string | null
+          notified_at?: string | null
+          reason: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approval_mode?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          detected_at?: string
+          due_at?: string | null
+          google_error?: Json | null
+          grant_id?: string
+          held_at?: string | null
+          held_by?: string | null
+          hold_note?: string | null
+          id?: string
+          initiative_id?: string
+          is_confidential?: boolean
+          member_id?: string | null
+          note?: string | null
+          notified_at?: string | null
+          reason?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_cancelled_by_fkey"
+            columns: ["cancelled_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "drive_membership_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_held_by_fkey"
+            columns: ["held_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "initiatives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_initiative_id_fkey"
+            columns: ["initiative_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["initiative_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_membership_revocations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -32010,6 +32472,14 @@ export type Database = {
         Args: { p_api_error: Json }
         Returns: string
       }
+      _drive_grant_keeps_access: {
+        Args: { p_initiative_id: string; p_person_id: string }
+        Returns: boolean
+      }
+      _drive_revocation_notify: {
+        Args: { p_closing_now: boolean; p_revocation_id: string }
+        Returns: boolean
+      }
       _enqueue_engagement_welcome: {
         Args: { p_engagement_id: string }
         Returns: undefined
@@ -32554,6 +33024,10 @@ export type Database = {
         Returns: string
       }
       admin_anonymize_member: { Args: { p_member_id: string }; Returns: Json }
+      admin_approve_drive_membership_revocation: {
+        Args: { p_revocation_id: string }
+        Returns: Json
+      }
       admin_archive_board_item: {
         Args: { p_item_id: string; p_reason?: string }
         Returns: Json
@@ -32576,6 +33050,10 @@ export type Database = {
       }
       admin_bulk_set_status: {
         Args: { p_is_active: boolean; p_member_ids: string[] }
+        Returns: Json
+      }
+      admin_cancel_drive_revocation: {
+        Args: { p_note: string; p_revocation_id: string }
         Returns: Json
       }
       admin_change_tribe_leader: {
@@ -32654,6 +33132,10 @@ export type Database = {
       }
       admin_get_member_details: { Args: { p_member_id: string }; Returns: Json }
       admin_get_tribe_allocations: { Args: never; Returns: Json }
+      admin_hold_drive_revocation: {
+        Args: { p_hold: boolean; p_note?: string; p_revocation_id: string }
+        Returns: Json
+      }
       admin_inactivate_member: {
         Args: { p_member_id: string; p_reason?: string }
         Returns: Json
@@ -32716,6 +33198,10 @@ export type Database = {
           p_offset?: number
           p_status?: string
         }
+        Returns: Json
+      }
+      admin_list_drive_revocation_queue: {
+        Args: { p_include_closed?: boolean }
         Returns: Json
       }
       admin_list_member_consents: {
@@ -32879,6 +33365,10 @@ export type Database = {
       }
       admin_reopen_onboarding_step: {
         Args: { p_member_id: string; p_note: string; p_step_key: string }
+        Returns: Json
+      }
+      admin_request_drive_revocation: {
+        Args: { p_grant_id: string; p_note: string }
         Returns: Json
       }
       admin_resolve_anomaly: {
@@ -33971,6 +34461,7 @@ export type Database = {
         Args: { p_item_id: string }
         Returns: undefined
       }
+      enqueue_membership_drive_revocations: { Args: never; Returns: Json }
       enrich_applications_from_csv: {
         Args: {
           p_cycle_id: string
