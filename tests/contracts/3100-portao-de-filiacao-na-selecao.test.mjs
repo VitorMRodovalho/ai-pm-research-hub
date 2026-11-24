@@ -56,9 +56,10 @@ test('B. a aprovacao le o portao depois do vinculo, devolve e registra, e nao bl
   assert.ok(vinculo > 0 && afiliacao > 0 && leitura > vinculo && leitura > afiliacao && leitura < log,
     `${APPROVE.file}: o portao precisa ser lido depois do vinculo e das afiliacoes, antes do log`);
   const retorno = b.slice(b.lastIndexOf("RETURN jsonb_build_object(\n    'success',            true,"));
-  assert.match(retorno, /'entry_chapter_derived',\s+v_entry_derived,\s+'affiliation_gate',\s+v_affiliation_gate\s+\);\s+END;/);
+  // #3168: 'affiliation_nudge' vem logo depois do portao, no retorno e no log.
+  assert.match(retorno, /'entry_chapter_derived',\s+v_entry_derived,\s+'affiliation_gate',\s+v_affiliation_gate,\s+'affiliation_nudge',\s+v_affiliation_nudge\s+\);\s+END;/);
   const ctx = b.slice(log, b.indexOf('RETURN jsonb_build_object(', log));
-  assert.match(ctx, /'affiliation_gate',\s+v_affiliation_gate\s+\)\s+\);/);
+  assert.match(ctx, /'affiliation_gate',\s+v_affiliation_gate,\s+'affiliation_nudge',\s+v_affiliation_nudge\s+\)\s+\);/);
   assert.equal((b.match(/v_affiliation_gate/g) || []).length, 4, 'v_affiliation_gate: declaracao, leitura, log e retorno; outro uso e desvio de fluxo');
 });
 
