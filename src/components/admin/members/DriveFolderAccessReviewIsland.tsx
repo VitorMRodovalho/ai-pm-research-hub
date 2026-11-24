@@ -30,9 +30,22 @@ interface FindingRow {
   folder_linked: boolean;
 }
 
+// #3186: o herdado da pasta de cima não vira item; chega agregado por pasta, sem e-mail.
+interface InheritedFolder {
+  drive_folder_id: string;
+  inherited_count: number;
+  unknown_person: number;
+  last_seen_at: string;
+  initiatives: Array<{ id: string; title: string; is_confidential: boolean }>;
+  drive_folder_url: string | null;
+  is_confidential: boolean;
+}
+
 interface Findings {
   rows: FindingRow[];
-  summary: { open: number; kept: number; approved: number; failed: number; unknown_person: number; confidential_open: number };
+  inherited_by_folder?: InheritedFolder[];
+  summary: { open: number; kept: number; approved: number; failed: number; unknown_person: number; confidential_open: number;
+             inherited?: number; inherited_folders?: number };
 }
 
 function fmtDate(s: string | null): string {
@@ -97,6 +110,7 @@ export default function DriveFolderAccessReviewIsland() {
   }
   if (!data) return null;
   const s = data.summary;
+  const inh = data.inherited_by_folder ?? [];
 
   return (
     <section className="mt-10 space-y-4" aria-labelledby="drive-folder-review-title">
@@ -125,6 +139,7 @@ export default function DriveFolderAccessReviewIsland() {
         <span className="rounded-full bg-red-100 text-red-800 px-3 py-1">{t('driveRevocation.sumFailed', 'Falhas')}: {s.failed}</span>
         <span className="rounded-full bg-slate-100 text-slate-800 px-3 py-1">{t('driveFolderReview.sumUnknown', 'Fora do cadastro')}: {s.unknown_person}</span>
         <span className="rounded-full bg-purple-100 text-purple-900 px-3 py-1">{t('driveRevocation.sumConfidential', 'Confidenciais abertos')}: {s.confidential_open}</span>
+        <span className="rounded-full bg-slate-100 text-slate-800 px-3 py-1">{t('driveFolderReview.sumInherited', 'Herdados da pasta de cima')}: {s.inherited ?? 0}</span>
       </div>
 
       {data.rows.length === 0 ? (
@@ -206,6 +221,44 @@ export default function DriveFolderAccessReviewIsland() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {inh.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">{t('driveFolderReview.inheritedTitle', 'Herdado da pasta de cima')}</h3>
+          <p className="text-xs text-[var(--text-secondary)] max-w-3xl">
+            {t('driveFolderReview.inheritedHint', 'Permissões que a pasta de trabalho herda da pasta de cima, de quem não tem concessão nem está no roster. Não viram item, porque aqui não se revogam: a decisão é na pasta de cima, no Drive.')}
+          </p>
+          <div className="overflow-x-auto rounded-xl border border-[var(--border-default)]">
+            <table className="w-full text-sm">
+              <thead className="bg-[var(--surface-section-cool)]">
+                <tr>
+                  <th className="text-left px-3 py-2">{t('driveFolderReview.colFolder', 'Pasta de')}</th>
+                  <th className="text-left px-3 py-2">{t('driveFolderReview.colInherited', 'Herdadas')}</th>
+                  <th className="text-left px-3 py-2">{t('driveFolderReview.sumUnknown', 'Fora do cadastro')}</th>
+                  <th className="text-left px-3 py-2">{t('driveFolderReview.colSeen', 'Visto em')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {inh.map((f) => (
+                  <tr key={f.drive_folder_id} className="border-t border-[var(--border-subtle)] align-top">
+                    <td className="px-3 py-2">
+                      {f.initiatives.map((i) => (
+                        <span key={i.id} className="flex items-center gap-1">
+                          {i.is_confidential && <Lock className="w-3.5 h-3.5 text-purple-700" aria-label={t('driveRevocation.confidential', 'confidencial')} />}
+                          {f.drive_folder_url ? <a href={f.drive_folder_url} target="_blank" rel="noopener noreferrer" className="underline">{i.title}</a> : i.title}
+                        </span>
+                      ))}
+                    </td>
+                    <td className="px-3 py-2">{f.inherited_count}</td>
+                    <td className="px-3 py-2">{f.unknown_person}</td>
+                    <td className="px-3 py-2">{fmtDate(f.last_seen_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </section>

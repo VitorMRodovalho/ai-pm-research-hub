@@ -10276,6 +10276,33 @@ export type Database = {
           },
         ]
       }
+      drive_folder_inherited_access: {
+        Row: {
+          drive_folder_id: string
+          first_seen_at: string
+          inherited_count: number
+          inherited_unknown_person: number
+          last_seen_at: string
+          updated_at: string
+        }
+        Insert: {
+          drive_folder_id: string
+          first_seen_at?: string
+          inherited_count: number
+          inherited_unknown_person: number
+          last_seen_at?: string
+          updated_at?: string
+        }
+        Update: {
+          drive_folder_id?: string
+          first_seen_at?: string
+          inherited_count?: number
+          inherited_unknown_person?: number
+          last_seen_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       drive_membership_grants: {
         Row: {
           api_error: Json | null

@@ -210,8 +210,10 @@ Deno.serve(async (req) => {
       out.push(data);
     }
     const sum = (k: string) => out.reduce((n, r) => n + (Number(r?.[k]) || 0), 0);
-    return { folders: out.length, findings: sum("findings"), findings_inherited: sum("findings_inherited"),
-             unknown_person: sum("unknown_person"), opened: sum("opened"), closed: sum("closed") };
+    // #3186: findings is the direct permission only (opens an item); inherited is a per-folder count, no item.
+    return { folders: out.length, findings: sum("findings"), unknown_person: sum("unknown_person"),
+             inherited: sum("inherited"), inherited_unknown_person: sum("inherited_unknown_person"),
+             opened: sum("opened"), closed: sum("closed") };
   };
 
   if (dryRun) {
