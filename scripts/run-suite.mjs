@@ -13,14 +13,20 @@
 //   contracts   -> node --test --test-concurrency=1 <tests/contracts files>
 // Extra arguments after the bucket are passed to node --test (e.g. --test-name-pattern).
 //
+// #3192: every bucket loads tests/helpers/db-fetch-preload.mjs with `--import` (node --test forwards it to each
+// test process), so every DB-aware test gets the PGRST003/522 retry, including createClient. The run starts with a
+// fresh retry budget and ends by printing how many calls were retried for 522 (also to GITHUB_STEP_SUMMARY in CI).
+//
 // Usage: node scripts/run-suite.mjs <structural|behavioural|contracts> [extra node --test args]
 import { spawn } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
 import { suiteFiles } from './classify-test-suite.mjs';
+import { resetarOrcamento, resumoDoOrcamento } from '../tests/helpers/db-fetch.mjs';
 
 export const COMMANDS = {
-  structural: ['node', '--experimental-strip-types', '--test', '--test-concurrency=4'],
-  behavioural: ['node', 'scripts/with-db-lease.mjs', '--', 'node', '--experimental-strip-types', '--test', '--test-concurrency=1'],
-  contracts: ['node', '--test', '--test-concurrency=1'],
+  structural: ['node', '--import', './tests/helpers/db-fetch-preload.mjs', '--experimental-strip-types', '--test', '--test-concurrency=4'],
+  behavioural: ['node', 'scripts/with-db-lease.mjs', '--', 'node', '--import', './tests/helpers/db-fetch-preload.mjs', '--experimental-strip-types', '--test', '--test-concurrency=1'],
+  contracts: ['node', '--import', './tests/helpers/db-fetch-preload.mjs', '--test', '--test-concurrency=1'],
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -36,7 +42,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.exit(2);
   }
   console.error(`run-suite: ${bucket} = ${files.length} arquivo(s), derivados do disco`);
+  resetarOrcamento();
   const [cmd, ...args] = COMMANDS[bucket];
   const child = spawn(cmd, [...args, ...extra, ...files], { stdio: 'inherit' });
-  child.on('exit', (code, signal) => process.exit(signal ? 1 : (code ?? 1)));
+  child.on('exit', (code, signal) => {
+    const resumo = `run-suite ${bucket}: ${resumoDoOrcamento()}`;
+    console.error(resumo);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      try { appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${resumo}\n`); } catch { /* o resumo nao decide o veredito */ }
+    }
+    process.exit(signal ? 1 : (code ?? 1));
+  });
 }

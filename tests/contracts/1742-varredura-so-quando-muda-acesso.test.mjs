@@ -104,5 +104,5 @@ test('#1742 (3) o teste so pula com 0 explicito, e os controles nao dependem dis
 test('#1742 (4) a rodada noturna existe e varre o arquivo inteiro', () => {
   const y = readFileSync(NIGHTLY, 'utf8');
   assert.match(y, /schedule:\s*\n\s*- cron: '[^']+'/);
-  assert.match(y, /GHOST_READ_SWEEP: '1'\s*\n\s*run: node --test [^\n]*tests\/contracts\/leitura-por-nao-membro-derivada-do-catalogo\.test\.mjs/);
+  assert.match(y, /GHOST_READ_SWEEP: '1'\s*\n\s*run: node (?:--import \.\/tests\/helpers\/db-fetch-preload\.mjs )?--test [^\n]*tests\/contracts\/leitura-por-nao-membro-derivada-do-catalogo\.test\.mjs/);
 });
