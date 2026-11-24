@@ -11,11 +11,17 @@
  *   G22 todo chamador passa a pasta da concessão (ciclo, executor, aprovar já), e nenhum chama com dois argumentos.
  *   G23 a tabela da revisão: RLS fechado, um item aberto por permissão da pasta, estados coerentes.
  *   G24 a classificação: só a pasta de trabalho viva; só usuário, sem dono, sem a conta de serviço; o veredito em ordem
- *       (concessão viva, roster pela pasta, manage_platform, achado); dry_run volta antes de qualquer escrita; fecha o
- *       que deixou de valer e abre só o achado.
- *   G25 o executor: acha o item da revisão, reconfere antes do Drive e só fecha o aprovado; o dreno drena as três filas.
- *   G26 a tela: manage_platform, rls_can_see_initiative e registro de PII na leitura; revogar recusa herdado,
- *       concessão viva, roster e manage_platform; manter e revogar pedem motivo.
+ *       (concessão viva, trilha de desligamento aberta, o predicado da última conferência, achado); dry_run volta antes
+ *       de qualquer escrita; fecha o que deixou de valer e abre só o achado.
+ *   G25 o executor: acha o item da revisão, reconfere antes do Drive pela pessoa resolvida de novo pelo e-mail (nunca
+ *       pelo id gravado) e pela trilha de desligamento, e só fecha o aprovado; o dreno drena as três filas.
+ *   G26 a tela: manage_platform, rls_can_see_initiative e registro de PII na leitura; revogar recusa herdado, o e-mail
+ *       que fica com o acesso (resolvido de novo, nunca pelo id gravado) e a trilha de desligamento aberta; manter e
+ *       revogar pedem motivo.
+ *   G29 a última conferência resolve a pessoa pelo e-mail: concessão viva no e-mail, ou TODO membro com o e-mail (em
+ *       members e member_emails) no roster pela pasta ou com manage_platform.
+ *   G30 a retenção (LGPD): o revogado perde o e-mail em 5 anos e o fechado em 90 dias, com o pseudônimo e o salt do
+ *       #1054, no mesmo purge_expired_logs; nada é apagado.
  *   G27 emulação do #785 sobre as funções da migration.
  *   G28 o reconcile: lê a ACL mesmo com roster vazio, uma revisão por pasta, depois do ledger, sem a conta de serviço,
  *       pede o "herdado" ao Drive, e o dry_run da revisão não grava.
@@ -101,7 +107,35 @@ export function tabela(migText) {
     umAbertoPorPermissao: /drive_folder_access_findings_open_uidx\s+ON public\.drive_folder_access_findings \(drive_folder_id, permission_id\) WHERE status IN \('open','kept','approved','failed'\);/.test(m),
     aprovadoTemQuem: /CONSTRAINT dfaf_approved_has_person\s+CHECK \(status NOT IN \('approved','revoked','already_absent','failed'\)\s+OR \(approved_by IS NOT NULL AND approved_at IS NOT NULL\)\)/.test(m),
     mantidoTemMotivo: /CONSTRAINT dfaf_kept_has_review\s+CHECK \(status <> 'kept' OR \(reviewed_at IS NOT NULL AND review_note IS NOT NULL\)\)/.test(m),
+    motivoDaTrilha: /close_reason\s+text CHECK \(close_reason IN \('permission_gone','covered_by_grant','offboarding_lane','on_roster',\s+'manage_platform_exception'\)\)/.test(m),
     fechadoTemMotivo: /CONSTRAINT dfaf_closed_has_reason\s+CHECK \(\(status = 'closed'\) = \(close_reason IS NOT NULL AND closed_at IS NOT NULL\)\)/.test(m),
+  };
+}
+
+/** G29: a última conferência resolve a pessoa pelo e-mail. */
+export function pessoaPeloEmail(helperBody, migText) {
+  const h = sql(helperBody);
+  const r = {
+    concessaoNoEmail: /SELECT EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = p_drive_folder_id AND g\.permission_email = lower\(btrim\(p_email\)\)::citext AND g\.status = 'granted'\)/.test(h),
+    todoMembroDoEmail: /OR EXISTS \(SELECT 1 FROM public\.members m WHERE \( lower\(m\.email\) = lower\(btrim\(p_email\)\) OR EXISTS \(SELECT 1 FROM public\.member_emails me WHERE me\.member_id = m\.id AND me\.email = lower\(btrim\(p_email\)\)::citext\) \) AND \( \(m\.person_id IS NOT NULL AND public\._drive_grant_keeps_access\(m\.person_id, NULL, p_drive_folder_id\)\) OR coalesce\(public\.can_by_member\(m\.id, 'manage_platform'\), false\) \)\)/.test(h),
+    semLimite: !/\bLIMIT\b/.test(h),
+  };
+  if (migText != null) r.servicoSo = /REVOKE ALL ON FUNCTION public\._drive_finding_keeps_access\(text, text\) FROM PUBLIC, anon, authenticated;/.test(migText);
+  return r;
+}
+
+/** G30: a retenção do e-mail da revisão. */
+export function retencao(purgeBody) {
+  const p = sql(purgeBody);
+  const CRIT = /permission_email NOT LIKE 'sha256:%' AND \( \(status IN \('revoked','already_absent'\) AND created_at < now\(\) - \(v_dfaf_terminal_anonymize_days \|\| ' days'\)::interval\) OR \(status = 'closed' AND closed_at < now\(\) - \(v_dfaf_closed_anonymize_days \|\| ' days'\)::interval\) \)/g;
+  return {
+    prazoRevogado5Anos: /v_dfaf_terminal_anonymize_days constant integer := 1825;/.test(p),
+    prazoFechado90Dias: /v_dfaf_closed_anonymize_days constant integer := 90;/.test(p),
+    criterioNasDuasPontas: count(p, CRIT) === 2,
+    pseudonimoDoMesmoSalt: /UPDATE public\.drive_folder_access_findings SET permission_email = 'sha256:' \|\| encode\(extensions\.digest\(permission_email::text \|\| v_drive_audit_salt, 'sha256'\), 'hex'\)/.test(p),
+    saltDo1054: /v_drive_audit_salt constant text := 'nucleoia-drive-offboarding-audit-anon-v1';/.test(p),
+    devolveALinha: /RETURN QUERY SELECT 'drive_folder_access_findings'::text, 'anonymize'::text, v_count, v_oldest;/.test(p),
+    naoApaga: !/DELETE FROM public\.drive_folder_access_findings/.test(p),
   };
 }
 
@@ -115,7 +149,7 @@ export function classificacao(recordBody) {
     soServico: /^ ?BEGIN IF public\.current_caller_role\(\) IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION/.test(corpo),
     soPastaDeTrabalhoViva: /IF NOT EXISTS \(SELECT 1 FROM public\.initiative_drive_links l WHERE l\.drive_folder_id = p_drive_folder_id AND l\.link_purpose = 'workspace' AND l\.unlinked_at IS NULL\) THEN RAISE EXCEPTION/.test(s),
     soUsuarioSemDonoNemServico: /WHERE x\.type = 'user' AND coalesce\(x\.deleted, false\) = false AND x\.id IS NOT NULL AND nullif\(btrim\(x\."emailAddress"\), ''\) IS NOT NULL AND x\.role IS DISTINCT FROM 'owner' AND lower\(btrim\(x\."emailAddress"\)\) NOT IN \(SELECT lower\(btrim\(e\)\) FROM unnest\(coalesce\(p_ignore_emails/.test(s),
-    vereditoEmOrdem: /'verdict', CASE WHEN EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = p_drive_folder_id AND g\.permission_email = w\.email::citext AND g\.status = 'granted'\) THEN 'covered_by_grant' WHEN w\.person_id IS NOT NULL AND public\._drive_grant_keeps_access\(w\.person_id, NULL, p_drive_folder_id\) THEN 'on_roster' WHEN w\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(w\.member_id, 'manage_platform'\), false\) THEN 'manage_platform_exception' ELSE 'finding' END/.test(s),
+    vereditoEmOrdem: /'verdict', CASE WHEN EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = p_drive_folder_id AND g\.permission_email = w\.email::citext AND g\.status = 'granted'\) THEN 'covered_by_grant' WHEN EXISTS \(SELECT 1 FROM public\.drive_offboarding_audit a WHERE a\.drive_file_id = p_drive_folder_id AND a\.permission_id = w\.permission_id AND a\.status IN \('pending_revoke','approved'\)\) THEN 'offboarding_lane' WHEN public\._drive_finding_keeps_access\(p_drive_folder_id, w\.email\) THEN CASE WHEN w\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(w\.member_id, 'manage_platform'\), false\) THEN 'manage_platform_exception' ELSE 'on_roster' END ELSE 'finding' END/.test(s),
     dryRunAntesDeEscrever: dry > 0 && primeiraEscrita > dry,
     fechaOQueDeixouDeValer: /UPDATE public\.drive_folder_access_findings f SET status = 'closed', closed_at = now\(\), updated_at = now\(\), close_reason = coalesce\(\(SELECT cur\.verdict FROM cur WHERE cur\.permission_id = f\.permission_id AND cur\.verdict <> 'finding'\), 'permission_gone'\) WHERE f\.drive_folder_id = p_drive_folder_id AND f\.status IN \('open','kept','approved','failed'\) AND NOT EXISTS \(SELECT 1 FROM cur WHERE cur\.permission_id = f\.permission_id AND cur\.verdict = 'finding'\)/.test(s),
     abreSoOAchado: /INSERT INTO public\.drive_folder_access_findings \(drive_folder_id, permission_id, permission_email, permission_role, inherited, person_id, member_id\) SELECT [^;]*? WHERE c\.verdict = 'finding' AND NOT EXISTS \(SELECT 1 FROM public\.drive_folder_access_findings f WHERE f\.drive_folder_id = p_drive_folder_id AND f\.permission_id = c\.permission_id AND f\.status IN \('open','kept','approved','failed'\)\)/.test(s),
@@ -129,7 +163,8 @@ export function executorDaRevisao(getBody, markBody, migText) {
   const ramo = slice(g, 'FROM public.drive_membership_revocations r', "'queue', 'folder_acl'");
   const dreno = migText == null ? '' : slice(migText, "cron.schedule('revoke-drive-drain-hourly'", '$drain$;');
   const r = {
-    reconfereAntesDoDrive: /CASE WHEN f\.status = 'approved' AND \( EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = f\.drive_folder_id AND g\.permission_email = f\.permission_email AND g\.status = 'granted'\) OR \(f\.person_id IS NOT NULL AND public\._drive_grant_keeps_access\(f\.person_id, NULL, f\.drive_folder_id\)\) OR \(f\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(f\.member_id, 'manage_platform'\), false\)\) \) THEN 'stale_keeps_access' ELSE f\.status END AS status/.test(ramo),
+    reconfereAntesDoDrive: /CASE WHEN f\.status = 'approved' AND public\._drive_finding_keeps_access\(f\.drive_folder_id, f\.permission_email::text\) THEN 'stale_keeps_access' WHEN f\.status = 'approved' AND EXISTS \(SELECT 1 FROM public\.drive_offboarding_audit a WHERE a\.drive_file_id = f\.drive_folder_id AND a\.permission_id = f\.permission_id AND a\.status IN \('pending_revoke','approved'\)\) THEN 'offboarding_lane' ELSE f\.status END AS status/.test(ramo),
+    naoConfiaNoIdGravado: ramo !== '' && !/\bf\.(person_id|member_id)\b/.test(ramo),
     achaPeloId: /FROM public\.drive_folder_access_findings f WHERE f\.id = p_audit_id/.test(ramo),
     soFechaOAprovado: /UPDATE public\.drive_folder_access_findings SET status = p_status, google_error = p_google_error, revoked_at = CASE WHEN p_status IN \('revoked','already_absent'\) THEN now\(\) ELSE revoked_at END, updated_at = now\(\) WHERE id = p_audit_id AND status = 'approved' RETURNING \* INTO v_f;/.test(mk),
     auditaORevogado: /IF v_f\.id IS NOT NULL THEN IF p_status IN \('revoked','already_absent'\) THEN INSERT INTO public\.admin_audit_log [^;]*'drive_folder_access_revoked'/.test(mk),
@@ -156,9 +191,9 @@ export function telaDaRevisao(listBody, reviewBody) {
     acaoPortao: PORTAO.test(v),
     motivoObrigatorio: /IF p_action IN \('keep','revoke'\) AND v_note IS NULL THEN RAISE EXCEPTION/.test(v),
     revogarRecusaHerdado: /IF v_f\.inherited IS TRUE THEN RAISE EXCEPTION/.test(revogar),
-    revogarRecusaConcessaoViva: /IF EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = v_f\.drive_folder_id AND g\.permission_email = v_f\.permission_email AND g\.status = 'granted'\) THEN RAISE EXCEPTION/.test(revogar),
-    revogarRecusaRoster: /IF v_f\.person_id IS NOT NULL AND public\._drive_grant_keeps_access\(v_f\.person_id, NULL, v_f\.drive_folder_id\) THEN RAISE EXCEPTION/.test(revogar),
-    revogarRecusaManagePlatform: /IF v_f\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(v_f\.member_id, 'manage_platform'\), false\) THEN RAISE EXCEPTION/.test(revogar),
+    revogarRecusaQuemFica: /IF public\._drive_finding_keeps_access\(v_f\.drive_folder_id, v_f\.permission_email::text\) THEN RAISE EXCEPTION/.test(revogar),
+    revogarRecusaTrilha: /IF EXISTS \(SELECT 1 FROM public\.drive_offboarding_audit a WHERE a\.drive_file_id = v_f\.drive_folder_id AND a\.permission_id = v_f\.permission_id AND a\.status IN \('pending_revoke','approved'\)\) THEN RAISE EXCEPTION/.test(revogar),
+    revogarNaoConfiaNoIdGravado: revogar !== '' && !/\bv_f\.(person_id|member_id)\b/.test(revogar),
     revogarAprova: /UPDATE public\.drive_folder_access_findings SET status = 'approved', approved_by = v_caller_id, approved_at = now\(\)/.test(revogar),
   };
 }
@@ -207,6 +242,10 @@ test('#3179 G25: o executor acha o item da revisão e o dreno drena as três fil
 test('#3179 G26: a tela da revisão', () => {
   ok(telaDaRevisao(body('admin_list_drive_folder_access_findings'), body('admin_review_drive_folder_access')), 'a tela da revisão mudou');
 });
+test('#3179 G29: a última conferência resolve a pessoa pelo e-mail', () => {
+  ok(pessoaPeloEmail(body('_drive_finding_keeps_access'), readFileSync(join(MIG_DIR, MIG), 'utf8')), 'a conferência deixou de resolver pelo e-mail');
+});
+test('#3179 G30: a retenção do e-mail da revisão', () => ok(retencao(body('purge_expired_logs')), 'a retenção mudou'));
 test('#3178-#3179 G27: emulação do #785 sobre as funções da migration', () => {
   const m = readFileSync(join(MIG_DIR, MIG), 'utf8');
   const fns = [...new Set([...m.matchAll(/CREATE OR REPLACE FUNCTION public\.([a-z_0-9]+)\(/g)].map((x) => x[1]))];
@@ -241,6 +280,8 @@ test('#3178-#3179 M: cada predicado reprova a mutação do seu defeito', () => {
   const L = body('admin_list_drive_folder_access_findings');
   const V = body('admin_review_drive_folder_access');
   const EF = readFileSync(EF_PATH, 'utf8');
+  const H = body('_drive_finding_keeps_access');
+  const P = body('purge_expired_logs');
 
   // G21
   assert.equal(olhaAPasta(mut(K, 'l.drive_folder_id = p_drive_folder_id', 'true'), null).iniciativaOuPasta, false);
@@ -260,7 +301,8 @@ test('#3178-#3179 M: cada predicado reprova a mutação do seu defeito', () => {
   assert.equal(classificacao(mut(R, "AND x.role IS DISTINCT FROM 'owner'\n", '')).soUsuarioSemDonoNemServico, false);
   assert.equal(classificacao(mut(R, "WHERE x.type = 'user'", "WHERE x.type IS NOT NULL")).soUsuarioSemDonoNemServico, false);
   assert.equal(classificacao(mut(R, "AND g.status = 'granted') THEN 'covered_by_grant'", "AND g.status IS NOT NULL) THEN 'covered_by_grant'")).vereditoEmOrdem, false);
-  assert.equal(classificacao(mut(R, '_drive_grant_keeps_access(w.person_id, NULL, p_drive_folder_id)', '_drive_grant_keeps_access(w.person_id, NULL, NULL)')).vereditoEmOrdem, false);
+  assert.equal(classificacao(mut(R, 'public._drive_finding_keeps_access(p_drive_folder_id, w.email)', 'false')).vereditoEmOrdem, false);
+  assert.equal(classificacao(mut(R, "AND a.status IN ('pending_revoke','approved')) THEN 'offboarding_lane'", "AND false) THEN 'offboarding_lane'")).vereditoEmOrdem, false);
   assert.equal(classificacao(mut(R, "ELSE 'finding' END", "ELSE 'on_roster' END")).vereditoEmOrdem, false);
   const dry = slice(R, '  IF p_dry_run THEN\n', '  END IF;\n');
   assert.equal(classificacao(mut(R, dry, '')).dryRunAntesDeEscrever, false);
@@ -268,14 +310,35 @@ test('#3178-#3179 M: cada predicado reprova a mutação do seu defeito', () => {
   assert.equal(classificacao(mut(R, "     WHERE c.verdict = 'finding'\n       AND NOT EXISTS", '     WHERE true\n       AND NOT EXISTS')).abreSoOAchado, false);
   assert.equal(classificacao(mut(R, "IF NOT EXISTS (SELECT 1 FROM public.initiative_drive_links l\n                  WHERE l.drive_folder_id = p_drive_folder_id AND l.link_purpose = 'workspace' AND l.unlinked_at IS NULL) THEN", 'IF false THEN')).soPastaDeTrabalhoViva, false);
   // G25
-  assert.equal(executorDaRevisao(mut(G, "THEN 'stale_keeps_access'\n              ELSE f.status END", "THEN f.status\n              ELSE f.status END"), MK, null).reconfereAntesDoDrive, false);
+  assert.equal(executorDaRevisao(mut(G, "THEN 'offboarding_lane'\n              ELSE f.status END", "THEN f.status\n              ELSE f.status END"), MK, null).reconfereAntesDoDrive, false);
+  // M1: a conferência volta a confiar no id gravado no item
+  const viaId = mut(G, 'public._drive_finding_keeps_access(f.drive_folder_id, f.permission_email::text)',
+    '(f.person_id IS NOT NULL AND public._drive_grant_keeps_access(f.person_id, NULL, f.drive_folder_id))');
+  assert.equal(executorDaRevisao(viaId, MK, null).reconfereAntesDoDrive, false);
+  assert.equal(executorDaRevisao(viaId, MK, null).naoConfiaNoIdGravado, false);
   assert.equal(executorDaRevisao(G, mut(MK, "WHERE id = p_audit_id AND status = 'approved'\n     RETURNING * INTO v_f;", "WHERE id = p_audit_id\n     RETURNING * INTO v_f;"), null).soFechaOAprovado, false);
   const linhaDreno = "        UNION ALL\n        SELECT id, approved_at FROM public.drive_folder_access_findings\n         WHERE status = 'approved' AND approved_at < now() - interval '5 minutes'\n";
   assert.equal(executorDaRevisao(G, MK, mut(M, linhaDreno, '')).drenoTresFilas, false);
   // G26
   assert.equal(telaDaRevisao(mut(L, 'AND public.rls_can_see_initiative(l.initiative_id)', ''), V).leituraConfidencial, false);
   assert.equal(telaDaRevisao(L, mut(V, '    IF v_f.inherited IS TRUE THEN\n', '    IF false THEN\n')).revogarRecusaHerdado, false);
-  assert.equal(telaDaRevisao(L, mut(V, "AND public._drive_grant_keeps_access(v_f.person_id, NULL, v_f.drive_folder_id) THEN", 'AND false THEN')).revogarRecusaRoster, false);
+  assert.equal(telaDaRevisao(L, mut(V, 'IF public._drive_finding_keeps_access(v_f.drive_folder_id, v_f.permission_email::text) THEN', 'IF false THEN')).revogarRecusaQuemFica, false);
+  const viaIdV = mut(V, 'IF public._drive_finding_keeps_access(v_f.drive_folder_id, v_f.permission_email::text) THEN',
+    'IF v_f.person_id IS NOT NULL AND public._drive_grant_keeps_access(v_f.person_id, NULL, v_f.drive_folder_id) THEN');
+  assert.equal(telaDaRevisao(L, viaIdV).revogarNaoConfiaNoIdGravado, false);
+  assert.equal(telaDaRevisao(L, mut(V, "                  AND a.status IN ('pending_revoke','approved')) THEN\n      RAISE EXCEPTION 'A trilha", "                  AND false) THEN\n      RAISE EXCEPTION 'A trilha")).revogarRecusaTrilha, false);
+  // G29
+  assert.equal(pessoaPeloEmail(mut(H, "OR EXISTS (SELECT 1 FROM public.member_emails me\n", "OR false AND EXISTS (SELECT 1 FROM public.member_emails me\n"), null).todoMembroDoEmail, false);
+  assert.equal(pessoaPeloEmail(mut(H, "OR coalesce(public.can_by_member(m.id, 'manage_platform'), false) ))", ')))'), null).todoMembroDoEmail, false);
+  assert.equal(pessoaPeloEmail(mut(H, "AND g.status = 'granted')", "AND g.status IS NOT NULL)"), null).concessaoNoEmail, false);
+  assert.equal(pessoaPeloEmail(mut(H, "OR coalesce(public.can_by_member(m.id, 'manage_platform'), false) ));", "OR coalesce(public.can_by_member(m.id, 'manage_platform'), false) ) LIMIT 1);"), null).semLimite, false);
+  // G30
+  assert.equal(retencao(mut(P, 'v_dfaf_closed_anonymize_days  constant integer := 90;', 'v_dfaf_closed_anonymize_days  constant integer := 3650;')).prazoFechado90Dias, false);
+  assert.equal(retencao(mut(P, 'v_dfaf_terminal_anonymize_days constant integer := 1825;', 'v_dfaf_terminal_anonymize_days constant integer := 99999;')).prazoRevogado5Anos, false);
+  assert.equal(retencao(mut(P, "           OR (status = 'closed' AND closed_at < now() - (v_dfaf_closed_anonymize_days || ' days')::interval) );", ' );')).criterioNasDuasPontas, false);
+  assert.equal(retencao(mut(P, "SET permission_email = 'sha256:' || encode(extensions.digest(permission_email::text || v_drive_audit_salt, 'sha256'), 'hex'),\n            updated_at", "SET permission_email = 'sha256:' || encode(extensions.digest(permission_email::text, 'sha256'), 'hex'),\n            updated_at")).pseudonimoDoMesmoSalt, false);
+  assert.equal(retencao(mut(P, "RETURN QUERY SELECT 'drive_folder_access_findings'::text, 'anonymize'::text, v_count, v_oldest;", "RETURN QUERY SELECT 'drive_folder_access_findings'::text, 'anonymize'::text, 0::bigint, v_oldest;")).devolveALinha, false);
+  assert.equal(tabela(mut(M, "'covered_by_grant','offboarding_lane','on_roster',", "'covered_by_grant','on_roster',")).motivoDaTrilha, false);
   assert.equal(telaDaRevisao(L, mut(V, "IF p_action IN ('keep','revoke') AND v_note IS NULL", "IF p_action IN ('keep') AND v_note IS NULL")).motivoObrigatorio, false);
   assert.equal(telaDaRevisao(L, mut(V, "IF v_caller_id IS NULL OR NOT public.can_by_member(v_caller_id, 'manage_platform')", 'IF v_caller_id IS NULL')).acaoPortao, false);
   // G28
@@ -310,4 +373,6 @@ test(dbGated ? '#3178-#3179 vivo: o corpo em produção passa nos mesmos predica
   ok(classificacao(await vivo('record_drive_folder_acl')));
   ok(executorDaRevisao(await vivo('get_drive_revocation_row'), await vivo('mark_drive_revocation_done'), null));
   ok(telaDaRevisao(await vivo('admin_list_drive_folder_access_findings'), await vivo('admin_review_drive_folder_access')));
+  ok(pessoaPeloEmail(await vivo('_drive_finding_keeps_access'), null));
+  ok(retencao(await vivo('purge_expired_logs')));
 });

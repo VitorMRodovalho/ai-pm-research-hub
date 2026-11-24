@@ -21,6 +21,12 @@
 -- 6. A tela: admin_list_drive_folder_access_findings (leitura, manage_platform e rls_can_see_initiative) e
 --    admin_review_drive_folder_access (manter, reabrir ou revogar, com motivo). Revogar recusa a permissão herdada da
 --    pasta-mãe, que só sai lá.
+-- 7. A última conferência de revogar (a tela e o executor) resolve a pessoa de novo pelo e-mail, com
+--    _drive_finding_keeps_access, e nunca pelo id gravado no item: quem era "fora do cadastro" pode ter entrado depois.
+--    A classificação usa o mesmo predicado, para não abrir item que a revogação recusaria.
+-- 8. Uma fila só por permissão: a que já está aberta na trilha de desligamento (drive_offboarding_audit) não vira item.
+-- 9. Retenção (LGPD): purge_expired_logs ganha o bloco da revisão. O revogado perde o e-mail em 5 anos, como a trilha
+--    de desligamento; o fechado, em 90 dias. Mesmo pseudônimo 'sha256:' e mesmo salt do #1054, no mesmo cron mensal.
 --
 -- A chave site_config.drive_membership_revoke_enabled não muda e não manda nesta revisão: registrar não tem efeito fora
 -- do banco, e revogar é sempre uma ação da gestão, como a avulsa.
@@ -47,6 +53,30 @@ $function$;
 REVOKE ALL ON FUNCTION public._drive_grant_keeps_access(uuid, uuid, text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public._drive_grant_keeps_access(uuid, uuid, text) TO service_role;
 
+-- A última conferência antes de revogar um item da revisão (#3179). Resolve a pessoa DE NOVO pelo e-mail da permissão,
+-- em members e member_emails, e nunca pelo id gravado no item: quem era "fora do cadastro" quando o item abriu pode ter
+-- entrado depois. Fica com o acesso se o e-mail tem concessão viva na pasta, ou se QUALQUER membro com esse e-mail está
+-- no roster de uma iniciativa que usa a pasta, ou tem manage_platform.
+CREATE OR REPLACE FUNCTION public._drive_finding_keeps_access(p_drive_folder_id text, p_email text)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public', 'pg_temp'
+AS $function$
+  SELECT EXISTS (SELECT 1 FROM public.drive_membership_grants g
+                  WHERE g.drive_folder_id = p_drive_folder_id AND g.permission_email = lower(btrim(p_email))::citext
+                    AND g.status = 'granted')
+      OR EXISTS (SELECT 1 FROM public.members m
+                  WHERE ( lower(m.email) = lower(btrim(p_email))
+                       OR EXISTS (SELECT 1 FROM public.member_emails me
+                                   WHERE me.member_id = m.id AND me.email = lower(btrim(p_email))::citext) )
+                    AND ( (m.person_id IS NOT NULL AND public._drive_grant_keeps_access(m.person_id, NULL, p_drive_folder_id))
+                       OR coalesce(public.can_by_member(m.id, 'manage_platform'), false) ));
+$function$;
+REVOKE ALL ON FUNCTION public._drive_finding_keeps_access(text, text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public._drive_finding_keeps_access(text, text) TO service_role;
+
 -- ── 3. A revisão do acesso fora do ledger (#3179) ──
 CREATE TABLE IF NOT EXISTS public.drive_folder_access_findings (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -69,7 +99,8 @@ CREATE TABLE IF NOT EXISTS public.drive_folder_access_findings (
   revoked_at       timestamptz,
   google_error     jsonb,
   closed_at        timestamptz,
-  close_reason     text CHECK (close_reason IN ('permission_gone','covered_by_grant','on_roster','manage_platform_exception')),
+  close_reason     text CHECK (close_reason IN ('permission_gone','covered_by_grant','offboarding_lane','on_roster',
+                                                    'manage_platform_exception')),
   created_at       timestamptz NOT NULL DEFAULT now(),
   updated_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT dfaf_kept_has_review       CHECK (status <> 'kept' OR (reviewed_at IS NOT NULL AND review_note IS NOT NULL)),
@@ -150,10 +181,16 @@ BEGIN
              WHEN EXISTS (SELECT 1 FROM public.drive_membership_grants g
                            WHERE g.drive_folder_id = p_drive_folder_id AND g.permission_email = w.email::citext
                              AND g.status = 'granted') THEN 'covered_by_grant'
-             WHEN w.person_id IS NOT NULL
-              AND public._drive_grant_keeps_access(w.person_id, NULL, p_drive_folder_id) THEN 'on_roster'
-             WHEN w.member_id IS NOT NULL
-              AND coalesce(public.can_by_member(w.member_id, 'manage_platform'), false) THEN 'manage_platform_exception'
+             -- a trilha de desligamento já tem a mesma permissão aberta: uma fila só por permissão (como o passo c)
+             WHEN EXISTS (SELECT 1 FROM public.drive_offboarding_audit a
+                           WHERE a.drive_file_id = p_drive_folder_id AND a.permission_id = w.permission_id
+                             AND a.status IN ('pending_revoke','approved')) THEN 'offboarding_lane'
+             -- o mesmo predicado da última conferência (todo membro com o e-mail, não só o primeiro casado), para que
+             -- nenhum item aberto aqui seja um que a revogação depois recusa
+             WHEN public._drive_finding_keeps_access(p_drive_folder_id, w.email)
+              THEN CASE WHEN w.member_id IS NOT NULL
+                         AND coalesce(public.can_by_member(w.member_id, 'manage_platform'), false)
+                        THEN 'manage_platform_exception' ELSE 'on_roster' END
              ELSE 'finding' END)), '[]'::jsonb)
     INTO v_cls
     FROM who w;
@@ -163,6 +200,7 @@ BEGIN
            'findings',  count(*) FILTER (WHERE c.verdict = 'finding'),
            'findings_inherited', count(*) FILTER (WHERE c.verdict = 'finding' AND c.inherited IS TRUE),
            'covered_by_grant', count(*) FILTER (WHERE c.verdict = 'covered_by_grant'),
+           'offboarding_lane', count(*) FILTER (WHERE c.verdict = 'offboarding_lane'),
            'on_roster', count(*) FILTER (WHERE c.verdict = 'on_roster'),
            'manage_platform_exception', count(*) FILTER (WHERE c.verdict = 'manage_platform_exception'),
            'unknown_person', count(*) FILTER (WHERE c.verdict = 'finding' AND c.member_id IS NULL))
@@ -481,16 +519,18 @@ BEGIN
       'is_shared_drive', NULL, 'approved_by', v_m.approved_by, 'queue', 'membership');
   END IF;
 
-  -- #3179: item da revisão do acesso fora do ledger. A mesma última conferência: se a permissão ganhou concessão viva,
-  -- se a pessoa entrou no roster de uma iniciativa que usa a pasta, ou se tem manage_platform, devolve stale_keeps_access.
+  -- #3179: item da revisão do acesso fora do ledger. A mesma última conferência, com a pessoa resolvida de novo pelo
+  -- e-mail (nunca pelo id gravado): concessão viva, roster de uma iniciativa que usa a pasta ou manage_platform devolvem
+  -- stale_keeps_access; a trilha de desligamento com a mesma permissão aberta devolve offboarding_lane.
   SELECT f.id,
          CASE WHEN f.status = 'approved'
-               AND ( EXISTS (SELECT 1 FROM public.drive_membership_grants g
-                              WHERE g.drive_folder_id = f.drive_folder_id AND g.permission_email = f.permission_email
-                                AND g.status = 'granted')
-                  OR (f.person_id IS NOT NULL AND public._drive_grant_keeps_access(f.person_id, NULL, f.drive_folder_id))
-                  OR (f.member_id IS NOT NULL AND coalesce(public.can_by_member(f.member_id, 'manage_platform'), false)) )
+               AND public._drive_finding_keeps_access(f.drive_folder_id, f.permission_email::text)
                 THEN 'stale_keeps_access'
+              WHEN f.status = 'approved'
+               AND EXISTS (SELECT 1 FROM public.drive_offboarding_audit a
+                            WHERE a.drive_file_id = f.drive_folder_id AND a.permission_id = f.permission_id
+                              AND a.status IN ('pending_revoke','approved'))
+                THEN 'offboarding_lane'
               ELSE f.status END AS status,
          f.drive_folder_id, f.permission_id, f.permission_email, f.approved_by
     INTO v_f
@@ -722,8 +762,8 @@ REVOKE ALL ON FUNCTION public.admin_list_drive_folder_access_findings(boolean) F
 GRANT EXECUTE ON FUNCTION public.admin_list_drive_folder_access_findings(boolean) TO authenticated, service_role;
 
 -- A decisão da gestão sobre um item: manter (o acesso é legítimo), reabrir (desfaz o manter) ou revogar (pelo executor
--- da ADR-0107, no dreno seguinte). Manter e revogar pedem motivo. Revogar reconfere a pessoa e recusa a permissão
--- herdada da pasta-mãe, que só sai lá.
+-- da ADR-0107, no dreno seguinte). Manter e revogar pedem motivo. Revogar reconfere a pessoa, resolvida de novo pelo
+-- e-mail, e recusa a permissão herdada da pasta-mãe, que só sai lá.
 CREATE OR REPLACE FUNCTION public.admin_review_drive_folder_access(p_finding_id uuid, p_action text, p_note text DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
@@ -765,16 +805,14 @@ BEGIN
     IF v_f.inherited IS TRUE THEN
       RAISE EXCEPTION 'A permissão vem da pasta-mãe e só sai lá';
     END IF;
-    IF EXISTS (SELECT 1 FROM public.drive_membership_grants g
-                WHERE g.drive_folder_id = v_f.drive_folder_id AND g.permission_email = v_f.permission_email
-                  AND g.status = 'granted') THEN
-      RAISE EXCEPTION 'A permissão tem concessão viva no ledger; use a fila de fim de vínculo';
+    -- a pessoa resolvida de novo pelo e-mail, não pelo id gravado no item
+    IF public._drive_finding_keeps_access(v_f.drive_folder_id, v_f.permission_email::text) THEN
+      RAISE EXCEPTION 'O e-mail fica com o acesso: concessão viva, roster de uma iniciativa que usa a pasta ou manage_platform';
     END IF;
-    IF v_f.person_id IS NOT NULL AND public._drive_grant_keeps_access(v_f.person_id, NULL, v_f.drive_folder_id) THEN
-      RAISE EXCEPTION 'A pessoa está no roster de uma iniciativa que usa a pasta e fica com o acesso';
-    END IF;
-    IF v_f.member_id IS NOT NULL AND coalesce(public.can_by_member(v_f.member_id, 'manage_platform'), false) THEN
-      RAISE EXCEPTION 'O titular tem manage_platform e fica com o acesso';
+    IF EXISTS (SELECT 1 FROM public.drive_offboarding_audit a
+                WHERE a.drive_file_id = v_f.drive_folder_id AND a.permission_id = v_f.permission_id
+                  AND a.status IN ('pending_revoke','approved')) THEN
+      RAISE EXCEPTION 'A trilha de desligamento já tem esta permissão aberta; decida por lá';
     END IF;
     UPDATE public.drive_folder_access_findings
        SET status = 'approved', approved_by = v_caller_id, approved_at = now(), google_error = NULL,
@@ -824,6 +862,346 @@ SELECT cron.schedule('revoke-drive-drain-hourly', '7 * * * *', $cron$
   END
   $drain$;
 $cron$);
+
+-- ── 7. Retenção do e-mail da revisão (#3179, LGPD). Corpo da captura 20260805000425 (igual ao vivo), só com o
+-- bloco novo e as duas constantes. Mesmo cron (log-retention-monthly), sem cron novo. ──
+CREATE OR REPLACE FUNCTION public.purge_expired_logs(p_dry_run boolean DEFAULT true, p_limit integer DEFAULT 10000)
+ RETURNS TABLE(table_name text, purge_mode text, rows_affected bigint, oldest_row_kept timestamp with time zone)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+DECLARE
+  -- Retention constants (days). Change here to adjust policy.
+  v_mcp_retention_days          constant integer := 90;
+  v_email_webhook_retention_days constant integer := 180;
+  v_broadcast_retention_days    constant integer := 730;
+  v_data_anomaly_resolved_days  constant integer := 180;
+  v_comms_ingestion_retention_days constant integer := 90;
+  v_knowledge_ingestion_retention_days constant integer := 90;
+  v_pii_access_anonymize_days   constant integer := 1825;
+  v_pii_access_drop_days        constant integer := 2190;
+  v_admin_audit_archive_days    constant integer := 1825;
+  v_admin_audit_drop_days       constant integer := 2555;
+  -- #1054: drive_offboarding_audit permission_email anonymization (5y)
+  v_drive_audit_anonymize_days  constant integer := 1825;
+  v_drive_audit_salt            constant text := 'nucleoia-drive-offboarding-audit-anon-v1';
+  -- #3179: drive_folder_access_findings. O item revogado guarda a prova por 5 anos, como a trilha de desligamento;
+  -- o item fechado (deixou de ser achado) não prova nada e perde o e-mail em 90 dias. Mesmo salt, mesmo pseudônimo.
+  v_dfaf_terminal_anonymize_days constant integer := 1825;
+  v_dfaf_closed_anonymize_days  constant integer := 90;
+  v_count bigint;
+  v_oldest timestamptz;
+BEGIN
+  -- Auth: GRANT-based only. Function EXECUTE is granted to service_role
+  -- exclusively (see GRANT at migration tail). Callers without the grant
+  -- receive Postgres-level 'permission denied for function' error directly.
+  -- This is an infrastructure RPC (log retention) — ADR-0011 can_by_member
+  -- pattern applies to domain RPCs with user-level authority derivation.
+
+  -- mcp_usage_log (90d drop)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.mcp_usage_log
+      WHERE created_at < now() - (v_mcp_retention_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.mcp_usage_log WHERE id IN (
+          SELECT id FROM public.mcp_usage_log
+          WHERE created_at < now() - (v_mcp_retention_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.mcp_usage_log;
+    RETURN QUERY SELECT 'mcp_usage_log'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'mcp_usage_log purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'mcp_usage_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- comms_metrics_ingestion_log (90d drop)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.comms_metrics_ingestion_log
+      WHERE created_at < now() - (v_comms_ingestion_retention_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.comms_metrics_ingestion_log WHERE id IN (
+          SELECT id FROM public.comms_metrics_ingestion_log
+          WHERE created_at < now() - (v_comms_ingestion_retention_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.comms_metrics_ingestion_log;
+    RETURN QUERY SELECT 'comms_metrics_ingestion_log'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'comms_metrics_ingestion_log purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'comms_metrics_ingestion_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- knowledge_insights_ingestion_log (90d drop)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.knowledge_insights_ingestion_log
+      WHERE created_at < now() - (v_knowledge_ingestion_retention_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.knowledge_insights_ingestion_log WHERE id IN (
+          SELECT id FROM public.knowledge_insights_ingestion_log
+          WHERE created_at < now() - (v_knowledge_ingestion_retention_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.knowledge_insights_ingestion_log;
+    RETURN QUERY SELECT 'knowledge_insights_ingestion_log'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'knowledge_insights_ingestion_log purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'knowledge_insights_ingestion_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- data_anomaly_log (180d after resolved)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.data_anomaly_log
+      WHERE fixed_at IS NOT NULL
+        AND fixed_at < now() - (v_data_anomaly_resolved_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.data_anomaly_log WHERE id IN (
+          SELECT id FROM public.data_anomaly_log
+          WHERE fixed_at IS NOT NULL
+            AND fixed_at < now() - (v_data_anomaly_resolved_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(detected_at) INTO v_oldest FROM public.data_anomaly_log;
+    RETURN QUERY SELECT 'data_anomaly_log'::text, 'drop_resolved'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'data_anomaly_log purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'data_anomaly_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- email_webhook_events (180d drop)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.email_webhook_events
+      WHERE created_at < now() - (v_email_webhook_retention_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.email_webhook_events WHERE id IN (
+          SELECT id FROM public.email_webhook_events
+          WHERE created_at < now() - (v_email_webhook_retention_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.email_webhook_events;
+    RETURN QUERY SELECT 'email_webhook_events'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'email_webhook_events purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'email_webhook_events'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- broadcast_log (2y drop)
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.broadcast_log
+      WHERE sent_at < now() - (v_broadcast_retention_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.broadcast_log WHERE id IN (
+          SELECT id FROM public.broadcast_log
+          WHERE sent_at < now() - (v_broadcast_retention_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(sent_at) INTO v_oldest FROM public.broadcast_log;
+    RETURN QUERY SELECT 'broadcast_log'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'broadcast_log purge failed: %', SQLERRM;
+    RETURN QUERY SELECT 'broadcast_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- pii_access_log: 5y anonymize
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.pii_access_log
+      WHERE accessed_at < now() - (v_pii_access_anonymize_days || ' days')::interval
+        AND accessed_at >= now() - (v_pii_access_drop_days || ' days')::interval
+        AND accessor_id IS NOT NULL;
+    ELSE
+      WITH upd AS (
+        UPDATE public.pii_access_log
+        SET accessor_id = NULL,
+            reason = CASE WHEN reason IS NOT NULL THEN 'anonymized' ELSE reason END
+        WHERE id IN (
+          SELECT id FROM public.pii_access_log
+          WHERE accessed_at < now() - (v_pii_access_anonymize_days || ' days')::interval
+            AND accessed_at >= now() - (v_pii_access_drop_days || ' days')::interval
+            AND accessor_id IS NOT NULL
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM upd;
+    END IF;
+    SELECT min(accessed_at) INTO v_oldest FROM public.pii_access_log;
+    RETURN QUERY SELECT 'pii_access_log'::text, 'anonymize'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'pii_access_log anonymize failed: %', SQLERRM;
+    RETURN QUERY SELECT 'pii_access_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- pii_access_log: 6y drop
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.pii_access_log
+      WHERE accessed_at < now() - (v_pii_access_drop_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM public.pii_access_log WHERE id IN (
+          SELECT id FROM public.pii_access_log
+          WHERE accessed_at < now() - (v_pii_access_drop_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    RETURN QUERY SELECT 'pii_access_log'::text, 'drop'::text, v_count, NULL::timestamptz;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'pii_access_log drop failed: %', SQLERRM;
+    RETURN QUERY SELECT 'pii_access_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- admin_audit_log: 5y archive
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.admin_audit_log
+      WHERE created_at < now() - (v_admin_audit_archive_days || ' days')::interval;
+    ELSE
+      WITH moved AS (
+        INSERT INTO z_archive.admin_audit_log
+          (id, actor_id, action, target_type, target_id, changes, metadata, created_at)
+        SELECT id, actor_id, action, target_type, target_id, changes, metadata, created_at
+        FROM public.admin_audit_log
+        WHERE id IN (
+          SELECT id FROM public.admin_audit_log
+          WHERE created_at < now() - (v_admin_audit_archive_days || ' days')::interval
+          LIMIT p_limit
+        )
+        ON CONFLICT (id) DO NOTHING
+        RETURNING id
+      ), del AS (
+        DELETE FROM public.admin_audit_log WHERE id IN (SELECT id FROM moved)
+        RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.admin_audit_log;
+    RETURN QUERY SELECT 'admin_audit_log'::text, 'archive'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'admin_audit_log archive failed: %', SQLERRM;
+    RETURN QUERY SELECT 'admin_audit_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- z_archive.admin_audit_log: 7y drop
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM z_archive.admin_audit_log
+      WHERE created_at < now() - (v_admin_audit_drop_days || ' days')::interval;
+    ELSE
+      WITH del AS (
+        DELETE FROM z_archive.admin_audit_log WHERE id IN (
+          SELECT id FROM z_archive.admin_audit_log
+          WHERE created_at < now() - (v_admin_audit_drop_days || ' days')::interval
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM del;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM z_archive.admin_audit_log;
+    RETURN QUERY SELECT 'z_archive.admin_audit_log'::text, 'drop'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'z_archive.admin_audit_log drop failed: %', SQLERRM;
+    RETURN QUERY SELECT 'z_archive.admin_audit_log'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- drive_folder_access_findings: anonymize permission_email (#3179)
+  -- Revogado ou já ausente: 5 anos depois de aberto. Fechado: 90 dias depois de fechado. Item aberto, mantido,
+  -- aprovado ou com falha fica, porque a gestão ainda decide sobre ele. Mesmo 'sha256:' e mesmo salt do #1054.
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.drive_folder_access_findings
+      WHERE permission_email NOT LIKE 'sha256:%'
+        AND ( (status IN ('revoked','already_absent')
+               AND created_at < now() - (v_dfaf_terminal_anonymize_days || ' days')::interval)
+           OR (status = 'closed' AND closed_at < now() - (v_dfaf_closed_anonymize_days || ' days')::interval) );
+    ELSE
+      WITH upd AS (
+        UPDATE public.drive_folder_access_findings
+        SET permission_email = 'sha256:' || encode(extensions.digest(permission_email::text || v_drive_audit_salt, 'sha256'), 'hex'),
+            updated_at = now()
+        WHERE id IN (
+          SELECT id FROM public.drive_folder_access_findings
+          WHERE permission_email NOT LIKE 'sha256:%'
+            AND ( (status IN ('revoked','already_absent')
+                   AND created_at < now() - (v_dfaf_terminal_anonymize_days || ' days')::interval)
+               OR (status = 'closed' AND closed_at < now() - (v_dfaf_closed_anonymize_days || ' days')::interval) )
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM upd;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.drive_folder_access_findings;
+    RETURN QUERY SELECT 'drive_folder_access_findings'::text, 'anonymize'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'drive_folder_access_findings anonymize failed: %', SQLERRM;
+    RETURN QUERY SELECT 'drive_folder_access_findings'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- drive_offboarding_audit: 5y anonymize permission_email (#1054)
+  -- Terminal rows only. SHA-256 + fixed salt (extensions.digest), hex,
+  -- 'sha256:' sentinel prefix -> idempotent (re-run skips already-anonymized).
+  BEGIN
+    IF p_dry_run THEN
+      SELECT count(*) INTO v_count FROM public.drive_offboarding_audit
+      WHERE created_at < now() - (v_drive_audit_anonymize_days || ' days')::interval
+        AND status IN ('revoked','failed','already_absent','skipped')
+        AND permission_email NOT LIKE 'sha256:%';
+    ELSE
+      WITH upd AS (
+        UPDATE public.drive_offboarding_audit
+        SET permission_email = 'sha256:' || encode(extensions.digest(permission_email::text || v_drive_audit_salt, 'sha256'), 'hex')
+        WHERE id IN (
+          SELECT id FROM public.drive_offboarding_audit
+          WHERE created_at < now() - (v_drive_audit_anonymize_days || ' days')::interval
+            AND status IN ('revoked','failed','already_absent','skipped')
+            AND permission_email NOT LIKE 'sha256:%'
+          LIMIT p_limit
+        ) RETURNING 1
+      ) SELECT count(*) INTO v_count FROM upd;
+    END IF;
+    SELECT min(created_at) INTO v_oldest FROM public.drive_offboarding_audit;
+    RETURN QUERY SELECT 'drive_offboarding_audit'::text, 'anonymize'::text, v_count, v_oldest;
+  EXCEPTION WHEN OTHERS THEN
+    RAISE WARNING 'drive_offboarding_audit anonymize failed: %', SQLERRM;
+    RETURN QUERY SELECT 'drive_offboarding_audit'::text, 'error'::text, 0::bigint, NULL::timestamptz;
+  END;
+
+  -- Meta-log
+  IF NOT p_dry_run THEN
+    BEGIN
+      INSERT INTO public.admin_audit_log (
+        actor_id, action, target_type, target_id, changes, metadata
+      ) VALUES (
+        NULL, 'platform.log_retention_run', 'system', NULL, NULL,
+        jsonb_build_object('executed_at', now(), 'p_limit', p_limit, 'source', 'purge_expired_logs')
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE WARNING 'meta-log insert failed: %', SQLERRM;
+    END;
+  END IF;
+END;
+$function$;
 
 -- ── 2. A versão de dois argumentos sai: os chamadores acima já passam a pasta (#3178) ──
 DROP FUNCTION IF EXISTS public._drive_grant_keeps_access(uuid, uuid);

@@ -137,5 +137,11 @@ revogação automática ligar.
    `/admin/members/drive-teardown`. A revogação vai pelo executor da ADR-0107, que reconfere antes do Drive, e não avisa
    a pessoa, como a avulsa. A permissão herdada da pasta-mãe não é revogada na pasta de trabalho: só sai na pasta-mãe.
    A chave `drive_membership_revoke_enabled` não manda nesta revisão.
-4. **Fora desta emenda:** grupo, domínio e link aberto ("qualquer pessoa com o link") na pasta de trabalho, e a leitura
+4. **A última conferência é pelo e-mail, e há uma fila só por permissão.** Antes de revogar um item da revisão, a tela
+   e o executor resolvem a pessoa de novo pelo e-mail da permissão (`members.email` e `member_emails`), com
+   `_drive_finding_keeps_access`, e nunca pelo id gravado no item: quem era "fora do cadastro" pode ter entrado depois.
+   A permissão que já está aberta na trilha de desligamento (`drive_offboarding_audit`) não vira item da revisão.
+5. **Retenção (LGPD).** O e-mail do item revogado vira pseudônimo em 5 anos, como na trilha de desligamento (#1054), e
+   o do item fechado em 90 dias, pelo mesmo `purge_expired_logs`, com o mesmo salt e no mesmo cron mensal.
+6. **Fora desta emenda:** grupo, domínio e link aberto ("qualquer pessoa com o link") na pasta de trabalho, e a leitura
    da ACL de pasta que não é de trabalho.
