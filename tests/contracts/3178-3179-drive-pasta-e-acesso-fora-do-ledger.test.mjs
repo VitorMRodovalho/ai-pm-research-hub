@@ -11,7 +11,8 @@
  *   G22 todo chamador passa a pasta da concessão (ciclo, executor, aprovar já), e nenhum chama com dois argumentos.
  *   G23 a tabela da revisão: RLS fechado, um item aberto por permissão da pasta, estados coerentes.
  *   G24 a classificação: só a pasta de trabalho viva; só usuário, sem dono, sem a conta de serviço; o veredito em ordem
- *       (concessão viva, trilha de desligamento aberta, o predicado da última conferência, achado); dry_run volta antes
+ *       (concessão viva, trilha de desligamento aberta, o predicado da última conferência, herdado
+ *       da pasta de cima pela #3186, achado); dry_run volta antes
  *       de qualquer escrita; fecha o que deixou de valer e abre só o achado.
  *   G25 o executor: acha o item da revisão, reconfere antes do Drive pela pessoa resolvida de novo pelo e-mail (nunca
  *       pelo id gravado) e pela trilha de desligamento, e só fecha o aprovado; o dreno drena as três filas.
@@ -149,7 +150,7 @@ export function classificacao(recordBody) {
     soServico: /^ ?BEGIN IF public\.current_caller_role\(\) IS DISTINCT FROM 'service_role' THEN RAISE EXCEPTION/.test(corpo),
     soPastaDeTrabalhoViva: /IF NOT EXISTS \(SELECT 1 FROM public\.initiative_drive_links l WHERE l\.drive_folder_id = p_drive_folder_id AND l\.link_purpose = 'workspace' AND l\.unlinked_at IS NULL\) THEN RAISE EXCEPTION/.test(s),
     soUsuarioSemDonoNemServico: /WHERE x\.type = 'user' AND coalesce\(x\.deleted, false\) = false AND x\.id IS NOT NULL AND nullif\(btrim\(x\."emailAddress"\), ''\) IS NOT NULL AND x\.role IS DISTINCT FROM 'owner' AND lower\(btrim\(x\."emailAddress"\)\) NOT IN \(SELECT lower\(btrim\(e\)\) FROM unnest\(coalesce\(p_ignore_emails/.test(s),
-    vereditoEmOrdem: /'verdict', CASE WHEN EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = p_drive_folder_id AND g\.permission_email = w\.email::citext AND g\.status = 'granted'\) THEN 'covered_by_grant' WHEN EXISTS \(SELECT 1 FROM public\.drive_offboarding_audit a WHERE a\.drive_file_id = p_drive_folder_id AND a\.permission_id = w\.permission_id AND a\.status IN \('pending_revoke','approved'\)\) THEN 'offboarding_lane' WHEN public\._drive_finding_keeps_access\(p_drive_folder_id, w\.email\) THEN CASE WHEN w\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(w\.member_id, 'manage_platform'\), false\) THEN 'manage_platform_exception' ELSE 'on_roster' END ELSE 'finding' END/.test(s),
+    vereditoEmOrdem: /'verdict', CASE WHEN EXISTS \(SELECT 1 FROM public\.drive_membership_grants g WHERE g\.drive_folder_id = p_drive_folder_id AND g\.permission_email = w\.email::citext AND g\.status = 'granted'\) THEN 'covered_by_grant' WHEN EXISTS \(SELECT 1 FROM public\.drive_offboarding_audit a WHERE a\.drive_file_id = p_drive_folder_id AND a\.permission_id = w\.permission_id AND a\.status IN \('pending_revoke','approved'\)\) THEN 'offboarding_lane' WHEN public\._drive_finding_keeps_access\(p_drive_folder_id, w\.email\) THEN CASE WHEN w\.member_id IS NOT NULL AND coalesce\(public\.can_by_member\(w\.member_id, 'manage_platform'\), false\) THEN 'manage_platform_exception' ELSE 'on_roster' END WHEN w\.inherited IS TRUE THEN 'inherited' ELSE 'finding' END/.test(s),
     dryRunAntesDeEscrever: dry > 0 && primeiraEscrita > dry,
     fechaOQueDeixouDeValer: /UPDATE public\.drive_folder_access_findings f SET status = 'closed', closed_at = now\(\), updated_at = now\(\), close_reason = coalesce\(\(SELECT cur\.verdict FROM cur WHERE cur\.permission_id = f\.permission_id AND cur\.verdict <> 'finding'\), 'permission_gone'\) WHERE f\.drive_folder_id = p_drive_folder_id AND f\.status IN \('open','kept','approved','failed'\) AND NOT EXISTS \(SELECT 1 FROM cur WHERE cur\.permission_id = f\.permission_id AND cur\.verdict = 'finding'\)/.test(s),
     abreSoOAchado: /INSERT INTO public\.drive_folder_access_findings \(drive_folder_id, permission_id, permission_email, permission_role, inherited, person_id, member_id\) SELECT [^;]*? WHERE c\.verdict = 'finding' AND NOT EXISTS \(SELECT 1 FROM public\.drive_folder_access_findings f WHERE f\.drive_folder_id = p_drive_folder_id AND f\.permission_id = c\.permission_id AND f\.status IN \('open','kept','approved','failed'\)\)/.test(s),
@@ -258,7 +259,7 @@ test('#3178-#3179 G27: emulação do #785 sobre as funções da migration', () =
   assert.deepEqual(Object.entries(resultado).filter(([, v]) => v).map(([k]) => k), [], 'leitora SECDEF sem portão confidencial');
   // a leitora nova está entre as que a emulação olhou, e é executável por authenticated: o portão é que a livra
   assert.ok(fns.includes('admin_list_drive_folder_access_findings'));
-  assert.equal(leitoraSemPortao(body('admin_list_drive_folder_access_findings').replace(/public\.rls_can_see_initiative\(l\.initiative_id\)/, 'true').replace(/confidential/g, 'x'), true),
+  assert.equal(leitoraSemPortao(body('admin_list_drive_folder_access_findings').replace(/public\.rls_can_see_initiative\(l\.initiative_id\)/g, 'true').replace(/confidential/g, 'x'), true),
     true, 'sem o portão, a leitora nova é pega');
   // controle positivo: uma leitora de initiatives sem portão é pega; com o portão passa; escritora passa
   assert.equal(leitoraSemPortao('SELECT i.title FROM public.initiatives i WHERE i.id = p_id', true), true);
