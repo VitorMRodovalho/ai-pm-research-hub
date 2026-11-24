@@ -32,4 +32,4 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           GHOST_READ_SWEEP: '1'
-        run: node --test --test-concurrency=1 tests/contracts/leitura-por-nao-membro-derivada-do-catalogo.test.mjs
+        run: node --import ./tests/helpers/db-fetch-preload.mjs --test --test-concurrency=1 tests/contracts/leitura-por-nao-membro-derivada-do-catalogo.test.mjs

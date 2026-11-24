@@ -14,6 +14,12 @@
 import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { dbFetch, ehSaturacaoDePool, TENTATIVAS } from '../helpers/db-fetch.mjs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+// #3192: as saturacoes simuladas aqui iam para o acumulador da corrida real e apareciam no resumo
+// do run-suite como chamadas repetidas de verdade. Este guard usa um arquivo proprio, como o #1869.
+process.env.DB_FETCH_BUDGET_FILE = join(tmpdir(), `db-fetch-budget-TESTE-1844-${process.pid}.log`);
 
 const resposta = (status, corpo) =>
   new Response(corpo, { status, headers: { 'Content-Type': 'application/json' } });

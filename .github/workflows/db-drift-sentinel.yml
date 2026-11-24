@@ -53,5 +53,5 @@ jobs:
             echo "::error::SUPABASE_SERVICE_ROLE_KEY ausente: a sentinela nao mede nada sem ela."
             exit 1
           fi
-          node --test --test-name-pattern "missing-file drift vs p224 baseline" \
+          node --import ./tests/helpers/db-fetch-preload.mjs --test --test-name-pattern "missing-file drift vs p224 baseline" \
             tests/contracts/rpc-migration-coverage.test.mjs
