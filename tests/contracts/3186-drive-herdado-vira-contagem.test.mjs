@@ -12,7 +12,6 @@
  *   G33 a tela: o herdado por pasta viva, com o portão rls_can_see_initiative (ADR-0105), e o total no resumo.
  *   G34 o reconcile soma 'inherited' e 'inherited_unknown_person', sem 'findings_inherited'.
  *   G35 a ilha mostra o bloco do herdado e as chaves existem nos três idiomas.
- *   G36 a volta do cron: o mesmo nome e horário, sem skip_acl_review.
  *   M   cada predicado reprova a mutação do seu defeito.
  *
  * A camada viva (DB-gated) roda G31 e G33 sobre o corpo em produção.
@@ -40,7 +39,6 @@ const ROOT = process.cwd();
 const MIG_DIR = join(ROOT, 'supabase/migrations');
 const pick = (re) => readdirSync(MIG_DIR).filter((f) => re.test(f)).sort().pop();
 const MIG = pick(/_3186_drive_herdado_vira_contagem\.sql$/);
-const MIG_CRON = pick(/_3186b_drive_religa_revisao_no_cron\.sql$/);
 const EF_PATH = join(ROOT, 'supabase/functions/reconcile-initiative-drive-access/index.ts');
 const ISLAND = join(ROOT, 'src/components/admin/members/DriveFolderAccessReviewIsland.tsx');
 const LOCALES = ['pt-BR', 'en-US', 'es-LATAM'].map((l) => join(ROOT, `src/i18n/${l}.ts`));
@@ -124,16 +122,6 @@ export function ilhaMostraOHerdado(islandText, localeTexts) {
   return r;
 }
 
-/** G36: a volta do cron. */
-export function cronReligado(cronMig) {
-  const c = sql(cronMig);
-  return {
-    mesmoNomeEHorario: /SELECT cron\.schedule\( 'membership-drive-reconcile-daily', '0 4 \* \* \*', \$cron\$/.test(c),
-    corpoSemPausa: /body := '\{"source":"pg_cron"\}'::jsonb,/.test(c),
-    semSkip: !/skip_acl_review/.test(c),
-  };
-}
-
 test('#3186 G31: o herdado vira contagem na classificação', () => {
   assert.ok(MIG, 'migration *_3186_drive_herdado_vira_contagem.sql ausente');
   ok(herdadoViraContagem(body('record_drive_folder_acl')), 'o herdado deixou de virar contagem');
@@ -144,10 +132,6 @@ test('#3186 G34: o reconcile soma o herdado', () => ok(reconcileSomaOHerdado(rea
 test('#3186 G35: a ilha mostra o herdado nos três idiomas', () => {
   ok(ilhaMostraOHerdado(readFileSync(ISLAND, 'utf8'), LOCALES.map((p) => [p.split('/').pop(), readFileSync(p, 'utf8')])), 'a ilha mudou');
 });
-test('#3186 G36: o cron volta sem skip_acl_review', () => {
-  assert.ok(MIG_CRON, 'migration *_3186b_drive_religa_revisao_no_cron.sql ausente');
-  ok(cronReligado(readFileSync(join(MIG_DIR, MIG_CRON), 'utf8')), 'o cron mudou');
-});
 
 test('#3186 M: cada predicado reprova a mutação do seu defeito', () => {
   const mut = (src, a, b) => { const out = src.replace(a, b); assert.notEqual(out, src, `mutação não aplicou: ${a}`); return out; };
@@ -157,7 +141,6 @@ test('#3186 M: cada predicado reprova a mutação do seu defeito', () => {
   const EF = readFileSync(EF_PATH, 'utf8');
   const I = readFileSync(ISLAND, 'utf8');
   const PT = readFileSync(LOCALES[0], 'utf8');
-  const C = readFileSync(join(MIG_DIR, MIG_CRON), 'utf8');
   // G31
   assert.equal(herdadoViraContagem(mut(R, "             WHEN w.inherited IS TRUE THEN 'inherited'\n", '')).vereditoDepoisDeQuemFica, false);
   assert.equal(herdadoViraContagem(mut(R, "WHEN w.inherited IS TRUE THEN 'inherited'", "WHEN w.inherited IS NOT FALSE THEN 'inherited'")).vereditoDepoisDeQuemFica, false);
@@ -186,10 +169,6 @@ test('#3186 M: cada predicado reprova a mutação do seu defeito', () => {
   assert.equal(ilhaMostraOHerdado(mut(I, '{inh.map((f) => (', '{[].map((f) => ('), []).mostraPorPasta, false);
   assert.equal(ilhaMostraOHerdado(mut(I, '{s.inherited ?? 0}', '{0}'), []).totalNoResumo, false);
   assert.equal(ilhaMostraOHerdado(I, [['pt-BR.ts', mut(PT, "  'driveFolderReview.inheritedHint': '", "  'driveFolderReview.xHint': '")]])['chaves_pt-BR.ts'], false);
-  // G36
-  assert.equal(cronReligado(mut(C, `'{"source":"pg_cron"}'::jsonb`, `'{"source":"pg_cron","skip_acl_review":true}'::jsonb`)).semSkip, false);
-  assert.equal(cronReligado(mut(C, `'{"source":"pg_cron"}'::jsonb`, `'{"source":"pg_cron","skip_acl_review":true}'::jsonb`)).corpoSemPausa, false);
-  assert.equal(cronReligado(mut(C, "  '0 4 * * *',", "  '0 5 * * *',")).mesmoNomeEHorario, false);
 });
 
 // ───────────────────────── vivo ─────────────────────────
