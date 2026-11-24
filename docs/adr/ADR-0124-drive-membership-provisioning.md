@@ -120,3 +120,28 @@ revogação automática ligar.
     estado de antes, porque o próprio item passa a dizer `engagement_restored`.
 11. **Fora desta emenda:** pasta de trabalho de mais de uma iniciativa (#3178; 0 casos em 22/11/2026, com guard que
     avisa se aparecer) e acesso fora do ledger, como compartilhamento manual depois da revogação (#3179).
+
+## Emenda 2: a pasta decide quem fica, e o acesso fora do ledger vai à revisão (#3178 e #3179, 23/11/2026)
+
+1. **Quem fica olha a pasta (#3178).** `_drive_grant_keeps_access(pessoa, iniciativa, pasta)`: fica quem está no roster
+   da iniciativa da concessão ou de qualquer iniciativa ativa com vínculo de trabalho vivo na mesma pasta (o mesmo "usa a
+   pasta" de `get_membership_drive_targets`). O ciclo, o executor e o "aprovar já" passam a pasta da concessão, e a
+   versão de dois argumentos sai. Quem sai de uma iniciativa e segue em outra que usa a pasta não entra na fila. O item
+   aberto pela iniciativa de onde a pessoa saiu por último continua com o nome da iniciativa da concessão.
+2. **O acesso fora do ledger vai à revisão (#3179).** O reconcile diário lê a ACL de cada pasta de trabalho, inclusive a
+   de roster vazio, e manda para `record_drive_folder_acl`, que classifica num lugar só. Vira item de
+   `drive_folder_access_findings` a permissão de usuário sem concessão viva de quem não fica pelo roster da pasta. Ficam
+   fora o dono da pasta, grupo, domínio e link, a conta de serviço e quem tem `manage_platform` (a exceção nomeada do
+   item da Emenda 1). O item fecha sozinho quando a permissão some, ganha concessão viva, ou a pessoa entra no roster.
+3. **Nada sai sozinho.** A gestão mantém (com motivo), reabre, ou pede a revogação (com motivo), em
+   `/admin/members/drive-teardown`. A revogação vai pelo executor da ADR-0107, que reconfere antes do Drive, e não avisa
+   a pessoa, como a avulsa. A permissão herdada da pasta-mãe não é revogada na pasta de trabalho: só sai na pasta-mãe.
+   A chave `drive_membership_revoke_enabled` não manda nesta revisão.
+4. **A última conferência é pelo e-mail, e há uma fila só por permissão.** Antes de revogar um item da revisão, a tela
+   e o executor resolvem a pessoa de novo pelo e-mail da permissão (`members.email` e `member_emails`), com
+   `_drive_finding_keeps_access`, e nunca pelo id gravado no item: quem era "fora do cadastro" pode ter entrado depois.
+   A permissão que já está aberta na trilha de desligamento (`drive_offboarding_audit`) não vira item da revisão.
+5. **Retenção (LGPD).** O e-mail do item revogado vira pseudônimo em 5 anos, como na trilha de desligamento (#1054), e
+   o do item fechado em 90 dias, pelo mesmo `purge_expired_logs`, com o mesmo salt e no mesmo cron mensal.
+6. **Fora desta emenda:** grupo, domínio e link aberto ("qualquer pessoa com o link") na pasta de trabalho, e a leitura
+   da ACL de pasta que não é de trabalho.

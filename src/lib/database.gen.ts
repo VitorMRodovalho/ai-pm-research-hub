@@ -9983,6 +9983,299 @@ export type Database = {
           },
         ]
       }
+      drive_folder_access_findings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          close_reason: string | null
+          closed_at: string | null
+          created_at: string
+          drive_folder_id: string
+          first_seen_at: string
+          google_error: Json | null
+          id: string
+          inherited: boolean | null
+          last_seen_at: string
+          member_id: string | null
+          permission_email: string
+          permission_id: string
+          permission_role: string | null
+          person_id: string | null
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          revoked_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          created_at?: string
+          drive_folder_id: string
+          first_seen_at?: string
+          google_error?: Json | null
+          id?: string
+          inherited?: boolean | null
+          last_seen_at?: string
+          member_id?: string | null
+          permission_email: string
+          permission_id: string
+          permission_role?: string | null
+          person_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          created_at?: string
+          drive_folder_id?: string
+          first_seen_at?: string
+          google_error?: Json | null
+          id?: string
+          inherited?: boolean | null
+          last_seen_at?: string
+          member_id?: string | null
+          permission_email?: string
+          permission_id?: string
+          permission_role?: string | null
+          person_id?: string | null
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "member_attendance_summary"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "members_public_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "public_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_active_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_initiative_roster"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_operational_tiers"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_operational_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drive_folder_access_findings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "v_tribe_active_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       drive_membership_grants: {
         Row: {
           api_error: Json | null
@@ -32468,12 +32761,20 @@ export type Database = {
         }
         Returns: Json
       }
+      _drive_finding_keeps_access: {
+        Args: { p_drive_folder_id: string; p_email: string }
+        Returns: boolean
+      }
       _drive_grant_failure_class: {
         Args: { p_api_error: Json }
         Returns: string
       }
       _drive_grant_keeps_access: {
-        Args: { p_initiative_id: string; p_person_id: string }
+        Args: {
+          p_drive_folder_id: string
+          p_initiative_id: string
+          p_person_id: string
+        }
         Returns: boolean
       }
       _drive_revocation_notify: {
@@ -33191,6 +33492,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_list_drive_folder_access_findings: {
+        Args: { p_include_closed?: boolean }
+        Returns: Json
+      }
       admin_list_drive_revocation_audit: {
         Args: {
           p_limit?: number
@@ -33389,6 +33694,10 @@ export type Database = {
       }
       admin_retry_application_ai_analysis: {
         Args: { p_application_id: string }
+        Returns: Json
+      }
+      admin_review_drive_folder_access: {
+        Args: { p_action: string; p_finding_id: string; p_note?: string }
         Returns: Json
       }
       admin_roll_cycle_membership: {
@@ -37412,6 +37721,15 @@ export type Database = {
           p_initiative_drive_link_id: string
           p_mime_type?: string
           p_size_bytes?: number
+        }
+        Returns: Json
+      }
+      record_drive_folder_acl: {
+        Args: {
+          p_drive_folder_id: string
+          p_dry_run?: boolean
+          p_ignore_emails?: string[]
+          p_permissions: Json
         }
         Returns: Json
       }
