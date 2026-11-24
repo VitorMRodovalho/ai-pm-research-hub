@@ -5,10 +5,12 @@
  *
  * Trava (sobre a CAPTURA VIGENTE de cada função):
  *   A. o plano mora num lugar só (affiliation_nudge_plan): coorte = affiliation_needs_review (#3105), não o ciclo;
- *   B. a variante sai do motivo do portão e do balde do snapshot (#3107); VEP com filiação e portão fechado não avisa;
+ *   B. a variante sai do motivo do portão e do balde do snapshot (#3107); VEP com filiação e portão fechado não avisa.
+ *      Desde a #3168 o CASE mora em affiliation_nudge_variant, que o plano chama;
  *   C. os quatro textos continuam ligados às variantes, num lugar só (affiliation_nudge_text);
  *   D. o aviso: lê o plano; nada sai em ensaio NEM com o aviso desligado; dedupe de 30 dias; tipo e link de sempre;
- *      a variante fica gravada em source_type; o plano não leva nome;
+ *      a variante fica gravada em source_type; o plano não leva nome. Desde a #3168 o dedupe e o envio moram em
+ *      affiliation_nudge_deliver, que o cron e a aprovação chamam;
  *   E. o liga/desliga: a chave nasce desligada e a leitura falha fechada; ligar exige manage_platform, pausar é da
  *      audiência da fila; motivo obrigatório e linha em admin_audit_log;
  *   F. o painel: a audiência da fila; estado, agendamento, prévia, histórico (com a variante dos envios antigos pelo
@@ -29,6 +31,8 @@ const MIGRATIONS = resolve(ROOT, 'supabase/migrations');
 const cap = (n) => maskLineComments(latestFunctionCapture(ROOT, n).body);
 const N = cap('nudge_entry_chapter_cohort');
 const PLAN = cap('affiliation_nudge_plan');
+const VARIANT = cap('affiliation_nudge_variant');
+const DELIVER = cap('affiliation_nudge_deliver');
 const TEXT = cap('affiliation_nudge_text');
 const ON = cap('affiliation_nudge_enabled');
 const SET = cap('set_affiliation_nudge_enabled');
@@ -50,10 +54,12 @@ test('A. o plano mora num lugar só, e a coorte é o portão fechado', () => {
 });
 
 test('B. a variante sai do portão e do snapshot; VEP com filiação e portão fechado não avisa', () => {
-  assert.match(PLAN, /public\.affiliation_gate\(m\.id\) ->> 'reason' AS reason,\s+public\.affiliation_vep_snapshot\(m\.id\) ->> 'bucket' AS bucket/);
+  assert.match(PLAN, /SELECT m\.id AS member_id,\s+public\.affiliation_nudge_variant\(m\.id\) AS variant\s+FROM public\.members m/, 'o plano lê a variante de um lugar só');
+  assert.doesNotMatch(PLAN, /CASE|affiliation_gate\(|affiliation_vep_snapshot\(/, 'o plano não guarda uma segunda cópia da regra da variante');
+  assert.match(VARIANT, /SELECT public\.affiliation_gate\(p_member_id\) ->> 'reason' AS reason,\s+public\.affiliation_vep_snapshot\(p_member_id\) ->> 'bucket' AS bucket/);
   assert.match(
-    PLAN,
-    /CASE\s+WHEN x\.reason = 'entry_chapter_required'\s+THEN 'ambiguous'\s+WHEN x\.reason = 'not_affiliated'\s+THEN 'not_affiliated'\s+WHEN x\.bucket = 'profile_private'\s+THEN 'profile_private'\s+WHEN x\.bucket IS NULL OR x\.bucket = 'no_fetch'\s+THEN 'no_fetch'\s+ELSE NULL\s+END AS variant/,
+    VARIANT,
+    /CASE\s+WHEN x\.reason = 'entry_chapter_required'\s+THEN 'ambiguous'\s+WHEN x\.reason = 'not_affiliated'\s+THEN 'not_affiliated'\s+WHEN x\.bucket = 'profile_private'\s+THEN 'profile_private'\s+WHEN x\.bucket IS NULL OR x\.bucket = 'no_fetch'\s+THEN 'no_fetch'\s+ELSE NULL\s+END\s+FROM \(/,
   );
   assert.match(N, /IF v_rec\.variant IS NULL THEN\s+v_internal := v_internal \+ 1;\s+CONTINUE;\s+END IF;/, 'sem variante, não avisa');
 });
@@ -64,18 +70,26 @@ test('C. os textos continuam ligados às variantes, num lugar só', () => {
   assert.match(TEXT, /WHEN 'no_fetch' THEN jsonb_build_object\(\s+'title', 'Vincule seu perfil PMI para definir seu capítulo de entrada',/);
   assert.match(TEXT, /WHEN 'not_affiliated' THEN jsonb_build_object\(\s+'title', 'Confirme sua filiação PMI para definir seu capítulo de entrada',\s+'body',\s+'Não conseguimos confirmar uma filiação PMI ativa/);
   assert.doesNotMatch(N, /'Escolha seu capítulo|'Confirme sua filiação/, 'o aviso não guarda uma segunda cópia dos textos');
+  assert.doesNotMatch(DELIVER, /'Escolha seu capítulo|'Confirme sua filiação/, 'o envio também não');
 });
 
 test('D. nada sai em ensaio nem desligado; dedupe; tipo, link e variante gravada; plano sem nome', () => {
   const plano = N.indexOf("v_plan := v_plan || jsonb_build_object('member_id', v_rec.member_id, 'variant', v_rec.variant);");
   const portao = N.indexOf('IF p_dry_run OR NOT v_enabled THEN\n      CONTINUE;');
-  const dedupe = N.indexOf("AND n.type = 'entry_chapter_action_needed'\n        AND n.created_at > now() - interval '30 days'");
-  const envio = N.indexOf('PERFORM public.create_notification(');
-  assert.ok(plano > 0 && portao > plano && dedupe > portao && envio > dedupe, 'plano, ensaio/desligado, dedupe e envio nessa ordem');
+  const envio = N.indexOf('IF NOT public.affiliation_nudge_deliver(v_rec.member_id, v_rec.variant) THEN');
+  assert.ok(plano > 0 && portao > plano && envio > portao, 'plano, ensaio/desligado e envio nessa ordem');
+  assert.match(N, /IF NOT public\.affiliation_nudge_deliver\(v_rec\.member_id, v_rec\.variant\) THEN\s+v_skipped := v_skipped \+ 1;\s+CONTINUE;\s+END IF;\s+v_sent := v_sent \+ 1;/, 'barrado pelo dedupe conta como pulado; enviado conta como enviado');
   assert.match(N, /v_enabled := public\.affiliation_nudge_enabled\(\);/);
-  assert.match(N, /PERFORM public\.create_notification\(\s+v_rec\.member_id,\s+'entry_chapter_action_needed',\s+v_text ->> 'title',\s+v_text ->> 'body',\s+'\/profile#entry-chapter-card',\s+'affiliation_nudge\.' \|\| v_rec\.variant,\s+NULL::uuid\s+\);/);
+  assert.doesNotMatch(N, /create_notification|interval '30 days'/, 'o cron não guarda uma segunda cópia do envio nem do dedupe');
+  // o envio único: dedupe antes do envio, com o mesmo tipo, link e variante gravada
+  const dedupe = DELIVER.indexOf("AND n.type = 'entry_chapter_action_needed'\n      AND n.created_at > now() - interval '30 days'");
+  const create = DELIVER.indexOf('PERFORM public.create_notification(');
+  assert.ok(dedupe > 0 && create > dedupe, 'dedupe e envio nessa ordem');
+  assert.match(DELIVER, /AND n\.created_at > now\(\) - interval '30 days'\s+\) THEN\s+RETURN false;\s+END IF;/, 'barrado pelo dedupe não envia');
+  assert.match(DELIVER, /PERFORM public\.create_notification\(\s+p_member_id,\s+'entry_chapter_action_needed',\s+v_text ->> 'title',\s+v_text ->> 'body',\s+'\/profile#entry-chapter-card',\s+'affiliation_nudge\.' \|\| p_variant,\s+NULL::uuid\s+\);\s+RETURN true;/);
+  assert.match(DELIVER, /v_text := public\.affiliation_nudge_text\(p_variant\);/);
+  assert.equal((DELIVER.match(/PERFORM public\.create_notification\(/g) || []).length, 1, 'um ponto de envio só');
   assert.match(N, /'paused', NOT p_dry_run AND NOT v_enabled,/);
-  assert.equal((N.match(/PERFORM public\.create_notification\(/g) || []).length, 1, 'um ponto de envio só');
   assert.doesNotMatch(N, /'name'|applicant_name|m\.name/, 'o plano não expõe nome');
 });
 

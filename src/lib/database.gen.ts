@@ -33581,7 +33581,15 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: boolean
       }
+      affiliation_nudge_deliver: {
+        Args: { p_member_id: string; p_variant: string }
+        Returns: boolean
+      }
       affiliation_nudge_enabled: { Args: never; Returns: boolean }
+      affiliation_nudge_on_approval: {
+        Args: { p_member_id: string }
+        Returns: Json
+      }
       affiliation_nudge_plan: {
         Args: never
         Returns: {
@@ -33590,6 +33598,10 @@ export type Database = {
         }[]
       }
       affiliation_nudge_text: { Args: { p_variant: string }; Returns: Json }
+      affiliation_nudge_variant: {
+        Args: { p_member_id: string }
+        Returns: string
+      }
       affiliation_vep_snapshot: { Args: { p_member_id: string }; Returns: Json }
       analytics_is_leadership_role: {
         Args: { p_designations: string[]; p_operational_role: string }
