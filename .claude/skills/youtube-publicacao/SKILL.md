@@ -46,6 +46,18 @@ de um membro. O GP decidiu cortar, e como o vídeo já estava no ar (não listad
 novo, as 3 legendas de novo (3 × 400 unidades) e o deslocamento de capítulos e da ata. Leia a
 transcrição procurando esse tipo de trecho ANTES do primeiro envio, e leve a decisão ao GP.
 
+**Corte depois de publicado: o editor do Studio mantém o link, e NÃO mexe nas legendas.** Medido em
+27/11/2026 no workshop da Tribo 7: um gancho de 12,2 s (trecho de fala posto antes da capa) foi
+lido pela audiência como falha, e um palestrante perguntou no grupo. O corte pelo Studio (Editor,
+Trim & cut, campo de tempo em `h:mm:ss:quadros`) manteve o id e as visualizações e levou cerca de
+uma hora para processar; enquanto isso o vídeo antigo segue no ar. Depois dele:
+- as 3 faixas continuaram no tempo antigo, 12,2 s atrasadas: baixe a faixa servida e compare o
+  primeiro cue antes de concluir qualquer coisa;
+- `captions().update` com o VTT deslocado substitui a faixa no mesmo id, sem apagar e reinserir;
+- capítulos da descrição e das localizações são re-ancorados por você, e só DEPOIS que a duração
+  nova aparecer na API, para não desalinhar o vídeo antigo.
+Gancho antes da capa só com o OK do GP no corte final.
+
 ### 2. Áudio: MEDIR, nunca recitar
 
 O defeito muda por gravação. Três casos medidos no mesmo canal: Airmeet T6 (04/08) a −24 LUFS sem
