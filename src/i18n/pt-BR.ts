@@ -5816,6 +5816,7 @@ const ptBR: Record<string, string> = {
   'verify.invalidHint': 'Verifique o código e tente novamente.',
   'verify.unavailable': "Não foi possível verificar este código agora.",
   'verify.unavailableHint': "Isso não diz nada sobre o documento. Tente de novo em instantes.",
+  'verify.downloadPdf': 'Baixar o certificado (PDF)',
   'verify.type': 'Tipo',
   'verify.issuedTo': 'Emitido para',
   'verify.issuedAt': 'Data',
