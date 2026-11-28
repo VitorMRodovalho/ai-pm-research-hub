@@ -5808,6 +5808,7 @@ const enUS: Record<string, string> = {
   'verify.invalidHint': 'Please check the code and try again.',
   'verify.unavailable': "We couldn't verify this code right now.",
   'verify.unavailableHint': "This says nothing about the document. Try again in a moment.",
+  'verify.downloadPdf': 'Download the certificate (PDF)',
   'verify.type': 'Type',
   'verify.issuedTo': 'Issued to',
   'verify.issuedAt': 'Date',

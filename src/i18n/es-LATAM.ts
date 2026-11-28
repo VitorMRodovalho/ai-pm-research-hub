@@ -5809,6 +5809,7 @@ const esLATAM: Record<string, string> = {
   'verify.invalidHint': 'Verifique el código e intente nuevamente.',
   'verify.unavailable': "No fue posible verificar este código ahora.",
   'verify.unavailableHint': "Esto no dice nada sobre el documento. Intenta de nuevo en unos instantes.",
+  'verify.downloadPdf': 'Descargar el certificado (PDF)',
   'verify.type': 'Tipo',
   'verify.issuedTo': 'Emitido para',
   'verify.issuedAt': 'Fecha',

@@ -83,10 +83,18 @@ const { code } = Astro.params;
       row(t('verify.code', lang), `<code class="text-[12px] bg-[var(--surface-hover)] px-2 py-0.5 rounded font-mono">${esc(data.verification_code)}</code>`),
     ].filter(Boolean).join('');
 
+    // Event guest certificates (#1098) have no login behind them, so the PDF is offered here:
+    // the route answers only for an issued guest code and redirects to a short-lived signed URL.
+    const download = data.audience === 'event_guest' && data.verification_code
+      ? `<div class="text-center mt-5"><a data-guest-pdf href="/api/certificates/guest-pdf/${encodeURIComponent(String(data.verification_code))}" rel="nofollow"
+          class="inline-block px-5 py-2.5 rounded-lg bg-navy text-white text-sm font-semibold no-underline hover:opacity-90">${t('verify.downloadPdf', lang)}</a></div>`
+      : '';
+
     return `<div class="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-6">
       <div class="text-center mb-4"><div class="text-3xl mb-2">✅</div>
         <p class="font-bold text-emerald-800 dark:text-emerald-300 text-lg">${t('verify.valid', lang)}</p></div>
       <div class="divide-y divide-[var(--border-subtle)]">${rows}</div>
+      ${download}
     </div>`;
   }
 
