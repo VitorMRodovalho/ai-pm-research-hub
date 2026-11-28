@@ -158,6 +158,9 @@ async function buildGuestCertData(guest: GuestCertRow, sb: any): Promise<Certifi
     verification_code: guest.verification_code || undefined,
     issued_by: guest.issued_by || undefined,
     counter_signed_by: guest.counter_signed_by || undefined,
+    // #3201: the second signatory printed on the PDF is the counter-signer frozen at issuance
+    counter_signed_by_name: guest.counter_signed_by ? (snap.counter_signed_by_name || undefined) : undefined,
+    counter_signed_by_role: guest.counter_signed_by ? (snap.counter_signed_by_role || undefined) : undefined,
     description: guest.description || undefined,
     language: guest.language || 'pt-BR',
     signed_at: guest.issued_at || undefined,
