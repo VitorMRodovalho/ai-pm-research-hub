@@ -91,6 +91,7 @@ export interface CertificateData {
   signed_at?: string;
   counter_signed_at?: string;
   counter_signed_by_name?: string;
+  counter_signed_by_role?: string; // #3201: event guest certs, frozen in content_snapshot
   template_content?: any; // full template from governance_documents
   // #1153 Direção 1: the approved chain-version HTML body (document_versions.content_html),
   // snapshotted immutably at signing into content_snapshot.html_body. When present, the signed
@@ -139,6 +140,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     lifetime: 'Reconhecimento vitalício',
     roleGestor: 'Gestor do Núcleo',
     roleCoGestor: 'Co-Gestor do Núcleo',
+    roleCounterSigner: 'Contra-assinatura',
     verifyCode: 'Código de verificação',
     issuedOn: 'Emitido em',
     verifyAt: 'Verifique em',
@@ -172,6 +174,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     lifetime: 'Lifetime recognition',
     roleGestor: 'Núcleo Manager',
     roleCoGestor: 'Núcleo Co-Manager',
+    roleCounterSigner: 'Counter-signature',
     verifyCode: 'Verification code',
     issuedOn: 'Issued on',
     verifyAt: 'Verify at',
@@ -205,6 +208,7 @@ const TEMPLATES: Record<string, Record<string, string>> = {
     lifetime: 'Reconocimiento vitalicio',
     roleGestor: 'Gestor del Núcleo',
     roleCoGestor: 'Co-Gestor del Núcleo',
+    roleCounterSigner: 'Contrafirma',
     verifyCode: 'Código de verificación',
     issuedOn: 'Emitido el',
     verifyAt: 'Verifique en',
@@ -634,8 +638,14 @@ function formatShortDate(date: string | undefined): string {
  *   - type         → body text (bodyExcellence / bodyParticipation) via the i18n dict
  *   - seal label   → derived from the title (recoSealLabel)
  *   - verify host  → CERT_VERIFY_HOST (chapter-institutional domain)
- * Signatories are the two fixed Núcleo leads (Gestor + Co-Gestor). All strings i18n'd.
+ * Signatories are the Gestor plus the Co-Gestor, except a counter-signed EVENT guest cert, whose
+ * second signatory is the member who counter-signed (name and role frozen at issuance, #3201).
+ * All strings i18n'd.
  */
+function escHtml(v: string): string {
+  return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 export function buildRecognitionHTML(certData: CertificateData): string {
   const lang = certData.language || 'pt-BR';
   const tpl = TEMPLATES[lang] || TEMPLATES['pt-BR'];
@@ -676,6 +686,15 @@ export function buildRecognitionHTML(certData: CertificateData): string {
   // render guard would otherwise hold the PDF hostage on a dead src).
   const gpSigImg = certData.signature_url ? `<img class="rc-sigimg" src="${certData.signature_url}" alt="" />` : '';
   const coGpSigImg = certData.co_signature_url ? `<img class="rc-sigimg" src="${certData.co_signature_url}" alt="" />` : '';
+  // Second signatory. Member recognition certs keep the fixed Co-Gestor. An EVENT guest cert
+  // (#1098) that was counter-signed names the member who actually counter-signed, frozen in
+  // content_snapshot at issuance, because the image above is already that member's: a fixed name
+  // under someone else's signature would misattribute the act (#3201).
+  const isEventCounterSigned = type === 'event_participation' && !!certData.counter_signed_by_name;
+  const secondName = isEventCounterSigned ? escHtml(certData.counter_signed_by_name!) : 'Fabricio R. C. Costa';
+  const secondRole = isEventCounterSigned
+    ? escHtml(certData.counter_signed_by_role || tpl.roleCounterSigner)
+    : tpl.roleCoGestor;
 
   const css = `
     .rc-page{position:relative;width:297mm;height:210mm;background:#FCFBF9;box-sizing:border-box;padding:14mm 18mm;overflow:hidden;page-break-after:always;font-family:Georgia,'Times New Roman','Liberation Serif',serif;color:#25313f}
@@ -741,7 +760,7 @@ export function buildRecognitionHTML(certData: CertificateData): string {
     <div class="rc-bottom">
       <div class="rc-signs">
         <div class="rc-sig">${gpSigImg}<div class="rc-sigline"></div><div class="rc-signame">Vitor Maia Rodovalho, PMP</div><div class="rc-sigrole">${tpl.roleGestor}</div></div>
-        <div class="rc-sig">${coGpSigImg}<div class="rc-sigline"></div><div class="rc-signame">Fabricio R. C. Costa</div><div class="rc-sigrole">${tpl.roleCoGestor}</div></div>
+        <div class="rc-sig">${coGpSigImg}<div class="rc-sigline"></div><div class="rc-signame">${secondName}</div><div class="rc-sigrole">${secondRole}</div></div>
       </div>
       <div class="rc-chapband"><div class="rc-chaplabel">${tpl.chaptersLabel}</div><img class="rc-chapstrip" src="${CHAPTERS_STRIP_DATA_URI}" alt="" /></div>
       <div class="rc-verify">${verifyLine}</div>
